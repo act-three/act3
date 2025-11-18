@@ -1,0 +1,64 @@
+{
+	"version": "2",
+	"sql": [
+		{
+			"engine": "sqlite",
+			"queries": "query.sql",
+			"schema": "ddl",
+			"gen": {
+				"go": {
+					"package": "schema",
+					"out": "schema",
+					"emit_exact_table_names": true,
+					"emit_pointers_for_null_types": true,
+					"rename": {
+						"artworkkey": "ArtworkKey",
+						"baseurl": "BaseURL",
+						"configtransmission": "ConfigTransmission",
+						"editionid": "EditionID",
+						"endedon": "EndedOn",
+						"episodeid": "EpisodeID",
+						"episodeorder": "EpisodeOrder",
+						"episodetag": "EpisodeTag",
+						"episodevideo": "EpisodeVideo",
+						"failuredesc": "FailureDesc",
+						"genrename": "GenreName",
+						"imdbid": "IMDBID",
+						"infohash": "InfoHash",
+						"movieid": "MovieID",
+						"nextrun": "NextRun",
+						"orderid": "OrderID",
+						"originalhash": "OriginalHash",
+						"ownerid": "OwnerID",
+						"planserieseditionid": "PlanSeriesEditionID",
+						"premieredon": "PremieredOn",
+						"releaseid": "ReleaseID",
+						"releasepath": "ReleasePath",
+						"seasonepisode": "SeasonEpisode",
+						"seasonid": "SeasonID",
+						"seriesid": "SeriesID",
+						"seriesedition": "SeriesEdition",
+						"sortkey": "SortKey",
+						"tagid": "TagID",
+						"tvdbid": "TVDBID",
+						"tvmazeid": "TVmazeID",
+						"tvmazeimageurl": "TVmazeImageURL",
+						"tvmazeupdatedat": "TVmazeUpdatedAt",
+						"tvmazeurl": "TVmazeURL",
+						"tvrageid": "TVRageID",
+						"videoid": "VideoID",
+					},
+					"overrides": [
+						{
+							"column": "artwork.updated_at",
+							"go_type": {
+								"import": "ily.dev/act3/storage/unixtime",
+								"type": "Time"
+							}
+						}
+					]
+				}
+			}
+		}
+	]
+}

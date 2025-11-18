@@ -1,0 +1,6 @@
+*.db
+*.db-shm
+*.db-wal
+/node_modules
+/src
+/ui/static/static/bundle.*

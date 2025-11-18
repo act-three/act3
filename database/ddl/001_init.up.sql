@@ -1,0 +1,222 @@
+-- initial schema
+
+CREATE TABLE User
+(
+	ID   TEXT PRIMARY KEY DEFAULT ('u'||newID()),
+	Name TEXT NOT NULL
+)
+STRICT;
+
+CREATE TABLE ConfigTransmission
+(
+	Single  INTEGER PRIMARY KEY CHECK (single = 0),
+	Path    TEXT NOT NULL,
+	BaseURL TEXT NOT NULL
+)
+STRICT;
+
+CREATE TABLE Storage
+(
+	Path     TEXT PRIMARY KEY,
+	Contents TEXT NOT NULL CHECK (Contents IN ('Movie', 'Series'))
+)
+STRICT;
+
+CREATE TABLE Series
+(
+	ID      TEXT PRIMARY KEY DEFAULT ('sr'||newID()),
+	Title   TEXT NOT NULL,
+	Summary TEXT NOT NULL,
+	Status  TEXT NOT NULL CHECK (Status IN (
+		'In Development',
+		'Running',
+		'Ended',
+		'To Be Determined'
+	)),
+	Language    TEXT NOT NULL,
+	PremieredOn TEXT,
+	EndedOn     TEXT,
+
+	TVmazeID        INTEGER UNIQUE,
+	TVmazeURL       TEXT,
+	TVmazeImageURL  TEXT NOT NULL,
+	TVmazeUpdatedAt INTEGER NOT NULL DEFAULT (0),
+	IMDBID          TEXT UNIQUE,
+	TVDBID          INTEGER UNIQUE,
+	TVRageID        INTEGER UNIQUE
+)
+STRICT;
+
+CREATE TABLE SeriesGenre
+(
+	SeriesID  TEXT NOT NULL REFERENCES Series,
+	GenreName TEXT NOT NULL,
+	PRIMARY KEY (SeriesID, GenreName)
+)
+STRICT, WITHOUT ROWID;
+
+CREATE TABLE SeriesEdition
+(
+	ID       TEXT PRIMARY KEY DEFAULT ('sed'||newID()),
+	Title    TEXT NOT NULL,
+	SeriesID TEXT NOT NULL REFERENCES Series,
+	UNIQUE (SeriesID, Title)
+)
+STRICT;
+
+CREATE TABLE Season
+(
+	ID           TEXT PRIMARY KEY DEFAULT ('sn'||newID()),
+	EditionID    TEXT NOT NULL REFERENCES SeriesEdition,
+	SortKey      TEXT NOT NULL,
+	Name         TEXT NOT NULL,
+	Number       INTEGER NOT NULL,
+	TVmazeURL    TEXT,
+	Summary      TEXT NOT NULL,
+	EpisodeOrder INTEGER NOT NULL,
+	PremieredOn  TEXT,
+	EndedOn      TEXT,
+	TVmazeImageURL TEXT NOT NULL,
+	UNIQUE (EditionID, SortKey)
+)
+STRICT;
+
+CREATE TABLE Episode
+(
+	ID      TEXT PRIMARY KEY DEFAULT ('ep'||newID()),
+	Title   TEXT NOT NULL,
+	Summary TEXT NOT NULL,
+	Type    TEXT NOT NULL CHECK (Type IN (
+		'regular',
+		'significant_special',
+		'insignificant_special'
+	)),
+	Airdate        TEXT, -- can be NULL if unaired/unreleased
+	Runtime        INTEGER NOT NULL, -- minutes
+	TVmazeURL      TEXT,
+	TVmazeImageURL TEXT NOT NULL
+)
+STRICT;
+
+CREATE TABLE SeasonEpisode
+(
+	SeasonID  TEXT NOT NULL REFERENCES Season,
+	EpisodeID TEXT NOT NULL REFERENCES Episode,
+	SortKey   TEXT NOT NULL,
+	Label     TEXT NOT NULL, -- episode number e.g. "5", or "Special"
+	Number    INTEGER, -- NULL for specials
+	UNIQUE (SeasonID, SortKey),
+	PRIMARY KEY (SeasonID, EpisodeID)
+)
+STRICT, WITHOUT ROWID;
+CREATE INDEX Index_SeasonEpisode_EpisodeID ON SeasonEpisode (EpisodeID);
+
+CREATE TABLE Movie
+(
+	ID         TEXT PRIMARY KEY DEFAULT ('mo'||newID()),
+	Title      TEXT NOT NULL,
+	ArtworkKey TEXT NOT NULL
+)
+STRICT;
+
+CREATE TABLE Tag
+(
+	ID      TEXT PRIMARY KEY DEFAULT ('t'||newID()),
+	Name    TEXT NOT NULL,
+	OwnerID INTEGER
+)
+STRICT;
+
+CREATE TABLE TagSeries
+(
+	TagID    TEXT NOT NULL REFERENCES Tag,
+	SeriesID TEXT NOT NULL REFERENCES Series,
+	PRIMARY KEY (TagID, SeriesID)
+)
+STRICT, WITHOUT ROWID;
+CREATE INDEX Index_TagSeries_SeriesID ON TagSeries (SeriesID);
+
+CREATE TABLE TagMovie
+(
+	TagID   TEXT NOT NULL REFERENCES Tag,
+	MovieID TEXT NOT NULL REFERENCES Movie,
+	PRIMARY KEY (TagID, MovieID)
+)
+STRICT, WITHOUT ROWID;
+CREATE INDEX Index_TagMovie_MovieID ON TagMovie (MovieID);
+
+CREATE TABLE Release
+(
+	ID       TEXT PRIMARY KEY DEFAULT ('rel'||newID()),
+	Name     TEXT NOT NULL,
+	InfoHash TEXT UNIQUE
+)
+STRICT;
+
+CREATE TABLE EpisodeVideo
+(
+	EpisodeID TEXT NOT NULL REFERENCES Episode,
+	VideoID   TEXT NOT NULL REFERENCES Video,
+	PRIMARY KEY (EpisodeID, VideoID)
+)
+STRICT;
+
+CREATE TABLE MovieVideo
+(
+	MovieID   TEXT NOT NULL REFERENCES Movie,
+	VideoID   TEXT NOT NULL REFERENCES Video,
+	PRIMARY KEY (MovieID, VideoID)
+)
+STRICT, WITHOUT ROWID;
+
+CREATE TABLE Video
+(
+	ID           TEXT PRIMARY KEY DEFAULT ('vid'||newID()),
+	ReleaseID    TEXT NOT NULL REFERENCES Release,
+	ReleasePath  TEXT NOT NULL,
+	OriginalHash TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	UNIQUE (ReleaseID, ReleasePath)
+)
+STRICT;
+
+CREATE TABLE RenditionForStreaming
+(
+	ID      TEXT PRIMARY KEY DEFAULT ('rfs'||newID()),
+	VideoID TEXT NOT NULL REFERENCES Video,
+	Hash    TEXT NOT NULL
+)
+STRICT;
+
+CREATE TABLE Task
+(
+	ID          TEXT PRIMARY KEY DEFAULT ('task'||newID()),
+	Type        TEXT NOT NULL,
+	Args        TEXT NOT NULL,
+	Failures    INTEGER NOT NULL DEFAULT (0),
+	NextRun     INTEGER NOT NULL DEFAULT (0),
+	FailureDesc TEXT
+)
+STRICT;
+CREATE INDEX Index_Task_Type ON Task (Type);
+
+CREATE TABLE Download
+(
+	ID        TEXT PRIMARY KEY DEFAULT ('dl'||newID()),
+	CreatedAt INTEGER NOT NULL DEFAULT (unixepoch()),
+	State     TEXT NOT NULL CHECK (State IN (
+		'added',
+		'active',
+		'done',
+		'error'
+	)),
+	Title               TEXT NOT NULL,
+	Error               TEXT NOT NULL DEFAULT (''),
+	Torrent             BLOB NOT NULL,
+	InfoHash            TEXT NOT NULL UNIQUE,
+	Progress            REAL NOT NULL DEFAULT (0.0),
+	PlanSeriesEditionID TEXT REFERENCES SeriesEdition,
+	Plan                TEXT NOT NULL DEFAULT ('{}')
+)
+STRICT;
+CREATE INDEX Index_Download_PlanEditionID ON Download (PlanSeriesEditionID)
+WHERE PlanSeriesEditionID IS NOT NULL;

@@ -1,0 +1,20 @@
+// Project tasks configuration.
+// See https://zed.dev/docs/tasks for documentation.
+[
+  {
+    "label": "go generate",
+    "command": ["go generate ./..."],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    // What to do with the terminal pane and tab, after the command was started:
+    // * `always` — always show the task's pane, and focus the corresponding tab in it (default)
+    // * `no_focus` — always show the task's pane, add the task's tab in it, but don't focus it
+    // * `never` — do not alter focus, but still add/reuse the task's tab in its pane
+    "reveal": "always",
+    "hide": "on_success",
+    // Whether to show the task line in the output of the spawned task, defaults to `true`.
+    "show_summary": true,
+    // Whether to show the command line in the output of the spawned task, defaults to `true`.
+    "show_command": true,
+  },
+]
