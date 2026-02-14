@@ -88,12 +88,12 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 		}
 
 		tx.m.prog.addVideo(vid.ID, "Encoding")
-		tx.addTask(ctx, taskIngestDemo, vid.ID)
+		tx.addTask(ctx, taskIngestEncode, vid.ID)
 		return nil
 	}
 }
 
-func (tx *TxR) taskIngestDemo(ctx Context, args []string) func(*TxRW) error {
+func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 	vid, err := tx.q.VideoGet(ctx, args[0])
 	if err != nil {
 		return taskError(err)

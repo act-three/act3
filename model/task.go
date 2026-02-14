@@ -21,7 +21,7 @@ const (
 	taskAddDownloadToTransmission = "add-download-to-transmission"
 	taskFetchEpisodes             = "fetch-episodes"
 	taskIngest                    = "ingest"
-	taskIngestDemo                = "ingest-demo"
+	taskIngestEncode              = "ingest-demo"
 )
 
 type taskFunc func(*TxR, Context, []string) func(*TxRW) error
@@ -30,7 +30,7 @@ var taskTab = map[string]taskFunc{
 	taskAddDownloadToTransmission: (*TxR).taskAddDownloadToTransmission,
 	taskFetchEpisodes:             (*TxR).taskFetchEpisodes,
 	taskIngest:                    (*TxR).taskIngest,
-	taskIngestDemo:                (*TxR).taskIngestDemo,
+	taskIngestEncode:              (*TxR).taskIngestEncode,
 }
 
 func taskError(err error) func(*TxRW) error {
