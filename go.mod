@@ -13,6 +13,7 @@ require (
 )
 
 require (
+	github.com/Eyevinn/hls-m3u8 v0.6.4 // indirect
 	github.com/anacrolix/generics v0.1.0 // indirect
 	github.com/anacrolix/missinggo v1.3.0 // indirect
 	github.com/anacrolix/missinggo/v2 v2.10.0 // indirect

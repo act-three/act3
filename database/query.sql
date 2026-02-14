@@ -123,13 +123,26 @@ RETURNING *;
 SELECT * FROM Release WHERE InfoHash = ?;
 
 -- name: RenditionForStreamingCreate :one
-INSERT INTO RenditionForStreaming (VideoID, Hash)
+INSERT INTO RenditionForStreaming (
+	VideoID,
+	Params -- TODO(april) this might want to be multiple columns, not sure
+)
 VALUES (?, ?)
 RETURNING *;
 
 -- name: RenditionForStreamingListByVideoID :many
 SELECT * FROM RenditionForStreaming
 WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
+
+-- name: RenditionForStreamingListDirectByVideoID :many
+SELECT * FROM RenditionForStreaming
+WHERE VideoID = ?;
+
+-- name: RenditionForStreamingUpdateEncode :one
+UPDATE RenditionForStreaming
+SET Hash = ?, Playlist = ?
+WHERE ID = ?
+RETURNING *;
 
 -- name: SchemaVersionGet :one
 SELECT version, digest FROM schema LIMIT 1;
@@ -298,4 +311,9 @@ SELECT * FROM Video
 WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
 
 -- name: VideoUpdateOriginalHash :one
-UPDATE Video SET OriginalHash = ? WHERE ID = ? RETURNING *;
+UPDATE Video SET OriginalHash = ? WHERE ID = ?
+RETURNING *;
+
+-- name: VideoUpdateMVPlaylist :one
+UPDATE Video SET MVPlaylist = ? WHERE ID = ?
+RETURNING *;

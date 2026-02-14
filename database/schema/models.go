@@ -56,10 +56,12 @@ type Release struct {
 	InfoHash *string
 }
 
-type Renditionforstreaming struct {
-	ID      string
-	VideoID string
-	Hash    string
+type RenditionForStreaming struct {
+	ID       string
+	VideoID  string
+	Params   string
+	Hash     string
+	Playlist string
 }
 
 type Schema struct {
@@ -158,4 +160,5 @@ type Video struct {
 	ReleaseID    string
 	ReleasePath  string
 	OriginalHash string
+	Mvplaylist   string
 }

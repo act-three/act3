@@ -64,43 +64,54 @@ func (d *Dir) Link(name string) (hash string, err error) {
 	return hash, nil
 }
 
-func (d *Dir) CreateFunc(f func(*os.File) error) (hash string, err error) {
-	tmp := rand.Text()[:8]
-	slog.Debug("create", "path", tmp)
-	w, err := d.root.Create(tmp)
-	if err != nil {
-		return "", err
+func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (hashes []string, err error) {
+	var tmps []string
+	for range n {
+		tmps = append(tmps, rand.Text()[:8])
 	}
-	defer d.root.Remove(tmp)
-
-	err = f(w)
-	if err != nil {
-		return "", err
-	}
-	err = w.Close()
-	if err != nil && !errors.Is(err, os.ErrClosed) {
-		return "", err
+	var ws []*os.File
+	for _, tmp := range tmps {
+		w, err := d.root.Create(tmp)
+		if err != nil {
+			return nil, err
+		}
+		defer d.root.Remove(tmp)
+		ws = append(ws, w)
 	}
 
-	slog.Debug("open", "path", tmp)
-	r, err := d.root.Open(tmp)
+	err = f(ws)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	hash, err = digest(r)
-	if err != nil {
-		return "", err
+	for _, w := range ws {
+		err = w.Close()
+		if err != nil && !errors.Is(err, os.ErrClosed) {
+			return nil, err
+		}
 	}
-	path := filepath.Join(hash[:2], hash[2:4], hash[4:])
-	err = d.root.MkdirAll(path[:5], 0755)
-	if err != nil {
-		return "", err
+
+	for _, tmp := range tmps {
+		slog.Debug("open", "path", tmp)
+		r, err := d.root.Open(tmp)
+		if err != nil {
+			return nil, err
+		}
+		hash, err := digest(r)
+		if err != nil {
+			return nil, err
+		}
+		path := filepath.Join(hash[:2], hash[2:4], hash[4:])
+		err = d.root.MkdirAll(path[:5], 0755)
+		if err != nil {
+			return nil, err
+		}
+		err = d.root.Rename(tmp, path)
+		if err != nil {
+			return nil, err
+		}
+		hashes = append(hashes, hash)
 	}
-	err = d.root.Rename(tmp, path)
-	if err != nil {
-		return "", err
-	}
-	return hash, nil
+	return hashes, nil
 }
 
 func (d *Dir) Open(hash string) (*os.File, error) {

@@ -603,38 +603,53 @@ func (q *Queries) ReleaseGetByInfoHash(ctx context.Context, infohash *string) (R
 }
 
 const renditionForStreamingCreate = `-- name: RenditionForStreamingCreate :one
-INSERT INTO RenditionForStreaming (VideoID, Hash)
+INSERT INTO RenditionForStreaming (
+	VideoID,
+	Params -- TODO(april) this might want to be multiple columns, not sure
+)
 VALUES (?, ?)
-RETURNING id, videoid, hash
+RETURNING id, videoid, params, hash, playlist
 `
 
 type RenditionForStreamingCreateParams struct {
 	VideoID string
-	Hash    string
+	Params  string
 }
 
-func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg RenditionForStreamingCreateParams) (Renditionforstreaming, error) {
-	row := q.db.QueryRowContext(ctx, renditionForStreamingCreate, arg.VideoID, arg.Hash)
-	var i Renditionforstreaming
-	err := row.Scan(&i.ID, &i.VideoID, &i.Hash)
+func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg RenditionForStreamingCreateParams) (RenditionForStreaming, error) {
+	row := q.db.QueryRowContext(ctx, renditionForStreamingCreate, arg.VideoID, arg.Params)
+	var i RenditionForStreaming
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.Params,
+		&i.Hash,
+		&i.Playlist,
+	)
 	return i, err
 }
 
 const renditionForStreamingListByVideoID = `-- name: RenditionForStreamingListByVideoID :many
-SELECT id, videoid, hash FROM RenditionForStreaming
+SELECT id, videoid, params, hash, playlist FROM RenditionForStreaming
 WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 `
 
-func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episodeid string) ([]Renditionforstreaming, error) {
+func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episodeid string) ([]RenditionForStreaming, error) {
 	rows, err := q.db.QueryContext(ctx, renditionForStreamingListByVideoID, episodeid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Renditionforstreaming
+	var items []RenditionForStreaming
 	for rows.Next() {
-		var i Renditionforstreaming
-		if err := rows.Scan(&i.ID, &i.VideoID, &i.Hash); err != nil {
+		var i RenditionForStreaming
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.Params,
+			&i.Hash,
+			&i.Playlist,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -646,6 +661,66 @@ func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episod
 		return nil, err
 	}
 	return items, nil
+}
+
+const renditionForStreamingListDirectByVideoID = `-- name: RenditionForStreamingListDirectByVideoID :many
+SELECT id, videoid, params, hash, playlist FROM RenditionForStreaming
+WHERE VideoID = ?
+`
+
+func (q *Queries) RenditionForStreamingListDirectByVideoID(ctx context.Context, videoid string) ([]RenditionForStreaming, error) {
+	rows, err := q.db.QueryContext(ctx, renditionForStreamingListDirectByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RenditionForStreaming
+	for rows.Next() {
+		var i RenditionForStreaming
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.Params,
+			&i.Hash,
+			&i.Playlist,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const renditionForStreamingUpdateEncode = `-- name: RenditionForStreamingUpdateEncode :one
+UPDATE RenditionForStreaming
+SET Hash = ?, Playlist = ?
+WHERE ID = ?
+RETURNING id, videoid, params, hash, playlist
+`
+
+type RenditionForStreamingUpdateEncodeParams struct {
+	Hash     string
+	Playlist string
+	ID       string
+}
+
+func (q *Queries) RenditionForStreamingUpdateEncode(ctx context.Context, arg RenditionForStreamingUpdateEncodeParams) (RenditionForStreaming, error) {
+	row := q.db.QueryRowContext(ctx, renditionForStreamingUpdateEncode, arg.Hash, arg.Playlist, arg.ID)
+	var i RenditionForStreaming
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.Params,
+		&i.Hash,
+		&i.Playlist,
+	)
+	return i, err
 }
 
 const schemaVersionGet = `-- name: SchemaVersionGet :one
@@ -1532,7 +1607,7 @@ INSERT INTO Video
 	ReleasePath
 )
 VALUES (?, ?)
-RETURNING id, releaseid, releasepath, originalhash
+RETURNING id, releaseid, releasepath, originalhash, mvplaylist
 `
 
 type VideoCreateParams struct {
@@ -1548,12 +1623,13 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
+		&i.Mvplaylist,
 	)
 	return i, err
 }
 
 const videoGet = `-- name: VideoGet :one
-SELECT id, releaseid, releasepath, originalhash FROM Video WHERE ID = ?
+SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video WHERE ID = ?
 `
 
 func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
@@ -1564,12 +1640,13 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
+		&i.Mvplaylist,
 	)
 	return i, err
 }
 
 const videoGetByReleasePath = `-- name: VideoGetByReleasePath :one
-SELECT id, releaseid, releasepath, originalhash FROM Video WHERE ReleaseID = ? AND ReleasePath = ?
+SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video WHERE ReleaseID = ? AND ReleasePath = ?
 `
 
 type VideoGetByReleasePathParams struct {
@@ -1585,12 +1662,13 @@ func (q *Queries) VideoGetByReleasePath(ctx context.Context, arg VideoGetByRelea
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
+		&i.Mvplaylist,
 	)
 	return i, err
 }
 
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
-SELECT id, releaseid, releasepath, originalhash FROM Video
+SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
 WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 `
 
@@ -1608,6 +1686,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 			&i.ReleaseID,
 			&i.ReleasePath,
 			&i.OriginalHash,
+			&i.Mvplaylist,
 		); err != nil {
 			return nil, err
 		}
@@ -1622,8 +1701,32 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 	return items, nil
 }
 
+const videoUpdateMVPlaylist = `-- name: VideoUpdateMVPlaylist :one
+UPDATE Video SET MVPlaylist = ? WHERE ID = ?
+RETURNING id, releaseid, releasepath, originalhash, mvplaylist
+`
+
+type VideoUpdateMVPlaylistParams struct {
+	Mvplaylist string
+	ID         string
+}
+
+func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPlaylistParams) (Video, error) {
+	row := q.db.QueryRowContext(ctx, videoUpdateMVPlaylist, arg.Mvplaylist, arg.ID)
+	var i Video
+	err := row.Scan(
+		&i.ID,
+		&i.ReleaseID,
+		&i.ReleasePath,
+		&i.OriginalHash,
+		&i.Mvplaylist,
+	)
+	return i, err
+}
+
 const videoUpdateOriginalHash = `-- name: VideoUpdateOriginalHash :one
-UPDATE Video SET OriginalHash = ? WHERE ID = ? RETURNING id, releaseid, releasepath, originalhash
+UPDATE Video SET OriginalHash = ? WHERE ID = ?
+RETURNING id, releaseid, releasepath, originalhash, mvplaylist
 `
 
 type VideoUpdateOriginalHashParams struct {
@@ -1639,6 +1742,7 @@ func (q *Queries) VideoUpdateOriginalHash(ctx context.Context, arg VideoUpdateOr
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
+		&i.Mvplaylist,
 	)
 	return i, err
 }

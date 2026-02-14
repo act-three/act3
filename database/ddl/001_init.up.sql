@@ -175,15 +175,18 @@ CREATE TABLE Video
 	ReleaseID    TEXT NOT NULL REFERENCES Release,
 	ReleasePath  TEXT NOT NULL,
 	OriginalHash TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	UNIQUE (ReleaseID, ReleasePath)
 )
 STRICT;
 
 CREATE TABLE RenditionForStreaming
 (
-	ID      TEXT PRIMARY KEY DEFAULT ('rfs'||newID()),
-	VideoID TEXT NOT NULL REFERENCES Video,
-	Hash    TEXT NOT NULL
+	ID       TEXT PRIMARY KEY DEFAULT ('rfs'||newID()),
+	VideoID  TEXT NOT NULL REFERENCES Video,
+	Params   TEXT NOT NULL, -- resolution, bitrate, etc (should be multiple cols?)
+	Hash     TEXT NOT NULL,
+	Playlist TEXT NOT NULL
 )
 STRICT;
 

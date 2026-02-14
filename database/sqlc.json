@@ -34,6 +34,7 @@
 						"premieredon": "PremieredOn",
 						"releaseid": "ReleaseID",
 						"releasepath": "ReleasePath",
+						"renditionforstreaming": "RenditionForStreaming",
 						"seasonepisode": "SeasonEpisode",
 						"seasonid": "SeasonID",
 						"seriesid": "SeriesID",

@@ -7,10 +7,9 @@ import (
 )
 
 type progress struct {
-	mu        sync.Mutex
-	vIDByEpID map[string]map[string]bool
-	rIDByvID  map[string]map[string]bool
-	progByrID map[string]ProgressItem
+	mu          sync.Mutex
+	vIDByEpID   map[string]map[string]bool
+	progByVidID map[string]ProgressItem
 }
 
 func (p *progress) addEpisodeVideo(epID, vID string) {
@@ -25,43 +24,34 @@ func (p *progress) addEpisodeVideo(epID, vID string) {
 	p.vIDByEpID[epID][vID] = true
 }
 
-func (p *progress) addRendition(vID, rID, desc string, total time.Duration) {
+func (p *progress) addVideo(vID, desc string, total time.Duration) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	if p.rIDByvID == nil {
-		p.rIDByvID = map[string]map[string]bool{}
+	if p.progByVidID == nil {
+		p.progByVidID = map[string]ProgressItem{}
 	}
-	if p.rIDByvID[vID] == nil {
-		p.rIDByvID[vID] = map[string]bool{}
-	}
-	p.rIDByvID[vID][rID] = true
-
-	if p.progByrID == nil {
-		p.progByrID = map[string]ProgressItem{}
-	}
-	p.progByrID[rID] = ProgressItem{
+	p.progByVidID[vID] = ProgressItem{
 		CreatedAt: time.Now(),
 		Desc:      desc,
 		Total:     total,
 	}
 }
 
-func (p *progress) updateRendition(rID string, progress time.Duration) {
+func (p *progress) updateVideo(vID string, progress time.Duration) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	pi, ok := p.progByrID[rID]
+	pi, ok := p.progByVidID[vID]
 	if !ok {
 		return
 	}
 	pi.Value = progress
-	p.progByrID[rID] = pi
+	p.progByVidID[vID] = pi
 }
 
-func (p *progress) clearRendition(vID, rID string) {
+func (p *progress) clearVideo(vID string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	delete(p.progByrID, rID)
-	delete(p.rIDByvID[vID], rID)
+	delete(p.progByVidID, vID)
 }
 
 func (p *progress) getByEpisodeID(epID string) []ProgressItem {
@@ -69,9 +59,7 @@ func (p *progress) getByEpisodeID(epID string) []ProgressItem {
 	defer p.mu.Unlock()
 	var a []ProgressItem
 	for vID := range p.vIDByEpID[epID] {
-		for rID := range p.rIDByvID[vID] {
-			a = append(a, p.progByrID[rID])
-		}
+		a = append(a, p.progByVidID[vID])
 	}
 	slices.SortFunc(a, func(a, b ProgressItem) int {
 		return a.CreatedAt.Compare(b.CreatedAt)
