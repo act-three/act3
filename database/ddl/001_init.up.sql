@@ -185,8 +185,8 @@ CREATE TABLE RenditionForStreaming
 	ID       TEXT PRIMARY KEY DEFAULT ('rfs'||newID()),
 	VideoID  TEXT NOT NULL REFERENCES Video,
 	Params   TEXT NOT NULL, -- resolution, bitrate, etc (should be multiple cols?)
-	Hash     TEXT NOT NULL,
-	Playlist TEXT NOT NULL
+	Hash     TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	Playlist TEXT NOT NULL DEFAULT ('') -- empty during ingest
 )
 STRICT;
 
