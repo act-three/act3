@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"ily.dev/act3/database/schema"
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
@@ -121,6 +122,16 @@ func (w *web) dialogEditEpisode(req *http.Request) (http.Handler, error) {
 			return nil, err
 		}
 
+		videos, err := tr.VideoListByEpisodeID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
+		renditions, err := tr.RenditionForStreamingListByEpisodeID(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+
 		return app.Dialog(
 			ScrollArea()(
 				html.Div()(
@@ -133,7 +144,87 @@ func (w *web) dialogEditEpisode(req *http.Request) (http.Handler, error) {
 					html.Text(ep.Label()),
 				),
 
-				html.Div()(html.Text("Metadata")),
+				html.Div(
+					attr.Class("mt-4 font-bold"),
+				)(html.Text("Videos")),
+				expr.IfElse(len(videos) == 0,
+					func() html.Node {
+						return html.Div(
+							attr.Class("text-gray-500"),
+						)(html.Text("No videos found"))
+					},
+					func() html.Node { return html.Group() },
+				),
+				html.Range(videos, func(v schema.Video) html.Node {
+					return html.Div(
+						attr.Class("ml-4 mt-2"),
+					)(
+						html.Div()(
+							html.Text("ID: "),
+							html.Text(v.ID),
+						),
+						html.Div()(
+							html.Text("Release Path: "),
+							html.Text(v.ReleasePath),
+						),
+						html.Div()(
+							html.Text("Original Hash: "),
+							html.Text(v.OriginalHash),
+						),
+						expr.IfElse(v.Mvplaylist != "",
+							func() html.Node {
+								return html.Div()(
+									html.Text("Playlist: "),
+									html.Text(v.Mvplaylist),
+								)
+							},
+							func() html.Node { return html.Group() },
+						),
+					)
+				}),
+
+				html.Div(
+					attr.Class("mt-4 font-bold"),
+				)(html.Text("Renditions for Streaming")),
+				expr.IfElse(len(renditions) == 0,
+					func() html.Node {
+						return html.Div(
+							attr.Class("text-gray-500"),
+						)(html.Text("No renditions found"))
+					},
+					func() html.Node { return html.Group() },
+				),
+				html.Range(renditions, func(r schema.RenditionForStreaming) html.Node {
+					return html.Div(
+						attr.Class("ml-4 mt-2"),
+					)(
+						html.Div()(
+							html.Text("ID: "),
+							html.Text(r.ID),
+						),
+						html.Div()(
+							html.Text("Video ID: "),
+							html.Text(r.VideoID),
+						),
+						html.Div()(
+							html.Text("Params: "),
+							html.Text(r.Params),
+						),
+						expr.IfElse(r.Hash != "",
+							func() html.Node {
+								return html.Div()(
+									html.Text("Hash: "),
+									html.Text(r.Hash),
+								)
+							},
+							func() html.Node { return html.Group() },
+						),
+					)
+				}),
+
+				html.Div(
+					attr.Class("mt-4 font-bold"),
+				)(html.Text("Metadata")),
 				html.Div()(html.Text("Title")),
 				html.Div()(html.Text("Sort Title")),
 				html.Div()(html.Text("Season Number")),

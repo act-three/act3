@@ -44,7 +44,10 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 	}
 
 	// Plan renditions based on the source properties.
-	planned := video.PlanRenditions(probe)
+	planned, err := video.PlanRenditions(probe)
+	if err != nil {
+		return taskError(err)
+	}
 	if len(planned) == 0 {
 		return taskError(fmt.Errorf("no video stream found in source"))
 	}

@@ -3,6 +3,8 @@ package model
 import (
 	"fmt"
 	"path"
+
+	"ily.dev/act3/database/schema"
 )
 
 type RenditionForStreaming struct {
@@ -54,4 +56,12 @@ func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionF
 		})
 	}
 	return rends, nil
+}
+
+func (tx *TxR) VideoListByEpisodeID(ctx Context, epID string) ([]schema.Video, error) {
+	return tx.q.VideoListByEpisodeID(ctx, epID)
+}
+
+func (tx *TxR) RenditionForStreamingListByEpisodeID(ctx Context, epID string) ([]schema.RenditionForStreaming, error) {
+	return tx.q.RenditionForStreamingListByVideoID(ctx, epID)
 }

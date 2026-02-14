@@ -2,7 +2,11 @@
 // See doc.go for an overview of the approach.
 package video
 
-import "ily.dev/act3/video/ffmpeg"
+import (
+	"fmt"
+
+	"ily.dev/act3/video/ffmpeg"
+)
 
 // Rendition describes one output variant in the bitrate ladder.
 type Rendition struct {
@@ -84,13 +88,16 @@ const (
 // does not need access to the source metadata.
 //
 // Returns nil if the source has no video stream.
-func PlanRenditions(probe *ffmpeg.ProbeResult) []Rendition {
+func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 	if probe.Video == nil {
-		return nil
+		return nil, nil
 	}
 
 	vs := probe.Video
 	srcBitrateKbps := vs.BitRate / 1000 // bits/s → kbit/s
+	if srcBitrateKbps == 0 {
+		return nil, fmt.Errorf("source video bitrate is unknown")
+	}
 
 	canRemux := vs.CodecName == "h264" || vs.CodecName == "hevc"
 
@@ -170,5 +177,5 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) []Rendition {
 		})
 	}
 
-	return renditions
+	return renditions, nil
 }

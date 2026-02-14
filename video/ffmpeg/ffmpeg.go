@@ -76,14 +76,14 @@ type EncodeParams struct {
 }
 
 // Probe runs ffprobe and returns stream information for the media in r.
-func Probe(ctx context.Context, r io.Reader) (*ProbeResult, error) {
+func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	var stdout, stderr bytes.Buffer
 	c := exec.CommandContext(ctx, "ffprobe",
 		"-v", "quiet",
 		"-print_format", "json",
 		"-show_format",
 		"-show_streams",
-		"pipe:0",
+		"/dev/stdin",
 	)
 	c.Stdin = r
 	c.Stdout = &stdout
@@ -158,7 +158,7 @@ func Probe(ctx context.Context, r io.Reader) (*ProbeResult, error) {
 }
 
 // ProbeDuration is a convenience wrapper that returns only the duration.
-func ProbeDuration(ctx context.Context, r io.Reader) (time.Duration, error) {
+func ProbeDuration(ctx context.Context, r *os.File) (time.Duration, error) {
 	p, err := Probe(ctx, r)
 	if err != nil {
 		return 0, err
