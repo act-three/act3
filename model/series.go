@@ -78,12 +78,6 @@ func newSeries(
 		sr.soByID[sed.ID()] = sed
 		sr.soByTitle[sed.Title()] = sed
 		slog.Debug("loaded series edition", "id", sed.ID(), "title", sed.Title())
-		for sn := range sed.Seasons() {
-			slog.Debug("loaded season", "id", sn.ID(), "name", sn.Name())
-			for ep := range sn.Episodes(AnyEpisode) {
-				slog.Debug("loaded episode", "id", ep.ID(), "label", ep.Label())
-			}
-		}
 	}
 	return sr
 }
