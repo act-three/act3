@@ -166,29 +166,6 @@ func ProbeDuration(ctx context.Context, r *os.File) (time.Duration, error) {
 	return p.Duration, nil
 }
 
-// TotalWork returns the total encoding work for the given renditions,
-// expressed in the same units as the source duration. This accounts
-// for the three encoding phases (pass-1 + remux + pass-2) and can be
-// used as the denominator for progress tracking.
-func TotalWork(dsts []EncodeParams, duration time.Duration) time.Duration {
-	var total time.Duration
-	hasRemux, hasEncode := false, false
-	for _, dst := range dsts {
-		if dst.Remux {
-			hasRemux = true
-		} else {
-			hasEncode = true
-		}
-	}
-	if hasRemux {
-		total += duration // remux phase
-	}
-	if hasEncode {
-		total += 2 * duration // pass 1 + pass 2
-	}
-	return total
-}
-
 // MediaName returns the media file name for rendition i.
 // The caller uses this to fix up playlist references after hashing.
 func MediaName(i int) string {
@@ -217,13 +194,12 @@ func passlogPath(tmpDir string, i int) string {
 // (see [MediaName]). The caller must replace this with the content-addressed
 // storage path.
 //
-// onProgress is called with cumulative time-based progress; the total can
-// be computed with [TotalWork].
+// onProgress is called periodically with a value in [0,1].
 func Encode(ctx context.Context,
 	src *os.File,
 	dsts []EncodeParams,
 	duration time.Duration,
-	onProgress func(time.Duration),
+	onProgress func(float64),
 ) (playlists []string, err error) {
 	if len(dsts) == 0 {
 		return nil, fmt.Errorf("no renditions specified")
@@ -251,9 +227,10 @@ func Encode(ctx context.Context,
 
 	playlists = make([]string, len(dsts))
 	var cumulative time.Duration
+	total := totalWork(dsts, duration)
 	report := func(d time.Duration) {
 		if onProgress != nil {
-			onProgress(cumulative + d)
+			onProgress(1000 * float64(cumulative+d) / float64(total))
 		}
 	}
 
@@ -595,4 +572,27 @@ func copyFileData(dst *os.File, srcPath string) error {
 	defer f.Close()
 	_, err = io.Copy(dst, f)
 	return err
+}
+
+// totalWork returns the total encoding work for the given renditions,
+// expressed in the same units as the source duration. This accounts
+// for the three encoding phases (pass-1 + remux + pass-2) and can be
+// used as the denominator for progress tracking.
+func totalWork(dsts []EncodeParams, duration time.Duration) time.Duration {
+	var total time.Duration
+	hasRemux, hasEncode := false, false
+	for _, dst := range dsts {
+		if dst.Remux {
+			hasRemux = true
+		} else {
+			hasEncode = true
+		}
+	}
+	if hasRemux {
+		total += duration // remux phase
+	}
+	if hasEncode {
+		total += 2 * duration // pass 1 + pass 2
+	}
+	return total
 }

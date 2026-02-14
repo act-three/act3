@@ -24,7 +24,7 @@ func (p *progress) addEpisodeVideo(epID, vID string) {
 	p.vIDByEpID[epID][vID] = true
 }
 
-func (p *progress) addVideo(vID, desc string, total time.Duration) {
+func (p *progress) addVideo(vID, desc string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.progByVidID == nil {
@@ -33,18 +33,17 @@ func (p *progress) addVideo(vID, desc string, total time.Duration) {
 	p.progByVidID[vID] = ProgressItem{
 		CreatedAt: time.Now(),
 		Desc:      desc,
-		Total:     total,
 	}
 }
 
-func (p *progress) updateVideo(vID string, progress time.Duration) {
+func (p *progress) updateVideo(vID string, value float64) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	pi, ok := p.progByVidID[vID]
 	if !ok {
 		return
 	}
-	pi.Value = progress
+	pi.value = value
 	p.progByVidID[vID] = pi
 }
 
@@ -70,14 +69,9 @@ func (p *progress) getByEpisodeID(epID string) []ProgressItem {
 type ProgressItem struct {
 	CreatedAt time.Time
 	Desc      string
-	Total     time.Duration
-	Value     time.Duration
+	value     float64
 }
 
-// Progress returns Value/Total, or 0 if Total == 0.
 func (pi *ProgressItem) Progress() float64 {
-	if pi.Total == 0 {
-		return 0
-	}
-	return float64(pi.Value) / float64(pi.Total)
+	return pi.value
 }

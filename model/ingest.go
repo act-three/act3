@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/video"
@@ -72,25 +71,6 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 		})
 	}
 
-	// Compute total encoding work for progress tracking.
-	// The 3-phase approach means: remux=1×dur, pass1+pass2=2×dur
-	// (regardless of the number of reencode renditions).
-	hasRemux, hasEncode := false, false
-	for _, r := range planned {
-		if r.Remux {
-			hasRemux = true
-		} else {
-			hasEncode = true
-		}
-	}
-	totalWork := time.Duration(0)
-	if hasRemux {
-		totalWork += probe.Duration
-	}
-	if hasEncode {
-		totalWork += 2 * probe.Duration
-	}
-
 	return func(tx *TxRW) error {
 		vid, err = tx.q.VideoUpdateOriginalHash(ctx, schema.VideoUpdateOriginalHashParams{
 			ID:           vid.ID,
@@ -107,7 +87,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 			}
 		}
 
-		tx.m.prog.addVideo(vid.ID, "Encoding", totalWork)
+		tx.m.prog.addVideo(vid.ID, "Encoding")
 		tx.addTask(ctx, taskIngestDemo, vid.ID)
 		return nil
 	}
@@ -169,8 +149,8 @@ func (tx *TxR) taskIngestDemo(ctx Context, args []string) func(*TxRW) error {
 			}
 		}
 		playlists, err = ffmpeg.Encode(ctx, src, dsts, probe.Duration,
-			func(d time.Duration) {
-				tx.m.prog.updateVideo(vid.ID, d)
+			func(v float64) {
+				tx.m.prog.updateVideo(vid.ID, v)
 			},
 		)
 		return err
