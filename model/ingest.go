@@ -1,7 +1,6 @@
 package model
 
 import (
-	"encoding/json/v2"
 	"fmt"
 	"io"
 	"os"
@@ -11,14 +10,11 @@ import (
 	"ily.dev/act3/video/ffmpeg"
 )
 
-// renditionParams is serialized to JSON in RenditionForStreaming.Params.
-type renditionParams struct {
-	Remux         bool   `json:"remux"`
-	Codec         string `json:"codec"`               // "h264" or "hevc"
-	TargetBitrate int64  `json:"targetBitrate"`       // kbit/s
-	MaxHeight     int    `json:"maxHeight,omitempty"` // 0 = source
-	MaxFPS        int    `json:"maxFps,omitempty"`    // 0 = source
-	CopyAudio     bool   `json:"copyAudio,omitempty"` // copy audio (source is AAC)
+func boolToInt64(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
@@ -51,23 +47,17 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 		return taskError(fmt.Errorf("no video stream found in source"))
 	}
 
-	// Serialize rendition params for DB storage.
+	// Build rendition params for DB storage.
 	var rfsParams []schema.RenditionForStreamingCreateParams
 	for _, r := range planned {
-		b, err := json.Marshal(renditionParams{
-			Remux:         r.Remux,
+		rfsParams = append(rfsParams, schema.RenditionForStreamingCreateParams{
+			VideoID:       vid.ID,
+			Remux:         boolToInt64(r.Remux),
 			Codec:         r.Codec,
 			TargetBitrate: r.TargetBitrate,
-			MaxHeight:     r.MaxHeight,
-			MaxFPS:        r.MaxFPS,
-			CopyAudio:     r.CopyAudio,
-		})
-		if err != nil {
-			return taskError(err)
-		}
-		rfsParams = append(rfsParams, schema.RenditionForStreamingCreateParams{
-			VideoID: vid.ID,
-			Params:  string(b),
+			MaxHeight:     int64(r.MaxHeight),
+			MaxFPS:        int64(r.MaxFPS),
+			CopyAudio:     boolToInt64(r.CopyAudio),
 		})
 	}
 
@@ -113,14 +103,6 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 	}
 	defer src.Close()
 
-	// Parse the rendition params stored in the DB.
-	params := make([]renditionParams, len(rfsList))
-	for i, rfs := range rfsList {
-		if err := json.Unmarshal([]byte(rfs.Params), &params[i]); err != nil {
-			return taskError(fmt.Errorf("parse rendition params %s: %w", rfs.ID, err))
-		}
-	}
-
 	// Probe source for duration (needed for progress tracking).
 	probe, err := ffmpeg.Probe(ctx, src)
 	if err != nil {
@@ -136,16 +118,16 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 	var playlists []string
 	hashes, err := tx.m.store.CreateNFunc(len(rfsList), func(dstFiles []*os.File) error {
 		dsts := make([]ffmpeg.EncodeParams, len(rfsList))
-		for i, p := range params {
+		for i, rfs := range rfsList {
 			dsts[i] = ffmpeg.EncodeParams{
 				File:      dstFiles[i],
-				Remux:     p.Remux,
-				Codec:     toFFmpegCodec(p.Codec),
-				Bitrate:   p.TargetBitrate,
-				MaxHeight: p.MaxHeight,
-				MaxFPS:    p.MaxFPS,
-				Tag:       toVideoTag(p.Codec),
-				CopyAudio: p.CopyAudio,
+				Remux:     rfs.Remux != 0,
+				Codec:     toFFmpegCodec(rfs.Codec),
+				Bitrate:   rfs.TargetBitrate,
+				MaxHeight: int(rfs.MaxHeight),
+				MaxFPS:    int(rfs.MaxFPS),
+				Tag:       toVideoTag(rfs.Codec),
+				CopyAudio: rfs.CopyAudio != 0,
 			}
 		}
 		playlists, err = ffmpeg.Encode(ctx, src, dsts, probe.Duration,
@@ -169,18 +151,18 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 
 	// Generate the multivariant (master) HLS playlist.
 	var mvEntries []video.MVEntry
-	for i, p := range params {
-		bandwidth := p.TargetBitrate * 1000 // kbit/s → bit/s
+	for i, rfs := range rfsList {
+		bandwidth := rfs.TargetBitrate * 1000 // kbit/s → bit/s
 
 		var resolution string
 		if probe.Video != nil {
 			w, h := video.ScaleResolution(
-				probe.Video.Width, probe.Video.Height, p.MaxHeight,
+				probe.Video.Width, probe.Video.Height, int(rfs.MaxHeight),
 			)
 			resolution = video.ResolutionString(w, h)
 		}
 
-		r := video.Rendition{Codec: p.Codec}
+		r := video.Rendition{Codec: rfs.Codec}
 		mvEntries = append(mvEntries, video.MVEntry{
 			URI:        rfsList[i].ID,
 			Bandwidth:  bandwidth,

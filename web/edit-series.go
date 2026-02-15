@@ -207,8 +207,33 @@ func (w *web) dialogEditEpisode(req *http.Request) (http.Handler, error) {
 							html.Text(r.VideoID),
 						),
 						html.Div()(
-							html.Text("Params: "),
-							html.Text(r.Params),
+							html.Text("Codec: "),
+							html.Text(r.Codec),
+						),
+						html.Div()(
+							html.Textf("Target Bitrate: %d kbit/s", r.TargetBitrate),
+						),
+						html.Div()(
+							html.Textf("Remux: %v", r.Remux != 0),
+						),
+						html.Div()(
+							html.Textf("Copy Audio: %v", r.CopyAudio != 0),
+						),
+						expr.IfElse(r.MaxHeight != 0,
+							func() html.Node {
+								return html.Div()(
+									html.Textf("Max Height: %d", r.MaxHeight),
+								)
+							},
+							func() html.Node { return html.Group() },
+						),
+						expr.IfElse(r.MaxFPS != 0,
+							func() html.Node {
+								return html.Div()(
+									html.Textf("Max FPS: %d", r.MaxFPS),
+								)
+							},
+							func() html.Node { return html.Group() },
 						),
 						expr.IfElse(r.Hash != "",
 							func() html.Node {

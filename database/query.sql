@@ -125,9 +125,14 @@ SELECT * FROM Release WHERE InfoHash = ?;
 -- name: RenditionForStreamingCreate :one
 INSERT INTO RenditionForStreaming (
 	VideoID,
-	Params -- TODO(april) this might want to be multiple columns, not sure
+	Remux,
+	Codec,
+	TargetBitrate,
+	MaxHeight,
+	MaxFPS,
+	CopyAudio
 )
-VALUES (?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: RenditionForStreamingListByVideoID :many

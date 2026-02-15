@@ -57,11 +57,16 @@ type Release struct {
 }
 
 type RenditionForStreaming struct {
-	ID       string
-	VideoID  string
-	Params   string
-	Hash     string
-	Playlist string
+	ID            string
+	VideoID       string
+	Remux         int64
+	Codec         string
+	TargetBitrate int64
+	MaxHeight     int64
+	MaxFPS        int64
+	CopyAudio     int64
+	Hash          string
+	Playlist      string
 }
 
 type Schema struct {

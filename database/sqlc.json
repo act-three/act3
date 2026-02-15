@@ -44,9 +44,13 @@
 						"tvdbid": "TVDBID",
 						"tvmazeid": "TVmazeID",
 						"tvmazeimageurl": "TVmazeImageURL",
+						"targetbitrate": "TargetBitrate",
 						"tvmazeupdatedat": "TVmazeUpdatedAt",
 						"tvmazeurl": "TVmazeURL",
 						"tvrageid": "TVRageID",
+						"copyaudio": "CopyAudio",
+						"maxfps": "MaxFPS",
+						"maxheight": "MaxHeight",
 						"videoid": "VideoID",
 					},
 					"overrides": [

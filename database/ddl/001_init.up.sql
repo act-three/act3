@@ -182,11 +182,16 @@ STRICT;
 
 CREATE TABLE RenditionForStreaming
 (
-	ID       TEXT PRIMARY KEY DEFAULT ('rfs'||newID()),
-	VideoID  TEXT NOT NULL REFERENCES Video,
-	Params   TEXT NOT NULL, -- resolution, bitrate, etc (should be multiple cols?)
-	Hash     TEXT NOT NULL DEFAULT (''), -- empty during ingest
-	Playlist TEXT NOT NULL DEFAULT ('') -- empty during ingest
+	ID            TEXT PRIMARY KEY DEFAULT ('rfs'||newID()),
+	VideoID       TEXT NOT NULL REFERENCES Video,
+	Remux         INTEGER NOT NULL, -- 1: copy video stream; 0: reencode
+	Codec         TEXT NOT NULL, -- "h264" or "hevc"
+	TargetBitrate INTEGER NOT NULL, -- kbit/s
+	MaxHeight     INTEGER NOT NULL DEFAULT (0), -- 0 = source
+	MaxFPS        INTEGER NOT NULL DEFAULT (0), -- 0 = source
+	CopyAudio     INTEGER NOT NULL, -- 1: copy audio; 0: reencode to AAC
+	Hash          TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	Playlist      TEXT NOT NULL DEFAULT ('') -- empty during ingest
 )
 STRICT;
 
