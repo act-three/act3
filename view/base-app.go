@@ -1,19 +1,15 @@
-package app
+package view
 
 import (
-	"net/http"
-
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/web/base"
+	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/sidebar"
-	"ily.dev/act3/web/turbo"
-	"ily.dev/act3/web/web"
 )
 
-func Page(title string, child ...html.Node) http.Handler {
-	return base.Base(title)(
+func app(title string, child ...html.Node) html.Node {
+	return base(title)(
 		html.Div(
 			attr.Attr("data-slot")("sidebar-wrapper"),
 			attr.Class(`
@@ -31,7 +27,7 @@ func Page(title string, child ...html.Node) http.Handler {
 			sidebar.Sidebar(),
 			turbo.Frame("main",
 				attr.Role("main"),
-				turbo.TurboAction("advance"),
+				turbo.DataAction("advance"),
 				attr.Attr("data-slot")("sidebar-inset"),
 				attr.Class(`
 					bg-gray-1
@@ -56,15 +52,11 @@ func Page(title string, child ...html.Node) http.Handler {
 	)
 }
 
-func PageFrame(title, id string, child ...html.Node) http.Handler {
-	return web.Page(
+func PageFrame(title, id string, child ...html.Node) html.Node {
+	return Group(
 		html.Title()(html.Text(title)),
 		turbo.Frame(id)(child...),
 	)
-}
-
-func PartFrame(id string, child ...html.Node) http.Handler {
-	return web.Page(turbo.Frame(id)(child...))
 }
 
 func DialogButton(url string) html.Element {
@@ -74,8 +66,8 @@ func DialogButton(url string) html.Element {
 	)
 }
 
-func Dialog(children ...html.Node) http.Handler {
-	return PartFrame("dialog",
+func Dialog(children ...html.Node) html.Node {
+	return turbo.Frame("dialog")(
 		html.Div(
 			attr.Class(`fixed inset-[0]`),
 			attr.Attr("data-controller")("dialog"),
@@ -130,44 +122,6 @@ func Dialog(children ...html.Node) http.Handler {
 						Icon("x"),
 					),
 				),
-			),
-		),
-	)
-}
-
-func ErrorBadRequest(turboFrameID, title, desc string) http.Handler {
-	return web.StreamBadRequest(
-		turbo.Prepend(turboFrameID,
-			html.Div(
-				attr.Class("border p-1 bg-crimson-3"),
-			)(
-				html.Div()(html.Text(title)),
-				html.Div()(html.Text(desc)),
-			),
-		),
-	)
-}
-
-func ErrorNotFound(turboFrameID, path string) http.Handler {
-	return web.StreamNotFound(
-		turbo.Prepend(turboFrameID,
-			html.Div(
-				attr.Class("border p-1 bg-crimson-3"),
-			)(
-				html.Div()(html.Text("Not Found")),
-				html.Div()(html.Text(path)),
-			),
-		),
-	)
-}
-
-func ErrorInternal(turboFrameID string) http.Handler {
-	return web.StreamInternalError(
-		turbo.Prepend(turboFrameID,
-			html.Div(
-				attr.Class("border p-1 bg-crimson-3"),
-			)(
-				html.Div()(html.Text("Internal Error")),
 			),
 		),
 	)

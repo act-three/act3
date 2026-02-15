@@ -2,6 +2,7 @@ package web
 
 import (
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -14,10 +15,9 @@ import (
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tvmaze"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/web/app"
-	"ily.dev/act3/web/editseries"
+	"ily.dev/act3/ui/turbo"
+	"ily.dev/act3/view"
 	"ily.dev/act3/web/input"
-	"ily.dev/act3/web/turbo"
 	"ily.dev/act3/xstrings"
 )
 
@@ -28,7 +28,7 @@ func (w *web) editSeries(req *http.Request) (http.Handler, error) {
 		if err != nil {
 			return nil, err
 		}
-		return editseries.Editor("Edit Series", all), nil
+		return page(view.EditMediaSeries("Edit Series", all)), nil
 	})
 }
 
@@ -49,27 +49,30 @@ func (w *web) editSeriesDetail(req *http.Request) (http.Handler, error) {
 			orderBy = model.AirDate
 		}
 		sed := sr.EditionByTitle(orderBy)
+		if sed == nil {
+			return nil, fmt.Errorf("unknown edition name: %s", orderBy)
+		}
 
 		dls, err := tx.DownloadHeadListBySeriesEditionID(ctx, sed.ID())
 		if err != nil {
 			return nil, err
 		}
 
-		detail := editseries.Detail(sr, sed, dls)
+		detail := view.EditMediaSeriesDetail(sr, sed, dls)
 		if req.Header.Get("turbo-frame") == "detail" {
-			return app.PageFrame(sr.Title(), "detail", detail), nil
+			return page(view.PageFrame(sr.Title(), "detail", detail)), nil
 		}
 
 		all, err := tx.SeriesHeadList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return editseries.Editor(sr.Title(), all, detail), nil
+		return page(view.EditMediaSeries(sr.Title(), all, detail)), nil
 	})
 }
 
 func (w *web) seriesAddDialogReq(req *http.Request) (http.Handler, error) {
-	return app.Dialog(
+	return page(view.Dialog(
 		html.Div(
 			attr.Attr("data-controller")("add-series"),
 			attr.Class(`
@@ -110,7 +113,7 @@ func (w *web) seriesAddDialogReq(req *http.Request) (http.Handler, error) {
 				turbo.Frame("results"),
 			),
 		),
-	), nil
+	)), nil
 }
 
 func (w *web) dialogEditEpisode(req *http.Request) (http.Handler, error) {
@@ -132,7 +135,7 @@ func (w *web) dialogEditEpisode(req *http.Request) (http.Handler, error) {
 			return nil, err
 		}
 
-		return app.Dialog(
+		return page(view.Dialog(
 			ScrollArea()(
 				html.Div()(
 					html.Text(ep.SeriesHead().Title()),
@@ -263,7 +266,7 @@ func (w *web) dialogEditEpisode(req *http.Request) (http.Handler, error) {
 				html.Div()(html.Text("Audio Details (codec, etc)")),
 				html.Div()(html.Text("Subtitle Details (format, etc)")),
 			),
-		), nil
+		)), nil
 	})
 }
 
@@ -276,7 +279,7 @@ func (w *web) seriesSearch(req *http.Request) (http.Handler, error) {
 	query := req.FormValue("q")
 	slog.InfoContext(ctx, "search", "q", query)
 	if strings.TrimSpace(query) == "" {
-		return app.PartFrame("results"), nil
+		return page(turbo.Frame("results")), nil
 	}
 	series, err := w.tvmaze.Search(ctx, query)
 	if err != nil {
@@ -303,7 +306,7 @@ func (w *web) seriesSearch(req *http.Request) (http.Handler, error) {
 			results[i] = result{TVmaze: res.Show, Local: m[int64(res.Show.ID)]}
 		}
 
-		return app.PartFrame("results",
+		return page(turbo.Frame("results")(
 			FlexCol(Gap4, Class("p-4"))(
 				html.Range(results, func(t result) html.Node {
 					frameID := "tvmaze-" + strconv.Itoa(t.TVmaze.ID)
@@ -323,7 +326,7 @@ func (w *web) seriesSearch(req *http.Request) (http.Handler, error) {
 											html.Form(
 												attr.Method("post"),
 												attr.Action("/do/add-series"),
-												turbo.TurboFrame(frameID),
+												turbo.DataFrame(frameID),
 											)(
 												html.Input(
 													attr.Type("hidden"),
@@ -346,7 +349,7 @@ func (w *web) seriesSearch(req *http.Request) (http.Handler, error) {
 					)
 				}),
 			),
-		), nil
+		)), nil
 	})
 }
 

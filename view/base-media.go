@@ -1,15 +1,12 @@
-package web
+package view
 
 import (
-	"net/http"
-
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
-	"ily.dev/act3/web/base"
 )
 
-func media(title string, child ...html.Node) http.Handler {
-	return base.Base(title)(
+func media(title string, child ...html.Node) html.Node {
+	return base(title)(
 		html.Group(child...),
 		html.Div(
 			attr.Class("fixed inset-x-0 bottom-0 flex flex-col items-center"),

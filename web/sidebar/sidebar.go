@@ -4,7 +4,8 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/web/turbo"
+	"ily.dev/act3/ui/stimulus"
+	"ily.dev/act3/ui/turbo"
 )
 
 type MenuSection struct {
@@ -63,8 +64,8 @@ func Sidebar() html.Node {
 		attr.Attr("data-variant")("inset"),
 		attr.Attr("data-side")("left"),
 		attr.Attr("data-slot")("sidebar"),
-		turbo.Controller("sidebar"),
-		turbo.Action("turbo:visit@document->sidebar#visit"),
+		stimulus.Controller("sidebar"),
+		stimulus.Action("turbo:visit@document->sidebar#visit"),
 	)(
 		html.Div(
 			attr.Attr("data-slot")("sidebar-gap"),
@@ -223,7 +224,7 @@ func sidebarMenuButton(it MenuItem) html.Node {
 		`),
 		it.Attr,
 		attr.Href(it.Path),
-		turbo.Target("sidebar", "link"),
+		stimulus.Target("sidebar", "link"),
 		attr.Attr("data-slot")("sidebar-menu-button"),
 		attr.Attr("data-sidebar")("menu-button"),
 		attr.Attr("data-size")("default"),

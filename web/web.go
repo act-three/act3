@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"errors"
 	"io/fs"
 	"log/slog"
@@ -8,10 +9,12 @@ import (
 	"path"
 	"strings"
 
+	"ily.dev/act3/html"
+	"ily.dev/act3/html/attr"
 	"ily.dev/act3/http/timing"
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tvmaze"
-	"ily.dev/act3/web/app"
+	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
 
@@ -99,19 +102,87 @@ func handler(hf handlerFunc) http.HandlerFunc {
 			h, err = hf(req)
 			var ve *model.ValidationError
 			if errors.As(err, &ve) {
-				h = app.ErrorBadRequest(errorFrameID(err),
+				h = errorBadRequest(errorFrameID(err),
 					ve.Op,
 					ve.Err.Error(),
 				)
 			} else if errors.Is(err, errNotFound) {
-				h = app.ErrorNotFound(errorFrameID(err), req.URL.Path)
+				h = errorNotFound(errorFrameID(err), req.URL.Path)
 			} else if err != nil {
 				slog.ErrorContext(ctx, "error", "error", err)
-				h = app.ErrorInternal(errorFrameID(err))
+				h = errorInternal(errorFrameID(err))
 			}
 		})
 		h.ServeHTTP(w, req)
 	}
+}
+
+func page(node ...html.Node) http.Handler {
+	return rawHandler("text/html", 200, node...)
+}
+
+func pageBadRequest(node ...html.Node) http.Handler {
+	return rawHandler("text/html", 400, node...)
+}
+
+func stream(node ...html.Node) http.Handler {
+	return rawHandler("text/vnd.turbo-stream.html", 200, node...)
+}
+
+func rawHandler(contentType string, code int, node ...html.Node) http.Handler {
+	buf := &bytes.Buffer{}
+	err := html.Render(buf, html.Group(node...))
+	if err != nil {
+		panic(err)
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		w.Header().Set("Content-Type", contentType)
+		w.WriteHeader(code)
+		_, err := w.Write(buf.Bytes())
+		if err != nil {
+			slog.WarnContext(ctx, err.Error())
+			return
+		}
+	})
+}
+
+func errorBadRequest(turboFrameID, title, desc string) http.Handler {
+	return rawHandler("text/vnd.turbo-stream.html", 400,
+		turbo.Prepend(turboFrameID,
+			html.Div(
+				attr.Class("border p-1 bg-crimson-3"),
+			)(
+				html.Div()(html.Text(title)),
+				html.Div()(html.Text(desc)),
+			),
+		),
+	)
+}
+
+func errorNotFound(turboFrameID, path string) http.Handler {
+	return rawHandler("text/vnd.turbo-stream.html", 404,
+		turbo.Prepend(turboFrameID,
+			html.Div(
+				attr.Class("border p-1 bg-crimson-3"),
+			)(
+				html.Div()(html.Text("Not Found")),
+				html.Div()(html.Text(path)),
+			),
+		),
+	)
+}
+
+func errorInternal(turboFrameID string) http.Handler {
+	return rawHandler("text/vnd.turbo-stream.html", 500,
+		turbo.Prepend(turboFrameID,
+			html.Div(
+				attr.Class("border p-1 bg-crimson-3"),
+			)(
+				html.Div()(html.Text("Internal Error")),
+			),
+		),
+	)
 }
 
 type frameIDError struct {

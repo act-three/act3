@@ -1,12 +1,10 @@
-package base
+package view
 
 import (
-	"net/http"
-
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
+	. "ily.dev/act3/ui"
 	"ily.dev/act3/web/static"
-	"ily.dev/act3/web/web"
 )
 
 var (
@@ -14,9 +12,9 @@ var (
 	scriptBundleURL = static.FS.NameToDigest("/static/bundle.js")
 )
 
-func Base(title string, head ...html.Node) func(body ...html.Node) http.Handler {
-	return func(body ...html.Node) http.Handler {
-		return web.Page(
+func base(title string, head ...html.Node) html.Element {
+	return func(body ...html.Node) html.Node {
+		return Group(
 			html.Doctype,
 			html.Html(
 				attr.Class("group/active-url"),

@@ -11,6 +11,7 @@ const (
 	spinnerSizeKey
 	progressSizeKey
 	lineClampKey
+	fontWeightKey
 )
 
 func Group(nodes ...html.Node) html.Node {

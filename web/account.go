@@ -3,18 +3,13 @@ package web
 import (
 	"net/http"
 
-	"ily.dev/act3/html"
-	"ily.dev/act3/web/app"
+	"ily.dev/act3/view"
 )
 
 func (w *web) accountProfile(req *http.Request) (http.Handler, error) {
-	return app.Page("Profile",
-		html.Div()(html.Text("Change Name")),
-	), nil
+	return page(view.EditAccountProfile()), nil
 }
 
 func (w *web) accountSecurity(req *http.Request) (http.Handler, error) {
-	return app.Page("Security",
-		html.Div()(html.Text("Change Password")),
-	), nil
+	return page(view.EditAccountSecurity()), nil
 }

@@ -4,7 +4,7 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/web/turbo"
+	"ily.dev/act3/ui/stimulus"
 )
 
 const (
@@ -20,18 +20,18 @@ func List(prefix, target string, attrs ...attr.Node) html.Element {
 	return ScrollArea(
 		attr.Class("p-2"),
 		attr.Group(attrs...),
-		turbo.Controller(controller),
-		turbo.Value(controller, "prefix")(prefix),
-		turbo.Value(controller, "target")(target),
-		turbo.Action("turbo:render@document->list#render"),
+		stimulus.Controller(controller),
+		stimulus.Value(controller, "prefix")(prefix),
+		stimulus.Value(controller, "target")(target),
+		stimulus.Action("turbo:render@document->list#render"),
 	)
 }
 
 func Items[T any](items []T, f func(T, ...attr.Node) html.Node) html.Node {
 	return html.Range(items, func(v T) html.Node {
 		return f(v,
-			turbo.Target("list", "item"),
-			turbo.Action("click->list#select"),
+			stimulus.Target("list", "item"),
+			stimulus.Action("click->list#select"),
 		)
 	})
 }

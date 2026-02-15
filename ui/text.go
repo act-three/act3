@@ -1,27 +1,30 @@
 package ui
 
 import (
+	"fmt"
+
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 )
 
-var (
-	FontNormal = Class("font-normal")
-	FontMedium = Class("font-medium")
-	FontBold   = Class("font-bold")
-)
+func Textf(format string, arg ...any) html.Node {
+	return Text(fmt.Sprintf(format, arg...))
+}
 
-func Text(s string, attrs ...attr.Node) html.Node {
+func Text(s string) html.Node {
 	return html.Div(
-		attr.FuncAttr("class", func(get func(any) any) string {
-			s, _ := get(lineClampKey).(string)
-			return s
-		}),
-		group(attrs...),
+		attr.EnvAttr("class", lineClampKey, ""),
+		attr.EnvAttr("class", fontWeightKey, ""),
 	)(
 		html.Text(s),
 	)
 }
+
+var (
+	FontNormal = html.WithValue(fontWeightKey, "font-normal")
+	FontMedium = html.WithValue(fontWeightKey, "font-medium")
+	FontBold   = html.WithValue(fontWeightKey, "font-bold")
+)
 
 var (
 	LineClamp1 = html.WithValue(lineClampKey, "line-clamp-1")

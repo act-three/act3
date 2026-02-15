@@ -1,9 +1,9 @@
-package view
+package ui
 
 import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
-	"ily.dev/act3/web/turbo"
+	"ily.dev/act3/ui/turbo"
 )
 
 func Split(attrs ...attr.Node) func(list, detail html.Node) html.Node {
@@ -12,6 +12,8 @@ func Split(attrs ...attr.Node) func(list, detail html.Node) html.Node {
 			attr.Class("flex flex-1 h-1"),
 			attr.Group(attrs...),
 		)(
+			// TODO(april): refactor list stuff and frame target stuff;
+			// pull it out of ui and put it in view
 			turbo.Frame("item-list",
 				attr.Target("detail"),
 				attr.Class(`
@@ -26,7 +28,7 @@ func Split(attrs ...attr.Node) func(list, detail html.Node) html.Node {
 			)(
 				list,
 			),
-			turbo.Frame("detail", turbo.TurboAction("advance"))(detail),
+			turbo.Frame("detail", turbo.DataAction("advance"))(detail),
 		)
 	}
 }

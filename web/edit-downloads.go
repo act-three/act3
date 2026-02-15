@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"ily.dev/act3/model"
-	"ily.dev/act3/web/editdownloads"
+	"ily.dev/act3/view"
 	"ily.dev/act3/xstrings"
 )
 
@@ -16,7 +16,7 @@ func (w *web) editDownloads(req *http.Request) (http.Handler, error) {
 		if err != nil {
 			return nil, err
 		}
-		return editdownloads.Editor("Downloads", dls, nil), nil
+		return page(view.EditMediaDownloads("Downloads", dls, nil)), nil
 	})
 }
 
@@ -33,14 +33,14 @@ func (w *web) editDownloadsDetail(req *http.Request) (http.Handler, error) {
 		}
 
 		if req.Header.Get("turbo-frame") == "detail" {
-			return editdownloads.DetailFrame(dl.Title(), dl), nil
+			return page(view.EditMediaDownloadsDetailFrame(dl.Title(), dl)), nil
 		}
 
 		dls, err := tx.DownloadHeadList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return editdownloads.Editor(dl.Title(), dls, dl), nil
+		return page(view.EditMediaDownloads(dl.Title(), dls, dl)), nil
 	})
 }
 
@@ -61,6 +61,7 @@ func (w *web) doAddTorrent(req *http.Request) (h http.Handler, err error) {
 			return nil, err
 		}
 		dls := []*model.DownloadHead{&dl.DownloadHead}
-		return editdownloads.Stream(dls, req.FormValue("sed-id")), nil
+
+		return stream(view.EditMediaDownloadsStream(dls, req.FormValue("sed-id"))), nil
 	})
 }

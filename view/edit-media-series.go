@@ -1,45 +1,42 @@
-package editseries
+package view
 
 import (
-	"net/http"
-
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/web/app"
+	"ily.dev/act3/ui/stimulus"
+	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/item"
 	"ily.dev/act3/web/list"
 	"ily.dev/act3/web/toolbar"
-	"ily.dev/act3/web/turbo"
-	"ily.dev/act3/web/view"
 )
 
-const ListItems = "series-list-items"
+const EditMediaSeriesListItems = "series-list-items"
 
-func Editor(
+func EditMediaSeries(
 	title string,
 	s []*model.SeriesHead,
 	detail ...html.Node,
-) http.Handler {
-	return app.Page(title, FlexCol(attr.Class("place-self-stretch"))(
+) html.Node {
+	return app(title, FlexCol(attr.Class("place-self-stretch"))(
 		toolbar.Primary()(
-			html.Div()(app.DialogButton("/dialog/series-add")(
+			html.Div()(DialogButton("/dialog/series-add")(
 				Icon("plus"),
 				html.Text("Add Series"),
 			)).
 				With(ButtonRoundedRect).
 				With(ButtonBordered),
 			html.Div(attr.Class("relative w-md"))(
-				seriesSearchbar(),
+				editMediaSeriesSearchbar(),
 			),
 			html.Div(),
 		),
-		view.Split()(
+		Split()(
 			list.List("/edit/series/", "detail")(
-				turbo.Sink(ListItems)(
-					list.Items(s, ListItem),
+				turbo.Sink(EditMediaSeriesListItems)(
+					list.Items(s, EditMediaSeriesListItem),
 				),
 			),
 			expr.IfElse(detail != nil,
@@ -62,7 +59,7 @@ func Editor(
 	))
 }
 
-func ListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
+func EditMediaSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
 	return item.Item(
 		attr.Group(attrs...),
 		list.ID(ss.ID()),
@@ -81,7 +78,7 @@ func ListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
 	)
 }
 
-func Detail(
+func EditMediaSeriesDetail(
 	sr *model.Series,
 	sed *model.SeriesEdition,
 	dls []*model.DownloadHead,
@@ -127,7 +124,7 @@ func Detail(
 						return html.Div()(html.Text("Unknown Edition"))
 					},
 					func() html.Node {
-						return detailEdition(sed, dls)
+						return editMediaSeriesDetailEdition(sed, dls)
 					},
 				),
 			),
@@ -135,25 +132,76 @@ func Detail(
 	)
 }
 
-func detailEdition(
+func editMediaSeriesSearchbar() html.Node {
+	return html.Text("editMediaSeriesSearchbar")
+}
+
+func editMediaSeriesDetailEdition(
 	sed *model.SeriesEdition,
 	dls []*model.DownloadHead,
 ) html.Node {
 	return html.Div()(
-		addTorrentButton(sed.ID()),
+		editMediaSeriesAddTorrentButton(sed.ID()),
 		turbo.Sink("add-torrent-errors"),
 		html.Div(
 			attr.Class("border"),
 		)(
 			turbo.Sink("edition-torrents-"+sed.ID())(
-				ListDownloadDetail(dls),
+				editMediaSeriesListDownloadDetail(dls),
 			),
 		),
-		detailEpisodeList(sed),
+		editMediaSeriesDetailEpisodeList(sed),
 	)
 }
 
-func detailEpisodeList(sed *model.SeriesEdition) html.Node {
+func editMediaSeriesAddTorrentButton(sedID string) html.Node {
+	return html.Form(
+		attr.Class("flex flex-row gap-1 group"),
+		attr.Method("POST"),
+		attr.Enctype("multipart/form-data"),
+		attr.Action("/do/add-torrent"),
+		stimulus.Controller("add-torrent"),
+		stimulus.Action("turbo:submit-end->add-torrent#reset"),
+	)(
+		html.Input(
+			attr.Type("hidden"),
+			attr.Name("sed-id"),
+			attr.Value(sedID),
+		),
+		html.Input(
+			attr.Class("hidden"),
+			attr.Type("file"),
+			attr.Name("torrent"),
+			stimulus.Target("add-torrent", "picker"),
+			stimulus.Action("change->add-torrent#upload"),
+		),
+		Button(
+			stimulus.Target("add-torrent", "button"),
+			stimulus.Action("click->add-torrent#open:prevent"),
+		)(
+			html.Text("Add Torrent…"),
+		),
+	)
+}
+
+func editMediaSeriesListDownloadDetail(dls []*model.DownloadHead) html.Node {
+	return html.Range(dls, editMediaSeriesListDownloadDetailItem)
+}
+
+func editMediaSeriesListDownloadDetailItem(dl *model.DownloadHead) html.Node {
+	return html.Div(
+		attr.Class("p-1"),
+	)(
+		html.A(
+			attr.Href(dl.URL()),
+			turbo.DataFrame("main"),
+		)(
+			html.Text(dl.Title()),
+		),
+	)
+}
+
+func editMediaSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
 	return html.Div(
 		attr.Class("flex flex-col gap-2"),
 	)(
@@ -169,7 +217,7 @@ func detailEpisodeList(sed *model.SeriesEdition) html.Node {
 						html.Div()(html.Text(sn.Name())),
 						html.Div()(html.Textf("%d", sn.NumEpisodes(model.Significant))),
 						html.Div()(
-							html.RangeSeq(sn.Episodes(model.Significant), detailEpisode).
+							html.RangeSeq(sn.Episodes(model.Significant), editMediaSeriesDetailEpisodeListItem).
 								With(ButtonBorderless),
 						),
 					)
@@ -179,7 +227,7 @@ func detailEpisodeList(sed *model.SeriesEdition) html.Node {
 	)
 }
 
-func detailEpisode(ep *model.Episode) html.Node {
+func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	return html.Div(
 		attr.Class("flex flex-col gap-1"),
 	)(
@@ -190,7 +238,7 @@ func detailEpisode(ep *model.Episode) html.Node {
 				html.Text(ep.Label()),
 			),
 			html.Div()(
-				app.DialogButton(ep.EditDialogURL())(Icon("info")),
+				DialogButton(ep.EditDialogURL())(Icon("info")),
 			),
 		),
 		html.Range(ep.Progress(), func(pi model.ProgressItem) html.Node {
@@ -201,55 +249,4 @@ func detailEpisode(ep *model.Episode) html.Node {
 			)
 		}),
 	)
-}
-
-func ListDownloadDetail(dls []*model.DownloadHead) html.Node {
-	return html.Range(dls, downloadDetail)
-}
-
-func downloadDetail(dl *model.DownloadHead) html.Node {
-	return html.Div(
-		attr.Class("p-1"),
-	)(
-		html.A(
-			attr.Href(dl.URL()),
-			turbo.TurboFrame("main"),
-		)(
-			html.Text(dl.Title()),
-		),
-	)
-}
-
-func addTorrentButton(sedID string) html.Node {
-	return html.Form(
-		attr.Class("flex flex-row gap-1 group"),
-		attr.Method("POST"),
-		attr.Enctype("multipart/form-data"),
-		attr.Action("/do/add-torrent"),
-		turbo.Controller("add-torrent"),
-		turbo.Action("turbo:submit-end->add-torrent#reset"),
-	)(
-		html.Input(
-			attr.Type("hidden"),
-			attr.Name("sed-id"),
-			attr.Value(sedID),
-		),
-		html.Input(
-			attr.Class("hidden"),
-			attr.Type("file"),
-			attr.Name("torrent"),
-			turbo.Target("add-torrent", "picker"),
-			turbo.Action("change->add-torrent#upload"),
-		),
-		Button(
-			turbo.Target("add-torrent", "button"),
-			turbo.Action("click->add-torrent#open:prevent"),
-		)(
-			html.Text("Add Torrent…"),
-		),
-	)
-}
-
-func seriesSearchbar() html.Node {
-	return html.Text("seriesSearchbar")
 }
