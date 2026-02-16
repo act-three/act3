@@ -61,14 +61,19 @@ func newEpisode(
 }
 
 func (ep *Episode) ID() string               { return ep.ep.ID }
+func (ep *Episode) Title() string            { return ep.ep.Title }
+func (ep *Episode) Summary() string          { return ep.ep.Summary }
+func (ep *Episode) ImageURL() string         { return ep.ep.TVmazeImageURL }
 func (ep *Episode) Progress() []ProgressItem { return ep.prog }
+func (ep *Episode) SnnEnn() string {
+	if eNN := ep.snep.Number; eNN != nil {
+		return fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, *eNN)
+	}
+	return fmt.Sprintf("S%02d Special", ep.sn.sn.Number)
+}
 
 func (ep *Episode) HasType(types EpisodeType) bool {
 	return types&ep.type_ != 0
-}
-
-func (ep *Episode) Title() string {
-	return ep.ep.Title
 }
 
 func (ep *Episode) Label() string {
@@ -91,7 +96,7 @@ func (ep *Episode) SeasonHead() *SeasonHead {
 	return ep.sn
 }
 
-func (ep *Episode) PlayURL() string {
+func (ep *Episode) DetailURL() string {
 	s := "-special"
 	if ep.HasType(Regular) && ep.snep.Number != nil {
 		s = fmt.Sprintf("e%02d", *ep.snep.Number)

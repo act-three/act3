@@ -24,7 +24,7 @@ func sidebarData() []MenuSection {
 	return []MenuSection{
 		{
 			Items: []MenuItem{
-				{"spotlight", "/", "Media", attr.Attr("data-turbo-frame")("_top")},
+				{"spotlight", "/", "Act Three", attr.Attr("data-turbo-frame")("_top")},
 			},
 		},
 		{

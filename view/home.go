@@ -6,7 +6,7 @@ import (
 )
 
 func Home() html.Node {
-	return media("Act Three",
+	return media("Act Three")(
 		html.Div()(html.A(attr.Href("/movies"))(html.Text("All Movies"))),
 		html.Div()(html.A(attr.Href("/series"))(html.Text("All Series"))),
 	)

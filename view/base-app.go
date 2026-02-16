@@ -9,7 +9,7 @@ import (
 )
 
 func app(title string, child ...html.Node) html.Node {
-	return base(title)(
+	return base(title)()(
 		html.Div(
 			attr.Attr("data-slot")("sidebar-wrapper"),
 			attr.Class(`

@@ -11,10 +11,12 @@ func Textf(format string, arg ...any) html.Node {
 	return Text(fmt.Sprintf(format, arg...))
 }
 
-func Text(s string) html.Node {
+func Text(s string, attrs ...attr.Node) html.Node {
 	return html.Div(
+		attr.EnvAttr("class", textSelectKey, "select-auto"),
 		attr.EnvAttr("class", lineClampKey, ""),
 		attr.EnvAttr("class", fontWeightKey, ""),
+		group(attrs...),
 	)(
 		html.Text(s),
 	)
@@ -32,4 +34,9 @@ var (
 	LineClamp3 = html.WithValue(lineClampKey, "line-clamp-3")
 	LineClamp4 = html.WithValue(lineClampKey, "line-clamp-4")
 	LineClamp5 = html.WithValue(lineClampKey, "line-clamp-5")
+)
+
+var (
+	TextSelectAuto = html.WithValue(textSelectKey, "select-auto")
+	TextSelectNone = html.WithValue(textSelectKey, "select-none")
 )

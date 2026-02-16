@@ -11,23 +11,26 @@ func Button(attrs ...attr.Node) html.Element {
 	if a.Has("href") {
 		tag = "a"
 	}
-	return html.Tag(tag)(
-		attr.Class(base),
-		attr.FuncAttr("class", func(get func(any) any) string {
-			variant, _ := get(buttonVariantKey).(buttonVariant)
-			return buttonVariantTable[variant]
-		}),
-		attr.FuncAttr("class", func(get func(any) any) string {
-			variant, _ := get(buttonVariantKey).(buttonVariant)
-			size, _ := get(buttonSizeKey).(buttonSize)
-			return buttonSizeTable[variant][size]
-		}),
-		attr.FuncAttr("class", func(get func(any) any) string {
-			shape, _ := get(buttonShapeKey).(buttonShape)
-			return buttonShapeTable[shape]
-		}),
-		a,
-	)
+	return func(nodes ...html.Node) html.Node {
+		return html.Tag(tag)(
+			attr.Class(base),
+			attr.FuncAttr("class", func(get func(any) any) string {
+				variant, _ := get(buttonVariantKey).(buttonVariant)
+				return buttonVariantTable[variant]
+			}),
+			attr.FuncAttr("class", func(get func(any) any) string {
+				variant, _ := get(buttonVariantKey).(buttonVariant)
+				size, _ := get(buttonSizeKey).(buttonSize)
+				return buttonSizeTable[variant][size]
+			}),
+			attr.FuncAttr("class", func(get func(any) any) string {
+				shape, _ := get(buttonShapeKey).(buttonShape)
+				return buttonShapeTable[shape]
+			}),
+			a,
+		)(nodes...).With(TextSelectNone)
+	}
+
 }
 
 var (
@@ -72,6 +75,7 @@ const base = `
 	[&_svg]:shrink-0
 	[&_svg:not([class*='size-'])]:size-4
 	active:opacity-60
+	cursor-pointer
 `
 
 type (

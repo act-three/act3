@@ -4,30 +4,42 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
+	. "ily.dev/act3/ui"
 )
 
 func MediaListSeries(a []*model.SeriesHead) html.Node {
-	return media("Act Three",
-		html.Div(
-			attr.Class("p-4"),
-		)(
-			html.Div(
-				attr.Class("py-2 font-bold"),
-			)(
-				html.Text("All Series"),
-			),
-			html.Div()(
-				html.Range(a, func(sr *model.SeriesHead) html.Node {
-					return html.Div()(
-						html.A(
-							attr.Href(sr.PlayURL()),
-						)(
-							html.Text(sr.Title()),
+	return media("Act Three")(
+		Box(Class(`
+				w-full
+				flex
+				flex-row
+				flex-wrap
+				justify-center
+				content-start
+				gap-[1px]
+			`))(
+			html.Range(a, func(sr *model.SeriesHead) html.Node {
+				return html.Div(Class(`
+					aspect-2/3
+					w-50
+					relative
+					hover:after:content-[""]
+					hover:after:absolute
+					hover:after:inset-0
+					hover:after:bg-black/40
+					hover:after:pointer-events-none
+					`))(
+					html.A(
+						Class("block w-full h-full"),
+						attr.Href(sr.PlayURL()),
+					)(
+						html.Img(
+							Class("w-full h-full object-cover"),
+							attr.Src(sr.TVmazeImageURL()),
 						),
-					)
-
-				}),
-			),
+					),
+				)
+			}),
 		),
 	)
 }

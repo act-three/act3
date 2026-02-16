@@ -11,7 +11,7 @@ func MediaEpisode(
 	streams []*model.RenditionForStreaming,
 	dls []*model.RenditionForDownload,
 ) html.Node {
-	return media(ep.Title(),
+	return media(ep.Title())(
 		html.Div(
 			attr.Class("p-4 font-bold"),
 		)(

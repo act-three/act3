@@ -12,6 +12,7 @@ const (
 	progressSizeKey
 	lineClampKey
 	fontWeightKey
+	textSelectKey
 )
 
 func Group(nodes ...html.Node) html.Node {
