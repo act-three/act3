@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"database/sql"
 	"encoding/json/v2"
 	"errors"
@@ -126,6 +127,26 @@ func (m *Model) start(tasks ...schema.Task) {
 	}()
 }
 
+func (m *Model) taskLock(id string) string {
+	m.runningTasksMu.Lock()
+	defer m.runningTasksMu.Unlock()
+	if _, ok := m.runningTasks[id]; ok {
+		return ""
+	}
+	key := cryptorand.Text()
+	m.runningTasks[id] = key
+	return key
+}
+
+func (m *Model) taskUnlock(id, key string) {
+	m.runningTasksMu.Lock()
+	defer m.runningTasksMu.Unlock()
+	if m.runningTasks[id] != key {
+		panic("bad lock structure: key mismatch")
+	}
+	delete(m.runningTasks, id)
+}
+
 func (m *Model) run(task schema.Task) {
 	ctx := context.Background()
 	ctx = logcontext.With(ctx, slog.Group("task", "id", task.ID))
@@ -140,6 +161,13 @@ func (m *Model) run(task schema.Task) {
 }
 
 func (md *Model) run1(ctx Context, task schema.Task) (err error) {
+	if key := md.taskLock(task.ID); key == "" {
+		time.AfterFunc(time.Minute, func() { md.start(task) })
+		return nil
+	} else {
+		defer md.taskUnlock(task.ID, key)
+	}
+
 	defer tlog.Elapsed(ctx, "task", "type", task.Type, "args", task.Args)()
 
 	defer func() {

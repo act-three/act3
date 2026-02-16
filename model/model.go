@@ -28,8 +28,11 @@ type Model struct {
 
 	dbr   *sql.DB
 	dbw   *sql.DB
-	tasks chan<- schema.Task
 	prog  progress
+	tasks chan<- schema.Task
+
+	runningTasksMu sync.Mutex
+	runningTasks   map[string]string
 
 	transmission atomic.Pointer[transmissionrpc.Client]
 
@@ -52,6 +55,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		dbr:            dbr,
 		dbw:            dbw,
 		tasks:          tasks,
+		runningTasks:   map[string]string{},
 		activeInfoHash: map[string]bool{},
 		fileProgress:   map[string]map[string]float64{},
 	}
