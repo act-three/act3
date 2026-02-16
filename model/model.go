@@ -29,10 +29,7 @@ type Model struct {
 	dbr   *sql.DB
 	dbw   *sql.DB
 	prog  progress
-	tasks chan<- schema.Task
-
-	runningTasksMu sync.Mutex
-	runningTasks   map[string]string
+	tasks map[string]*taskQueue
 
 	transmission atomic.Pointer[transmissionrpc.Client]
 
@@ -48,14 +45,12 @@ type model Config
 func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	ctx := context.Background()
 	defer errorfmt.Handlef("model init: %w", &err)
-	tasks := make(chan schema.Task)
 	m = &Model{
 		store:          c.Store,
 		tvmaze:         c.TVmaze,
 		dbr:            dbr,
 		dbw:            dbw,
-		tasks:          tasks,
-		runningTasks:   map[string]string{},
+		tasks:          map[string]*taskQueue{},
 		activeInfoHash: map[string]bool{},
 		fileProgress:   map[string]map[string]float64{},
 	}
@@ -63,9 +58,13 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	if err != nil {
 		return nil, err
 	}
-	err = m.startTasks(ctx, tasks)
-	if err != nil {
-		return nil, err
+	for name, n := range taskQueues {
+		ch := make(chan schema.Task)
+		tq := newTaskQueue(name, m, ch)
+		err = tq.startTasks(ctx, n, ch)
+		if err != nil {
+			return nil, err
+		}
 	}
 	hashes, err := schema.New(dbr).DownloadListInfoHashesActive(ctx)
 	if err != nil {
