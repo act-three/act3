@@ -103,6 +103,17 @@ func (w *web) doRunTask(req *http.Request) (http.Handler, error) {
 	return http.RedirectHandler("/system/tasks", http.StatusSeeOther), nil
 }
 
+func (w *web) doDeleteTask(req *http.Request) (http.Handler, error) {
+	return w.withTxRW(func(tx *model.TxRW) (http.Handler, error) {
+		ctx := req.Context()
+		err := tx.TaskDelete(ctx, req.PathValue("id"))
+		if err != nil {
+			return nil, err
+		}
+		return http.RedirectHandler("/system/tasks", http.StatusSeeOther), nil
+	})
+}
+
 func filepathHasPrefix(p, prefix string) bool {
 	prefix = path.Clean(prefix)
 	for {

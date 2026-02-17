@@ -271,6 +271,10 @@ func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
 	return tasks, nil
 }
 
+func (tx *TxRW) TaskDelete(ctx Context, id string) error {
+	return tx.q.TaskDelete(ctx, id)
+}
+
 func (t *TxRW) addTask(ctx Context, ttype string, args ...string) error {
 	b, err := json.Marshal(args)
 	task, err := t.q.TaskCreate(ctx, schema.TaskCreateParams{

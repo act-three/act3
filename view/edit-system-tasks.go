@@ -36,7 +36,18 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 								return html.Group(
 									html.Tr()(
 										table.Cell()(html.Text(t.Type())),
-										table.Cell()(html.Text(t.ID())),
+										table.Cell()(
+											html.Text(t.ID()),
+											html.Form(
+												attr.Action("/do/delete-task/"+t.ID()),
+												attr.Method("POST"),
+											)(
+												Button()(
+													html.Text("Delete"),
+												).
+													With(ButtonBorderless),
+											),
+										),
 										table.Cell()(html.Text(t.Args())),
 										table.Cell()(html.Textf("%d", t.Failures())),
 										table.Cell()(

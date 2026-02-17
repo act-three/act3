@@ -17,6 +17,9 @@ var (
 	Gap3 = Class("gap-3")
 	Gap4 = Class("gap-4")
 	Gap5 = Class("gap-5")
+	Gap6 = Class("gap-6")
+	Gap7 = Class("gap-7")
+	Gap8 = Class("gap-8")
 )
 
 type attrEmbed[T any] struct {

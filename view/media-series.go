@@ -10,49 +10,68 @@ import (
 func MediaSeries(sr *model.Series) html.Node {
 	sed := sr.EditionByTitle(model.AirDate)
 	return media(sr.Title())(
-		Box(Class("mx-auto w-4xl relative"))(
-			Box(Class("sticky w-lg"))(
-				Box()(
-					html.Img(attr.Src(sr.TVmazeImageURL())),
-				),
-				Box(Class("p-4 font-bold"))(Text(sr.Title())),
-				Box(Class("p-4"))(
-					Text("Show: regular & specials"),
-				),
-				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
-					return Box(
-						Class(""),
-					)(
-						Text(sn.Name()),
-					)
-				}),
+		Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
+			html.Img(
+				Class("w-full aspect-2/3 object-cover "),
+				attr.Src(sr.TVmazeImageURL()),
 			),
-			Box(Class("absolute top-0 left-60"))(
-				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
-					return Box(
-						Class("py-8"),
-					)(
-						Box(Class(`
-							py-4
-							text-gray-11
-							text-xl
-							border-t-[2px]
-							border-gray-11
-						`))(Text(sn.Name())).With(FontBold),
-						FlexCol(Class("gap-2 py-2"))(
-							html.RangeSeq(sn.Episodes(model.AnyEpisode), mediaSeriesEpisode),
+		),
+		Grid12(Class("pt-6"))(
+			Box(Class("col-span-3"))(
+				Box(Class("sticky top-20"))(
+					Box()(
+						html.Img(
+							Class("w-full aspect-2/3 object-cover"),
+							attr.Src(sr.TVmazeImageURL()),
 						),
-					)
-				}),
+					),
+					Box(Class("p-4 font-bold"))(Text(sr.Title())),
+					Box(Class("p-4"))(
+						Text("Show: regular & specials"),
+					),
+					html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
+						return Box(
+							Class(""),
+						)(
+							Text(sn.Name()),
+						)
+					}),
+				),
+			),
+			FlexCol(Class("col-span-8 col-start-5 gap-20"))(
+				html.RangeSeq(sed.Seasons(), mediaSeriesSeason),
 			),
 		),
 	)
 }
 
+func mediaSeriesSeason(sn *model.Season) html.Node {
+	return Box()(
+		Box(Class(`
+			py-4
+			pb-8
+			text-gray-11
+			text-xl
+			border-t-[2px]
+			border-gray-11
+		`))(Text(sn.Name())).With(FontBold),
+		FlexCol(Class("gap-12 py-2"))(
+			html.RangeSeq(sn.Episodes(model.AnyEpisode), mediaSeriesEpisode),
+		),
+	)
+}
+
 func mediaSeriesEpisode(ep *model.Episode) html.Node {
-	return FlexRow(Class("text-gray-11 gap-2"))(
-		FlexCol(Class("flex-none w-96 h-45 gap-2"))(
-			FlexRow(Class("items-center gap-2"))(
+	const doHideSpoilers = false
+	hideSpoilersText := group()
+	hideSpoilersImage := group()
+	if doHideSpoilers {
+		hideSpoilersText = Class("backdrop-blur-xs")
+		hideSpoilersImage = Class("backdrop-blur-md")
+	}
+	return Grid8(Class("text-gray-11"))(
+		FlexCol(Class("col-span-4 gap-2"))(
+			FlexRow(Class("items-center gap-4"))(
 				Box()(
 					Button()(Icon("play")).
 						With(ButtonBordered).
@@ -65,33 +84,38 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 								text-gray-11/60
 								decoration-gray-11/60!
 							`),
-						)(Text(ep.SnnEnn())),
+						)(Text(ep.SnnEnn(), Class("font-normal"))),
 						FlexRow()(
-							Box()(Text(ep.Title())),
+							Box()(Text(ep.Title(),
+								Class("font-semibold"),
+							)),
 						),
 					),
 				),
 			),
 			Box(Class("relative"))(
-				Text(ep.Summary(), Class("text-sm")).With(LineClamp4),
+				Text(ep.Summary(), Class("text-md")).With(LineClamp4),
 				Box(
 					Class(`
 					absolute
 					inset-0
-					backdrop-blur-xs
 					pointer-events-none
 				`),
+					hideSpoilersText,
 				),
 			),
 		),
-		Box(Class(`flex-none w-80 h-45 bg-gray-6
+		Box(Class(`
+			col-span-4
+			aspect-16/9
+			bg-gray-6
 			relative
 			hover:after:content-[""]
 			hover:after:absolute
 			hover:after:inset-0
 			hover:after:bg-black/40
 			hover:after:pointer-events-none
-			`))(
+		`))(
 			html.A(attr.Href(ep.DetailURL()))(
 				html.Img(
 					Class("w-full h-full object-cover"),
@@ -102,9 +126,9 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 				Class(`
 					absolute
 					inset-0
-					backdrop-blur-md
 					pointer-events-none
 				`),
+				hideSpoilersImage,
 			),
 		),
 	)

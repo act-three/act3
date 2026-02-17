@@ -62,6 +62,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /do/add-torrent", w.doAddTorrent)
 	handle(mux, "POST /do/update-transmission-settings", w.doUpdateTransmissionSettings)
 	handle(mux, "POST /do/run-task/{id}", w.doRunTask)
+	handle(mux, "POST /do/delete-task/{id}", w.doDeleteTask)
 	mux.Handle("GET /static/", static.FS)
 }
 

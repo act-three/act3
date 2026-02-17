@@ -105,11 +105,11 @@ const (
 
 var buttonVariantTable = map[buttonVariant]string{
 	buttonBorderless: `
-		text-accent-9
+		text-accent-11
 	`,
 	buttonBordered: `
 		bg-gray-3
-		text-accent-9
+		text-accent-11
 	`,
 	buttonProminent: `
 		bg-accent-9
