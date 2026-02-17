@@ -52,8 +52,7 @@ Note that HLS requires all renditions in a playlist to use the same codec.
 
 We generally prioritize quality. This includes:
 
-  - 2-pass encoding
-  - using the medium preset in ffmpeg
+  - 2-pass encoding (faster preset for pass 1 analysis, medium for pass 2)
   - using the highest profile and level permitted by the [HLS spec][HLS]
     (ignoring requirements that don't apply to devices and OS versions
     outside our supported range)
@@ -63,9 +62,22 @@ we might have to revisit some of these choices.
 
 # Audio
 
-We always encode to AAC.
-If the source audio is already AAC, we remux,
-otherwise we reencode it.
+We encode to AAC stereo (2-channel) for all streaming renditions.
+Stereo is used because non-standard surround channel layouts
+(such as 5.1(side)) require a PCE (Program Config Element)
+in the AAC bitstream, which CoreMedia's HLS fMP4 parser rejects.
+
+If the source audio is already AAC stereo (≤2 channels),
+we copy the audio stream as-is.
+Otherwise, we reencode to AAC with a stereo downmix.
+
+When the source has surround audio (>2 channels),
+we add one extra rendition with the same video as the best rendition
+but with 5.1(back) audio instead of stereo.
+The 5.1(back) layout maps to the standard MPEG-4 channel configuration 6,
+which does not require PCE and is accepted by all HLS clients.
+This converts non-standard layouts like 5.1(side)
+to the compatible 5.1 rear-surround layout.
 
 # Subtitles
 

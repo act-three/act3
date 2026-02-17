@@ -62,20 +62,23 @@ type VideoStream struct {
 
 // AudioStream describes an audio stream.
 type AudioStream struct {
-	CodecName string // e.g. "aac", "ac3", "dts"
-	BitRate   int64  // bits per second (0 if unknown)
+	CodecName     string // e.g. "aac", "ac3", "dts"
+	BitRate       int64  // bits per second (0 if unknown)
+	Channels      int    // number of channels (e.g. 2, 6)
+	ChannelLayout string // e.g. "stereo", "5.1(side)", "5.1" (empty if unknown)
 }
 
 // EncodeParams describes how to produce one rendition.
 type EncodeParams struct {
-	File      *os.File // output file; media data is written here
-	Remux     bool     // true: copy video stream; false: reencode
-	Codec     string   // ffmpeg encoder name, e.g. "libx264" or "libx265" (ignored if Remux)
-	Bitrate   int64    // target video bitrate in kbit/s (ignored if Remux)
-	MaxHeight int      // max output height; 0 = source (ignored if Remux)
-	MaxFPS    int      // max output fps; 0 = source (ignored if Remux)
-	Tag       string   // video tag, e.g. "hvc1" for HEVC in fMP4
-	CopyAudio bool     // true: copy audio stream; false: reencode to AAC
+	File          *os.File // output file; media data is written here
+	Remux         bool     // true: copy video stream; false: reencode
+	Codec         string   // ffmpeg encoder name, e.g. "libx264" or "libx265" (ignored if Remux)
+	Bitrate       int64    // target video bitrate in kbit/s (ignored if Remux)
+	MaxHeight     int      // max output height; 0 = source (ignored if Remux)
+	MaxFPS        int      // max output fps; 0 = source (ignored if Remux)
+	Tag           string   // video tag, e.g. "hvc1" for HEVC in fMP4
+	CopyAudio     bool     // true: copy audio stream; false: reencode to AAC
+	SurroundAudio bool     // true: encode audio as 5.1(back); false: stereo downmix
 }
 
 // Probe runs ffprobe and returns stream information for the media in r.
@@ -102,12 +105,14 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			BitRate  string `json:"bit_rate"`
 		} `json:"format"`
 		Streams []struct {
-			CodecType  string `json:"codec_type"`
-			CodecName  string `json:"codec_name"`
-			Width      int    `json:"width"`
-			Height     int    `json:"height"`
-			BitRate    string `json:"bit_rate"`
-			RFrameRate string `json:"r_frame_rate"`
+			CodecType     string `json:"codec_type"`
+			CodecName     string `json:"codec_name"`
+			Width         int    `json:"width"`
+			Height        int    `json:"height"`
+			BitRate       string `json:"bit_rate"`
+			RFrameRate    string `json:"r_frame_rate"`
+			Channels      int    `json:"channels"`
+			ChannelLayout string `json:"channel_layout"`
 		} `json:"streams"`
 	}
 	err = json.Unmarshal(stdout.Bytes(), &raw)
@@ -137,8 +142,10 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			if result.Audio == nil {
 				br, _ := strconv.ParseInt(s.BitRate, 10, 64)
 				result.Audio = &AudioStream{
-					CodecName: s.CodecName,
-					BitRate:   br,
+					CodecName:     s.CodecName,
+					BitRate:       br,
+					Channels:      s.Channels,
+					ChannelLayout: s.ChannelLayout,
 				}
 			}
 		}
@@ -215,14 +222,11 @@ func Encode(ctx context.Context,
 	defer os.RemoveAll(tmpDir)
 
 	// Classify renditions into remux and reencode.
-	remuxIdx := -1
+	var remuxIdxs []int
 	var encodeIdxs []int
 	for i, dst := range dsts {
 		if dst.Remux {
-			if remuxIdx >= 0 {
-				return nil, fmt.Errorf("multiple remux renditions not supported")
-			}
-			remuxIdx = i
+			remuxIdxs = append(remuxIdxs, i)
 		} else {
 			encodeIdxs = append(encodeIdxs, i)
 		}
@@ -248,10 +252,12 @@ func Encode(ctx context.Context,
 		}
 	}
 
-	// Phase 2: remux the copy rendition.
-	if remuxIdx >= 0 {
-		if err = doRemux(ctx, src, tmpDir, dsts[remuxIdx], remuxIdx, report); err != nil {
-			return nil, fmt.Errorf("remux: %w", err)
+	// Phase 2: remux the copy rendition(s).
+	// There may be more than one when the same video is muxed with
+	// different audio (e.g. stereo + 5.1 surround).
+	for _, ri := range remuxIdxs {
+		if err = doRemux(ctx, src, tmpDir, dsts[ri], ri, report); err != nil {
+			return nil, fmt.Errorf("remux %d: %w", ri, err)
 		}
 		cumulative += duration
 		if _, err = src.Seek(0, io.SeekStart); err != nil {
@@ -308,8 +314,10 @@ func doRemux(ctx context.Context, src *os.File, tmpDir string,
 	}
 	if p.CopyAudio {
 		args = append(args, "-c:a", "copy")
+	} else if p.SurroundAudio {
+		args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
 	} else {
-		args = append(args, "-c:a", "aac")
+		args = append(args, "-c:a", "aac", "-ac", "2")
 	}
 	args = append(args, "-sn")
 	args = append(args, hlsOutputArgs(mediaPath)...)
@@ -384,8 +392,10 @@ func pass2Combined(ctx context.Context, src *os.File, tmpDir string,
 		args = append(args, twoPassArgs(p.Codec, 2, passlogPath(tmpDir, i))...)
 		if p.CopyAudio {
 			args = append(args, "-c:a", "copy")
+		} else if p.SurroundAudio {
+			args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
 		} else {
-			args = append(args, "-c:a", "aac")
+			args = append(args, "-c:a", "aac", "-ac", "2")
 		}
 		args = append(args, "-sn")
 		args = append(args, hlsOutputArgs(mediaPath)...)
@@ -605,17 +615,16 @@ func copyFileData(dst *os.File, srcPath string) error {
 // used as the denominator for progress tracking.
 func totalWork(dsts []EncodeParams, duration time.Duration) time.Duration {
 	var total time.Duration
-	hasRemux, hasEncode := false, false
+	nRemux := 0
+	hasEncode := false
 	for _, dst := range dsts {
 		if dst.Remux {
-			hasRemux = true
+			nRemux++
 		} else {
 			hasEncode = true
 		}
 	}
-	if hasRemux {
-		total += duration // remux phase
-	}
+	total += time.Duration(nRemux) * duration // remux phases
 	if hasEncode {
 		total += 2 * duration // pass 1 + pass 2
 	}

@@ -65,6 +65,7 @@ type RenditionForStreaming struct {
 	MaxHeight     int64
 	MaxFPS        int64
 	CopyAudio     int64
+	SurroundAudio int64
 	Hash          string
 	Playlist      string
 }

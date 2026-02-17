@@ -1,0 +1,171 @@
+{
+  "playlistType" : "VOD",
+  "mimeType" : "application\/x-mpegurl",
+  "processedSegmentsCount" : 7,
+  "url" : "http:\/\/localhost:9876\/stereo.m3u8",
+  "hasDiscSequenceTag" : false,
+  "messages" : [
+    {
+      "errorComment" : "Illegal MIME type",
+      "errorDomain" : "ValidatorErrorDomain",
+      "errorStatusCode" : -50024,
+      "errorRequirementLevel" : 1,
+      "errorDetail" : "MIME type: application\/x-mpegurl"
+    }
+  ],
+  "measuredMeanBitrate" : 465449,
+  "parsedSegmentsCount" : 7,
+  "fetchCount" : 1,
+  "hasEndTag" : true,
+  "validatorTimestamp" : "2026-02-16T22:10:34.881-08:00",
+  "validatorVersion" : "1.25.36 (1.25.36.18b-250603)",
+  "measuredMaxBitrate" : 516624,
+  "independentSegments" : false,
+  "iframeOnly" : false,
+  "playlistKind" : "media",
+  "validatorName" : "mediastreamvalidator",
+  "sslContentDeliveredSecurely" : false,
+  "discontinuities" : [
+    {
+      "segments" : [
+        {
+          "segmentDurationTag" : 10.416667,
+          "mediaSequence" : 0,
+          "mimeType" : "video\/mp4",
+          "dataID" : 1,
+          "url" : "stereo_media.mp4",
+          "segmentByteRangeLength" : 608435,
+          "videoStartsWithIDR" : true,
+          "sslContentDeliveredSecurely" : false,
+          "segmentByteRangeOffset" : 1400,
+          "format" : "fragmentedMP4",
+          "videoFrameRate" : 24,
+          "startTime" : 0,
+          "discontinuityDomain" : 0
+        },
+        {
+          "segmentDurationTag" : 10.416667,
+          "mediaSequence" : 1,
+          "mimeType" : "video\/mp4",
+          "dataID" : 3,
+          "url" : "stereo_media.mp4",
+          "segmentByteRangeLength" : 604485,
+          "videoStartsWithIDR" : true,
+          "sslContentDeliveredSecurely" : false,
+          "segmentByteRangeOffset" : 609835,
+          "format" : "fragmentedMP4",
+          "videoFrameRate" : 24,
+          "startTime" : 10.416666666666666,
+          "discontinuityDomain" : 0
+        },
+        {
+          "segmentDurationTag" : 10.416667,
+          "mediaSequence" : 2,
+          "mimeType" : "video\/mp4",
+          "dataID" : 4,
+          "url" : "stereo_media.mp4",
+          "segmentByteRangeLength" : 672688,
+          "videoStartsWithIDR" : true,
+          "sslContentDeliveredSecurely" : false,
+          "segmentByteRangeOffset" : 1214320,
+          "format" : "fragmentedMP4",
+          "videoFrameRate" : 24,
+          "startTime" : 20.833333333333332,
+          "discontinuityDomain" : 0
+        },
+        {
+          "segmentDurationTag" : 10.416667,
+          "mediaSequence" : 3,
+          "mimeType" : "video\/mp4",
+          "dataID" : 5,
+          "url" : "stereo_media.mp4",
+          "segmentByteRangeLength" : 602037,
+          "videoStartsWithIDR" : true,
+          "sslContentDeliveredSecurely" : false,
+          "segmentByteRangeOffset" : 1887008,
+          "format" : "fragmentedMP4",
+          "videoFrameRate" : 24,
+          "startTime" : 31.25,
+          "discontinuityDomain" : 0
+        },
+        {
+          "segmentDurationTag" : 10.416667,
+          "mediaSequence" : 4,
+          "mimeType" : "video\/mp4",
+          "dataID" : 6,
+          "url" : "stereo_media.mp4",
+          "segmentByteRangeLength" : 629622,
+          "videoStartsWithIDR" : true,
+          "sslContentDeliveredSecurely" : false,
+          "segmentByteRangeOffset" : 2489045,
+          "format" : "fragmentedMP4",
+          "videoFrameRate" : 24,
+          "startTime" : 41.666666666666664,
+          "discontinuityDomain" : 0
+        },
+        {
+          "segmentDurationTag" : 10.416667,
+          "mediaSequence" : 5,
+          "mimeType" : "video\/mp4",
+          "dataID" : 7,
+          "url" : "stereo_media.mp4",
+          "segmentByteRangeLength" : 504850,
+          "videoStartsWithIDR" : true,
+          "sslContentDeliveredSecurely" : false,
+          "segmentByteRangeOffset" : 3118667,
+          "format" : "fragmentedMP4",
+          "videoFrameRate" : 24,
+          "startTime" : 52.083333333333336,
+          "discontinuityDomain" : 0
+        },
+        {
+          "segmentDurationTag" : 0.5,
+          "mediaSequence" : 6,
+          "mimeType" : "video\/mp4",
+          "dataID" : 8,
+          "url" : "stereo_media.mp4",
+          "segmentByteRangeLength" : 43300,
+          "videoStartsWithIDR" : true,
+          "sslContentDeliveredSecurely" : false,
+          "segmentByteRangeOffset" : 3623517,
+          "format" : "fragmentedMP4",
+          "videoFrameRate" : 24,
+          "startTime" : 62.5,
+          "discontinuityDomain" : 0
+        }
+      ],
+      "measurements" : {
+        "measuredMaxBitrate" : 516624,
+        "measuredMeanBitrate" : 465449,
+        "measuredSegments" : 7
+      },
+      "tracks" : [
+        {
+          "trackVideoIDRStandardDeviation" : 0,
+          "trackId" : 1,
+          "trackVideoWidth" : 1280,
+          "trackVideoLevel" : 31,
+          "trackVideoTransferFunction" : "ITU_R_709_2",
+          "trackVideoHeight" : 720,
+          "trackMediaType" : "vide",
+          "trackVideoIDRInterval" : 10.416666666666666,
+          "trackVideoIsInterlaced" : false,
+          "trackVideoProfile" : 66,
+          "trackMediaSubType" : "avc1"
+        },
+        {
+          "trackMediaType" : "soun",
+          "trackAudioChannelCount" : 2,
+          "trackId" : 2,
+          "trackAudioSampleRate" : 48000,
+          "trackMediaSubType" : "aac ",
+          "trackAudioChannelLayout" : "Stereo (L R)"
+        }
+      ]
+    }
+  ],
+  "dataVersion" : 1.2,
+  "playlistTargetDuration" : 10,
+  "gzipEncoded" : false,
+  "dataID" : 0
+}

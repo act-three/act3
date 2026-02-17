@@ -134,9 +134,10 @@ INSERT INTO RenditionForStreaming (
 	TargetBitrate,
 	MaxHeight,
 	MaxFPS,
-	CopyAudio
+	CopyAudio,
+	SurroundAudio
 )
-VALUES (?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: RenditionForStreamingGet :one

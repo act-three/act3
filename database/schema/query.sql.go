@@ -638,10 +638,11 @@ INSERT INTO RenditionForStreaming (
 	TargetBitrate,
 	MaxHeight,
 	MaxFPS,
-	CopyAudio
+	CopyAudio,
+	SurroundAudio
 )
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, hash, playlist
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist
 `
 
 type RenditionForStreamingCreateParams struct {
@@ -652,6 +653,7 @@ type RenditionForStreamingCreateParams struct {
 	MaxHeight     int64
 	MaxFPS        int64
 	CopyAudio     int64
+	SurroundAudio int64
 }
 
 func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg RenditionForStreamingCreateParams) (RenditionForStreaming, error) {
@@ -663,6 +665,7 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 		arg.MaxHeight,
 		arg.MaxFPS,
 		arg.CopyAudio,
+		arg.SurroundAudio,
 	)
 	var i RenditionForStreaming
 	err := row.Scan(
@@ -674,6 +677,7 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 		&i.MaxHeight,
 		&i.MaxFPS,
 		&i.CopyAudio,
+		&i.SurroundAudio,
 		&i.Hash,
 		&i.Playlist,
 	)
@@ -681,7 +685,7 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 }
 
 const renditionForStreamingGet = `-- name: RenditionForStreamingGet :one
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, hash, playlist FROM RenditionForStreaming
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist FROM RenditionForStreaming
 WHERE ID = ?
 `
 
@@ -697,6 +701,7 @@ func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (Rend
 		&i.MaxHeight,
 		&i.MaxFPS,
 		&i.CopyAudio,
+		&i.SurroundAudio,
 		&i.Hash,
 		&i.Playlist,
 	)
@@ -704,7 +709,7 @@ func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (Rend
 }
 
 const renditionForStreamingListByVideoID = `-- name: RenditionForStreamingListByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, hash, playlist FROM RenditionForStreaming
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist FROM RenditionForStreaming
 WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 `
 
@@ -726,6 +731,7 @@ func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episod
 			&i.MaxHeight,
 			&i.MaxFPS,
 			&i.CopyAudio,
+			&i.SurroundAudio,
 			&i.Hash,
 			&i.Playlist,
 		); err != nil {
@@ -743,7 +749,7 @@ func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episod
 }
 
 const renditionForStreamingListDirectByVideoID = `-- name: RenditionForStreamingListDirectByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, hash, playlist FROM RenditionForStreaming
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist FROM RenditionForStreaming
 WHERE VideoID = ?
 `
 
@@ -765,6 +771,7 @@ func (q *Queries) RenditionForStreamingListDirectByVideoID(ctx context.Context, 
 			&i.MaxHeight,
 			&i.MaxFPS,
 			&i.CopyAudio,
+			&i.SurroundAudio,
 			&i.Hash,
 			&i.Playlist,
 		); err != nil {
@@ -785,7 +792,7 @@ const renditionForStreamingUpdateEncode = `-- name: RenditionForStreamingUpdateE
 UPDATE RenditionForStreaming
 SET Hash = ?, Playlist = ?
 WHERE ID = ?
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, hash, playlist
+RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist
 `
 
 type RenditionForStreamingUpdateEncodeParams struct {
@@ -806,6 +813,7 @@ func (q *Queries) RenditionForStreamingUpdateEncode(ctx context.Context, arg Ren
 		&i.MaxHeight,
 		&i.MaxFPS,
 		&i.CopyAudio,
+		&i.SurroundAudio,
 		&i.Hash,
 		&i.Playlist,
 	)

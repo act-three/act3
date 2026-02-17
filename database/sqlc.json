@@ -52,6 +52,7 @@
 						"copyaudio": "CopyAudio",
 						"maxfps": "MaxFPS",
 						"maxheight": "MaxHeight",
+						"surroundaudio": "SurroundAudio",
 						"videoid": "VideoID",
 					},
 					"overrides": [

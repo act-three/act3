@@ -15,7 +15,8 @@ type Rendition struct {
 	TargetBitrate int64  // kbit/s (actual source bitrate for remux)
 	MaxHeight     int    // output height in pixels; 0 = use source
 	MaxFPS        int    // output frame rate cap; 0 = use source
-	CopyAudio     bool   // true if source audio is AAC
+	CopyAudio     bool   // true if source audio is AAC stereo (safe to copy)
+	SurroundAudio bool   // true: encode as 5.1(back); false: stereo downmix
 }
 
 // FFmpegCodec returns the ffmpeg encoder name for the rendition codec.
@@ -108,9 +109,19 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 		outCodec = "h264"
 	}
 
+	// Determine whether source audio can be copied as-is.
+	// Only copy AAC with ≤2 channels; surround AAC may use PCE
+	// (Program Config Element) for non-standard layouts like
+	// 5.1(side), which CoreMedia's HLS parser rejects.
 	copyAudio := false
-	if probe.Audio != nil && probe.Audio.CodecName == "aac" {
-		copyAudio = true
+	hasSurround := false
+	if probe.Audio != nil {
+		if probe.Audio.CodecName == "aac" && probe.Audio.Channels <= 2 {
+			copyAudio = true
+		}
+		if probe.Audio.Channels > 2 {
+			hasSurround = true
+		}
 	}
 
 	// Plan best rendition.
@@ -141,6 +152,17 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 	}
 
 	renditions := []Rendition{best}
+
+	// When the source has surround audio, add a variant of the
+	// best rendition with 5.1(back) audio. This converts
+	// non-standard layouts like 5.1(side) to the standard 5.1
+	// channel configuration that CoreMedia accepts.
+	if hasSurround {
+		surround := best
+		surround.CopyAudio = false
+		surround.SurroundAudio = true
+		renditions = append(renditions, surround)
+	}
 
 	// Add lower-bitrate renditions from the ladder.
 	for _, entry := range ladder {

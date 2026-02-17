@@ -58,6 +58,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 			MaxHeight:     int64(r.MaxHeight),
 			MaxFPS:        int64(r.MaxFPS),
 			CopyAudio:     boolToInt64(r.CopyAudio),
+			SurroundAudio: boolToInt64(r.SurroundAudio),
 		})
 	}
 
@@ -131,14 +132,15 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 		dsts := make([]ffmpeg.EncodeParams, len(rfsList))
 		for i, rfs := range rfsList {
 			dsts[i] = ffmpeg.EncodeParams{
-				File:      dstFiles[i],
-				Remux:     rfs.Remux != 0,
-				Codec:     toFFmpegCodec(rfs.Codec),
-				Bitrate:   rfs.TargetBitrate,
-				MaxHeight: int(rfs.MaxHeight),
-				MaxFPS:    int(rfs.MaxFPS),
-				Tag:       toVideoTag(rfs.Codec),
-				CopyAudio: rfs.CopyAudio != 0,
+				File:          dstFiles[i],
+				Remux:         rfs.Remux != 0,
+				Codec:         toFFmpegCodec(rfs.Codec),
+				Bitrate:       rfs.TargetBitrate,
+				MaxHeight:     int(rfs.MaxHeight),
+				MaxFPS:        int(rfs.MaxFPS),
+				Tag:           toVideoTag(rfs.Codec),
+				CopyAudio:     rfs.CopyAudio != 0,
+				SurroundAudio: rfs.SurroundAudio != 0,
 			}
 		}
 		playlists, err = ffmpeg.Encode(ctx, src, dsts, probe.Duration,
@@ -156,7 +158,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 	// content-addressed storage hashes.
 	for i := range playlists {
 		playlists[i] = video.FixupMediaPlaylist(
-			playlists[i], ffmpeg.MediaName(i), "/vids/"+hashes[i],
+			playlists[i], ffmpeg.MediaName(i), "/vids/"+hashes[i]+".mp4",
 		)
 	}
 

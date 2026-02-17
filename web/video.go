@@ -44,7 +44,7 @@ func (w *web) videoRenditionPlaylist(req *http.Request) (http.Handler, error) {
 	})
 }
 func (wb *web) videoStream(req *http.Request) (http.Handler, error) {
-	hash := req.PathValue("hash")
+	hash, _ := strings.CutSuffix(req.PathValue("hash"), ".mp4")
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.ServeFileFS(w, req, wb.store, hash)
 	}), nil
