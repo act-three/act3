@@ -89,6 +89,17 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 		return taskError(err)
 	}
 
+	// Register progress tracking. This re-derives the episode→video
+	// mappings from the database so progress bars survive restarts.
+	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return taskError(err)
+	}
+	tx.m.prog.addVideo(vid.ID, "Encoding")
+	for _, ev := range evs {
+		tx.m.prog.addEpisodeVideo(ev.EpisodeID, vid.ID)
+	}
+
 	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
 	if err != nil {
 		return taskError(err)

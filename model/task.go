@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"math/rand/v2"
 	"runtime/debug"
 	"sync"
@@ -57,7 +58,8 @@ func taskError(err error) func(*TxRW) error {
 }
 
 type Task struct {
-	t schema.Task
+	t         schema.Task
+	isRunning bool
 }
 
 func (t *Task) ID() string {
@@ -67,6 +69,7 @@ func (t *Task) ID() string {
 func (t *Task) Type() string       { return t.t.Type }
 func (t *Task) Args() string       { return t.t.Args }
 func (t *Task) Failures() int64    { return t.t.Failures }
+func (t *Task) IsRunning() bool    { return t.isRunning }
 func (t *Task) NextRun() time.Time { return time.UnixMilli(t.t.NextRun) }
 func (t *Task) FailureDesc() string {
 	if s := t.t.FailureDesc; s != nil {
@@ -146,6 +149,16 @@ func (tq *taskQueue) unlock(id, key string) {
 		panic("bad lock structure: key mismatch")
 	}
 	delete(tq.running, id)
+}
+
+func (tq *taskQueue) runningSet() map[string]bool {
+	tq.runningMu.Lock()
+	defer tq.runningMu.Unlock()
+	m := map[string]bool{}
+	for k := range tq.running {
+		m[k] = true
+	}
+	return m
 }
 
 func (tq *taskQueue) run(task schema.Task) {
@@ -246,8 +259,7 @@ func (m *Model) RunTaskNow(ctx Context, id string) (err error) {
 		return err
 	}
 	task.NextRun = -1 // Negative means don't reschedule.
-	m.submit(task)
-	return nil
+	return m.submit(task)
 }
 
 func (m *Model) submit(task schema.Task) (err error) {
@@ -264,9 +276,14 @@ func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
 	if err != nil {
 		return nil, err
 	}
+	isRunning := map[string]bool{}
+	for _, tq := range tx.m.tasks {
+		maps.Copy(isRunning, tq.runningSet())
+	}
 	var tasks []*Task
 	for _, t := range list {
-		tasks = append(tasks, &Task{t})
+		task := &Task{t, isRunning[t.ID]}
+		tasks = append(tasks, task)
 	}
 	return tasks, nil
 }
@@ -284,7 +301,15 @@ func (t *TxRW) addTask(ctx Context, ttype string, args ...string) error {
 	if err != nil {
 		return err
 	}
-	t.onCommit(func() { t.m.submit(task) })
+	t.onCommit(func() {
+		err := t.m.submit(task)
+		if err != nil {
+			slog.ErrorContext(ctx, "submit-task-error",
+				"task-id", task.ID,
+				"error", err.Error(),
+			)
+		}
+	})
 	return nil
 }
 

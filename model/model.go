@@ -65,6 +65,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		if err != nil {
 			return nil, err
 		}
+		m.tasks[name] = tq
 	}
 	hashes, err := schema.New(dbr).DownloadListInfoHashesActive(ctx)
 	if err != nil {

@@ -51,15 +51,24 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 										table.Cell()(html.Text(t.Args())),
 										table.Cell()(html.Textf("%d", t.Failures())),
 										table.Cell()(
-											html.Textf("%v", t.NextRun()),
-											html.Form(
-												attr.Action("/do/run-task/"+t.ID()),
-												attr.Method("POST"),
-											)(
-												Button()(
-													html.Text("Run Now"),
-												).
-													With(ButtonBorderless),
+											expr.IfElse(t.IsRunning(),
+												func() html.Node {
+													return Text("Running")
+												},
+												func() html.Node {
+													return Group(
+														html.Textf("%v", t.NextRun()),
+														html.Form(
+															attr.Action("/do/run-task/"+t.ID()),
+															attr.Method("POST"),
+														)(
+															Button()(
+																html.Text("Run Now"),
+															).
+																With(ButtonBorderless),
+														),
+													)
+												},
 											),
 										),
 									),

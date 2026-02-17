@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,6 +17,8 @@ import (
 	"sync"
 	"time"
 )
+
+var overridePreset = os.Getenv("A3FFMPEGVIDEOPRESET")
 
 // FrameRate is a frame rate represented as the exact fraction Num/Den.
 // A zero or negative Den is treated as "unknown" by comparison methods.
@@ -230,7 +233,7 @@ func Encode(ctx context.Context,
 	total := totalWork(dsts, duration)
 	report := func(d time.Duration) {
 		if onProgress != nil {
-			onProgress(1000 * float64(cumulative+d) / float64(total))
+			onProgress(float64(cumulative+d) / float64(total))
 		}
 	}
 
@@ -328,10 +331,15 @@ func pass1Combined(ctx context.Context, src *os.File, tmpDir string,
 		args = append(args, "-filter_complex", filterStr)
 	}
 
+	preset := pass1DefaultPreset
+	if overridePreset != "" {
+		preset = overridePreset
+	}
+
 	for _, i := range idxs {
 		p := dsts[i]
 		args = append(args, "-map", labels[i])
-		args = append(args, "-c:v", p.Codec, "-preset", "medium")
+		args = append(args, "-c:v", p.Codec, "-preset", preset)
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
 		args = append(args, twoPassArgs(p.Codec, 1, passlogPath(tmpDir, i))...)
 		args = append(args, "-an", "-sn")
@@ -356,6 +364,11 @@ func pass2Combined(ctx context.Context, src *os.File, tmpDir string,
 		args = append(args, "-filter_complex", filterStr)
 	}
 
+	preset := pass2DefaultPreset
+	if overridePreset != "" {
+		preset = overridePreset
+	}
+
 	for _, i := range idxs {
 		p := dsts[i]
 		mediaPath := filepath.Join(tmpDir, MediaName(i))
@@ -363,7 +376,7 @@ func pass2Combined(ctx context.Context, src *os.File, tmpDir string,
 
 		args = append(args, "-map", labels[i])
 		args = append(args, "-map", "0:a:0?") // optional audio
-		args = append(args, "-c:v", p.Codec, "-preset", "medium")
+		args = append(args, "-c:v", p.Codec, "-preset", preset)
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
 		if p.Tag != "" {
 			args = append(args, "-tag:v", p.Tag)
@@ -504,6 +517,7 @@ func runWithProgress(ctx context.Context, args []string, onProgress func(time.Du
 	}
 	c.ExtraFiles = []*os.File{pw}
 
+	slog.DebugContext(ctx, "ffmpeg-command", "args", args)
 	err = c.Start()
 	pw.Close() // close parent's copy; child has its own fd
 	if err != nil {
@@ -596,3 +610,14 @@ func totalWork(dsts []EncodeParams, duration time.Duration) time.Duration {
 	}
 	return total
 }
+
+const (
+	// Pass 1 needs to collect accurate statistics for pass 2.
+	// Preset "faster" makes the same structural decisions as "medium"
+	// (B-frames enabled, same reference frame count, same partitions)
+	// but skips the expensive per-frame optimization work
+	// (detailed subpel refinement, trellis quantization, full RDO)
+	// that gets thrown away anyway.
+	pass1DefaultPreset = "faster"
+	pass2DefaultPreset = "medium"
+)

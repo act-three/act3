@@ -107,6 +107,10 @@ INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)
 RETURNING *;
 
+-- name: EpisodeVideoListByVideoID :many
+SELECT * FROM EpisodeVideo
+WHERE VideoID = ?;
+
 -- name: MovieList :many
 SELECT ID, Title, ArtworkKey FROM Movie;
 

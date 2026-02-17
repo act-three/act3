@@ -542,6 +542,34 @@ func (q *Queries) EpisodeVideoCreate(ctx context.Context, arg EpisodeVideoCreate
 	return i, err
 }
 
+const episodeVideoListByVideoID = `-- name: EpisodeVideoListByVideoID :many
+SELECT episodeid, videoid FROM EpisodeVideo
+WHERE VideoID = ?
+`
+
+func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string) ([]EpisodeVideo, error) {
+	rows, err := q.db.QueryContext(ctx, episodeVideoListByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EpisodeVideo
+	for rows.Next() {
+		var i EpisodeVideo
+		if err := rows.Scan(&i.EpisodeID, &i.VideoID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const movieList = `-- name: MovieList :many
 SELECT ID, Title, ArtworkKey FROM Movie
 `
