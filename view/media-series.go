@@ -1,6 +1,8 @@
 package view
 
 import (
+	"slices"
+
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
@@ -8,7 +10,10 @@ import (
 )
 
 func MediaSeries(sr *model.Series) html.Node {
-	sed := sr.EditionByTitle(model.AirDate)
+	seasons := slices.Values(([]*model.Season)(nil)) // empty
+	if sed := sr.EditionByTitle(model.AirDate); sed != nil {
+		seasons = sed.Seasons()
+	}
 	return media(sr.Title())(
 		Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
 			html.Img(
@@ -29,7 +34,7 @@ func MediaSeries(sr *model.Series) html.Node {
 					Box(Class("p-4"))(
 						Text("Show: regular & specials"),
 					),
-					html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
+					html.RangeSeq(seasons, func(sn *model.Season) html.Node {
 						return Box(
 							Class(""),
 						)(
@@ -39,7 +44,7 @@ func MediaSeries(sr *model.Series) html.Node {
 				),
 			),
 			FlexCol(Class("col-span-8 col-start-5 gap-20"))(
-				html.RangeSeq(sed.Seasons(), mediaSeriesSeason),
+				html.RangeSeq(seasons, mediaSeriesSeason),
 			),
 		),
 	)
