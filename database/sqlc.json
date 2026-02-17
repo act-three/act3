@@ -26,6 +26,7 @@
 						"imdbid": "IMDBID",
 						"infohash": "InfoHash",
 						"movieid": "MovieID",
+						"mvplaylist": "MVPlaylist",
 						"nextrun": "NextRun",
 						"orderid": "OrderID",
 						"originalhash": "OriginalHash",

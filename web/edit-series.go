@@ -174,11 +174,11 @@ func (w *web) dialogEditEpisode(req *http.Request) (http.Handler, error) {
 							html.Text("Original Hash: "),
 							html.Text(v.OriginalHash),
 						),
-						expr.IfElse(v.Mvplaylist != "",
+						expr.IfElse(v.MVPlaylist != "",
 							func() html.Node {
 								return html.Div()(
 									html.Text("Playlist: "),
-									html.Text(v.Mvplaylist),
+									html.Text(v.MVPlaylist),
 								)
 							},
 							func() html.Node { return html.Group() },

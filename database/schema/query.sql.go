@@ -680,6 +680,29 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 	return i, err
 }
 
+const renditionForStreamingGet = `-- name: RenditionForStreamingGet :one
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, hash, playlist FROM RenditionForStreaming
+WHERE ID = ?
+`
+
+func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (RenditionForStreaming, error) {
+	row := q.db.QueryRowContext(ctx, renditionForStreamingGet, id)
+	var i RenditionForStreaming
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.Remux,
+		&i.Codec,
+		&i.TargetBitrate,
+		&i.MaxHeight,
+		&i.MaxFPS,
+		&i.CopyAudio,
+		&i.Hash,
+		&i.Playlist,
+	)
+	return i, err
+}
+
 const renditionForStreamingListByVideoID = `-- name: RenditionForStreamingListByVideoID :many
 SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, hash, playlist FROM RenditionForStreaming
 WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
@@ -1689,7 +1712,7 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
-		&i.Mvplaylist,
+		&i.MVPlaylist,
 	)
 	return i, err
 }
@@ -1706,7 +1729,7 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
-		&i.Mvplaylist,
+		&i.MVPlaylist,
 	)
 	return i, err
 }
@@ -1728,7 +1751,7 @@ func (q *Queries) VideoGetByReleasePath(ctx context.Context, arg VideoGetByRelea
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
-		&i.Mvplaylist,
+		&i.MVPlaylist,
 	)
 	return i, err
 }
@@ -1752,7 +1775,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 			&i.ReleaseID,
 			&i.ReleasePath,
 			&i.OriginalHash,
-			&i.Mvplaylist,
+			&i.MVPlaylist,
 		); err != nil {
 			return nil, err
 		}
@@ -1773,19 +1796,19 @@ RETURNING id, releaseid, releasepath, originalhash, mvplaylist
 `
 
 type VideoUpdateMVPlaylistParams struct {
-	Mvplaylist string
+	MVPlaylist string
 	ID         string
 }
 
 func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPlaylistParams) (Video, error) {
-	row := q.db.QueryRowContext(ctx, videoUpdateMVPlaylist, arg.Mvplaylist, arg.ID)
+	row := q.db.QueryRowContext(ctx, videoUpdateMVPlaylist, arg.MVPlaylist, arg.ID)
 	var i Video
 	err := row.Scan(
 		&i.ID,
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
-		&i.Mvplaylist,
+		&i.MVPlaylist,
 	)
 	return i, err
 }
@@ -1808,7 +1831,7 @@ func (q *Queries) VideoUpdateOriginalHash(ctx context.Context, arg VideoUpdateOr
 		&i.ReleaseID,
 		&i.ReleasePath,
 		&i.OriginalHash,
-		&i.Mvplaylist,
+		&i.MVPlaylist,
 	)
 	return i, err
 }

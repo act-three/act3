@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"errors"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -44,7 +45,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /account/security", w.accountSecurity)
 	handle(mux, "GET /dialog/series-add", w.seriesAddDialogReq)
 	handle(mux, "GET /dialog/edit-episode/{id}", w.dialogEditEpisode)
-	handle(mux, "GET /dl/{hash}/{name}", w.download)
+	handle(mux, "GET /dl/{hash}/{name}", w.videoDownload)
 	handle(mux, "GET /edit/downloads", w.editDownloads)
 	handle(mux, "GET /edit/downloads/{id}", w.editDownloadsDetail)
 	handle(mux, "GET /edit/series", w.editSeries)
@@ -53,10 +54,12 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /search-series", w.seriesSearch)
 	handle(mux, "GET /series", w.listSeries)
 	handle(mux, "GET /series/{id}", w.showSeries)
-	handle(mux, "GET /stream/{hash}", w.stream)
 	handle(mux, "GET /system/storage", w.systemStorage)
 	handle(mux, "GET /system/tasks", w.systemTasks)
 	handle(mux, "GET /system/transmission", w.systemTransmission)
+	handle(mux, "GET /vid/{id}", w.videoPlaylist)
+	handle(mux, "GET /vidr/{id}", w.videoRenditionPlaylist)
+	handle(mux, "GET /vids/{hash}", w.videoStream)
 	handle(mux, "GET /{$}", w.home)
 	handle(mux, "POST /do/add-series", w.doAddSeries)
 	handle(mux, "POST /do/add-torrent", w.doAddTorrent)
@@ -148,6 +151,17 @@ func rawHandler(contentType string, code int, node ...html.Node) http.Handler {
 	})
 }
 
+func stringHandler(contentType, body string) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		w.Header().Set("Content-Type", contentType)
+		_, err := io.WriteString(w, body)
+		if err != nil {
+			slog.WarnContext(ctx, err.Error())
+			return
+		}
+	}
+}
 func errorBadRequest(turboFrameID, title, desc string) http.Handler {
 	return rawHandler("text/vnd.turbo-stream.html", 400,
 		turbo.Prepend(turboFrameID,

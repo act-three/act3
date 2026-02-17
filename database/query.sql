@@ -139,6 +139,10 @@ INSERT INTO RenditionForStreaming (
 VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
+-- name: RenditionForStreamingGet :one
+SELECT * FROM RenditionForStreaming
+WHERE ID = ?;
+
 -- name: RenditionForStreamingListByVideoID :many
 SELECT * FROM RenditionForStreaming
 WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);

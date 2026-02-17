@@ -165,5 +165,5 @@ type Video struct {
 	ReleaseID    string
 	ReleasePath  string
 	OriginalHash string
-	Mvplaylist   string
+	MVPlaylist   string
 }

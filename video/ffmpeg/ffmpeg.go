@@ -486,17 +486,28 @@ func hlsOutputArgs(mediaPath string) []string {
 }
 
 // twoPassArgs returns encoder-specific flags for 2-pass encoding.
-// libx265 uses -x265-params; libx264 uses standard -pass flags.
+// Both libx264 and libx265 use their native parameter interface
+// (-x264-params / -x265-params) to specify the stats file directly.
+// This avoids ffmpeg's -passlogfile suffix-appending logic, which
+// bases the suffix on a global output stream index that differs
+// between pass 1 (video only) and pass 2 (video + audio).
 func twoPassArgs(codec string, pass int, passlog string) []string {
-	if codec == "libx265" {
+	switch codec {
+	case "libx265":
 		return []string{
 			"-x265-params",
 			fmt.Sprintf("pass=%d:stats=%s", pass, passlog),
 		}
-	}
-	return []string{
-		"-pass", strconv.Itoa(pass),
-		"-passlogfile", passlog,
+	case "libx264":
+		return []string{
+			"-x264-params",
+			fmt.Sprintf("pass=%d:stats=%s", pass, passlog),
+		}
+	default:
+		return []string{
+			"-pass", strconv.Itoa(pass),
+			"-passlogfile", passlog,
+		}
 	}
 }
 

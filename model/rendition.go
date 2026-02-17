@@ -58,8 +58,8 @@ func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionF
 	return rends, nil
 }
 
-func (tx *TxR) VideoListByEpisodeID(ctx Context, epID string) ([]schema.Video, error) {
-	return tx.q.VideoListByEpisodeID(ctx, epID)
+func (tx *TxR) RenditionForStreaming(ctx Context, id string) (schema.RenditionForStreaming, error) {
+	return tx.q.RenditionForStreamingGet(ctx, id)
 }
 
 func (tx *TxR) RenditionForStreamingListByEpisodeID(ctx Context, epID string) ([]schema.RenditionForStreaming, error) {

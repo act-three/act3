@@ -156,7 +156,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 	// content-addressed storage hashes.
 	for i := range playlists {
 		playlists[i] = video.FixupMediaPlaylist(
-			playlists[i], ffmpeg.MediaName(i), hashes[i],
+			playlists[i], ffmpeg.MediaName(i), "/vids/"+hashes[i],
 		)
 	}
 
@@ -175,7 +175,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 
 		r := video.Rendition{Codec: rfs.Codec}
 		mvEntries = append(mvEntries, video.MVEntry{
-			URI:        rfsList[i].ID,
+			URI:        "/vidr/" + rfsList[i].ID + ".m3u8",
 			Bandwidth:  bandwidth,
 			Resolution: resolution,
 			Codecs:     r.HLSCodecs(),
@@ -198,7 +198,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 		}
 		_, err := tx.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
 			ID:         vid.ID,
-			Mvplaylist: mvPlaylist,
+			MVPlaylist: mvPlaylist,
 		})
 		return err
 	}

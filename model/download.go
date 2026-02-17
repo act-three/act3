@@ -590,7 +590,7 @@ func hasVideoExtension(s string) bool {
 	return found && videoExtensions[ext]
 }
 
-var addrSnnEnn = regexp.MustCompile(`\bS(\d\d)E(\d\d)\b`)
+var addrSnnEnn = regexp.MustCompile(`\b[Ss](\d\d)[Ee](\d\d)\b`)
 
 func scanSpan(s string) (addr, int) {
 	if !hasVideoExtension(s) {

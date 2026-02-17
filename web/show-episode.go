@@ -17,7 +17,7 @@ func (w *web) showEpisode(req *http.Request) (http.Handler, error) {
 			return nil, err
 		}
 
-		streams, err := tx.RenditionForStreamingList(ctx, epID)
+		videos, err := tx.VideoListByEpisodeID(ctx, epID)
 		if err != nil {
 			return nil, err
 		}
@@ -27,6 +27,6 @@ func (w *web) showEpisode(req *http.Request) (http.Handler, error) {
 			return nil, err
 		}
 
-		return page(view.MediaEpisode(ep, streams, dls)), nil
+		return page(view.MediaEpisode(ep, videos, dls)), nil
 	})
 }
