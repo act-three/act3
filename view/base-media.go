@@ -4,6 +4,7 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/turbo"
 )
 
 func media(title string) html.Element {
@@ -11,6 +12,7 @@ func media(title string) html.Element {
 		return base(title)(Class("pt-14"))(
 			Group(child...),
 			mediaNavigationMenu(),
+			turbo.Frame("player"),
 		)
 	}
 }

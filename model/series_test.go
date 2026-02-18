@@ -58,7 +58,7 @@ func TestNewSeries(t *testing.T) {
 		}
 
 		// Create series
-		sr := newSeries(srData, seds, sns, sneps, eps, noProgress)
+		sr := newSeries(srData, seds, sns, sneps, eps, noProgress, nil)
 
 		// Verify series head data
 		if sr.ID() != "series-1" {
@@ -122,7 +122,7 @@ func TestNewSeries(t *testing.T) {
 			},
 		}
 
-		sr := newSeries(srData, seds, sns, nil, nil, noProgress)
+		sr := newSeries(srData, seds, sns, nil, nil, noProgress, nil)
 
 		// Verify both editions exist
 		if len(sr.soByID) != 2 {
@@ -153,7 +153,7 @@ func TestNewSeries(t *testing.T) {
 			Title: "Empty Series",
 		}
 
-		sr := newSeries(srData, nil, nil, nil, nil, noProgress)
+		sr := newSeries(srData, nil, nil, nil, nil, noProgress, nil)
 
 		if sr.ID() != "series-3" {
 			t.Errorf("expected series ID 'series-3', got '%s'", sr.ID())
@@ -203,7 +203,7 @@ func TestNewSeries(t *testing.T) {
 			},
 		}
 
-		sr := newSeries(srData, seds, sns, nil, nil, noProgress)
+		sr := newSeries(srData, seds, sns, nil, nil, noProgress, nil)
 
 		// Verify editions exist
 		ed1 := sr.soByID["edition-1"]
@@ -251,7 +251,7 @@ func TestSeriesEditionByTitle(t *testing.T) {
 			},
 		}
 
-		sr := newSeries(srData, seds, nil, nil, nil, noProgress)
+		sr := newSeries(srData, seds, nil, nil, nil, noProgress, nil)
 
 		ed := sr.EditionByTitle("Original")
 		if ed == nil {
@@ -268,7 +268,7 @@ func TestSeriesEditionByTitle(t *testing.T) {
 			Title: "Test Series",
 		}
 
-		sr := newSeries(srData, nil, nil, nil, nil, noProgress)
+		sr := newSeries(srData, nil, nil, nil, nil, noProgress, nil)
 
 		ed := sr.EditionByTitle("Nonexistent")
 		if ed != nil {
@@ -310,7 +310,7 @@ func TestSeriesEditionSeq(t *testing.T) {
 			},
 		}
 
-		sr := newSeries(srData, seds, nil, nil, nil, noProgress)
+		sr := newSeries(srData, seds, nil, nil, nil, noProgress, nil)
 
 		titles := []string{}
 		for ed := range sr.SeriesEditionSeq() {
@@ -341,7 +341,7 @@ func TestSeriesEditionSeq(t *testing.T) {
 			{ID: "edition-3", Title: "C", SeriesID: "series-1"},
 		}
 
-		sr := newSeries(srData, seds, nil, nil, nil, noProgress)
+		sr := newSeries(srData, seds, nil, nil, nil, noProgress, nil)
 
 		count := 0
 		for range sr.SeriesEditionSeq() {
@@ -371,7 +371,7 @@ func TestSeriesHeadMethods(t *testing.T) {
 		TVmazeImageURL: "https://example.com/image.jpg",
 	}
 
-	sr := newSeries(srData, nil, nil, nil, nil, noProgress)
+	sr := newSeries(srData, nil, nil, nil, nil, noProgress, nil)
 
 	t.Run("ID returns correct value", func(t *testing.T) {
 		if sr.ID() != "series-1" {

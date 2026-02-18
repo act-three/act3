@@ -31,13 +31,14 @@ type seasonEpisode struct {
 }
 
 type Episode struct {
-	ep    schema.Episode
-	snep  schema.SeasonEpisode
-	type_ EpisodeType
-	sn    *SeasonHead
-	so    *SeriesEditionHead
-	sr    *SeriesHead
-	prog  []ProgressItem
+	ep     schema.Episode
+	snep   schema.SeasonEpisode
+	type_  EpisodeType
+	sn     *SeasonHead
+	so     *SeriesEditionHead
+	sr     *SeriesHead
+	prog   []ProgressItem
+	videos []*Video
 }
 
 func newEpisode(
@@ -47,15 +48,17 @@ func newEpisode(
 	snepData schema.SeasonEpisode,
 	epData schema.Episode,
 	prog []ProgressItem,
+	videos []*Video,
 ) *Episode {
 	ep := &Episode{
-		ep:    epData,
-		snep:  snepData,
-		type_: episodeTypeByName[epData.Type],
-		sn:    sn,
-		so:    so,
-		sr:    sr,
-		prog:  prog,
+		ep:     epData,
+		snep:   snepData,
+		type_:  episodeTypeByName[epData.Type],
+		sn:     sn,
+		so:     so,
+		sr:     sr,
+		prog:   prog,
+		videos: videos,
 	}
 	return ep
 }
@@ -65,6 +68,7 @@ func (ep *Episode) Title() string            { return ep.ep.Title }
 func (ep *Episode) Summary() string          { return ep.ep.Summary }
 func (ep *Episode) ImageURL() string         { return ep.ep.TVmazeImageURL }
 func (ep *Episode) Progress() []ProgressItem { return ep.prog }
+func (ep *Episode) Videos() []*Video         { return ep.videos }
 func (ep *Episode) SnnEnn() string {
 	if eNN := ep.snep.Number; eNN != nil {
 		return fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, *eNN)

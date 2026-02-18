@@ -111,6 +111,23 @@ RETURNING *;
 SELECT * FROM EpisodeVideo
 WHERE VideoID = ?;
 
+-- name: EpisodeVideoListByEditionID :many
+SELECT * FROM EpisodeVideo
+WHERE EpisodeID IN (
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+);
+
+-- name: EpisodeVideoListBySeriesID :many
+SELECT * FROM EpisodeVideo
+WHERE EpisodeID IN (
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE SeasonID IN (
+		SELECT ID FROM Season
+		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+	)
+);
+
 -- name: MovieList :many
 SELECT ID, Title, ArtworkKey FROM Movie;
 
@@ -323,6 +340,29 @@ SELECT * FROM Video WHERE ReleaseID = ? AND ReleasePath = ?;
 -- name: VideoListByEpisodeID :many
 SELECT * FROM Video
 WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
+
+-- name: VideoListByEditionID :many
+SELECT * FROM Video
+WHERE ID IN (
+	SELECT VideoID FROM EpisodeVideo
+	WHERE EpisodeID IN (
+		SELECT EpisodeID FROM SeasonEpisode
+		WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+	)
+);
+
+-- name: VideoListBySeriesID :many
+SELECT * FROM Video
+WHERE ID IN (
+	SELECT VideoID FROM EpisodeVideo
+	WHERE EpisodeID IN (
+		SELECT EpisodeID FROM SeasonEpisode
+		WHERE SeasonID IN (
+			SELECT ID FROM Season
+			WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+		)
+	)
+);
 
 -- name: VideoUpdateOriginalHash :one
 UPDATE Video SET OriginalHash = ? WHERE ID = ?

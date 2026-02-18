@@ -53,6 +53,7 @@ func newSeries(
 	sneps []schema.SeasonEpisode,
 	eps []schema.Episode,
 	progByEpisodeID func(string) []ProgressItem,
+	videosByEpisodeID map[string][]*Video,
 ) *Series {
 	sr := &Series{
 		SeriesHead: SeriesHead{srData},
@@ -74,6 +75,7 @@ func newSeries(
 		sns := snByEditionID[soData.ID]
 		sed := newSeriesEdition(&sr.SeriesHead, soData, sns, snepBySeasonID, epByID,
 			progByEpisodeID,
+			videosByEpisodeID,
 		)
 		sr.soByID[sed.ID()] = sed
 		sr.soByTitle[sed.Title()] = sed
@@ -184,9 +186,21 @@ func (tx *TxR) Series(ctx Context, id string) (*Series, error) {
 	if err != nil {
 		return nil, err
 	}
+	evs, err := tx.q.EpisodeVideoListBySeriesID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	vids, err := tx.q.VideoListBySeriesID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	vidByID := vidMapByID(vids)
+	videosByEpisodeID := vidMapByEpisodeID(evs, vidByID)
 
 	sr := newSeries(srData, seds, sns, sneps, eps,
 		tx.m.prog.getByEpisodeID,
+		videosByEpisodeID,
 	)
 	return sr, nil
 }

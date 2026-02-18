@@ -29,6 +29,7 @@ func newSeason(
 	sneps []schema.SeasonEpisode,
 	epByID map[string]*schema.Episode,
 	progByEpisodeID func(string) []ProgressItem,
+	videosByEpisodeID map[string][]*Video,
 ) *Season {
 	sn := &Season{
 		SeasonHead: SeasonHead{snData},
@@ -43,6 +44,7 @@ func newSeason(
 		}
 		ep := newEpisode(sr, so, &sn.SeasonHead, snepData, *epData,
 			progByEpisodeID(epData.ID),
+			videosByEpisodeID[epData.ID],
 		)
 		sn.eps = append(sn.eps, ep)
 		sn.epByID[ep.ID()] = ep

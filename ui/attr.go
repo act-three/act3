@@ -10,6 +10,14 @@ var (
 
 func Attr(name string) attr.AttrName { return attr.Attr(name) }
 
+func Disabled(disabled bool) attr.Node {
+	if disabled {
+		return attr.Disabled
+	} else {
+		return group()
+	}
+}
+
 var (
 	Gap0 = Class("gap-0")
 	Gap1 = Class("gap-1")

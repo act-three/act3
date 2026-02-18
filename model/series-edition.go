@@ -36,6 +36,7 @@ func newSeriesEdition(
 	snepBySeasonID map[string][]schema.SeasonEpisode,
 	epByID map[string]*schema.Episode,
 	progByEpisodeID func(string) []ProgressItem,
+	videosByEpisodeID map[string][]*Video,
 ) *SeriesEdition {
 	sed := &SeriesEdition{
 		SeriesEditionHead: SeriesEditionHead{soData},
@@ -46,6 +47,7 @@ func newSeriesEdition(
 		sneps := snepBySeasonID[snData.ID]
 		sn := newSeason(sr, &sed.SeriesEditionHead, snData, sneps, epByID,
 			progByEpisodeID,
+			videosByEpisodeID,
 		)
 		sed.sns = append(sed.sns, sn)
 		sed.snByID[sn.ID()] = sn
@@ -157,11 +159,24 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 	if err != nil {
 		return nil, err
 	}
+	evs, err := tx.q.EpisodeVideoListByEditionID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	vids, err := tx.q.VideoListByEditionID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	vidByID := vidMapByID(vids)
+	videosByEpisodeID := vidMapByEpisodeID(evs, vidByID)
+
 	sr := &SeriesHead{srData}
 	epByID := epMapByID(eps)
 	snepBySeasonID := snepMapBySeasonID(sneps)
 	sed := newSeriesEdition(sr, sedData, sns, snepBySeasonID, epByID,
 		tx.m.prog.getByEpisodeID,
+		videosByEpisodeID,
 	)
 	return sed, nil
 }

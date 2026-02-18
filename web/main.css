@@ -1,5 +1,6 @@
 @import "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap";
 @import "tailwindcss";
+@import "./plyr.css";
 
 @theme {
 	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
@@ -178,7 +179,28 @@
 		stroke-width: 1.5;
 	}
 
-	body:has(.app) {
+	body:has(.app), body:has(#full-player) {
 		overflow: hidden;
+	}
+
+	.plyr {
+		height: 100%;
+	}
+
+	.plyr__video-wrapper {
+		height: 100%;
+	}
+
+	.plyr video {
+		object-fit: contain;
+	}
+
+	.plyr__controls-top {
+		transition: opacity 0.3s ease, background 0.15s ease;
+	}
+
+	.plyr--hide-controls .plyr__controls-top {
+		opacity: 0;
+		pointer-events: none;
 	}
 }

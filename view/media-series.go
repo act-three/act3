@@ -3,6 +3,7 @@ package view
 import (
 	"slices"
 
+	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
@@ -74,11 +75,22 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 		hideSpoilersText = Class("backdrop-blur-xs")
 		hideSpoilersImage = Class("backdrop-blur-md")
 	}
+	vids := ep.Videos()
 	return Grid8(Class("text-gray-11"))(
 		FlexCol(Class("col-span-5 gap-2"))(
 			FlexRow(Class("items-center gap-4"))(
 				Box()(
-					Button()(Icon("play")).
+					expr.IfElse(len(vids) > 0,
+						func() html.Node {
+							return Button(
+								attr.Href(vids[0].PlayerURL()),
+								attr.Attr("data-turbo-frame")("player"),
+							)(Icon("play"))
+						},
+						func() html.Node {
+							return Button(Disabled(true))(Icon("x"))
+						},
+					).
 						With(ButtonBordered).
 						With(ButtonCircle),
 				),

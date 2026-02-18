@@ -542,6 +542,71 @@ func (q *Queries) EpisodeVideoCreate(ctx context.Context, arg EpisodeVideoCreate
 	return i, err
 }
 
+const episodeVideoListByEditionID = `-- name: EpisodeVideoListByEditionID :many
+SELECT episodeid, videoid FROM EpisodeVideo
+WHERE EpisodeID IN (
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+)
+`
+
+func (q *Queries) EpisodeVideoListByEditionID(ctx context.Context, editionid string) ([]EpisodeVideo, error) {
+	rows, err := q.db.QueryContext(ctx, episodeVideoListByEditionID, editionid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EpisodeVideo
+	for rows.Next() {
+		var i EpisodeVideo
+		if err := rows.Scan(&i.EpisodeID, &i.VideoID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const episodeVideoListBySeriesID = `-- name: EpisodeVideoListBySeriesID :many
+SELECT episodeid, videoid FROM EpisodeVideo
+WHERE EpisodeID IN (
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE SeasonID IN (
+		SELECT ID FROM Season
+		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+	)
+)
+`
+
+func (q *Queries) EpisodeVideoListBySeriesID(ctx context.Context, seriesid string) ([]EpisodeVideo, error) {
+	rows, err := q.db.QueryContext(ctx, episodeVideoListBySeriesID, seriesid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EpisodeVideo
+	for rows.Next() {
+		var i EpisodeVideo
+		if err := rows.Scan(&i.EpisodeID, &i.VideoID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const episodeVideoListByVideoID = `-- name: EpisodeVideoListByVideoID :many
 SELECT episodeid, videoid FROM EpisodeVideo
 WHERE VideoID = ?
@@ -1764,6 +1829,46 @@ func (q *Queries) VideoGetByReleasePath(ctx context.Context, arg VideoGetByRelea
 	return i, err
 }
 
+const videoListByEditionID = `-- name: VideoListByEditionID :many
+SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
+WHERE ID IN (
+	SELECT VideoID FROM EpisodeVideo
+	WHERE EpisodeID IN (
+		SELECT EpisodeID FROM SeasonEpisode
+		WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+	)
+)
+`
+
+func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([]Video, error) {
+	rows, err := q.db.QueryContext(ctx, videoListByEditionID, editionid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Video
+	for rows.Next() {
+		var i Video
+		if err := rows.Scan(
+			&i.ID,
+			&i.ReleaseID,
+			&i.ReleasePath,
+			&i.OriginalHash,
+			&i.MVPlaylist,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
 SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
 WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
@@ -1771,6 +1876,49 @@ WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 
 func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([]Video, error) {
 	rows, err := q.db.QueryContext(ctx, videoListByEpisodeID, episodeid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Video
+	for rows.Next() {
+		var i Video
+		if err := rows.Scan(
+			&i.ID,
+			&i.ReleaseID,
+			&i.ReleasePath,
+			&i.OriginalHash,
+			&i.MVPlaylist,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const videoListBySeriesID = `-- name: VideoListBySeriesID :many
+SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
+WHERE ID IN (
+	SELECT VideoID FROM EpisodeVideo
+	WHERE EpisodeID IN (
+		SELECT EpisodeID FROM SeasonEpisode
+		WHERE SeasonID IN (
+			SELECT ID FROM Season
+			WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+		)
+	)
+)
+`
+
+func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]Video, error) {
+	rows, err := q.db.QueryContext(ctx, videoListBySeriesID, seriesid)
 	if err != nil {
 		return nil, err
 	}

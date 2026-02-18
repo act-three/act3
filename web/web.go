@@ -51,6 +51,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /edit/series", w.editSeries)
 	handle(mux, "GET /edit/series/{id}", w.editSeriesDetail)
 	handle(mux, "GET /ep/{id}", w.showEpisode)
+	handle(mux, "GET /player/{id}", w.showPlayer)
 	handle(mux, "GET /search-series", w.seriesSearch)
 	handle(mux, "GET /series", w.listSeries)
 	handle(mux, "GET /series/{id}", w.showSeries)
