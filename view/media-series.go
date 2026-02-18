@@ -17,14 +17,14 @@ func MediaSeries(sr *model.Series) html.Node {
 	return media(sr.Title())(
 		Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
 			html.Img(
-				Class("w-full aspect-2/3 object-cover "),
+				Class("w-full aspect-2/3 object-cover"),
 				attr.Src(sr.TVmazeImageURL()),
 			),
 		),
 		Grid12(Class("pt-6"))(
 			Box(Class("col-span-3"))(
 				Box(Class("sticky top-20"))(
-					Box()(
+					Box(Class("rounded-sm overflow-hidden"))(
 						html.Img(
 							Class("w-full aspect-2/3 object-cover"),
 							attr.Src(sr.TVmazeImageURL()),
@@ -75,7 +75,7 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 		hideSpoilersImage = Class("backdrop-blur-md")
 	}
 	return Grid8(Class("text-gray-11"))(
-		FlexCol(Class("col-span-4 gap-2"))(
+		FlexCol(Class("col-span-5 gap-2"))(
 			FlexRow(Class("items-center gap-4"))(
 				Box()(
 					Button()(Icon("play")).
@@ -99,11 +99,11 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 				),
 			),
 			Box(Class("relative"))(
-				Text(ep.Summary(), Class("text-md")).With(LineClamp4),
+				Text(ep.Summary(), Class("text-sm")).With(LineClamp4),
 				Box(
 					Class(`
 					absolute
-					inset-0
+					-inset-2
 					pointer-events-none
 				`),
 					hideSpoilersText,
@@ -111,10 +111,12 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 			),
 		),
 		Box(Class(`
-			col-span-4
+			col-span-3
 			aspect-16/9
 			bg-gray-6
 			relative
+			rounded-xs
+			overflow-hidden
 			hover:after:content-[""]
 			hover:after:absolute
 			hover:after:inset-0
@@ -134,6 +136,9 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 					pointer-events-none
 				`),
 				hideSpoilersImage,
+			),
+			Box(Class("absolute bottom-0 left-0 right-0"))(
+				Progress(0.1).With(ProgressSM),
 			),
 		),
 	)
