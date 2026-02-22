@@ -3,7 +3,7 @@ set -eo pipefail
 
 cd $(dirname $0)
 mkdir -p deploy
-dir=$(mktemp -d -t act3)
+dir=$(mktemp -d /tmp/act3.XXXXXX)
 trap "rm -rf '$dir'" EXIT
 
 go build -o $dir/act3
