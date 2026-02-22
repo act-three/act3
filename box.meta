@@ -1,0 +1,15 @@
+box act3
+
+user 501 501
+
+run /act3
+
+mount (
+	rw /database
+	rw /storage
+)
+
+env (
+	A3DATABASE /database
+	A3STORAGE  /storage
+)

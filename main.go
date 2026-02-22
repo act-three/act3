@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strings"
 
@@ -25,7 +26,8 @@ import (
 //go:generate go tool esbuild --bundle --outfile=web/static/static/bundle.js web/main.js
 
 var (
-	storageDir = getenv("A3STORAGE", "/var/lib/act3")
+	databaseDir = getenv("A3DATABASE", ".")
+	storageDir  = getenv("A3STORAGE", "/var/lib/act3")
 )
 
 func getenv(name, def string) string {
@@ -75,7 +77,7 @@ func main() {
 	slog.SetDefault(slog.New(logcontext.Handler(slog.Default().Handler())))
 	slog.Info("startup", "mod", bi.Main.Path, "version", bi.Main.Version)
 
-	dbr, dbw, err := database.Open("act3.db")
+	dbr, dbw, err := database.Open(filepath.Join(databaseDir, "act3.db"))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

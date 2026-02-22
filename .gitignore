@@ -2,5 +2,6 @@
 *.db-shm
 *.db-wal
 /node_modules
+/deploy
 /src
 /ui/static/static/bundle.*

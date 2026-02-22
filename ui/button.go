@@ -30,7 +30,6 @@ func Button(attrs ...attr.Node) html.Element {
 			a,
 		)(nodes...).With(TextSelectNone)
 	}
-
 }
 
 var (
