@@ -1,5 +1,5 @@
 (() => {
-  // turbo.es2017-esm.js
+  // web/turbo.es2017-esm.js
   (function(prototype) {
     if (typeof prototype.requestSubmit == "function") return;
     prototype.requestSubmit = function(submitter2) {
@@ -5437,7 +5437,7 @@
   window.Turbo = { ...Turbo2, StreamActions };
   start();
 
-  // stimulus.js
+  // web/stimulus.js
   var EventListener = class {
     constructor(eventTarget, eventName, eventOptions) {
       this.eventTarget = eventTarget;
@@ -7885,7 +7885,7 @@
   Controller.outlets = [];
   Controller.values = {};
 
-  // main.js
+  // web/main.js
   window.Stimulus = Application.start();
   Stimulus.register("dialog", class extends Controller {
     dismiss() {

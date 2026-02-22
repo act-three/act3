@@ -19,8 +19,6 @@ import (
 	"ily.dev/act3/web/static"
 )
 
-//go:generate go tool esbuild --bundle --outfile=static/static/bundle.js main.js
-
 var errNotFound = errors.New("not found")
 
 // Max request body for all requests except video uploads.

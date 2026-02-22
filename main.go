@@ -22,6 +22,7 @@ import (
 )
 
 //go:generate tailwindcss -i web/main.css -o web/static/static/bundle.css
+//go:generate go tool esbuild --bundle --outfile=web/static/static/bundle.js web/main.js
 
 var (
 	storageDir = getenv("A3STORAGE", "/var/lib/act3")
