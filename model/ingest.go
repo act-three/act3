@@ -17,34 +17,34 @@ func boolToInt64(b bool) int64 {
 	return 0
 }
 
-func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
+func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	vid, err := tx.q.VideoGet(ctx, args[0])
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	hash, err := tx.m.store.Copy(args[1])
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 
 	// Probe source to get codec info, resolution, bitrate, etc.
 	f, err := tx.m.store.Open(hash)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	defer f.Close()
 	probe, err := ffmpeg.Probe(ctx, f)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 
 	// Plan renditions based on the source properties.
 	planned, err := video.PlanRenditions(probe)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	if len(planned) == 0 {
-		return taskError(fmt.Errorf("no video stream found in source"))
+		return fmt.Errorf("no video stream found in source")
 	}
 
 	// Build rendition params for DB storage.
@@ -62,7 +62,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 		})
 	}
 
-	return func(tx *TxRW) error {
+	return tx.m.WithTxRW(func(tx *TxRW) error {
 		vid, err = tx.q.VideoUpdateOriginalHash(ctx, schema.VideoUpdateOriginalHashParams{
 			ID:           vid.ID,
 			OriginalHash: hash,
@@ -81,20 +81,20 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 		tx.m.prog.addVideo(vid.ID, "Encoding")
 		tx.addTask(ctx, taskIngestEncode, vid.ID)
 		return nil
-	}
+	})
 }
 
-func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
+func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 	vid, err := tx.q.VideoGet(ctx, args[0])
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 
 	// Register progress tracking. This re-derives the episode→video
 	// mappings from the database so progress bars survive restarts.
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	tx.m.prog.addVideo(vid.ID, "Encoding")
 	for _, ev := range evs {
@@ -103,25 +103,25 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 
 	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	if len(rfsList) == 0 {
-		return taskError(fmt.Errorf("no renditions planned for video %s", vid.ID))
+		return fmt.Errorf("no renditions planned for video %s", vid.ID)
 	}
 
 	src, err := tx.m.store.Open(vid.OriginalHash)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	defer src.Close()
 
 	// Probe source for duration (needed for progress tracking).
 	probe, err := ffmpeg.Probe(ctx, src)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	if _, err := src.Seek(0, io.SeekStart); err != nil {
-		return taskError(err)
+		return err
 	}
 
 	var encodeErr error
@@ -159,7 +159,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 	})
 	if err != nil {
 		encodeErr = err
-		return taskError(err)
+		return err
 	}
 
 	// Fixup media playlists: replace temp media filenames with
@@ -193,7 +193,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 	}
 	mvPlaylist := video.GenerateMVPlaylist(mvEntries)
 
-	return func(tx *TxRW) error {
+	return tx.m.WithTxRW(func(tx *TxRW) error {
 		for i, rfs := range rfsList {
 			_, err := tx.q.RenditionForStreamingUpdateEncode(ctx,
 				schema.RenditionForStreamingUpdateEncodeParams{
@@ -211,7 +211,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 			MVPlaylist: mvPlaylist,
 		})
 		return err
-	}
+	})
 }
 
 func toFFmpegCodec(codec string) string {

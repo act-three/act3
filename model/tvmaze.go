@@ -9,24 +9,24 @@ import (
 	"ily.dev/act3/database/schema"
 )
 
-func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) func(tx *TxRW) error {
+func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 	// TODO(em): pull info from Client
 	id, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	slog.InfoContext(ctx, "got id", "TVmazeID", id)
 
 	seasons, err := tx.m.tvmaze.ListShowSeasons(ctx, id)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	eps, err := tx.m.tvmaze.ListShowEpisodes(ctx, id)
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 
-	return func(tx *TxRW) error {
+	return tx.m.WithTxRW(func(tx *TxRW) error {
 		series, err := tx.q.SeriesGetByTVmazeID(ctx, &id)
 		if err != nil {
 			return err
@@ -112,7 +112,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) func(tx *Tx
 		}
 
 		return nil
-	}
+	})
 }
 
 func pad(n int) string {

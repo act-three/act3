@@ -32,7 +32,7 @@ const (
 	queueCPU = "cpu"
 )
 
-type taskFunc func(*TxR, Context, []string) func(*TxRW) error
+type taskFunc func(*TxR, Context, []string) error
 
 var taskTab = map[string]taskFunc{
 	taskAddDownloadToTransmission: (*TxR).taskAddDownloadToTransmission,
@@ -51,10 +51,6 @@ var queueTab = map[string]string{
 var taskQueues = map[string]int{
 	queueIO:  2,
 	queueCPU: 1,
-}
-
-func taskError(err error) func(*TxRW) error {
-	return func(*TxRW) error { return err }
 }
 
 type Task struct {
@@ -215,12 +211,11 @@ func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 			return err
 		}
 
-		frw := f(tx, ctx, args)
+		err = f(tx, ctx, args)
+		if err != nil {
+			return err
+		}
 		return tq.m.WithTxRW(func(t *TxRW) error {
-			err = frw(t)
-			if err != nil {
-				return err
-			}
 			return t.q.TaskDelete(ctx, task.ID)
 		})
 	})

@@ -259,15 +259,15 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err
 	return tx.newDownload(ctx, dl)
 }
 
-func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) func(tx *TxRW) error {
+func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) error {
 	tm := tx.m.transmission.Load()
 	if tm == nil {
-		return taskError(fmt.Errorf("no transmission client available"))
+		return fmt.Errorf("no transmission client available")
 	}
 
 	dl, err := tx.q.DownloadGet(ctx, args[0])
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	s := base64.StdEncoding.EncodeToString(dl.Torrent)
 	t, err := tm.TorrentAdd(ctx, transmissionrpc.TorrentAddPayload{
@@ -275,21 +275,18 @@ func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) func(tx
 		MetaInfo: &s,
 	})
 	if err != nil {
-		return taskError(err)
+		return err
 	}
 	ts, err := tm.TorrentGetAllForHashes(ctx, []string{*t.HashString})
 	if err != nil {
-		return taskError(err)
+		return err
 	} else if len(ts) != 1 {
-		return taskError(fmt.Errorf("%s: got %d torrents, wanted 1", *t.HashString, len(ts)))
+		return fmt.Errorf("%s: got %d torrents, wanted 1", *t.HashString, len(ts))
 	}
-	return func(tx *TxRW) error {
+	return tx.m.WithTxRW(func(tx *TxRW) error {
 		_, err = tx.updateDownload(ctx, &ts[0])
-		if err != nil {
-			return err
-		}
-		return nil
-	}
+		return err
+	})
 }
 
 func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Download, err error) {
