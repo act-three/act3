@@ -6,7 +6,7 @@ mkdir -p deploy
 dir=$(mktemp -d /tmp/act3.XXXXXX)
 trap "rm -rf '$dir'" EXIT
 
-CGO_ENABLED=0 go build -o $dir/act3
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $dir/act3
 
 today=$(date +%Y%m%d)
 n=1
