@@ -21,6 +21,7 @@ mksquashfs \
     box.meta \
     "$dir/act3" \
     deploy/$image \
+    -p '/data d 0555 0 0' \
     -p '/database d 0555 0 0' \
     -p '/storage d 0555 0 0' \
     -p '/dev d 0555 0 0' \

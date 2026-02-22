@@ -5,6 +5,7 @@ user 501 501
 run /act3
 
 mount (
+	ro /data
 	rw /database
 	rw /storage
 )
