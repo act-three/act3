@@ -242,6 +242,12 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 			),
 		),
 		html.Range(ep.Progress(), func(pi model.ProgressItem) html.Node {
+			if err := pi.Error(); err != nil {
+				return html.Div(Class("text-sm text-red-11"))(
+					Text(pi.Desc),
+					Text(err.Error()),
+				)
+			}
 			return FlexCol(Class("text-gray-11/80 text-sm"))(
 				Text(pi.Desc),
 				Progress(pi.Progress(), attr.Class("max-w-xs")).

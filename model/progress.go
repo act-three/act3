@@ -53,6 +53,17 @@ func (p *progress) clearVideo(vID string) {
 	delete(p.progByVidID, vID)
 }
 
+func (p *progress) errorVideo(vID string, err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	pi, ok := p.progByVidID[vID]
+	if !ok {
+		return
+	}
+	pi.err = err
+	p.progByVidID[vID] = pi
+}
+
 func (p *progress) getByEpisodeID(epID string) []ProgressItem {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -70,8 +81,8 @@ type ProgressItem struct {
 	CreatedAt time.Time
 	Desc      string
 	value     float64
+	err       error
 }
 
-func (pi *ProgressItem) Progress() float64 {
-	return pi.value
-}
+func (pi *ProgressItem) Progress() float64 { return pi.value }
+func (pi *ProgressItem) Error() error      { return pi.err }

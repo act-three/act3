@@ -124,7 +124,14 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 		return taskError(err)
 	}
 
-	defer tx.m.prog.clearVideo(vid.ID)
+	var encodeErr error
+	defer func() {
+		if encodeErr != nil {
+			tx.m.prog.errorVideo(vid.ID, encodeErr)
+		} else {
+			tx.m.prog.clearVideo(vid.ID)
+		}
+	}()
 
 	// Encode all renditions.
 	var playlists []string
@@ -151,6 +158,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) func(*TxRW) error {
 		return err
 	})
 	if err != nil {
+		encodeErr = err
 		return taskError(err)
 	}
 
