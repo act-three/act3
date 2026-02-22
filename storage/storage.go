@@ -37,18 +37,24 @@ func (d *Dir) FS() fs.FS {
 	return &fanoutFS{d.root.FS()}
 }
 
-func (d *Dir) Link(name string) (hash string, err error) {
+func (d *Dir) Copy(name string) (hash string, err error) {
+	fr, err := os.Open(name)
+	if err != nil {
+		return "", err
+	}
+	defer fr.Close()
 	tmp := rand.Text()[:8]
-	err = os.Link(name, filepath.Join(d.root.Name(), tmp))
+	fw, err := d.root.Create(tmp)
 	if err != nil {
 		return "", err
 	}
+	defer fw.Close()
 	defer d.root.Remove(tmp)
-	f, err := d.root.Open(tmp)
+	_, err = io.Copy(fw, fr)
 	if err != nil {
 		return "", err
 	}
-	hash, err = digest(f)
+	hash, err = d.digest(tmp)
 	if err != nil {
 		return "", err
 	}
@@ -62,6 +68,15 @@ func (d *Dir) Link(name string) (hash string, err error) {
 		return "", err
 	}
 	return hash, nil
+}
+
+func (d *Dir) digest(name string) (string, error) {
+	f, err := d.root.Open(name)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	return digest(f)
 }
 
 func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (hashes []string, err error) {

@@ -22,7 +22,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) func(*TxRW) error {
 	if err != nil {
 		return taskError(err)
 	}
-	hash, err := tx.m.store.Link(args[1])
+	hash, err := tx.m.store.Copy(args[1])
 	if err != nil {
 		return taskError(err)
 	}

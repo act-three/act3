@@ -13,4 +13,5 @@ mount (
 env (
 	A3DATABASE /database
 	A3STORAGE  /storage
+	PATH       /
 )
