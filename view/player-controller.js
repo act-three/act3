@@ -10,6 +10,7 @@ export default class extends Controller {
 		"seekTooltip",
 		"currentTime",
 		"duration",
+		"qualityMenu",
 	];
 	static values = {
 		iconUrl: String,
@@ -20,6 +21,7 @@ export default class extends Controller {
 		harlow: Boolean,
 		hideControls: Boolean,
 		loading: Boolean,
+		currentQuality: String,
 	};
 
 	#isTouch = false;
@@ -210,6 +212,50 @@ export default class extends Controller {
 
 	toggleHarlow() {
 		this.harlowValue = !this.harlowValue;
+	}
+
+	// --- Quality menu ---
+
+	toggleQualityMenu() {
+		this.qualityMenuTarget.classList.toggle("hidden");
+	}
+
+	setQuality(e) {
+		const url = e.params.url;
+		const label = e.params.label;
+		const video = this.videoTarget;
+
+		const currentTime = video.currentTime;
+		const wasPlaying = !video.paused;
+
+		// Switch the source.
+		const source = video.querySelector("source");
+		if (source) {
+			source.src = url;
+		} else {
+			video.src = url;
+		}
+		video.load();
+
+		// Restore position once enough data is available.
+		const restore = () => {
+			video.currentTime = currentTime;
+			if (wasPlaying) video.play();
+			video.removeEventListener("loadedmetadata", restore);
+		};
+		video.addEventListener("loadedmetadata", restore);
+
+		this.currentQualityValue = label;
+		this.qualityMenuTarget.classList.add("hidden");
+
+		// Update active state on menu items.
+		for (const btn of this.qualityMenuTarget.querySelectorAll("button")) {
+			if (btn.dataset.playerLabelParam === label) {
+				btn.setAttribute("data-active", "");
+			} else {
+				btn.removeAttribute("data-active");
+			}
+		}
 	}
 
 	togglePlay() {

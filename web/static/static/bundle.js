@@ -7902,7 +7902,8 @@
       "progress",
       "seekTooltip",
       "currentTime",
-      "duration"
+      "duration",
+      "qualityMenu"
     ];
     static values = {
       iconUrl: String,
@@ -7912,7 +7913,8 @@
       stopped: Boolean,
       harlow: Boolean,
       hideControls: Boolean,
-      loading: Boolean
+      loading: Boolean,
+      currentQuality: String
     };
     #isTouch = false;
     #timerControls = null;
@@ -8068,6 +8070,39 @@
     }
     toggleHarlow() {
       this.harlowValue = !this.harlowValue;
+    }
+    // --- Quality menu ---
+    toggleQualityMenu() {
+      this.qualityMenuTarget.classList.toggle("hidden");
+    }
+    setQuality(e) {
+      const url = e.params.url;
+      const label = e.params.label;
+      const video = this.videoTarget;
+      const currentTime = video.currentTime;
+      const wasPlaying = !video.paused;
+      const source = video.querySelector("source");
+      if (source) {
+        source.src = url;
+      } else {
+        video.src = url;
+      }
+      video.load();
+      const restore = () => {
+        video.currentTime = currentTime;
+        if (wasPlaying) video.play();
+        video.removeEventListener("loadedmetadata", restore);
+      };
+      video.addEventListener("loadedmetadata", restore);
+      this.currentQualityValue = label;
+      this.qualityMenuTarget.classList.add("hidden");
+      for (const btn of this.qualityMenuTarget.querySelectorAll("button")) {
+        if (btn.dataset.playerLabelParam === label) {
+          btn.setAttribute("data-active", "");
+        } else {
+          btn.removeAttribute("data-active");
+        }
+      }
     }
     togglePlay() {
       const video = this.videoTarget;

@@ -20,7 +20,14 @@ func (w *web) showPlayerForEpisode(req *http.Request) (http.Handler, error) {
 			req.PathValue("epID"),
 			req.PathValue("sedID"),
 		)
-		return page(view.MediaPlayerForEpisode(v, ep)), nil
+		if err != nil {
+			return nil, err
+		}
+		qualityOpts, err := tr.QualityOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		return page(view.MediaPlayerForEpisode(v, ep, qualityOpts)), nil
 	})
 }
 

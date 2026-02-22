@@ -12,11 +12,11 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
-func MediaPlayerForEpisode(v *model.Video, ep *model.Episode) html.Node {
-	return mediaPlayer(v, mediaPlayerTitleForEpisode(ep))
+func MediaPlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption) html.Node {
+	return mediaPlayer(v, mediaPlayerTitleForEpisode(ep), qualityOpts)
 }
 
-func mediaPlayer(v *model.Video, title string) html.Node {
+func mediaPlayer(v *model.Video, title string, qualityOpts []model.QualityOption) html.Node {
 	return turbo.Frame("player")(
 		html.Div(
 			attr.ID("full-player"),
@@ -29,6 +29,7 @@ func mediaPlayer(v *model.Video, title string) html.Node {
 			stimulus.Value("player", "stopped")("true"),
 			stimulus.Value("player", "harlow")("false"),
 			stimulus.Value("player", "hide-controls")("false"),
+			stimulus.Value("player", "current-quality")("Auto"),
 
 			stimulus.Action("keydown.h@window->player#toggleHarlow"),
 			stimulus.Action("keydown@window->player#handleKey"),
@@ -169,7 +170,7 @@ func mediaPlayer(v *model.Video, title string) html.Node {
 							items-center
 							gap-4
 						`))(
-							Button(stimulus.Action("click->player#toggleSettings"))(Icon("settings-2")),
+							mediaPlayerQualityMenu(qualityOpts),
 							Button(stimulus.Action("click->player#toggleFullscreen"))(Icon("maximize")),
 						),
 					),
@@ -196,6 +197,40 @@ func mediaPlayerTitleForEpisode(ep *model.Episode) string {
 		ep.SnnEnn(),
 		ep.Title(),
 		year,
+	)
+}
+
+func mediaPlayerQualityMenu(opts []model.QualityOption) html.Node {
+	var items []html.Node
+	for _, opt := range opts {
+		items = append(items,
+			html.Button(
+				attr.Type("button"),
+				stimulus.Action("click->player#setQuality"),
+				attr.Attr("data-player-url-param")(opt.URL),
+				attr.Attr("data-player-label-param")(opt.Label),
+				Class(`
+					w-full text-left px-3 py-1.5
+					text-sm text-white/80 hover:text-white hover:bg-white/10
+					cursor-pointer
+					data-[active]:text-white data-[active]:font-bold
+				`),
+			)(Text(opt.Label)),
+		)
+	}
+	return html.Div(Class("relative"))(
+		Button(stimulus.Action("click->player#toggleQualityMenu"))(Icon("settings-2")),
+		html.Div(
+			stimulus.Target("player", "qualityMenu"),
+			Class(`
+				absolute bottom-full right-0 mb-2
+				bg-black/80 backdrop-blur
+				rounded-lg
+				py-1
+				min-w-[120px]
+				hidden
+			`),
+		)(items...),
 	)
 }
 
