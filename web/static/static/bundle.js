@@ -7885,14 +7885,15 @@
   Controller.outlets = [];
   Controller.values = {};
 
-  // web/main.js
-  window.Stimulus = Application.start();
-  Stimulus.register("dialog", class extends Controller {
+  // view/dialog-controller.js
+  var dialog_controller_default = class extends Controller {
     dismiss() {
       this.element.classList.add("hidden");
     }
-  });
-  Stimulus.register("player", class extends Controller {
+  };
+
+  // view/player-controller.js
+  var player_controller_default = class extends Controller {
     static targets = [
       "video",
       "volume",
@@ -8248,8 +8249,10 @@
       //controlsElement.hover ||
       this.#recentTouchSeek;
     }
-  });
-  Stimulus.register("list", class extends Controller {
+  };
+
+  // web/list/list-controller.js
+  var list_controller_default = class extends Controller {
     static targets = ["item"];
     static values = {
       prefix: String,
@@ -8374,8 +8377,10 @@
         }
       }
     }
-  });
-  Stimulus.register("sidebar", class extends Controller {
+  };
+
+  // web/sidebar/sidebar-controller.js
+  var sidebar_controller_default = class extends Controller {
     static targets = ["link"];
     initialize() {
       this.#showSelected(document.location);
@@ -8409,8 +8414,10 @@
       }
       return path.substring(0, n);
     }
-  });
-  Stimulus.register("add-torrent", class extends Controller {
+  };
+
+  // view/add-torrent-controller.js
+  var add_torrent_controller_default = class extends Controller {
     static targets = ["picker", "button"];
     open() {
       this.pickerTarget.click();
@@ -8421,7 +8428,15 @@
     reset() {
       this.element.reset();
     }
-  });
+  };
+
+  // web/main.js
+  window.Stimulus = Application.start();
+  Stimulus.register("dialog", dialog_controller_default);
+  Stimulus.register("player", player_controller_default);
+  Stimulus.register("list", list_controller_default);
+  Stimulus.register("sidebar", sidebar_controller_default);
+  Stimulus.register("add-torrent", add_torrent_controller_default);
 })();
 /*!
 Turbo 8.0.19
