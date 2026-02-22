@@ -72,7 +72,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) func(tx *Tx
 				Title:          te.Name,
 				Summary:        te.Summary,
 				Type:           te.Type,
-				Airdate:        &te.Airdate,
+				Airdate:        te.Airdate,
 				Runtime:        int64(te.Runtime),
 				TVmazeURL:      &te.URL,
 				TVmazeImageURL: te.Image.Medium(),

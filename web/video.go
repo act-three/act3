@@ -9,14 +9,18 @@ import (
 	"ily.dev/act3/view"
 )
 
-func (w *web) showPlayer(req *http.Request) (http.Handler, error) {
+func (w *web) showPlayerForEpisode(req *http.Request) (http.Handler, error) {
 	return w.withTxR(func(tr *model.TxR) (http.Handler, error) {
 		ctx := req.Context()
 		v, err := tr.Video(ctx, req.PathValue("id"))
 		if err != nil {
 			return nil, err
 		}
-		return page(view.MediaPlayer(v)), nil
+		ep, err := tr.EpisodeInEdition(ctx,
+			req.PathValue("epID"),
+			req.PathValue("sedID"),
+		)
+		return page(view.MediaPlayerForEpisode(v, ep)), nil
 	})
 }
 

@@ -1,6 +1,5 @@
 @import "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap";
 @import "tailwindcss";
-@import "./plyr.css";
 
 @theme {
 	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
@@ -202,5 +201,79 @@
 	.plyr--hide-controls .plyr__controls-top {
 		opacity: 0;
 		pointer-events: none;
+	}
+
+	[data-player-harlow-value=true] .plyr__controls-top {
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	[data-player-harlow-value=true] .plyr__controls {
+		opacity: 0;
+		pointer-events: none;
+		transform: translateY(100%);
+	}
+
+	#full-player>[data-player-target=controls]>.overlay--top {
+		background: linear-gradient(180deg,
+			rgb(0% 0% 0% / 0.8) 0%,
+			rgb(0% 0% 0% / 0.703125) 6.25%,
+			rgb(0% 0% 0% / 0.6125) 12.5%,
+			rgb(0% 0% 0% / 0.528125) 18.75%,
+			rgb(0% 0% 0% / 0.45) 25%,
+			rgb(0% 0% 0% / 0.37812500000000004) 31.25%,
+			rgb(0% 0% 0% / 0.3125) 37.5%,
+			rgb(0% 0% 0% / 0.25312500000000004) 43.75%,
+			rgb(0% 0% 0% / 0.19999999999999996) 50%,
+			rgb(0% 0% 0% / 0.15312499999999996) 56.25%,
+			rgb(0% 0% 0% / 0.11250000000000004) 62.5%,
+			rgb(0% 0% 0% / 0.078125) 68.75%,
+			rgb(0% 0% 0% / 0.050000000000000044) 75%,
+			rgb(0% 0% 0% / 0.028124999999999956) 81.25%,
+			rgb(0% 0% 0% / 0.012499999999999956) 87.5%,
+			rgb(0% 0% 0% / 0.0031250000000000444) 93.75%,
+			rgb(0% 0% 0% / 0) 100%);
+	}
+
+	#full-player>[data-player-target=controls]>.overlay--bottom {
+		background: linear-gradient(0deg,
+			rgb(0% 0% 0% / 0.8) 0%,
+			rgb(0% 0% 0% / 0.703125) 6.25%,
+			rgb(0% 0% 0% / 0.6125) 12.5%,
+			rgb(0% 0% 0% / 0.528125) 18.75%,
+			rgb(0% 0% 0% / 0.45) 25%,
+			rgb(0% 0% 0% / 0.37812500000000004) 31.25%,
+			rgb(0% 0% 0% / 0.3125) 37.5%,
+			rgb(0% 0% 0% / 0.25312500000000004) 43.75%,
+			rgb(0% 0% 0% / 0.19999999999999996) 50%,
+			rgb(0% 0% 0% / 0.15312499999999996) 56.25%,
+			rgb(0% 0% 0% / 0.11250000000000004) 62.5%,
+			rgb(0% 0% 0% / 0.078125) 68.75%,
+			rgb(0% 0% 0% / 0.050000000000000044) 75%,
+			rgb(0% 0% 0% / 0.028124999999999956) 81.25%,
+			rgb(0% 0% 0% / 0.012499999999999956) 87.5%,
+			rgb(0% 0% 0% / 0.0031250000000000444) 93.75%,
+			rgb(0% 0% 0% / 0) 100%);
+	}
+
+	#full-player .overlay--top,
+	#full-player .overlay--bottom {
+		transition:
+			opacity 0.4s ease-in-out,
+			transform 0.4s ease-in-out;
+	}
+
+	#full-player[data-player-harlow-value=true] .overlay--top,
+	#full-player[data-player-hide-controls-value=true] .overlay--top {
+		opacity: 0;
+		pointer-events: none;
+		transform: translateY(-100%);
+	}
+
+	#full-player[data-player-harlow-value=true] .overlay--bottom,
+	#full-player[data-player-hide-controls-value=true] .overlay--bottom {
+		opacity: 0;
+		pointer-events: none;
+		transform: translateY(100%);
 	}
 }

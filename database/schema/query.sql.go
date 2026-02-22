@@ -389,7 +389,7 @@ type EpisodeCreateParams struct {
 	Title          string
 	Summary        string
 	Type           string
-	Airdate        *string
+	Airdate        string
 	Runtime        int64
 	TVmazeURL      *string
 	TVmazeImageURL string

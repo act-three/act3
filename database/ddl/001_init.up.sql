@@ -91,7 +91,7 @@ CREATE TABLE Episode
 		'significant_special',
 		'insignificant_special'
 	)),
-	Airdate        TEXT, -- can be NULL if unaired/unreleased
+	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased
 	Runtime        INTEGER NOT NULL, -- minutes
 	TVmazeURL      TEXT,
 	TVmazeImageURL TEXT NOT NULL

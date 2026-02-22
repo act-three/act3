@@ -13,7 +13,7 @@ func Textf(format string, arg ...any) html.Node {
 
 func Text(s string, attrs ...attr.Node) html.Node {
 	return html.Div(
-		attr.EnvAttr("class", textSelectKey, "select-auto"),
+		attr.EnvAttr("class", textSelectKey, "select-none"),
 		attr.EnvAttr("class", lineClampKey, ""),
 		attr.EnvAttr("class", fontWeightKey, ""),
 		group(attrs...),

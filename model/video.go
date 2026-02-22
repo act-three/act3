@@ -1,6 +1,8 @@
 package model
 
-import "ily.dev/act3/database/schema"
+import (
+	"ily.dev/act3/database/schema"
+)
 
 type Video struct {
 	v schema.Video
@@ -12,7 +14,6 @@ func (v *Video) ReleasePath() string  { return v.v.ReleasePath }
 func (v *Video) OriginalHash() string { return v.v.OriginalHash }
 func (v *Video) MVPlaylist() string   { return v.v.MVPlaylist }
 func (v *Video) PlaylistURL() string  { return "/vid/" + v.ID() + ".m3u8" }
-func (v *Video) PlayerURL() string    { return "/player/" + v.ID() }
 
 func (tx *TxR) Video(ctx Context, id string) (*Video, error) {
 	v, err := tx.q.VideoGet(ctx, id)

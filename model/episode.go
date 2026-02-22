@@ -65,6 +65,7 @@ func newEpisode(
 
 func (ep *Episode) ID() string               { return ep.ep.ID }
 func (ep *Episode) Title() string            { return ep.ep.Title }
+func (ep *Episode) Airdate() string          { return ep.ep.Airdate }
 func (ep *Episode) Summary() string          { return ep.ep.Summary }
 func (ep *Episode) ImageURL() string         { return ep.ep.TVmazeImageURL }
 func (ep *Episode) Progress() []ProgressItem { return ep.prog }
@@ -74,6 +75,10 @@ func (ep *Episode) SnnEnn() string {
 		return fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, *eNN)
 	}
 	return fmt.Sprintf("S%02d Special", ep.sn.sn.Number)
+}
+
+func (ep *Episode) PlayerURL(v *Video) string {
+	return fmt.Sprintf("/player/%s/%s/%s", v.ID(), ep.ID(), ep.so.ID())
 }
 
 func (ep *Episode) HasType(types EpisodeType) bool {
@@ -114,7 +119,16 @@ func (ep *Episode) DetailURL() string {
 	)
 }
 
+// Episode is like EpisodeInEdition, but it assumes the Air Date edition.
 func (tx *TxR) Episode(ctx Context, id string) (*Episode, error) {
+	return tx.episodeInContext(ctx, id, "", AirDate)
+}
+
+func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) {
+	return tx.episodeInContext(ctx, id, edID, "")
+}
+
+func (tx *TxR) episodeInContext(ctx Context, id, edID, edName string) (*Episode, error) {
 	epRec, err := tx.q.EpisodeGet(ctx, id)
 	if err != nil {
 		return nil, err
@@ -135,7 +149,7 @@ func (tx *TxR) Episode(ctx Context, id string) (*Episode, error) {
 		if err != nil {
 			return nil, err
 		}
-		if seq.Title != AirDate && i < len(sneps)-1 {
+		if seq.ID != edID && seq.Title != edName && i < len(sneps)-1 {
 			continue
 		}
 		sr, err := tx.q.SeriesGet(ctx, seq.SeriesID)

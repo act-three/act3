@@ -83,7 +83,7 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 					expr.IfElse(len(vids) > 0,
 						func() html.Node {
 							return Button(
-								attr.Href(vids[0].PlayerURL()),
+								attr.Href(ep.PlayerURL(vids[0])),
 								attr.Attr("data-turbo-frame")("player"),
 							)(Icon("play"))
 						},
