@@ -632,12 +632,11 @@ func totalWork(dsts []EncodeParams, duration time.Duration) time.Duration {
 }
 
 const (
-	// Pass 1 needs to collect accurate statistics for pass 2.
-	// Preset "faster" makes the same structural decisions as "medium"
-	// (B-frames enabled, same reference frame count, same partitions)
-	// but skips the expensive per-frame optimization work
-	// (detailed subpel refinement, trellis quantization, full RDO)
-	// that gets thrown away anyway.
-	pass1DefaultPreset = "faster"
+	// Both passes must use the same preset so that x265 makes
+	// identical frame-type decisions (B vs P). A preset mismatch
+	// causes "Incomplete CU-tree stats file" / "slice=P but
+	// 2pass stats say B" errors because the stats written in
+	// pass 1 no longer match the frame structure in pass 2.
+	pass1DefaultPreset = "medium"
 	pass2DefaultPreset = "medium"
 )
