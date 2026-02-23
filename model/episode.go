@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/progress"
 	"ily.dev/act3/xstrings"
 )
 
@@ -37,7 +38,7 @@ type Episode struct {
 	sn     *SeasonHead
 	so     *SeriesEditionHead
 	sr     *SeriesHead
-	prog   []ProgressItem
+	prog   []*progress.Item
 	videos []*Video
 }
 
@@ -47,7 +48,7 @@ func newEpisode(
 	sn *SeasonHead,
 	snepData schema.SeasonEpisode,
 	epData schema.Episode,
-	prog []ProgressItem,
+	prog []*progress.Item,
 	videos []*Video,
 ) *Episode {
 	ep := &Episode{
@@ -63,13 +64,13 @@ func newEpisode(
 	return ep
 }
 
-func (ep *Episode) ID() string               { return ep.ep.ID }
-func (ep *Episode) Title() string            { return ep.ep.Title }
-func (ep *Episode) Airdate() string          { return ep.ep.Airdate }
-func (ep *Episode) Summary() string          { return ep.ep.Summary }
-func (ep *Episode) ImageURL() string         { return ep.ep.TVmazeImageURL }
-func (ep *Episode) Progress() []ProgressItem { return ep.prog }
-func (ep *Episode) Videos() []*Video         { return ep.videos }
+func (ep *Episode) ID() string                 { return ep.ep.ID }
+func (ep *Episode) Title() string              { return ep.ep.Title }
+func (ep *Episode) Airdate() string            { return ep.ep.Airdate }
+func (ep *Episode) Summary() string            { return ep.ep.Summary }
+func (ep *Episode) ImageURL() string           { return ep.ep.TVmazeImageURL }
+func (ep *Episode) Progress() []*progress.Item { return ep.prog }
+func (ep *Episode) Videos() []*Video           { return ep.videos }
 func (ep *Episode) SnnEnn() string {
 	if eNN := ep.snep.Number; eNN != nil {
 		return fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, *eNN)

@@ -6,6 +6,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/expr"
+	"ily.dev/act3/model/progress"
 	"ily.dev/act3/xiter"
 )
 
@@ -35,7 +36,7 @@ func newSeriesEdition(
 	sns []schema.Season,
 	snepBySeasonID map[string][]schema.SeasonEpisode,
 	epByID map[string]*schema.Episode,
-	progByEpisodeID func(string) []ProgressItem,
+	progByEpisodeID func(string) []*progress.Item,
 	videosByEpisodeID map[string][]*Video,
 ) *SeriesEdition {
 	sed := &SeriesEdition{
@@ -175,7 +176,7 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 	epByID := epMapByID(eps)
 	snepBySeasonID := snepMapBySeasonID(sneps)
 	sed := newSeriesEdition(sr, sedData, sns, snepBySeasonID, epByID,
-		tx.m.prog.getByEpisodeID,
+		tx.m.prog.List,
 		videosByEpisodeID,
 	)
 	return sed, nil

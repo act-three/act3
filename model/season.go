@@ -4,6 +4,7 @@ import (
 	"iter"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/progress"
 	"ily.dev/act3/xiter"
 )
 
@@ -28,7 +29,7 @@ func newSeason(
 	snData schema.Season,
 	sneps []schema.SeasonEpisode,
 	epByID map[string]*schema.Episode,
-	progByEpisodeID func(string) []ProgressItem,
+	progByEpisodeID func(string) []*progress.Item,
 	videosByEpisodeID map[string][]*Video,
 ) *Season {
 	sn := &Season{

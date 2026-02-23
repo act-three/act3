@@ -5,6 +5,7 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/progress"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
@@ -241,15 +242,15 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 				DialogButton(ep.EditDialogURL())(Icon("info")),
 			),
 		),
-		html.Range(ep.Progress(), func(pi model.ProgressItem) html.Node {
+		html.Range(ep.Progress(), func(pi *progress.Item) html.Node {
 			if err := pi.Error(); err != nil {
 				return html.Div(Class("text-sm text-red-11"))(
-					Text(pi.Desc),
+					Text(pi.Description()),
 					Text(err.Error()),
 				)
 			}
 			return FlexCol(Class("text-gray-11/80 text-sm"))(
-				Text(pi.Desc),
+				Text(pi.Description()),
 				Progress(pi.Progress(), attr.Class("max-w-xs")).
 					With(ProgressSM),
 			)

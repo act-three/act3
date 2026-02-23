@@ -11,6 +11,7 @@ import (
 	"kr.dev/errorfmt"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/progress"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/storage"
 )
@@ -28,7 +29,7 @@ type Model struct {
 
 	dbr   *sql.DB
 	dbw   *sql.DB
-	prog  progress
+	prog  progress.Tracker
 	tasks map[string]*taskQueue
 
 	transmission atomic.Pointer[transmissionrpc.Client]

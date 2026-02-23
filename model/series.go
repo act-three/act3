@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/progress"
 	"ily.dev/act3/xstrings"
 )
 
@@ -52,7 +53,7 @@ func newSeries(
 	sns []schema.Season,
 	sneps []schema.SeasonEpisode,
 	eps []schema.Episode,
-	progByEpisodeID func(string) []ProgressItem,
+	progByEpisodeID func(string) []*progress.Item,
 	videosByEpisodeID map[string][]*Video,
 ) *Series {
 	sr := &Series{
@@ -199,7 +200,7 @@ func (tx *TxR) Series(ctx Context, id string) (*Series, error) {
 	videosByEpisodeID := vidMapByEpisodeID(evs, vidByID)
 
 	sr := newSeries(srData, seds, sns, sneps, eps,
-		tx.m.prog.getByEpisodeID,
+		tx.m.prog.List,
 		videosByEpisodeID,
 	)
 	return sr, nil

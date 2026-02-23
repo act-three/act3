@@ -4,9 +4,10 @@ import (
 	"testing"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/progress"
 )
 
-var noProgress = func(string) []ProgressItem { return nil }
+var noProgress = func(string) []*progress.Item { return nil }
 
 func TestNewSeries(t *testing.T) {
 	t.Run("creates series with single edition and episodes", func(t *testing.T) {

@@ -78,7 +78,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 			}
 		}
 
-		tx.m.prog.addVideo(vid.ID, "Encoding")
+		tx.m.prog.Open(vid.ID, "Encoding", "In Queue")
 		tx.addTask(ctx, taskIngestEncode, vid.ID)
 		return nil
 	})
@@ -96,9 +96,9 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	tx.m.prog.addVideo(vid.ID, "Encoding")
+	tx.m.prog.Open(vid.ID, "Encoding", "Starting")
 	for _, ev := range evs {
-		tx.m.prog.addEpisodeVideo(ev.EpisodeID, vid.ID)
+		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 
 	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
@@ -124,14 +124,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 		return err
 	}
 
-	var encodeErr error
-	defer func() {
-		if encodeErr != nil {
-			tx.m.prog.errorVideo(vid.ID, encodeErr)
-		} else {
-			tx.m.prog.clearVideo(vid.ID)
-		}
-	}()
+	defer tx.m.prog.Close(vid.ID, nil) // treat as success unless error below
 
 	// Encode all renditions.
 	var playlists []string
@@ -152,13 +145,13 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 		}
 		playlists, err = ffmpeg.Encode(ctx, src, dsts, probe.Duration,
 			func(v float64) {
-				tx.m.prog.updateVideo(vid.ID, v)
+				tx.m.prog.Update(vid.ID, v)
 			},
 		)
 		return err
 	})
 	if err != nil {
-		encodeErr = err
+		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
 
@@ -203,6 +196,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 				},
 			)
 			if err != nil {
+				tx.m.prog.Close(vid.ID, err)
 				return err
 			}
 		}
@@ -210,6 +204,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 			ID:         vid.ID,
 			MVPlaylist: mvPlaylist,
 		})
+		tx.m.prog.Close(vid.ID, err)
 		return err
 	})
 }

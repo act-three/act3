@@ -432,7 +432,7 @@ func (tx *TxRW) importEpisode(ctx Context,
 		return err
 	}
 
-	tx.m.prog.addEpisodeVideo(epID, vid.ID)
+	tx.m.prog.AddEdge(epID, vid.ID)
 	_, err = tx.q.EpisodeVideoCreate(ctx, schema.EpisodeVideoCreateParams{
 		EpisodeID: epID,
 		VideoID:   vid.ID,
