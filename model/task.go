@@ -24,7 +24,7 @@ const (
 	taskAddDownloadToTransmission = "add-download-to-transmission"
 	taskFetchEpisodes             = "fetch-episodes"
 	taskIngest                    = "ingest"
-	taskIngestEncode              = "ingest-demo"
+	taskIngestEncode              = "ingest-encode"
 )
 
 const (
