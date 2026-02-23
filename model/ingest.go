@@ -23,19 +23,31 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
+	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
+	for _, ev := range evs {
+		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
+	}
 	hash, err := tx.m.store.Copy(args[1])
 	if err != nil {
+		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
 
 	// Probe source to get codec info, resolution, bitrate, etc.
+	tx.m.prog.UpdateStatus(vid.ID, "Probing")
 	f, err := tx.m.store.Open(hash)
 	if err != nil {
+		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
 	defer f.Close()
 	probe, err := ffmpeg.Probe(ctx, f)
 	if err != nil {
+		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
 
