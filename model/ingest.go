@@ -61,9 +61,8 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	}
 
 	// Build rendition params for DB storage.
-	// Index = priority (0 = best rendition, from PlanRenditions order).
 	var rfsParams []schema.RenditionForStreamingCreateParams
-	for i, r := range planned {
+	for _, r := range planned {
 		rfsParams = append(rfsParams, schema.RenditionForStreamingCreateParams{
 			VideoID:       vid.ID,
 			Remux:         boolToInt64(r.Remux),
@@ -73,7 +72,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 			MaxFPS:        int64(r.MaxFPS),
 			CopyAudio:     boolToInt64(r.CopyAudio),
 			SurroundAudio: boolToInt64(r.SurroundAudio),
-			Priority:      int64(i),
+			Priority:      int64(r.Priority),
 		})
 	}
 
@@ -94,7 +93,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		}
 
 		tx.m.prog.Open(vid.ID, vid.ReleasePath, "Queued")
-		tx.addTask(ctx, taskIngestPass1, vid.ID)
+		tx.addTaskWithPriority(ctx, video.Pass1Priority, taskIngestPass1, vid.ID)
 		return nil
 	})
 }
@@ -199,8 +198,10 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		}
 	}
 
-	// Queue one taskIngestEncodeRend per rendition, with ascending
-	// priority so that best renditions from all videos run first.
+	// Queue one taskIngestEncodeRend per rendition.
+	// Rendition priorities are set by video.PlanRenditions:
+	// 0 = best, 2+ = remaining tiers. Pass1 uses priority 1,
+	// so best renditions from all videos encode before any pass1 runs.
 	tx.m.prog.UpdateStatus(vid.ID, "Queuing renditions")
 	tx.m.prog.Close(vid.ID, nil)
 

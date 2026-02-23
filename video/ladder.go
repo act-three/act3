@@ -17,6 +17,7 @@ type Rendition struct {
 	MaxFPS        int    // output frame rate cap; 0 = use source
 	CopyAudio     bool   // true if source audio is AAC stereo (safe to copy)
 	SurroundAudio bool   // true: encode as 5.1(back); false: stereo downmix
+	Priority      int    // encoding order: 0 = best, then worst, middle, rest
 }
 
 // FFmpegCodec returns the ffmpeg encoder name for the rendition codec.
@@ -53,19 +54,24 @@ func (r *Rendition) HLSCodecs() string {
 	return vc + ",mp4a.40.2" // + AAC-LC
 }
 
+const Pass1Priority = 1
+
 // ladder defines the bitrate tiers below the best rendition.
 // MaxHeight and MaxFPS are caps: only applied when the source
 // exceeds them (resolved at planning time, not encoding time).
+// Priority controls encoding order across all videos:
+// 0 = best rendition (not in table), then worst, middle, rest.
 var ladder = []struct {
 	Bitrate   int64 // kbit/s
 	MaxHeight int   // 0 = source
 	MaxFPS    int   // 0 = source
+	Priority  int
 }{
-	{20_000, 0, 0},
-	{5_000, 1080, 0},
-	{3_000, 720, 0},
-	{1_500, 540, 30},
-	{420, 540, 30},
+	{20_000, 0, 0, 6},
+	{5_000, 1080, 0, 4},
+	{3_000, 720, 0, 3},
+	{1_500, 540, 30, 5},
+	{420, 540, 30, 2},
 }
 
 const (
@@ -124,7 +130,7 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 		}
 	}
 
-	// Plan best rendition.
+	// Plan best rendition (priority 0 = encode first).
 	var best Rendition
 	switch {
 	case canRemux && srcBitrateKbps <= topTierCeiling:
@@ -134,6 +140,7 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 			Codec:         outCodec,
 			TargetBitrate: srcBitrateKbps,
 			CopyAudio:     copyAudio,
+			Priority:      0,
 		}
 	case !canRemux && srcBitrateKbps <= reencodeThreshold:
 		// Reencode at ~110 % of source bitrate.
@@ -141,6 +148,7 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 			Codec:         "hevc",
 			TargetBitrate: srcBitrateKbps * 11 / 10,
 			CopyAudio:     copyAudio,
+			Priority:      0,
 		}
 	default:
 		// Reencode at top-tier ceiling.
@@ -148,6 +156,7 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 			Codec:         "hevc",
 			TargetBitrate: topTierCeiling,
 			CopyAudio:     copyAudio,
+			Priority:      0,
 		}
 	}
 
@@ -161,6 +170,7 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 		surround := best
 		surround.CopyAudio = false
 		surround.SurroundAudio = true
+		surround.Priority = 1
 		renditions = append(renditions, surround)
 	}
 
@@ -196,6 +206,7 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 			MaxHeight:     maxH,
 			MaxFPS:        maxFPS,
 			CopyAudio:     copyAudio,
+			Priority:      entry.Priority,
 		})
 	}
 
