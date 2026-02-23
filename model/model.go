@@ -19,13 +19,15 @@ import (
 type Context = context.Context
 
 type Config struct {
-	Store  *storage.Dir
-	TVmaze *tvmaze.Client
+	Store         *storage.Dir
+	PersistentTmp string
+	TVmaze        *tvmaze.Client
 }
 
 type Model struct {
-	store  *storage.Dir
-	tvmaze *tvmaze.Client
+	store         *storage.Dir
+	persistentTmp string
+	tvmaze        *tvmaze.Client
 
 	dbr   *sql.DB
 	dbw   *sql.DB
@@ -45,6 +47,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	defer errorfmt.Handlef("model init: %w", &err)
 	m = &Model{
 		store:          c.Store,
+		persistentTmp:  c.PersistentTmp,
 		tvmaze:         c.TVmaze,
 		dbr:            dbr,
 		dbw:            dbw,

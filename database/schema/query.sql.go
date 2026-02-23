@@ -720,7 +720,7 @@ INSERT INTO RenditionForStreaming (
 	Priority
 )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, pass1stats, priority, preset
+RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
 `
 
 type RenditionForStreamingCreateParams struct {
@@ -760,15 +760,13 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 		&i.SurroundAudio,
 		&i.Hash,
 		&i.Playlist,
-		&i.Pass1Stats,
 		&i.Priority,
-		&i.Preset,
 	)
 	return i, err
 }
 
 const renditionForStreamingGet = `-- name: RenditionForStreamingGet :one
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, pass1stats, priority, preset FROM RenditionForStreaming
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
 WHERE ID = ?
 `
 
@@ -787,15 +785,13 @@ func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (Rend
 		&i.SurroundAudio,
 		&i.Hash,
 		&i.Playlist,
-		&i.Pass1Stats,
 		&i.Priority,
-		&i.Preset,
 	)
 	return i, err
 }
 
 const renditionForStreamingListByVideoID = `-- name: RenditionForStreamingListByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, pass1stats, priority, preset FROM RenditionForStreaming
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
 WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 `
 
@@ -820,9 +816,7 @@ func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episod
 			&i.SurroundAudio,
 			&i.Hash,
 			&i.Playlist,
-			&i.Pass1Stats,
 			&i.Priority,
-			&i.Preset,
 		); err != nil {
 			return nil, err
 		}
@@ -838,7 +832,7 @@ func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episod
 }
 
 const renditionForStreamingListDirectByVideoID = `-- name: RenditionForStreamingListDirectByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, pass1stats, priority, preset FROM RenditionForStreaming
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
 WHERE VideoID = ?
 `
 
@@ -863,9 +857,7 @@ func (q *Queries) RenditionForStreamingListDirectByVideoID(ctx context.Context, 
 			&i.SurroundAudio,
 			&i.Hash,
 			&i.Playlist,
-			&i.Pass1Stats,
 			&i.Priority,
-			&i.Preset,
 		); err != nil {
 			return nil, err
 		}
@@ -881,7 +873,7 @@ func (q *Queries) RenditionForStreamingListDirectByVideoID(ctx context.Context, 
 }
 
 const renditionForStreamingListEncodedByVideoID = `-- name: RenditionForStreamingListEncodedByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, pass1stats, priority, preset FROM RenditionForStreaming
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
 WHERE VideoID = ? AND Hash != ''
 `
 
@@ -906,9 +898,7 @@ func (q *Queries) RenditionForStreamingListEncodedByVideoID(ctx context.Context,
 			&i.SurroundAudio,
 			&i.Hash,
 			&i.Playlist,
-			&i.Pass1Stats,
 			&i.Priority,
-			&i.Preset,
 		); err != nil {
 			return nil, err
 		}
@@ -924,7 +914,7 @@ func (q *Queries) RenditionForStreamingListEncodedByVideoID(ctx context.Context,
 }
 
 const renditionForStreamingNextUnencoded = `-- name: RenditionForStreamingNextUnencoded :one
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, pass1stats, priority, preset FROM RenditionForStreaming
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
 WHERE VideoID = ? AND Hash = ''
 ORDER BY Priority ASC LIMIT 1
 `
@@ -944,9 +934,7 @@ func (q *Queries) RenditionForStreamingNextUnencoded(ctx context.Context, videoi
 		&i.SurroundAudio,
 		&i.Hash,
 		&i.Playlist,
-		&i.Pass1Stats,
 		&i.Priority,
-		&i.Preset,
 	)
 	return i, err
 }
@@ -955,7 +943,7 @@ const renditionForStreamingUpdateEncode = `-- name: RenditionForStreamingUpdateE
 UPDATE RenditionForStreaming
 SET Hash = ?, Playlist = ?
 WHERE ID = ?
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, pass1stats, priority, preset
+RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
 `
 
 type RenditionForStreamingUpdateEncodeParams struct {
@@ -979,44 +967,7 @@ func (q *Queries) RenditionForStreamingUpdateEncode(ctx context.Context, arg Ren
 		&i.SurroundAudio,
 		&i.Hash,
 		&i.Playlist,
-		&i.Pass1Stats,
 		&i.Priority,
-		&i.Preset,
-	)
-	return i, err
-}
-
-const renditionForStreamingUpdatePass1Stats = `-- name: RenditionForStreamingUpdatePass1Stats :one
-UPDATE RenditionForStreaming
-SET Pass1Stats = ?, Preset = ?
-WHERE ID = ?
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, pass1stats, priority, preset
-`
-
-type RenditionForStreamingUpdatePass1StatsParams struct {
-	Pass1Stats []byte
-	Preset     string
-	ID         string
-}
-
-func (q *Queries) RenditionForStreamingUpdatePass1Stats(ctx context.Context, arg RenditionForStreamingUpdatePass1StatsParams) (RenditionForStreaming, error) {
-	row := q.db.QueryRowContext(ctx, renditionForStreamingUpdatePass1Stats, arg.Pass1Stats, arg.Preset, arg.ID)
-	var i RenditionForStreaming
-	err := row.Scan(
-		&i.ID,
-		&i.VideoID,
-		&i.Remux,
-		&i.Codec,
-		&i.TargetBitrate,
-		&i.MaxHeight,
-		&i.MaxFPS,
-		&i.CopyAudio,
-		&i.SurroundAudio,
-		&i.Hash,
-		&i.Playlist,
-		&i.Pass1Stats,
-		&i.Priority,
-		&i.Preset,
 	)
 	return i, err
 }

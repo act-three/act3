@@ -83,11 +83,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	store := must(storage.Open(storageDir))
+	casDir := filepath.Join(storageDir, "cas")
+	tmpDir := filepath.Join(storageDir, "tmp")
+	err = os.MkdirAll(casDir, 0755)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	err = os.MkdirAll(tmpDir, 0755)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	store := must(storage.Open(casDir))
 	tvmazeClient := must(tvmaze.New(dbw))
 	m := must(model.New(dbr, dbw, model.Config{
-		Store:  store,
-		TVmaze: tvmazeClient,
+		Store:         store,
+		PersistentTmp: tmpDir,
+		TVmaze:        tvmazeClient,
 	}))
 
 	err = initConfig(m)

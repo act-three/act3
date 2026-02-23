@@ -193,9 +193,7 @@ CREATE TABLE RenditionForStreaming
 	SurroundAudio INTEGER NOT NULL DEFAULT (0), -- 1: encode as 5.1(back); 0: stereo downmix
 	Hash          TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	Playlist      TEXT NOT NULL DEFAULT (''), -- empty during ingest
-	Pass1Stats    BLOB, -- x264/x265 native stats blob; NULL for remux renditions
-	Priority      INTEGER NOT NULL DEFAULT (0), -- 0 = highest priority (best rendition)
-	Preset        TEXT NOT NULL DEFAULT ('') -- ffmpeg preset used during pass 1
+	Priority      INTEGER NOT NULL DEFAULT (0) -- 0 = highest priority (best rendition)
 )
 STRICT;
 

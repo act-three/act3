@@ -176,12 +176,6 @@ SET Hash = ?, Playlist = ?
 WHERE ID = ?
 RETURNING *;
 
--- name: RenditionForStreamingUpdatePass1Stats :one
-UPDATE RenditionForStreaming
-SET Pass1Stats = ?, Preset = ?
-WHERE ID = ?
-RETURNING *;
-
 -- name: RenditionForStreamingNextUnencoded :one
 SELECT * FROM RenditionForStreaming
 WHERE VideoID = ? AND Hash = ''
