@@ -24,7 +24,8 @@ const (
 	taskAddDownloadToTransmission = "add-download-to-transmission"
 	taskFetchEpisodes             = "fetch-episodes"
 	taskIngest                    = "ingest"
-	taskIngestEncode              = "ingest-encode"
+	taskIngestPass1               = "ingest-pass1"
+	taskIngestEncodeRend          = "ingest-encode-rend"
 )
 
 const (
@@ -38,14 +39,16 @@ var taskTab = map[string]taskFunc{
 	taskAddDownloadToTransmission: (*TxR).taskAddDownloadToTransmission,
 	taskFetchEpisodes:             (*TxR).taskFetchEpisodes,
 	taskIngest:                    (*TxR).taskIngest,
-	taskIngestEncode:              (*TxR).taskIngestEncode,
+	taskIngestPass1:               (*TxR).taskIngestPass1,
+	taskIngestEncodeRend:          (*TxR).taskIngestEncodeRend,
 }
 
 var queueTab = map[string]string{
 	taskAddDownloadToTransmission: queueIO,
 	taskFetchEpisodes:             queueIO,
 	taskIngest:                    queueIO,
-	taskIngestEncode:              queueCPU,
+	taskIngestPass1:               queueCPU,
+	taskIngestEncodeRend:          queueCPU,
 }
 
 var taskQueues = map[string]int{

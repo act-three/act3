@@ -53,6 +53,7 @@
 						"maxfps": "MaxFPS",
 						"maxheight": "MaxHeight",
 						"surroundaudio": "SurroundAudio",
+						"pass1stats": "Pass1Stats",
 						"videoid": "VideoID",
 					},
 					"overrides": [

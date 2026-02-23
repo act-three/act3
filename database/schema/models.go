@@ -68,6 +68,9 @@ type RenditionForStreaming struct {
 	SurroundAudio int64
 	Hash          string
 	Playlist      string
+	Pass1Stats    []byte
+	Priority      int64
+	Preset        string
 }
 
 type Schema struct {

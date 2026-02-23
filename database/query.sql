@@ -152,9 +152,10 @@ INSERT INTO RenditionForStreaming (
 	MaxHeight,
 	MaxFPS,
 	CopyAudio,
-	SurroundAudio
+	SurroundAudio,
+	Priority
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: RenditionForStreamingGet :one
@@ -174,6 +175,25 @@ UPDATE RenditionForStreaming
 SET Hash = ?, Playlist = ?
 WHERE ID = ?
 RETURNING *;
+
+-- name: RenditionForStreamingUpdatePass1Stats :one
+UPDATE RenditionForStreaming
+SET Pass1Stats = ?, Preset = ?
+WHERE ID = ?
+RETURNING *;
+
+-- name: RenditionForStreamingNextUnencoded :one
+SELECT * FROM RenditionForStreaming
+WHERE VideoID = ? AND Hash = ''
+ORDER BY Priority ASC LIMIT 1;
+
+-- name: RenditionForStreamingCountUnencoded :one
+SELECT COUNT(*) FROM RenditionForStreaming
+WHERE VideoID = ? AND Hash = '';
+
+-- name: RenditionForStreamingListEncodedByVideoID :many
+SELECT * FROM RenditionForStreaming
+WHERE VideoID = ? AND Hash != '';
 
 -- name: SchemaVersionGet :one
 SELECT version, digest FROM schema LIMIT 1;
