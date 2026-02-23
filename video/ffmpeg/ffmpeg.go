@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"ily.dev/act3/xbufio"
 )
 
 var overridePreset = os.Getenv("A3FFMPEGVIDEOPRESET")
@@ -711,7 +713,7 @@ func twoPassArgs(codec string, pass int, passlog string) []string {
 // runWithProgress starts ffmpeg with the given args, sets up a
 // progress-reporting pipe on fd 3, and blocks until ffmpeg exits.
 func runWithProgress(ctx context.Context, args []string, onProgress func(time.Duration)) error {
-	stderr := &bytes.Buffer{}
+	stderr := &xbufio.BoundedWriter{Max: 100_000}
 	c := exec.CommandContext(ctx, "ffmpeg", args...)
 	c.Stderr = stderr
 
