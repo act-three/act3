@@ -36,9 +36,6 @@ type Model struct {
 
 	activeInfoHashMu sync.Mutex
 	activeInfoHash   map[string]bool
-
-	fileProgressMu sync.RWMutex
-	fileProgress   map[string]map[string]float64 // infoHash -> filePath -> fraction [0,1]
 }
 
 type model Config
@@ -53,7 +50,6 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		dbw:            dbw,
 		tasks:          map[string]*taskQueue{},
 		activeInfoHash: map[string]bool{},
-		fileProgress:   map[string]map[string]float64{},
 	}
 	err = m.loadConfig(ctx)
 	if err != nil {

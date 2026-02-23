@@ -158,7 +158,13 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 			return nil, err
 		}
 	}
-	d.fileProgress = tx.m.fileProgressFor(dl.InfoHash)
+	items := tx.m.prog.List("dl/" + dl.ID)
+	if len(items) > 0 {
+		d.fileProgress = map[string]float64{}
+		for _, item := range items {
+			d.fileProgress[item.Description()] = item.Progress()
+		}
+	}
 	return d, nil
 }
 
@@ -522,11 +528,16 @@ func (m *Model) pollTransmissionOnce() error {
 	if err != nil {
 		return err
 	}
-	for i := range ts {
-		m.updateFileProgress(&ts[i])
-	}
 	return m.WithTxRW(func(tx *TxRW) error {
 		for i := range ts {
+			if ts[i].HashString == nil {
+				continue
+			}
+			dl, err := tx.DownloadByInfoHash(ctx, *ts[i].HashString)
+			if err != nil {
+				return err
+			}
+			m.updateFileProgress(&ts[i], dl)
 			_, err = tx.updateDownload(ctx, &ts[i])
 			if err != nil {
 				return err
@@ -536,30 +547,27 @@ func (m *Model) pollTransmissionOnce() error {
 	})
 }
 
-// updateFileProgress extracts per-file download progress from a Transmission
-// torrent response and stores it in the in-memory map.
-func (m *Model) updateFileProgress(t *transmissionrpc.Torrent) {
-	if t.HashString == nil {
-		return
-	}
-	progress := make(map[string]float64, len(t.Files))
+// updateFileProgress updates the progress tracker with per-file download
+// progress from a Transmission torrent response.
+func (m *Model) updateFileProgress(t *transmissionrpc.Torrent, dl *Download) {
 	for _, tf := range t.Files {
 		_, p, _ := strings.Cut(tf.Name, "/")
+		epID, _ := dl.PlanFor(p)
+		if epID == "" {
+			continue
+		}
+		key := "dl/" + dl.ID() + "/" + p
 		if tf.Length > 0 {
-			progress[p] = float64(tf.BytesCompleted) / float64(tf.Length)
+			frac := float64(tf.BytesCompleted) / float64(tf.Length)
+			m.prog.Open(key, p, "Downloading")
+			m.prog.AddEdge("dl/"+dl.ID(), key)
+			m.prog.AddEdge(epID, key)
+			m.prog.Update(key, frac)
+			if tf.BytesCompleted == tf.Length {
+				m.prog.Close(key, nil)
+			}
 		}
 	}
-	m.fileProgressMu.Lock()
-	m.fileProgress[*t.HashString] = progress
-	m.fileProgressMu.Unlock()
-}
-
-// fileProgressFor returns a snapshot of per-file progress for the given info hash,
-// or nil if no progress data is available.
-func (m *Model) fileProgressFor(infoHash string) map[string]float64 {
-	m.fileProgressMu.RLock()
-	defer m.fileProgressMu.RUnlock()
-	return m.fileProgress[infoHash]
 }
 
 func ParseTorrent(p []byte) (*metainfo.MetaInfo, *metainfo.Info, error) {
