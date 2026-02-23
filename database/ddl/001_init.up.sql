@@ -206,7 +206,8 @@ CREATE TABLE Task
 	Args        TEXT NOT NULL,
 	Failures    INTEGER NOT NULL DEFAULT (0),
 	NextRun     INTEGER NOT NULL DEFAULT (0),
-	FailureDesc TEXT
+	FailureDesc TEXT,
+	Priority    INTEGER NOT NULL DEFAULT (0)
 )
 STRICT;
 CREATE INDEX Index_Task_Type ON Task (Type);

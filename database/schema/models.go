@@ -157,6 +157,7 @@ type Task struct {
 	Failures    int64
 	NextRun     int64
 	FailureDesc *string
+	Priority    int64
 }
 
 type User struct {

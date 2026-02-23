@@ -1730,17 +1730,18 @@ func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
 }
 
 const taskCreate = `-- name: TaskCreate :one
-INSERT INTO Task (Type, Args) VALUES (?, ?)
-RETURNING id, type, args, failures, nextrun, failuredesc
+INSERT INTO Task (Type, Args, Priority) VALUES (?, ?, ?)
+RETURNING id, type, args, failures, nextrun, failuredesc, priority
 `
 
 type TaskCreateParams struct {
-	Type string
-	Args string
+	Type     string
+	Args     string
+	Priority int64
 }
 
 func (q *Queries) TaskCreate(ctx context.Context, arg TaskCreateParams) (Task, error) {
-	row := q.db.QueryRowContext(ctx, taskCreate, arg.Type, arg.Args)
+	row := q.db.QueryRowContext(ctx, taskCreate, arg.Type, arg.Args, arg.Priority)
 	var i Task
 	err := row.Scan(
 		&i.ID,
@@ -1749,6 +1750,7 @@ func (q *Queries) TaskCreate(ctx context.Context, arg TaskCreateParams) (Task, e
 		&i.Failures,
 		&i.NextRun,
 		&i.FailureDesc,
+		&i.Priority,
 	)
 	return i, err
 }
@@ -1763,7 +1765,7 @@ func (q *Queries) TaskDelete(ctx context.Context, id string) error {
 }
 
 const taskGet = `-- name: TaskGet :one
-SELECT id, type, args, failures, nextrun, failuredesc FROM Task WHERE ID = ?
+SELECT id, type, args, failures, nextrun, failuredesc, priority FROM Task WHERE ID = ?
 `
 
 func (q *Queries) TaskGet(ctx context.Context, id string) (Task, error) {
@@ -1776,12 +1778,13 @@ func (q *Queries) TaskGet(ctx context.Context, id string) (Task, error) {
 		&i.Failures,
 		&i.NextRun,
 		&i.FailureDesc,
+		&i.Priority,
 	)
 	return i, err
 }
 
 const taskList = `-- name: TaskList :many
-SELECT id, type, args, failures, nextrun, failuredesc FROM Task
+SELECT id, type, args, failures, nextrun, failuredesc, priority FROM Task
 `
 
 func (q *Queries) TaskList(ctx context.Context) ([]Task, error) {
@@ -1800,6 +1803,7 @@ func (q *Queries) TaskList(ctx context.Context) ([]Task, error) {
 			&i.Failures,
 			&i.NextRun,
 			&i.FailureDesc,
+			&i.Priority,
 		); err != nil {
 			return nil, err
 		}
@@ -1820,7 +1824,7 @@ UPDATE Task SET
 	NextRun = ?,
 	FailureDesc = ?
 WHERE ID = ?
-RETURNING id, type, args, failures, nextrun, failuredesc
+RETURNING id, type, args, failures, nextrun, failuredesc, priority
 `
 
 type TaskRescheduleParams struct {
@@ -1845,6 +1849,7 @@ func (q *Queries) TaskReschedule(ctx context.Context, arg TaskRescheduleParams) 
 		&i.Failures,
 		&i.NextRun,
 		&i.FailureDesc,
+		&i.Priority,
 	)
 	return i, err
 }

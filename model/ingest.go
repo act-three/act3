@@ -114,13 +114,10 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		return fmt.Errorf("no renditions planned for video %s", vid.ID)
 	}
 
-	// Classify renditions.
+	// Classify renditions: collect indices of those needing reencode.
 	var encodeIdxs []int
-	hasRemux := false
 	for i, rfs := range rfsList {
-		if rfs.Remux != 0 {
-			hasRemux = true
-		} else {
+		if rfs.Remux == 0 {
 			encodeIdxs = append(encodeIdxs, i)
 		}
 	}
@@ -190,18 +187,14 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		}
 	}
 
-	// Queue one taskIngestEncodeRend per rendition.
-	// Remux renditions don't need pass 1, but they still go through
-	// the same per-rendition task for uniform handling.
-	nTasks := len(rfsList)
-	_ = hasRemux // remux renditions are included in the count
-
+	// Queue one taskIngestEncodeRend per rendition, with ascending
+	// priority so that best renditions from all videos run first.
 	tx.m.prog.UpdateStatus(vid.ID, "Queuing renditions")
 	tx.m.prog.Close(vid.ID, nil)
 
 	return tx.m.WithTxRW(func(txw *TxRW) error {
-		for range nTasks {
-			txw.addTask(ctx, taskIngestEncodeRend, vid.ID)
+		for i := range rfsList {
+			txw.addTaskWithPriority(ctx, rfsList[i].Priority, taskIngestEncodeRend, vid.ID)
 		}
 		return nil
 	})

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"cmp"
 	"context"
 	cryptorand "crypto/rand"
 	"database/sql"
@@ -17,6 +18,7 @@ import (
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/log/logcontext"
 	"ily.dev/act3/tlog"
+	"ily.dev/act3/xheap"
 	"kr.dev/errorfmt"
 )
 
@@ -80,22 +82,31 @@ func (t *Task) FailureDesc() string {
 type taskQueue struct {
 	name string
 	m    *Model
-	in   chan<- schema.Task
+
+	mu     sync.Mutex
+	heap   *xheap.Heap[schema.Task]
+	signal chan struct{} // capacity 1; wakes a worker
 
 	runningMu sync.Mutex
 	running   map[string]string
 }
 
-func newTaskQueue(name string, m *Model, in chan<- schema.Task) *taskQueue {
+func newTaskQueue(name string, m *Model) *taskQueue {
 	return &taskQueue{
-		name:    name,
-		m:       m,
-		in:      in,
+		name: name,
+		m:    m,
+		heap: xheap.New(func(a, b schema.Task) int {
+			return cmp.Or(
+				cmp.Compare(a.Priority, b.Priority),
+				cmp.Compare(a.ID, b.ID),
+			)
+		}),
+		signal:  make(chan struct{}, 1),
 		running: map[string]string{},
 	}
 }
 
-func (tq *taskQueue) startTasks(ctx Context, n int, tasks <-chan schema.Task) error {
+func (tq *taskQueue) startTasks(ctx Context, n int) error {
 	a, err := schema.New(tq.m.dbr).TaskList(ctx)
 	if err != nil {
 		return err
@@ -104,30 +115,58 @@ func (tq *taskQueue) startTasks(ctx Context, n int, tasks <-chan schema.Task) er
 		if queueTab[task.Type] != tq.name {
 			continue
 		}
-		tq.submit(task)
+		tq.push(task)
 	}
+	tq.wake()
 	for range n {
-		go tq.runTasks(tasks)
+		go tq.runTasks()
 	}
 	return nil
 }
 
-func (tq *taskQueue) runTasks(tasks <-chan schema.Task) {
-	for task := range tasks {
-		if d := time.Until(time.UnixMilli(task.NextRun)); d > 0 {
-			time.AfterFunc(d, func() { tq.submit(task) })
-		} else {
-			tq.run(task)
+func (tq *taskQueue) runTasks() {
+	for range tq.signal {
+		for {
+			tq.mu.Lock()
+			if tq.heap.Len() == 0 {
+				tq.mu.Unlock()
+				break
+			}
+			task := tq.heap.Pop()
+			more := tq.heap.Len() > 0
+			tq.mu.Unlock()
+			if more {
+				tq.wake()
+			}
+			if d := time.Until(time.UnixMilli(task.NextRun)); d > 0 {
+				time.AfterFunc(d, func() { tq.submit(task) })
+			} else {
+				tq.run(task)
+			}
 		}
 	}
 }
 
+// push adds a task to the heap under the lock.
+func (tq *taskQueue) push(task schema.Task) {
+	tq.mu.Lock()
+	tq.heap.Push(task)
+	tq.mu.Unlock()
+}
+
+// wake sends a non-blocking signal to unblock one worker.
+func (tq *taskQueue) wake() {
+	select {
+	case tq.signal <- struct{}{}:
+	default:
+	}
+}
+
 func (tq *taskQueue) submit(tasks ...schema.Task) {
-	go func() {
-		for _, task := range tasks {
-			tq.in <- task
-		}
-	}()
+	for _, task := range tasks {
+		tq.push(task)
+	}
+	tq.wake()
 }
 
 func (tq *taskQueue) lock(id string) string {
@@ -291,10 +330,15 @@ func (tx *TxRW) TaskDelete(ctx Context, id string) error {
 }
 
 func (t *TxRW) addTask(ctx Context, ttype string, args ...string) error {
+	return t.addTaskWithPriority(ctx, 0, ttype, args...)
+}
+
+func (t *TxRW) addTaskWithPriority(ctx Context, priority int64, ttype string, args ...string) error {
 	b, err := json.Marshal(args)
 	task, err := t.q.TaskCreate(ctx, schema.TaskCreateParams{
-		Type: ttype,
-		Args: string(b),
+		Type:     ttype,
+		Args:     string(b),
+		Priority: priority,
 	})
 	if err != nil {
 		return err
@@ -323,3 +367,4 @@ func taskFailDelay(n int64) time.Duration {
 	}
 	return base
 }
+
