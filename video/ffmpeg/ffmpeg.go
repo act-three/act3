@@ -665,7 +665,9 @@ func buildFilterComplex(dsts []EncodeParams, idxs []int) (string, map[int]string
 // -----------------------------------------------------------------------
 
 func progressArgs() []string {
-	return []string{"-y", "-progress", "pipe:3", "-nostats"}
+	// -hwaccel none: force software decoding so ffmpeg doesn't fail
+	// on codecs without hardware decoder support (e.g. AV1).
+	return []string{"-y", "-hwaccel", "none", "-progress", "pipe:3", "-nostats"}
 }
 
 func hlsOutputArgs(mediaPath string) []string {
