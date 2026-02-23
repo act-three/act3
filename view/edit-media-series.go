@@ -244,16 +244,30 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 		),
 		html.Range(ep.Progress(), func(pi *progress.Item) html.Node {
 			if err := pi.Error(); err != nil {
-				return html.Div(Class("text-sm text-red-11"))(
+				return FlexCol(Class("text-sm text-red-11"))(
 					Text(pi.Description()),
-					Text(err.Error()),
+					html.Div(Class("text-red-11/60"))(
+						Text(truncate(err.Error(), 60)),
+					),
 				)
 			}
 			return FlexCol(Class("text-gray-11/80 text-sm"))(
-				Text(pi.Description()),
+				FlexRow(Class("gap-2"))(
+					Text(pi.Description()),
+					html.Div(Class("text-gray-11/50"))(
+						Text(pi.Status()),
+					),
+				),
 				Progress(pi.Progress(), attr.Class("max-w-xs")).
 					With(ProgressSM),
 			)
 		}),
 	)
+}
+
+func truncate(s string, max int) string {
+	if len(s) < max {
+		return s
+	}
+	return s[:max] + "…"
 }

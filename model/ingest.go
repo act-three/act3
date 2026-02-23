@@ -78,7 +78,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 			}
 		}
 
-		tx.m.prog.Open(vid.ID, "Encoding", "In Queue")
+		tx.m.prog.Open(vid.ID, vid.ReleasePath, "Queued")
 		tx.addTask(ctx, taskIngestEncode, vid.ID)
 		return nil
 	})
@@ -96,7 +96,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	tx.m.prog.Open(vid.ID, "Encoding", "Starting")
+	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Starting")
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
@@ -116,6 +116,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 	defer src.Close()
 
 	// Probe source for duration (needed for progress tracking).
+	tx.m.prog.UpdateStatus(vid.ID, "Probing")
 	probe, err := ffmpeg.Probe(ctx, src)
 	if err != nil {
 		return err
@@ -127,6 +128,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 	defer tx.m.prog.Close(vid.ID, nil) // treat as success unless error below
 
 	// Encode all renditions.
+	tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Encoding %d renditions", len(rfsList)))
 	var playlists []string
 	hashes, err := tx.m.store.CreateNFunc(len(rfsList), func(dstFiles []*os.File) error {
 		dsts := make([]ffmpeg.EncodeParams, len(rfsList))
@@ -186,6 +188,7 @@ func (tx *TxR) taskIngestEncode(ctx Context, args []string) error {
 	}
 	mvPlaylist := video.GenerateMVPlaylist(mvEntries)
 
+	tx.m.prog.UpdateStatus(vid.ID, "Saving")
 	return tx.m.WithTxRW(func(tx *TxRW) error {
 		for i, rfs := range rfsList {
 			_, err := tx.q.RenditionForStreamingUpdateEncode(ctx,
