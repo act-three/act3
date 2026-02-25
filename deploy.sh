@@ -8,27 +8,16 @@ trap "rm -rf '$dir'" EXIT
 
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $dir/act3
 
-## Fetch static ffmpeg and ffprobe binaries for linux-amd64.
-## https://github.com/shaka-project/static-ffmpeg-binaries/releases/tag/n7.1-2
-ffmpeg_url=https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/n7.1-2/ffmpeg-linux-x64
-ffmpeg_sha256=c656811eecb083e3e0e8ee706a572fd919d275ba5ab34eb9f4762302afce4270
-ffprobe_url=https://github.com/shaka-project/static-ffmpeg-binaries/releases/download/n7.1-2/ffprobe-linux-x64
-ffprobe_sha256=31c308c383fc0be13c5b8d83e98eb4acca7011f2f79eec8dc57a2a04796255e5
-
-fetch() {
-    local url=$1 sha256=$2 dest=$3
-    if [ -f "$dest" ] && echo "$sha256  $dest" | shasum -a 256 -c -; then
-        return
-    fi
-    curl -fsSL -o "$dest" "$url"
-    echo "$sha256  $dest" | shasum -a 256 -c -
-}
-
-cache=$HOME/.cache/act3
-mkdir -p "$cache"
-fetch "$ffmpeg_url" "$ffmpeg_sha256" "$cache/ffmpeg"
-fetch "$ffprobe_url" "$ffprobe_sha256" "$cache/ffprobe"
-chmod +x "$cache/ffmpeg" "$cache/ffprobe"
+## Build static ffmpeg and ffprobe from source via Docker.
+## See video/ffmpeg/Dockerfile for the build configuration.
+## Docker layer caching makes rebuilds fast when only the Go app changes.
+ffmpeg_image=act3-ffmpeg
+if ! docker image inspect "$ffmpeg_image" >/dev/null 2>&1; then
+    docker build -t "$ffmpeg_image" video/ffmpeg/
+fi
+docker run --rm "$ffmpeg_image" cat /out/ffmpeg > "$dir/ffmpeg"
+docker run --rm "$ffmpeg_image" cat /out/ffprobe > "$dir/ffprobe"
+chmod +x "$dir/ffmpeg" "$dir/ffprobe"
 
 today=$(date +%Y%m%d)
 n=1
@@ -42,8 +31,8 @@ image="act3.$version.app"
 mksquashfs \
     box.meta \
     "$dir/act3" \
-    "$cache/ffmpeg" \
-    "$cache/ffprobe" \
+    "$dir/ffmpeg" \
+    "$dir/ffprobe" \
     deploy/$image \
     -p '/data d 0555 0 0' \
     -p '/database d 0555 0 0' \

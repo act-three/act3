@@ -1,0 +1,116 @@
+# Build static ffmpeg and ffprobe binaries on Alpine (musl).
+# Based on shaka-project/static-ffmpeg-binaries build scripts.
+#
+# Usage:
+#   docker build -t act3-ffmpeg video/ffmpeg/
+#   docker run --rm act3-ffmpeg cat /out/ffmpeg > ffmpeg && chmod +x ffmpeg
+#   docker run --rm act3-ffmpeg cat /out/ffprobe > ffprobe && chmod +x ffprobe
+
+FROM --platform=linux/amd64 alpine:3.21 AS build
+
+RUN apk add --no-cache \
+    bash build-base cmake curl git nasm yasm \
+    meson ninja pkgconf python3 \
+    linux-headers perl diffutils
+
+WORKDIR /src
+
+# --- libvpx ---
+ARG LIBVPX_VERSION=v1.13.0
+RUN git clone --depth 1 --branch $LIBVPX_VERSION https://chromium.googlesource.com/webm/libvpx.git
+RUN cd libvpx && ./configure \
+    --prefix=/usr/local \
+    --disable-examples --disable-tools --disable-docs --disable-unit-tests \
+    --enable-vp9-highbitdepth --enable-static --disable-shared \
+    && make -j$(nproc) && make install
+
+# --- SVT-AV1 (encoder) ---
+ARG SVT_AV1_VERSION=v1.7.0
+RUN git clone --depth 1 --branch $SVT_AV1_VERSION https://gitlab.com/AOMediaCodec/SVT-AV1.git
+RUN mkdir SVT-AV1-build && cd SVT-AV1-build && cmake ../SVT-AV1 \
+    -DCMAKE_INSTALL_PREFIX=/usr/local \
+    -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF -DBUILD_APPS=OFF \
+    && make -j$(nproc) && make install
+
+# --- dav1d (AV1 decoder) ---
+ARG DAV1D_VERSION=1.5.3
+RUN git clone --depth 1 --branch $DAV1D_VERSION https://code.videolan.org/videolan/dav1d.git
+RUN cd dav1d && meson setup build \
+    --prefix=/usr/local --libdir=/usr/local/lib \
+    --default-library=static \
+    -Denable_tools=false -Denable_tests=false \
+    && ninja -C build && ninja -C build install
+
+# --- x264 ---
+ARG X264_COMMIT=a8b68ebf
+RUN git clone https://code.videolan.org/videolan/x264.git \
+    && cd x264 && git checkout $X264_COMMIT
+RUN cd x264 && ./configure \
+    --prefix=/usr/local \
+    --enable-static --disable-cli \
+    && make -j$(nproc) && make install
+
+# --- x265 ---
+ARG X265_VERSION=3.5
+RUN git clone --depth 1 --branch $X265_VERSION https://bitbucket.org/multicoreware/x265_git.git x265
+RUN mkdir x265-build && cd x265-build && cmake ../x265/source \
+    -DCMAKE_INSTALL_PREFIX=/usr/local \
+    -DENABLE_SHARED=OFF -DENABLE_CLI=OFF \
+    && make -j$(nproc) && make install
+# Fix x265.pc: cmake adds glibc-specific private libs that break static
+# linking on musl (e.g. -lgcc_s which doesn't exist as a static lib).
+RUN sed -i 's/^Libs\.private:.*/Libs.private: -lstdc++ -lm -ldl/' \
+    /usr/local/lib/pkgconfig/x265.pc
+
+# --- lame (MP3) ---
+ARG LAME_VERSION=3.100
+RUN curl -fsSL "https://sourceforge.net/projects/lame/files/lame/$LAME_VERSION/lame-$LAME_VERSION.tar.gz/download" \
+    | tar xz
+RUN cd lame-$LAME_VERSION && ./configure \
+    --prefix=/usr/local \
+    --enable-static --disable-shared --disable-frontend \
+    && make -j$(nproc) && make install
+
+# --- opus ---
+ARG OPUS_VERSION=v1.4
+RUN git clone --depth 1 --branch $OPUS_VERSION https://gitlab.xiph.org/xiph/opus.git
+RUN mkdir opus-build && cd opus-build && cmake ../opus \
+    -DCMAKE_INSTALL_PREFIX=/usr/local \
+    -DBUILD_SHARED_LIBS=OFF -DOPUS_BUILD_TESTING=OFF -DOPUS_BUILD_PROGRAMS=OFF \
+    && make -j$(nproc) && make install
+
+# --- mbedtls ---
+ARG MBEDTLS_VERSION=v3.4.1
+RUN git clone --depth 1 --branch $MBEDTLS_VERSION https://github.com/Mbed-TLS/mbedtls.git
+RUN mkdir mbedtls-build && cd mbedtls-build && cmake ../mbedtls \
+    -DCMAKE_INSTALL_PREFIX=/usr/local \
+    -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF \
+    && make -j$(nproc) && make install
+
+# --- ffmpeg ---
+ARG FFMPEG_VERSION=n7.1
+RUN git clone --depth 1 --branch $FFMPEG_VERSION https://git.ffmpeg.org/ffmpeg.git ffmpeg
+RUN cd ffmpeg && \
+    CFLAGS="-static" LDFLAGS="-static" \
+    ./configure \
+    --pkg-config-flags="--static" \
+    --disable-ffplay \
+    --enable-libvpx \
+    --enable-libsvtav1 \
+    --enable-libdav1d \
+    --enable-libx264 \
+    --enable-libx265 \
+    --enable-libmp3lame \
+    --enable-libopus \
+    --enable-mbedtls \
+    --enable-runtime-cpudetect \
+    --enable-gpl \
+    --enable-version3 \
+    --enable-static \
+    && make -j$(nproc)
+
+# Verify binaries are static.
+RUN file ffmpeg/ffmpeg ffmpeg/ffprobe | grep -q "statically linked"
+
+# Copy to output.
+RUN mkdir /out && cp ffmpeg/ffmpeg ffmpeg/ffprobe /out/
