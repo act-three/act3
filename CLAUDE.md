@@ -10,6 +10,10 @@ and movies. Single Go binary serving a web UI, managing torrent
 downloads via Transmission, fetching metadata from TVmaze, ingesting
 video into a content-addressed store, and transcoding to HLS via ffmpeg.
 
+We are still pre-production, so the db isn't precious. For instance, no
+need to add migrations, just edit the inital schema. And if there's bad
+data in the db, we can just wipe it and start over.
+
 ## Build & Run
 
 ```sh
