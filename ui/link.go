@@ -6,11 +6,16 @@ import (
 )
 
 func Link(url string, attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
-		return Button(
-			attr.Href(url),
-			Class("a$link"),
-			group(attrs...),
-		)(nodes...).With(ButtonGhost)
-	}
+	return html.A(
+		attr.Href(url),
+		attr.Class("a$link"),
+		attr.EnvAttr("class", linkUnderlineKey, "a$link+underline-auto"),
+		group(attrs...),
+	)
 }
+
+var (
+	LinkUnderlineAuto   = html.WithValue(linkUnderlineKey, "a$link+underline-auto")
+	LinkUnderlineAlways = html.WithValue(linkUnderlineKey, "a$link+underline-always")
+	LinkUnderlineHover  = html.WithValue(linkUnderlineKey, "a$link+underline-hover")
+)

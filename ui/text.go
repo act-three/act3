@@ -16,6 +16,7 @@ func Text(s string, attrs ...attr.Node) html.Node {
 		attr.EnvAttr("class", textSelectKey, "a$text+select-none"),
 		attr.EnvAttr("class", lineClampKey, ""),
 		attr.EnvAttr("class", fontWeightKey, ""),
+		attr.EnvAttr("class", textSizeKey, ""),
 		group(attrs...),
 	)(
 		html.Text(s),
@@ -40,3 +41,17 @@ var (
 	TextSelectAuto = html.WithValue(textSelectKey, "a$text+select-auto")
 	TextSelectNone = html.WithValue(textSelectKey, "a$text+select-none")
 )
+
+var (
+	TextSize1 = html.WithValue(textSizeKey, "a$text+size-1")
+	TextSize2 = html.WithValue(textSizeKey, "a$text+size-2")
+	TextSize3 = html.WithValue(textSizeKey, "a$text+size-3")
+	TextSize4 = html.WithValue(textSizeKey, "a$text+size-4")
+	TextSize5 = html.WithValue(textSizeKey, "a$text+size-5")
+	TextSize6 = html.WithValue(textSizeKey, "a$text+size-6")
+	TextSize7 = html.WithValue(textSizeKey, "a$text+size-7")
+	TextSize8 = html.WithValue(textSizeKey, "a$text+size-8")
+	TextSize9 = html.WithValue(textSizeKey, "a$text+size-9")
+)
+
+var TextTruncate = html.WithValue(lineClampKey, "a$text+truncate")

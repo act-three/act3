@@ -13,6 +13,11 @@ const (
 	lineClampKey
 	fontWeightKey
 	textSelectKey
+	textSizeKey
+	tableVariantKey
+	tableSizeKey
+	inputSizeKey
+	linkUnderlineKey
 )
 
 func Group(nodes ...html.Node) html.Node {

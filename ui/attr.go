@@ -55,12 +55,16 @@ var (
 	Size1 = option(size1)
 	Size2 = option(size2)
 	Size3 = option(size3)
+	Size4 = option(size4)
+	Size5 = option(size5)
 )
 
 const (
 	size1 sizeOption = iota
 	size2
 	size3
+	size4
+	size5
 )
 
 type sideOption int

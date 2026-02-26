@@ -37,8 +37,26 @@
 	-webkit-line-clamp: 5;
 }
 
+/* truncate (single-line ellipsis) */
+.a\$text\+truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 /* selection */
 .a\$text\+select-auto { user-select: auto; }
 .a\$text\+select-none { user-select: none; }
+
+/* size scale */
+.a\$text\+size-1 { font-size: 12px; line-height: 16px; letter-spacing: 0.0025em; }
+.a\$text\+size-2 { font-size: 14px; line-height: 20px; letter-spacing: 0em; }
+.a\$text\+size-3 { font-size: 16px; line-height: 24px; letter-spacing: 0em; }
+.a\$text\+size-4 { font-size: 18px; line-height: 26px; letter-spacing: -0.0025em; }
+.a\$text\+size-5 { font-size: 20px; line-height: 28px; letter-spacing: -0.005em; }
+.a\$text\+size-6 { font-size: 24px; line-height: 30px; letter-spacing: -0.005em; }
+.a\$text\+size-7 { font-size: 28px; line-height: 36px; letter-spacing: -0.0075em; }
+.a\$text\+size-8 { font-size: 35px; line-height: 40px; letter-spacing: -0.01em; }
+.a\$text\+size-9 { font-size: 60px; line-height: 60px; letter-spacing: -0.025em; }
 
 }

@@ -10,10 +10,12 @@ type cardVariant int
 const (
 	cardSurface cardVariant = iota // default
 	cardGhost
+	cardClassic
 )
 
 var (
 	Ghost        = option(cardGhost)
+	Classic      = option(cardClassic)
 	CardSelected = attr.Attr("data-selected")
 )
 
@@ -35,12 +37,15 @@ func Card(attrs ...attr.Node) html.Element {
 var cardVariantClasses = map[cardVariant]string{
 	cardSurface: "a$card+surface",
 	cardGhost:   "a$card+ghost",
+	cardClassic: "a$card+classic",
 }
 
 var cardSizeClasses = map[sizeOption]string{
 	size1: "a$card+size-1",
 	size2: "a$card+size-2",
 	size3: "a$card+size-3",
+	size4: "a$card+size-4",
+	size5: "a$card+size-5",
 }
 
 func CardMedia(attrs ...attr.Node) html.Element {

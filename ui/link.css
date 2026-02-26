@@ -1,12 +1,43 @@
 @layer components {
 
 .a\$link {
+	color: var(--color-accent-9);
+	cursor: pointer;
 	text-decoration: none;
 }
-@media (hover: hover) {
-	.a\$link:hover {
-		text-decoration: underline;
-	}
+.a\$link:focus-visible {
+	outline: 2px solid var(--color-accent-8);
+	outline-offset: -1px;
+	border-radius: 0.125rem;
 }
 
+/* underline auto — underline on hover */
+.a\$link\+underline-auto {
+	text-decoration: none;
+}
+
+/* underline always */
+.a\$link\+underline-always {
+	text-decoration: underline;
+	text-decoration-color: var(--color-accent-5);
+	text-underline-offset: 2px;
+}
+
+/* underline hover — underline only on hover */
+.a\$link\+underline-hover {
+	text-decoration: none;
+}
+
+}
+
+@media (hover: hover) {
+	.a\$link\+underline-auto:hover {
+		text-decoration: underline;
+		text-decoration-color: var(--color-accent-5);
+		text-underline-offset: 2px;
+	}
+	.a\$link\+underline-hover:hover {
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
 }
