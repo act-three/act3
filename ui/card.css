@@ -1,0 +1,29 @@
+@layer components {
+
+/* card — base */
+.a\$card {
+	background-color: color-mix(in oklch, var(--color-gray-1) 70%, transparent);
+	box-shadow: inset 0 0 0 1px var(--color-gray-6);
+}
+
+/* sizes */
+.a\$card\+size-1 {
+	padding: 0.75rem;
+	border-radius: 0.5rem;
+	--inset-padding: -12px;
+	--inset-rounded: 8px;
+}
+.a\$card\+size-2 {
+	padding: 0.75rem;
+	border-radius: 0.5rem;
+	--inset-padding: -12px;
+	--inset-rounded: 8px;
+}
+.a\$card\+size-3 {
+	padding: 1rem;
+	border-radius: 0.5rem;
+	--inset-padding: -16px;
+	--inset-rounded: 8px;
+}
+
+}
