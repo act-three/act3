@@ -1970,10 +1970,8 @@
     flex: none;
     border-inline-end: 1px solid var(--color-gray-6);
     place-items: center;
+    display: grid;
   }
-}
-.a\$split-list {
-  display: grid;
 }
 @layer components {
   .a\$text\+weight-normal {

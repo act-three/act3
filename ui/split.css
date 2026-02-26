@@ -12,12 +12,7 @@
 	flex: none;
 	border-inline-end: 1px solid var(--color-gray-6);
 	place-items: center;
-}
-
-}
-
-/* Outside @layer so it overrides turbo-frame's
-   Tailwind "contents" utility. */
-.a\$split-list {
 	display: grid;
+}
+
 }
