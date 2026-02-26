@@ -10,7 +10,6 @@ import (
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
-	"ily.dev/act3/web/list"
 	"ily.dev/act3/xslices"
 	"ily.dev/act3/xstrings"
 )
@@ -31,11 +30,11 @@ func EditMediaDownloads(
 				Box(),
 			),
 			Split()(
-				list.List("/edit/downloads/", "detail",
+				List("/edit/downloads/", "detail",
 					attr.ID(torrentListID),
 					Class("flex-1"),
 				)(
-					list.Items(items, editMediaDownloadsListItem),
+					ListItems(items, editMediaDownloadsListItem),
 				),
 				expr.IfElse(selected != nil,
 					func() html.Node {
@@ -75,8 +74,8 @@ func editMediaDownloadsSearchBar() html.Node {
 func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node {
 	return Item(
 		attr.Group(attrs...),
-		list.ID(dl.ID()),
-		list.URL(dl.URL()),
+		ListID(dl.ID()),
+		ListURL(dl.URL()),
 	)(
 		ItemContent()(
 			expr.IfElse(dl.State() == "error",

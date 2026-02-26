@@ -1,4 +1,4 @@
-import { Controller } from "../../web/stimulus.js";
+import { Controller } from "../web/stimulus.js";
 
 export default class extends Controller {
 	static targets = ["item"];

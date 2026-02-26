@@ -8286,8 +8286,8 @@
     }
   };
 
-  // web/list/list-controller.js
-  var list_controller_default = class extends Controller {
+  // ui/list.js
+  var list_default = class extends Controller {
     static targets = ["item"];
     static values = {
       prefix: String,
@@ -8469,7 +8469,7 @@
   window.Stimulus = Application.start();
   Stimulus.register("dialog", dialog_controller_default);
   Stimulus.register("player", player_controller_default);
-  Stimulus.register("list", list_controller_default);
+  Stimulus.register("list", list_default);
   Stimulus.register("sidebar", sidebar_controller_default);
   Stimulus.register("add-torrent", add_torrent_controller_default);
 })();

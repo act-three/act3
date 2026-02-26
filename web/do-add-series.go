@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"ily.dev/act3/model"
+	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view"
-	"ily.dev/act3/web/list"
 )
 
 func (w *web) doAddSeries(req *http.Request) (h http.Handler, err error) {
@@ -22,7 +22,7 @@ func (w *web) doAddSeries(req *http.Request) (h http.Handler, err error) {
 			turbo.Frame("tvmaze-"+strconv.FormatInt(*ss.TVmazeID(), 10))(
 				seriesResultLink(ss),
 				turbo.Prepend(view.EditMediaSeriesListItems,
-					list.Items([]*model.SeriesHead{ss}, view.EditMediaSeriesListItem),
+					ListItems([]*model.SeriesHead{ss}, view.EditMediaSeriesListItem),
 				),
 			),
 		), nil

@@ -9,7 +9,6 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
-	"ily.dev/act3/web/list"
 )
 
 const EditMediaSeriesListItems = "series-list-items"
@@ -33,9 +32,9 @@ func EditMediaSeries(
 			html.Div(),
 		),
 		Split()(
-			list.List("/edit/series/", "detail")(
+			List("/edit/series/", "detail")(
 				turbo.Sink(EditMediaSeriesListItems)(
-					list.Items(s, EditMediaSeriesListItem),
+					ListItems(s, EditMediaSeriesListItem),
 				),
 			),
 			expr.IfElse(detail != nil,
@@ -61,8 +60,8 @@ func EditMediaSeries(
 func EditMediaSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
 	return Item(
 		attr.Group(attrs...),
-		list.ID(ss.ID()),
-		list.URL(ss.EditURL()),
+		ListID(ss.ID()),
+		ListURL(ss.EditURL()),
 	)(
 		ItemMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
 		ItemContent()(
