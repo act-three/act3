@@ -91,7 +91,7 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 							return Button(Disabled(true))(Icon("x"))
 						},
 					).
-						With(ButtonBordered).
+						With(ButtonSurface).
 						With(ButtonCircle),
 				),
 				Link(ep.DetailURL(), Class("text-gray-11"))(

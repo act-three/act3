@@ -40,7 +40,8 @@ func mediaNavigationMenu() html.Node {
 			`),
 		)(
 			Link("/")(Icon("spotlight"), Text("Act Three")),
-			Button(attr.Href("/account/profile"))(Icon("settings")),
+			Button(attr.Href("/account/profile"))(Icon("settings")).
+				With(ButtonGhost),
 		),
 	)
 }

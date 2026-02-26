@@ -14,5 +14,5 @@ func Primary(attrs ...attr.Node) html.Element {
 		`),
 		attr.Group(attrs...),
 	).
-		With(ButtonBordered).(html.Element)
+		With(ButtonSurface).(html.Element)
 }

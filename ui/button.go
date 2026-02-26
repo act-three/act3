@@ -13,15 +13,18 @@ func Button(attrs ...attr.Node) html.Element {
 	}
 	return func(nodes ...html.Node) html.Node {
 		return html.Tag(tag)(
-			attr.Class(base),
+			attr.Class(buttonBase),
 			attr.FuncAttr("class", func(get func(any) any) string {
 				variant, _ := get(buttonVariantKey).(buttonVariant)
 				return buttonVariantTable[variant]
 			}),
 			attr.FuncAttr("class", func(get func(any) any) string {
-				variant, _ := get(buttonVariantKey).(buttonVariant)
+				shape, _ := get(buttonShapeKey).(buttonShape)
 				size, _ := get(buttonSizeKey).(buttonSize)
-				return buttonSizeTable[variant][size]
+				if shape == buttonCircle {
+					return buttonCircleSizeTable[size]
+				}
+				return buttonSizeTable[size]
 			}),
 			attr.FuncAttr("class", func(get func(any) any) string {
 				shape, _ := get(buttonShapeKey).(buttonShape)
@@ -32,40 +35,44 @@ func Button(attrs ...attr.Node) html.Element {
 	}
 }
 
+// Variants
 var (
-	ButtonBorderless  = html.WithValue(buttonVariantKey, buttonBorderless) // default
-	ButtonBordered    = html.WithValue(buttonVariantKey, buttonBordered)
-	ButtonProminent   = html.WithValue(buttonVariantKey, buttonProminent)
+	ButtonSolid       = html.WithValue(buttonVariantKey, buttonSolid)       // default
+	ButtonSoft        = html.WithValue(buttonVariantKey, buttonSoft)
+	ButtonSurface     = html.WithValue(buttonVariantKey, buttonSurface)
+	ButtonOutline     = html.WithValue(buttonVariantKey, buttonOutline)
+	ButtonGhost       = html.WithValue(buttonVariantKey, buttonGhost)
 	ButtonDestructive = html.WithValue(buttonVariantKey, buttonDestructive)
 )
 
+// Sizes
 var (
-	ButtonSM = html.WithValue(buttonSizeKey, buttonSM)
-	ButtonMD = html.WithValue(buttonSizeKey, buttonMD) // default
-	ButtonLG = html.WithValue(buttonSizeKey, buttonLG)
+	ButtonSize1 = html.WithValue(buttonSizeKey, buttonSize1)
+	ButtonSize2 = html.WithValue(buttonSizeKey, buttonSize2) // default
+	ButtonSize3 = html.WithValue(buttonSizeKey, buttonSize3)
+	ButtonSize4 = html.WithValue(buttonSizeKey, buttonSize4)
 )
 
+// Shapes / radius
 var (
-	ButtonCapsule     = html.WithValue(buttonShapeKey, buttonCapsule) // default
-	ButtonCircle      = html.WithValue(buttonShapeKey, buttonCircle)
-	ButtonRoundedRect = html.WithValue(buttonShapeKey, buttonRoundedRect)
+	ButtonRadiusFull   = html.WithValue(buttonShapeKey, buttonRadiusFull) // default
+	ButtonCircle       = html.WithValue(buttonShapeKey, buttonCircle)
+	ButtonRadiusMedium = html.WithValue(buttonShapeKey, buttonRadiusMedium)
+	ButtonRadiusNone   = html.WithValue(buttonShapeKey, buttonRadiusNone)
 )
 
-const base = `
-	focus-visible:border-gray-6
-	focus-visible:ring-gray-7/50
-	aria-invalid:ring-crimson-8/20
-	aria-invalid:border-crimson-8
+const buttonBase = `
+	relative
 	inline-flex
 	shrink-0
 	items-center
 	justify-center
-	gap-2
 	font-medium
 	whitespace-nowrap
-	transition-all
+	transition-colors
 	outline-none
 	focus-visible:ring-[3px]
+	focus-visible:ring-accent-8/40
 	disabled:pointer-events-none
 	disabled:opacity-50
 	aria-disabled:pointer-events-none
@@ -73,7 +80,6 @@ const base = `
 	[&_svg]:pointer-events-none
 	[&_svg]:shrink-0
 	[&_svg:not([class*='size-'])]:size-4
-	active:opacity-60
 	cursor-pointer
 `
 
@@ -84,74 +90,54 @@ type (
 )
 
 const (
-	buttonBorderless buttonVariant = iota // default
-	buttonBordered
-	buttonProminent
+	buttonSolid buttonVariant = iota // default
+	buttonSoft
+	buttonSurface
+	buttonOutline
+	buttonGhost
 	buttonDestructive
 )
 
 const (
-	buttonMD buttonSize = iota // default
-	buttonSM
-	buttonLG
+	buttonSize2 buttonSize = iota // default
+	buttonSize1
+	buttonSize3
+	buttonSize4
 )
 
 const (
-	buttonCapsule buttonShape = iota // default
+	buttonRadiusFull buttonShape = iota // default
 	buttonCircle
-	buttonRoundedRect
+	buttonRadiusMedium
+	buttonRadiusNone
 )
 
 var buttonVariantTable = map[buttonVariant]string{
-	buttonBorderless: `
-		text-accent-11
-	`,
-	buttonBordered: `
-		bg-gray-3
-		text-accent-11
-	`,
-	buttonProminent: `
-		bg-accent-9
-		text-white-12
-	`,
-	buttonDestructive: `
-		bg-crimson-9
-		text-white-12
-	`,
+	buttonSolid:       "bg-accent-9 text-white hover:bg-accent-10",
+	buttonSoft:        "bg-accent-3 text-accent-11 hover:bg-accent-4",
+	buttonSurface:     "bg-accent-2 text-accent-11 border border-accent-7 hover:bg-accent-3",
+	buttonOutline:     "border border-accent-8 text-accent-11 hover:bg-accent-2",
+	buttonGhost:       "text-accent-11 hover:bg-accent-3",
+	buttonDestructive: "bg-crimson-9 text-white hover:bg-crimson-10",
 }
 
-var (
-	buttonSizeTable = map[buttonVariant]map[buttonSize]string{
-		buttonBorderless:  buttonSizeBorderless,
-		buttonBordered:    buttonSizeBordered,
-		buttonProminent:   buttonSizeBordered,
-		buttonDestructive: buttonSizeBordered,
-	}
+var buttonSizeTable = map[buttonSize]string{
+	buttonSize1: "h-6 px-2 gap-1 text-xs",
+	buttonSize2: "h-8 px-3 gap-1.5 text-sm",
+	buttonSize3: "h-10 px-4 gap-2",
+	buttonSize4: "h-12 px-6 gap-3",
+}
 
-	buttonSizeBordered = map[buttonSize]string{
-		buttonSM: "h-8 gap-1.5 px-3 has-[>svg]:px-2.5",
-		buttonMD: "h-9 px-4 py-2 has-[>svg]:px-3",
-		buttonLG: "h-10 px-6 has-[>svg]:px-4",
-	}
-
-	buttonSizeBorderless = map[buttonSize]string{
-		buttonSM: "gap-1.5 has-[>svg]:px-2.5",
-		buttonMD: "has-[>svg]:px-3",
-		buttonLG: "has-[>svg]:px-4",
-	}
-)
+var buttonCircleSizeTable = map[buttonSize]string{
+	buttonSize1: "size-6 text-xs",
+	buttonSize2: "size-8 text-sm",
+	buttonSize3: "size-10",
+	buttonSize4: "size-12",
+}
 
 var buttonShapeTable = map[buttonShape]string{
-	buttonCapsule: `
-		aspect-auto
-		rounded-full
-	`,
-	buttonCircle: `
-		aspect-square
-		rounded-full
-	`,
-	buttonRoundedRect: `
-		aspect-auto
-		rounded-md
-	`,
+	buttonRadiusFull:   "rounded-full",
+	buttonCircle:       "aspect-square rounded-full",
+	buttonRadiusMedium: "rounded-md",
+	buttonRadiusNone:   "rounded-none",
 }

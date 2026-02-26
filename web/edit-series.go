@@ -334,7 +334,7 @@ func (w *web) seriesSearch(req *http.Request) (http.Handler, error) {
 													attr.Value(strconv.Itoa(t.TVmaze.ID)),
 												),
 												Button()(html.Text("Add")).
-													With(ButtonBordered),
+													With(ButtonSurface),
 											),
 										)
 									},

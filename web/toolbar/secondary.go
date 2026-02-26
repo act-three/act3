@@ -14,6 +14,6 @@ func Secondary(attrs ...attr.Node) html.Element {
 		`),
 		attr.Group(attrs...),
 	).
-		With(ButtonSM).
-		With(ButtonBordered).(html.Element)
+		With(ButtonSize1).
+		With(ButtonSurface).(html.Element)
 }

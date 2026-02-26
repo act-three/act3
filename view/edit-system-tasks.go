@@ -45,7 +45,7 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 												Button()(
 													html.Text("Delete"),
 												).
-													With(ButtonBorderless),
+													With(ButtonGhost),
 											),
 										),
 										table.Cell()(html.Text(t.Args())),
@@ -65,7 +65,7 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 															Button()(
 																html.Text("Run Now"),
 															).
-																With(ButtonBorderless),
+																With(ButtonGhost),
 														),
 													)
 												},

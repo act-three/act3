@@ -11,6 +11,6 @@ func Link(url string, attrs ...attr.Node) html.Element {
 			attr.Href(url),
 			Class("hover:underline"),
 			group(attrs...),
-		)(nodes...).With(ButtonBorderless)
+		)(nodes...).With(ButtonGhost)
 	}
 }

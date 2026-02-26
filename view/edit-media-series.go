@@ -27,8 +27,8 @@ func EditMediaSeries(
 				Icon("plus"),
 				html.Text("Add Series"),
 			)).
-				With(ButtonRoundedRect).
-				With(ButtonBordered),
+				With(ButtonRadiusMedium).
+				With(ButtonSurface),
 			html.Div(attr.Class("relative w-md"))(
 				editMediaSeriesSearchbar(),
 			),
@@ -219,7 +219,7 @@ func editMediaSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
 						html.Div()(html.Textf("%d", sn.NumEpisodes(model.Significant))),
 						html.Div()(
 							html.RangeSeq(sn.Episodes(model.Significant), editMediaSeriesDetailEpisodeListItem).
-								With(ButtonBorderless),
+								With(ButtonGhost),
 						),
 					)
 				})
