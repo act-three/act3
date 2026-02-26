@@ -16,7 +16,7 @@ RUN apk add --no-cache \
 WORKDIR /src
 
 # --- libvpx ---
-ARG LIBVPX_VERSION=v1.13.0
+ARG LIBVPX_VERSION=v1.16.0
 RUN git clone --depth 1 --branch $LIBVPX_VERSION https://chromium.googlesource.com/webm/libvpx.git
 RUN cd libvpx && ./configure \
     --prefix=/usr/local \
@@ -25,7 +25,7 @@ RUN cd libvpx && ./configure \
     && make -j$(nproc) && make install
 
 # --- SVT-AV1 (encoder) ---
-ARG SVT_AV1_VERSION=v1.7.0
+ARG SVT_AV1_VERSION=v3.1.2
 RUN git clone --depth 1 --branch $SVT_AV1_VERSION https://gitlab.com/AOMediaCodec/SVT-AV1.git
 RUN mkdir SVT-AV1-build && cd SVT-AV1-build && cmake ../SVT-AV1 \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -42,7 +42,7 @@ RUN cd dav1d && meson setup build \
     && ninja -C build && ninja -C build install
 
 # --- x264 ---
-ARG X264_COMMIT=a8b68ebf
+ARG X264_COMMIT=b35605ac
 RUN git clone https://code.videolan.org/videolan/x264.git \
     && cd x264 && git checkout $X264_COMMIT
 RUN cd x264 && ./configure \
@@ -51,7 +51,7 @@ RUN cd x264 && ./configure \
     && make -j$(nproc) && make install
 
 # --- x265 ---
-ARG X265_VERSION=3.5
+ARG X265_VERSION=4.1
 RUN git clone --depth 1 --branch $X265_VERSION https://bitbucket.org/multicoreware/x265_git.git x265
 RUN mkdir x265-build && cd x265-build && cmake ../x265/source \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -72,7 +72,7 @@ RUN cd lame-$LAME_VERSION && ./configure \
     && make -j$(nproc) && make install
 
 # --- opus ---
-ARG OPUS_VERSION=v1.4
+ARG OPUS_VERSION=v1.6.1
 RUN git clone --depth 1 --branch $OPUS_VERSION https://gitlab.xiph.org/xiph/opus.git
 RUN mkdir opus-build && cd opus-build && cmake ../opus \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
@@ -80,15 +80,15 @@ RUN mkdir opus-build && cd opus-build && cmake ../opus \
     && make -j$(nproc) && make install
 
 # --- mbedtls ---
-ARG MBEDTLS_VERSION=v3.4.1
-RUN git clone --depth 1 --branch $MBEDTLS_VERSION https://github.com/Mbed-TLS/mbedtls.git
+ARG MBEDTLS_VERSION=v3.6.5
+RUN git clone --depth 1 --recurse-submodules --branch $MBEDTLS_VERSION https://github.com/Mbed-TLS/mbedtls.git
 RUN mkdir mbedtls-build && cd mbedtls-build && cmake ../mbedtls \
     -DCMAKE_INSTALL_PREFIX=/usr/local \
     -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF \
     && make -j$(nproc) && make install
 
 # --- ffmpeg ---
-ARG FFMPEG_VERSION=n7.1
+ARG FFMPEG_VERSION=n8.0
 RUN git clone --depth 1 --branch $FFMPEG_VERSION https://git.ffmpeg.org/ffmpeg.git ffmpeg
 RUN cd ffmpeg && \
     CFLAGS="-static" LDFLAGS="-static" \
