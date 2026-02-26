@@ -73,8 +73,8 @@ main.go
 
 - **sqlc**: `database/query.sql` + `database/ddl/*.sql` →
   `database/schema/`
-- **tailwindcss**: `web/main.css` → `web/static/static/bundle.css`
-- **esbuild**: `web/main.js` → `web/static/static/bundle.js`
+- **tailwindcss**: `main.css` → `web/static/static/bundle.css`
+- **esbuild**: `main.js` → `web/static/static/bundle.js`
   (esbuild is a Go tool dep)
 - **html tags**: `html/gen.go` → `html/tag.go`
 

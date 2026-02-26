@@ -121,9 +121,9 @@ don't get sticky hover:
 
 ### 4. Import the CSS
 
-Make sure `web/main.css` imports the new stylesheet:
+Make sure `main.css` imports the new stylesheet:
 ```css
-@import "../ui/<component>.css";
+@import "./ui/<component>.css";
 ```
 
 ### 5. Verify
