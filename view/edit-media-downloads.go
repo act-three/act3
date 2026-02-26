@@ -72,7 +72,7 @@ func editMediaDownloadsSearchBar() html.Node {
 }
 
 func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node {
-	return Card(Ghost,
+	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(dl.ID()),
 		ListURL(dl.URL()),
@@ -184,7 +184,7 @@ func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) ht
 			html.Range(dfs, func(df *model.DownloadFile) html.Node {
 				ep := df.Episode()
 				displayPath := strings.TrimPrefix(df.Path(), prefix)
-				return Card(Ghost)(
+				return Card(CardGhost)(
 					CardContent()(
 						expr.IfElse(ep != nil,
 							func() html.Node {

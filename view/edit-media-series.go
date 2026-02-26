@@ -58,7 +58,7 @@ func EditMediaSeries(
 }
 
 func EditMediaSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
-	return Card(Ghost,
+	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(ss.ID()),
 		ListURL(ss.EditURL()),

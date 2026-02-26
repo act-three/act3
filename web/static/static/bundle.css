@@ -89,9 +89,6 @@
     --color-white: rgba(255, 255, 255, 1);
     --color-gray-1: var(--color-mauve-1);
     --color-gray-2: var(--color-mauve-2);
-    --color-gray-3: var(--color-mauve-3);
-    --color-gray-5: var(--color-mauve-5);
-    --color-gray-6: var(--color-mauve-6);
     --color-gray-11: var(--color-mauve-11);
     --color-gray-12: var(--color-mauve-12);
     --color-gray-a2: var(--color-mauve-a2);
@@ -100,7 +97,6 @@
     --color-gray-a6: var(--color-mauve-a6);
     --color-gray-a7: var(--color-mauve-a7);
     --color-gray-a10: var(--color-mauve-a10);
-    --color-accent-5: var(--color-crimson-5);
     --color-accent-8: var(--color-crimson-8);
     --color-accent-9: var(--color-crimson-9);
     --color-accent-10: var(--color-crimson-10);

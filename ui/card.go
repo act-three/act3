@@ -5,18 +5,22 @@ import (
 	"ily.dev/act3/html/attr"
 )
 
-type cardVariant int
-
-const (
-	cardSurface cardVariant = iota // default
-	cardGhost
-	cardClassic
+var (
+	CardSurface = Class("a$card+surface")
+	CardGhost   = Class("a$card+ghost")
+	CardClassic = Class("a$card+classic")
 )
 
 var (
-	Ghost        = option(cardGhost)
-	Classic      = option(cardClassic)
 	CardSelected = attr.Attr("data-selected")
+)
+
+var (
+	CardSize1 = Class("a$card+size-1")
+	CardSize2 = Class("a$card+size-2")
+	CardSize3 = Class("a$card+size-3")
+	CardSize4 = Class("a$card+size-4")
+	CardSize5 = Class("a$card+size-5")
 )
 
 func Card(attrs ...attr.Node) html.Element {
@@ -27,25 +31,9 @@ func Card(attrs ...attr.Node) html.Element {
 	}
 	return html.Tag(tag)(
 		attr.Class("a$card"),
-		attr.Class(cardVariantClasses[getOption(attrs, cardSurface)]),
-		attr.Class(cardSizeClasses[getOption(attrs, size1)]),
 		a,
 		attr.Attr("data-slot")("card"),
 	)
-}
-
-var cardVariantClasses = map[cardVariant]string{
-	cardSurface: "a$card+surface",
-	cardGhost:   "a$card+ghost",
-	cardClassic: "a$card+classic",
-}
-
-var cardSizeClasses = map[sizeOption]string{
-	size1: "a$card+size-1",
-	size2: "a$card+size-2",
-	size3: "a$card+size-3",
-	size4: "a$card+size-4",
-	size5: "a$card+size-5",
 }
 
 func CardMedia(attrs ...attr.Node) html.Element {

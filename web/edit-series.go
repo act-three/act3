@@ -309,9 +309,9 @@ func (w *web) seriesSearch(req *http.Request) (http.Handler, error) {
 			FlexCol(Gap4, Class("p-4"))(
 				html.Range(results, func(t result) html.Node {
 					frameID := "tvmaze-" + strconv.Itoa(t.TVmaze.ID)
-					return Card(Size3, Class("h-[200px]"))(
+					return Card(CardSurface, CardSize3, Class("h-[200px]"))(
 						FlexRow(Gap4, Class("h-full"))(
-							Inset(SideLeft, Class("flex-none"))(
+							Inset(InsetSideLeft, Class("flex-none"))(
 								html.Img(
 									Class("block h-full aspect-2/3 object-cover"),
 									attr.Src(t.TVmaze.Image.Medium()),
