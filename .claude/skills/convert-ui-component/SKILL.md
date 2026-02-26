@@ -22,9 +22,10 @@ semantic `u-`-prefixed CSS classes in a per-component stylesheet.
 
 Read `ui/<component>.go`. Identify:
 
-- The base Tailwind class string (usually a multi-line const)
-- The variant/size/shape table maps (e.g. `map[xxxVariant]string`)
-- The `FuncAttr("class", ...)` calls that resolve them
+- The base component class name
+- The variant/size/shape names & classes (e.g. `u-button+ghost`,
+  `u-button+size2`)
+- The `FuncAttr("class", ...)` calls, if any, that resolve them
 - The public API vars (`ButtonSolid`, `ButtonSize2`, etc.)
 
 ### 2. Rewrite the Go file
@@ -37,19 +38,11 @@ Replace the Tailwind class strings with `u-`-prefixed class names.
 
 **Add:**
 - `attr.Class("u-<component>")` as the base class
-- New `map[...]string` tables returning `u-` class names, e.g.:
-
-```go
-var fooVariantClasses = map[fooVariant]string{
-    fooSolid: "u-foo+solid",
-    fooSoft:  "u-foo+soft",
-}
-```
+- `attr.Class("u-<component>+<variant>") for variant class names
 
 **Keep unchanged:**
 - The `FuncAttr("class", ...)` pattern (just update table names)
 - All public API vars (`FooSolid`, `FooSize2`, etc.)
-- Type definitions and iota consts
 
 ### 3. Write the CSS file
 
@@ -129,7 +122,7 @@ Make sure `main.css` imports the new stylesheet:
 ### 5. Verify
 
 ```sh
-go build -tags goexperiment.jsonv2 .
+go build -o /dev/null -tags goexperiment.jsonv2 .
 go test -tags goexperiment.jsonv2 ./ui/...
 ```
 
