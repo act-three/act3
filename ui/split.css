@@ -10,7 +10,7 @@
 	width: 22.5rem;
 	height: 100cvh;
 	flex: none;
-	border-inline-end: 1px solid var(--color-gray-6);
+	border-inline-end: 1px solid var(--color-gray-a6);
 	place-items: center;
 	display: grid;
 }

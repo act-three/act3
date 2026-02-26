@@ -12,7 +12,7 @@
 /* surface variant */
 .a\$card\+surface {
 	background-color: color-mix(in oklch, var(--color-gray-1) 70%, transparent);
-	box-shadow: inset 0 0 0 1px var(--color-gray-6);
+	box-shadow: inset 0 0 0 1px var(--color-gray-a5);
 }
 
 /* classic variant */
@@ -39,8 +39,8 @@
 	padding: 0.5rem;
 }
 .a\$card\+ghost:focus-visible {
-	border-color: var(--color-gray-6);
-	box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-gray-6) 50%, transparent);
+	border-color: var(--color-gray-a6);
+	box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-gray-a6) 50%, transparent);
 }
 .a\$card\+ghost[data-selected] {
 	background-color: var(--color-accent-9);
@@ -55,27 +55,27 @@
 	--inset-rounded: 8px;
 }
 .a\$card\+size-2 {
-	padding: 0.75rem;
-	border-radius: 0.5rem;
-	--inset-padding: -12px;
-	--inset-rounded: 8px;
-}
-.a\$card\+size-3 {
 	padding: 1rem;
 	border-radius: 0.5rem;
 	--inset-padding: -16px;
 	--inset-rounded: 8px;
 }
-.a\$card\+size-4 {
+.a\$card\+size-3 {
 	padding: 1.5rem;
 	border-radius: 0.75rem;
 	--inset-padding: -24px;
 	--inset-rounded: 12px;
 }
+.a\$card\+size-4 {
+	padding: 2rem;
+	border-radius: 0.75rem;
+	--inset-padding: -32px;
+	--inset-rounded: 12px;
+}
 .a\$card\+size-5 {
-	padding: 2.5rem;
+	padding: 3rem;
 	border-radius: 1rem;
-	--inset-padding: -40px;
+	--inset-padding: -48px;
 	--inset-rounded: 16px;
 }
 
@@ -145,7 +145,7 @@
 
 @media (hover: hover) {
 	a.a\$card\+ghost:hover {
-		background-color: var(--color-gray-3);
+		background-color: var(--color-gray-a3);
 	}
 	a.a\$card\+classic:hover {
 		box-shadow:

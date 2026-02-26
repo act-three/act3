@@ -49,6 +49,18 @@
     --color-mauve-10: color(display-p3 0.514 0.508 0.552);
     --color-mauve-11: color(display-p3 0.395 0.388 0.424);
     --color-mauve-12: color(display-p3 0.128 0.122 0.147);
+    --color-mauve-a1: color(display-p3 0.349 0.024 0.349 / 0.012);
+    --color-mauve-a2: color(display-p3 0.184 0.024 0.349 / 0.024);
+    --color-mauve-a3: color(display-p3 0.129 0.008 0.255 / 0.063);
+    --color-mauve-a4: color(display-p3 0.094 0.012 0.216 / 0.095);
+    --color-mauve-a5: color(display-p3 0.098 0.008 0.224 / 0.126);
+    --color-mauve-a6: color(display-p3 0.055 0.004 0.18 / 0.153);
+    --color-mauve-a7: color(display-p3 0.067 0.008 0.184 / 0.197);
+    --color-mauve-a8: color(display-p3 0.02 0.004 0.176 / 0.271);
+    --color-mauve-a9: color(display-p3 0.02 0.004 0.106 / 0.451);
+    --color-mauve-a10: color(display-p3 0.012 0.004 0.09 / 0.491);
+    --color-mauve-a11: color(display-p3 0.016 0 0.059 / 0.612);
+    --color-mauve-a12: color(display-p3 0.008 0 0.027 / 0.879);
     --color-crimson-1: color(display-p3 0.998 0.989 0.992);
     --color-crimson-2: color(display-p3 0.991 0.969 0.976);
     --color-crimson-3: color(display-p3 0.987 0.917 0.941);
@@ -61,6 +73,18 @@
     --color-crimson-10: color(display-p3 0.807 0.266 0.468);
     --color-crimson-11: color(display-p3 0.731 0.195 0.388);
     --color-crimson-12: color(display-p3 0.352 0.111 0.221);
+    --color-crimson-a1: color(display-p3 0.675 0.024 0.349 / 0.012);
+    --color-crimson-a2: color(display-p3 0.757 0.02 0.267 / 0.032);
+    --color-crimson-a3: color(display-p3 0.859 0.008 0.294 / 0.083);
+    --color-crimson-a4: color(display-p3 0.827 0.008 0.298 / 0.134);
+    --color-crimson-a5: color(display-p3 0.753 0.008 0.275 / 0.189);
+    --color-crimson-a6: color(display-p3 0.682 0.004 0.247 / 0.244);
+    --color-crimson-a7: color(display-p3 0.62 0.004 0.251 / 0.318);
+    --color-crimson-a8: color(display-p3 0.6 0.004 0.251 / 0.408);
+    --color-crimson-a9: color(display-p3 0.776 0 0.298 / 0.702);
+    --color-crimson-a10: color(display-p3 0.737 0 0.275 / 0.734);
+    --color-crimson-a11: color(display-p3 0.731 0.195 0.388);
+    --color-crimson-a12: color(display-p3 0.352 0.111 0.221);
     --color-black: rgba(0, 0, 0, 1);
     --color-white: rgba(255, 255, 255, 1);
     --color-gray-1: var(--color-mauve-1);
@@ -70,16 +94,24 @@
     --color-gray-6: var(--color-mauve-6);
     --color-gray-11: var(--color-mauve-11);
     --color-gray-12: var(--color-mauve-12);
-    --color-accent-2: var(--color-crimson-2);
-    --color-accent-3: var(--color-crimson-3);
-    --color-accent-4: var(--color-crimson-4);
+    --color-gray-a2: var(--color-mauve-a2);
+    --color-gray-a3: var(--color-mauve-a3);
+    --color-gray-a5: var(--color-mauve-a5);
+    --color-gray-a6: var(--color-mauve-a6);
+    --color-gray-a7: var(--color-mauve-a7);
+    --color-gray-a10: var(--color-mauve-a10);
     --color-accent-5: var(--color-crimson-5);
-    --color-accent-7: var(--color-crimson-7);
     --color-accent-8: var(--color-crimson-8);
     --color-accent-9: var(--color-crimson-9);
     --color-accent-10: var(--color-crimson-10);
-    --color-accent-11: var(--color-crimson-11);
     --color-accent-12: var(--color-crimson-12);
+    --color-accent-a2: var(--color-crimson-a2);
+    --color-accent-a3: var(--color-crimson-a3);
+    --color-accent-a4: var(--color-crimson-a4);
+    --color-accent-a5: var(--color-crimson-a5);
+    --color-accent-a7: var(--color-crimson-a7);
+    --color-accent-a8: var(--color-crimson-a8);
+    --color-accent-a11: var(--color-crimson-a11);
   }
 }
 @layer base {
@@ -1415,6 +1447,18 @@
     --color-mauve-10: color(display-p3 0.487 0.48 0.519);
     --color-mauve-11: color(display-p3 0.707 0.7 0.735);
     --color-mauve-12: color(display-p3 0.933 0.933 0.94);
+    --color-mauve-a1: color(display-p3 0 0 0 / 0);
+    --color-mauve-a2: color(display-p3 0.996 0.992 1 / 0.034);
+    --color-mauve-a3: color(display-p3 0.937 0.933 0.992 / 0.077);
+    --color-mauve-a4: color(display-p3 0.957 0.918 0.996 / 0.111);
+    --color-mauve-a5: color(display-p3 0.937 0.906 0.996 / 0.145);
+    --color-mauve-a6: color(display-p3 0.953 0.925 0.996 / 0.183);
+    --color-mauve-a7: color(display-p3 0.945 0.929 1 / 0.246);
+    --color-mauve-a8: color(display-p3 0.937 0.918 1 / 0.361);
+    --color-mauve-a9: color(display-p3 0.933 0.918 1 / 0.424);
+    --color-mauve-a10: color(display-p3 0.941 0.925 1 / 0.479);
+    --color-mauve-a11: color(display-p3 0.965 0.961 1 / 0.712);
+    --color-mauve-a12: color(display-p3 0.992 0.992 1 / 0.937);
     --color-crimson-1: color(display-p3 0.093 0.068 0.078);
     --color-crimson-2: color(display-p3 0.117 0.078 0.095);
     --color-crimson-3: color(display-p3 0.203 0.091 0.143);
@@ -1427,6 +1471,18 @@
     --color-crimson-10: color(display-p3 0.864 0.364 0.539);
     --color-crimson-11: color(display-p3 1 0.56 0.66);
     --color-crimson-12: color(display-p3 0.966 0.834 0.906);
+    --color-crimson-a1: color(display-p3 0.984 0.071 0.463 / 0.03);
+    --color-crimson-a2: color(display-p3 0.996 0.282 0.569 / 0.055);
+    --color-crimson-a3: color(display-p3 0.996 0.227 0.573 / 0.148);
+    --color-crimson-a4: color(display-p3 1 0.157 0.569 / 0.227);
+    --color-crimson-a5: color(display-p3 1 0.231 0.604 / 0.286);
+    --color-crimson-a6: color(display-p3 1 0.337 0.643 / 0.349);
+    --color-crimson-a7: color(display-p3 1 0.416 0.663 / 0.454);
+    --color-crimson-a8: color(display-p3 0.996 0.427 0.651 / 0.614);
+    --color-crimson-a9: color(display-p3 1 0.345 0.596 / 0.832);
+    --color-crimson-a10: color(display-p3 1 0.42 0.62 / 0.853);
+    --color-crimson-a11: color(display-p3 1 0.56 0.66);
+    --color-crimson-a12: color(display-p3 0.966 0.834 0.906);
   }
 }
 @layer components {
@@ -1436,7 +1492,6 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    font-weight: 500;
     white-space: nowrap;
     user-select: none;
     vertical-align: top;
@@ -1444,6 +1499,12 @@
     transition-duration: 150ms;
     outline: none;
     cursor: pointer;
+  }
+  .a\$button:where(:not(.a\$button\+ghost)) {
+    font-weight: 500;
+  }
+  .a\$button:where(:not(.a\$button\+ghost)) svg {
+    opacity: 0.9;
   }
   .a\$button:focus-visible {
     outline: 2px solid var(--color-accent-8);
@@ -1495,54 +1556,66 @@
     background-color: var(--color-accent-10);
     filter: brightness(0.92) saturate(1.1);
   }
+  .a\$button\+soft:focus-visible {
+    outline-offset: -1px;
+  }
   .a\$button\+soft {
-    background-color: var(--color-accent-3);
-    color: var(--color-accent-11);
+    background-color: var(--color-accent-a3);
+    color: var(--color-accent-a11);
   }
   @media (hover: hover) {
     .a\$button\+soft:hover {
-      background-color: var(--color-accent-4);
+      background-color: var(--color-accent-a4);
     }
   }
   .a\$button\+soft:active:not(:disabled) {
-    background-color: var(--color-accent-5);
+    background-color: var(--color-accent-a5);
+  }
+  .a\$button\+surface:focus-visible {
+    outline-offset: -1px;
   }
   .a\$button\+surface {
-    background-color: var(--color-accent-2);
-    color: var(--color-accent-11);
-    box-shadow: inset 0 0 0 1px var(--color-accent-7);
+    background-color: var(--color-accent-a2);
+    color: var(--color-accent-a11);
+    box-shadow: inset 0 0 0 1px var(--color-accent-a7);
   }
   @media (hover: hover) {
     .a\$button\+surface:hover {
-      box-shadow: inset 0 0 0 1px var(--color-accent-8);
+      box-shadow: inset 0 0 0 1px var(--color-accent-a8);
     }
   }
   .a\$button\+surface:active:not(:disabled) {
-    background-color: var(--color-accent-3);
-    box-shadow: inset 0 0 0 1px var(--color-accent-8);
+    background-color: var(--color-accent-a3);
+    box-shadow: inset 0 0 0 1px var(--color-accent-a8);
+  }
+  .a\$button\+outline:focus-visible {
+    outline-offset: -1px;
   }
   .a\$button\+outline {
-    box-shadow: inset 0 0 0 1px var(--color-accent-8);
-    color: var(--color-accent-11);
+    box-shadow: inset 0 0 0 1px var(--color-accent-a8);
+    color: var(--color-accent-a11);
   }
   @media (hover: hover) {
     .a\$button\+outline:hover {
-      background-color: var(--color-accent-2);
+      background-color: var(--color-accent-a2);
     }
   }
   .a\$button\+outline:active:not(:disabled) {
-    background-color: var(--color-accent-3);
+    background-color: var(--color-accent-a3);
+  }
+  .a\$button\+ghost:focus-visible {
+    outline-offset: -1px;
   }
   .a\$button\+ghost {
-    color: var(--color-accent-11);
+    color: var(--color-accent-a11);
   }
   @media (hover: hover) {
     .a\$button\+ghost:hover {
-      background-color: var(--color-accent-3);
+      background-color: var(--color-accent-a3);
     }
   }
   .a\$button\+ghost:active:not(:disabled) {
-    background-color: var(--color-accent-4);
+    background-color: var(--color-accent-a4);
   }
   .a\$button\+destructive {
     background-color: var(--color-crimson-9);
@@ -1563,23 +1636,29 @@
     gap: 0.25rem;
     font-size: 0.75rem;
     line-height: 1rem;
+    letter-spacing: 0.0025em;
   }
   .a\$button\+size-2 {
     height: 2rem;
     padding-inline: 0.75rem;
-    gap: 0.375rem;
+    gap: 0.5rem;
     font-size: 0.875rem;
     line-height: 1.25rem;
   }
   .a\$button\+size-3 {
     height: 2.5rem;
     padding-inline: 1rem;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    font-size: 1rem;
+    line-height: 1.5rem;
   }
   .a\$button\+size-4 {
     height: 3rem;
     padding-inline: 1.5rem;
     gap: 0.75rem;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    letter-spacing: -0.0025em;
   }
   .a\$button\+circle-1 {
     width: 1.5rem;
@@ -1596,10 +1675,14 @@
   .a\$button\+circle-3 {
     width: 2.5rem;
     height: 2.5rem;
+    font-size: 1rem;
+    line-height: 1.5rem;
   }
   .a\$button\+circle-4 {
     width: 3rem;
     height: 3rem;
+    font-size: 1.125rem;
+    line-height: 1.75rem;
   }
   .a\$button\+radius-full {
     border-radius: 9999px;
@@ -1608,8 +1691,17 @@
     aspect-ratio: 1;
     border-radius: 9999px;
   }
-  .a\$button\+radius-medium {
+  .a\$button\+radius-medium:where(.a\$button\+size-1, .a\$button\+circle-1) {
+    border-radius: 0.1875rem;
+  }
+  .a\$button\+radius-medium:where(.a\$button\+size-2, .a\$button\+circle-2) {
+    border-radius: 0.25rem;
+  }
+  .a\$button\+radius-medium:where(.a\$button\+size-3, .a\$button\+circle-3) {
     border-radius: 0.375rem;
+  }
+  .a\$button\+radius-medium:where(.a\$button\+size-4, .a\$button\+circle-4) {
+    border-radius: 0.5rem;
   }
   .a\$button\+radius-none {
     border-radius: 0;
@@ -1628,7 +1720,7 @@
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklch, var(--color-gray-1) 70%, transparent);
     }
-    box-shadow: inset 0 0 0 1px var(--color-gray-6);
+    box-shadow: inset 0 0 0 1px var(--color-gray-a5);
   }
   .a\$card\+classic {
     background-color: var(--panel-background);
@@ -1649,10 +1741,10 @@
     padding: 0.5rem;
   }
   .a\$card\+ghost:focus-visible {
-    border-color: var(--color-gray-6);
-    box-shadow: 0 0 0 3px color-mix(in srgb, color(display-p3 0.856 0.846 0.875) 50%, transparent);
+    border-color: var(--color-gray-a6);
+    box-shadow: 0 0 0 3px color-mix(in srgb, color(display-p3 0.055 0.004 0.18 / 0.153) 50%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-gray-6) 50%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-gray-a6) 50%, transparent);
     }
   }
   .a\$card\+ghost[data-selected] {
@@ -1666,27 +1758,27 @@
     --inset-rounded: 8px;
   }
   .a\$card\+size-2 {
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    --inset-padding: -12px;
-    --inset-rounded: 8px;
-  }
-  .a\$card\+size-3 {
     padding: 1rem;
     border-radius: 0.5rem;
     --inset-padding: -16px;
     --inset-rounded: 8px;
   }
-  .a\$card\+size-4 {
+  .a\$card\+size-3 {
     padding: 1.5rem;
     border-radius: 0.75rem;
     --inset-padding: -24px;
     --inset-rounded: 12px;
   }
+  .a\$card\+size-4 {
+    padding: 2rem;
+    border-radius: 0.75rem;
+    --inset-padding: -32px;
+    --inset-rounded: 12px;
+  }
   .a\$card\+size-5 {
-    padding: 2.5rem;
+    padding: 3rem;
     border-radius: 1rem;
-    --inset-padding: -40px;
+    --inset-padding: -48px;
     --inset-rounded: 16px;
   }
   .a\$card-media {
@@ -1748,7 +1840,7 @@
 }
 @media (hover: hover) {
   a.a\$card\+ghost:hover {
-    background-color: var(--color-gray-3);
+    background-color: var(--color-gray-a3);
   }
   a.a\$card\+classic:hover {
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),	0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -1833,22 +1925,23 @@
 }
 @layer components {
   .a\$link {
-    color: var(--color-accent-9);
+    color: var(--color-accent-a11);
     cursor: pointer;
     text-decoration: none;
   }
   .a\$link:focus-visible {
     outline: 2px solid var(--color-accent-8);
-    outline-offset: -1px;
-    border-radius: 0.125rem;
+    outline-offset: 2px;
+    border-radius: calc(0.07em * 1);
   }
   .a\$link\+underline-auto {
     text-decoration: none;
   }
   .a\$link\+underline-always {
     text-decoration: underline;
-    text-decoration-color: var(--color-accent-5);
-    text-underline-offset: 2px;
+    text-decoration-color: var(--color-accent-a5);
+    text-decoration-thickness: min(2px, max(1px, 0.05em));
+    text-underline-offset: calc(0.025em + 2px);
   }
   .a\$link\+underline-hover {
     text-decoration: none;
@@ -1857,12 +1950,14 @@
 @media (hover: hover) {
   .a\$link\+underline-auto:hover {
     text-decoration: underline;
-    text-decoration-color: var(--color-accent-5);
-    text-underline-offset: 2px;
+    text-decoration-color: var(--color-accent-a5);
+    text-decoration-thickness: min(2px, max(1px, 0.05em));
+    text-underline-offset: calc(0.025em + 2px);
   }
   .a\$link\+underline-hover:hover {
     text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration-thickness: min(2px, max(1px, 0.05em));
+    text-underline-offset: calc(0.025em + 2px);
   }
 }
 @layer components {
@@ -1876,7 +1971,7 @@
     position: relative;
     width: 100%;
     border-radius: 9999px;
-    background-color: var(--color-gray-3);
+    background-color: var(--color-gray-a3);
   }
   .a\$progress-fill {
     height: 100%;
@@ -1929,7 +2024,7 @@
     content: "";
     display: block;
     width: 100%;
-    height: 33.333%;
+    height: 30%;
     border-radius: 3px;
     background-color: currentColor;
     animation: spinner-leaf-fade 800ms linear infinite;
@@ -2005,7 +2100,7 @@
     width: 22.5rem;
     height: 100cvh;
     flex: none;
-    border-inline-end: 1px solid var(--color-gray-6);
+    border-inline-end: 1px solid var(--color-gray-a6);
     place-items: center;
     display: grid;
   }
@@ -2112,8 +2207,7 @@
     display: flex;
     width: 100%;
     min-width: 0;
-    border-radius: 0.375rem;
-    border: 1px solid var(--color-gray-6);
+    border: 1px solid var(--color-gray-a7);
     background-color: var(--color-gray-1);
     color: var(--color-gray-12);
     font-size: inherit;
@@ -2123,7 +2217,7 @@
     transition-duration: 150ms;
   }
   .a\$input::placeholder {
-    color: var(--color-gray-11);
+    color: var(--color-gray-a10);
   }
   .a\$input::selection {
     background-color: var(--color-accent-9);
@@ -2150,18 +2244,21 @@
     font-size: 12px;
     padding-inline: 0.5rem;
     padding-block: 0.125rem;
+    border-radius: 0.25rem;
   }
   .a\$input\+size-2 {
     height: 32px;
     font-size: 14px;
     padding-inline: 0.75rem;
     padding-block: 0.25rem;
+    border-radius: 0.25rem;
   }
   .a\$input\+size-3 {
     height: 40px;
     font-size: 16px;
     padding-inline: 0.75rem;
     padding-block: 0.375rem;
+    border-radius: 0.375rem;
   }
 }
 @layer components {
@@ -2172,13 +2269,13 @@
     background-color: transparent;
   }
   .a\$table\+surface {
-    border: 1px solid var(--color-gray-6);
+    border: 1px solid var(--color-gray-a5);
     border-radius: 0.5rem;
     background-color: var(--panel-background);
     overflow: hidden;
   }
   .a\$table\+surface .a\$table-header .a\$table-row {
-    background-color: var(--color-gray-2);
+    background-color: var(--color-gray-a2);
   }
   .a\$table\+size-1 {
     font-size: 0.875rem;
@@ -2217,7 +2314,7 @@
     min-height: 48px;
   }
   .a\$table-row {
-    box-shadow: inset 0 -1px var(--color-gray-5);
+    box-shadow: inset 0 -1px var(--color-gray-a5);
     transition-property: color, background-color;
     transition-duration: 150ms;
   }
@@ -2225,7 +2322,7 @@
     box-shadow: none;
   }
   .a\$table-row[data-state="selected"] {
-    background-color: var(--color-gray-2);
+    background-color: var(--color-gray-a2);
   }
   .a\$table-head {
     color: var(--color-gray-12);
@@ -2265,7 +2362,7 @@
     align-content: center;
     justify-content: space-between;
     gap: 1rem;
-    border-bottom: 1px solid var(--color-gray-6);
+    border-bottom: 1px solid var(--color-gray-a6);
     padding-inline: 1rem;
   }
   .a\$toolbar-secondary {
