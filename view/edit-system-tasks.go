@@ -6,7 +6,6 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/web/table"
 )
 
 func EditSystemTasks(tasks []*model.Task) html.Node {
@@ -20,23 +19,23 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 				html.Div(
 					attr.Class("py-4"),
 				)(
-					table.Root(attr.Class("max-w-full"))(
-						table.Header()(
-							table.Row()(
-								table.Head()(html.Text("Task")),
-								table.Head()(html.Text("ID")),
-								table.Head()(html.Text("Args")),
-								table.Head()(html.Text("Failures")),
-								table.Head()(html.Text("Next Run")),
+					TableRoot(attr.Class("max-w-full"))(
+						TableHeader()(
+							TableRow()(
+								TableHead()(html.Text("Task")),
+								TableHead()(html.Text("ID")),
+								TableHead()(html.Text("Args")),
+								TableHead()(html.Text("Failures")),
+								TableHead()(html.Text("Next Run")),
 							),
 						),
-						table.Body()(
+						TableBody()(
 							html.Range(tasks, func(t *model.Task) html.Node {
 								s := t.FailureDesc()
 								return html.Group(
 									html.Tr()(
-										table.Cell()(html.Text(t.Type())),
-										table.Cell()(
+										TableCell()(html.Text(t.Type())),
+										TableCell()(
 											html.Text(t.ID()),
 											html.Form(
 												attr.Action("/do/delete-task/"+t.ID()),
@@ -48,9 +47,9 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 													With(ButtonGhost),
 											),
 										),
-										table.Cell()(html.Text(t.Args())),
-										table.Cell()(html.Textf("%d", t.Failures())),
-										table.Cell()(
+										TableCell()(html.Text(t.Args())),
+										TableCell()(html.Textf("%d", t.Failures())),
+										TableCell()(
 											expr.IfElse(t.IsRunning(),
 												func() html.Node {
 													return Text("Running")
@@ -75,7 +74,7 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 									expr.IfElse(s != "",
 										func() html.Node {
 											return html.Tr()(
-												table.Cell(
+												TableCell(
 													attr.Colspan("5"),
 												)(
 													html.Div(

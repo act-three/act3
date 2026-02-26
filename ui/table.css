@@ -1,0 +1,58 @@
+@layer components {
+
+.a\$table {
+	caption-side: bottom;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+}
+
+.a\$table-header tr {
+	border-bottom-width: 1px;
+}
+
+.a\$table-body tr:last-child {
+	border-bottom-width: 0;
+}
+
+.a\$table-row {
+	border-bottom-width: 1px;
+	transition-property: color, background-color;
+	transition-duration: 150ms;
+}
+.a\$table-row[data-state="selected"] {
+	background-color: var(--color-gray-2);
+}
+
+.a\$table-head {
+	color: var(--color-gray-12);
+	height: 2.5rem;
+	background-clip: padding-box;
+	padding-inline: 0.5rem;
+	text-align: start;
+	vertical-align: middle;
+	font-weight: 500;
+	white-space: nowrap;
+	width: 100px;
+}
+.a\$table-head:has([role="checkbox"]) {
+	padding-inline-end: 0;
+}
+
+.a\$table-cell {
+	background-clip: padding-box;
+	padding: 0.5rem;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+.a\$table-cell:has([role="checkbox"]) {
+	padding-inline-end: 0;
+}
+
+}
+
+@media (hover: hover) {
+	.a\$table-row:hover td,
+	.a\$table-row:hover th {
+		background-color: color-mix(in oklch, var(--color-gray-2) 50%, transparent);
+	}
+}

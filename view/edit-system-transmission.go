@@ -4,7 +4,7 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
-	"ily.dev/act3/web/input"
+	. "ily.dev/act3/ui"
 )
 
 func EditSystemTransmission(config *model.ConfigTransmission) html.Node {
@@ -19,7 +19,7 @@ func EditSystemTransmission(config *model.ConfigTransmission) html.Node {
 			)(
 				html.Div(attr.Class("py-4"))(
 					html.Div()(html.Text("RPC URL")),
-					input.Text(
+					InputText(
 						attr.Name("url"),
 						attr.Class("max-w-xs"),
 						attr.Value(config.BaseURL),
@@ -27,14 +27,14 @@ func EditSystemTransmission(config *model.ConfigTransmission) html.Node {
 				),
 				html.Div(attr.Class("py-4"))(
 					html.Div()(html.Text("Download Folder")),
-					input.Text(
+					InputText(
 						attr.Name("path"),
 						attr.Class("max-w-xs"),
 						attr.Value(config.Path),
 					),
 				),
 				html.Div(attr.Class("py-4"))(
-					input.Submit(
+					InputSubmit(
 						attr.Value("Save"),
 					),
 				),

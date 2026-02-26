@@ -6,7 +6,7 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
-	"ily.dev/act3/web/input"
+	. "ily.dev/act3/ui"
 )
 
 type Filesystem struct {
@@ -61,12 +61,12 @@ func EditSystemStorage(
 					)(
 						html.Text("filesystem path"),
 					),
-					input.Text(
+					InputText(
 						attr.Class("max-w-xs"),
 						attr.ID("path"),
 						attr.Name("path"),
 					),
-					input.Submit(attr.Value("add")),
+					InputSubmit(attr.Value("add")),
 				),
 			),
 			html.Div(attr.ID("dirs"))(

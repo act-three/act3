@@ -9,9 +9,7 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
-	"ily.dev/act3/web/item"
 	"ily.dev/act3/web/list"
-	"ily.dev/act3/web/toolbar"
 )
 
 const EditMediaSeriesListItems = "series-list-items"
@@ -22,7 +20,7 @@ func EditMediaSeries(
 	detail ...html.Node,
 ) html.Node {
 	return app(title, FlexCol(attr.Class("place-self-stretch"))(
-		toolbar.Primary()(
+		ToolbarPrimary()(
 			html.Div()(DialogButton("/dialog/series-add")(
 				Icon("plus"),
 				html.Text("Add Series"),
@@ -61,15 +59,15 @@ func EditMediaSeries(
 }
 
 func EditMediaSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
-	return item.Item(
+	return Item(
 		attr.Group(attrs...),
 		list.ID(ss.ID()),
 		list.URL(ss.EditURL()),
 	)(
-		item.Media()(html.Img(attr.Src(ss.TVmazeImageURL()))),
-		item.Content()(
-			item.Title()(html.Text(ss.Title())),
-			item.Description(attr.Class("line-clamp-2"))(
+		ItemMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
+		ItemContent()(
+			ItemTitle()(html.Text(ss.Title())),
+			ItemDescription(attr.Class("line-clamp-2"))(
 				html.If(ss.PremieredOn() != nil,
 					func() html.Node { return html.Text(*ss.PremieredOn()) },
 				),

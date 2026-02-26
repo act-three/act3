@@ -10,9 +10,7 @@ import (
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
-	"ily.dev/act3/web/item"
 	"ily.dev/act3/web/list"
-	"ily.dev/act3/web/toolbar"
 	"ily.dev/act3/xslices"
 	"ily.dev/act3/xstrings"
 )
@@ -25,7 +23,7 @@ func EditMediaDownloads(
 	const torrentListID = "torrent-list"
 	return app(title,
 		FlexCol(Class("place-self-stretch"))(
-			toolbar.Primary()(
+			ToolbarPrimary()(
 				Box(),
 				Box(Class("relative w-md"))(
 					editMediaDownloadsSearchBar(),
@@ -75,26 +73,26 @@ func editMediaDownloadsSearchBar() html.Node {
 }
 
 func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node {
-	return item.Item(
+	return Item(
 		attr.Group(attrs...),
 		list.ID(dl.ID()),
 		list.URL(dl.URL()),
 	)(
-		item.Content()(
+		ItemContent()(
 			expr.IfElse(dl.State() == "error",
 				func() html.Node {
 					return html.Group(
-						item.Title()(Text(dl.Title())),
-						item.Description(attr.Class("line-clamp-2"))(
+						ItemTitle()(Text(dl.Title())),
+						ItemDescription(attr.Class("line-clamp-2"))(
 							Text(dl.Error()),
 						),
 					)
 				},
 				func() html.Node {
 					return html.Group(
-						item.Title()(Text(dl.Title())).
+						ItemTitle()(Text(dl.Title())).
 							With(FontNormal),
-						item.Description()(
+						ItemDescription()(
 							Textf("%d/%d assigned",
 								dl.PlanLen(),
 								dl.FilesLen(),
@@ -187,11 +185,11 @@ func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) ht
 			html.Range(dfs, func(df *model.DownloadFile) html.Node {
 				ep := df.Episode()
 				displayPath := strings.TrimPrefix(df.Path(), prefix)
-				return item.Item()(
-					item.Content()(
+				return Item()(
+					ItemContent()(
 						expr.IfElse(ep != nil,
 							func() html.Node {
-								return item.Title()(
+								return ItemTitle()(
 									html.Textf("%s. %s", ep.Label(), ep.Title()),
 								)
 							},
@@ -199,7 +197,7 @@ func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) ht
 								return html.Group()
 							},
 						),
-						item.Description()(html.Text(displayPath)),
+						ItemDescription()(html.Text(displayPath)),
 						expr.IfElse(df.Progress() >= 0,
 							func() html.Node {
 								return Progress(df.Progress(), Class("mt-1")).

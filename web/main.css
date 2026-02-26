@@ -12,6 +12,10 @@
 @import "../ui/spinner.css";
 @import "../ui/split.css";
 @import "../ui/text.css";
+@import "../ui/input.css";
+@import "../ui/item.css";
+@import "../ui/table.css";
+@import "../ui/toolbar.css";
 
 @theme {
 	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;

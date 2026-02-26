@@ -17,7 +17,6 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view"
-	"ily.dev/act3/web/input"
 	"ily.dev/act3/xstrings"
 )
 
@@ -92,7 +91,7 @@ func (w *web) seriesAddDialogReq(req *http.Request) (http.Handler, error) {
 				attr.Action("/search-series"),
 				attr.Attr("data-turbo-frame")("results"),
 			)(
-				input.Text(
+				InputText(
 					attr.Attr("autofocus"),
 					attr.Attr("data-action")("add-series#search"),
 					attr.Class("flex-none"),
