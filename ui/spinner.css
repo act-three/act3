@@ -1,3 +1,13 @@
+@keyframes spinner-leaf-fade {
+	0% {
+		opacity: 1
+	}
+
+	to {
+		opacity: .25
+	}
+}
+
 @layer components {
 
 /* spinner — base */

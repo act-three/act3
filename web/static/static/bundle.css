@@ -1905,6 +1905,14 @@
     overscroll-behavior: contain;
   }
 }
+@keyframes spinner-leaf-fade {
+  0% {
+    opacity: 1;
+  }
+  to {
+    opacity: .25;
+  }
+}
 @layer components {
   .a\$spinner {
     position: relative;
@@ -2273,25 +2281,6 @@
   }
 }
 @layer base {
-  body {
-    min-height: 100vh;
-    font-optical-sizing: auto;
-    font-size: var(--body);
-    font-style: normal;
-    font-weight: 400;
-    line-height: var(--body-lh);
-    -webkit-text-size-adjust: 100%;
-    -moz-text-size-adjust: none;
-    text-size-adjust: none;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  svg[width="24"][height="24"] {
-    stroke-width: 1.5;
-  }
-  body:has(.app), body:has(#full-player) {
-    overflow: hidden;
-  }
   .plyr {
     height: 100%;
   }
@@ -2335,6 +2324,27 @@
     opacity: 0;
     pointer-events: none;
     transform: translateY(100%);
+  }
+}
+@layer base {
+  body {
+    min-height: 100vh;
+    font-optical-sizing: auto;
+    font-size: var(--body);
+    font-style: normal;
+    font-weight: 400;
+    line-height: var(--body-lh);
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: none;
+    text-size-adjust: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  svg[width="24"][height="24"] {
+    stroke-width: 1.5;
+  }
+  body:has(.app), body:has(#full-player) {
+    overflow: hidden;
   }
 }
 @property --tw-translate-x {
@@ -2591,14 +2601,6 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-@keyframes spinner-leaf-fade {
-  0% {
-    opacity: 1;
-  }
-  to {
-    opacity: .25;
   }
 }
 @layer properties {
