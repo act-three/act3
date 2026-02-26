@@ -13,22 +13,22 @@ func Button(attrs ...attr.Node) html.Element {
 	}
 	return func(nodes ...html.Node) html.Node {
 		return html.Tag(tag)(
-			attr.Class(buttonBase),
+			attr.Class("a$button"),
 			attr.FuncAttr("class", func(get func(any) any) string {
-				variant, _ := get(buttonVariantKey).(buttonVariant)
-				return buttonVariantTable[variant]
+				v, _ := get(buttonVariantKey).(buttonVariant)
+				return buttonVariantClasses[v]
 			}),
 			attr.FuncAttr("class", func(get func(any) any) string {
-				shape, _ := get(buttonShapeKey).(buttonShape)
-				size, _ := get(buttonSizeKey).(buttonSize)
-				if shape == buttonCircle {
-					return buttonCircleSizeTable[size]
+				s, _ := get(buttonSizeKey).(buttonSize)
+				r, _ := get(buttonShapeKey).(buttonShape)
+				if r == buttonCircle {
+					return buttonCircleSizeClasses[s]
 				}
-				return buttonSizeTable[size]
+				return buttonSizeClasses[s]
 			}),
 			attr.FuncAttr("class", func(get func(any) any) string {
-				shape, _ := get(buttonShapeKey).(buttonShape)
-				return buttonShapeTable[shape]
+				r, _ := get(buttonShapeKey).(buttonShape)
+				return buttonShapeClasses[r]
 			}),
 			a,
 		)(nodes...).With(TextSelectNone)
@@ -61,28 +61,6 @@ var (
 	ButtonRadiusNone   = html.WithValue(buttonShapeKey, buttonRadiusNone)
 )
 
-const buttonBase = `
-	relative
-	inline-flex
-	shrink-0
-	items-center
-	justify-center
-	font-medium
-	whitespace-nowrap
-	transition-colors
-	outline-none
-	focus-visible:ring-[3px]
-	focus-visible:ring-accent-8/40
-	disabled:pointer-events-none
-	disabled:opacity-50
-	aria-disabled:pointer-events-none
-	aria-disabled:opacity-50
-	[&_svg]:pointer-events-none
-	[&_svg]:shrink-0
-	[&_svg:not([class*='size-'])]:size-4
-	cursor-pointer
-`
-
 type (
 	buttonVariant int
 	buttonSize    int
@@ -112,32 +90,32 @@ const (
 	buttonRadiusNone
 )
 
-var buttonVariantTable = map[buttonVariant]string{
-	buttonSolid:       "bg-accent-9 text-white hover:bg-accent-10",
-	buttonSoft:        "bg-accent-3 text-accent-11 hover:bg-accent-4",
-	buttonSurface:     "bg-accent-2 text-accent-11 border border-accent-7 hover:bg-accent-3",
-	buttonOutline:     "border border-accent-8 text-accent-11 hover:bg-accent-2",
-	buttonGhost:       "text-accent-11 hover:bg-accent-3",
-	buttonDestructive: "bg-crimson-9 text-white hover:bg-crimson-10",
+var buttonVariantClasses = map[buttonVariant]string{
+	buttonSolid:       "a$button+solid",
+	buttonSoft:        "a$button+soft",
+	buttonSurface:     "a$button+surface",
+	buttonOutline:     "a$button+outline",
+	buttonGhost:       "a$button+ghost",
+	buttonDestructive: "a$button+destructive",
 }
 
-var buttonSizeTable = map[buttonSize]string{
-	buttonSize1: "h-6 px-2 gap-1 text-xs",
-	buttonSize2: "h-8 px-3 gap-1.5 text-sm",
-	buttonSize3: "h-10 px-4 gap-2",
-	buttonSize4: "h-12 px-6 gap-3",
+var buttonSizeClasses = map[buttonSize]string{
+	buttonSize1: "a$button+size-1",
+	buttonSize2: "a$button+size-2",
+	buttonSize3: "a$button+size-3",
+	buttonSize4: "a$button+size-4",
 }
 
-var buttonCircleSizeTable = map[buttonSize]string{
-	buttonSize1: "size-6 text-xs",
-	buttonSize2: "size-8 text-sm",
-	buttonSize3: "size-10",
-	buttonSize4: "size-12",
+var buttonCircleSizeClasses = map[buttonSize]string{
+	buttonSize1: "a$button+circle-1",
+	buttonSize2: "a$button+circle-2",
+	buttonSize3: "a$button+circle-3",
+	buttonSize4: "a$button+circle-4",
 }
 
-var buttonShapeTable = map[buttonShape]string{
-	buttonRadiusFull:   "rounded-full",
-	buttonCircle:       "aspect-square rounded-full",
-	buttonRadiusMedium: "rounded-md",
-	buttonRadiusNone:   "rounded-none",
+var buttonShapeClasses = map[buttonShape]string{
+	buttonRadiusFull:   "a$button+radius-full",
+	buttonCircle:       "a$button+radius-circle",
+	buttonRadiusMedium: "a$button+radius-medium",
+	buttonRadiusNone:   "a$button+radius-none",
 }
