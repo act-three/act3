@@ -2032,6 +2032,27 @@
     }
   }
 }
+button[aria-busy="true"], a[aria-busy="true"] {
+  pointer-events: none;
+}
+button[aria-busy="true"] > *, a[aria-busy="true"] > * {
+  visibility: hidden;
+}
+button[aria-busy="true"]::after, a[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 9999px;
+  animation: spin 600ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 @layer theme {
   .dark {
     --color-gray-0: oklch(0 0 0);
@@ -2059,27 +2080,6 @@
     --color-crimson-10: color(display-p3 0.864 0.364 0.539);
     --color-crimson-11: color(display-p3 1 0.56 0.66);
     --color-crimson-12: color(display-p3 0.966 0.834 0.906);
-  }
-}
-button[aria-busy="true"], a[aria-busy="true"] {
-  pointer-events: none;
-}
-button[aria-busy="true"] > *, a[aria-busy="true"] > * {
-  visibility: hidden;
-}
-button[aria-busy="true"]::after, a[aria-busy="true"]::after {
-  content: "";
-  position: absolute;
-  width: 1em;
-  height: 1em;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 9999px;
-  animation: spin 600ms linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
   }
 }
 @layer base {

@@ -1,0 +1,20 @@
+button[aria-busy="true"],
+a[aria-busy="true"] {
+	pointer-events: none;
+}
+button[aria-busy="true"] > *,
+a[aria-busy="true"] > * {
+	visibility: hidden;
+}
+button[aria-busy="true"]::after,
+a[aria-busy="true"]::after {
+	content: "";
+	position: absolute;
+	width: 1em;
+	height: 1em;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	border-radius: 9999px;
+	animation: spin 600ms linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }

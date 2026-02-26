@@ -1,5 +1,6 @@
 @import "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap";
 @import "tailwindcss";
+@import "../ui/button.css";
 
 @theme {
 	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
@@ -151,27 +152,6 @@
 	--color-accent-11: var(--color-crimson-11);
 	--color-accent-12: var(--color-crimson-12);
 }
-
-button[aria-busy="true"],
-a[aria-busy="true"] {
-	pointer-events: none;
-}
-button[aria-busy="true"] > *,
-a[aria-busy="true"] > * {
-	visibility: hidden;
-}
-button[aria-busy="true"]::after,
-a[aria-busy="true"]::after {
-	content: "";
-	position: absolute;
-	width: 1em;
-	height: 1em;
-	border: 2px solid currentColor;
-	border-right-color: transparent;
-	border-radius: 9999px;
-	animation: spin 600ms linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg) } }
 
 @layer base {
 	::selection {
