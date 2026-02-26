@@ -2,6 +2,7 @@
 @import "tailwindcss";
 @import "../ui/button.css";
 @import "../ui/card.css";
+@import "../ui/spinner.css";
 
 @theme {
 	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
