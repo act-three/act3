@@ -1,6 +1,6 @@
 @layer components {
 
-.a\$grid-12 {
+.u-grid-12 {
 	margin-inline: auto;
 	width: 70.5rem;
 	display: grid;
@@ -8,14 +8,14 @@
 	gap: 1.5rem;
 }
 
-.a\$grid-9 {
+.u-grid-9 {
 	width: 100%;
 	display: grid;
 	grid-template-columns: repeat(9, minmax(0, 1fr));
 	gap: 1.5rem;
 }
 
-.a\$grid-8 {
+.u-grid-8 {
 	width: 100%;
 	display: grid;
 	grid-template-columns: repeat(8, minmax(0, 1fr));

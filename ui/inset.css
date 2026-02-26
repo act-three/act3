@@ -1,49 +1,49 @@
 @layer components {
 
 /* inset — base */
-.a\$inset {
+.u-inset {
 	overflow: hidden;
 }
 
 /* side: all (default) */
-.a\$inset\+all {
+.u-inset\+all {
 	border-radius: var(--inset-rounded);
 	padding: var(--inset-padding);
 }
 
 /* side: x */
-.a\$inset\+x {
+.u-inset\+x {
 	margin-inline: var(--inset-padding);
 }
 
 /* side: y */
-.a\$inset\+y {
+.u-inset\+y {
 	margin-block: var(--inset-padding);
 }
 
 /* side: top */
-.a\$inset\+top {
+.u-inset\+top {
 	border-radius: var(--inset-rounded) var(--inset-rounded) 0 0;
 	margin-top: var(--inset-padding);
 	margin-inline: var(--inset-padding);
 }
 
 /* side: bottom */
-.a\$inset\+bottom {
+.u-inset\+bottom {
 	border-radius: 0 0 var(--inset-rounded) var(--inset-rounded);
 	margin-bottom: var(--inset-padding);
 	margin-inline: var(--inset-padding);
 }
 
 /* side: left */
-.a\$inset\+left {
+.u-inset\+left {
 	border-radius: var(--inset-rounded) 0 0 var(--inset-rounded);
 	margin-left: var(--inset-padding);
 	margin-block: var(--inset-padding);
 }
 
 /* side: right */
-.a\$inset\+right {
+.u-inset\+right {
 	border-radius: 0 var(--inset-rounded) var(--inset-rounded) 0;
 	margin-right: var(--inset-padding);
 	margin-block: var(--inset-padding);

@@ -1,23 +1,23 @@
 @layer components {
 
-.a\$link {
+.u-link {
 	color: var(--color-accent-a11);
 	cursor: pointer;
 	text-decoration: none;
 }
-.a\$link:focus-visible {
+.u-link:focus-visible {
 	outline: 2px solid var(--color-accent-8);
 	outline-offset: 2px;
 	border-radius: calc(0.07em * 1);
 }
 
 /* underline auto — underline on hover */
-.a\$link\+underline-auto {
+.u-link\+underline-auto {
 	text-decoration: none;
 }
 
 /* underline always */
-.a\$link\+underline-always {
+.u-link\+underline-always {
 	text-decoration: underline;
 	text-decoration-color: var(--color-accent-a5);
 	text-decoration-thickness: min(2px, max(1px, 0.05em));
@@ -25,20 +25,20 @@
 }
 
 /* underline hover — underline only on hover */
-.a\$link\+underline-hover {
+.u-link\+underline-hover {
 	text-decoration: none;
 }
 
 }
 
 @media (hover: hover) {
-	.a\$link\+underline-auto:hover {
+	.u-link\+underline-auto:hover {
 		text-decoration: underline;
 		text-decoration-color: var(--color-accent-a5);
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
 		text-underline-offset: calc(0.025em + 2px);
 	}
-	.a\$link\+underline-hover:hover {
+	.u-link\+underline-hover:hover {
 		text-decoration: underline;
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
 		text-underline-offset: calc(0.025em + 2px);

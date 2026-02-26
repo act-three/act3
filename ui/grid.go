@@ -7,21 +7,21 @@ import (
 
 func Grid12(attrs ...attr.Node) html.Element {
 	return Box(
-		Class("a$grid-12"),
+		Class("u-grid-12"),
 		group(attrs...),
 	)
 }
 
 func Grid9(attrs ...attr.Node) html.Element {
 	return Box(
-		Class("a$grid-9"),
+		Class("u-grid-9"),
 		group(attrs...),
 	)
 }
 
 func Grid8(attrs ...attr.Node) html.Element {
 	return Box(
-		Class("a$grid-8"),
+		Class("u-grid-8"),
 		group(attrs...),
 	)
 }

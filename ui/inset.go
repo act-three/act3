@@ -6,18 +6,18 @@ import (
 )
 
 var (
-	InsetSideAll    = Class("a$inset+all")
-	InsetSideX      = Class("a$inset+x")
-	InsetSideY      = Class("a$inset+y")
-	InsetSideTop    = Class("a$inset+top")
-	InsetSideBottom = Class("a$inset+bottom")
-	InsetSideLeft   = Class("a$inset+left")
-	InsetSideRight  = Class("a$inset+right")
+	InsetSideAll    = Class("u-inset+all")
+	InsetSideX      = Class("u-inset+x")
+	InsetSideY      = Class("u-inset+y")
+	InsetSideTop    = Class("u-inset+top")
+	InsetSideBottom = Class("u-inset+bottom")
+	InsetSideLeft   = Class("u-inset+left")
+	InsetSideRight  = Class("u-inset+right")
 )
 
 func Inset(attrs ...attr.Node) html.Element {
 	return html.Div(
-		Class("a$inset"),
+		Class("u-inset"),
 		group(attrs...),
 	)
 }

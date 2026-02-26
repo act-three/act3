@@ -1,6 +1,6 @@
 @layer components {
 
-.a\$input {
+.u-input {
 	display: flex;
 	width: 100%;
 	min-width: 0;
@@ -13,43 +13,43 @@
 	transition-property: color, box-shadow, outline;
 	transition-duration: 150ms;
 }
-.a\$input::placeholder {
+.u-input::placeholder {
 	color: var(--color-gray-a10);
 }
-.a\$input::selection {
+.u-input::selection {
 	background-color: var(--color-accent-9);
 	color: white;
 }
-.a\$input:focus-visible {
+.u-input:focus-visible {
 	outline: 2px solid var(--color-accent-8);
 	outline-offset: -1px;
 	border-color: transparent;
 }
-.a\$input:disabled {
+.u-input:disabled {
 	cursor: not-allowed;
 	opacity: 0.5;
 }
-.a\$input[aria-invalid="true"] {
+.u-input[aria-invalid="true"] {
 	border-color: var(--color-crimson-8);
 	box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-crimson-8) 20%, transparent);
 }
 
 /* sizes */
-.a\$input\+size-1 {
+.u-input\+size-1 {
 	height: 24px;
 	font-size: 12px;
 	padding-inline: 0.5rem;
 	padding-block: 0.125rem;
 	border-radius: 0.25rem;
 }
-.a\$input\+size-2 {
+.u-input\+size-2 {
 	height: 32px;
 	font-size: 14px;
 	padding-inline: 0.75rem;
 	padding-block: 0.25rem;
 	border-radius: 0.25rem;
 }
-.a\$input\+size-3 {
+.u-input\+size-3 {
 	height: 40px;
 	font-size: 16px;
 	padding-inline: 0.75rem;

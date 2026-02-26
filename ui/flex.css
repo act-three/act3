@@ -1,11 +1,11 @@
 @layer components {
 
-.a\$flex-row {
+.u-flex-row {
 	display: flex;
 	flex-direction: row;
 }
 
-.a\$flex-col {
+.u-flex-col {
 	display: flex;
 	flex-direction: column;
 }

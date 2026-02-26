@@ -9,14 +9,14 @@ import (
 func Split(attrs ...attr.Node) func(list, detail html.Node) html.Node {
 	return func(list, detail html.Node) html.Node {
 		return html.Div(
-			attr.Class("a$split"),
+			attr.Class("u-split"),
 			attr.Group(attrs...),
 		)(
 			// TODO(april): refactor list stuff and frame target stuff;
 			// pull it out of ui and put it in view
 			turbo.Frame("item-list",
 				attr.Target("detail"),
-				attr.Class("a$split-list"),
+				attr.Class("u-split-list"),
 			)(
 				list,
 			),

@@ -7,7 +7,7 @@ import (
 
 func ToolbarPrimary(attrs ...attr.Node) html.Element {
 	return html.Header(
-		attr.Class("a$toolbar-primary"),
+		attr.Class("u-toolbar-primary"),
 		attr.Group(attrs...),
 	).
 		With(ButtonSurface).(html.Element)
@@ -15,7 +15,7 @@ func ToolbarPrimary(attrs ...attr.Node) html.Element {
 
 func ToolbarSecondary(attrs ...attr.Node) html.Element {
 	return html.Header(
-		attr.Class("a$toolbar-secondary"),
+		attr.Class("u-toolbar-secondary"),
 		attr.Group(attrs...),
 	).
 		With(ButtonSize1).

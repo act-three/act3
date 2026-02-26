@@ -21,12 +21,12 @@ func Progress(value float64, attrs ...attr.Node) html.Node {
 		attr.Attr("aria-valuenow")(fmt.Sprintf("%.1f", value*100)),
 		attr.Attr("data-state")(state),
 		attr.Attr("data-value")(fmt.Sprintf("%.1f", value*100)),
-		attr.Class("a$progress"),
+		attr.Class("u-progress"),
 		attr.EnvAttr("class", progressSizeKey, progressMD),
 		attr.Group(attrs...),
 	)(
 		html.Div(
-			attr.Class("a$progress-fill"),
+			attr.Class("u-progress-fill"),
 			attr.Style(fmt.Sprintf("width: %.2f%%", 100*value)),
 		),
 	)
@@ -39,7 +39,7 @@ var (
 )
 
 const (
-	progressSM = "a$progress+size-sm"
-	progressMD = "a$progress+size-md"
-	progressLG = "a$progress+size-lg"
+	progressSM = "u-progress+size-sm"
+	progressMD = "u-progress+size-md"
+	progressLG = "u-progress+size-lg"
 )

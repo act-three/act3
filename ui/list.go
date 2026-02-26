@@ -15,7 +15,7 @@ var (
 
 func List(prefix, target string, attrs ...attr.Node) html.Element {
 	return ScrollArea(
-		attr.Class("a$list"),
+		attr.Class("u-list"),
 		attr.Group(attrs...),
 		stimulus.Controller(listController),
 		stimulus.Value(listController, "prefix")(prefix),

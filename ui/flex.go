@@ -7,14 +7,14 @@ import (
 
 func FlexRow(attrs ...attr.Node) html.Element {
 	return html.Div(
-		Class("a$flex-row"),
+		Class("u-flex-row"),
 		group(attrs...),
 	)
 }
 
 func FlexCol(attrs ...attr.Node) html.Element {
 	return html.Div(
-		Class("a$flex-col"),
+		Class("u-flex-col"),
 		group(attrs...),
 	)
 }

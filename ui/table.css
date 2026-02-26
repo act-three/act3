@@ -1,80 +1,80 @@
 @layer components {
 
-.a\$table {
+.u-table {
 	caption-side: bottom;
 }
 
 /* ghost variant (default) */
-.a\$table\+ghost {
+.u-table\+ghost {
 	background-color: transparent;
 }
 
 /* surface variant */
-.a\$table\+surface {
+.u-table\+surface {
 	border: 1px solid var(--color-gray-a5);
 	border-radius: 0.5rem;
 	background-color: var(--panel-background);
 	overflow: hidden;
 }
-.a\$table\+surface .a\$table-header .a\$table-row {
+.u-table\+surface .u-table-header .u-table-row {
 	background-color: var(--color-gray-a2);
 }
 
 /* sizes */
-.a\$table\+size-1 {
+.u-table\+size-1 {
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 }
-.a\$table\+size-1 .a\$table-head {
+.u-table\+size-1 .u-table-head {
 	height: 2rem;
 	padding: 0.5rem;
 }
-.a\$table\+size-1 .a\$table-cell {
+.u-table\+size-1 .u-table-cell {
 	padding: 0.5rem;
 	min-height: 36px;
 }
 
-.a\$table\+size-2 {
+.u-table\+size-2 {
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 }
-.a\$table\+size-2 .a\$table-head {
+.u-table\+size-2 .u-table-head {
 	height: 2.5rem;
 	padding: 0.75rem;
 }
-.a\$table\+size-2 .a\$table-cell {
+.u-table\+size-2 .u-table-cell {
 	padding: 0.75rem;
 	min-height: 44px;
 }
 
-.a\$table\+size-3 {
+.u-table\+size-3 {
 	font-size: 1rem;
 	line-height: 1.5rem;
 }
-.a\$table\+size-3 .a\$table-head {
+.u-table\+size-3 .u-table-head {
 	height: 2.75rem;
 	padding: 0.75rem 1rem;
 }
-.a\$table\+size-3 .a\$table-cell {
+.u-table\+size-3 .u-table-cell {
 	padding: 0.75rem 1rem;
 	min-height: 48px;
 }
 
 /* row separators */
-.a\$table-row {
+.u-table-row {
 	box-shadow: inset 0 -1px var(--color-gray-a5);
 	transition-property: color, background-color;
 	transition-duration: 150ms;
 }
-.a\$table-body .a\$table-row:last-child {
+.u-table-body .u-table-row:last-child {
 	box-shadow: none;
 }
-.a\$table-row[data-state="selected"] {
+.u-table-row[data-state="selected"] {
 	background-color: var(--color-gray-a2);
 }
 
 /* column headers */
-.a\$table-head {
+.u-table-head {
 	color: var(--color-gray-12);
 	background-clip: padding-box;
 	text-align: start;
@@ -83,25 +83,25 @@
 	white-space: nowrap;
 	width: 100px;
 }
-.a\$table-head:has([role="checkbox"]) {
+.u-table-head:has([role="checkbox"]) {
 	padding-inline-end: 0;
 }
 
 /* cells */
-.a\$table-cell {
+.u-table-cell {
 	background-clip: padding-box;
 	vertical-align: middle;
 	white-space: nowrap;
 }
-.a\$table-cell:has([role="checkbox"]) {
+.u-table-cell:has([role="checkbox"]) {
 	padding-inline-end: 0;
 }
 
 }
 
 @media (hover: hover) {
-	.a\$table-row:hover td,
-	.a\$table-row:hover th {
+	.u-table-row:hover td,
+	.u-table-row:hover th {
 		background-color: color-mix(in oklch, var(--color-gray-2) 50%, transparent);
 	}
 }

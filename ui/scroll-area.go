@@ -11,7 +11,7 @@ import (
 // relies on the browser's default scrollbar rendering.
 func ScrollArea(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("a$scroll-area"),
+		attr.Class("u-scroll-area"),
 		attr.Group(attrs...),
 	)
 }

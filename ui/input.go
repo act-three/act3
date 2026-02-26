@@ -20,14 +20,14 @@ var (
 )
 
 var inputSizeClasses = map[inputSize]string{
-	inputSize1: "a$input+size-1",
-	inputSize2: "a$input+size-2",
-	inputSize3: "a$input+size-3",
+	inputSize1: "u-input+size-1",
+	inputSize2: "u-input+size-2",
+	inputSize3: "u-input+size-3",
 }
 
 func InputText(attrs ...attr.Node) html.Element {
 	return html.Input(
-		attr.Class("a$input"),
+		attr.Class("u-input"),
 		attr.FuncAttr("class", func(get func(any) any) string {
 			s, _ := get(inputSizeKey).(inputSize)
 			return inputSizeClasses[s]

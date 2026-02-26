@@ -13,7 +13,7 @@ func Button(attrs ...attr.Node) html.Element {
 	}
 	return func(nodes ...html.Node) html.Node {
 		return html.Tag(tag)(
-			attr.Class("a$button"),
+			attr.Class("u-button"),
 			attr.FuncAttr("class", func(get func(any) any) string {
 				v, _ := get(buttonVariantKey).(buttonVariant)
 				return buttonVariantClasses[v]
@@ -91,31 +91,31 @@ const (
 )
 
 var buttonVariantClasses = map[buttonVariant]string{
-	buttonSolid:       "a$button+solid",
-	buttonSoft:        "a$button+soft",
-	buttonSurface:     "a$button+surface",
-	buttonOutline:     "a$button+outline",
-	buttonGhost:       "a$button+ghost",
-	buttonDestructive: "a$button+destructive",
+	buttonSolid:       "u-button+solid",
+	buttonSoft:        "u-button+soft",
+	buttonSurface:     "u-button+surface",
+	buttonOutline:     "u-button+outline",
+	buttonGhost:       "u-button+ghost",
+	buttonDestructive: "u-button+destructive",
 }
 
 var buttonSizeClasses = map[buttonSize]string{
-	buttonSize1: "a$button+size-1",
-	buttonSize2: "a$button+size-2",
-	buttonSize3: "a$button+size-3",
-	buttonSize4: "a$button+size-4",
+	buttonSize1: "u-button+size-1",
+	buttonSize2: "u-button+size-2",
+	buttonSize3: "u-button+size-3",
+	buttonSize4: "u-button+size-4",
 }
 
 var buttonCircleSizeClasses = map[buttonSize]string{
-	buttonSize1: "a$button+circle-1",
-	buttonSize2: "a$button+circle-2",
-	buttonSize3: "a$button+circle-3",
-	buttonSize4: "a$button+circle-4",
+	buttonSize1: "u-button+circle-1",
+	buttonSize2: "u-button+circle-2",
+	buttonSize3: "u-button+circle-3",
+	buttonSize4: "u-button+circle-4",
 }
 
 var buttonShapeClasses = map[buttonShape]string{
-	buttonRadiusFull:   "a$button+radius-full",
-	buttonCircle:       "a$button+radius-circle",
-	buttonRadiusMedium: "a$button+radius-medium",
-	buttonRadiusNone:   "a$button+radius-none",
+	buttonRadiusFull:   "u-button+radius-full",
+	buttonCircle:       "u-button+radius-circle",
+	buttonRadiusMedium: "u-button+radius-medium",
+	buttonRadiusNone:   "u-button+radius-none",
 }

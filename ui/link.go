@@ -8,14 +8,14 @@ import (
 func Link(url string, attrs ...attr.Node) html.Element {
 	return html.A(
 		attr.Href(url),
-		attr.Class("a$link"),
-		attr.EnvAttr("class", linkUnderlineKey, "a$link+underline-auto"),
+		attr.Class("u-link"),
+		attr.EnvAttr("class", linkUnderlineKey, "u-link+underline-auto"),
 		group(attrs...),
 	)
 }
 
 var (
-	LinkUnderlineAuto   = html.WithValue(linkUnderlineKey, "a$link+underline-auto")
-	LinkUnderlineAlways = html.WithValue(linkUnderlineKey, "a$link+underline-always")
-	LinkUnderlineHover  = html.WithValue(linkUnderlineKey, "a$link+underline-hover")
+	LinkUnderlineAuto   = html.WithValue(linkUnderlineKey, "u-link+underline-auto")
+	LinkUnderlineAlways = html.WithValue(linkUnderlineKey, "u-link+underline-always")
+	LinkUnderlineHover  = html.WithValue(linkUnderlineKey, "u-link+underline-hover")
 )

@@ -1,20 +1,20 @@
 ---
 name: convert-ui-component
-description: Convert a ui/ component from inline Tailwind utilities to Radix-style component CSS with `a$` prefix. Use when asked to convert, migrate, or restyle a ui/ component.
+description: Convert a ui/ component from inline Tailwind utilities to Radix-style component CSS with `u-` prefix. Use when asked to convert, migrate, or restyle a ui/ component.
 ---
 
 # Convert UI Component to Component CSS
 
 Convert a `ui/` component from inline Tailwind utility classes to
-semantic `a$`-prefixed CSS classes in a per-component stylesheet.
+semantic `u-`-prefixed CSS classes in a per-component stylesheet.
 
 ## Naming conventions
 
-- Base class: `a$<component>` (e.g. `a$button`, `a$badge`)
-- Variant classes use `+` separator: `a$<component>+<variant>`
-  (e.g. `a$button+solid`, `a$button+size-2`)
-- In CSS selectors, escape `$` and `+`: `.a\$button\+solid`
-- In Go strings, no escaping needed: `"a$button+solid"`
+- Base class: `u-<component>` (e.g. `u-button`, `u-badge`)
+- Variant classes use `+` separator: `u-<component>+<variant>`
+  (e.g. `u-button+solid`, `u-button+size-2`)
+- In CSS selectors, escape `+`: `.u-button\+solid`
+- In Go strings, no escaping needed: `"u-button+solid"`
 
 ## Steps
 
@@ -29,20 +29,20 @@ Read `ui/<component>.go`. Identify:
 
 ### 2. Rewrite the Go file
 
-Replace the Tailwind class strings with `a$`-prefixed class names.
+Replace the Tailwind class strings with `u-`-prefixed class names.
 
 **Remove:**
 - The base const with inline Tailwind utilities
 - All `map[...]string` tables that hold Tailwind class lists
 
 **Add:**
-- `attr.Class("a$<component>")` as the base class
-- New `map[...]string` tables returning `a$` class names, e.g.:
+- `attr.Class("u-<component>")` as the base class
+- New `map[...]string` tables returning `u-` class names, e.g.:
 
 ```go
 var fooVariantClasses = map[fooVariant]string{
-    fooSolid: "a$foo+solid",
-    fooSoft:  "a$foo+soft",
+    fooSolid: "u-foo+solid",
+    fooSoft:  "u-foo+soft",
 }
 ```
 
@@ -63,7 +63,7 @@ Follow these patterns from Radix Themes:
 ```css
 @layer components {
 
-.a\$foo {
+.u-foo {
     position: relative;
     display: inline-flex;
     /* ... */
@@ -75,7 +75,7 @@ Follow these patterns from Radix Themes:
 **Focus ring** — use `outline` not `box-shadow` (survives
 `overflow: hidden`):
 ```css
-.a\$foo:focus-visible {
+.u-foo:focus-visible {
     outline: 2px solid var(--color-accent-8);
     outline-offset: 2px;
 }
@@ -83,8 +83,8 @@ Follow these patterns from Radix Themes:
 
 **Disabled** — cover both `:disabled` and `[aria-disabled]`:
 ```css
-.a\$foo:disabled,
-.a\$foo[aria-disabled="true"] {
+.u-foo:disabled,
+.u-foo[aria-disabled="true"] {
     pointer-events: none;
     opacity: 0.5;
 }
@@ -94,7 +94,7 @@ Follow these patterns from Radix Themes:
 don't get sticky hover:
 ```css
 @media (hover: hover) {
-    .a\$foo\+solid:hover {
+    .u-foo\+solid:hover {
         background-color: var(--color-accent-10);
     }
 }
@@ -102,7 +102,7 @@ don't get sticky hover:
 
 **Active/press** — one step deeper than hover, exclude disabled:
 ```css
-.a\$foo\+solid:active:not(:disabled) {
+.u-foo\+solid:active:not(:disabled) {
     background-color: var(--color-accent-10);
     filter: brightness(0.92) saturate(1.1);
 }
@@ -111,7 +111,7 @@ don't get sticky hover:
 **Borders** — use `box-shadow: inset 0 0 0 1px` instead of
 `border` to avoid layout shift:
 ```css
-.a\$foo\+outline {
+.u-foo\+outline {
     box-shadow: inset 0 0 0 1px var(--color-accent-8);
 }
 ```

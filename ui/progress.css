@@ -1,7 +1,7 @@
 @layer components {
 
 /* progress — base */
-.a\$progress {
+.u-progress {
 	overflow: hidden;
 	position: relative;
 	width: 100%;
@@ -10,7 +10,7 @@
 }
 
 /* fill bar */
-.a\$progress-fill {
+.u-progress-fill {
 	height: 100%;
 	border-radius: 9999px;
 	background-color: var(--color-accent-9);
@@ -20,13 +20,13 @@
 }
 
 /* sizes */
-.a\$progress\+size-sm {
+.u-progress\+size-sm {
 	height: 0.25rem;
 }
-.a\$progress\+size-md {
+.u-progress\+size-md {
 	height: 0.5rem;
 }
-.a\$progress\+size-lg {
+.u-progress\+size-lg {
 	height: 0.75rem;
 }
 

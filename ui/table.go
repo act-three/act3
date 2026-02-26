@@ -32,19 +32,19 @@ var (
 )
 
 var tableVariantClasses = map[tableVariant]string{
-	tableGhost:   "a$table+ghost",
-	tableSurface: "a$table+surface",
+	tableGhost:   "u-table+ghost",
+	tableSurface: "u-table+surface",
 }
 
 var tableSizeClasses = map[tableSize]string{
-	tableSize1: "a$table+size-1",
-	tableSize2: "a$table+size-2",
-	tableSize3: "a$table+size-3",
+	tableSize1: "u-table+size-1",
+	tableSize2: "u-table+size-2",
+	tableSize3: "u-table+size-3",
 }
 
 func TableRoot(attrs ...attr.Node) html.Element {
 	return html.Table(
-		attr.Class("a$table"),
+		attr.Class("u-table"),
 		attr.FuncAttr("class", func(get func(any) any) string {
 			v, _ := get(tableVariantKey).(tableVariant)
 			return tableVariantClasses[v]
@@ -59,35 +59,35 @@ func TableRoot(attrs ...attr.Node) html.Element {
 
 func TableHeader(attrs ...attr.Node) html.Element {
 	return html.Thead(
-		attr.Class("a$table-header"),
+		attr.Class("u-table-header"),
 		attr.Group(attrs...),
 	)
 }
 
 func TableBody(attrs ...attr.Node) html.Element {
 	return html.Tbody(
-		attr.Class("a$table-body"),
+		attr.Class("u-table-body"),
 		attr.Group(attrs...),
 	)
 }
 
 func TableRow(attrs ...attr.Node) html.Element {
 	return html.Tr(
-		attr.Class("a$table-row"),
+		attr.Class("u-table-row"),
 		attr.Group(attrs...),
 	)
 }
 
 func TableHead(attrs ...attr.Node) html.Element {
 	return html.Th(
-		attr.Class("a$table-head"),
+		attr.Class("u-table-head"),
 		attr.Group(attrs...),
 	)
 }
 
 func TableCell(attrs ...attr.Node) html.Element {
 	return html.Td(
-		attr.Class("a$table-cell"),
+		attr.Class("u-table-cell"),
 		attr.Group(attrs...),
 	)
 }

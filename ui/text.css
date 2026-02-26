@@ -1,36 +1,36 @@
 @layer components {
 
 /* font weights */
-.a\$text\+weight-normal { font-weight: 400; }
-.a\$text\+weight-medium { font-weight: 500; }
-.a\$text\+weight-bold   { font-weight: 700; }
+.u-text\+weight-normal { font-weight: 400; }
+.u-text\+weight-medium { font-weight: 500; }
+.u-text\+weight-bold   { font-weight: 700; }
 
 /* line clamps */
-.a\$text\+clamp-1 {
+.u-text\+clamp-1 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 1;
 }
-.a\$text\+clamp-2 {
+.u-text\+clamp-2 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
 }
-.a\$text\+clamp-3 {
+.u-text\+clamp-3 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 3;
 }
-.a\$text\+clamp-4 {
+.u-text\+clamp-4 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 4;
 }
-.a\$text\+clamp-5 {
+.u-text\+clamp-5 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
@@ -38,25 +38,25 @@
 }
 
 /* truncate (single-line ellipsis) */
-.a\$text\+truncate {
+.u-text\+truncate {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
 /* selection */
-.a\$text\+select-auto { user-select: auto; }
-.a\$text\+select-none { user-select: none; }
+.u-text\+select-auto { user-select: auto; }
+.u-text\+select-none { user-select: none; }
 
 /* size scale */
-.a\$text\+size-1 { font-size: 12px; line-height: 16px; letter-spacing: 0.0025em; }
-.a\$text\+size-2 { font-size: 14px; line-height: 20px; letter-spacing: 0em; }
-.a\$text\+size-3 { font-size: 16px; line-height: 24px; letter-spacing: 0em; }
-.a\$text\+size-4 { font-size: 18px; line-height: 26px; letter-spacing: -0.0025em; }
-.a\$text\+size-5 { font-size: 20px; line-height: 28px; letter-spacing: -0.005em; }
-.a\$text\+size-6 { font-size: 24px; line-height: 30px; letter-spacing: -0.005em; }
-.a\$text\+size-7 { font-size: 28px; line-height: 36px; letter-spacing: -0.0075em; }
-.a\$text\+size-8 { font-size: 35px; line-height: 40px; letter-spacing: -0.01em; }
-.a\$text\+size-9 { font-size: 60px; line-height: 60px; letter-spacing: -0.025em; }
+.u-text\+size-1 { font-size: 12px; line-height: 16px; letter-spacing: 0.0025em; }
+.u-text\+size-2 { font-size: 14px; line-height: 20px; letter-spacing: 0em; }
+.u-text\+size-3 { font-size: 16px; line-height: 24px; letter-spacing: 0em; }
+.u-text\+size-4 { font-size: 18px; line-height: 26px; letter-spacing: -0.0025em; }
+.u-text\+size-5 { font-size: 20px; line-height: 28px; letter-spacing: -0.005em; }
+.u-text\+size-6 { font-size: 24px; line-height: 30px; letter-spacing: -0.005em; }
+.u-text\+size-7 { font-size: 28px; line-height: 36px; letter-spacing: -0.0075em; }
+.u-text\+size-8 { font-size: 35px; line-height: 40px; letter-spacing: -0.01em; }
+.u-text\+size-9 { font-size: 60px; line-height: 60px; letter-spacing: -0.025em; }
 
 }
