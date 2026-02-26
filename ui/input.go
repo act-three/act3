@@ -33,7 +33,6 @@ func InputText(attrs ...attr.Node) html.Element {
 			return inputSizeClasses[s]
 		}),
 		attr.Group(attrs...),
-		attr.Attr("data-slot")("input"),
 	)
 }
 

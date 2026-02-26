@@ -32,7 +32,6 @@ func Card(attrs ...attr.Node) html.Element {
 	return html.Tag(tag)(
 		attr.Class("a$card"),
 		a,
-		attr.Attr("data-slot")("card"),
 	)
 }
 
@@ -40,7 +39,6 @@ func CardMedia(attrs ...attr.Node) html.Element {
 	return html.Div(
 		attr.Class("a$card-media"),
 		attr.Group(attrs...),
-		attr.Attr("data-slot")("card-media"),
 	)
 }
 
@@ -48,7 +46,6 @@ func CardContent(attrs ...attr.Node) html.Element {
 	return html.Div(
 		attr.Class("a$card-content"),
 		attr.Group(attrs...),
-		attr.Attr("data-slot")("card-content"),
 	)
 }
 
@@ -56,7 +53,6 @@ func CardTitle(attrs ...attr.Node) html.Element {
 	return html.Div(
 		attr.Class("a$card-title"),
 		attr.Group(attrs...),
-		attr.Attr("data-slot")("card-title"),
 	)
 }
 
@@ -64,6 +60,5 @@ func CardDescription(attrs ...attr.Node) html.Element {
 	return html.Div(
 		attr.Class("a$card-description"),
 		attr.Group(attrs...),
-		attr.Attr("data-slot")("card-description"),
 	)
 }
