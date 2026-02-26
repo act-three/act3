@@ -3,7 +3,7 @@ import { Application } from "./web/stimulus.js";
 import DialogController from "./view/dialog-controller.js";
 import PlayerController from "./view/player-controller.js";
 import ListController from "./ui/list.js";
-import SidebarController from "./web/sidebar/sidebar-controller.js";
+import SidebarController from "./view/sidebar/sidebar-controller.js";
 import AddTorrentController from "./view/add-torrent-controller.js";
 
 window.Stimulus = Application.start();

@@ -8414,7 +8414,7 @@
     }
   };
 
-  // web/sidebar/sidebar-controller.js
+  // view/sidebar/sidebar-controller.js
   var sidebar_controller_default = class extends Controller {
     static targets = ["link"];
     initialize() {
@@ -8465,7 +8465,7 @@
     }
   };
 
-  // web/main.js
+  // main.js
   window.Stimulus = Application.start();
   Stimulus.register("dialog", dialog_controller_default);
   Stimulus.register("player", player_controller_default);

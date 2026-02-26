@@ -5,7 +5,7 @@ import (
 	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
-	"ily.dev/act3/web/sidebar"
+	"ily.dev/act3/view/sidebar"
 )
 
 func app(title string, child ...html.Node) html.Node {
