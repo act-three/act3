@@ -72,26 +72,26 @@ func editMediaDownloadsSearchBar() html.Node {
 }
 
 func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node {
-	return Item(
+	return Card(Ghost,
 		attr.Group(attrs...),
 		ListID(dl.ID()),
 		ListURL(dl.URL()),
 	)(
-		ItemContent()(
+		CardContent()(
 			expr.IfElse(dl.State() == "error",
 				func() html.Node {
 					return html.Group(
-						ItemTitle()(Text(dl.Title())),
-						ItemDescription(attr.Class("line-clamp-2"))(
+						CardTitle()(Text(dl.Title())),
+						CardDescription(attr.Class("line-clamp-2"))(
 							Text(dl.Error()),
 						),
 					)
 				},
 				func() html.Node {
 					return html.Group(
-						ItemTitle()(Text(dl.Title())).
+						CardTitle()(Text(dl.Title())).
 							With(FontNormal),
-						ItemDescription()(
+						CardDescription()(
 							Textf("%d/%d assigned",
 								dl.PlanLen(),
 								dl.FilesLen(),
@@ -184,11 +184,11 @@ func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) ht
 			html.Range(dfs, func(df *model.DownloadFile) html.Node {
 				ep := df.Episode()
 				displayPath := strings.TrimPrefix(df.Path(), prefix)
-				return Item()(
-					ItemContent()(
+				return Card(Ghost)(
+					CardContent()(
 						expr.IfElse(ep != nil,
 							func() html.Node {
-								return ItemTitle()(
+								return CardTitle()(
 									html.Textf("%s. %s", ep.Label(), ep.Title()),
 								)
 							},
@@ -196,7 +196,7 @@ func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) ht
 								return html.Group()
 							},
 						),
-						ItemDescription()(html.Text(displayPath)),
+						CardDescription()(html.Text(displayPath)),
 						expr.IfElse(df.Progress() >= 0,
 							func() html.Node {
 								return Progress(df.Progress(), Class("mt-1")).

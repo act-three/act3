@@ -58,15 +58,15 @@ func EditMediaSeries(
 }
 
 func EditMediaSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
-	return Item(
+	return Card(Ghost,
 		attr.Group(attrs...),
 		ListID(ss.ID()),
 		ListURL(ss.EditURL()),
 	)(
-		ItemMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
-		ItemContent()(
-			ItemTitle()(html.Text(ss.Title())),
-			ItemDescription(attr.Class("line-clamp-2"))(
+		CardMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
+		CardContent()(
+			CardTitle()(html.Text(ss.Title())),
+			CardDescription(attr.Class("line-clamp-2"))(
 				html.If(ss.PremieredOn() != nil,
 					func() html.Node { return html.Text(*ss.PremieredOn()) },
 				),

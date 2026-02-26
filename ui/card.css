@@ -2,8 +2,35 @@
 
 /* card — base */
 .a\$card {
+	outline: none;
+}
+
+/* surface variant */
+.a\$card\+surface {
 	background-color: color-mix(in oklch, var(--color-gray-1) 70%, transparent);
 	box-shadow: inset 0 0 0 1px var(--color-gray-6);
+}
+
+/* ghost variant */
+.a\$card\+ghost {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	border-radius: 0.125rem;
+	border: 1px solid transparent;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	background-color: transparent;
+	gap: 0.5rem;
+	padding: 0.5rem;
+}
+.a\$card\+ghost:focus-visible {
+	border-color: var(--color-gray-6);
+	box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-gray-6) 50%, transparent);
+}
+.a\$card\+ghost[data-selected] {
+	background-color: var(--color-accent-9);
+	color: var(--color-accent-12);
 }
 
 /* sizes */
@@ -26,4 +53,75 @@
 	--inset-rounded: 8px;
 }
 
+/* sub-parts */
+.a\$card-media {
+	display: flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	width: 2.5rem;
+	height: 3.75rem;
+	overflow: hidden;
+}
+.a\$card-media svg {
+	pointer-events: none;
+}
+.a\$card-media img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.a\$card-content {
+	display: flex;
+	flex: 1 1 0%;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+.a\$card-content + .a\$card-content {
+	flex: none;
+}
+
+.a\$card-title {
+	display: flex;
+	width: fit-content;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	font-weight: 500;
+	line-height: calc(1em + 0.25rem);
+}
+
+.a\$card-description {
+	color: var(--color-gray-11);
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	text-wrap: balance;
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	font-weight: 400;
+}
+.a\$card-description > a {
+	text-decoration: underline;
+	text-underline-offset: 4px;
+}
+
+.a\$card\+ghost:has(.a\$card-description) .a\$card-media {
+	transform: translateY(0.125rem);
+	align-self: flex-start;
+}
+
+}
+
+@media (hover: hover) {
+	a.a\$card\+ghost:hover {
+		background-color: color-mix(in oklch, var(--color-accent-9) 50%, transparent);
+	}
+	.a\$card-description > a:hover {
+		color: var(--color-gray-12);
+	}
 }
