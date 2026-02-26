@@ -9,7 +9,7 @@ func Link(url string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return Button(
 			attr.Href(url),
-			Class("hover:underline"),
+			Class("a$link"),
 			group(attrs...),
 		)(nodes...).With(ButtonGhost)
 	}

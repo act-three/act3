@@ -1,0 +1,44 @@
+@layer components {
+
+/* font weights */
+.a\$text\+weight-normal { font-weight: 400; }
+.a\$text\+weight-medium { font-weight: 500; }
+.a\$text\+weight-bold   { font-weight: 700; }
+
+/* line clamps */
+.a\$text\+clamp-1 {
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 1;
+}
+.a\$text\+clamp-2 {
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+.a\$text\+clamp-3 {
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+}
+.a\$text\+clamp-4 {
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 4;
+}
+.a\$text\+clamp-5 {
+	overflow: hidden;
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 5;
+}
+
+/* selection */
+.a\$text\+select-auto { user-select: auto; }
+.a\$text\+select-none { user-select: none; }
+
+}

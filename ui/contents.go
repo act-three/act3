@@ -7,7 +7,7 @@ import (
 
 func Contents(attrs ...attr.Node) html.Element {
 	return html.Div(
-		Class("contents"),
+		Class("a$contents"),
 		group(attrs...),
 	)
 }

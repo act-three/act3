@@ -1,0 +1,13 @@
+@layer components {
+
+.a\$flex-row {
+	display: flex;
+	flex-direction: row;
+}
+
+.a\$flex-col {
+	display: flex;
+	flex-direction: column;
+}
+
+}

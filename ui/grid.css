@@ -1,0 +1,25 @@
+@layer components {
+
+.a\$grid-12 {
+	margin-inline: auto;
+	width: 70.5rem;
+	display: grid;
+	grid-template-columns: repeat(12, minmax(0, 1fr));
+	gap: 1.5rem;
+}
+
+.a\$grid-9 {
+	width: 100%;
+	display: grid;
+	grid-template-columns: repeat(9, minmax(0, 1fr));
+	gap: 1.5rem;
+}
+
+.a\$grid-8 {
+	width: 100%;
+	display: grid;
+	grid-template-columns: repeat(8, minmax(0, 1fr));
+	gap: 1.5rem;
+}
+
+}

@@ -1,0 +1,12 @@
+@layer components {
+
+.a\$link {
+	text-decoration: none;
+}
+@media (hover: hover) {
+	.a\$link:hover {
+		text-decoration: underline;
+	}
+}
+
+}

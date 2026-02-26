@@ -1,0 +1,33 @@
+@layer components {
+
+/* progress — base */
+.a\$progress {
+	overflow: hidden;
+	position: relative;
+	width: 100%;
+	border-radius: 9999px;
+	background-color: var(--color-gray-3);
+}
+
+/* fill bar */
+.a\$progress-fill {
+	height: 100%;
+	border-radius: 9999px;
+	background-color: var(--color-accent-9);
+	transition-property: width;
+	transition-duration: 600ms;
+	transition-timing-function: linear;
+}
+
+/* sizes */
+.a\$progress\+size-sm {
+	height: 0.25rem;
+}
+.a\$progress\+size-md {
+	height: 0.5rem;
+}
+.a\$progress\+size-lg {
+	height: 0.75rem;
+}
+
+}

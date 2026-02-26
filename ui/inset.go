@@ -6,24 +6,20 @@ import (
 )
 
 func Inset(attrs ...attr.Node) html.Element {
-	class := "rounded-(--inset-rounded) p-(--inset-padding)"
-	switch getOption[sideOption](attrs, 0) {
-	case sideX:
-		class = "mx-(--inset-padding)"
-	case sideY:
-		class = "my-(--inset-padding)"
-	case sideTop:
-		class = "rounded-t-(--inset-rounded) mt-(--inset-padding) mx-(--inset-padding)"
-	case sideBottom:
-		class = "rounded-b-(--inset-rounded) mb-(--inset-padding) mx-(--inset-padding)"
-	case sideLeft:
-		class = "rounded-l-(--inset-rounded) ml-(--inset-padding) my-(--inset-padding)"
-	case sideRight:
-		class = "rounded-r-(--inset-rounded) mr-(--inset-padding) my-(--inset-padding)"
-	}
+	side := getOption[sideOption](attrs, 0)
 	return html.Div(
-		Class(class),
-		Class("overflow-hidden"),
+		Class("a$inset"),
+		Class(insetSideClasses[side]),
 		group(attrs...),
 	)
+}
+
+var insetSideClasses = map[sideOption]string{
+	sideAll:    "a$inset+all",
+	sideX:      "a$inset+x",
+	sideY:      "a$inset+y",
+	sideTop:    "a$inset+top",
+	sideBottom: "a$inset+bottom",
+	sideLeft:   "a$inset+left",
+	sideRight:  "a$inset+right",
 }

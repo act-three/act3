@@ -1,0 +1,23 @@
+@layer components {
+
+.a\$split {
+	display: flex;
+	flex: 1 1 0%;
+	min-height: 0;
+}
+
+.a\$split-list {
+	width: 22.5rem;
+	height: 100cvh;
+	flex: none;
+	border-inline-end: 1px solid var(--color-gray-6);
+	place-items: center;
+}
+
+}
+
+/* Outside @layer so it overrides turbo-frame's
+   Tailwind "contents" utility. */
+.a\$split-list {
+	display: grid;
+}
