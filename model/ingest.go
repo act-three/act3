@@ -312,7 +312,9 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 }
 
 // rebuildMVPlaylist regenerates the multivariant HLS playlist from
-// all currently encoded renditions for the video.
+// all currently encoded renditions for the video. If probe is
+// non-nil, resolutions are computed from source dimensions;
+// otherwise they are preserved from the existing MV playlist.
 func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video, probe *ffmpeg.ProbeResult) error {
 	encoded, err := tx.q.RenditionForStreamingListEncodedByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -322,21 +324,32 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video, probe *ffmpeg.Pr
 		return nil
 	}
 
+	// Parse existing MV playlist so we can preserve resolution
+	// when probe data isn't available.
+	existing := video.ParseMVPlaylist(vid.MVPlaylist)
+
 	var mvEntries []video.MVEntry
 	for _, rfs := range encoded {
-		bandwidth := rfs.TargetBitrate * 1000
+		bandwidth := video.PeakBitrate(rfs.Playlist)
+		if bandwidth == 0 {
+			bandwidth = rfs.TargetBitrate * 1000
+		}
+
+		uri := "/vidr/" + rfs.ID + ".m3u8"
 
 		var resolution string
-		if probe.Video != nil {
+		if probe != nil && probe.Video != nil {
 			w, h := video.ScaleResolution(
 				probe.Video.Width, probe.Video.Height, int(rfs.MaxHeight),
 			)
 			resolution = video.ResolutionString(w, h)
+		} else if prev, ok := existing[uri]; ok {
+			resolution = prev.Resolution
 		}
 
 		r := video.Rendition{Codec: rfs.Codec}
 		mvEntries = append(mvEntries, video.MVEntry{
-			URI:        "/vidr/" + rfs.ID + ".m3u8",
+			URI:        uri,
 			Bandwidth:  bandwidth,
 			Resolution: resolution,
 			Codecs:     r.HLSCodecs(),

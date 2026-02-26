@@ -2,6 +2,7 @@ package video
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Eyevinn/hls-m3u8/m3u8"
@@ -40,6 +41,59 @@ func GenerateMVPlaylist(entries []MVEntry) string {
 		master.Append(e.URI, nil, p)
 	}
 	return master.Encode().String()
+}
+
+// PeakBitrate computes the peak segment bitrate from an HLS
+// media playlist, in bits per second. It parses #EXTINF durations
+// and #EXT-X-BYTERANGE sizes, returning the maximum
+// (segment_bytes * 8 / segment_duration) across all segments.
+// Returns 0 if no segments are found.
+func PeakBitrate(playlist string) int64 {
+	var peak int64
+	var dur float64
+	for _, line := range strings.Split(playlist, "\n") {
+		switch {
+		case strings.HasPrefix(line, "#EXTINF:"):
+			// #EXTINF:6.131125,
+			s := strings.TrimPrefix(line, "#EXTINF:")
+			s, _, _ = strings.Cut(s, ",")
+			dur, _ = strconv.ParseFloat(s, 64)
+		case strings.HasPrefix(line, "#EXT-X-BYTERANGE:"):
+			// #EXT-X-BYTERANGE:4792012@3868
+			s := strings.TrimPrefix(line, "#EXT-X-BYTERANGE:")
+			s, _, _ = strings.Cut(s, "@")
+			bytes, _ := strconv.ParseInt(s, 10, 64)
+			if dur > 0 && bytes > 0 {
+				bps := int64(float64(bytes*8) / dur)
+				if bps > peak {
+					peak = bps
+				}
+			}
+		}
+	}
+	return peak
+}
+
+// ParseMVPlaylist extracts variant entries from a multivariant
+// playlist string, returning a map from URI to the entry.
+func ParseMVPlaylist(playlist string) map[string]MVEntry {
+	m := make(map[string]MVEntry)
+	mp := m3u8.NewMasterPlaylist()
+	if err := mp.DecodeFrom(strings.NewReader(playlist), false); err != nil {
+		return m
+	}
+	for _, v := range mp.Variants {
+		if v == nil {
+			continue
+		}
+		m[v.URI] = MVEntry{
+			URI:        v.URI,
+			Bandwidth:  int64(v.Bandwidth),
+			Resolution: v.Resolution,
+			Codecs:     v.Codecs,
+		}
+	}
+	return m
 }
 
 // ResolutionString formats a width and height as "WxH".
