@@ -5,6 +5,23 @@
 	display: contents;
 }
 
+/* scale presets */
+.u-theme\+scale\+1 {
+	--scale: 0.9;
+}
+.u-theme\+scale\+2 {
+	--scale: 0.95;
+}
+.u-theme\+scale\+3 {
+	--scale: 1;
+}
+.u-theme\+scale\+4 {
+	--scale: 1.05;
+}
+.u-theme\+scale\+5 {
+	--scale: 1.1;
+}
+
 /* radius presets */
 .u-theme\+radius\+none {
 	--radius-factor: 0;

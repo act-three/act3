@@ -29,7 +29,7 @@
 	display: block;
 	width: 100%;
 	height: 30%;
-	border-radius: calc(3px * var(--radius-factor, 1));
+	border-radius: calc(3px * var(--scale) * var(--radius-factor, 1));
 	background-color: currentColor;
 	animation: spinner-leaf-fade 800ms linear infinite;
 }
@@ -55,16 +55,16 @@
 
 /* sizes */
 .u-spinner\+size-sm {
-	width: 0.75rem;
-	height: 0.75rem;
+	width: calc(0.75rem * var(--scale));
+	height: calc(0.75rem * var(--scale));
 }
 .u-spinner\+size-md {
-	width: 1rem;
-	height: 1rem;
+	width: calc(1rem * var(--scale));
+	height: calc(1rem * var(--scale));
 }
 .u-spinner\+size-lg {
-	width: 1.25rem;
-	height: 1.25rem;
+	width: calc(1.25rem * var(--scale));
+	height: calc(1.25rem * var(--scale));
 }
 
 }

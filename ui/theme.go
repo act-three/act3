@@ -18,6 +18,15 @@ func Theme(attrs ...attr.Node) html.Element {
 // Accent colors
 var AccentCrimson = Class("u-theme+accent-color+crimson")
 
+// Scale presets
+var (
+	Scale1 = Class("u-theme+scale+1")
+	Scale2 = Class("u-theme+scale+2")
+	Scale3 = Class("u-theme+scale+3")
+	Scale4 = Class("u-theme+scale+4")
+	Scale5 = Class("u-theme+scale+5")
+)
+
 // Radius presets
 var (
 	RadiusNone   = Class("u-theme+radius+none")

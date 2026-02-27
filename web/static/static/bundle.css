@@ -27,7 +27,6 @@
     --radius-md: 0.375rem;
     --radius-lg: 0.5rem;
     --radius-xl: 0.75rem;
-    --ease-in: cubic-bezier(0.4, 0, 1, 1);
     --ease-out: cubic-bezier(0, 0, 0.2, 1);
     --blur-xs: 4px;
     --blur-md: 12px;
@@ -266,9 +265,6 @@
   .pointer-events-none {
     pointer-events: none;
   }
-  .collapse {
-    visibility: collapse;
-  }
   .visible {
     visibility: visible;
   }
@@ -305,9 +301,6 @@
   .top-0 {
     top: calc(var(--spacing) * 0);
   }
-  .top-1 {
-    top: calc(var(--spacing) * 1);
-  }
   .top-1\/2 {
     top: calc(1/2 * 100%);
   }
@@ -331,9 +324,6 @@
   }
   .left-0 {
     left: calc(var(--spacing) * 0);
-  }
-  .left-1 {
-    left: calc(var(--spacing) * 1);
   }
   .left-1\/2 {
     left: calc(1/2 * 100%);
@@ -540,36 +530,15 @@
   .flex-none {
     flex: none;
   }
-  .flex-shrink {
-    flex-shrink: 1;
-  }
   .shrink-0 {
     flex-shrink: 0;
-  }
-  .grow {
-    flex-grow: 1;
-  }
-  .basis-1 {
-    flex-basis: calc(var(--spacing) * 1);
   }
   .basis-1\/3 {
     flex-basis: calc(1/3 * 100%);
   }
-  .border-collapse {
-    border-collapse: collapse;
-  }
-  .-translate-1 {
-    --tw-translate-x: calc(var(--spacing) * -1);
-    --tw-translate-y: calc(var(--spacing) * -1);
-    translate: var(--tw-translate-x) var(--tw-translate-y);
-  }
   .-translate-1\/2 {
     --tw-translate-x: calc(calc(1/2 * 100%) * -1);
     --tw-translate-y: calc(calc(1/2 * 100%) * -1);
-    translate: var(--tw-translate-x) var(--tw-translate-y);
-  }
-  .-translate-x-1 {
-    --tw-translate-x: calc(var(--spacing) * -1);
     translate: var(--tw-translate-x) var(--tw-translate-y);
   }
   .-translate-x-1\/2 {
@@ -587,9 +556,6 @@
   }
   .cursor-pointer {
     cursor: pointer;
-  }
-  .resize {
-    resize: both;
   }
   .appearance-none {
     appearance: none;
@@ -665,11 +631,6 @@
   }
   .place-self-stretch {
     place-self: stretch;
-  }
-  .truncate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   .overflow-auto {
     overflow: auto;
@@ -782,9 +743,6 @@
   .p-6 {
     padding: calc(var(--spacing) * 6);
   }
-  .p-9 {
-    padding: calc(var(--spacing) * 9);
-  }
   .p-12 {
     padding: calc(var(--spacing) * 12);
   }
@@ -861,9 +819,6 @@
     --tw-font-weight: var(--font-weight-semibold);
     font-weight: var(--font-weight-semibold);
   }
-  .text-wrap {
-    text-wrap: wrap;
-  }
   .whitespace-nowrap {
     white-space: nowrap;
   }
@@ -918,12 +873,6 @@
   .tabular-nums {
     --tw-numeric-spacing: tabular-nums;
     font-variant-numeric: var(--tw-ordinal,) var(--tw-slashed-zero,) var(--tw-numeric-figure,) var(--tw-numeric-spacing,) var(--tw-numeric-fraction,);
-  }
-  .underline {
-    text-decoration-line: underline;
-  }
-  .decoration-gray-11 {
-    text-decoration-color: var(--color-mauve-11);
   }
   .decoration-gray-11\/60\! {
     text-decoration-color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 60%, transparent) !important;
@@ -1009,10 +958,6 @@
     -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
     backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
   }
-  .backdrop-filter {
-    -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
-    backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
-  }
   .transition {
     transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to, opacity, box-shadow, transform, translate, scale, rotate, filter, -webkit-backdrop-filter, backdrop-filter, display, content-visibility, overlay, pointer-events;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
@@ -1039,10 +984,6 @@
   .duration-300 {
     --tw-duration: 300ms;
     transition-duration: 300ms;
-  }
-  .ease-in {
-    --tw-ease: var(--ease-in);
-    transition-timing-function: var(--ease-in);
   }
   .ease-out {
     --tw-ease: var(--ease-out);
@@ -1541,6 +1482,21 @@
   .u-theme {
     display: contents;
   }
+  .u-theme\+scale\+1 {
+    --scale: 0.9;
+  }
+  .u-theme\+scale\+2 {
+    --scale: 0.95;
+  }
+  .u-theme\+scale\+3 {
+    --scale: 1;
+  }
+  .u-theme\+scale\+4 {
+    --scale: 1.05;
+  }
+  .u-theme\+scale\+5 {
+    --scale: 1.1;
+  }
   .u-theme\+radius\+none {
     --radius-factor: 0;
   }
@@ -1729,58 +1685,58 @@
     filter: brightness(0.92) saturate(1.1);
   }
   .u-button\+size-1 {
-    height: 1.5rem;
-    padding-inline: 0.5rem;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
+    height: calc(1.5rem * var(--scale));
+    padding-inline: calc(0.5rem * var(--scale));
+    gap: calc(0.25rem * var(--scale));
+    font-size: calc(0.75rem * var(--scale));
+    line-height: calc(1rem * var(--scale));
     letter-spacing: 0.0025em;
   }
   .u-button\+size-2 {
-    height: 2rem;
-    padding-inline: 0.75rem;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    height: calc(2rem * var(--scale));
+    padding-inline: calc(0.75rem * var(--scale));
+    gap: calc(0.5rem * var(--scale));
+    font-size: calc(0.875rem * var(--scale));
+    line-height: calc(1.25rem * var(--scale));
   }
   .u-button\+size-3 {
-    height: 2.5rem;
-    padding-inline: 1rem;
-    gap: 0.75rem;
-    font-size: 1rem;
-    line-height: 1.5rem;
+    height: calc(2.5rem * var(--scale));
+    padding-inline: calc(1rem * var(--scale));
+    gap: calc(0.75rem * var(--scale));
+    font-size: calc(1rem * var(--scale));
+    line-height: calc(1.5rem * var(--scale));
   }
   .u-button\+size-4 {
-    height: 3rem;
-    padding-inline: 1.5rem;
-    gap: 0.75rem;
-    font-size: 1.125rem;
-    line-height: 1.75rem;
+    height: calc(3rem * var(--scale));
+    padding-inline: calc(1.5rem * var(--scale));
+    gap: calc(0.75rem * var(--scale));
+    font-size: calc(1.125rem * var(--scale));
+    line-height: calc(1.75rem * var(--scale));
     letter-spacing: -0.0025em;
   }
   .u-button\+circle-1 {
-    width: 1.5rem;
-    height: 1.5rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
+    width: calc(1.5rem * var(--scale));
+    height: calc(1.5rem * var(--scale));
+    font-size: calc(0.75rem * var(--scale));
+    line-height: calc(1rem * var(--scale));
   }
   .u-button\+circle-2 {
-    width: 2rem;
-    height: 2rem;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    width: calc(2rem * var(--scale));
+    height: calc(2rem * var(--scale));
+    font-size: calc(0.875rem * var(--scale));
+    line-height: calc(1.25rem * var(--scale));
   }
   .u-button\+circle-3 {
-    width: 2.5rem;
-    height: 2.5rem;
-    font-size: 1rem;
-    line-height: 1.5rem;
+    width: calc(2.5rem * var(--scale));
+    height: calc(2.5rem * var(--scale));
+    font-size: calc(1rem * var(--scale));
+    line-height: calc(1.5rem * var(--scale));
   }
   .u-button\+circle-4 {
-    width: 3rem;
-    height: 3rem;
-    font-size: 1.125rem;
-    line-height: 1.75rem;
+    width: calc(3rem * var(--scale));
+    height: calc(3rem * var(--scale));
+    font-size: calc(1.125rem * var(--scale));
+    line-height: calc(1.75rem * var(--scale));
   }
   .u-button\+radius-full {
     border-radius: 9999px;
@@ -1790,16 +1746,16 @@
     border-radius: 9999px;
   }
   .u-button\+radius-medium:where(.u-button\+size-1, .u-button\+circle-1) {
-    border-radius: calc(0.1875rem * var(--radius-factor, 1));
+    border-radius: calc(0.1875rem * var(--scale) * var(--radius-factor, 1));
   }
   .u-button\+radius-medium:where(.u-button\+size-2, .u-button\+circle-2) {
-    border-radius: calc(0.25rem * var(--radius-factor, 1));
+    border-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
   }
   .u-button\+radius-medium:where(.u-button\+size-3, .u-button\+circle-3) {
-    border-radius: calc(0.375rem * var(--radius-factor, 1));
+    border-radius: calc(0.375rem * var(--scale) * var(--radius-factor, 1));
   }
   .u-button\+radius-medium:where(.u-button\+size-4, .u-button\+circle-4) {
-    border-radius: calc(0.5rem * var(--radius-factor, 1));
+    border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
   }
   .u-button\+radius-none {
     border-radius: 0;
@@ -1850,34 +1806,34 @@
     color: var(--color-accent-12);
   }
   .u-card\+size-1 {
-    padding: 0.75rem;
-    border-radius: calc(0.5rem * var(--radius-factor, 1));
-    --inset-padding: -12px;
-    --inset-rounded: 8px;
+    padding: calc(0.75rem * var(--scale));
+    border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
+    --inset-padding: calc(-12px * var(--scale));
+    --inset-rounded: calc(8px * var(--scale));
   }
   .u-card\+size-2 {
-    padding: 1rem;
-    border-radius: calc(0.5rem * var(--radius-factor, 1));
-    --inset-padding: -16px;
-    --inset-rounded: 8px;
+    padding: calc(1rem * var(--scale));
+    border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
+    --inset-padding: calc(-16px * var(--scale));
+    --inset-rounded: calc(8px * var(--scale));
   }
   .u-card\+size-3 {
-    padding: 1.5rem;
-    border-radius: calc(0.75rem * var(--radius-factor, 1));
-    --inset-padding: -24px;
-    --inset-rounded: 12px;
+    padding: calc(1.5rem * var(--scale));
+    border-radius: calc(0.75rem * var(--scale) * var(--radius-factor, 1));
+    --inset-padding: calc(-24px * var(--scale));
+    --inset-rounded: calc(12px * var(--scale));
   }
   .u-card\+size-4 {
-    padding: 2rem;
-    border-radius: calc(0.75rem * var(--radius-factor, 1));
-    --inset-padding: -32px;
-    --inset-rounded: 12px;
+    padding: calc(2rem * var(--scale));
+    border-radius: calc(0.75rem * var(--scale) * var(--radius-factor, 1));
+    --inset-padding: calc(-32px * var(--scale));
+    --inset-rounded: calc(12px * var(--scale));
   }
   .u-card\+size-5 {
-    padding: 3rem;
-    border-radius: calc(1rem * var(--radius-factor, 1));
-    --inset-padding: -48px;
-    --inset-rounded: 16px;
+    padding: calc(3rem * var(--scale));
+    border-radius: calc(1rem * var(--scale) * var(--radius-factor, 1));
+    --inset-padding: calc(-48px * var(--scale));
+    --inset-rounded: calc(16px * var(--scale));
   }
   .u-card-media {
     display: flex;
@@ -2080,13 +2036,13 @@
     transition-timing-function: linear;
   }
   .u-progress\+size-sm {
-    height: 0.25rem;
+    height: calc(0.25rem * var(--scale));
   }
   .u-progress\+size-md {
-    height: 0.5rem;
+    height: calc(0.5rem * var(--scale));
   }
   .u-progress\+size-lg {
-    height: 0.75rem;
+    height: calc(0.75rem * var(--scale));
   }
 }
 @layer components {
@@ -2123,7 +2079,7 @@
     display: block;
     width: 100%;
     height: 30%;
-    border-radius: calc(3px * var(--radius-factor, 1));
+    border-radius: calc(3px * var(--scale) * var(--radius-factor, 1));
     background-color: currentColor;
     animation: spinner-leaf-fade 800ms linear infinite;
   }
@@ -2176,16 +2132,16 @@
     animation-delay: -100ms;
   }
   .u-spinner\+size-sm {
-    width: 0.75rem;
-    height: 0.75rem;
+    width: calc(0.75rem * var(--scale));
+    height: calc(0.75rem * var(--scale));
   }
   .u-spinner\+size-md {
-    width: 1rem;
-    height: 1rem;
+    width: calc(1rem * var(--scale));
+    height: calc(1rem * var(--scale));
   }
   .u-spinner\+size-lg {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: calc(1.25rem * var(--scale));
+    height: calc(1.25rem * var(--scale));
   }
 }
 @layer components {
@@ -2255,48 +2211,48 @@
     user-select: none;
   }
   .u-text\+size-1 {
-    font-size: 12px;
-    line-height: 16px;
+    font-size: calc(12px * var(--scale));
+    line-height: calc(16px * var(--scale));
     letter-spacing: 0.0025em;
   }
   .u-text\+size-2 {
-    font-size: 14px;
-    line-height: 20px;
+    font-size: calc(14px * var(--scale));
+    line-height: calc(20px * var(--scale));
     letter-spacing: 0em;
   }
   .u-text\+size-3 {
-    font-size: 16px;
-    line-height: 24px;
+    font-size: calc(16px * var(--scale));
+    line-height: calc(24px * var(--scale));
     letter-spacing: 0em;
   }
   .u-text\+size-4 {
-    font-size: 18px;
-    line-height: 26px;
+    font-size: calc(18px * var(--scale));
+    line-height: calc(26px * var(--scale));
     letter-spacing: -0.0025em;
   }
   .u-text\+size-5 {
-    font-size: 20px;
-    line-height: 28px;
+    font-size: calc(20px * var(--scale));
+    line-height: calc(28px * var(--scale));
     letter-spacing: -0.005em;
   }
   .u-text\+size-6 {
-    font-size: 24px;
-    line-height: 30px;
+    font-size: calc(24px * var(--scale));
+    line-height: calc(30px * var(--scale));
     letter-spacing: -0.005em;
   }
   .u-text\+size-7 {
-    font-size: 28px;
-    line-height: 36px;
+    font-size: calc(28px * var(--scale));
+    line-height: calc(36px * var(--scale));
     letter-spacing: -0.0075em;
   }
   .u-text\+size-8 {
-    font-size: 35px;
-    line-height: 40px;
+    font-size: calc(35px * var(--scale));
+    line-height: calc(40px * var(--scale));
     letter-spacing: -0.01em;
   }
   .u-text\+size-9 {
-    font-size: 60px;
-    line-height: 60px;
+    font-size: calc(60px * var(--scale));
+    line-height: calc(60px * var(--scale));
     letter-spacing: -0.025em;
   }
 }
@@ -2338,25 +2294,25 @@
     }
   }
   .u-input\+size-1 {
-    height: 24px;
-    font-size: 12px;
-    padding-inline: 0.5rem;
-    padding-block: 0.125rem;
-    border-radius: calc(0.25rem * var(--radius-factor, 1));
+    height: calc(24px * var(--scale));
+    font-size: calc(12px * var(--scale));
+    padding-inline: calc(0.5rem * var(--scale));
+    padding-block: calc(0.125rem * var(--scale));
+    border-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
   }
   .u-input\+size-2 {
-    height: 32px;
-    font-size: 14px;
-    padding-inline: 0.75rem;
-    padding-block: 0.25rem;
-    border-radius: calc(0.25rem * var(--radius-factor, 1));
+    height: calc(32px * var(--scale));
+    font-size: calc(14px * var(--scale));
+    padding-inline: calc(0.75rem * var(--scale));
+    padding-block: calc(0.25rem * var(--scale));
+    border-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
   }
   .u-input\+size-3 {
-    height: 40px;
-    font-size: 16px;
-    padding-inline: 0.75rem;
-    padding-block: 0.375rem;
-    border-radius: calc(0.375rem * var(--radius-factor, 1));
+    height: calc(40px * var(--scale));
+    font-size: calc(16px * var(--scale));
+    padding-inline: calc(0.75rem * var(--scale));
+    padding-block: calc(0.375rem * var(--scale));
+    border-radius: calc(0.375rem * var(--scale) * var(--radius-factor, 1));
   }
 }
 @layer components {
@@ -2376,40 +2332,40 @@
     background-color: var(--color-gray-a2);
   }
   .u-table\+size-1 {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    font-size: calc(0.875rem * var(--scale));
+    line-height: calc(1.25rem * var(--scale));
   }
   .u-table\+size-1 .u-table-head {
-    height: 2rem;
-    padding: 0.5rem;
+    height: calc(2rem * var(--scale));
+    padding: calc(0.5rem * var(--scale));
   }
   .u-table\+size-1 .u-table-cell {
-    padding: 0.5rem;
-    min-height: 36px;
+    padding: calc(0.5rem * var(--scale));
+    min-height: calc(36px * var(--scale));
   }
   .u-table\+size-2 {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
+    font-size: calc(0.875rem * var(--scale));
+    line-height: calc(1.25rem * var(--scale));
   }
   .u-table\+size-2 .u-table-head {
-    height: 2.5rem;
-    padding: 0.75rem;
+    height: calc(2.5rem * var(--scale));
+    padding: calc(0.75rem * var(--scale));
   }
   .u-table\+size-2 .u-table-cell {
-    padding: 0.75rem;
-    min-height: 44px;
+    padding: calc(0.75rem * var(--scale));
+    min-height: calc(44px * var(--scale));
   }
   .u-table\+size-3 {
-    font-size: 1rem;
-    line-height: 1.5rem;
+    font-size: calc(1rem * var(--scale));
+    line-height: calc(1.5rem * var(--scale));
   }
   .u-table\+size-3 .u-table-head {
-    height: 2.75rem;
-    padding: 0.75rem 1rem;
+    height: calc(2.75rem * var(--scale));
+    padding: calc(0.75rem * var(--scale)) calc(1rem * var(--scale));
   }
   .u-table\+size-3 .u-table-cell {
-    padding: 0.75rem 1rem;
-    min-height: 48px;
+    padding: calc(0.75rem * var(--scale)) calc(1rem * var(--scale));
+    min-height: calc(48px * var(--scale));
   }
   .u-table-row {
     box-shadow: inset 0 -1px var(--color-gray-a5);
@@ -2669,6 +2625,7 @@
 }
 @layer base {
   body {
+    --scale: 1;
     min-height: 100vh;
     font-optical-sizing: auto;
     font-size: var(--body);

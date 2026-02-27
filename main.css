@@ -28,6 +28,7 @@
 
 @layer base {
 	body {
+		--scale: 1;
 		min-height: 100vh;
 		font-optical-sizing: auto;
 		font-size: var(--body);

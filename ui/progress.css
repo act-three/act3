@@ -21,13 +21,13 @@
 
 /* sizes */
 .u-progress\+size-sm {
-	height: 0.25rem;
+	height: calc(0.25rem * var(--scale));
 }
 .u-progress\+size-md {
-	height: 0.5rem;
+	height: calc(0.5rem * var(--scale));
 }
 .u-progress\+size-lg {
-	height: 0.75rem;
+	height: calc(0.75rem * var(--scale));
 }
 
 }
