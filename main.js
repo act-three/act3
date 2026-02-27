@@ -5,7 +5,7 @@ import PlayerController from "./view/player-controller.js";
 import ListController from "./ui/list.js";
 import SidebarController from "./view/sidebar/sidebar-controller.js";
 import AddTorrentController from "./view/add-torrent-controller.js";
-import NoteController from "./ui/note.js";
+import NotePortController from "./ui/note-port.js";
 import TopbarController from "./view/topbar-controller.js";
 
 window.Stimulus = Application.start();
@@ -14,5 +14,5 @@ Stimulus.register("player", PlayerController);
 Stimulus.register("list", ListController);
 Stimulus.register("sidebar", SidebarController);
 Stimulus.register("add-torrent", AddTorrentController);
-Stimulus.register("note", NoteController);
+Stimulus.register("note-port", NotePortController);
 Stimulus.register("topbar", TopbarController);

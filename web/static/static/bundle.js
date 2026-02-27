@@ -8465,47 +8465,206 @@
     }
   };
 
-  // ui/note.js
-  var note_default = class extends Controller {
-    static values = {
-      duration: { type: Number, default: 5e3 }
-    };
+  // ui/note-port.js
+  var GAP = 14;
+  var DURATION = 5e3;
+  var VISIBLE = 3;
+  var SWIPE_THRESHOLD = 20;
+  var VELOCITY_THRESHOLD = 0.11;
+  var note_port_default = class extends Controller {
+    static targets = ["note"];
     connect() {
-      this.#remaining = this.durationValue;
-      this.#startTimer();
+      this.#onVisibility = () => {
+        if (document.hidden) {
+          this.#pauseAllTimers();
+        } else {
+          this.#resumeAllTimers();
+        }
+      };
+      document.addEventListener(
+        "visibilitychange",
+        this.#onVisibility
+      );
     }
     disconnect() {
-      this.#clearTimer();
+      document.removeEventListener(
+        "visibilitychange",
+        this.#onVisibility
+      );
     }
-    dismiss() {
-      this.#clearTimer();
-      this.element.setAttribute("data-state", "closed");
-      this.element.addEventListener("animationend", () => {
-        this.element.remove();
-      }, { once: true });
+    noteTargetConnected(el) {
+      el.style.setProperty(
+        "--initial-height",
+        el.offsetHeight + "px"
+      );
+      requestAnimationFrame(() => {
+        el.setAttribute("data-mounted", "");
+        this.#layout();
+      });
+      this.#startTimer(el);
+      for (const t of this.noteTargets.slice(0, -VISIBLE)) {
+        this.dismiss(t);
+      }
+    }
+    noteTargetDisconnected() {
+      this.#layout();
     }
     pause() {
-      if (!this.#timerID) return;
-      this.#remaining -= Date.now() - this.#started;
-      this.#clearTimer();
+      this.#hovered = true;
+      this.#pauseAllTimers();
+      this.#layout();
     }
     resume() {
-      if (this.#timerID) return;
-      if (this.#remaining <= 0) return;
-      this.#startTimer();
+      this.#hovered = false;
+      this.#resumeAllTimers();
+      this.#layout();
     }
-    #timerID;
-    #started;
-    #remaining;
-    #startTimer() {
-      this.#started = Date.now();
-      this.#timerID = setTimeout(() => this.dismiss(), this.#remaining);
+    dismiss(el) {
+      this.#clearTimer(el);
+      el.removeAttribute("data-swiping");
+      el.style.removeProperty("--swipe");
+      el.setAttribute("data-dismissed", "");
+      el.removeAttribute("data-mounted");
+      el.addEventListener("transitionend", () => {
+        el.remove();
+      }, { once: true });
+      setTimeout(() => {
+        if (el.parentNode) el.remove();
+      }, 600);
     }
-    #clearTimer() {
-      if (this.#timerID) {
-        clearTimeout(this.#timerID);
-        this.#timerID = null;
+    // --- swipe to dismiss ---
+    swipeStart(e) {
+      if (e.target.closest("button, a")) {
+        return;
       }
+      const el = e.target.closest(
+        "[data-note-port-target='note']"
+      );
+      if (!el) return;
+      el.setPointerCapture(e.pointerId);
+      this.#swipe = {
+        el,
+        startY: e.clientY,
+        startTime: Date.now()
+      };
+      el.setAttribute("data-swiping", "");
+    }
+    swipeMove(e) {
+      if (!this.#swipe) return;
+      const { el, startY } = this.#swipe;
+      let dy = e.clientY - startY;
+      if (dy < 0) dy = dy * 0.2;
+      el.style.setProperty("--swipe", dy + "px");
+    }
+    swipeEnd(e) {
+      if (!this.#swipe) return;
+      const { el, startY, startTime } = this.#swipe;
+      this.#swipe = null;
+      const dy = e.clientY - startY;
+      const dt = Date.now() - startTime;
+      const velocity = Math.abs(dy) / dt;
+      if (dy > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
+        this.#clearTimer(el);
+        el.removeAttribute("data-swiping");
+        el.setAttribute("data-swipe-out", "");
+        el.removeAttribute("data-mounted");
+        el.addEventListener("animationend", () => {
+          el.remove();
+        }, { once: true });
+        setTimeout(() => {
+          if (el.parentNode) el.remove();
+        }, 300);
+      } else {
+        el.removeAttribute("data-swiping");
+        el.style.setProperty("--swipe", "0px");
+      }
+    }
+    // --- timers ---
+    #hovered = false;
+    #timers = /* @__PURE__ */ new WeakMap();
+    #onVisibility;
+    #swipe = null;
+    #startTimer(el) {
+      this.#clearTimer(el);
+      if (this.#hovered || document.hidden) return;
+      const id = setTimeout(
+        () => this.dismiss(el),
+        DURATION
+      );
+      this.#timers.set(el, id);
+    }
+    #clearTimer(el) {
+      const id = this.#timers.get(el);
+      if (id) {
+        clearTimeout(id);
+        this.#timers.delete(el);
+      }
+    }
+    #pauseAllTimers() {
+      for (const el of this.noteTargets) {
+        this.#clearTimer(el);
+      }
+    }
+    #resumeAllTimers() {
+      if (this.#hovered || document.hidden) return;
+      for (const el of this.noteTargets) {
+        this.#startTimer(el);
+      }
+    }
+    // --- layout ---
+    #layout() {
+      const notes = this.noteTargets.filter(
+        (n) => !n.hasAttribute("data-dismissed") && !n.hasAttribute("data-swipe-out")
+      );
+      const count = notes.length;
+      const expanded = this.#hovered;
+      const frontHeight = count > 0 ? this.#height(notes[count - 1]) : 0;
+      let heightsBefore = 0;
+      for (let i = count - 1; i >= 0; i--) {
+        const note = notes[i];
+        const idx = count - 1 - i;
+        const h = this.#height(note);
+        note.style.zIndex = count - idx;
+        note.style.setProperty("--index", idx);
+        note.style.setProperty(
+          "--front-toast-height",
+          frontHeight + "px"
+        );
+        if (idx === 0) {
+          note.setAttribute("data-front", "");
+        } else {
+          note.removeAttribute("data-front");
+        }
+        if (expanded) {
+          note.style.setProperty(
+            "--offset",
+            heightsBefore + "px"
+          );
+          heightsBefore += h + GAP;
+        } else {
+          note.style.setProperty(
+            "--offset",
+            idx * GAP + "px"
+          );
+        }
+      }
+      if (expanded) {
+        this.element.style.setProperty(
+          "--port-height",
+          heightsBefore + 24 + "px"
+        );
+      } else {
+        this.element.style.setProperty(
+          "--port-height",
+          frontHeight + VISIBLE * GAP + 24 + "px"
+        );
+      }
+    }
+    #height(el) {
+      return parseInt(
+        el.style.getPropertyValue("--initial-height"),
+        10
+      ) || el.offsetHeight;
     }
   };
 
@@ -8530,7 +8689,7 @@
   Stimulus.register("list", list_default);
   Stimulus.register("sidebar", sidebar_controller_default);
   Stimulus.register("add-torrent", add_torrent_controller_default);
-  Stimulus.register("note", note_default);
+  Stimulus.register("note-port", note_port_default);
   Stimulus.register("topbar", topbar_controller_default);
 })();
 /*!

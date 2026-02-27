@@ -15,7 +15,6 @@ import (
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tvmaze"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
 
@@ -148,12 +147,9 @@ func stringHandler(contentType, body string) http.HandlerFunc {
 
 func handleBadRequest(w http.ResponseWriter, req *http.Request, title, desc string) {
 	h := rawHandler("text/vnd.turbo-stream.html", 400,
-		turbo.Append("note-viewport",
-			Note(NoteError)(
-				NoteTitle()(html.Text(title)),
-				NoteDescription()(html.Text(desc)),
-				NoteClose(),
-			),
+		Note(NoteError)(
+			NoteTitle()(html.Text(title)),
+			NoteDescription()(html.Text(desc)),
 		),
 	)
 	h.ServeHTTP(w, req)
@@ -161,12 +157,9 @@ func handleBadRequest(w http.ResponseWriter, req *http.Request, title, desc stri
 
 func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
 	h := rawHandler("text/vnd.turbo-stream.html", 404,
-		turbo.Append("note-viewport",
-			Note(NoteError)(
-				NoteTitle()(html.Text("Not Found")),
-				NoteDescription()(html.Text(path)),
-				NoteClose(),
-			),
+		Note(NoteError)(
+			NoteTitle()(html.Text("Not Found")),
+			NoteDescription()(html.Text(path)),
 		),
 	)
 	h.ServeHTTP(w, req)
@@ -174,11 +167,8 @@ func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
 
 func handleInternal(w http.ResponseWriter, req *http.Request) {
 	h := rawHandler("text/vnd.turbo-stream.html", 500,
-		turbo.Append("note-viewport",
-			Note(NoteError)(
-				NoteTitle()(html.Text("Internal Error")),
-				NoteClose(),
-			),
+		Note(NoteError)(
+			NoteTitle()(html.Text("Internal Error")),
 		),
 	)
 	h.ServeHTTP(w, req)
@@ -191,4 +181,3 @@ func urlPathHasPrefix(req *http.Request, prefix string) bool {
 	}
 	return req.URL.Path == prefix || strings.HasPrefix(req.URL.Path, prefix+"/")
 }
-
