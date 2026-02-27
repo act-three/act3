@@ -140,7 +140,6 @@ func editMediaSeriesDetailEdition(
 ) html.Node {
 	return html.Div()(
 		editMediaSeriesAddTorrentButton(sed.ID()),
-		turbo.Sink("add-torrent-errors"),
 		html.Div(
 			attr.Class("border"),
 		)(

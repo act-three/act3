@@ -11,10 +11,10 @@ import (
 	"strings"
 
 	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/http/timing"
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tvmaze"
+	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
@@ -90,17 +90,14 @@ func handle(mux *http.ServeMux, pattern string, hf handlerFunc) {
 		})
 		var ve *model.ValidationError
 		if errors.As(err, &ve) {
-			handleBadRequest(w, req, errorFrameID(err),
-				ve.Op,
-				ve.Err.Error(),
-			)
+			handleBadRequest(w, req, ve.Op, ve.Err.Error())
 			return
 		} else if errors.Is(err, errNotFound) {
-			handleNotFound(w, req, errorFrameID(err), req.URL.Path)
+			handleNotFound(w, req, req.URL.Path)
 			return
 		} else if err != nil {
 			slog.ErrorContext(ctx, "error", "error", err)
-			handleInternal(w, req, errorFrameID(err))
+			handleInternal(w, req)
 			return
 		}
 		if node != nil {
@@ -149,64 +146,42 @@ func stringHandler(contentType, body string) http.HandlerFunc {
 	}
 }
 
-func handleBadRequest(w http.ResponseWriter, req *http.Request, turboFrameID, title, desc string) {
+func handleBadRequest(w http.ResponseWriter, req *http.Request, title, desc string) {
 	h := rawHandler("text/vnd.turbo-stream.html", 400,
-		turbo.Prepend(turboFrameID,
-			html.Div(
-				attr.Class("border p-1 bg-crimson-3"),
-			)(
-				html.Div()(html.Text(title)),
-				html.Div()(html.Text(desc)),
+		turbo.Append("note-viewport",
+			Note(NoteError)(
+				NoteTitle()(html.Text(title)),
+				NoteDescription()(html.Text(desc)),
+				NoteClose(),
 			),
 		),
 	)
 	h.ServeHTTP(w, req)
 }
 
-func handleNotFound(w http.ResponseWriter, req *http.Request, turboFrameID, path string) {
+func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
 	h := rawHandler("text/vnd.turbo-stream.html", 404,
-		turbo.Prepend(turboFrameID,
-			html.Div(
-				attr.Class("border p-1 bg-crimson-3"),
-			)(
-				html.Div()(html.Text("Not Found")),
-				html.Div()(html.Text(path)),
+		turbo.Append("note-viewport",
+			Note(NoteError)(
+				NoteTitle()(html.Text("Not Found")),
+				NoteDescription()(html.Text(path)),
+				NoteClose(),
 			),
 		),
 	)
 	h.ServeHTTP(w, req)
 }
 
-func handleInternal(w http.ResponseWriter, req *http.Request, turboFrameID string) {
+func handleInternal(w http.ResponseWriter, req *http.Request) {
 	h := rawHandler("text/vnd.turbo-stream.html", 500,
-		turbo.Prepend(turboFrameID,
-			html.Div(
-				attr.Class("border p-1 bg-crimson-3"),
-			)(
-				html.Div()(html.Text("Internal Error")),
+		turbo.Append("note-viewport",
+			Note(NoteError)(
+				NoteTitle()(html.Text("Internal Error")),
+				NoteClose(),
 			),
 		),
 	)
 	h.ServeHTTP(w, req)
-}
-
-type frameIDError struct {
-	id  string
-	err error
-}
-
-func decorateErrorFrame(id string, err *error) {
-	if *err != nil {
-		*err = frameIDError{id, *err}
-	}
-}
-
-func (e frameIDError) Error() string {
-	return e.err.Error()
-}
-
-func (e frameIDError) Unwrap() error {
-	return e.err
 }
 
 func urlPathHasPrefix(req *http.Request, prefix string) bool {
@@ -217,10 +192,3 @@ func urlPathHasPrefix(req *http.Request, prefix string) bool {
 	return req.URL.Path == prefix || strings.HasPrefix(req.URL.Path, prefix+"/")
 }
 
-func errorFrameID(err error) string {
-	var fe frameIDError
-	if errors.As(err, &fe) {
-		return fe.id
-	}
-	return "errors"
-}

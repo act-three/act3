@@ -46,8 +46,7 @@ func (c *Config) editDownloadsDetail(w http.ResponseWriter, req *http.Request) (
 	})
 }
 
-func (c *Config) doAddTorrent(w http.ResponseWriter, req *http.Request) (n html.Node, err error) {
-	defer decorateErrorFrame("add-torrent-errors", &err)
+func (c *Config) doAddTorrent(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		file, _, err := req.FormFile("torrent")

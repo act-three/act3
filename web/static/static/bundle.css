@@ -701,9 +701,6 @@
       background-color: color-mix(in oklab, var(--color-black) 80%, transparent);
     }
   }
-  .bg-crimson-3 {
-    background-color: var(--color-crimson-3);
-  }
   .bg-gray-0 {
     background-color: var(--color-gray-0);
   }

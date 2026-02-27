@@ -11,8 +11,7 @@ import (
 	"ily.dev/act3/view"
 )
 
-func (c *Config) doAddSeries(_ http.ResponseWriter, req *http.Request) (n html.Node, err error) {
-	defer decorateErrorFrame("add-series-errors", &err)
+func (c *Config) doAddSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		ss, err := tx.SeriesCreateByTVmazeID(ctx, req.FormValue("id"))
