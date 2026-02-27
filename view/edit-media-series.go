@@ -20,12 +20,10 @@ func EditMediaSeries(
 ) html.Node {
 	return app(title, FlexCol(attr.Class("place-self-stretch"))(
 		ToolbarPrimary()(
-			html.Div()(DialogButton("/dialog/series-add")(
+			DialogButton("/dialog/series-add", ButtonRadiusMedium, ButtonSurface)(
 				Icon("plus"),
 				html.Text("Add Series"),
-			)).
-				With(ButtonRadiusMedium).
-				With(ButtonSurface),
+			),
 			html.Div(attr.Class("relative w-md"))(
 				editMediaSeriesSearchbar(),
 			),
@@ -214,8 +212,7 @@ func editMediaSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
 						html.Div()(html.Text(sn.Name())),
 						html.Div()(html.Textf("%d", sn.NumEpisodes(model.Significant))),
 						html.Div()(
-							html.RangeSeq(sn.Episodes(model.Significant), editMediaSeriesDetailEpisodeListItem).
-								With(ButtonGhost),
+							html.RangeSeq(sn.Episodes(model.Significant), editMediaSeriesDetailEpisodeListItem),
 						),
 					)
 				})
@@ -235,7 +232,7 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 				html.Text(ep.Label()),
 			),
 			html.Div()(
-				DialogButton(ep.EditDialogURL())(Icon("info")),
+				DialogButton(ep.EditDialogURL(), ButtonGhost)(Icon("info")),
 			),
 		),
 		html.Range(ep.Progress(), func(pi *progress.Item) html.Node {

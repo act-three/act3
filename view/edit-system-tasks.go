@@ -41,10 +41,9 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 												attr.Action("/do/delete-task/"+t.ID()),
 												attr.Method("POST"),
 											)(
-												Button()(
+												Button(ButtonGhost)(
 													html.Text("Delete"),
-												).
-													With(ButtonGhost),
+												),
 											),
 										),
 										TableCell()(html.Text(t.Args())),
@@ -61,10 +60,9 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 															attr.Action("/do/run-task/"+t.ID()),
 															attr.Method("POST"),
 														)(
-															Button()(
+															Button(ButtonGhost)(
 																html.Text("Run Now"),
-															).
-																With(ButtonGhost),
+															),
 														),
 													)
 												},

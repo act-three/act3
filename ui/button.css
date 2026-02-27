@@ -59,16 +59,16 @@
 @keyframes spin { to { transform: rotate(360deg) } }
 
 /* variant: solid (default) */
-.u-button\+solid {
+.u-button:where(:not(.u-button\+soft, .u-button\+surface, .u-button\+outline, .u-button\+ghost, .u-button\+destructive)) {
 	background-color: var(--color-accent-9);
 	color: white;
 }
 @media (hover: hover) {
-	.u-button\+solid:hover {
+	.u-button:where(:not(.u-button\+soft, .u-button\+surface, .u-button\+outline, .u-button\+ghost, .u-button\+destructive)):hover {
 		background-color: var(--color-accent-10);
 	}
 }
-.u-button\+solid:active:not(:disabled) {
+.u-button:where(:not(.u-button\+soft, .u-button\+surface, .u-button\+outline, .u-button\+ghost, .u-button\+destructive)):active:not(:disabled) {
 	background-color: var(--color-accent-10);
 	filter: brightness(0.92) saturate(1.1);
 }
@@ -166,7 +166,8 @@
 	line-height: calc(1rem * var(--scale));
 	letter-spacing: 0.0025em;
 }
-.u-button\+size-2 {
+/* size-2 (default) */
+.u-button:where(:not(.u-button\+size-1, .u-button\+size-3, .u-button\+size-4)) {
 	height: calc(2rem * var(--scale));
 	padding-inline: calc(0.75rem * var(--scale));
 	gap: calc(0.5rem * var(--scale));
@@ -189,50 +190,27 @@
 	letter-spacing: -0.0025em;
 }
 
-/* circle sizes */
-.u-button\+circle-1 {
-	width: calc(1.5rem * var(--scale));
-	height: calc(1.5rem * var(--scale));
-	font-size: calc(0.75rem * var(--scale));
-	line-height: calc(1rem * var(--scale));
-}
-.u-button\+circle-2 {
-	width: calc(2rem * var(--scale));
-	height: calc(2rem * var(--scale));
-	font-size: calc(0.875rem * var(--scale));
-	line-height: calc(1.25rem * var(--scale));
-}
-.u-button\+circle-3 {
-	width: calc(2.5rem * var(--scale));
-	height: calc(2.5rem * var(--scale));
-	font-size: calc(1rem * var(--scale));
-	line-height: calc(1.5rem * var(--scale));
-}
-.u-button\+circle-4 {
-	width: calc(3rem * var(--scale));
-	height: calc(3rem * var(--scale));
-	font-size: calc(1.125rem * var(--scale));
-	line-height: calc(1.75rem * var(--scale));
-}
-
 /* shapes / radius */
-.u-button\+radius-full {
+/* radius-full (default) */
+.u-button:where(:not(.u-button\+radius-circle, .u-button\+radius-medium, .u-button\+radius-none)) {
 	border-radius: 9999px;
 }
 .u-button\+radius-circle {
 	aspect-ratio: 1;
 	border-radius: 9999px;
+	padding-inline: 0;
+	gap: 0;
 }
-.u-button\+radius-medium:where(.u-button\+size-1, .u-button\+circle-1) {
+.u-button\+radius-medium:where(.u-button\+size-1) {
 	border-radius: calc(0.1875rem * var(--scale) * var(--radius-factor, 1));
 }
-.u-button\+radius-medium:where(.u-button\+size-2, .u-button\+circle-2) {
+.u-button\+radius-medium:where(:not(.u-button\+size-1, .u-button\+size-3, .u-button\+size-4)) {
 	border-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
 }
-.u-button\+radius-medium:where(.u-button\+size-3, .u-button\+circle-3) {
+.u-button\+radius-medium:where(.u-button\+size-3) {
 	border-radius: calc(0.375rem * var(--scale) * var(--radius-factor, 1));
 }
-.u-button\+radius-medium:where(.u-button\+size-4, .u-button\+circle-4) {
+.u-button\+radius-medium:where(.u-button\+size-4) {
 	border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
 }
 .u-button\+radius-none {

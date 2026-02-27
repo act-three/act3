@@ -110,7 +110,7 @@ func mediaPlayer(v *model.Video, title string, qualityOpts []model.QualityOption
 					items-center
 					gap-4
 				`))(
-					Button(stimulus.Action("click->player#dismiss"))(Icon("x")),
+					Button(stimulus.Action("click->player#dismiss"), ButtonSurface, ButtonCircle)(Icon("x")),
 					Box(Class("plyr__title"))(Text(title)),
 				),
 				FlexCol(
@@ -146,8 +146,8 @@ func mediaPlayer(v *model.Video, title string, qualityOpts []model.QualityOption
 							justify-start
 							gap-4
 						`))(
-							Button(stimulus.Action("click->player#toggleCaptions"))(Icon("message-square-text")),
-							Button(stimulus.Action("click->player#toggleAudioDesc"))(Icon("audio-lines")),
+							Button(stimulus.Action("click->player#toggleCaptions"), ButtonSurface, ButtonCircle)(Icon("message-square-text")),
+							Button(stimulus.Action("click->player#toggleAudioDesc"), ButtonSurface, ButtonCircle)(Icon("audio-lines")),
 							mediaPlayerVolumeBar(),
 						),
 
@@ -158,9 +158,9 @@ func mediaPlayer(v *model.Video, title string, qualityOpts []model.QualityOption
 							justify-center
 							gap-4
 						`))(
-							Button(stimulus.Action("click->player#skipBackward"))(Icon("rotate-ccw")),
-							Button(stimulus.Action("click->player#togglePlay"))(Icon("play")),
-							Button(stimulus.Action("click->player#skipForward"))(Icon("rotate-cw")),
+							Button(stimulus.Action("click->player#skipBackward"), ButtonSurface, ButtonCircle)(Icon("rotate-ccw")),
+							Button(stimulus.Action("click->player#togglePlay"), ButtonSurface, ButtonCircle)(Icon("play")),
+							Button(stimulus.Action("click->player#skipForward"), ButtonSurface, ButtonCircle)(Icon("rotate-cw")),
 						),
 
 						FlexRow(Class(`
@@ -171,14 +171,12 @@ func mediaPlayer(v *model.Video, title string, qualityOpts []model.QualityOption
 							gap-4
 						`))(
 							mediaPlayerQualityMenu(qualityOpts),
-							Button(stimulus.Action("click->player#toggleFullscreen"))(Icon("maximize")),
+							Button(stimulus.Action("click->player#toggleFullscreen"), ButtonSurface, ButtonCircle)(Icon("maximize")),
 						),
 					),
 				),
 			),
-		).
-			With(ButtonSurface).
-			With(ButtonCircle),
+		),
 	)
 }
 
@@ -218,7 +216,7 @@ func mediaPlayerQualityMenu(opts []model.QualityOption) html.Node {
 		)
 	}
 	return html.Div(Class("relative"))(
-		Button(stimulus.Action("click->player#toggleQualityMenu"))(Icon("settings-2")),
+		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle)(Icon("settings-2")),
 		html.Div(
 			stimulus.Target("player", "qualityMenu"),
 			Class(`
@@ -369,7 +367,7 @@ func mediaPlayerSeekBar() html.Node {
 
 func mediaPlayerVolumeBar() html.Node {
 	return FlexRow(Class("items-center gap-2"))(
-		Button(stimulus.Action("click->player#toggleMute"))(Icon("volume-2")),
+		Button(stimulus.Action("click->player#toggleMute"), ButtonSurface, ButtonCircle)(Icon("volume-2")),
 		html.Div(Class("w-20"))(
 			html.Div(Class("relative"))(
 				html.Input(

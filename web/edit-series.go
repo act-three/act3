@@ -333,8 +333,7 @@ func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.No
 													attr.Name("id"),
 													attr.Value(strconv.Itoa(t.TVmaze.ID)),
 												),
-												Button()(html.Text("Add")).
-													With(ButtonSurface),
+												Button(ButtonSurface)(html.Text("Add")),
 											),
 										)
 									},

@@ -5,10 +5,7 @@ import "ily.dev/act3/html"
 type key int
 
 const (
-	buttonVariantKey key = iota
-	buttonSizeKey
-	buttonShapeKey
-	spinnerSizeKey
+	spinnerSizeKey key = iota
 	progressSizeKey
 	lineClampKey
 	fontWeightKey

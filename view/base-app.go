@@ -60,10 +60,11 @@ func PageFrame(title, id string, child ...html.Node) html.Node {
 	)
 }
 
-func DialogButton(url string) html.Element {
+func DialogButton(url string, attrs ...attr.Node) html.Element {
 	return Button(
 		attr.Href(url),
 		attr.Attr("data-turbo-frame")("dialog"),
+		attr.Group(attrs...),
 	)
 }
 

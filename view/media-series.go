@@ -85,14 +85,14 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 							return Button(
 								attr.Href(ep.PlayerURL(vids[0])),
 								attr.Attr("data-turbo-frame")("player"),
+								ButtonSurface,
+								ButtonCircle,
 							)(Icon("play"))
 						},
 						func() html.Node {
-							return Button(Disabled(true))(Icon("x"))
+							return Button(Disabled(true), ButtonSurface, ButtonCircle)(Icon("x"))
 						},
-					).
-						With(ButtonSurface).
-						With(ButtonCircle),
+					),
 				),
 				Link(ep.DetailURL(), Class("text-gray-11"))(
 					FlexCol()(
