@@ -18,6 +18,5 @@ func ToolbarSecondary(attrs ...attr.Node) html.Element {
 		attr.Class("u-toolbar-secondary"),
 		attr.Group(attrs...),
 	).
-		With(ButtonSize1).
 		With(ButtonSurface).(html.Element)
 }

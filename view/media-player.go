@@ -177,7 +177,6 @@ func mediaPlayer(v *model.Video, title string, qualityOpts []model.QualityOption
 				),
 			),
 		).
-			With(ButtonSize3).
 			With(ButtonSurface).
 			With(ButtonCircle),
 	)
