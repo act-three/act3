@@ -1,6 +1,7 @@
 @import "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap";
 @import "tailwindcss";
 @import "./ui/color.css";
+@import "./ui/theme.css";
 @import "./ui/button.css";
 @import "./ui/card.css";
 @import "./ui/contents.css";

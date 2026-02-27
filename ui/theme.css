@@ -1,0 +1,54 @@
+@layer components {
+
+/* theme — base */
+.u-theme {
+	display: contents;
+}
+
+/* radius presets */
+.u-theme\+radius\+none {
+	--radius-factor: 0;
+}
+.u-theme\+radius\+small {
+	--radius-factor: 0.75;
+}
+.u-theme\+radius\+medium {
+	--radius-factor: 1;
+}
+.u-theme\+radius\+large {
+	--radius-factor: 1.5;
+}
+.u-theme\+radius\+full {
+	--radius-factor: 2.5;
+}
+
+/* accent color: crimson */
+.u-theme\+accent-color\+crimson {
+	--color-accent-1: var(--color-crimson-1);
+	--color-accent-2: var(--color-crimson-2);
+	--color-accent-3: var(--color-crimson-3);
+	--color-accent-4: var(--color-crimson-4);
+	--color-accent-5: var(--color-crimson-5);
+	--color-accent-6: var(--color-crimson-6);
+	--color-accent-7: var(--color-crimson-7);
+	--color-accent-8: var(--color-crimson-8);
+	--color-accent-9: var(--color-crimson-9);
+	--color-accent-10: var(--color-crimson-10);
+	--color-accent-11: var(--color-crimson-11);
+	--color-accent-12: var(--color-crimson-12);
+
+	--color-accent-a1: var(--color-crimson-a1);
+	--color-accent-a2: var(--color-crimson-a2);
+	--color-accent-a3: var(--color-crimson-a3);
+	--color-accent-a4: var(--color-crimson-a4);
+	--color-accent-a5: var(--color-crimson-a5);
+	--color-accent-a6: var(--color-crimson-a6);
+	--color-accent-a7: var(--color-crimson-a7);
+	--color-accent-a8: var(--color-crimson-a8);
+	--color-accent-a9: var(--color-crimson-a9);
+	--color-accent-a10: var(--color-crimson-a10);
+	--color-accent-a11: var(--color-crimson-a11);
+	--color-accent-a12: var(--color-crimson-a12);
+}
+
+}

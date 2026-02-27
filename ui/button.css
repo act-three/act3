@@ -224,16 +224,16 @@
 	border-radius: 9999px;
 }
 .u-button\+radius-medium:where(.u-button\+size-1, .u-button\+circle-1) {
-	border-radius: 0.1875rem;
+	border-radius: calc(0.1875rem * var(--radius-factor, 1));
 }
 .u-button\+radius-medium:where(.u-button\+size-2, .u-button\+circle-2) {
-	border-radius: 0.25rem;
+	border-radius: calc(0.25rem * var(--radius-factor, 1));
 }
 .u-button\+radius-medium:where(.u-button\+size-3, .u-button\+circle-3) {
-	border-radius: 0.375rem;
+	border-radius: calc(0.375rem * var(--radius-factor, 1));
 }
 .u-button\+radius-medium:where(.u-button\+size-4, .u-button\+circle-4) {
-	border-radius: 0.5rem;
+	border-radius: calc(0.5rem * var(--radius-factor, 1));
 }
 .u-button\+radius-none {
 	border-radius: 0;
