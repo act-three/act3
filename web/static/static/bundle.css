@@ -1478,6 +1478,18 @@
 @layer components {
   .u-theme {
     display: contents;
+    --color-panel: color-mix(
+		in oklch,
+		oklch(1 0 0) 70%,
+		transparent
+	);
+    @supports (color: color-mix(in lab, red, red)) {
+      --color-panel: color-mix(
+		in oklch,
+		var(--color-gray-0) 70%,
+		transparent
+	);
+    }
   }
   .u-theme\+scale\+1 {
     --scale: 0.9;
@@ -1752,7 +1764,8 @@
     box-shadow: inset 0 0 0 1px var(--color-gray-a5);
   }
   .u-card\+classic {
-    background-color: var(--panel-background);
+    background-color: var(--color-panel);
+    backdrop-filter: blur(64px);
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1),	0 1px 2px -1px rgb(0 0 0 / 0.1);
     transition-property: box-shadow;
     transition-duration: 150ms;
@@ -2300,7 +2313,8 @@
   .u-table\+surface {
     border: 1px solid var(--color-gray-a5);
     border-radius: calc(0.5rem * var(--radius-factor, 1));
-    background-color: var(--panel-background);
+    background-color: var(--color-panel);
+    backdrop-filter: blur(64px);
     overflow: hidden;
   }
   .u-table\+surface .u-table-header .u-table-row {

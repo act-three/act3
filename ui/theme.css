@@ -1,6 +1,17 @@
-/* theme — base */
+/* theme — base
+ *
+ * Only the "translucent" panel background style is supported
+ * (see --color-panel below). There is no way to configure this
+ * on the theme; components that use it always get the
+ * translucent treatment.
+ */
 .u-theme {
 	display: contents;
+	--color-panel: color-mix(
+		in oklch,
+		var(--color-gray-0) 70%,
+		transparent
+	);
 }
 
 /* scale presets */
