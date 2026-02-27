@@ -49,6 +49,7 @@ func app(title string, child ...html.Node) html.Node {
 			),
 		),
 		turbo.Frame("dialog"),
+		NoteViewport(),
 	)
 }
 

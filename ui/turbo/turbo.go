@@ -41,3 +41,9 @@ func Prepend(id string, node ...html.Node) html.Node {
 		html.Template()(node...),
 	)
 }
+
+func Append(id string, node ...html.Node) html.Node {
+	return stream(action("append"), target(id))(
+		html.Template()(node...),
+	)
+}

@@ -38,7 +38,7 @@ Replace the Tailwind class strings with `u-`-prefixed class names.
 
 **Add:**
 - `attr.Class("u-<component>")` as the base class
-- `attr.Class("u-<component>+<variant>") for variant class names
+- `attr.Class("u-<component>+<variant>")` for variant class names
 
 **Keep unchanged:**
 - The `FuncAttr("class", ...)` pattern (just update table names)
