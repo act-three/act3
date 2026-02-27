@@ -4,12 +4,13 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 )
 
 func media(title string) html.Element {
 	return func(child ...html.Node) html.Node {
-		return base(title)(Class("pt-14"))(
+		return base(title)()(
 			Group(child...),
 			mediaNavigationMenu(),
 			turbo.Frame("player"),
@@ -19,6 +20,7 @@ func media(title string) html.Element {
 
 func mediaNavigationMenu() html.Node {
 	return FlexCol(
+		stimulus.Controller("topbar"),
 		Class(`
 			fixed
 			top-0

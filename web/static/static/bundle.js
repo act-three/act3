@@ -8509,6 +8509,20 @@
     }
   };
 
+  // view/topbar-controller.js
+  var topbar_controller_default = class extends Controller {
+    #ro;
+    connect() {
+      this.#ro = new ResizeObserver(([e]) => {
+        document.body.style.paddingTop = e.contentRect.height + "px";
+      });
+      this.#ro.observe(this.element);
+    }
+    disconnect() {
+      this.#ro.disconnect();
+    }
+  };
+
   // main.js
   window.Stimulus = Application.start();
   Stimulus.register("dialog", dialog_controller_default);
@@ -8517,6 +8531,7 @@
   Stimulus.register("sidebar", sidebar_controller_default);
   Stimulus.register("add-torrent", add_torrent_controller_default);
   Stimulus.register("note", note_default);
+  Stimulus.register("topbar", topbar_controller_default);
 })();
 /*!
 Turbo 8.0.19
