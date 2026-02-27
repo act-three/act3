@@ -1,5 +1,3 @@
-@layer components {
-
 .u-toolbar-primary {
 	display: flex;
 	height: 4rem;
@@ -22,6 +20,4 @@
 	gap: 1rem;
 	border-bottom-width: 1px;
 	padding-inline: 1rem;
-}
-
 }

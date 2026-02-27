@@ -1,5 +1,3 @@
-@layer components {
-
 /* inset — base */
 .u-inset {
 	overflow: hidden;
@@ -47,6 +45,4 @@
 	border-radius: 0 var(--inset-rounded) var(--inset-rounded) 0;
 	margin-right: var(--inset-padding);
 	margin-block: var(--inset-padding);
-}
-
 }

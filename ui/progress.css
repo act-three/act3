@@ -1,5 +1,3 @@
-@layer components {
-
 /* progress — base */
 .u-progress {
 	overflow: hidden;
@@ -29,6 +27,4 @@
 }
 .u-progress\+size-lg {
 	height: calc(0.75rem * var(--scale));
-}
-
 }

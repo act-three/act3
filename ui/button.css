@@ -1,5 +1,3 @@
-@layer components {
-
 /* button — base */
 .u-button {
 	position: relative;
@@ -215,6 +213,4 @@
 }
 .u-button\+radius-none {
 	border-radius: 0;
-}
-
 }

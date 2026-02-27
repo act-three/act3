@@ -1,5 +1,3 @@
-@layer components {
-
 /* card — base */
 .u-card {
 	outline: none;
@@ -139,8 +137,6 @@
 .u-card\+ghost:has(.u-card-description) .u-card-media {
 	transform: translateY(0.125rem);
 	align-self: flex-start;
-}
-
 }
 
 @media (hover: hover) {

@@ -1,5 +1,3 @@
-@layer components {
-
 .u-table {
 	caption-side: bottom;
 }
@@ -96,8 +94,6 @@
 }
 .u-table-cell:has([role="checkbox"]) {
 	padding-inline-end: 0;
-}
-
 }
 
 @media (hover: hover) {

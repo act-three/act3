@@ -1,5 +1,3 @@
-@layer components {
-
 /* theme — base */
 .u-theme {
 	display: contents;
@@ -66,6 +64,4 @@
 	--color-accent-a10: var(--color-crimson-a10);
 	--color-accent-a11: var(--color-crimson-a11);
 	--color-accent-a12: var(--color-crimson-a12);
-}
-
 }

@@ -8,8 +8,6 @@
 	}
 }
 
-@layer components {
-
 /* spinner — base */
 .u-spinner {
 	position: relative;
@@ -66,6 +64,4 @@
 .u-spinner\+size-lg {
 	width: calc(1.25rem * var(--scale));
 	height: calc(1.25rem * var(--scale));
-}
-
 }

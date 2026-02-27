@@ -1,5 +1,3 @@
-@layer components {
-
 .u-flex-row {
 	display: flex;
 	flex-direction: row;
@@ -8,6 +6,4 @@
 .u-flex-col {
 	display: flex;
 	flex-direction: column;
-}
-
 }

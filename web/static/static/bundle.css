@@ -1869,19 +1869,19 @@
     transform: translateY(0.125rem);
     align-self: flex-start;
   }
-}
-@media (hover: hover) {
-  a.u-card\+ghost:hover {
-    background-color: var(--color-gray-a3);
-  }
-  a.u-card\+classic:hover {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),	0 2px 4px -2px rgb(0 0 0 / 0.1);
-  }
-  a.u-card\+classic:active {
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  }
-  .u-card-description > a:hover {
-    color: var(--color-gray-12);
+  @media (hover: hover) {
+    a.u-card\+ghost:hover {
+      background-color: var(--color-gray-a3);
+    }
+    a.u-card\+classic:hover {
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1),	0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    a.u-card\+classic:active {
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    }
+    .u-card-description > a:hover {
+      color: var(--color-gray-12);
+    }
   }
 }
 @layer components {
@@ -1978,18 +1978,18 @@
   .u-link\+underline-hover {
     text-decoration: none;
   }
-}
-@media (hover: hover) {
-  .u-link:where(:not(.u-link\+underline-always, .u-link\+underline-hover)):hover {
-    text-decoration: underline;
-    text-decoration-color: var(--color-accent-a5);
-    text-decoration-thickness: min(2px, max(1px, 0.05em));
-    text-underline-offset: calc(0.025em + 2px);
-  }
-  .u-link\+underline-hover:hover {
-    text-decoration: underline;
-    text-decoration-thickness: min(2px, max(1px, 0.05em));
-    text-underline-offset: calc(0.025em + 2px);
+  @media (hover: hover) {
+    .u-link:where(:not(.u-link\+underline-always, .u-link\+underline-hover)):hover {
+      text-decoration: underline;
+      text-decoration-color: var(--color-accent-a5);
+      text-decoration-thickness: min(2px, max(1px, 0.05em));
+      text-underline-offset: calc(0.025em + 2px);
+    }
+    .u-link\+underline-hover:hover {
+      text-decoration: underline;
+      text-decoration-thickness: min(2px, max(1px, 0.05em));
+      text-underline-offset: calc(0.025em + 2px);
+    }
   }
 }
 @layer components {
@@ -2032,15 +2032,15 @@
     overscroll-behavior: contain;
   }
 }
-@keyframes spinner-leaf-fade {
-  0% {
-    opacity: 1;
-  }
-  to {
-    opacity: .25;
-  }
-}
 @layer components {
+  @keyframes spinner-leaf-fade {
+    0% {
+      opacity: 1;
+    }
+    to {
+      opacity: .25;
+    }
+  }
   .u-spinner {
     position: relative;
     opacity: 0.65;
@@ -2376,12 +2376,12 @@
   .u-table-cell:has([role="checkbox"]) {
     padding-inline-end: 0;
   }
-}
-@media (hover: hover) {
-  .u-table-row:hover td,	.u-table-row:hover th {
-    background-color: color-mix(in srgb, color(display-p3 0.98 0.976 0.984) 50%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklch, var(--color-gray-2) 50%, transparent);
+  @media (hover: hover) {
+    .u-table-row:hover td,	.u-table-row:hover th {
+      background-color: color-mix(in srgb, color(display-p3 0.98 0.976 0.984) 50%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in oklch, var(--color-gray-2) 50%, transparent);
+      }
     }
   }
 }
