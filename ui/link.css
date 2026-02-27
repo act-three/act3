@@ -11,8 +11,8 @@
 	border-radius: calc(0.07em * 1);
 }
 
-/* underline auto — underline on hover */
-.u-link\+underline-auto {
+/* underline auto (default) — underline on hover */
+.u-link:where(:not(.u-link\+underline-always, .u-link\+underline-hover)) {
 	text-decoration: none;
 }
 
@@ -32,7 +32,7 @@
 }
 
 @media (hover: hover) {
-	.u-link\+underline-auto:hover {
+	.u-link:where(:not(.u-link\+underline-always, .u-link\+underline-hover)):hover {
 		text-decoration: underline;
 		text-decoration-color: var(--color-accent-a5);
 		text-decoration-thickness: min(2px, max(1px, 0.05em));

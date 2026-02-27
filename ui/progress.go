@@ -22,7 +22,6 @@ func Progress(value float64, attrs ...attr.Node) html.Node {
 		attr.Attr("data-state")(state),
 		attr.Attr("data-value")(fmt.Sprintf("%.1f", value*100)),
 		attr.Class("u-progress"),
-		attr.EnvAttr("class", progressSizeKey, progressMD),
 		attr.Group(attrs...),
 	)(
 		html.Div(
@@ -33,13 +32,7 @@ func Progress(value float64, attrs ...attr.Node) html.Node {
 }
 
 var (
-	ProgressSM = html.WithValue(progressSizeKey, progressSM)
-	ProgressMD = html.WithValue(progressSizeKey, progressMD) // default
-	ProgressLG = html.WithValue(progressSizeKey, progressLG)
-)
-
-const (
-	progressSM = "u-progress+size-sm"
-	progressMD = "u-progress+size-md"
-	progressLG = "u-progress+size-lg"
+	ProgressSM = attr.Class("u-progress+size-sm")
+	ProgressMD = attr.Class("u-progress+size-md")
+	ProgressLG = attr.Class("u-progress+size-lg")
 )

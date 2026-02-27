@@ -5,10 +5,10 @@ import (
 	"ily.dev/act3/html/attr"
 )
 
-func Spinner() html.Node {
+func Spinner(attrs ...attr.Node) html.Node {
 	return html.Div(
 		attr.Class("u-spinner"),
-		attr.EnvAttr("class", spinnerSizeKey, spinnerMD),
+		group(attrs...),
 	)(spinnerLeaves...)
 }
 
@@ -20,13 +20,7 @@ var spinnerLeaves = func() (a []html.Node) {
 }()
 
 var (
-	SpinnerSM = html.WithValue(spinnerSizeKey, spinnerSM)
-	SpinnerMD = html.WithValue(spinnerSizeKey, spinnerMD) // default
-	SpinnerLG = html.WithValue(spinnerSizeKey, spinnerLG)
-)
-
-const (
-	spinnerSM = "u-spinner+size-sm"
-	spinnerMD = "u-spinner+size-md"
-	spinnerLG = "u-spinner+size-lg"
+	SpinnerSM = attr.Class("u-spinner+size-sm")
+	SpinnerMD = attr.Class("u-spinner+size-md")
+	SpinnerLG = attr.Class("u-spinner+size-lg")
 )

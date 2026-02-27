@@ -4,20 +4,16 @@ import (
 	"io"
 
 	"ily.dev/act3/html/attr"
-	"ily.dev/act3/html/internal/env"
 )
 
 //go:generate go run gen.go -output tag.go
 
 func Render(w io.Writer, n Node) error {
-	return n.renderTo(w, env.Empty())
+	return n.renderTo(w)
 }
 
 type Node interface {
-	// With modifies the receiver with the given modifier.
-	With(Modifier) Node
-
-	renderTo(io.Writer, env.Env) error
+	renderTo(io.Writer) error
 }
 
 // Tag returns a new HTML tag with the given name.
@@ -42,16 +38,8 @@ type Element func(...Node) Node
 
 // renderTo renders e with no children.
 // To add children, call e(child1, child2, ...).
-func (e Element) renderTo(w io.Writer, env env.Env) error {
-	return e().renderTo(w, env)
-}
-
-// With modifies e with m.
-// The returned Node is also an Element.
-func (e Element) With(m Modifier) Node {
-	return Element(func(child ...Node) Node {
-		return e(child...).With(m)
-	})
+func (e Element) renderTo(w io.Writer) error {
+	return e().renderTo(w)
 }
 
 type element struct {
@@ -60,17 +48,17 @@ type element struct {
 	child Node
 }
 
-func (e element) renderTo(w io.Writer, env env.Env) error {
+func (e element) renderTo(w io.Writer) error {
 	w.Write(lt)
 	io.WriteString(w, e.tag)
 	w.Write(space)
-	err := attr.Render(w, e.attrs, env)
+	err := attr.Render(w, e.attrs)
 	if err != nil {
 		return err
 	}
 	if !isVoid[e.tag] {
 		w.Write(gt)
-		err = e.child.renderTo(w, env)
+		err = e.child.renderTo(w)
 		if err != nil {
 			return err
 		}
@@ -80,8 +68,6 @@ func (e element) renderTo(w io.Writer, env env.Env) error {
 	_, err = w.Write(gt)
 	return err
 }
-
-func (e element) With(m Modifier) Node { return modify(e, m) }
 
 func (element) node() {}
 

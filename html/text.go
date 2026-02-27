@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"html"
 	"io"
-
-	"ily.dev/act3/html/internal/env"
 )
 
 type raw string
@@ -19,13 +17,10 @@ func Raw(s string) Node {
 	return raw(s)
 }
 
-func (r raw) renderTo(w io.Writer, env env.Env) error {
+func (r raw) renderTo(w io.Writer) error {
 	_, err := io.WriteString(w, string(r))
 	return err
 }
-
-// With modifies e with m.
-func (r raw) With(m Modifier) Node { return r }
 
 type text string
 
@@ -41,11 +36,8 @@ func Textf(format string, arg ...any) Node {
 	return text(fmt.Sprintf(format, arg...))
 }
 
-func (t text) renderTo(w io.Writer, env env.Env) error {
+func (t text) renderTo(w io.Writer) error {
 	s := html.EscapeString(string(t))
 	_, err := io.WriteString(w, s)
 	return err
 }
-
-// With modifies e with m.
-func (t text) With(m Modifier) Node { return t }

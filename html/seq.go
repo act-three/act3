@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"ily.dev/act3/expr"
-	"ily.dev/act3/html/internal/env"
 )
 
 type seq iter.Seq[Node]
@@ -44,15 +43,12 @@ func If(cond bool, f func() Node) Node {
 	return nil
 }
 
-func (s seq) renderTo(w io.Writer, env env.Env) error {
+func (s seq) renderTo(w io.Writer) error {
 	for n := range s {
-		err := n.renderTo(w, env)
+		err := n.renderTo(w)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
-
-// With modifies e with m.
-func (s seq) With(m Modifier) Node { return modify(s, m) }

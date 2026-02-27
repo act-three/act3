@@ -60,7 +60,7 @@ func mediaSeriesSeason(sn *model.Season) html.Node {
 			text-xl
 			border-t-[2px]
 			border-gray-11
-		`))(Text(sn.Name())).With(FontBold),
+		`))(Text(sn.Name(), FontBold)),
 		FlexCol(Class("gap-12 py-2"))(
 			html.RangeSeq(sn.Episodes(model.AnyEpisode), mediaSeriesEpisode),
 		),
@@ -111,7 +111,7 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 				),
 			),
 			Box(Class("relative"))(
-				Text(ep.Summary(), Class("text-sm")).With(LineClamp4),
+				Text(ep.Summary(), Class("text-sm"), LineClamp4),
 				Box(
 					Class(`
 					absolute
@@ -150,7 +150,7 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 				hideSpoilersImage,
 			),
 			Box(Class("absolute bottom-0 left-0 right-0"))(
-				Progress(0.1).With(ProgressSM),
+				Progress(0.1, ProgressSM),
 			),
 		),
 	)

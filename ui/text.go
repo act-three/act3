@@ -13,10 +13,7 @@ func Textf(format string, arg ...any) html.Node {
 
 func Text(s string, attrs ...attr.Node) html.Node {
 	return html.Div(
-		attr.EnvAttr("class", textSelectKey, "u-text+select-none"),
-		attr.EnvAttr("class", lineClampKey, ""),
-		attr.EnvAttr("class", fontWeightKey, ""),
-		attr.EnvAttr("class", textSizeKey, ""),
+		attr.Class("u-text"),
 		group(attrs...),
 	)(
 		html.Text(s),
@@ -24,34 +21,34 @@ func Text(s string, attrs ...attr.Node) html.Node {
 }
 
 var (
-	FontNormal = html.WithValue(fontWeightKey, "u-text+weight-normal")
-	FontMedium = html.WithValue(fontWeightKey, "u-text+weight-medium")
-	FontBold   = html.WithValue(fontWeightKey, "u-text+weight-bold")
+	FontNormal = attr.Class("u-text+weight-normal")
+	FontMedium = attr.Class("u-text+weight-medium")
+	FontBold   = attr.Class("u-text+weight-bold")
 )
 
 var (
-	LineClamp1 = html.WithValue(lineClampKey, "u-text+clamp-1")
-	LineClamp2 = html.WithValue(lineClampKey, "u-text+clamp-2")
-	LineClamp3 = html.WithValue(lineClampKey, "u-text+clamp-3")
-	LineClamp4 = html.WithValue(lineClampKey, "u-text+clamp-4")
-	LineClamp5 = html.WithValue(lineClampKey, "u-text+clamp-5")
+	LineClamp1 = attr.Class("u-text+clamp-1")
+	LineClamp2 = attr.Class("u-text+clamp-2")
+	LineClamp3 = attr.Class("u-text+clamp-3")
+	LineClamp4 = attr.Class("u-text+clamp-4")
+	LineClamp5 = attr.Class("u-text+clamp-5")
 )
 
 var (
-	TextSelectAuto = html.WithValue(textSelectKey, "u-text+select-auto")
-	TextSelectNone = html.WithValue(textSelectKey, "u-text+select-none")
+	TextSelectAuto = attr.Class("u-text+select-auto")
+	TextSelectNone = attr.Class("u-text+select-none")
 )
 
 var (
-	TextSize1 = html.WithValue(textSizeKey, "u-text+size-1")
-	TextSize2 = html.WithValue(textSizeKey, "u-text+size-2")
-	TextSize3 = html.WithValue(textSizeKey, "u-text+size-3")
-	TextSize4 = html.WithValue(textSizeKey, "u-text+size-4")
-	TextSize5 = html.WithValue(textSizeKey, "u-text+size-5")
-	TextSize6 = html.WithValue(textSizeKey, "u-text+size-6")
-	TextSize7 = html.WithValue(textSizeKey, "u-text+size-7")
-	TextSize8 = html.WithValue(textSizeKey, "u-text+size-8")
-	TextSize9 = html.WithValue(textSizeKey, "u-text+size-9")
+	TextSize1 = attr.Class("u-text+size-1")
+	TextSize2 = attr.Class("u-text+size-2")
+	TextSize3 = attr.Class("u-text+size-3")
+	TextSize4 = attr.Class("u-text+size-4")
+	TextSize5 = attr.Class("u-text+size-5")
+	TextSize6 = attr.Class("u-text+size-6")
+	TextSize7 = attr.Class("u-text+size-7")
+	TextSize8 = attr.Class("u-text+size-8")
+	TextSize9 = attr.Class("u-text+size-9")
 )
 
-var TextTruncate = html.WithValue(lineClampKey, "u-text+truncate")
+var TextTruncate = attr.Class("u-text+truncate")

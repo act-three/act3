@@ -58,7 +58,8 @@
 	width: calc(0.75rem * var(--scale));
 	height: calc(0.75rem * var(--scale));
 }
-.u-spinner\+size-md {
+/* size-md (default) */
+.u-spinner:where(:not(.u-spinner\+size-sm, .u-spinner\+size-lg)) {
 	width: calc(1rem * var(--scale));
 	height: calc(1rem * var(--scale));
 }

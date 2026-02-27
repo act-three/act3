@@ -1966,7 +1966,7 @@
     outline-offset: 2px;
     border-radius: calc(0.07em * 1);
   }
-  .u-link\+underline-auto {
+  .u-link:where(:not(.u-link\+underline-always, .u-link\+underline-hover)) {
     text-decoration: none;
   }
   .u-link\+underline-always {
@@ -1980,7 +1980,7 @@
   }
 }
 @media (hover: hover) {
-  .u-link\+underline-auto:hover {
+  .u-link:where(:not(.u-link\+underline-always, .u-link\+underline-hover)):hover {
     text-decoration: underline;
     text-decoration-color: var(--color-accent-a5);
     text-decoration-thickness: min(2px, max(1px, 0.05em));
@@ -2016,7 +2016,7 @@
   .u-progress\+size-sm {
     height: calc(0.25rem * var(--scale));
   }
-  .u-progress\+size-md {
+  .u-progress:where(:not(.u-progress\+size-sm, .u-progress\+size-lg)) {
     height: calc(0.5rem * var(--scale));
   }
   .u-progress\+size-lg {
@@ -2113,7 +2113,7 @@
     width: calc(0.75rem * var(--scale));
     height: calc(0.75rem * var(--scale));
   }
-  .u-spinner\+size-md {
+  .u-spinner:where(:not(.u-spinner\+size-sm, .u-spinner\+size-lg)) {
     width: calc(1rem * var(--scale));
     height: calc(1rem * var(--scale));
   }
@@ -2182,11 +2182,11 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .u-text:where(:not(.u-text\+select-auto)) {
+    user-select: none;
+  }
   .u-text\+select-auto {
     user-select: auto;
-  }
-  .u-text\+select-none {
-    user-select: none;
   }
   .u-text\+size-1 {
     font-size: calc(12px * var(--scale));
@@ -2278,7 +2278,7 @@
     padding-block: calc(0.125rem * var(--scale));
     border-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
   }
-  .u-input\+size-2 {
+  .u-input:where(:not(.u-input\+size-1, .u-input\+size-3)) {
     height: calc(32px * var(--scale));
     font-size: calc(14px * var(--scale));
     padding-inline: calc(0.75rem * var(--scale));
@@ -2297,7 +2297,7 @@
   .u-table {
     caption-side: bottom;
   }
-  .u-table\+ghost {
+  .u-table:where(:not(.u-table\+surface)) {
     background-color: transparent;
   }
   .u-table\+surface {
@@ -2321,15 +2321,15 @@
     padding: calc(0.5rem * var(--scale));
     min-height: calc(36px * var(--scale));
   }
-  .u-table\+size-2 {
+  .u-table:where(:not(.u-table\+size-1, .u-table\+size-3)) {
     font-size: calc(0.875rem * var(--scale));
     line-height: calc(1.25rem * var(--scale));
   }
-  .u-table\+size-2 .u-table-head {
+  .u-table:where(:not(.u-table\+size-1, .u-table\+size-3)) .u-table-head {
     height: calc(2.5rem * var(--scale));
     padding: calc(0.75rem * var(--scale));
   }
-  .u-table\+size-2 .u-table-cell {
+  .u-table:where(:not(.u-table\+size-1, .u-table\+size-3)) .u-table-cell {
     padding: calc(0.75rem * var(--scale));
     min-height: calc(44px * var(--scale));
   }

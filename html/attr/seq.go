@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"iter"
-
-	"ily.dev/act3/html/internal/env"
 )
 
 var isCombining = map[string]bool{
@@ -62,13 +60,13 @@ func (s seq) Has(name string) bool {
 	return false
 }
 
-func (s seq) renderTo(w io.Writer, env env.Env) error {
+func (s seq) renderTo(w io.Writer) error {
 	comb := map[string]*bytes.Buffer{}
 	seen := map[string]bool{}
 	buf := &bytes.Buffer{}
 	for a := range s {
 		buf.Reset()
-		err := a.renderTo(buf, env)
+		err := a.renderTo(buf)
 		if err != nil {
 			return err
 		}

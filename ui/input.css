@@ -42,7 +42,8 @@
 	padding-block: calc(0.125rem * var(--scale));
 	border-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
 }
-.u-input\+size-2 {
+/* size-2 (default) */
+.u-input:where(:not(.u-input\+size-1, .u-input\+size-3)) {
 	height: calc(32px * var(--scale));
 	font-size: calc(14px * var(--scale));
 	padding-inline: calc(0.75rem * var(--scale));

@@ -15,7 +15,7 @@ func Button(attrs ...attr.Node) html.Element {
 		return html.Tag(tag)(
 			attr.Class("u-button"),
 			a,
-		)(nodes...).With(TextSelectNone)
+		)(nodes...)
 	}
 }
 

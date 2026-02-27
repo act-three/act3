@@ -45,8 +45,8 @@
 }
 
 /* selection */
+.u-text:where(:not(.u-text\+select-auto)) { user-select: none; }
 .u-text\+select-auto { user-select: auto; }
-.u-text\+select-none { user-select: none; }
 
 /* size scale */
 .u-text\+size-1 { font-size: calc(12px * var(--scale)); line-height: calc(16px * var(--scale)); letter-spacing: 0.0025em; }

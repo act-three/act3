@@ -89,15 +89,13 @@ func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html
 				},
 				func() html.Node {
 					return html.Group(
-						CardTitle()(Text(dl.Title())).
-							With(FontNormal),
-						CardDescription()(
+						CardTitle(FontNormal)(Text(dl.Title())),
+						CardDescription(LineClamp2)(
 							Textf("%d/%d assigned",
 								dl.PlanLen(),
 								dl.FilesLen(),
 							),
-						).
-							With(LineClamp2),
+						),
 					)
 				},
 			),
@@ -199,8 +197,7 @@ func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) ht
 						CardDescription()(html.Text(displayPath)),
 						expr.IfElse(df.Progress() >= 0,
 							func() html.Node {
-								return Progress(df.Progress(), Class("mt-1")).
-									With(ProgressSM)
+								return Progress(df.Progress(), Class("mt-1"), ProgressSM)
 							},
 							func() html.Node {
 								return html.Group()

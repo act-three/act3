@@ -4,19 +4,17 @@ import (
 	"io"
 	"reflect"
 	"strings"
-
-	"ily.dev/act3/html/internal/env"
 )
 
 //go:generate go run gen.go -output all.go
 
-func Render(w io.Writer, n Node, env env.Env) error {
-	return n.renderTo(w, env)
+func Render(w io.Writer, n Node) error {
+	return n.renderTo(w)
 }
 
 type Node interface {
 	Has(name string) bool
-	renderTo(io.Writer, env.Env) error
+	renderTo(io.Writer) error
 	attr()
 }
 
@@ -38,8 +36,8 @@ func (a AttrName) Has(name string) bool {
 	return a(empty).Has(name)
 }
 
-func (a AttrName) renderTo(w io.Writer, env env.Env) error {
-	return a(empty).renderTo(w, env)
+func (a AttrName) renderTo(w io.Writer) error {
+	return a(empty).renderTo(w)
 }
 
 func (AttrName) attr() {}
@@ -58,7 +56,7 @@ func (a attrValue) Name() string {
 }
 
 // renderTo writes a to w.
-func (a attrValue) renderTo(w io.Writer, env env.Env) error {
+func (a attrValue) renderTo(w io.Writer) error {
 	return render(w, a.name, a.value)
 }
 
@@ -97,41 +95,6 @@ func renderQuoted(w io.Writer, v string) error {
 	_, err := w.Write(dquote)
 	return err
 }
-
-type funcAttr struct {
-	name  string
-	value func(func(any) any) string
-}
-
-func FuncAttr(name string, value func(get func(any) any) string) Node {
-	return funcAttr{name, value}
-}
-
-func EnvAttr(name string, key any, def string) Node {
-	return funcAttr{name, func(get func(any) any) string {
-		v, ok := get(key).(string)
-		if !ok {
-			return def
-		}
-		return v
-	}}
-}
-
-func (a funcAttr) Has(name string) bool {
-	return a.name == name
-}
-
-func (a funcAttr) Name() string {
-	return a.name
-}
-
-func (a funcAttr) renderTo(w io.Writer, e env.Env) error {
-	return render(w, a.name, a.value(func(key any) any {
-		return env.Value(e, key)
-	}))
-}
-
-func (funcAttr) attr() {}
 
 var (
 	equals      = []byte("=")

@@ -251,8 +251,7 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 						Text(pi.Status()),
 					),
 				),
-				Progress(pi.Progress(), attr.Class("max-w-xs")).
-					With(ProgressSM),
+				Progress(pi.Progress(), attr.Class("max-w-xs"), ProgressSM),
 			)
 		}),
 	)
