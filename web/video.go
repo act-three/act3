@@ -5,12 +5,13 @@ import (
 	"net/http"
 	"strings"
 
+	"ily.dev/act3/html"
 	"ily.dev/act3/model"
 	"ily.dev/act3/view"
 )
 
-func (w *web) showPlayerForEpisode(req *http.Request) (http.Handler, error) {
-	return w.withTxR(func(tr *model.TxR) (http.Handler, error) {
+func (c *Config) showPlayerForEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		v, err := tr.Video(ctx, req.PathValue("id"))
 		if err != nil {
@@ -27,12 +28,12 @@ func (w *web) showPlayerForEpisode(req *http.Request) (http.Handler, error) {
 		if err != nil {
 			return nil, err
 		}
-		return page(view.MediaPlayerForEpisode(v, ep, qualityOpts)), nil
+		return view.MediaPlayerForEpisode(v, ep, qualityOpts), nil
 	})
 }
 
-func (w *web) videoPlaylist(req *http.Request) (http.Handler, error) {
-	return w.withTxR(func(tx *model.TxR) (http.Handler, error) {
+func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
@@ -45,12 +46,13 @@ func (w *web) videoPlaylist(req *http.Request) (http.Handler, error) {
 		if vid.MVPlaylist() == "" {
 			return nil, errNotFound
 		}
-		return stringHandler("application/vnd.apple.mpegurl", vid.MVPlaylist()), nil
+		stringHandler("application/vnd.apple.mpegurl", vid.MVPlaylist()).ServeHTTP(w, req)
+		return nil, nil
 	})
 }
 
-func (w *web) videoRenditionPlaylist(req *http.Request) (http.Handler, error) {
-	return w.withTxR(func(tx *model.TxR) (http.Handler, error) {
+func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
@@ -63,23 +65,23 @@ func (w *web) videoRenditionPlaylist(req *http.Request) (http.Handler, error) {
 		if rend.Playlist == "" {
 			return nil, errNotFound
 		}
-		return stringHandler("application/vnd.apple.mpegurl", rend.Playlist), nil
+		stringHandler("application/vnd.apple.mpegurl", rend.Playlist).ServeHTTP(w, req)
+		return nil, nil
 	})
 }
-func (wb *web) videoStream(req *http.Request) (http.Handler, error) {
+
+func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	hash, _ := strings.CutSuffix(req.PathValue("hash"), ".mp4")
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		http.ServeFileFS(w, req, wb.store, hash)
-	}), nil
+	http.ServeFileFS(w, req, c.Store, hash)
+	return nil, nil
 }
 
-func (wb *web) videoDownload(req *http.Request) (http.Handler, error) {
+func (c *Config) videoDownload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	hash := req.PathValue("hash")
 	disposition := mime.FormatMediaType("attachment", map[string]string{
 		"filename": req.PathValue("name"),
 	})
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Disposition", disposition)
-		http.ServeFileFS(w, req, wb.store, hash)
-	}), nil
+	w.Header().Set("Content-Disposition", disposition)
+	http.ServeFileFS(w, req, c.Store, hash)
+	return nil, nil
 }

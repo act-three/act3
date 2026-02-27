@@ -3,13 +3,14 @@ package web
 import (
 	"net/http"
 
+	"ily.dev/act3/html"
 	"ily.dev/act3/view"
 )
 
-func (w *web) accountProfile(req *http.Request) (http.Handler, error) {
-	return page(view.EditAccountProfile()), nil
+func (c *Config) accountProfile(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return view.EditAccountProfile(), nil
 }
 
-func (w *web) accountSecurity(req *http.Request) (http.Handler, error) {
-	return page(view.EditAccountSecurity()), nil
+func (c *Config) accountSecurity(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return view.EditAccountSecurity(), nil
 }

@@ -5,6 +5,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"ily.dev/act3/html"
 	"ily.dev/act3/model"
 	"ily.dev/act3/sys/fsinfo"
 	"ily.dev/act3/view"
@@ -16,19 +17,19 @@ var excludeFSType = map[string]bool{
 	"tmpfs":    true,
 }
 
-func (w *web) systemTransmission(req *http.Request) (http.Handler, error) {
-	return w.withTxR(func(tx *model.TxR) (http.Handler, error) {
+func (c *Config) systemTransmission(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		config, err := tx.Transmission(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return page(view.EditSystemTransmission(config)), nil
+		return view.EditSystemTransmission(config), nil
 	})
 }
 
-func (w *web) doUpdateTransmissionSettings(req *http.Request) (http.Handler, error) {
-	return w.withTxRW(func(tx *model.TxRW) (http.Handler, error) {
+func (c *Config) doUpdateTransmissionSettings(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		err := tx.TransmissionSet(ctx, model.ConfigTransmission{
 			Path:    req.FormValue("path"),
@@ -37,12 +38,13 @@ func (w *web) doUpdateTransmissionSettings(req *http.Request) (http.Handler, err
 		if err != nil {
 			return nil, err
 		}
-		return http.RedirectHandler("/system/transmission", http.StatusSeeOther), nil
+		http.Redirect(w, req, "/system/transmission", http.StatusSeeOther)
+		return nil, nil
 	})
 }
 
-func (w *web) systemStorage(req *http.Request) (http.Handler, error) {
-	return w.withTxR(func(tx *model.TxR) (http.Handler, error) {
+func (c *Config) systemStorage(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		storage, err := tx.StorageList(ctx)
 		if err != nil {
@@ -79,38 +81,40 @@ func (w *web) systemStorage(req *http.Request) (http.Handler, error) {
 			})
 		}
 
-		return page(view.EditSystemStorage(storage, fs)), nil
+		return view.EditSystemStorage(storage, fs), nil
 	})
 }
 
-func (w *web) systemTasks(req *http.Request) (http.Handler, error) {
-	return w.withTxR(func(tx *model.TxR) (http.Handler, error) {
+func (c *Config) systemTasks(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		tasks, err := tx.TaskList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return page(view.EditSystemTasks(tasks)), nil
+		return view.EditSystemTasks(tasks), nil
 	})
 }
 
-func (w *web) doRunTask(req *http.Request) (http.Handler, error) {
+func (c *Config) doRunTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
-	err := w.model.RunTaskNow(ctx, req.PathValue("id"))
+	err := c.Model.RunTaskNow(ctx, req.PathValue("id"))
 	if err != nil {
 		return nil, err
 	}
-	return http.RedirectHandler("/system/tasks", http.StatusSeeOther), nil
+	http.Redirect(w, req, "/system/tasks", http.StatusSeeOther)
+	return nil, nil
 }
 
-func (w *web) doDeleteTask(req *http.Request) (http.Handler, error) {
-	return w.withTxRW(func(tx *model.TxRW) (http.Handler, error) {
+func (c *Config) doDeleteTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		err := tx.TaskDelete(ctx, req.PathValue("id"))
 		if err != nil {
 			return nil, err
 		}
-		return http.RedirectHandler("/system/tasks", http.StatusSeeOther), nil
+		http.Redirect(w, req, "/system/tasks", http.StatusSeeOther)
+		return nil, nil
 	})
 }
 

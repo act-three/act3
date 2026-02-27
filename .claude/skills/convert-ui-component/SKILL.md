@@ -122,6 +122,7 @@ Make sure `main.css` imports the new stylesheet:
 ### 5. Verify
 
 ```sh
+go generate ./...
 go build -o /dev/null -tags goexperiment.jsonv2 .
 go test -tags goexperiment.jsonv2 ./ui/...
 ```

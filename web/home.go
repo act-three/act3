@@ -3,9 +3,10 @@ package web
 import (
 	"net/http"
 
+	"ily.dev/act3/html"
 	"ily.dev/act3/view"
 )
 
-func (w *web) home(req *http.Request) (http.Handler, error) {
-	return page(view.Home()), nil
+func (c *Config) home(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return view.Home(), nil
 }

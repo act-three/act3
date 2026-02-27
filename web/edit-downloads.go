@@ -4,49 +4,51 @@ import (
 	"database/sql"
 	"net/http"
 
+	"ily.dev/act3/html"
 	"ily.dev/act3/model"
 	"ily.dev/act3/view"
 	"ily.dev/act3/xstrings"
 )
 
-func (w *web) editDownloads(req *http.Request) (http.Handler, error) {
-	return w.withTxR(func(tx *model.TxR) (http.Handler, error) {
+func (c *Config) editDownloads(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		dls, err := tx.DownloadHeadList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return page(view.EditMediaDownloads("Downloads", dls, nil)), nil
+		return view.EditMediaDownloads("Downloads", dls, nil), nil
 	})
 }
 
-func (w *web) editDownloadsDetail(req *http.Request) (http.Handler, error) {
-	return w.withTxR(func(tx *model.TxR) (http.Handler, error) {
+func (c *Config) editDownloadsDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		_, id, _ := xstrings.LastCut(req.PathValue("id"), "-")
 
 		dl, err := tx.Download(ctx, id)
 		if err == sql.ErrNoRows {
-			return http.RedirectHandler("/edit/downloads", http.StatusSeeOther), nil
+			http.Redirect(w, req, "/edit/downloads", http.StatusSeeOther)
+			return nil, nil
 		} else if err != nil {
 			return nil, err
 		}
 
 		if req.Header.Get("turbo-frame") == "detail" {
-			return page(view.EditMediaDownloadsDetailFrame(dl.Title(), dl)), nil
+			return view.EditMediaDownloadsDetailFrame(dl.Title(), dl), nil
 		}
 
 		dls, err := tx.DownloadHeadList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return page(view.EditMediaDownloads(dl.Title(), dls, dl)), nil
+		return view.EditMediaDownloads(dl.Title(), dls, dl), nil
 	})
 }
 
-func (w *web) doAddTorrent(req *http.Request) (h http.Handler, err error) {
+func (c *Config) doAddTorrent(w http.ResponseWriter, req *http.Request) (n html.Node, err error) {
 	defer decorateErrorFrame("add-torrent-errors", &err)
-	return w.withTxRW(func(tx *model.TxRW) (http.Handler, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		file, _, err := req.FormFile("torrent")
 		if err != nil {
@@ -62,6 +64,7 @@ func (w *web) doAddTorrent(req *http.Request) (h http.Handler, err error) {
 		}
 		dls := []*model.DownloadHead{&dl.DownloadHead}
 
-		return stream(view.EditMediaDownloadsStream(dls, req.FormValue("sed-id"))), nil
+		stream(view.EditMediaDownloadsStream(dls, req.FormValue("sed-id"))).ServeHTTP(w, req)
+		return nil, nil
 	})
 }

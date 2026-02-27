@@ -24,7 +24,7 @@ var errNotFound = errors.New("not found")
 // Max request body for all requests except video uploads.
 const maxReqBody = 10 * 1000 * 1000
 
-type handlerFunc func(*http.Request) (http.Handler, error)
+type handlerFunc func(http.ResponseWriter, *http.Request) (html.Node, error)
 
 type Config struct {
 	Model  *model.Model
@@ -33,99 +33,86 @@ type Config struct {
 }
 
 func Handle(mux *http.ServeMux, c *Config) {
-	w := &web{
-		model:  c.Model,
-		store:  c.Store,
-		tvmaze: c.TVmaze,
-	}
-
-	handle(mux, "GET /account/profile", w.accountProfile)
-	handle(mux, "GET /account/security", w.accountSecurity)
-	handle(mux, "GET /dialog/series-add", w.seriesAddDialogReq)
-	handle(mux, "GET /dialog/edit-episode/{id}", w.dialogEditEpisode)
-	handle(mux, "GET /dl/{hash}/{name}", w.videoDownload)
-	handle(mux, "GET /edit/downloads", w.editDownloads)
-	handle(mux, "GET /edit/downloads/{id}", w.editDownloadsDetail)
-	handle(mux, "GET /edit/series", w.editSeries)
-	handle(mux, "GET /edit/series/{id}", w.editSeriesDetail)
-	handle(mux, "GET /ep/{id}", w.showEpisode)
-	handle(mux, "GET /player/{id}/{epID}/{sedID}", w.showPlayerForEpisode)
-	handle(mux, "GET /search-series", w.seriesSearch)
-	handle(mux, "GET /series", w.listSeries)
-	handle(mux, "GET /series/{id}", w.showSeries)
-	handle(mux, "GET /system/storage", w.systemStorage)
-	handle(mux, "GET /system/tasks", w.systemTasks)
-	handle(mux, "GET /system/transmission", w.systemTransmission)
-	handle(mux, "GET /vid/{id}", w.videoPlaylist)
-	handle(mux, "GET /vidr/{id}", w.videoRenditionPlaylist)
-	handle(mux, "GET /vids/{hash}", w.videoStream)
-	handle(mux, "GET /{$}", w.home)
-	handle(mux, "POST /do/add-series", w.doAddSeries)
-	handle(mux, "POST /do/add-torrent", w.doAddTorrent)
-	handle(mux, "POST /do/update-transmission-settings", w.doUpdateTransmissionSettings)
-	handle(mux, "POST /do/run-task/{id}", w.doRunTask)
-	handle(mux, "POST /do/delete-task/{id}", w.doDeleteTask)
+	handle(mux, "GET /account/profile", c.accountProfile)
+	handle(mux, "GET /account/security", c.accountSecurity)
+	handle(mux, "GET /dialog/series-add", c.seriesAddDialogReq)
+	handle(mux, "GET /dialog/edit-episode/{id}", c.dialogEditEpisode)
+	handle(mux, "GET /dl/{hash}/{name}", c.videoDownload)
+	handle(mux, "GET /edit/downloads", c.editDownloads)
+	handle(mux, "GET /edit/downloads/{id}", c.editDownloadsDetail)
+	handle(mux, "GET /edit/series", c.editSeries)
+	handle(mux, "GET /edit/series/{id}", c.editSeriesDetail)
+	handle(mux, "GET /ep/{id}", c.showEpisode)
+	handle(mux, "GET /player/{id}/{epID}/{sedID}", c.showPlayerForEpisode)
+	handle(mux, "GET /search-series", c.seriesSearch)
+	handle(mux, "GET /series", c.listSeries)
+	handle(mux, "GET /series/{id}", c.showSeries)
+	handle(mux, "GET /system/storage", c.systemStorage)
+	handle(mux, "GET /system/tasks", c.systemTasks)
+	handle(mux, "GET /system/transmission", c.systemTransmission)
+	handle(mux, "GET /vid/{id}", c.videoPlaylist)
+	handle(mux, "GET /vidr/{id}", c.videoRenditionPlaylist)
+	handle(mux, "GET /vids/{hash}", c.videoStream)
+	handle(mux, "GET /{$}", c.home)
+	handle(mux, "POST /do/add-series", c.doAddSeries)
+	handle(mux, "POST /do/add-torrent", c.doAddTorrent)
+	handle(mux, "POST /do/update-transmission-settings", c.doUpdateTransmissionSettings)
+	handle(mux, "POST /do/run-task/{id}", c.doRunTask)
+	handle(mux, "POST /do/delete-task/{id}", c.doDeleteTask)
 	mux.Handle("GET /static/", static.FS)
 }
 
-type web struct {
-	model  *model.Model
-	store  fs.FS
-	tvmaze *tvmaze.Client
-}
-
-func (w *web) withTxR(f func(*model.TxR) (http.Handler, error)) (h http.Handler, err error) {
-	err = w.model.WithTxR(func(tx *model.TxR) error {
-		h, err = f(tx)
+func (c *Config) withTxR(f func(*model.TxR) (html.Node, error)) (n html.Node, err error) {
+	err = c.Model.WithTxR(func(tx *model.TxR) error {
+		n, err = f(tx)
 		return err
 	})
-	return h, err
+	return n, err
 }
 
-func (w *web) withTxRW(f func(*model.TxRW) (http.Handler, error)) (h http.Handler, err error) {
-	err = w.model.WithTxRW(func(tx *model.TxRW) error {
-		h, err = f(tx)
+func (c *Config) withTxRW(f func(*model.TxRW) (html.Node, error)) (n html.Node, err error) {
+	err = c.Model.WithTxRW(func(tx *model.TxRW) error {
+		n, err = f(tx)
 		return err
 	})
-	return h, err
+	return n, err
 }
 
 func handle(mux *http.ServeMux, pattern string, hf handlerFunc) {
-	h := http.MaxBytesHandler(handler(hf), maxReqBody)
-	mux.Handle(pattern, h)
-}
-
-func handler(hf handlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+	var h http.Handler
+	h = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		slog.InfoContext(ctx, "request", "url", req.URL)
-		var h http.Handler
+		var node html.Node
+		var err error
 		timing.Measure(ctx, "page", func() {
-			var err error
-			h, err = hf(req)
-			var ve *model.ValidationError
-			if errors.As(err, &ve) {
-				h = errorBadRequest(errorFrameID(err),
-					ve.Op,
-					ve.Err.Error(),
-				)
-			} else if errors.Is(err, errNotFound) {
-				h = errorNotFound(errorFrameID(err), req.URL.Path)
-			} else if err != nil {
-				slog.ErrorContext(ctx, "error", "error", err)
-				h = errorInternal(errorFrameID(err))
-			}
+			node, err = hf(w, req)
 		})
-		h.ServeHTTP(w, req)
-	}
+		var ve *model.ValidationError
+		if errors.As(err, &ve) {
+			handleBadRequest(w, req, errorFrameID(err),
+				ve.Op,
+				ve.Err.Error(),
+			)
+			return
+		} else if errors.Is(err, errNotFound) {
+			handleNotFound(w, req, errorFrameID(err), req.URL.Path)
+			return
+		} else if err != nil {
+			slog.ErrorContext(ctx, "error", "error", err)
+			handleInternal(w, req, errorFrameID(err))
+			return
+		}
+		if node != nil {
+			page(node).ServeHTTP(w, req)
+		}
+	})
+	h = http.MaxBytesHandler(h, maxReqBody)
+	mux.Handle(pattern, h)
 }
 
 func page(node ...html.Node) http.Handler {
 	return rawHandler("text/html", 200, node...)
-}
-
-func pageBadRequest(node ...html.Node) http.Handler {
-	return rawHandler("text/html", 400, node...)
 }
 
 func stream(node ...html.Node) http.Handler {
@@ -161,8 +148,9 @@ func stringHandler(contentType, body string) http.HandlerFunc {
 		}
 	}
 }
-func errorBadRequest(turboFrameID, title, desc string) http.Handler {
-	return rawHandler("text/vnd.turbo-stream.html", 400,
+
+func handleBadRequest(w http.ResponseWriter, req *http.Request, turboFrameID, title, desc string) {
+	h := rawHandler("text/vnd.turbo-stream.html", 400,
 		turbo.Prepend(turboFrameID,
 			html.Div(
 				attr.Class("border p-1 bg-crimson-3"),
@@ -172,10 +160,11 @@ func errorBadRequest(turboFrameID, title, desc string) http.Handler {
 			),
 		),
 	)
+	h.ServeHTTP(w, req)
 }
 
-func errorNotFound(turboFrameID, path string) http.Handler {
-	return rawHandler("text/vnd.turbo-stream.html", 404,
+func handleNotFound(w http.ResponseWriter, req *http.Request, turboFrameID, path string) {
+	h := rawHandler("text/vnd.turbo-stream.html", 404,
 		turbo.Prepend(turboFrameID,
 			html.Div(
 				attr.Class("border p-1 bg-crimson-3"),
@@ -185,10 +174,11 @@ func errorNotFound(turboFrameID, path string) http.Handler {
 			),
 		),
 	)
+	h.ServeHTTP(w, req)
 }
 
-func errorInternal(turboFrameID string) http.Handler {
-	return rawHandler("text/vnd.turbo-stream.html", 500,
+func handleInternal(w http.ResponseWriter, req *http.Request, turboFrameID string) {
+	h := rawHandler("text/vnd.turbo-stream.html", 500,
 		turbo.Prepend(turboFrameID,
 			html.Div(
 				attr.Class("border p-1 bg-crimson-3"),
@@ -197,6 +187,7 @@ func errorInternal(turboFrameID string) http.Handler {
 			),
 		),
 	)
+	h.ServeHTTP(w, req)
 }
 
 type frameIDError struct {
