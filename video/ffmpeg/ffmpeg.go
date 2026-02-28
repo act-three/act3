@@ -192,98 +192,46 @@ func passlogPath(tmpDir string, i int) string {
 	return filepath.Join(tmpDir, fmt.Sprintf("passlog%d", i))
 }
 
-// Pass1Result holds the per-rendition output of a combined first-pass run.
-type Pass1Result struct {
-	Index  int    // rendition index from the idxs argument
-	Stats  []byte // x264/x265 native stats data
-	Preset string // ffmpeg preset used (must match in pass 2)
-}
-
 // Pass1Combined runs a single ffmpeg command that performs first-pass
 // analysis for every reencode rendition, reading the source once.
-// It returns the stats data for each rendition so it can be stored
-// externally (e.g. in a database) and used later by [Pass2Single].
+// Stats files are written to the paths in passlogs (keyed by
+// rendition index, matching idxs). The caller must ensure the
+// parent directories exist. Returns the preset that must be passed
+// to [Pass2Single].
 func Pass1Combined(ctx context.Context, src *os.File, dsts []EncodeParams,
-	idxs []int, duration time.Duration, onProgress func(float64),
-) ([]Pass1Result, error) {
-	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass1-*")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(tmpDir)
-
-	total := duration // pass 1 = 1× duration
+	idxs []int, passlogs map[int]string, duration time.Duration,
+	onProgress func(float64),
+) (string, error) {
+	total := duration
 	report := func(d time.Duration) {
 		if onProgress != nil {
 			onProgress(float64(d) / float64(total))
 		}
 	}
 
-	if err := pass1Combined(ctx, src, tmpDir, dsts, idxs, report); err != nil {
-		return nil, err
+	if err := pass1Combined(ctx, src, dsts, idxs, passlogs, report); err != nil {
+		return "", err
 	}
 
 	preset := pass1DefaultPreset
 	if overridePreset != "" {
 		preset = overridePreset
 	}
-
-	var results []Pass1Result
-	for _, i := range idxs {
-		// x265 appends ".cutree" to the stats path; read both files
-		// and concatenate. x264 uses a single file.
-		statsPath := passlogPath(tmpDir, i)
-		stats, err := os.ReadFile(statsPath)
-		if err != nil {
-			return nil, fmt.Errorf("read stats for rendition %d: %w", i, err)
-		}
-		cutreePath := statsPath + ".cutree"
-		if cutree, err2 := os.ReadFile(cutreePath); err2 == nil {
-			stats = append(stats, cutreeDelimiter...)
-			stats = append(stats, cutree...)
-		}
-		results = append(results, Pass1Result{
-			Index:  i,
-			Stats:  stats,
-			Preset: preset,
-		})
-	}
-	return results, nil
-}
-
-// cutreeDelimiter separates the main stats file from the .cutree file
-// when they are stored as a single blob.
-var cutreeDelimiter = []byte("\n---CUTREE---\n")
-
-// writeStatsFiles writes a combined stats blob back to disk as separate
-// files (main + .cutree) for ffmpeg pass 2 to consume.
-func writeStatsFiles(stats []byte, statsPath string) error {
-	parts := bytes.SplitN(stats, cutreeDelimiter, 2)
-	if err := os.WriteFile(statsPath, parts[0], 0644); err != nil {
-		return err
-	}
-	if len(parts) == 2 {
-		return os.WriteFile(statsPath+".cutree", parts[1], 0644)
-	}
-	return nil
+	return preset, nil
 }
 
 // Pass2Single runs second-pass encoding for a single rendition,
-// producing one HLS fMP4 output. The stats blob must come from a
-// prior [Pass1Combined] call for the same rendition parameters.
+// producing one HLS fMP4 output. The passlog path must point to
+// stats written by a prior [Pass1Combined] call for the same
+// rendition parameters.
 func Pass2Single(ctx context.Context, src *os.File, dst EncodeParams,
-	stats []byte, preset string, duration time.Duration, onProgress func(float64),
+	passlog string, preset string, duration time.Duration, onProgress func(float64),
 ) (playlist string, err error) {
 	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass2-*")
 	if err != nil {
 		return "", err
 	}
 	defer os.RemoveAll(tmpDir)
-
-	statsPath := passlogPath(tmpDir, 0)
-	if err := writeStatsFiles(stats, statsPath); err != nil {
-		return "", err
-	}
 
 	total := duration
 	report := func(d time.Duration) {
@@ -314,7 +262,7 @@ func Pass2Single(ctx context.Context, src *os.File, dst EncodeParams,
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
-	args = append(args, twoPassArgs(dst.Codec, 2, statsPath)...)
+	args = append(args, twoPassArgs(dst.Codec, 2, passlog)...)
 	if dst.CopyAudio {
 		args = append(args, "-c:a", "copy")
 	} else if dst.SurroundAudio {
@@ -426,9 +374,15 @@ func Encode(ctx context.Context,
 		}
 	}
 
+	// Build passlog paths for stats files (shared between phases 1 and 3).
+	passlogs := make(map[int]string, len(encodeIdxs))
+	for _, i := range encodeIdxs {
+		passlogs[i] = passlogPath(tmpDir, i)
+	}
+
 	// Phase 1: combined first-pass analysis for all reencode renditions.
 	if len(encodeIdxs) > 0 {
-		if err = pass1Combined(ctx, src, tmpDir, dsts, encodeIdxs, report); err != nil {
+		if err = pass1Combined(ctx, src, dsts, encodeIdxs, passlogs, report); err != nil {
 			return nil, fmt.Errorf("pass 1: %w", err)
 		}
 		cumulative += duration
@@ -452,7 +406,7 @@ func Encode(ctx context.Context,
 
 	// Phase 3: combined second-pass encode for all reencode renditions.
 	if len(encodeIdxs) > 0 {
-		if err = pass2Combined(ctx, src, tmpDir, dsts, encodeIdxs, report); err != nil {
+		if err = pass2Combined(ctx, src, dsts, encodeIdxs, passlogs, tmpDir, report); err != nil {
 			return nil, fmt.Errorf("pass 2: %w", err)
 		}
 		// (no need to seek; we're done reading src)
@@ -513,8 +467,9 @@ func doRemux(ctx context.Context, src *os.File, tmpDir string,
 // pass1Combined runs a single ffmpeg command that performs first-pass
 // analysis for every reencode rendition, reading the source once.
 // Different resolution/fps targets are handled via filter_complex+split.
-func pass1Combined(ctx context.Context, src *os.File, tmpDir string,
-	dsts []EncodeParams, idxs []int, onProgress func(time.Duration),
+func pass1Combined(ctx context.Context, src *os.File,
+	dsts []EncodeParams, idxs []int, passlogs map[int]string,
+	onProgress func(time.Duration),
 ) error {
 	filterStr, labels := buildFilterComplex(dsts, idxs)
 
@@ -534,7 +489,7 @@ func pass1Combined(ctx context.Context, src *os.File, tmpDir string,
 		args = append(args, "-map", labels[i])
 		args = append(args, "-c:v", p.Codec, "-preset", preset)
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
-		args = append(args, twoPassArgs(p.Codec, 1, passlogPath(tmpDir, i))...)
+		args = append(args, twoPassArgs(p.Codec, 1, passlogs[i])...)
 		args = append(args, "-an", "-sn")
 		args = append(args, "-f", "null", "/dev/null")
 	}
@@ -546,8 +501,9 @@ func pass1Combined(ctx context.Context, src *os.File, tmpDir string,
 // encoding for every reencode rendition, producing HLS fMP4 output
 // for each. The source is read once and split via filter_complex when
 // different resolutions or frame rates are needed.
-func pass2Combined(ctx context.Context, src *os.File, tmpDir string,
-	dsts []EncodeParams, idxs []int, onProgress func(time.Duration),
+func pass2Combined(ctx context.Context, src *os.File,
+	dsts []EncodeParams, idxs []int, passlogs map[int]string,
+	tmpDir string, onProgress func(time.Duration),
 ) error {
 	filterStr, labels := buildFilterComplex(dsts, idxs)
 
@@ -574,7 +530,7 @@ func pass2Combined(ctx context.Context, src *os.File, tmpDir string,
 		if p.Tag != "" {
 			args = append(args, "-tag:v", p.Tag)
 		}
-		args = append(args, twoPassArgs(p.Codec, 2, passlogPath(tmpDir, i))...)
+		args = append(args, twoPassArgs(p.Codec, 2, passlogs[i])...)
 		if p.CopyAudio {
 			args = append(args, "-c:a", "copy")
 		} else if p.SurroundAudio {

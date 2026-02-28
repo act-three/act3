@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -111,4 +112,85 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	if strings.Contains(output, "Processed 0 out of") {
 		t.Error("mediastreamvalidator processed 0 segments")
 	}
+}
+
+// TestX264MbtreePass2 verifies that x264 2-pass encoding works when
+// pass 1 writes stats (including .mbtree) directly to a persistent
+// directory and pass 2 reads from the same path.
+func TestX264MbtreePass2(t *testing.T) {
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("docker not in PATH")
+	}
+	if err := exec.Command("docker", "image", "inspect",
+		dockerImage).Run(); err != nil {
+		t.Skipf("%s image not built", dockerImage)
+	}
+
+	dir := t.TempDir()
+
+	// Generate a tiny H.264 + AAC source.
+	t.Log("generating source...")
+	cmd := dockerFFmpeg(dir,
+		"-y",
+		"-f", "lavfi", "-i",
+		"testsrc2=duration=2:size=160x90:rate=24",
+		"-f", "lavfi", "-i",
+		"sine=frequency=440:duration=2:sample_rate=48000",
+		"-c:v", "libx264", "-preset", "ultrafast",
+		"-c:a", "aac", "-ac", "2",
+		"source.mkv",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generate source: %v\n%s", err, out)
+	}
+
+	// Pass 1: x264 analysis writes stats + .mbtree directly.
+	// Use "medium" preset (production default) — mbtree is enabled
+	// at this preset level, producing the .mbtree auxiliary file.
+	t.Log("running pass 1...")
+	cmd = dockerFFmpeg(dir,
+		"-y", "-hwaccel", "none",
+		"-i", "source.mkv",
+		"-c:v", "libx264", "-preset", "medium",
+		"-b:v", "500k",
+		"-x264-params", "pass=1:stats=passlog0",
+		"-an", "-sn",
+		"-f", "null", "/dev/null",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("pass 1: %v\n%s", err, out)
+	}
+
+	// Verify stats files were written.
+	if _, err := os.Stat(filepath.Join(dir, "passlog0")); err != nil {
+		t.Fatalf("stats file not written: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "passlog0.mbtree")); err != nil {
+		t.Fatal("expected .mbtree file from x264 pass 1")
+	}
+
+	// Pass 2: encode reading stats directly from the same dir.
+	t.Log("running pass 2...")
+	cmd = dockerFFmpeg(dir,
+		"-y", "-hwaccel", "none",
+		"-i", "source.mkv",
+		"-c:v", "libx264", "-preset", "medium",
+		"-b:v", "500k",
+		"-x264-params", "pass=2:stats=passlog0",
+		"-c:a", "aac", "-ac", "2",
+		"-sn",
+		"-f", "hls",
+		"-hls_segment_type", "fmp4",
+		"-hls_flags", "single_file",
+		"-hls_playlist_type", "vod",
+		"-hls_time", "6",
+		"-hls_list_size", "0",
+		"-hls_segment_filename", "media0.mp4",
+		"stream0.m3u8",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("pass 2: %v\n%s", err, out)
+	}
+
+	t.Log("pass 2 succeeded — x264 mbtree stats OK")
 }

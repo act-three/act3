@@ -168,8 +168,19 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 			}
 		}
 
+		// Create stats directory and build passlog paths.
+		statsDir := tx.m.pass1StatsDir(vid.ID)
+		if err := os.MkdirAll(statsDir, 0o777); err != nil {
+			tx.m.prog.Close(vid.ID, err)
+			return err
+		}
+		passlogs := make(map[int]string, len(encodeIdxs))
+		for _, i := range encodeIdxs {
+			passlogs[i] = filepath.Join(statsDir, rfsList[i].ID)
+		}
+
 		tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Pass 1 (%d renditions)", len(encodeIdxs)))
-		results, err := ffmpeg.Pass1Combined(ctx, src, dsts, encodeIdxs, probe.Duration,
+		preset, err := ffmpeg.Pass1Combined(ctx, src, dsts, encodeIdxs, passlogs, probe.Duration,
 			func(v float64) { tx.m.prog.Update(vid.ID, v) },
 		)
 		if err != nil {
@@ -177,8 +188,8 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 			return err
 		}
 
-		// Save stats to persistent tmp dir.
-		err = tx.m.savePass1Stats(rfsList, results)
+		// Save preset so pass 2 uses the same one.
+		err = os.WriteFile(filepath.Join(statsDir, "preset"), []byte(preset), 0o666)
 		if err != nil {
 			tx.m.prog.Close(vid.ID, err)
 			return err
@@ -270,12 +281,13 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 			return err
 		}
 
-		stats, preset, err := tx.m.loadPass1Stats(rfs.ID)
+		passlog := tx.m.pass1Passlog(vid.ID, rfs.ID)
+		preset, err := tx.m.loadPass1Preset(vid.ID)
 		if err != nil {
 			return err
 		}
 		tx.m.prog.UpdateStatus(progKey, desc+": encoding")
-		playlist, err = ffmpeg.Pass2Single(ctx, src, dst, stats, preset, probe.Duration, onProgress)
+		playlist, err = ffmpeg.Pass2Single(ctx, src, dst, passlog, preset, probe.Duration, onProgress)
 		return err
 	})
 	if err != nil {
@@ -305,7 +317,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		return rebuildMVPlaylist(ctx, txw, vid, probe)
 	})
 	if err == nil && rfs.Remux == 0 {
-		tx.m.removePass1Stats(rfs.ID)
+		tx.m.removePass1Stats(vid.ID, rfs.ID)
 	}
 	tx.m.prog.Close(progKey, err)
 	return err
@@ -397,41 +409,25 @@ func (m *Model) pass1Dir() string {
 	return filepath.Join(m.persistentTmp, "pass1")
 }
 
-func (m *Model) savePass1Stats(rfsList []schema.RenditionForStreaming, results []ffmpeg.Pass1Result) error {
-	dir := m.pass1Dir()
-	err := os.MkdirAll(dir, 0o777)
-	if err != nil {
-		return err
-	}
-	for _, r := range results {
-		id := rfsList[r.Index].ID
-		err := os.WriteFile(filepath.Join(dir, id+".stats"), r.Stats, 0o666)
-		if err != nil {
-			return err
-		}
-		err = os.WriteFile(filepath.Join(dir, id+".preset"), []byte(r.Preset), 0o666)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (m *Model) pass1StatsDir(vidID string) string {
+	return filepath.Join(m.pass1Dir(), vidID)
 }
 
-func (m *Model) loadPass1Stats(rfsID string) (stats []byte, preset string, err error) {
-	dir := m.pass1Dir()
-	stats, err = os.ReadFile(filepath.Join(dir, rfsID+".stats"))
-	if err != nil {
-		return nil, "", err
-	}
-	presetBytes, err := os.ReadFile(filepath.Join(dir, rfsID+".preset"))
-	if err != nil {
-		return nil, "", err
-	}
-	return stats, string(presetBytes), nil
+func (m *Model) pass1Passlog(vidID, rfsID string) string {
+	return filepath.Join(m.pass1StatsDir(vidID), rfsID)
 }
 
-func (m *Model) removePass1Stats(rfsID string) {
-	dir := m.pass1Dir()
-	os.Remove(filepath.Join(dir, rfsID+".stats"))
-	os.Remove(filepath.Join(dir, rfsID+".preset"))
+func (m *Model) loadPass1Preset(vidID string) (string, error) {
+	b, err := os.ReadFile(filepath.Join(m.pass1StatsDir(vidID), "preset"))
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (m *Model) removePass1Stats(vidID, rfsID string) {
+	passlog := m.pass1Passlog(vidID, rfsID)
+	os.Remove(passlog)
+	os.Remove(passlog + ".mbtree")
+	os.Remove(passlog + ".cutree")
 }
