@@ -1,7 +1,9 @@
+# keep sorted with e.g. `sort` command
 *.db
 *.db-shm
 *.db-wal
-/node_modules
 /deploy
+/node_modules
 /src
 /ui/static/static/bundle.*
+validation_data.json
