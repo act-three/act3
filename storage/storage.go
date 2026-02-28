@@ -129,6 +129,14 @@ func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (hashes []string, err
 	return hashes, nil
 }
 
+func (d *Dir) Remove(hash string) error {
+	p, err := keyPath(hash, true)
+	if err != nil {
+		return err
+	}
+	return d.root.Remove(p)
+}
+
 func (d *Dir) Open(hash string) (*os.File, error) {
 	p, err := keyPath(hash, true)
 	if err != nil {

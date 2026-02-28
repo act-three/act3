@@ -170,6 +170,9 @@ WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
 SELECT * FROM RenditionForStreaming
 WHERE VideoID = ?;
 
+-- name: RenditionForStreamingDeleteByVideoID :exec
+DELETE FROM RenditionForStreaming WHERE VideoID = ?;
+
 -- name: RenditionForStreamingUpdateEncode :one
 UPDATE RenditionForStreaming
 SET Hash = ?, Playlist = ?

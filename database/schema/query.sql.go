@@ -765,6 +765,15 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 	return i, err
 }
 
+const renditionForStreamingDeleteByVideoID = `-- name: RenditionForStreamingDeleteByVideoID :exec
+DELETE FROM RenditionForStreaming WHERE VideoID = ?
+`
+
+func (q *Queries) RenditionForStreamingDeleteByVideoID(ctx context.Context, videoid string) error {
+	_, err := q.db.ExecContext(ctx, renditionForStreamingDeleteByVideoID, videoid)
+	return err
+}
+
 const renditionForStreamingGet = `-- name: RenditionForStreamingGet :one
 SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
 WHERE ID = ?

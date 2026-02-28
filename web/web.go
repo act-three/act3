@@ -59,6 +59,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /do/run-task/{id}", c.doRunTask)
 	handle(mux, "POST /do/delete-task/{id}", c.doDeleteTask)
 	handle(mux, "POST /do/kill-task/{id}", c.doKillTask)
+	handle(mux, "POST /do/reingest-video/{id}", c.doReingestVideo)
 	mux.Handle("GET /static/", static.FS)
 }
 

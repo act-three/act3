@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"kr.dev/errorfmt"
+
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/video"
 	"ily.dev/act3/video/ffmpeg"
@@ -38,9 +40,28 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		return err
 	}
 
-	// Probe source to get codec info, resolution, bitrate, etc.
+	err = tx.m.WithTxRW(func(txw *TxRW) error {
+		vid, err = txw.q.VideoUpdateOriginalHash(ctx, schema.VideoUpdateOriginalHashParams{
+			ID:           vid.ID,
+			OriginalHash: hash,
+		})
+		return err
+	})
+	if err != nil {
+		tx.m.prog.Close(vid.ID, err)
+		return err
+	}
+
+	return tx.planAndCreateRenditions(ctx, vid)
+}
+
+// planAndCreateRenditions probes the source in CAS, plans a
+// rendition ladder, creates the rendition DB records, and queues
+// pass1. The caller must have already set vid.OriginalHash and
+// opened progress tracking for vid.ID.
+func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 	tx.m.prog.UpdateStatus(vid.ID, "Probing")
-	f, err := tx.m.store.Open(hash)
+	f, err := tx.m.store.Open(vid.OriginalHash)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
 		return err
@@ -52,7 +73,6 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		return err
 	}
 
-	// Plan renditions based on the source properties.
 	planned, err := video.PlanRenditions(probe)
 	if err != nil {
 		return err
@@ -61,7 +81,6 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		return fmt.Errorf("no video stream found in source")
 	}
 
-	// Build rendition params for DB storage.
 	var rfsParams []schema.RenditionForStreamingCreateParams
 	for _, r := range planned {
 		rfsParams = append(rfsParams, schema.RenditionForStreamingCreateParams{
@@ -77,24 +96,15 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		})
 	}
 
-	return tx.m.WithTxRW(func(tx *TxRW) error {
-		vid, err = tx.q.VideoUpdateOriginalHash(ctx, schema.VideoUpdateOriginalHashParams{
-			ID:           vid.ID,
-			OriginalHash: hash,
-		})
-		if err != nil {
-			return err
-		}
-
+	tx.m.prog.UpdateStatus(vid.ID, "Queued")
+	return tx.m.WithTxRW(func(txw *TxRW) error {
 		for _, rfs := range rfsParams {
-			_, err = tx.q.RenditionForStreamingCreate(ctx, rfs)
+			_, err = txw.q.RenditionForStreamingCreate(ctx, rfs)
 			if err != nil {
 				return err
 			}
 		}
-
-		tx.m.prog.Open(vid.ID, vid.ReleasePath, "Queued")
-		tx.addTaskWithPriority(ctx, video.Pass1Priority, taskIngestPass1, vid.ID)
+		txw.addTaskWithPriority(ctx, video.Pass1Priority, taskIngestPass1, vid.ID)
 		return nil
 	})
 }
@@ -321,6 +331,76 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	}
 	tx.m.prog.Close(progKey, err)
 	return err
+}
+
+// ReIngestVideo queues a reingest task for the given video.
+// The task will delete all existing renditions (CAS blobs and DB
+// records), re-probe the original source, plan new renditions,
+// and restart the encoding pipeline.
+func (m *Model) ReIngestVideo(ctx Context, videoID string) (err error) {
+	defer errorfmt.Handlef("reingest video %s: %w", videoID, &err)
+	vid, err := schema.New(m.dbr).VideoGet(ctx, videoID)
+	if err != nil {
+		return err
+	}
+	if vid.OriginalHash == "" {
+		return fmt.Errorf("video has no original hash")
+	}
+	return m.WithTxRW(func(tx *TxRW) error {
+		return tx.addTask(ctx, taskReingest, videoID)
+	})
+}
+
+// taskReingest deletes all existing renditions for a video
+// and restarts the ingestion pipeline from the probe step.
+func (tx *TxR) taskReingest(ctx Context, args []string) error {
+	vid, err := tx.q.VideoGet(ctx, args[0])
+	if err != nil {
+		return err
+	}
+	if vid.OriginalHash == "" {
+		return fmt.Errorf("video %s has no original hash", vid.ID)
+	}
+
+	// Delete existing rendition CAS blobs and pass1 stats.
+	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	for _, rfs := range rfsList {
+		if rfs.Hash != "" {
+			tx.m.store.Remove(rfs.Hash)
+		}
+		tx.m.removePass1Stats(vid.ID, rfs.ID)
+	}
+
+	// Delete rendition DB records and clear MV playlist.
+	err = tx.m.WithTxRW(func(txw *TxRW) error {
+		err := txw.q.RenditionForStreamingDeleteByVideoID(ctx, vid.ID)
+		if err != nil {
+			return err
+		}
+		_, err = txw.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
+			ID:         vid.ID,
+			MVPlaylist: "",
+		})
+		return err
+	})
+	if err != nil {
+		return err
+	}
+
+	// Set up progress tracking.
+	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Re-ingesting")
+	for _, ev := range evs {
+		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
+	}
+
+	return tx.planAndCreateRenditions(ctx, vid)
 }
 
 // rebuildMVPlaylist regenerates the multivariant HLS playlist from

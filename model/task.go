@@ -28,6 +28,7 @@ const (
 	taskIngest                    = "ingest"
 	taskIngestPass1               = "ingest-pass1"
 	taskIngestEncodeRend          = "ingest-encode-rend"
+	taskReingest                  = "reingest"
 )
 
 const (
@@ -43,6 +44,7 @@ var taskTab = map[string]taskFunc{
 	taskIngest:                    (*TxR).taskIngest,
 	taskIngestPass1:               (*TxR).taskIngestPass1,
 	taskIngestEncodeRend:          (*TxR).taskIngestEncodeRend,
+	taskReingest:                  (*TxR).taskReingest,
 }
 
 var queueTab = map[string]string{
@@ -51,6 +53,7 @@ var queueTab = map[string]string{
 	taskIngest:                    queueIO,
 	taskIngestPass1:               queueCPU,
 	taskIngestEncodeRend:          queueCPU,
+	taskReingest:                  queueIO,
 }
 
 var taskQueues = map[string]int{
