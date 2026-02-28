@@ -157,6 +157,7 @@ type Task struct {
 	FailureDesc *string
 	Priority    int64
 	Queue       string
+	Running     int64
 }
 
 type User struct {

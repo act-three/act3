@@ -1691,7 +1691,7 @@ func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
 
 const taskCreate = `-- name: TaskCreate :one
 INSERT INTO Task (Type, Args, Priority, Queue) VALUES (?, ?, ?, ?)
-RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue
+RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
 `
 
 type TaskCreateParams struct {
@@ -1718,6 +1718,7 @@ func (q *Queries) TaskCreate(ctx context.Context, arg TaskCreateParams) (Task, e
 		&i.FailureDesc,
 		&i.Priority,
 		&i.Queue,
+		&i.Running,
 	)
 	return i, err
 }
@@ -1732,7 +1733,7 @@ func (q *Queries) TaskDelete(ctx context.Context, id string) error {
 }
 
 const taskGet = `-- name: TaskGet :one
-SELECT id, type, args, failures, nextrun, failuredesc, priority, queue FROM Task WHERE ID = ?
+SELECT id, type, args, failures, nextrun, failuredesc, priority, queue, running FROM Task WHERE ID = ?
 `
 
 func (q *Queries) TaskGet(ctx context.Context, id string) (Task, error) {
@@ -1747,12 +1748,13 @@ func (q *Queries) TaskGet(ctx context.Context, id string) (Task, error) {
 		&i.FailureDesc,
 		&i.Priority,
 		&i.Queue,
+		&i.Running,
 	)
 	return i, err
 }
 
 const taskList = `-- name: TaskList :many
-SELECT id, type, args, failures, nextrun, failuredesc, priority, queue FROM Task
+SELECT id, type, args, failures, nextrun, failuredesc, priority, queue, running FROM Task
 `
 
 func (q *Queries) TaskList(ctx context.Context) ([]Task, error) {
@@ -1773,6 +1775,7 @@ func (q *Queries) TaskList(ctx context.Context) ([]Task, error) {
 			&i.FailureDesc,
 			&i.Priority,
 			&i.Queue,
+			&i.Running,
 		); err != nil {
 			return nil, err
 		}
@@ -1787,11 +1790,34 @@ func (q *Queries) TaskList(ctx context.Context) ([]Task, error) {
 	return items, nil
 }
 
-const taskNext = `-- name: TaskNext :many
-SELECT id, type, args, failures, nextrun, failuredesc, priority, queue FROM Task
-WHERE Queue = ? AND NextRun <= ?
+const taskLock = `-- name: TaskLock :one
+UPDATE Task SET Running = 1
+WHERE ID = ? AND Running = 0
+RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
+`
+
+func (q *Queries) TaskLock(ctx context.Context, id string) (Task, error) {
+	row := q.db.QueryRowContext(ctx, taskLock, id)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Args,
+		&i.Failures,
+		&i.NextRun,
+		&i.FailureDesc,
+		&i.Priority,
+		&i.Queue,
+		&i.Running,
+	)
+	return i, err
+}
+
+const taskNext = `-- name: TaskNext :one
+SELECT id, type, args, failures, nextrun, failuredesc, priority, queue, running FROM Task
+WHERE Queue = ? AND Running = 0 AND NextRun <= ?
 ORDER BY Priority, ID
-LIMIT 10
+LIMIT 1
 `
 
 type TaskNextParams struct {
@@ -1799,36 +1825,21 @@ type TaskNextParams struct {
 	NextRun int64
 }
 
-func (q *Queries) TaskNext(ctx context.Context, arg TaskNextParams) ([]Task, error) {
-	rows, err := q.db.QueryContext(ctx, taskNext, arg.Queue, arg.NextRun)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Task
-	for rows.Next() {
-		var i Task
-		if err := rows.Scan(
-			&i.ID,
-			&i.Type,
-			&i.Args,
-			&i.Failures,
-			&i.NextRun,
-			&i.FailureDesc,
-			&i.Priority,
-			&i.Queue,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) TaskNext(ctx context.Context, arg TaskNextParams) (Task, error) {
+	row := q.db.QueryRowContext(ctx, taskNext, arg.Queue, arg.NextRun)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Args,
+		&i.Failures,
+		&i.NextRun,
+		&i.FailureDesc,
+		&i.Priority,
+		&i.Queue,
+		&i.Running,
+	)
+	return i, err
 }
 
 const taskReschedule = `-- name: TaskReschedule :one
@@ -1837,7 +1848,7 @@ UPDATE Task SET
 	NextRun = ?,
 	FailureDesc = ?
 WHERE ID = ?
-RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue
+RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
 `
 
 type TaskRescheduleParams struct {
@@ -1864,8 +1875,18 @@ func (q *Queries) TaskReschedule(ctx context.Context, arg TaskRescheduleParams) 
 		&i.FailureDesc,
 		&i.Priority,
 		&i.Queue,
+		&i.Running,
 	)
 	return i, err
+}
+
+const taskResetRunning = `-- name: TaskResetRunning :exec
+UPDATE Task SET Running = 0 WHERE Running = 1
+`
+
+func (q *Queries) TaskResetRunning(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, taskResetRunning)
+	return err
 }
 
 const taskSaveOneOff = `-- name: TaskSaveOneOff :exec
@@ -1897,6 +1918,15 @@ type TaskSetNextRunParams struct {
 
 func (q *Queries) TaskSetNextRun(ctx context.Context, arg TaskSetNextRunParams) error {
 	_, err := q.db.ExecContext(ctx, taskSetNextRun, arg.NextRun, arg.ID)
+	return err
+}
+
+const taskUnlock = `-- name: TaskUnlock :exec
+UPDATE Task SET Running = 0 WHERE ID = ?
+`
+
+func (q *Queries) TaskUnlock(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, taskUnlock, id)
 	return err
 }
 

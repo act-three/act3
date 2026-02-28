@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 	"math/rand/v2"
 	"runtime/debug"
 	"sync"
@@ -136,32 +135,33 @@ func (tq *taskQueue) wake() {
 func (tq *taskQueue) next() (*schema.Task, error) {
 	ctx := context.Background()
 	now := time.Now().UnixMilli()
-	tasks, err := schema.New(tq.m.dbr).TaskNext(ctx, schema.TaskNextParams{
+	task, err := schema.New(tq.m.dbr).TaskNext(ctx, schema.TaskNextParams{
 		Queue:   tq.name,
 		NextRun: now,
 	})
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	tq.runningMu.Lock()
-	defer tq.runningMu.Unlock()
-	for _, t := range tasks {
-		if _, ok := tq.running[t.ID]; !ok {
-			return &t, nil
-		}
-	}
-	return nil, nil
+	return &task, nil
 }
 
-func (tq *taskQueue) lock(id string, cancel context.CancelFunc) string {
+func (tq *taskQueue) lock(id string, cancel context.CancelFunc) (string, error) {
+	ctx := context.Background()
+	_, err := schema.New(tq.m.dbw).TaskLock(ctx, id)
+	if err == sql.ErrNoRows {
+		return "", nil // someone else locked it
+	}
+	if err != nil {
+		return "", err
+	}
 	tq.runningMu.Lock()
 	defer tq.runningMu.Unlock()
-	if _, ok := tq.running[id]; ok {
-		return ""
-	}
 	key := cryptorand.Text()
 	tq.running[id] = runEntry{key: key, cancel: cancel}
-	return key
+	return key, nil
 }
 
 func (tq *taskQueue) unlock(id, key string) {
@@ -173,6 +173,11 @@ func (tq *taskQueue) unlock(id, key string) {
 	}
 	e.cancel()
 	delete(tq.running, id)
+	ctx := context.Background()
+	err := schema.New(tq.m.dbw).TaskUnlock(ctx, id)
+	if err != nil {
+		slog.Error("task-unlock", "id", id, "error", err)
+	}
 }
 
 func (tq *taskQueue) kill(id string) bool {
@@ -183,16 +188,6 @@ func (tq *taskQueue) kill(id string) bool {
 		e.cancel()
 	}
 	return ok
-}
-
-func (tq *taskQueue) runningSet() map[string]bool {
-	tq.runningMu.Lock()
-	defer tq.runningMu.Unlock()
-	m := map[string]bool{}
-	for k := range tq.running {
-		m[k] = true
-	}
-	return m
 }
 
 func (tq *taskQueue) run(task schema.Task) {
@@ -211,7 +206,9 @@ func (tq *taskQueue) run(task schema.Task) {
 func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	if key := tq.lock(task.ID, cancel); key == "" {
+	if key, err := tq.lock(task.ID, cancel); err != nil {
+		return err
+	} else if key == "" {
 		return nil
 	} else {
 		defer tq.unlock(task.ID, key)
@@ -308,13 +305,9 @@ func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	isRunning := map[string]bool{}
-	for _, tq := range tx.m.tasks {
-		maps.Copy(isRunning, tq.runningSet())
-	}
 	var tasks []*Task
 	for _, t := range list {
-		task := &Task{t, isRunning[t.ID]}
+		task := &Task{t, t.Running != 0}
 		tasks = append(tasks, task)
 	}
 	return tasks, nil

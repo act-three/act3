@@ -329,11 +329,22 @@ RETURNING *;
 -- name: TaskSetNextRun :exec
 UPDATE Task SET NextRun = ? WHERE ID = ?;
 
--- name: TaskNext :many
+-- name: TaskNext :one
 SELECT * FROM Task
-WHERE Queue = ? AND NextRun <= ?
+WHERE Queue = ? AND Running = 0 AND NextRun <= ?
 ORDER BY Priority, ID
-LIMIT 10;
+LIMIT 1;
+
+-- name: TaskLock :one
+UPDATE Task SET Running = 1
+WHERE ID = ? AND Running = 0
+RETURNING *;
+
+-- name: TaskUnlock :exec
+UPDATE Task SET Running = 0 WHERE ID = ?;
+
+-- name: TaskResetRunning :exec
+UPDATE Task SET Running = 0 WHERE Running = 1;
 
 -- name: TaskSaveOneOff :exec
 UPDATE Task SET
