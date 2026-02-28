@@ -89,7 +89,7 @@ main.go
 - Structured logging via `log/slog` with context-aware `logcontext`
 - Separate read/write DB connections: `dbr` (read-only, unlimited conns)
   and `dbw` (read-write, max 1 conn, `_txlock=immediate`)
-- `x`-prefixed packages (`xbufio`, `xheap`, `xiter`, `xslices`,
+- `x`-prefixed packages (`xbufio`, `xiter`, `xslices`,
   `xstrings`) are small stdlib extensions
 - Static assets use digest-based cache busting via `http/digest/`
 - Wrap documentation (markdown, code comments) to roughly 72 characters

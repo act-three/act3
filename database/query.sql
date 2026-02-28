@@ -306,7 +306,7 @@ INSERT INTO Storage (Path, Contents) VALUES (?, ?);
 SELECT * FROM Storage;
 
 -- name: TaskCreate :one
-INSERT INTO Task (Type, Args, Priority) VALUES (?, ?, ?)
+INSERT INTO Task (Type, Args, Priority, Queue) VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: TaskDelete :exec
@@ -325,6 +325,15 @@ UPDATE Task SET
 	FailureDesc = ?
 WHERE ID = ?
 RETURNING *;
+
+-- name: TaskSetNextRun :exec
+UPDATE Task SET NextRun = ? WHERE ID = ?;
+
+-- name: TaskNext :many
+SELECT * FROM Task
+WHERE Queue = ? AND NextRun <= ?
+ORDER BY Priority, ID
+LIMIT 10;
 
 -- name: TaskSaveOneOff :exec
 UPDATE Task SET

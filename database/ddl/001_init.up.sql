@@ -205,10 +205,11 @@ CREATE TABLE Task
 	Failures    INTEGER NOT NULL DEFAULT (0),
 	NextRun     INTEGER NOT NULL DEFAULT (0),
 	FailureDesc TEXT,
-	Priority    INTEGER NOT NULL DEFAULT (0)
+	Priority    INTEGER NOT NULL DEFAULT (0),
+	Queue       TEXT NOT NULL
 )
 STRICT;
-CREATE INDEX Index_Task_Type ON Task (Type);
+CREATE INDEX Index_Task_Queue ON Task (Queue, NextRun, Priority, ID);
 
 CREATE TABLE Download
 (

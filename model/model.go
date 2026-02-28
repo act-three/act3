@@ -60,9 +60,8 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	}
 	for name, n := range taskQueues {
 		tq := newTaskQueue(name, m)
-		err = tq.startTasks(ctx, n)
-		if err != nil {
-			return nil, err
+		for range n {
+			go tq.runTasks()
 		}
 		m.tasks[name] = tq
 	}
