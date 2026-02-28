@@ -114,6 +114,109 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	}
 }
 
+// TestEncodeMPEG2ToHEVC verifies that a synthetic MPEG2+MP2 source
+// in MPEG-TS (typical of broadcast captures and DVD rips) encodes
+// correctly to HEVC HLS fMP4.
+func TestEncodeMPEG2ToHEVC(t *testing.T) {
+	if _, err := exec.LookPath("docker"); err != nil {
+		t.Skip("docker not in PATH")
+	}
+	if err := exec.Command("docker", "image", "inspect",
+		dockerImage).Run(); err != nil {
+		t.Skipf("%s image not built", dockerImage)
+	}
+
+	dir := t.TempDir()
+
+	// Generate a synthetic MPEG2 + MP2 source in MPEG-TS:
+	// 720x480 at 29.97fps (NTSC DVD resolution).
+	t.Log("generating MPEG2 source...")
+	cmd := dockerFFmpeg(dir,
+		"-y",
+		"-f", "lavfi", "-i",
+		"testsrc2=duration=2:size=720x480:rate=30000/1001",
+		"-f", "lavfi", "-i",
+		"sine=frequency=440:duration=2:sample_rate=48000",
+		"-c:v", "mpeg2video", "-b:v", "5000k",
+		"-c:a", "mp2", "-b:a", "192k",
+		"-f", "mpegts",
+		"source.ts",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generate source: %v\n%s", err, out)
+	}
+
+	// Pass 1: x265 analysis.
+	t.Log("running pass 1...")
+	cmd = dockerFFmpeg(dir,
+		"-y", "-hwaccel", "none",
+		"-i", "source.ts",
+		"-c:v", "libx265", "-preset", "ultrafast",
+		"-b:v", "1500k",
+		"-x265-params", "pass=1:stats=passlog0",
+		"-an", "-sn",
+		"-f", "null", "/dev/null",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("pass 1: %v\n%s", err, out)
+	}
+
+	// Pass 2: encode to HLS fMP4.
+	t.Log("running pass 2...")
+	cmd = dockerFFmpeg(dir,
+		"-y", "-hwaccel", "none",
+		"-i", "source.ts",
+		"-c:v", "libx265", "-preset", "ultrafast",
+		"-tag:v", "hvc1",
+		"-b:v", "1500k",
+		"-x265-params", "pass=2:stats=passlog0",
+		"-c:a", "aac", "-ac", "2",
+		"-sn",
+		"-f", "hls",
+		"-hls_segment_type", "fmp4",
+		"-hls_flags", "single_file",
+		"-hls_playlist_type", "vod",
+		"-hls_time", "6",
+		"-hls_list_size", "0",
+		"-hls_segment_filename", "media0.mp4",
+		"stream0.m3u8",
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("pass 2: %v\n%s", err, out)
+	}
+
+	// Verify output files exist and are non-empty.
+	for _, name := range []string{"media0.mp4", "stream0.m3u8"} {
+		info, err := os.Stat(filepath.Join(dir, name))
+		if err != nil {
+			t.Fatalf("%s not created: %v", name, err)
+		}
+		if info.Size() == 0 {
+			t.Fatalf("%s is empty", name)
+		}
+	}
+
+	// Validate with mediastreamvalidator if available.
+	if _, err := exec.LookPath("mediastreamvalidator"); err == nil {
+		plsPath := filepath.Join(dir, "stream0.m3u8")
+		out, err := exec.Command(
+			"mediastreamvalidator", plsPath,
+		).CombinedOutput()
+		_ = err
+
+		output := string(out)
+		t.Logf("mediastreamvalidator output:\n%s", output)
+
+		if strings.Contains(output, "Error injecting segment data") {
+			t.Error("mediastreamvalidator reported: " +
+				"Error injecting segment data")
+		}
+		if strings.Contains(output, "Processed 0 out of") {
+			t.Error("mediastreamvalidator processed 0 segments")
+		}
+	}
+}
+
 // TestX264MbtreePass2 verifies that x264 2-pass encoding works when
 // pass 1 writes stats (including .mbtree) directly to a persistent
 // directory and pass 2 reads from the same path.
