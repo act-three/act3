@@ -21,9 +21,23 @@ func Text(s string, attrs ...attr.Node) html.Node {
 }
 
 var (
+	FontLight  = attr.Class("u-text+weight-light")
 	FontNormal = attr.Class("u-text+weight-normal")
 	FontMedium = attr.Class("u-text+weight-medium")
 	FontBold   = attr.Class("u-text+weight-bold")
+)
+
+var (
+	TextAlignLeft   = attr.Class("u-text+align-left")
+	TextAlignCenter = attr.Class("u-text+align-center")
+	TextAlignRight  = attr.Class("u-text+align-right")
+)
+
+var (
+	TextWrap    = attr.Class("u-text+wrap-wrap")
+	TextNowrap  = attr.Class("u-text+wrap-nowrap")
+	TextPretty  = attr.Class("u-text+wrap-pretty")
+	TextBalance = attr.Class("u-text+wrap-balance")
 )
 
 var (
@@ -49,6 +63,12 @@ var (
 	TextSize7 = attr.Class("u-text+size-7")
 	TextSize8 = attr.Class("u-text+size-8")
 	TextSize9 = attr.Class("u-text+size-9")
+)
+
+var (
+	TextTrimStart = attr.Class("u-text+trim-start")
+	TextTrimEnd   = attr.Class("u-text+trim-end")
+	TextTrimBoth  = attr.Class("u-text+trim-both")
 )
 
 var TextTruncate = attr.Class("u-text+truncate")

@@ -1,7 +1,19 @@
 /* font weights */
+.u-text\+weight-light  { font-weight: 300; }
 .u-text\+weight-normal { font-weight: 400; }
 .u-text\+weight-medium { font-weight: 500; }
 .u-text\+weight-bold   { font-weight: 700; }
+
+/* text align */
+.u-text\+align-left   { text-align: left; }
+.u-text\+align-center { text-align: center; }
+.u-text\+align-right  { text-align: right; }
+
+/* text wrap */
+.u-text\+wrap-wrap    { text-wrap: wrap; }
+.u-text\+wrap-nowrap  { text-wrap: nowrap; }
+.u-text\+wrap-pretty  { text-wrap: pretty; }
+.u-text\+wrap-balance { text-wrap: balance; }
 
 /* line clamps */
 .u-text\+clamp-1 {
@@ -9,31 +21,41 @@
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 1;
+	line-clamp: 1;
 }
 .u-text\+clamp-2 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
+	line-clamp: 2;
 }
 .u-text\+clamp-3 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 3;
+	line-clamp: 3;
 }
 .u-text\+clamp-4 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 4;
+	line-clamp: 4;
 }
 .u-text\+clamp-5 {
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 5;
+	line-clamp: 5;
 }
+
+/* trim (text-box leading trim) */
+.u-text\+trim-start { text-box: trim-start cap alphabetic; }
+.u-text\+trim-end   { text-box: trim-end cap alphabetic; }
+.u-text\+trim-both  { text-box: trim-both cap alphabetic; }
 
 /* truncate (single-line ellipsis) */
 .u-text\+truncate {
