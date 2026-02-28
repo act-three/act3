@@ -88,7 +88,12 @@ type taskQueue struct {
 	signal chan struct{} // capacity 1; wakes a worker
 
 	runningMu sync.Mutex
-	running   map[string]string
+	running   map[string]runEntry
+}
+
+type runEntry struct {
+	key    string
+	cancel context.CancelFunc
 }
 
 func newTaskQueue(name string, m *Model) *taskQueue {
@@ -102,7 +107,7 @@ func newTaskQueue(name string, m *Model) *taskQueue {
 			)
 		}),
 		signal:  make(chan struct{}, 1),
-		running: map[string]string{},
+		running: map[string]runEntry{},
 	}
 }
 
@@ -169,24 +174,36 @@ func (tq *taskQueue) submit(tasks ...schema.Task) {
 	tq.wake()
 }
 
-func (tq *taskQueue) lock(id string) string {
+func (tq *taskQueue) lock(id string, cancel context.CancelFunc) string {
 	tq.runningMu.Lock()
 	defer tq.runningMu.Unlock()
 	if _, ok := tq.running[id]; ok {
 		return ""
 	}
 	key := cryptorand.Text()
-	tq.running[id] = key
+	tq.running[id] = runEntry{key: key, cancel: cancel}
 	return key
 }
 
 func (tq *taskQueue) unlock(id, key string) {
 	tq.runningMu.Lock()
 	defer tq.runningMu.Unlock()
-	if tq.running[id] != key {
+	e := tq.running[id]
+	if e.key != key {
 		panic("bad lock structure: key mismatch")
 	}
+	e.cancel()
 	delete(tq.running, id)
+}
+
+func (tq *taskQueue) kill(id string) bool {
+	tq.runningMu.Lock()
+	defer tq.runningMu.Unlock()
+	e, ok := tq.running[id]
+	if ok {
+		e.cancel()
+	}
+	return ok
 }
 
 func (tq *taskQueue) runningSet() map[string]bool {
@@ -213,7 +230,9 @@ func (tq *taskQueue) run(task schema.Task) {
 }
 
 func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
-	if key := tq.lock(task.ID); key == "" {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	if key := tq.lock(task.ID, cancel); key == "" {
 		time.AfterFunc(time.Minute, func() { tq.submit(task) })
 		return nil
 	} else {
@@ -297,6 +316,15 @@ func (m *Model) RunTaskNow(ctx Context, id string) (err error) {
 	}
 	task.NextRun = -1 // Negative means don't reschedule.
 	return m.submit(task)
+}
+
+func (m *Model) KillTask(id string) bool {
+	for _, tq := range m.tasks {
+		if tq.kill(id) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *Model) submit(task schema.Task) (err error) {

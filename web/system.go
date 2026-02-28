@@ -106,6 +106,12 @@ func (c *Config) doRunTask(w http.ResponseWriter, req *http.Request) (html.Node,
 	return nil, nil
 }
 
+func (c *Config) doKillTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	c.Model.KillTask(req.PathValue("id"))
+	http.Redirect(w, req, "/system/tasks", http.StatusSeeOther)
+	return nil, nil
+}
+
 func (c *Config) doDeleteTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
