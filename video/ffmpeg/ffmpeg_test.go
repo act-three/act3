@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,29 +11,14 @@ import (
 
 const dockerImage = "act3-ffmpeg"
 
-// dockerFFmpeg runs ffmpeg inside the act3-ffmpeg Docker container
-// with dir mounted as /work.
-func dockerFFmpeg(dir string, args ...string) *exec.Cmd {
-	a := []string{
-		"run", "--rm",
-		"-v", dir + ":/work",
-		"-w", "/work",
-		dockerImage,
-		"/out/ffmpeg",
-	}
-	a = append(a, args...)
-	return exec.Command("docker", a...)
-}
-
-func TestEncodeAV1ToHEVC(t *testing.T) {
+// setupDocker configures the package to run ffmpeg/ffprobe inside
+// the act3-ffmpeg Docker container and returns a working directory
+// that is bind-mounted into the container at the same host path.
+func setupDocker(t *testing.T) string {
+	t.Helper()
 	if _, err := exec.LookPath("docker"); err != nil {
 		t.Skip("docker not in PATH")
 	}
-	if _, err := exec.LookPath("mediastreamvalidator"); err != nil {
-		t.Skip("mediastreamvalidator not in PATH")
-	}
-
-	// Verify the Docker image exists.
 	if err := exec.Command("docker", "image", "inspect",
 		dockerImage).Run(); err != nil {
 		t.Skipf("%s image not built", dockerImage)
@@ -40,64 +26,146 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 
 	dir := t.TempDir()
 
+	// Temp dirs created by production code (e.g. Pass2Single) must
+	// land under dir so they are accessible inside the container.
+	t.Setenv("TMPDIR", dir)
+
+	origCmd := newCmd
+	newCmd = dockerCmd(dir)
+
+	t.Cleanup(func() { newCmd = origCmd })
+
+	return dir
+}
+
+// dockerCmd returns a newCmd replacement that runs tools inside
+// Docker, with dir bind-mounted at the same host path.
+func dockerCmd(dir string) func(context.Context, string, ...string) *exec.Cmd {
+	return func(ctx context.Context, name string, args ...string) *exec.Cmd {
+		// Strip -progress pipe:3 and -nostats: the progress
+		// pipe fd is not forwarded into the Docker container.
+		var filtered []string
+		for i := 0; i < len(args); i++ {
+			if args[i] == "-progress" && i+1 < len(args) {
+				i++ // skip value
+				continue
+			}
+			if args[i] == "-nostats" {
+				continue
+			}
+			filtered = append(filtered, args[i])
+		}
+
+		a := []string{
+			"run", "--rm", "-i",
+			"-v", dir + ":" + dir,
+			dockerImage,
+			"/out/" + name,
+		}
+		a = append(a, filtered...)
+		return exec.CommandContext(ctx, "docker", a...)
+	}
+}
+
+// setPreset overrides the ffmpeg video preset for the duration
+// of the test.
+func setPreset(t *testing.T, preset string) {
+	t.Helper()
+	orig := overridePreset
+	overridePreset = preset
+	t.Cleanup(func() { overridePreset = orig })
+}
+
+// generate runs ffmpeg (through newCmd) to create a synthetic
+// source file for testing.
+func generate(t *testing.T, args ...string) {
+	t.Helper()
+	cmd := newCmd(t.Context(), "ffmpeg", args...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("generate source: %v\n%s", err, out)
+	}
+}
+
+func TestEncodeAV1ToHEVC(t *testing.T) {
+	if _, err := exec.LookPath("mediastreamvalidator"); err != nil {
+		t.Skip("mediastreamvalidator not in PATH")
+	}
+
+	dir := setupDocker(t)
+	setPreset(t, "ultrafast")
+	ctx := t.Context()
+	srcPath := filepath.Join(dir, "source.mkv")
+
 	// Generate a tiny AV1 10-bit + EAC3 5.1 source, matching
 	// the codec profile of our real content.
 	t.Log("generating source...")
-	cmd := dockerFFmpeg(dir,
+	generate(t,
 		"-y",
-		"-f", "lavfi", "-i", "testsrc2=duration=2:size=160x90:rate=24",
-		"-f", "lavfi", "-i", "sine=frequency=440:duration=2:sample_rate=48000",
+		"-f", "lavfi", "-i",
+		"testsrc2=duration=2:size=160x90:rate=24",
+		"-f", "lavfi", "-i",
+		"sine=frequency=440:duration=2:sample_rate=48000",
 		"-c:v", "libsvtav1", "-preset", "12", "-crf", "55",
 		"-pix_fmt", "yuv420p10le",
 		"-c:a", "eac3", "-ac", "6",
-		"source.mkv",
+		srcPath,
 	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generate source: %v\n%s", err, out)
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srcFile.Close()
+
+	t.Log("probing source...")
+	probe, err := Probe(ctx, srcFile)
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+
+	mediaPath := filepath.Join(dir, MediaName(0))
+	outFile, err := os.Create(mediaPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	params := EncodeParams{
+		File:    outFile,
+		Codec:   "libx265",
+		Bitrate: 6000,
+		Tag:     "hvc1",
+	}
+	passlogs := map[int]string{
+		0: filepath.Join(dir, "passlog0"),
 	}
 
 	// Pass 1: analysis.
 	t.Log("running pass 1...")
-	cmd = dockerFFmpeg(dir,
-		"-y", "-hwaccel", "none",
-		"-i", "source.mkv",
-		"-c:v", "libx265", "-preset", "ultrafast",
-		"-b:v", "6000k",
-		"-x265-params", "pass=1:stats=passlog0",
-		"-an", "-sn",
-		"-f", "null", "/dev/null",
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("pass 1: %v\n%s", err, out)
+	preset, err := Pass1Combined(ctx, srcFile,
+		[]EncodeParams{params}, []int{0}, passlogs,
+		probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 1: %v", err)
 	}
 
-	// Pass 2: encode to HLS fMP4, using the same args as
-	// hlsOutputArgs.
+	// Pass 2: encode to HLS fMP4.
 	t.Log("running pass 2...")
-	cmd = dockerFFmpeg(dir,
-		"-y", "-hwaccel", "none",
-		"-i", "source.mkv",
-		"-c:v", "libx265", "-preset", "ultrafast",
-		"-tag:v", "hvc1",
-		"-b:v", "6000k",
-		"-x265-params", "pass=2:stats=passlog0",
-		"-c:a", "aac", "-ac", "2",
-		"-sn",
-		"-f", "hls",
-		"-hls_segment_type", "fmp4",
-		"-hls_flags", "single_file",
-		"-hls_playlist_type", "vod",
-		"-hls_time", "6",
-		"-hls_list_size", "0",
-		"-hls_segment_filename", "media0.mp4",
-		"stream0.m3u8",
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("pass 2: %v\n%s", err, out)
+	playlist, err := Pass2Single(ctx, srcFile, params,
+		passlogs[0], preset, probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 2: %v", err)
+	}
+	if playlist == "" {
+		t.Fatal("empty playlist")
+	}
+	outFile.Close()
+
+	// Write playlist and validate with mediastreamvalidator.
+	plsPath := filepath.Join(dir, "stream0.m3u8")
+	if err := os.WriteFile(plsPath, []byte(playlist), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
-	// Validate.
-	plsPath := filepath.Join(dir, "stream0.m3u8")
 	out, err := exec.Command(
 		"mediastreamvalidator", plsPath,
 	).CombinedOutput()
@@ -107,7 +175,8 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	t.Logf("mediastreamvalidator output:\n%s", output)
 
 	if strings.Contains(output, "Error injecting segment data") {
-		t.Error("mediastreamvalidator reported: Error injecting segment data")
+		t.Error("mediastreamvalidator reported: " +
+			"Error injecting segment data")
 	}
 	if strings.Contains(output, "Processed 0 out of") {
 		t.Error("mediastreamvalidator processed 0 segments")
@@ -118,20 +187,15 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 // in MPEG-TS (typical of broadcast captures and DVD rips) encodes
 // correctly to HEVC HLS fMP4.
 func TestEncodeMPEG2ToHEVC(t *testing.T) {
-	if _, err := exec.LookPath("docker"); err != nil {
-		t.Skip("docker not in PATH")
-	}
-	if err := exec.Command("docker", "image", "inspect",
-		dockerImage).Run(); err != nil {
-		t.Skipf("%s image not built", dockerImage)
-	}
-
-	dir := t.TempDir()
+	dir := setupDocker(t)
+	setPreset(t, "ultrafast")
+	ctx := t.Context()
+	srcPath := filepath.Join(dir, "source.ts")
 
 	// Generate a synthetic MPEG2 + MP2 source in MPEG-TS:
 	// 720x480 at 29.97fps (NTSC DVD resolution).
 	t.Log("generating MPEG2 source...")
-	cmd := dockerFFmpeg(dir,
+	generate(t,
 		"-y",
 		"-f", "lavfi", "-i",
 		"testsrc2=duration=2:size=720x480:rate=30000/1001",
@@ -140,65 +204,72 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 		"-c:v", "mpeg2video", "-b:v", "5000k",
 		"-c:a", "mp2", "-b:a", "192k",
 		"-f", "mpegts",
-		"source.ts",
+		srcPath,
 	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generate source: %v\n%s", err, out)
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srcFile.Close()
+
+	t.Log("probing source...")
+	probe, err := Probe(ctx, srcFile)
+	if err != nil {
+		t.Fatalf("probe: %v", err)
 	}
 
-	// Pass 1: x265 analysis.
+	mediaPath := filepath.Join(dir, MediaName(0))
+	outFile, err := os.Create(mediaPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	params := EncodeParams{
+		File:    outFile,
+		Codec:   "libx265",
+		Bitrate: 1500,
+		Tag:     "hvc1",
+	}
+	passlogs := map[int]string{
+		0: filepath.Join(dir, "passlog0"),
+	}
+
 	t.Log("running pass 1...")
-	cmd = dockerFFmpeg(dir,
-		"-y", "-hwaccel", "none",
-		"-i", "source.ts",
-		"-c:v", "libx265", "-preset", "ultrafast",
-		"-b:v", "1500k",
-		"-x265-params", "pass=1:stats=passlog0",
-		"-an", "-sn",
-		"-f", "null", "/dev/null",
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("pass 1: %v\n%s", err, out)
+	preset, err := Pass1Combined(ctx, srcFile,
+		[]EncodeParams{params}, []int{0}, passlogs,
+		probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 1: %v", err)
 	}
 
-	// Pass 2: encode to HLS fMP4.
 	t.Log("running pass 2...")
-	cmd = dockerFFmpeg(dir,
-		"-y", "-hwaccel", "none",
-		"-i", "source.ts",
-		"-c:v", "libx265", "-preset", "ultrafast",
-		"-tag:v", "hvc1",
-		"-b:v", "1500k",
-		"-x265-params", "pass=2:stats=passlog0",
-		"-c:a", "aac", "-ac", "2",
-		"-sn",
-		"-f", "hls",
-		"-hls_segment_type", "fmp4",
-		"-hls_flags", "single_file",
-		"-hls_playlist_type", "vod",
-		"-hls_time", "6",
-		"-hls_list_size", "0",
-		"-hls_segment_filename", "media0.mp4",
-		"stream0.m3u8",
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("pass 2: %v\n%s", err, out)
+	playlist, err := Pass2Single(ctx, srcFile, params,
+		passlogs[0], preset, probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 2: %v", err)
 	}
+	if playlist == "" {
+		t.Fatal("empty playlist")
+	}
+	outFile.Close()
 
-	// Verify output files exist and are non-empty.
-	for _, name := range []string{"media0.mp4", "stream0.m3u8"} {
-		info, err := os.Stat(filepath.Join(dir, name))
-		if err != nil {
-			t.Fatalf("%s not created: %v", name, err)
-		}
-		if info.Size() == 0 {
-			t.Fatalf("%s is empty", name)
-		}
+	// Verify media file is non-empty.
+	info, err := os.Stat(mediaPath)
+	if err != nil {
+		t.Fatalf("media not created: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Fatal("media is empty")
 	}
 
 	// Validate with mediastreamvalidator if available.
 	if _, err := exec.LookPath("mediastreamvalidator"); err == nil {
 		plsPath := filepath.Join(dir, "stream0.m3u8")
+		if err := os.WriteFile(plsPath, []byte(playlist), 0o644); err != nil {
+			t.Fatal(err)
+		}
+
 		out, err := exec.Command(
 			"mediastreamvalidator", plsPath,
 		).CombinedOutput()
@@ -221,19 +292,15 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 // pass 1 writes stats (including .mbtree) directly to a persistent
 // directory and pass 2 reads from the same path.
 func TestX264MbtreePass2(t *testing.T) {
-	if _, err := exec.LookPath("docker"); err != nil {
-		t.Skip("docker not in PATH")
-	}
-	if err := exec.Command("docker", "image", "inspect",
-		dockerImage).Run(); err != nil {
-		t.Skipf("%s image not built", dockerImage)
-	}
+	dir := setupDocker(t)
+	setPreset(t, "medium")
+	ctx := t.Context()
 
-	dir := t.TempDir()
+	srcPath := filepath.Join(dir, "source.mkv")
 
 	// Generate a tiny H.264 + AAC source.
 	t.Log("generating source...")
-	cmd := dockerFFmpeg(dir,
+	generate(t,
 		"-y",
 		"-f", "lavfi", "-i",
 		"testsrc2=duration=2:size=160x90:rate=24",
@@ -241,58 +308,66 @@ func TestX264MbtreePass2(t *testing.T) {
 		"sine=frequency=440:duration=2:sample_rate=48000",
 		"-c:v", "libx264", "-preset", "ultrafast",
 		"-c:a", "aac", "-ac", "2",
-		"source.mkv",
+		srcPath,
 	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("generate source: %v\n%s", err, out)
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srcFile.Close()
+
+	t.Log("probing source...")
+	probe, err := Probe(ctx, srcFile)
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+
+	mediaPath := filepath.Join(dir, MediaName(0))
+	outFile, err := os.Create(mediaPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFile.Close()
+
+	params := EncodeParams{
+		File:    outFile,
+		Codec:   "libx264",
+		Bitrate: 500,
+	}
+	passlogs := map[int]string{
+		0: filepath.Join(dir, "passlog0"),
 	}
 
 	// Pass 1: x264 analysis writes stats + .mbtree directly.
-	// Use "medium" preset (production default) — mbtree is enabled
-	// at this preset level, producing the .mbtree auxiliary file.
 	t.Log("running pass 1...")
-	cmd = dockerFFmpeg(dir,
-		"-y", "-hwaccel", "none",
-		"-i", "source.mkv",
-		"-c:v", "libx264", "-preset", "medium",
-		"-b:v", "500k",
-		"-x264-params", "pass=1:stats=passlog0",
-		"-an", "-sn",
-		"-f", "null", "/dev/null",
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("pass 1: %v\n%s", err, out)
+	preset, err := Pass1Combined(ctx, srcFile,
+		[]EncodeParams{params}, []int{0}, passlogs,
+		probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 1: %v", err)
+	}
+	if preset != "medium" {
+		t.Fatalf("expected preset medium, got %q", preset)
 	}
 
 	// Verify stats files were written.
-	if _, err := os.Stat(filepath.Join(dir, "passlog0")); err != nil {
+	if _, err := os.Stat(passlogs[0]); err != nil {
 		t.Fatalf("stats file not written: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "passlog0.mbtree")); err != nil {
+	if _, err := os.Stat(passlogs[0] + ".mbtree"); err != nil {
 		t.Fatal("expected .mbtree file from x264 pass 1")
 	}
 
-	// Pass 2: encode reading stats directly from the same dir.
+	// Pass 2: encode reading stats from the same dir.
 	t.Log("running pass 2...")
-	cmd = dockerFFmpeg(dir,
-		"-y", "-hwaccel", "none",
-		"-i", "source.mkv",
-		"-c:v", "libx264", "-preset", "medium",
-		"-b:v", "500k",
-		"-x264-params", "pass=2:stats=passlog0",
-		"-c:a", "aac", "-ac", "2",
-		"-sn",
-		"-f", "hls",
-		"-hls_segment_type", "fmp4",
-		"-hls_flags", "single_file",
-		"-hls_playlist_type", "vod",
-		"-hls_time", "6",
-		"-hls_list_size", "0",
-		"-hls_segment_filename", "media0.mp4",
-		"stream0.m3u8",
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("pass 2: %v\n%s", err, out)
+	playlist, err := Pass2Single(ctx, srcFile, params,
+		passlogs[0], preset, probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 2: %v", err)
+	}
+	if playlist == "" {
+		t.Fatal("empty playlist")
 	}
 
 	t.Log("pass 2 succeeded — x264 mbtree stats OK")

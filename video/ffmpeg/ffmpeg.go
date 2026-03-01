@@ -22,6 +22,10 @@ import (
 
 var overridePreset = os.Getenv("A3FFMPEGVIDEOPRESET")
 
+// newCmd creates an *exec.Cmd for the named tool (ffmpeg or ffprobe).
+// Tests override this to run tools inside Docker.
+var newCmd = exec.CommandContext
+
 // FrameRate is a frame rate represented as the exact fraction Num/Den.
 // A zero or negative Den is treated as "unknown" by comparison methods.
 type FrameRate struct {
@@ -86,7 +90,7 @@ type EncodeParams struct {
 // Probe runs ffprobe and returns stream information for the media in r.
 func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	var stdout, stderr bytes.Buffer
-	c := exec.CommandContext(ctx, "ffprobe",
+	c := newCmd(ctx, "ffprobe",
 		"-v", "quiet",
 		"-print_format", "json",
 		"-show_format",
@@ -565,7 +569,7 @@ func twoPassArgs(codec string, pass int, passlog string) []string {
 // progress-reporting pipe on fd 3, and blocks until ffmpeg exits.
 func runWithProgress(ctx context.Context, args []string, onProgress func(time.Duration)) error {
 	stderr := &xbufio.BoundedWriter{Max: 100_000}
-	c := exec.CommandContext(ctx, "ffmpeg", args...)
+	c := newCmd(ctx, "ffmpeg", args...)
 	c.Stderr = stderr
 
 	pr, pw, err := os.Pipe()
