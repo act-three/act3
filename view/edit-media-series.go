@@ -80,7 +80,7 @@ func EditMediaSeriesDetail(
 	dls []*model.DownloadHead,
 ) html.Node {
 	return html.Div(attr.Class("place-self-stretch h-full w-full flex flex-col"))(
-		ScrollArea(
+		ScrollY(
 			attr.Class("p-4"),
 		)(
 			html.Div(

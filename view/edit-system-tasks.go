@@ -10,7 +10,7 @@ import (
 
 func EditSystemTasks(tasks []*model.Task) html.Node {
 	return app("Tasks",
-		ScrollArea(
+		ScrollY(
 			attr.Class("h-full w-full p-4"),
 		)(
 			html.Div()(html.Text("Scheduled Tasks")),

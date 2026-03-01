@@ -123,7 +123,7 @@ func editMediaDownloadsDetail(dl *model.Download) html.Node {
 			Text(dl.Error()),
 		)
 	}
-	return ScrollArea()(
+	return ScrollY()(
 		html.Div(
 			attr.Class("p-2"),
 		)(

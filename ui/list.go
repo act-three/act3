@@ -14,7 +14,7 @@ var (
 )
 
 func List(prefix, target string, attrs ...attr.Node) html.Element {
-	return ScrollArea(
+	return ScrollY(
 		attr.Class("u-list"),
 		attr.Group(attrs...),
 		stimulus.Controller(listController),

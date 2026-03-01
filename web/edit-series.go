@@ -136,7 +136,7 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 		}
 
 		return view.Dialog(
-			ScrollArea()(
+			ScrollY()(
 				html.Div()(
 					html.Text(ep.SeriesHead().Title()),
 				),

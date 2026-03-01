@@ -11,7 +11,7 @@
 @import "./ui/link.css" layer(components);
 @import "./ui/list.css" layer(components);
 @import "./ui/progress.css" layer(components);
-@import "./ui/scroll-area.css" layer(components);
+@import "./ui/scroll.css" layer(components);
 @import "./ui/spinner.css" layer(components);
 @import "./ui/split.css" layer(components);
 @import "./ui/code.css" layer(components);

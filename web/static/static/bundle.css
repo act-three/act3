@@ -2084,12 +2084,20 @@
   }
 }
 @layer components {
-  .u-scroll-area {
+  .u-scroll {
     flex: 1 1 0%;
     width: 100%;
     height: 100%;
-    overflow: auto;
     overscroll-behavior: contain;
+  }
+  .u-scroll\+x {
+    overflow: auto hidden;
+  }
+  .u-scroll\+y {
+    overflow: hidden auto;
+  }
+  .u-scroll\+xy {
+    overflow: auto;
   }
 }
 @layer components {
