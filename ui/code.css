@@ -7,7 +7,7 @@
 	background-color: var(--color-gray-3);
 	box-shadow: inset 0 0 0 1px var(--color-gray-a8);
 	color: var(--color-gray-11);
-	user-select: auto;
+	user-select: text;
 
 	/* size=3 (default) */
 	font-size: calc(14px * var(--scale));
