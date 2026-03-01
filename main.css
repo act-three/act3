@@ -14,6 +14,7 @@
 @import "./ui/scroll-area.css" layer(components);
 @import "./ui/spinner.css" layer(components);
 @import "./ui/split.css" layer(components);
+@import "./ui/code.css" layer(components);
 @import "./ui/text.css" layer(components);
 @import "./ui/input.css" layer(components);
 @import "./ui/table.css" layer(components);

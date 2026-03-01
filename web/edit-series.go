@@ -178,7 +178,9 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 							func() html.Node {
 								return html.Div()(
 									html.Text("Playlist: "),
-									html.Text(v.MVPlaylist),
+									Code()(
+										html.Text(v.MVPlaylist),
+									),
 								)
 							},
 							func() html.Node { return html.Group() },

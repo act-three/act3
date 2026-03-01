@@ -52,16 +52,16 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 											expr.IfElse(t.IsRunning(),
 												func() html.Node {
 													return Group(
-								Text("Running"),
-								html.Form(
-									attr.Action("/do/kill-task/"+t.ID()),
-									attr.Method("POST"),
-								)(
-									Button(ButtonDestructive)(
-										html.Text("Kill"),
-									),
-								),
-							)
+														Text("Running"),
+														html.Form(
+															attr.Action("/do/kill-task/"+t.ID()),
+															attr.Method("POST"),
+														)(
+															Button(ButtonDestructive)(
+																html.Text("Kill"),
+															),
+														),
+													)
 												},
 												func() html.Node {
 													return Group(
@@ -85,9 +85,7 @@ func EditSystemTasks(tasks []*model.Task) html.Node {
 												TableCell(
 													attr.Colspan("5"),
 												)(
-													html.Div(
-														attr.Class("whitespace-pre-wrap"),
-													)(
+													Code()(
 														html.Text(s),
 													),
 												),
