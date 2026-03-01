@@ -90,6 +90,8 @@
     --color-gray-1: var(--color-mauve-1);
     --color-gray-2: var(--color-mauve-2);
     --color-gray-3: var(--color-mauve-3);
+    --color-gray-5: var(--color-mauve-5);
+    --color-gray-6: var(--color-mauve-6);
     --color-gray-11: var(--color-mauve-11);
     --color-gray-12: var(--color-mauve-12);
     --color-gray-a2: var(--color-mauve-a2);
@@ -99,6 +101,7 @@
     --color-gray-a7: var(--color-mauve-a7);
     --color-gray-a8: var(--color-mauve-a8);
     --color-gray-a10: var(--color-mauve-a10);
+    --color-accent-6: var(--color-crimson-6);
     --color-accent-8: var(--color-crimson-8);
     --color-accent-9: var(--color-crimson-9);
     --color-accent-10: var(--color-crimson-10);
@@ -680,13 +683,13 @@
     border-top-width: 2px;
   }
   .border-gray-11 {
-    border-color: var(--color-mauve-11);
+    border-color: var(--color-gray-11);
   }
   .bg-\[rgba\(180\,180\,180\,0\.6\)\] {
     background-color: rgba(180,180,180,0.6);
   }
   .bg-accent-9 {
-    background-color: var(--color-crimson-9);
+    background-color: var(--color-accent-9);
   }
   .bg-black {
     background-color: var(--color-black);
@@ -707,13 +710,13 @@
     background-color: var(--color-gray-0);
   }
   .bg-gray-1 {
-    background-color: var(--color-mauve-1);
+    background-color: var(--color-gray-1);
   }
   .bg-gray-2 {
-    background-color: var(--color-mauve-2);
+    background-color: var(--color-gray-2);
   }
   .bg-gray-6 {
-    background-color: var(--color-mauve-6);
+    background-color: var(--color-gray-6);
   }
   .bg-transparent {
     background-color: transparent;
@@ -822,34 +825,34 @@
     white-space: nowrap;
   }
   .text-gray-11 {
-    color: var(--color-mauve-11);
+    color: var(--color-gray-11);
   }
   .text-gray-11\/50 {
     color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 50%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--color-mauve-11) 50%, transparent);
+      color: color-mix(in oklab, var(--color-gray-11) 50%, transparent);
     }
   }
   .text-gray-11\/60 {
     color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--color-mauve-11) 60%, transparent);
+      color: color-mix(in oklab, var(--color-gray-11) 60%, transparent);
     }
   }
   .text-gray-11\/70 {
     color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 70%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--color-mauve-11) 70%, transparent);
+      color: color-mix(in oklab, var(--color-gray-11) 70%, transparent);
     }
   }
   .text-gray-11\/80 {
     color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 80%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--color-mauve-11) 80%, transparent);
+      color: color-mix(in oklab, var(--color-gray-11) 80%, transparent);
     }
   }
   .text-gray-12 {
-    color: var(--color-mauve-12);
+    color: var(--color-gray-12);
   }
   .text-white {
     color: var(--color-white);
@@ -873,7 +876,7 @@
   .decoration-gray-11\/60\! {
     text-decoration-color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 60%, transparent) !important;
     @supports (color: color-mix(in lab, red, red)) {
-      text-decoration-color: color-mix(in oklab, var(--color-mauve-11) 60%, transparent) !important;
+      text-decoration-color: color-mix(in oklab, var(--color-gray-11) 60%, transparent) !important;
     }
   }
   .opacity-0 {
@@ -899,7 +902,7 @@
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
   .ring-accent-6 {
-    --tw-ring-color: var(--color-crimson-6);
+    --tw-ring-color: var(--color-accent-6);
   }
   .outline-hidden {
     --tw-outline-style: none;
@@ -1083,12 +1086,12 @@
   }
   .data-selected\:bg-gray-5 {
     &[data-selected] {
-      background-color: var(--color-mauve-5);
+      background-color: var(--color-gray-5);
     }
   }
   .data-selected\:text-accent-10 {
     &[data-selected] {
-      color: var(--color-crimson-10);
+      color: var(--color-accent-10);
     }
   }
   .data-\[active\]\:font-bold {
@@ -1472,6 +1475,54 @@
     --color-crimson-a10: color(display-p3 1 0.42 0.62 / 0.853);
     --color-crimson-a11: color(display-p3 1 0.56 0.66);
     --color-crimson-a12: color(display-p3 0.966 0.834 0.906);
+    --color-gray-1: var(--color-mauve-1);
+    --color-gray-2: var(--color-mauve-2);
+    --color-gray-3: var(--color-mauve-3);
+    --color-gray-4: var(--color-mauve-4);
+    --color-gray-5: var(--color-mauve-5);
+    --color-gray-6: var(--color-mauve-6);
+    --color-gray-7: var(--color-mauve-7);
+    --color-gray-8: var(--color-mauve-8);
+    --color-gray-9: var(--color-mauve-9);
+    --color-gray-10: var(--color-mauve-10);
+    --color-gray-11: var(--color-mauve-11);
+    --color-gray-12: var(--color-mauve-12);
+    --color-gray-a1: var(--color-mauve-a1);
+    --color-gray-a2: var(--color-mauve-a2);
+    --color-gray-a3: var(--color-mauve-a3);
+    --color-gray-a4: var(--color-mauve-a4);
+    --color-gray-a5: var(--color-mauve-a5);
+    --color-gray-a6: var(--color-mauve-a6);
+    --color-gray-a7: var(--color-mauve-a7);
+    --color-gray-a8: var(--color-mauve-a8);
+    --color-gray-a9: var(--color-mauve-a9);
+    --color-gray-a10: var(--color-mauve-a10);
+    --color-gray-a11: var(--color-mauve-a11);
+    --color-gray-a12: var(--color-mauve-a12);
+    --color-accent-1: var(--color-crimson-1);
+    --color-accent-2: var(--color-crimson-2);
+    --color-accent-3: var(--color-crimson-3);
+    --color-accent-4: var(--color-crimson-4);
+    --color-accent-5: var(--color-crimson-5);
+    --color-accent-6: var(--color-crimson-6);
+    --color-accent-7: var(--color-crimson-7);
+    --color-accent-8: var(--color-crimson-8);
+    --color-accent-9: var(--color-crimson-9);
+    --color-accent-10: var(--color-crimson-10);
+    --color-accent-11: var(--color-crimson-11);
+    --color-accent-12: var(--color-crimson-12);
+    --color-accent-a1: var(--color-crimson-a1);
+    --color-accent-a2: var(--color-crimson-a2);
+    --color-accent-a3: var(--color-crimson-a3);
+    --color-accent-a4: var(--color-crimson-a4);
+    --color-accent-a5: var(--color-crimson-a5);
+    --color-accent-a6: var(--color-crimson-a6);
+    --color-accent-a7: var(--color-crimson-a7);
+    --color-accent-a8: var(--color-crimson-a8);
+    --color-accent-a9: var(--color-crimson-a9);
+    --color-accent-a10: var(--color-crimson-a10);
+    --color-accent-a11: var(--color-crimson-a11);
+    --color-accent-a12: var(--color-crimson-a12);
   }
 }
 @layer components {
