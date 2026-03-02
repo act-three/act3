@@ -3,6 +3,8 @@ package progress
 import (
 	"errors"
 	"testing"
+	"testing/synctest"
+	"time"
 )
 
 func TestOpenAndList(t *testing.T) {
@@ -193,6 +195,71 @@ func TestReopenAfterErrorClose(t *testing.T) {
 	if items[0].Description() != "retry" {
 		t.Errorf("desc = %q, want %q", items[0].Description(), "retry")
 	}
+}
+
+func TestETANoUpdates(t *testing.T) {
+	var tr Tracker
+	tr.Open("v1", "Encoding", "pass 1")
+	items := tr.List("v1")
+	if items[0].ETA() != 0 {
+		t.Errorf("ETA = %v, want 0 (no updates yet)", items[0].ETA())
+	}
+}
+
+func TestETACalculation(t *testing.T) {
+	// Test ETA directly via Item fields (pure math, no time dependency).
+	m := &Item{value: 0.5, rate: 0.1}
+	// remaining=0.5, rate=0.1 → ETA = 5s
+	got := m.ETA()
+	want := 5 * time.Second
+	if diff := got - want; diff < -time.Millisecond || diff > time.Millisecond {
+		t.Errorf("ETA = %v, want ~%v", got, want)
+	}
+}
+
+func TestETAComplete(t *testing.T) {
+	m := &Item{value: 1.0, rate: 0.1}
+	if m.ETA() != 0 {
+		t.Errorf("ETA = %v, want 0 (progress complete)", m.ETA())
+	}
+}
+
+func TestETAZeroRate(t *testing.T) {
+	m := &Item{value: 0.5, rate: 0}
+	if m.ETA() != 0 {
+		t.Errorf("ETA = %v, want 0 (zero rate)", m.ETA())
+	}
+}
+
+func TestEMARateConverges(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		var tr Tracker
+		tr.Open("v1", "Encoding", "")
+
+		// Constant rate: 10% per second.
+		time.Sleep(1 * time.Second)
+		tr.Update("v1", 0.1)
+		time.Sleep(1 * time.Second)
+		tr.Update("v1", 0.2)
+
+		// Rate is steady at 0.1/s → remaining 0.8 → ETA = 8s.
+		got := tr.List("v1")[0].ETA()
+		want := 8 * time.Second
+		if diff := got - want; diff < -time.Millisecond || diff > time.Millisecond {
+			t.Errorf("ETA = %v, want ~%v", got, want)
+		}
+
+		// Speed doubles to 0.2/s for one interval.
+		// EMA = 0.2*0.2 + 0.8*0.1 = 0.12
+		// remaining 0.6 → ETA = 5s
+		time.Sleep(1 * time.Second)
+		tr.Update("v1", 0.4)
+		got = tr.List("v1")[0].ETA()
+		want = 5 * time.Second
+		if diff := got - want; diff < -time.Millisecond || diff > time.Millisecond {
+			t.Errorf("ETA = %v, want ~%v", got, want)
+		}
+	})
 }
 
 func TestListSortedByCreationTime(t *testing.T) {

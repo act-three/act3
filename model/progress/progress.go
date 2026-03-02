@@ -8,16 +8,24 @@ import (
 	"time"
 )
 
+// emaAlpha controls how much weight is given to the most recent
+// sample when computing the exponential moving average of the
+// progress rate. A value of 0.2 gives an effective window of
+// roughly 5 samples.
+const emaAlpha = 0.2
+
 // Item represents progress through a work item.
 // Its methods are safe to call concurrently.
 type Item struct {
 	// Item values are not synchronized, so keep them immutable.
-	opened time.Time
-	desc   string
-	status string
-	value  float64
-	err    error
-	closed bool
+	opened  time.Time
+	desc    string
+	status  string
+	value   float64
+	err     error
+	closed  bool
+	rate    float64   // EMA-smoothed progress per second
+	updated time.Time // time of last Update call
 }
 
 // Opened returns the time m was opened.
@@ -36,6 +44,20 @@ func (m *Item) Progress() float64 { return m.value }
 
 // Error returns the error, if any, given to Close.
 func (m *Item) Error() error { return m.err }
+
+// ETA returns the estimated time remaining based on the
+// exponentially weighted moving average of the progress rate.
+// It returns 0 if no estimate is available.
+func (m *Item) ETA() time.Duration {
+	if m.rate <= 0 {
+		return 0
+	}
+	remaining := 1.0 - m.value
+	if remaining <= 0 {
+		return 0
+	}
+	return time.Duration(remaining / m.rate * float64(time.Second))
+}
 
 // A Tracker keeps track of progress through a set of work items.
 // Clients open items, update progress as work is done,
@@ -88,14 +110,17 @@ func (t *Tracker) Open(key, desc, status string) {
 	if m, ok := t.item[key]; ok && !m.closed {
 		return
 	}
+	now := time.Now()
 	t.item[key] = &Item{
-		opened: time.Now(),
-		desc:   desc,
-		status: status,
+		opened:  now,
+		updated: now,
+		desc:    desc,
+		status:  status,
 	}
 }
 
-// Update updates the progress value for key.
+// Update updates the progress value for key and recomputes the
+// EMA-smoothed progress rate used by [Item.ETA].
 // If key is not open, Update has no effect.
 func (t *Tracker) Update(key string, value float64) {
 	t.mu.Lock()
@@ -107,6 +132,19 @@ func (t *Tracker) Update(key string, value float64) {
 	mm := &Item{}
 	*mm = *m
 	mm.value = value
+
+	now := time.Now()
+	var instant float64
+	if dt := now.Sub(m.updated).Seconds(); dt > 0 {
+		instant = (value - m.value) / dt
+	}
+	if m.updated.Equal(m.opened) {
+		mm.rate = instant
+	} else {
+		mm.rate = emaAlpha*instant + (1-emaAlpha)*m.rate
+	}
+	mm.updated = now
+
 	t.item[key] = mm
 }
 
