@@ -20,6 +20,8 @@ glitchy audio, glitchy video, buffering, etc.
 Use curl, mediastreamvalidator, and avmediainfo at your discretion to
 figure out what is going wrong.
 
+Do not attempt to implement a fix until Phase 5.
+
 When the issue is in the encoded output (e.g. mediastreamvalidator
 reports errors on the fMP4 segments), check whether the problem is
 in our encoding *args* or the encoding *environment*:
@@ -44,6 +46,8 @@ to reliably reproduce the failure. We won't necessarily keep all this
 video data around long term, but it's useful to have it on hand during
 debugging.
 
+Do not attempt to implement a fix until Phase 5.
+
 Useful assets:
 
 1. Source video. Available to download from the episode details page.
@@ -66,10 +70,17 @@ If these steps don't yield the same error, try variations:
 - Try longer clips, the full video, or different encode settings.
 - Try 2-pass encoding (Pass1Combined + Pass2Single) vs 1-pass.
 
+Verify that the test reproduces the same problem that was
+originally reported or observed in production.
+
 ### Phase 4. Minimize Test Case
 
-Try to minimize the size of the test data. Prefer generating
-synthetic sources over checking in large files. A good pattern:
+Try to minimize the size of the test data.
+
+Do not attempt to implement a fix until Phase 5.
+
+Prefer generating synthetic sources over checking in large files.
+A good pattern:
 
 1. Use `docker run act3-ffmpeg /out/ffmpeg` to generate a tiny
    synthetic source (e.g. `testsrc2` + `sine`, AV1+EAC3, ~2s).
@@ -79,6 +90,9 @@ synthetic sources over checking in large files. A good pattern:
 
 This keeps the test self-contained (no fixtures to check in, no
 server dependency) while using the exact production ffmpeg.
+
+Verify that the minimized testcase still reproduces the same
+problem originally reported or observed in production.
 
 See `video/ffmpeg/ffmpeg_test.go` for an example.
 
