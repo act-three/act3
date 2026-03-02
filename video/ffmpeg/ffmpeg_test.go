@@ -288,6 +288,123 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 	}
 }
 
+// TestMPEG2TelecineTwoPass verifies that 2-pass encoding works for
+// MPEG-2 soft-telecine sources (DVD rips with repeat_first_field).
+//
+// Reproduces a production failure: the source MKV reports 59.94fps
+// (from the MPEG-2 sequence header / MKV DefaultDuration) but
+// contains only ~24fps of actual coded frames. Pass 1 outputs to
+// -f null (no frame duplication), so x265 CU-tree stats cover
+// ~24fps worth of frames. Pass 2 outputs to HLS fMP4 where the
+// muxer forces the container frame rate (59.94fps), duplicating
+// frames ~2.5×. x265 then runs out of CU-tree stats and fails
+// with "Incomplete CU-tree stats file".
+func TestMPEG2TelecineTwoPass(t *testing.T) {
+	dir := setupDocker(t)
+	setPreset(t, "ultrafast")
+	ctx := t.Context()
+
+	// Synthesise a source that mimics a DVD-rip MKV with soft
+	// telecine: MPEG-2 at ~24fps actual coded frames, but the
+	// MKV DefaultDuration claims 59.94fps.
+	//
+	// 1. Generate 24fps MPEG-2 + AC-3 in MPEG-TS.
+	// 2. Patch the MPEG-2 sequence-header frame_rate to
+	//    60000/1001 (≈59.94fps) via the mpeg2_metadata BSF.
+	//    This only changes the bitstream, not the PTS values.
+	// 3. Remux to MKV with -default_mode passthrough so the
+	//    muxer copies the (now-patched) codec frame rate into
+	//    the track's DefaultDuration. The result is an MKV
+	//    where r_frame_rate=59.94 but actual timestamps are
+	//    at ~24fps — exactly the production scenario.
+	tsPath := filepath.Join(dir, "step1.ts")
+	patchedPath := filepath.Join(dir, "step2.ts")
+	srcPath := filepath.Join(dir, "source.mkv")
+
+	t.Log("generating 24fps MPEG-2 source...")
+	generate(t,
+		"-y",
+		"-f", "lavfi", "-i",
+		"testsrc2=duration=2:size=720x480:rate=24000/1001",
+		"-f", "lavfi", "-i",
+		"sine=frequency=440:duration=2:sample_rate=48000",
+		"-c:v", "mpeg2video", "-b:v", "5000k",
+		"-c:a", "ac3", "-ac", "2",
+		"-f", "mpegts", tsPath,
+	)
+
+	t.Log("patching MPEG-2 frame_rate to 59.94fps...")
+	generate(t,
+		"-y", "-i", tsPath,
+		"-c", "copy",
+		"-bsf:v", "mpeg2_metadata=frame_rate=60000/1001",
+		"-f", "mpegts", patchedPath,
+	)
+
+	t.Log("remuxing to MKV with passthrough DefaultDuration...")
+	generate(t,
+		"-y", "-i", patchedPath,
+		"-c", "copy",
+		"-default_mode", "passthrough",
+		srcPath,
+	)
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srcFile.Close()
+
+	t.Log("probing source...")
+	probe, err := Probe(ctx, srcFile)
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+	t.Logf("probe: %dx%d, %s fps, %d kbps",
+		probe.Video.Width, probe.Video.Height,
+		probe.Video.FrameRate, probe.Video.BitRate/1000)
+
+	// Sanity-check: r_frame_rate should be ~59.94fps.
+	if probe.Video.FrameRate.Le(30) {
+		t.Fatalf("expected r_frame_rate > 30, got %s",
+			probe.Video.FrameRate)
+	}
+
+	mediaFile, err := os.Create(filepath.Join(dir, MediaName(0)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer mediaFile.Close()
+
+	params := EncodeParams{
+		File:    mediaFile,
+		Codec:   "libx265",
+		Bitrate: 5000,
+		Tag:     "hvc1",
+	}
+	passlogs := map[int]string{
+		0: filepath.Join(dir, "passlog0"),
+	}
+
+	t.Log("running pass 1...")
+	preset, err := Pass1Combined(ctx, srcFile,
+		[]EncodeParams{params}, []int{0}, passlogs,
+		probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 1: %v", err)
+	}
+
+	t.Log("running pass 2...")
+	playlist, err := Pass2Single(ctx, srcFile, params,
+		passlogs[0], preset, probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 2: %v", err)
+	}
+	if playlist == "" {
+		t.Fatal("empty playlist")
+	}
+}
+
 // TestX264MbtreePass2 verifies that x264 2-pass encoding works when
 // pass 1 writes stats (including .mbtree) directly to a persistent
 // directory and pass 2 reads from the same path.

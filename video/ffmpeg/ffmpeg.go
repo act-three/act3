@@ -260,6 +260,7 @@ func Pass2Single(ctx context.Context, src *os.File, dst EncodeParams,
 	}
 
 	args = append(args, "-map", labels[0])
+	args = append(args, fpsPassthrough()...)
 	args = append(args, "-map", "0:a:0?")
 	args = append(args, "-c:v", dst.Codec, "-preset", preset)
 	args = append(args, "-b:v", fmt.Sprintf("%dk", dst.Bitrate))
@@ -384,6 +385,7 @@ func pass1Combined(ctx context.Context, src *os.File,
 	for _, i := range idxs {
 		p := dsts[i]
 		args = append(args, "-map", labels[i])
+		args = append(args, fpsPassthrough()...)
 		args = append(args, "-c:v", p.Codec, "-preset", preset)
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
 		args = append(args, twoPassArgs(p.Codec, 1, passlogs[i])...)
@@ -421,6 +423,7 @@ func pass2Combined(ctx context.Context, src *os.File,
 		plsPath := filepath.Join(tmpDir, playlistName(i))
 
 		args = append(args, "-map", labels[i])
+		args = append(args, fpsPassthrough()...)
 		args = append(args, "-map", "0:a:0?") // optional audio
 		args = append(args, "-c:v", p.Codec, "-preset", preset)
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
@@ -533,6 +536,18 @@ func hlsOutputArgs(mediaPath string) []string {
 		"-hls_list_size", "0",
 		"-hls_segment_filename", mediaPath,
 	}
+}
+
+// fpsPassthrough returns args that prevent ffmpeg from duplicating
+// or dropping video frames to match the container's advertised
+// frame rate. Without this, MPEG-2 soft-telecine sources (where
+// the MKV DefaultDuration says 59.94fps but the actual coded
+// frames are ~24fps) cause pass 1 (-f null, no duplication) and
+// pass 2 (-f hls, duplicates to 59.94fps) to produce different
+// frame counts, which makes x265 fail with "Incomplete CU-tree
+// stats file".
+func fpsPassthrough() []string {
+	return []string{"-fps_mode:v", "passthrough"}
 }
 
 // twoPassArgs returns encoder-specific flags for 2-pass encoding.
