@@ -86,13 +86,14 @@ func (c *Config) systemStorage(_ http.ResponseWriter, req *http.Request) (html.N
 }
 
 func (c *Config) systemTasks(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	running := c.Model.RunningTasks()
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		tasks, err := tx.TaskList(ctx)
+		queued, err := tx.TaskList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return view.EditSystemTasks(tasks), nil
+		return view.EditSystemTasks(running, queued), nil
 	})
 }
 

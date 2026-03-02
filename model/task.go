@@ -59,19 +59,24 @@ var taskQueues = map[string]int{
 }
 
 type Task struct {
-	t         schema.Task
-	isRunning bool
+	t schema.Task
 }
 
-func (t *Task) ID() string {
-	return t.t.ID
-}
-
+func (t *Task) ID() string         { return t.t.ID }
 func (t *Task) Type() string       { return t.t.Type }
 func (t *Task) Args() string       { return t.t.Args }
 func (t *Task) Failures() int64    { return t.t.Failures }
-func (t *Task) IsRunning() bool    { return t.isRunning }
 func (t *Task) NextRun() time.Time { return time.UnixMilli(t.t.NextRun) }
+
+type RunningTask struct {
+	id    string
+	ttype string
+	args  string
+}
+
+func (t *RunningTask) ID() string   { return t.id }
+func (t *RunningTask) Type() string { return t.ttype }
+func (t *RunningTask) Args() string { return t.args }
 func (t *Task) FailureDesc() string {
 	if s := t.t.FailureDesc; s != nil {
 		return *s
@@ -91,6 +96,8 @@ type taskQueue struct {
 
 type runEntry struct {
 	key    string
+	ttype  string
+	args   string
 	cancel context.CancelFunc
 }
 
@@ -148,7 +155,7 @@ func (tq *taskQueue) next() (*schema.Task, error) {
 	return &task, nil
 }
 
-func (tq *taskQueue) lock(id string, cancel context.CancelFunc) (string, error) {
+func (tq *taskQueue) lock(id, ttype, args string, cancel context.CancelFunc) (string, error) {
 	ctx := context.Background()
 	_, err := schema.New(tq.m.dbw).TaskLock(ctx, id)
 	if err == sql.ErrNoRows {
@@ -160,7 +167,7 @@ func (tq *taskQueue) lock(id string, cancel context.CancelFunc) (string, error) 
 	tq.runningMu.Lock()
 	defer tq.runningMu.Unlock()
 	key := cryptorand.Text()
-	tq.running[id] = runEntry{key: key, cancel: cancel}
+	tq.running[id] = runEntry{key: key, ttype: ttype, args: args, cancel: cancel}
 	return key, nil
 }
 
@@ -206,7 +213,7 @@ func (tq *taskQueue) run(task schema.Task) {
 func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	if key, err := tq.lock(task.ID, cancel); err != nil {
+	if key, err := tq.lock(task.ID, task.Type, task.Args, cancel); err != nil {
 		return err
 	} else if key == "" {
 		return nil
@@ -293,6 +300,24 @@ func (m *Model) KillTask(id string) bool {
 	return false
 }
 
+func (tq *taskQueue) runningTasks() []*RunningTask {
+	tq.runningMu.Lock()
+	defer tq.runningMu.Unlock()
+	var out []*RunningTask
+	for id, e := range tq.running {
+		out = append(out, &RunningTask{id: id, ttype: e.ttype, args: e.args})
+	}
+	return out
+}
+
+func (m *Model) RunningTasks() []*RunningTask {
+	var out []*RunningTask
+	for _, tq := range m.tasks {
+		out = append(out, tq.runningTasks()...)
+	}
+	return out
+}
+
 func (m *Model) wake(ttype string) {
 	tq := m.tasks[queueTab[ttype]]
 	if tq != nil {
@@ -307,8 +332,7 @@ func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
 	}
 	var tasks []*Task
 	for _, t := range list {
-		task := &Task{t, t.Running != 0}
-		tasks = append(tasks, task)
+		tasks = append(tasks, &Task{t})
 	}
 	return tasks, nil
 }

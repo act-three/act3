@@ -1755,6 +1755,7 @@ func (q *Queries) TaskGet(ctx context.Context, id string) (Task, error) {
 
 const taskList = `-- name: TaskList :many
 SELECT id, type, args, failures, nextrun, failuredesc, priority, queue, running FROM Task
+WHERE Running = 0
 `
 
 func (q *Queries) TaskList(ctx context.Context) ([]Task, error) {

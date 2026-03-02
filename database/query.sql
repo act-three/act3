@@ -316,7 +316,8 @@ DELETE FROM Task WHERE ID = ?;
 SELECT * FROM Task WHERE ID = ?;
 
 -- name: TaskList :many
-SELECT * FROM Task;
+SELECT * FROM Task
+WHERE Running = 0;
 
 -- name: TaskReschedule :one
 UPDATE Task SET

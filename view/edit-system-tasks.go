@@ -8,96 +8,109 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func EditSystemTasks(tasks []*model.Task) html.Node {
+func EditSystemTasks(running []*model.RunningTask, queued []*model.Task) html.Node {
 	return app("Tasks",
 		ScrollY(
 			attr.Class("h-full w-full p-4"),
 		)(
 			html.Div()(html.Text("Scheduled Tasks")),
-			html.Div()(html.Text("Tasks")),
-			html.Div()(
-				html.Div(
-					attr.Class("py-4"),
-				)(
-					TableRoot(attr.Class("max-w-full"))(
-						TableHeader()(
-							TableRow()(
-								TableHead()(html.Text("Task")),
-								TableHead()(html.Text("ID")),
-								TableHead()(html.Text("Args")),
-								TableHead()(html.Text("Failures")),
-								TableHead()(html.Text("Next Run")),
+
+			html.Div(attr.Class("py-4"))(
+				html.Div()(html.Text("Running")),
+				expr.IfElse(len(running) > 0,
+					func() html.Node {
+						return TableRoot(attr.Class("max-w-full"))(
+							TableHeader()(
+								TableRow()(
+									TableHead()(html.Text("Task")),
+									TableHead()(html.Text("ID")),
+									TableHead()(html.Text("Args")),
+									TableHead()(),
+								),
 							),
-						),
-						TableBody()(
-							html.Range(tasks, func(t *model.Task) html.Node {
-								s := t.FailureDesc()
-								return html.Group(
-									html.Tr()(
+							TableBody()(
+								html.Range(running, func(t *model.RunningTask) html.Node {
+									return html.Tr()(
 										TableCell()(html.Text(t.Type())),
+										TableCell()(html.Text(t.ID())),
+										TableCell()(html.Text(t.Args())),
 										TableCell()(
-											html.Text(t.ID()),
 											html.Form(
-												attr.Action("/do/delete-task/"+t.ID()),
+												attr.Action("/do/kill-task/"+t.ID()),
 												attr.Method("POST"),
 											)(
-												Button(ButtonGhost)(
-													html.Text("Delete"),
+												Button(ButtonDestructive)(
+													html.Text("Kill"),
 												),
 											),
 										),
-										TableCell()(html.Text(t.Args())),
-										TableCell()(html.Textf("%d", t.Failures())),
-										TableCell()(
-											expr.IfElse(t.IsRunning(),
-												func() html.Node {
-													return Group(
-														Text("Running"),
-														html.Form(
-															attr.Action("/do/kill-task/"+t.ID()),
-															attr.Method("POST"),
-														)(
-															Button(ButtonDestructive)(
-																html.Text("Kill"),
-															),
-														),
-													)
-												},
-												func() html.Node {
-													return Group(
-														html.Textf("%v", t.NextRun()),
-														html.Form(
-															attr.Action("/do/run-task/"+t.ID()),
-															attr.Method("POST"),
-														)(
-															Button(ButtonGhost)(
-																html.Text("Run Now"),
-															),
-														),
-													)
-												},
-											),
-										),
-									),
-									expr.IfElse(s != "",
-										func() html.Node {
-											return html.Tr()(
-												TableCell(
-													attr.Colspan("5"),
-												)(
-													Code()(
-														html.Text(s),
-													),
-												),
-											)
-										},
-										func() html.Node {
-											return html.Group()
-										},
-									),
-								)
-							}),
+									)
+								}),
+							),
+						)
+					},
+					func() html.Node {
+						return Text("No running tasks")
+					},
+				),
+			),
+
+			html.Div(attr.Class("py-4"))(
+				html.Div()(html.Text("Queued")),
+				TableRoot(attr.Class("max-w-full"))(
+					TableHeader()(
+						TableRow()(
+							TableHead()(html.Text("Task")),
+							TableHead()(html.Text("ID")),
+							TableHead()(html.Text("Args")),
+							TableHead()(html.Text("Failures")),
+							TableHead()(html.Text("Next Run")),
 						),
+					),
+					TableBody()(
+						html.Range(queued, func(t *model.Task) html.Node {
+							s := t.FailureDesc()
+							return html.Group(
+								html.Tr()(
+									TableCell()(html.Text(t.Type())),
+									TableCell()(
+										html.Text(t.ID()),
+										html.Form(
+											attr.Action("/do/delete-task/"+t.ID()),
+											attr.Method("POST"),
+										)(
+											Button(ButtonGhost)(
+												html.Text("Delete"),
+											),
+										),
+									),
+									TableCell()(html.Text(t.Args())),
+									TableCell()(html.Textf("%d", t.Failures())),
+									TableCell()(
+										html.Textf("%v", t.NextRun()),
+										html.Form(
+											attr.Action("/do/run-task/"+t.ID()),
+											attr.Method("POST"),
+										)(
+											Button(ButtonGhost)(
+												html.Text("Run Now"),
+											),
+										),
+									),
+								),
+								html.If(s != "", func() html.Node {
+									return html.Tr()(
+										TableCell(
+											attr.Colspan("5"),
+										)(
+											Code()(
+												html.Text(s),
+											),
+										),
+									)
+								}),
+							)
+						}),
 					),
 				),
 			),
