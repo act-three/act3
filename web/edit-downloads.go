@@ -63,7 +63,6 @@ func (c *Config) doAddTorrent(w http.ResponseWriter, req *http.Request) (html.No
 		}
 		dls := []*model.DownloadHead{&dl.DownloadHead}
 
-		stream(view.EditMediaDownloadsStream(dls, req.FormValue("sed-id"))).ServeHTTP(w, req)
-		return nil, nil
+		return view.EditMediaDownloadsStream(dls, req.FormValue("sed-id")), nil
 	})
 }

@@ -15,6 +15,7 @@ import (
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tvmaze"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
 
@@ -102,32 +103,29 @@ func handle(mux *http.ServeMux, pattern string, hf handlerFunc) {
 			return
 		}
 		if node != nil {
-			page(node).ServeHTTP(w, req)
+			rawHandler(200, node).ServeHTTP(w, req)
 		}
 	})
 	h = http.MaxBytesHandler(h, maxReqBody)
 	mux.Handle(pattern, h)
 }
 
-func page(node ...html.Node) http.Handler {
-	return rawHandler("text/html", 200, node...)
-}
-
-func stream(node ...html.Node) http.Handler {
-	return rawHandler("text/vnd.turbo-stream.html", 200, node...)
-}
-
-func rawHandler(contentType string, code int, node ...html.Node) http.Handler {
+func rawHandler(code int, node ...html.Node) http.Handler {
 	buf := &bytes.Buffer{}
 	err := html.Render(buf, html.Group(node...))
 	if err != nil {
 		panic(err)
 	}
+	body := buf.Bytes()
+	contentType := "text/html"
+	if turbo.SniffStream(body) {
+		contentType = "text/vnd.turbo-stream.html"
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		w.Header().Set("Content-Type", contentType)
 		w.WriteHeader(code)
-		_, err := w.Write(buf.Bytes())
+		_, err := w.Write(body)
 		if err != nil {
 			slog.WarnContext(ctx, err.Error())
 			return
@@ -148,7 +146,7 @@ func stringHandler(contentType, body string) http.HandlerFunc {
 }
 
 func handleBadRequest(w http.ResponseWriter, req *http.Request, title, desc string) {
-	h := rawHandler("text/vnd.turbo-stream.html", 400,
+	h := rawHandler(400,
 		Note(NoteError)(
 			NoteTitle()(html.Text(title)),
 			NoteDescription()(html.Text(desc)),
@@ -158,7 +156,7 @@ func handleBadRequest(w http.ResponseWriter, req *http.Request, title, desc stri
 }
 
 func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
-	h := rawHandler("text/vnd.turbo-stream.html", 404,
+	h := rawHandler(404,
 		Note(NoteError)(
 			NoteTitle()(html.Text("Not Found")),
 			NoteDescription()(html.Text(path)),
@@ -168,7 +166,7 @@ func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
 }
 
 func handleInternal(w http.ResponseWriter, req *http.Request) {
-	h := rawHandler("text/vnd.turbo-stream.html", 500,
+	h := rawHandler(500,
 		Note(NoteError)(
 			NoteTitle()(html.Text("Internal Error")),
 		),
