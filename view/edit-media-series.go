@@ -1,6 +1,9 @@
 package view
 
 import (
+	"fmt"
+	"time"
+
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
@@ -244,12 +247,19 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 					),
 				)
 			}
+			var etaNode html.Node
+			if eta := pi.ETA(); eta > 0 {
+				etaNode = html.Div(Class("text-gray-11/50"))(
+					Text(formatDuration(eta)),
+				)
+			}
 			return FlexCol(Class("text-gray-11/80 text-sm"))(
 				FlexRow(Class("gap-2"))(
 					Text(pi.Description()),
 					html.Div(Class("text-gray-11/50"))(
 						Text(pi.Status()),
 					),
+					etaNode,
 				),
 				Progress(pi.Progress(), attr.Class("max-w-xs"), ProgressSM),
 			)
@@ -262,4 +272,21 @@ func truncate(s string, max int) string {
 		return s
 	}
 	return s[:max] + "…"
+}
+
+// formatDuration formats d as a short human-readable string
+// for UI display (e.g. "3m 24s", "45s", "1h 12m").
+func formatDuration(d time.Duration) string {
+	d = d.Truncate(time.Second)
+	if d < time.Minute {
+		return fmt.Sprintf("%ds", int(d.Seconds()))
+	}
+	if d < time.Hour {
+		m := int(d.Minutes())
+		s := int(d.Seconds()) % 60
+		return fmt.Sprintf("%dm %ds", m, s)
+	}
+	h := int(d.Hours())
+	m := int(d.Minutes()) % 60
+	return fmt.Sprintf("%dh %dm", h, m)
 }
