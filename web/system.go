@@ -38,7 +38,7 @@ func (c *Config) doUpdateTransmissionSettings(w http.ResponseWriter, req *http.R
 		if err != nil {
 			return nil, err
 		}
-		http.Redirect(w, req, "/system/transmission", http.StatusSeeOther)
+		http.Redirect(w, req, "/app/transmission", http.StatusSeeOther)
 		return nil, nil
 	})
 }
@@ -103,13 +103,13 @@ func (c *Config) doRunTask(w http.ResponseWriter, req *http.Request) (html.Node,
 	if err != nil {
 		return nil, err
 	}
-	http.Redirect(w, req, "/system/tasks", http.StatusSeeOther)
+	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
 	return nil, nil
 }
 
 func (c *Config) doKillTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	c.Model.KillTask(req.PathValue("id"))
-	http.Redirect(w, req, "/system/tasks", http.StatusSeeOther)
+	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
 	return nil, nil
 }
 
@@ -120,7 +120,7 @@ func (c *Config) doDeleteTask(w http.ResponseWriter, req *http.Request) (html.No
 		if err != nil {
 			return nil, err
 		}
-		http.Redirect(w, req, "/system/tasks", http.StatusSeeOther)
+		http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
 		return nil, nil
 	})
 }

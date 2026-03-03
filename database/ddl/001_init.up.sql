@@ -24,7 +24,8 @@ STRICT;
 
 CREATE TABLE Series
 (
-	ID      TEXT PRIMARY KEY DEFAULT ('sr'||newID()),
+	ID      TEXT PRIMARY KEY,
+	Slug    TEXT NOT NULL UNIQUE,
 	Title   TEXT NOT NULL,
 	Summary TEXT NOT NULL,
 	Status  TEXT NOT NULL CHECK (Status IN (
@@ -84,6 +85,7 @@ STRICT;
 CREATE TABLE Episode
 (
 	ID      TEXT PRIMARY KEY DEFAULT ('ep'||newID()),
+	Slug    TEXT NOT NULL UNIQUE DEFAULT '',
 	Title   TEXT NOT NULL,
 	Summary TEXT NOT NULL,
 	Type    TEXT NOT NULL CHECK (Type IN (

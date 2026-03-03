@@ -30,7 +30,7 @@ func EditMediaDownloads(
 				Box(),
 			),
 			Split()(
-				List("/edit/downloads/", "detail",
+				List("/app/downloads/", "detail",
 					attr.ID(torrentListID),
 					Class("flex-1"),
 				)(
@@ -146,7 +146,7 @@ func editMediaDownloadsDetail(dl *model.Download) html.Node {
 func editMediaDownloadsDoImportButton(id string) html.Node {
 	return html.Form(
 		attr.Method("POST"),
-		attr.Action("/do/import-download"),
+		attr.Action("/-/do/import-download"),
 	)(
 		html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(id)),
 		Button()(html.Text("Import")),

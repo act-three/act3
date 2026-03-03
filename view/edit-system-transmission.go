@@ -15,7 +15,7 @@ func EditSystemTransmission(config *model.ConfigTransmission) html.Node {
 			html.Div()(html.Text("Transmission")),
 			html.Form(
 				attr.Method("post"),
-				attr.Action("/do/update-transmission-settings"),
+				attr.Action("/-/do/update-transmission-settings"),
 			)(
 				html.Div(attr.Class("py-4"))(
 					html.Div()(html.Text("RPC URL")),

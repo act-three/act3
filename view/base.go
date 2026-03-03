@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	styleBundleURL  = static.FS.NameToDigest("/static/bundle.css")
-	scriptBundleURL = static.FS.NameToDigest("/static/bundle.js")
-	PlyrIconURL     = static.FS.NameToDigest("/static/plyr.svg")
+	styleBundleURL  = "/-" + static.FS.NameToDigest("/static/bundle.css")
+	scriptBundleURL = "/-" + static.FS.NameToDigest("/static/bundle.js")
+	PlyrIconURL     = "/-" + static.FS.NameToDigest("/static/plyr.svg")
 )
 
 func base(title string, head ...html.Node) func(...attr.Node) html.Element {

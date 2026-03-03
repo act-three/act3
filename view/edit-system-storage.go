@@ -27,7 +27,7 @@ func EditSystemStorage(
 			html.Form(
 				attr.Attr("x-target")("dirs"),
 				attr.Method("post"),
-				attr.Action("/do/add-directory"),
+				attr.Action("/-/do/add-directory"),
 				attr.Style("padding: 1em; border: 1px solid #00000022"),
 			)(
 				html.H3()(html.Text("add directory")),

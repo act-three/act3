@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/xstrings"
 )
 
 func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
@@ -31,6 +32,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 		if err != nil {
 			return err
 		}
+		seriesSlug := series.Slug
 		sed, err := tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
 			Title:    AirDate,
 			SeriesID: series.ID,
@@ -68,7 +70,21 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 		}
 
 		for _, te := range eps {
+			// Compute episode slug component.
+			var snnEnn string
+			if te.Number != nil {
+				snnEnn = fmt.Sprintf("s%02de%02d", te.Season, *te.Number)
+			} else {
+				snnEnn = fmt.Sprintf("s%02d-special", te.Season)
+			}
+			titleSlug := xstrings.ToSlug(te.Name)
+			epSlug := seriesSlug + "/" + snnEnn
+			if titleSlug != "" {
+				epSlug += "-" + titleSlug
+			}
+
 			ep, err := tx.q.EpisodeCreate(ctx, schema.EpisodeCreateParams{
+				Slug:           epSlug,
 				Title:          te.Name,
 				Summary:        te.Summary,
 				Type:           te.Type,

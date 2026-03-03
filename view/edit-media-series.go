@@ -22,7 +22,7 @@ func EditMediaSeries(
 ) html.Node {
 	return app(title, FlexCol(attr.Class("place-self-stretch"))(
 		ToolbarPrimary()(
-			DialogButton("/dialog/series-add", ButtonRadiusMedium, ButtonSurface)(
+			DialogButton("/-/dialog/series-add", ButtonRadiusMedium, ButtonSurface)(
 				Icon("plus"),
 				html.Text("Add Series"),
 			),
@@ -32,7 +32,7 @@ func EditMediaSeries(
 			html.Div(),
 		),
 		Split()(
-			List("/edit/series/", "detail")(
+			List("/app/series/", "detail")(
 				turbo.Sink(EditMediaSeriesListItems)(
 					ListItems(s, EditMediaSeriesListItem),
 				),
@@ -156,7 +156,7 @@ func editMediaSeriesAddTorrentButton(sedID string) html.Node {
 		attr.Class("flex flex-row gap-1 group"),
 		attr.Method("POST"),
 		attr.Enctype("multipart/form-data"),
-		attr.Action("/do/add-torrent"),
+		attr.Action("/-/do/add-torrent"),
 		stimulus.Controller("add-torrent"),
 		stimulus.Action("turbo:submit-end->add-torrent#reset"),
 	)(

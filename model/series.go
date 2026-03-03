@@ -6,7 +6,9 @@ import (
 	"maps"
 	"slices"
 	"strconv"
+	"strings"
 
+	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
 	"ily.dev/act3/xstrings"
@@ -25,6 +27,7 @@ func newSeriesHeadList(list []schema.Series) []*SeriesHead {
 }
 
 func (sr *SeriesHead) ID() string             { return sr.sr.ID }
+func (sr *SeriesHead) Slug() string           { return sr.sr.Slug }
 func (sr *SeriesHead) PremieredOn() *string   { return sr.sr.PremieredOn }
 func (sr *SeriesHead) Status() string         { return sr.sr.Status }
 func (sr *SeriesHead) Summary() string        { return sr.sr.Summary }
@@ -33,11 +36,11 @@ func (sr *SeriesHead) TVmazeID() *int64       { return sr.sr.TVmazeID }
 func (sr *SeriesHead) TVmazeImageURL() string { return sr.sr.TVmazeImageURL }
 
 func (sr *SeriesHead) PlayURL() string {
-	return "/series/" + sr.sr.ID
+	return "/" + sr.sr.Slug
 }
 
 func (sr *SeriesHead) EditURL() string {
-	return "/edit/series/" + xstrings.ToSlug(sr.sr.Title) + "-" + sr.sr.ID
+	return "/app/series/" + sr.sr.Slug + "-" + sr.sr.ID
 }
 
 type Series struct {
@@ -120,6 +123,49 @@ func (tx *TxR) SeriesHeadListByTVmazeID(ctx Context, id []*int64) ([]*SeriesHead
 	return newSeriesHeadList(a), nil
 }
 
+var reservedSlugs = map[string]bool{
+	"app": true,
+	"-":   true,
+}
+
+func isReservedSlug(s string) bool {
+	return reservedSlugs[s]
+}
+
+func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string, id string) (string, error) {
+	slug := xstrings.ToSlug(title)
+	if slug == "" {
+		slug = id
+	}
+	if !isReservedSlug(slug) {
+		n, err := tx.q.SeriesSlugExists(ctx, slug)
+		if err != nil {
+			return "", err
+		}
+		if n == 0 {
+			return slug, nil
+		}
+	}
+
+	// Try slug-year.
+	if premiered != nil {
+		year, _, _ := strings.Cut(*premiered, "-")
+		if year != "" {
+			candidate := slug + "-" + year
+			n, err := tx.q.SeriesSlugExists(ctx, candidate)
+			if err != nil {
+				return "", err
+			}
+			if n == 0 {
+				return candidate, nil
+			}
+		}
+	}
+
+	// Last resort: slug-id.
+	return slug + "-" + id, nil
+}
+
 func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, id string) (*SeriesHead, error) {
 	id64, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
@@ -129,14 +175,23 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, id string) (*SeriesHead, err
 	if err != nil {
 		return nil, err
 	}
+
+	srID := "sr" + flurry.NewID()
+	slug, err := tx.generateSeriesSlug(ctx,
+		show.Name, show.Premiered, srID)
+	if err != nil {
+		return nil, err
+	}
+
 	srData, err := tx.q.SeriesCreate(ctx, schema.SeriesCreateParams{
+		ID:          srID,
+		Slug:        slug,
 		Title:       show.Name,
 		Status:      show.Status,
 		Language:    show.Language,
 		PremieredOn: show.Premiered,
 		EndedOn:     show.Ended,
-		//Network:     show.Network,
-		Summary: show.Summary,
+		Summary:     show.Summary,
 
 		TVmazeID:        &id64,
 		TVmazeURL:       &show.URL,
@@ -166,11 +221,24 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, id string) (*SeriesHead, err
 	return srh, nil
 }
 
+func (tx *TxR) SeriesBySlug(ctx Context, slug string) (*Series, error) {
+	srData, err := tx.q.SeriesGetBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	return tx.seriesFromData(ctx, srData)
+}
+
 func (tx *TxR) Series(ctx Context, id string) (*Series, error) {
 	srData, err := tx.q.SeriesGet(ctx, id)
 	if err != nil {
 		return nil, err
 	}
+	return tx.seriesFromData(ctx, srData)
+}
+
+func (tx *TxR) seriesFromData(ctx Context, srData schema.Series) (*Series, error) {
+	id := srData.ID
 	seds, err := tx.q.SeriesEditionListBySeriesID(ctx, id)
 	if err != nil {
 		return nil, err

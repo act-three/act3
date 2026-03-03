@@ -38,7 +38,7 @@ func (c *Config) editSeriesDetail(w http.ResponseWriter, req *http.Request) (htm
 
 		sr, err := tx.Series(ctx, selID)
 		if err == sql.ErrNoRows {
-			http.Redirect(w, req, "/edit/series", http.StatusSeeOther)
+			http.Redirect(w, req, "/app/series", http.StatusSeeOther)
 			return nil, nil
 		} else if err != nil {
 			return nil, err
@@ -89,7 +89,7 @@ func (c *Config) seriesAddDialogReq(_ http.ResponseWriter, req *http.Request) (h
 				html.Text("Add Series"),
 			),
 			html.Form(
-				attr.Action("/search-series"),
+				attr.Action("/-/part/series-search"),
 				attr.Attr("data-turbo-frame")("results"),
 			)(
 				InputText(
@@ -188,7 +188,7 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 						expr.IfElse(v.OriginalHash != "",
 							func() html.Node {
 								return html.Form(
-									attr.Action("/do/reingest-video/"+v.ID),
+									attr.Action("/-/do/reingest-video/"+v.ID),
 									attr.Method("POST"),
 									attr.Class("mt-2"),
 								)(
@@ -292,7 +292,7 @@ func (c *Config) doReingestVideo(w http.ResponseWriter, req *http.Request) (html
 	if err != nil {
 		return nil, err
 	}
-	http.Redirect(w, req, "/system/tasks", http.StatusSeeOther)
+	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
 	return nil, nil
 }
 
@@ -351,7 +351,7 @@ func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.No
 										return turbo.Frame(frameID)(
 											html.Form(
 												attr.Method("post"),
-												attr.Action("/do/add-series"),
+												attr.Action("/-/do/add-series"),
 												turbo.DataFrame(frameID),
 											)(
 												html.Input(

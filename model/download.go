@@ -54,7 +54,7 @@ func newDownloadHeadList(dls []schema.Download, err error) ([]*DownloadHead, err
 	return res, nil
 }
 
-func (d *DownloadHead) URL() string   { return "/edit/downloads/" + d.d.ID }
+func (d *DownloadHead) URL() string   { return "/app/downloads/" + d.d.ID }
 func (d *DownloadHead) ID() string    { return d.d.ID }
 func (d *DownloadHead) State() string { return d.d.State }
 func (d *DownloadHead) Title() string { return d.d.Title }

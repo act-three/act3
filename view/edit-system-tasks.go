@@ -36,7 +36,7 @@ func EditSystemTasks(running []*model.RunningTask, queued []*model.Task) html.No
 										TableCell()(html.Text(t.Args())),
 										TableCell()(
 											html.Form(
-												attr.Action("/do/kill-task/"+t.ID()),
+												attr.Action("/-/do/kill-task/"+t.ID()),
 												attr.Method("POST"),
 											)(
 												Button(ButtonDestructive)(
@@ -76,7 +76,7 @@ func EditSystemTasks(running []*model.RunningTask, queued []*model.Task) html.No
 									TableCell()(
 										html.Text(t.ID()),
 										html.Form(
-											attr.Action("/do/delete-task/"+t.ID()),
+											attr.Action("/-/do/delete-task/"+t.ID()),
 											attr.Method("POST"),
 										)(
 											Button(ButtonGhost)(
@@ -89,7 +89,7 @@ func EditSystemTasks(running []*model.RunningTask, queued []*model.Task) html.No
 									TableCell()(
 										html.Textf("%v", t.NextRun()),
 										html.Form(
-											attr.Action("/do/run-task/"+t.ID()),
+											attr.Action("/-/do/run-task/"+t.ID()),
 											attr.Method("POST"),
 										)(
 											Button(ButtonGhost)(

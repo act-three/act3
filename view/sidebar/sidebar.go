@@ -30,26 +30,26 @@ func sidebarData() []MenuSection {
 		{
 			Label: "Account",
 			Items: []MenuItem{
-				{"circle-user-round", "/account/profile", "Profile", nil},
-				{"fingerprint-pattern", "/account/security", "Security", nil},
+				{"circle-user-round", "/app/profile", "Profile", nil},
+				{"fingerprint-pattern", "/app/security", "Security", nil},
 			},
 		},
 		{
 			Label: "Edit Media",
 			Items: []MenuItem{
-				{"circle-arrow-down", "/edit/downloads", "Downloads", nil},
-				{"file-question-mark", "/edit/missing", "Missing Media", nil},
-				{"trash-2", "/edit/trash", "Trash", nil},
-				{"film", "/edit/movies", "All Movies", nil},
-				{"tv", "/edit/series", "All Series", nil},
+				{"circle-arrow-down", "/app/downloads", "Downloads", nil},
+				{"file-question-mark", "/app/missing", "Missing Media", nil},
+				{"trash-2", "/app/trash", "Trash", nil},
+				{"film", "/app/movies", "All Movies", nil},
+				{"tv", "/app/series", "All Series", nil},
 			},
 		},
 		{
 			Label: "System",
 			Items: []MenuItem{
-				{"cloud", "/system/transmission", "Download Client", nil},
-				{"hard-drive", "/system/storage", "Storage", nil},
-				{"calendar-check", "/system/tasks", "Tasks", nil},
+				{"cloud", "/app/transmission", "Download Client", nil},
+				{"hard-drive", "/app/storage", "Storage", nil},
+				{"calendar-check", "/app/tasks", "Tasks", nil},
 			},
 		},
 	}

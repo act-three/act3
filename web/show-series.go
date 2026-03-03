@@ -11,7 +11,7 @@ import (
 func (c *Config) showSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		sr, err := tr.Series(ctx, req.PathValue("id"))
+		sr, err := tr.SeriesBySlug(ctx, req.PathValue("slug"))
 		if err != nil {
 			return nil, err
 		}

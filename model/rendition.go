@@ -22,7 +22,7 @@ func (tx *TxR) RenditionForStreamingList(ctx Context, epID string) ([]*Rendition
 	var rends []*RenditionForStreaming
 	for _, r := range a {
 		rends = append(rends, &RenditionForStreaming{
-			url: path.Join("/stream", r.Hash),
+			url: path.Join("/-/vid", r.Hash),
 		})
 	}
 	return rends, nil
@@ -58,7 +58,7 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 		}
 		opts = append(opts, QualityOption{
 			Label: qualityLabel(r),
-			URL:   "/vidr/" + r.ID + ".m3u8",
+			URL:   "/-/pls/" + r.ID + ".m3u8",
 		})
 	}
 	return opts, nil
@@ -103,7 +103,7 @@ func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionF
 		filename := "episode.mkv"
 
 		rends = append(rends, &RenditionForDownload{
-			url:      path.Join("/dl", vid.OriginalHash, filename),
+			url:      path.Join("/-/dl", vid.OriginalHash, filename),
 			filename: filename,
 			label:    fmt.Sprintf("Original (%s)", vid.ReleasePath),
 		})

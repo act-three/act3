@@ -307,7 +307,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 
 	// Fixup media playlist: replace temp media filename with storage hash.
 	playlist = video.FixupMediaPlaylist(
-		playlist, ffmpeg.MediaName(0), "/vids/"+hashes[0]+".mp4",
+		playlist, ffmpeg.MediaName(0), "/-/vid/"+hashes[0]+".mp4",
 	)
 
 	tx.m.prog.UpdateStatus(progKey, desc+": saving")
@@ -427,7 +427,7 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video, probe *ffmpeg.Pr
 			bandwidth = rfs.TargetBitrate * 1000
 		}
 
-		uri := "/vidr/" + rfs.ID + ".m3u8"
+		uri := "/-/pls/" + rfs.ID + ".m3u8"
 
 		var resolution string
 		if probe != nil && probe.Video != nil {

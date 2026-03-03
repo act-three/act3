@@ -32,7 +32,7 @@ func MediaEpisode(
 							attr.Class("w-lg"),
 						)(
 							html.Source(
-								attr.Src("/vid/"+vid.ID+".m3u8"),
+								attr.Src("/-/plr/"+vid.ID+".m3u8"),
 								attr.Type("application/vnd.apple.mpegurl"),
 							),
 						),

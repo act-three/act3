@@ -364,6 +364,7 @@ func TestSeriesHeadMethods(t *testing.T) {
 
 	srData := schema.Series{
 		ID:             "series-1",
+		Slug:           "test-series",
 		Title:          "Test Series",
 		Summary:        "A test summary",
 		Status:         "Running",
@@ -377,6 +378,12 @@ func TestSeriesHeadMethods(t *testing.T) {
 	t.Run("ID returns correct value", func(t *testing.T) {
 		if sr.ID() != "series-1" {
 			t.Errorf("expected 'series-1', got '%s'", sr.ID())
+		}
+	})
+
+	t.Run("Slug returns correct value", func(t *testing.T) {
+		if sr.Slug() != "test-series" {
+			t.Errorf("expected 'test-series', got '%s'", sr.Slug())
 		}
 	})
 
@@ -423,22 +430,19 @@ func TestSeriesHeadMethods(t *testing.T) {
 	})
 
 	t.Run("PlayURL returns correct format", func(t *testing.T) {
-		expected := "/series/series-1"
+		expected := "/test-series"
 		if sr.PlayURL() != expected {
 			t.Errorf("expected '%s', got '%s'", expected, sr.PlayURL())
 		}
 	})
 
 	t.Run("EditURL returns correct format", func(t *testing.T) {
-		// Assuming xstrings.ToSlug converts "Test Series" to "test-series"
 		got := sr.EditURL()
 		if got == "" {
 			t.Error("expected non-empty EditURL")
 		}
-		// The exact format depends on xstrings.ToSlug implementation
-		// but it should contain the series ID
-		if got[:len("/edit/series/")] != "/edit/series/" {
-			t.Errorf("expected URL to start with '/edit/series/', got '%s'", got)
+		if got != "/app/series/test-series-series-1" {
+			t.Errorf("expected '/app/series/test-series-series-1', got '%s'", got)
 		}
 	})
 }

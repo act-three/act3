@@ -25,6 +25,7 @@ type Download struct {
 
 type Episode struct {
 	ID             string
+	Slug           string
 	Title          string
 	Summary        string
 	Type           string
@@ -101,6 +102,7 @@ type SeasonEpisode struct {
 
 type Series struct {
 	ID              string
+	Slug            string
 	Title           string
 	Summary         string
 	Status          string

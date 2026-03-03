@@ -69,6 +69,7 @@ WHERE ID = ? RETURNING *;
 -- name: EpisodeCreate :one
 INSERT INTO Episode
 (
+	Slug,
 	Title,
 	Summary,
 	Type,
@@ -77,11 +78,14 @@ INSERT INTO Episode
 	TVmazeURL,
 	TVmazeImageURL
 )
-VALUES (?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: EpisodeGet :one
 SELECT * FROM Episode WHERE ID = ?;
+
+-- name: EpisodeGetBySlug :one
+SELECT * FROM Episode WHERE Slug = ?;
 
 -- name: EpisodeListByEditionID :many
 SELECT * FROM Episode
@@ -250,6 +254,8 @@ ORDER BY SortKey;
 -- name: SeriesCreate :one
 INSERT INTO Series
 (
+	ID,
+	Slug,
 	Title,
 	Summary,
 	Status,
@@ -264,7 +270,7 @@ INSERT INTO Series
 	TVDBID,
 	TVRageID
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionCreate :one
@@ -285,6 +291,12 @@ SELECT GenreName FROM SeriesGenre WHERE SeriesID = ?;
 
 -- name: SeriesGet :one
 SELECT * FROM Series WHERE ID = ?;
+
+-- name: SeriesGetBySlug :one
+SELECT * FROM Series WHERE Slug = ?;
+
+-- name: SeriesSlugExists :one
+SELECT COUNT(*) FROM Series WHERE Slug = ?;
 
 -- name: SeriesGetByEditionID :one
 SELECT * FROM Series

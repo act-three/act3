@@ -28,7 +28,7 @@ func (c *Config) editDownloadsDetail(w http.ResponseWriter, req *http.Request) (
 
 		dl, err := tx.Download(ctx, id)
 		if err == sql.ErrNoRows {
-			http.Redirect(w, req, "/edit/downloads", http.StatusSeeOther)
+			http.Redirect(w, req, "/app/downloads", http.StatusSeeOther)
 			return nil, nil
 		} else if err != nil {
 			return nil, err

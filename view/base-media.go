@@ -46,7 +46,7 @@ func mediaNavigationMenu() html.Node {
 				Button(attr.Href("/"), ButtonGhost)(Icon("spotlight"), Text("Act Three")),
 				Button(attr.Href("/collections"), ButtonGhost)(Text("Collections")),
 				Box(Class("grow")),
-				Button(attr.Href("/account/profile"), ButtonGhost)(Icon("settings")),
+				Button(attr.Href("/app/profile"), ButtonGhost)(Icon("settings")),
 			),
 		),
 	)

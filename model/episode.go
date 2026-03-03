@@ -5,7 +5,6 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
-	"ily.dev/act3/xstrings"
 )
 
 type EpisodeType uint
@@ -65,6 +64,7 @@ func newEpisode(
 }
 
 func (ep *Episode) ID() string                 { return ep.ep.ID }
+func (ep *Episode) Slug() string               { return ep.ep.Slug }
 func (ep *Episode) Title() string              { return ep.ep.Title }
 func (ep *Episode) Airdate() string            { return ep.ep.Airdate }
 func (ep *Episode) Summary() string            { return ep.ep.Summary }
@@ -79,7 +79,7 @@ func (ep *Episode) SnnEnn() string {
 }
 
 func (ep *Episode) PlayerURL(v *Video) string {
-	return fmt.Sprintf("/player/%s/%s/%s", v.ID(), ep.ID(), ep.so.ID())
+	return fmt.Sprintf("/-/player/%s/%s/%s", v.ID(), ep.ID(), ep.so.ID())
 }
 
 func (ep *Episode) HasType(types EpisodeType) bool {
@@ -95,7 +95,7 @@ func (ep *Episode) Label() string {
 }
 
 func (ep *Episode) EditDialogURL() string {
-	return "/dialog/edit-episode/" + ep.ep.ID
+	return "/-/dialog/episode-edit/" + ep.ep.ID
 }
 
 func (ep *Episode) SeriesHead() *SeriesHead {
@@ -107,17 +107,17 @@ func (ep *Episode) SeasonHead() *SeasonHead {
 }
 
 func (ep *Episode) DetailURL() string {
-	s := "-special"
-	if ep.HasType(Regular) && ep.snep.Number != nil {
-		s = fmt.Sprintf("e%02d", *ep.snep.Number)
+	return "/" + ep.ep.Slug
+}
+
+// EpisodeBySlug looks up an episode by its full slug
+// (e.g. "breaking-bad/s01e01-pilot").
+func (tx *TxR) EpisodeBySlug(ctx Context, slug string) (*Episode, error) {
+	epRec, err := tx.q.EpisodeGetBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
 	}
-	return fmt.Sprintf("/ep/%s-s%02de%s-%s-%s",
-		xstrings.ToSlug(ep.sr.sr.Title),
-		ep.sn.sn.Number,
-		s,
-		xstrings.ToSlug(ep.ep.Title),
-		ep.ep.ID,
-	)
+	return tx.episodeInContext(ctx, epRec.ID, "", AirDate)
 }
 
 // Episode is like EpisodeInEdition, but it assumes the Air Date edition.
