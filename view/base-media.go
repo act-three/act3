@@ -33,16 +33,21 @@ func mediaNavigationMenu() html.Node {
 			bg-black/60
 		`),
 	)(
-		FlexRow(
-			Gap8,
-			Class(`
-				relative
-				items-center
-				p-4
-			`),
-		)(
-			Button(attr.Href("/"), ButtonGhost)(Icon("spotlight"), Text("Act Three")),
-			Button(attr.Href("/account/profile"), ButtonGhost)(Icon("settings")),
+		Grid12()(
+			FlexRow(
+				ColSpan12,
+				Gap8,
+				Class(`
+					relative
+					items-center
+					py-4
+				`),
+			)(
+				Button(attr.Href("/"), ButtonGhost)(Icon("spotlight"), Text("Act Three")),
+				Button(attr.Href("/collections"), ButtonGhost)(Text("Collections")),
+				Box(Class("grow")),
+				Button(attr.Href("/account/profile"), ButtonGhost)(Icon("settings")),
+			),
 		),
 	)
 }
