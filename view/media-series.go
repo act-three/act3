@@ -76,14 +76,17 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 		hideSpoilersImage = Class("backdrop-blur-md")
 	}
 	vids := ep.Videos()
+	playable := slices.IndexFunc(vids, func(v *model.Video) bool {
+		return v.MVPlaylist() != ""
+	})
 	return Grid8(Class("text-gray-11"))(
 		FlexCol(Class("col-span-5 gap-2"))(
 			FlexRow(Class("items-center gap-4"))(
 				Box()(
-					expr.IfElse(len(vids) > 0,
+					expr.IfElse(playable >= 0,
 						func() html.Node {
 							return Button(
-								attr.Href(ep.PlayerURL(vids[0])),
+								attr.Href(ep.PlayerURL(vids[playable])),
 								attr.Attr("data-turbo-frame")("player"),
 								ButtonSurface,
 								ButtonCircle,
