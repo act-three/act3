@@ -1,6 +1,7 @@
 package attr
 
 import (
+	"fmt"
 	"io"
 	"reflect"
 	"strings"
@@ -41,6 +42,11 @@ func (a AttrName) renderTo(w io.Writer) error {
 }
 
 func (AttrName) attr() {}
+
+// Stylef returns a style attribute with a formatted value.
+func Stylef(format string, a ...any) Node {
+	return Style(fmt.Sprintf(format, a...))
+}
 
 type attrValue struct {
 	name  string

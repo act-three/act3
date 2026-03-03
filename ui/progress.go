@@ -26,7 +26,7 @@ func Progress(value float64, attrs ...attr.Node) html.Node {
 	)(
 		html.Div(
 			attr.Class("u-progress-fill"),
-			attr.Style(fmt.Sprintf("width: %.2f%%", 100*value)),
+			attr.Stylef("width: %.2f%%", 100*value),
 		),
 	)
 }

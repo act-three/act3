@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 )
@@ -10,7 +8,7 @@ import (
 func grid(n int, attrs []attr.Node) html.Element {
 	return Box(
 		Class("u-grid"),
-		attr.Style(fmt.Sprintf("--cols:%d", n)),
+		attr.Stylef("--cols:%d", n),
 		group(attrs...),
 	)
 }
