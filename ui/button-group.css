@@ -1,0 +1,60 @@
+/* button-group */
+.u-button-group {
+	display: inline-flex;
+	border-radius: var(--button-group-radius,
+		calc(0.25rem * var(--scale) * var(--radius-factor, 1)));
+}
+
+/* reset child radii to flat */
+.u-button-group > :where(.u-button) {
+	border-radius: 0;
+}
+
+/* lift focused child above siblings so the ring isn't clipped */
+.u-button-group > :where(.u-button):focus-visible {
+	z-index: 1;
+}
+
+/* horizontal (default) — radius on outer edges */
+.u-button-group:where(:not(.u-button-group\+vertical))
+		> :where(.u-button:first-child) {
+	border-top-left-radius: inherit;
+	border-bottom-left-radius: inherit;
+}
+.u-button-group:where(:not(.u-button-group\+vertical))
+		> :where(.u-button:last-child) {
+	border-top-right-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+/* collapse box-shadow borders between adjacent buttons */
+.u-button-group:where(:not(.u-button-group\+vertical))
+		> :where(.u-button:not(:first-child)) {
+	margin-left: -1px;
+}
+
+/* vertical */
+.u-button-group\+vertical {
+	flex-direction: column;
+}
+.u-button-group\+vertical > :where(.u-button:first-child) {
+	border-top-left-radius: inherit;
+	border-top-right-radius: inherit;
+}
+.u-button-group\+vertical > :where(.u-button:last-child) {
+	border-bottom-left-radius: inherit;
+	border-bottom-right-radius: inherit;
+}
+.u-button-group\+vertical > :where(.u-button:not(:first-child)) {
+	margin-top: -1px;
+}
+
+/* radius variants */
+.u-button-group\+radius-none {
+	--button-group-radius: 0px;
+}
+.u-button-group\+radius-medium {
+	--button-group-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
+}
+.u-button-group\+radius-full {
+	--button-group-radius: 9999px;
+}

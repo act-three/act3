@@ -1,5 +1,6 @@
 .u-grid {
 	display: grid;
+	width: fit-content;
 	gap: 1.5rem;
 	grid-template-columns: repeat(var(--cols), 4.5rem);
 	margin-inline: auto;
