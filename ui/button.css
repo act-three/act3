@@ -188,29 +188,27 @@
 	letter-spacing: -0.0025em;
 }
 
-/* shapes / radius */
-/* radius-full (default) */
-.u-button:where(:not(.u-button\+radius-circle, .u-button\+radius-medium, .u-button\+radius-none)) {
-	border-radius: 9999px;
+/* radius */
+.u-button {
+	border-radius: max(var(--radius-2), var(--radius-full));
 }
+.u-button\+size-1 {
+	border-radius: max(var(--radius-1), var(--radius-full));
+}
+.u-button\+size-3 {
+	border-radius: max(var(--radius-3), var(--radius-full));
+}
+.u-button\+size-4 {
+	border-radius: max(var(--radius-4), var(--radius-full));
+}
+.u-button\+radius-none   { --radius-factor: 0; --radius-full: 0px; }
+.u-button\+radius-small  { --radius-factor: 0.75; --radius-full: 0px; }
+.u-button\+radius-medium { --radius-factor: 1; --radius-full: 0px; }
+.u-button\+radius-large  { --radius-factor: 1.5; --radius-full: 0px; }
+.u-button\+radius-full   { --radius-full: 9999px; }
 .u-button\+radius-circle {
+	--radius-full: 9999px;
 	aspect-ratio: 1;
-	border-radius: 9999px;
 	padding-inline: 0;
 	gap: 0;
-}
-.u-button\+radius-medium:where(.u-button\+size-1) {
-	border-radius: calc(0.1875rem * var(--scale) * var(--radius-factor, 1));
-}
-.u-button\+radius-medium:where(:not(.u-button\+size-1, .u-button\+size-3, .u-button\+size-4)) {
-	border-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
-}
-.u-button\+radius-medium:where(.u-button\+size-3) {
-	border-radius: calc(0.375rem * var(--scale) * var(--radius-factor, 1));
-}
-.u-button\+radius-medium:where(.u-button\+size-4) {
-	border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
-}
-.u-button\+radius-none {
-	border-radius: 0;
 }

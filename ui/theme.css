@@ -45,7 +45,8 @@
 	--radius-factor: 1.5;
 }
 .u-theme\+radius\+full {
-	--radius-factor: 2.5;
+	--radius-factor: 1.5;
+	--radius-full: 9999px;
 }
 
 /* accent color: crimson */

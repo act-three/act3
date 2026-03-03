@@ -1,8 +1,7 @@
 /* button-group */
 .u-button-group {
 	display: inline-flex;
-	border-radius: var(--button-group-radius,
-		calc(0.25rem * var(--scale) * var(--radius-factor, 1)));
+	border-radius: max(var(--radius-2), var(--radius-full));
 }
 
 /* reset child radii to flat */
@@ -49,12 +48,8 @@
 }
 
 /* radius variants */
-.u-button-group\+radius-none {
-	--button-group-radius: 0px;
-}
-.u-button-group\+radius-medium {
-	--button-group-radius: calc(0.25rem * var(--scale) * var(--radius-factor, 1));
-}
-.u-button-group\+radius-full {
-	--button-group-radius: 9999px;
-}
+.u-button-group\+radius-none   { --radius-factor: 0; --radius-full: 0px; }
+.u-button-group\+radius-small  { --radius-factor: 0.75; --radius-full: 0px; }
+.u-button-group\+radius-medium { --radius-factor: 1; --radius-full: 0px; }
+.u-button-group\+radius-large  { --radius-factor: 1.5; --radius-full: 0px; }
+.u-button-group\+radius-full   { --radius-full: 9999px; }

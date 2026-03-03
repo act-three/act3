@@ -39,8 +39,10 @@ var (
 
 // Shapes / radius
 var (
+	ButtonRadiusNone   = attr.Class("u-button+radius-none")
+	ButtonRadiusSmall  = attr.Class("u-button+radius-small")
+	ButtonRadiusMedium = attr.Class("u-button+radius-medium")
+	ButtonRadiusLarge  = attr.Class("u-button+radius-large")
 	ButtonRadiusFull   = attr.Class("u-button+radius-full")
 	ButtonCircle       = attr.Class("u-button+radius-circle")
-	ButtonRadiusMedium = attr.Class("u-button+radius-medium")
-	ButtonRadiusNone   = attr.Class("u-button+radius-none")
 )

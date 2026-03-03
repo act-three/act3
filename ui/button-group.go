@@ -19,6 +19,8 @@ var ButtonGroupVertical = attr.Class("u-button-group+vertical")
 
 var (
 	ButtonGroupRadiusNone   = attr.Class("u-button-group+radius-none")
+	ButtonGroupRadiusSmall  = attr.Class("u-button-group+radius-small")
 	ButtonGroupRadiusMedium = attr.Class("u-button-group+radius-medium")
+	ButtonGroupRadiusLarge  = attr.Class("u-button-group+radius-large")
 	ButtonGroupRadiusFull   = attr.Class("u-button-group+radius-full")
 )
