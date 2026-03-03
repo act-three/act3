@@ -7,18 +7,26 @@ import (
 	"iter"
 )
 
-var isCombining = map[string]bool{
-	"class": true,
+var combining = map[string]string{
+	"class": " ",
+	"style": ";",
 }
 
-// RegisterCombining registeres the named attribute as a
-// "combining" attribute.
+// RegisterCombining registers name as a "combining" attribute.
+// When a combining attribute appears more than once in an html node,
+// the values are combined, separated by sep,
+// into a single attribute in the rendered output.
 //
-// It must be called before rendering any nodes.
-// This is typically done in an [init] function in each package
-// that defines custom attributes.
-func RegisterCombining(name string) {
-	isCombining[name] = true
+// RegisterCombining must be called before Render.
+// This is typically done in an [init] function in packages
+// that define custom attributes.
+//
+// The initial set of combining attributes is:
+//
+//	class " "
+//	style ";"
+func RegisterCombining(name, sep string) {
+	combining[name] = sep
 }
 
 type seq iter.Seq[Node]
@@ -72,7 +80,7 @@ func (s seq) renderTo(w io.Writer) error {
 		}
 		nameBytes, rest, found := bytes.Cut(buf.Bytes(), equals)
 		name := string(nameBytes)
-		if isCombining[name] {
+		if sep, ok := combining[name]; ok {
 			if !found {
 				continue
 			}
@@ -83,7 +91,7 @@ func (s seq) renderTo(w io.Writer) error {
 			}
 			cbuf, ok := comb[name]
 			if ok {
-				cbuf.Write(space)
+				cbuf.WriteString(sep)
 			} else {
 				cbuf = &bytes.Buffer{}
 				comb[name] = cbuf

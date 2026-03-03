@@ -72,7 +72,7 @@ func render(w io.Writer, name string, v string) error {
 	// An attribute value cannot contain an "ambiguous ampersand".
 	// See https://html.spec.whatwg.org/multipage/syntax.html.
 
-	if isCombining[name] {
+	if _, ok := combining[name]; ok {
 		err = renderQuoted(w, v)
 	} else if !strings.ContainsAny(v, ` "'=<>`+"`") && v != "" {
 		v = strings.ReplaceAll(v, `&`, "&amp;")

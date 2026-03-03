@@ -10,7 +10,7 @@ var (
 )
 
 func init() {
-	attr.RegisterCombining("data-action")
+	attr.RegisterCombining("data-action", " ")
 }
 
 func Target(controller, name string) attr.Node {
