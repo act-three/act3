@@ -96,7 +96,7 @@ func EditMediaSeriesDetail(
 						attr.Class("flex flex-col gap-4 p-4"),
 					)(
 						html.H1()(html.Text(sr.Title())),
-						html.P()(html.Text(sr.Summary())),
+						html.P()(html.Safe(sr.Summary())),
 					),
 				),
 				html.Div(

@@ -367,7 +367,7 @@ func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.No
 										return seriesResultLink(t.Local)
 									},
 								),
-								Text(t.TVmaze.Summary, LineClamp3),
+								TextNode(LineClamp3)(html.Safe(t.TVmaze.Summary)),
 							),
 						),
 					)

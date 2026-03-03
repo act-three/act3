@@ -12,12 +12,18 @@ func Textf(format string, arg ...any) html.Node {
 }
 
 func Text(s string, attrs ...attr.Node) html.Node {
-	return html.Div(
-		attr.Class("u-text"),
-		group(attrs...),
-	)(
-		html.Text(s),
-	)
+	return TextNode(attrs...)(html.Text(s))
+}
+
+func TextNode(attrs ...attr.Node) html.Element {
+	return func(nodes ...html.Node) html.Node {
+		return html.Div(
+			attr.Class("u-text"),
+			group(attrs...),
+		)(
+			nodes...,
+		)
+	}
 }
 
 var (

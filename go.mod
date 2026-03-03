@@ -5,7 +5,7 @@ go 1.25.6
 require (
 	github.com/anacrolix/torrent v1.60.0
 	github.com/hekmon/transmissionrpc/v3 v3.0.0
-	golang.org/x/text v0.30.0
+	golang.org/x/text v0.34.0
 	kr.dev/errorfmt v0.1.1
 	kr.dev/walk v0.1.0
 	lukechampine.com/blake3 v1.4.1
@@ -33,9 +33,10 @@ require (
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
-	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect

@@ -111,7 +111,7 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 				),
 			),
 			Box(Class("relative"))(
-				Text(ep.Summary(), Class("text-sm"), LineClamp4),
+				TextNode(Class("text-sm"), LineClamp4)(html.Safe(ep.Summary())),
 				Box(
 					Class(`
 					absolute
