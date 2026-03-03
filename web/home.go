@@ -4,9 +4,17 @@ import (
 	"net/http"
 
 	"ily.dev/act3/html"
+	"ily.dev/act3/model"
 	"ily.dev/act3/view"
 )
 
 func (c *Config) home(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return view.Home(), nil
+	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		a, err := tr.SeriesHeadList(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return view.Home(a), nil
+	})
 }
