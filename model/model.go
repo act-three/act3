@@ -38,6 +38,9 @@ type Model struct {
 
 	activeInfoHashMu sync.Mutex
 	activeInfoHash   map[string]bool
+
+	subMu sync.Mutex
+	sub   map[chan *Event]struct{}
 }
 
 type model Config
@@ -53,7 +56,11 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		dbw:            dbw,
 		tasks:          map[string]*taskQueue{},
 		activeInfoHash: map[string]bool{},
+		sub:            map[chan *Event]struct{}{},
 	}
+	m.prog.SetHook(func(event string, it *progress.Item) {
+		m.addEvent(&Event{Type: event, Progress: it})
+	})
 	err = m.loadConfig(ctx)
 	if err != nil {
 		return nil, err

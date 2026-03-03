@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json/v2"
 	"errors"
 	"fmt"
@@ -158,7 +160,7 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 			return nil, err
 		}
 	}
-	items := tx.m.prog.List("dl/" + dl.ID)
+	items := tx.m.prog.List("dl-" + dl.ID)
 	if len(items) > 0 {
 		d.fileProgress = map[string]float64{}
 		for _, item := range items {
@@ -556,12 +558,13 @@ func (m *Model) updateFileProgress(t *transmissionrpc.Torrent, dl *Download) {
 		if epID == "" {
 			continue
 		}
-		key := "dl/" + dl.ID() + "/" + p
+		h := sha256.Sum256([]byte(p))
+		key := "dlf-" + dl.ID() + "-" + hex.EncodeToString(h[:8])
 		if tf.Length > 0 {
 			frac := float64(tf.BytesCompleted) / float64(tf.Length)
-			m.prog.Open(key, p, "Downloading")
-			m.prog.AddEdge("dl/"+dl.ID(), key)
+			m.prog.AddEdge("dl-"+dl.ID(), key)
 			m.prog.AddEdge(epID, key)
+			m.prog.Open(key, p, "Downloading")
 			m.prog.Update(key, frac)
 			if tf.BytesCompleted == tf.Length {
 				m.prog.Close(key, nil)

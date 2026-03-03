@@ -3,10 +3,32 @@
 package progress
 
 import (
+	"iter"
+	"maps"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 )
+
+// validKey panics if key contains characters that are unsafe
+// for use in CSS class names. Keys are used as CSS selectors
+// for Turbo Stream targeting, so they must only contain
+// letters, digits, hyphens, and underscores.
+func validKey(key string) {
+	if key == "" {
+		panic("progress: empty key")
+	}
+	if i := strings.IndexFunc(key, func(r rune) bool {
+		return !(r >= 'a' && r <= 'z' ||
+			r >= 'A' && r <= 'Z' ||
+			r >= '0' && r <= '9' ||
+			r == '-' || r == '_')
+	}); i >= 0 {
+		panic("progress: invalid character " +
+			string(rune(key[i])) + " in key " + key)
+	}
+}
 
 // emaAlpha controls how much weight is given to the most recent
 // sample when computing the exponential moving average of the
@@ -14,10 +36,18 @@ import (
 // roughly 5 samples.
 const emaAlpha = 0.2
 
+const (
+	EventOpen   = "progress-open"
+	EventUpdate = "progress-update"
+	EventClose  = "progress-close"
+)
+
 // Item represents progress through a work item.
 // Its methods are safe to call concurrently.
 type Item struct {
 	// Item values are not synchronized, so keep them immutable.
+	key     string
+	parents map[string]bool
 	opened  time.Time
 	desc    string
 	status  string
@@ -27,6 +57,12 @@ type Item struct {
 	rate    float64   // EMA-smoothed progress per second
 	updated time.Time // time of last Update call
 }
+
+// Key returns the unique key for m.
+func (m *Item) Key() string { return m.key }
+
+// Parents yields the keys from which m is reachable.
+func (m *Item) Parents() iter.Seq[string] { return maps.Keys(m.parents) }
 
 // Opened returns the time m was opened.
 func (m *Item) Opened() time.Time { return m.opened }
@@ -59,6 +95,17 @@ func (m *Item) ETA() time.Duration {
 	return time.Duration(remaining / m.rate * float64(time.Second))
 }
 
+type hookCall struct {
+	hook func(string, *Item)
+	Item *Item
+}
+
+func (h *hookCall) fire(event string) {
+	if h.hook != nil && h.Item != nil {
+		h.hook(event, h.Item)
+	}
+}
+
 // A Tracker keeps track of progress through a set of work items.
 // Clients open items, update progress as work is done,
 // and close them when finished.
@@ -67,11 +114,21 @@ func (m *Item) ETA() time.Duration {
 // A Tracker's methods are safe to call concurrently.
 type Tracker struct {
 	mu   sync.Mutex
-	item map[string]*Item // missing entry is implicitly "closed"
-	edge map[string]map[string]bool
+	hook func(string, *Item)
+	item map[string]*Item           // missing entry is implicitly "closed"
+	edge map[string]map[string]bool // parent -> child edges
+	back map[string]map[string]bool // child -> parent edges
 	// Note that we never delete edges. They only accumulate over time.
 	// If it ever becomes a problem, we can figure something out,
 	// but I doubt it will.
+}
+
+// SetHook arranges for t to call f upon each update of each Item.
+// Parameter event is one of the Event* constants.
+func (t *Tracker) SetHook(f func(event string, m *Item)) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.hook = f
 }
 
 // AddEdge associates child with parent,
@@ -84,6 +141,8 @@ type Tracker struct {
 // only if a key opened by Open can eventually be reached
 // by following edges.
 func (t *Tracker) AddEdge(parent, child string) {
+	validKey(parent)
+	validKey(child)
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.edge == nil {
@@ -93,6 +152,23 @@ func (t *Tracker) AddEdge(parent, child string) {
 		t.edge[parent] = map[string]bool{}
 	}
 	t.edge[parent][child] = true
+	if t.back == nil {
+		t.back = map[string]map[string]bool{}
+	}
+	if t.back[child] == nil {
+		t.back[child] = map[string]bool{}
+	}
+	t.back[child][parent] = true
+	var a []*Item
+	t.list(&a, parent)
+	for _, m := range a {
+		mm := &Item{}
+		*mm = *m
+		mm.parents = map[string]bool{}
+		maps.Copy(mm.parents, m.parents)
+		mm.parents[parent] = true
+		t.item[mm.key] = mm
+	}
 }
 
 // Open opens key for updates,
@@ -100,9 +176,17 @@ func (t *Tracker) AddEdge(parent, child string) {
 // The given desc should be a human-readable description,
 // sufficiently specific to distinguish this item from others in UI.
 //
+// Callers must call AddEdge for all parents before Open to ensure
+// that the UI updates correctly.
+// An event hook fires during Open, and the progress item contains
+// a snapshot of the parents that exist at that time.
+//
 // If key is already open, Open has no effect.
 func (t *Tracker) Open(key, desc, status string) {
+	validKey(key)
 	t.mu.Lock()
+	notify := hookCall{hook: t.hook}
+	defer notify.fire(EventOpen)
 	defer t.mu.Unlock()
 	if t.item == nil {
 		t.item = map[string]*Item{}
@@ -111,12 +195,17 @@ func (t *Tracker) Open(key, desc, status string) {
 		return
 	}
 	now := time.Now()
-	t.item[key] = &Item{
+	m := &Item{
+		key:     key,
+		parents: map[string]bool{},
 		opened:  now,
 		updated: now,
 		desc:    desc,
 		status:  status,
 	}
+	t.parents(m.parents, key)
+	t.item[key] = m
+	notify.Item = m
 }
 
 // Update updates the progress value for key and recomputes the
@@ -124,6 +213,8 @@ func (t *Tracker) Open(key, desc, status string) {
 // If key is not open, Update has no effect.
 func (t *Tracker) Update(key string, value float64) {
 	t.mu.Lock()
+	notify := hookCall{hook: t.hook}
+	defer notify.fire(EventUpdate)
 	defer t.mu.Unlock()
 	m := t.item[key]
 	if m == nil || m.closed {
@@ -146,12 +237,15 @@ func (t *Tracker) Update(key string, value float64) {
 	mm.updated = now
 
 	t.item[key] = mm
+	notify.Item = mm
 }
 
 // Update updates the status for key.
 // If key is not open, UpdateStatus has no effect.
 func (t *Tracker) UpdateStatus(key, status string) {
 	t.mu.Lock()
+	notify := hookCall{hook: t.hook}
+	defer notify.fire(EventUpdate)
 	defer t.mu.Unlock()
 	m := t.item[key]
 	if m == nil || m.closed {
@@ -161,12 +255,15 @@ func (t *Tracker) UpdateStatus(key, status string) {
 	*mm = *m
 	mm.status = status
 	t.item[key] = mm
+	notify.Item = mm
 }
 
 // Close closes key, and stores err, which may be nil, as its error.
 // If key is already closed, Close has no effect.
 func (t *Tracker) Close(key string, err error) {
 	t.mu.Lock()
+	notify := hookCall{hook: t.hook}
+	defer notify.fire(EventClose)
 	defer t.mu.Unlock()
 	if m, ok := t.item[key]; !ok {
 		return
@@ -177,9 +274,14 @@ func (t *Tracker) Close(key string, err error) {
 		mm.err = err
 		mm.closed = true
 		t.item[key] = mm
+		notify.Item = mm
 		return
 	}
 	delete(t.item, key)
+	notify.Item = &Item{
+		key:    key,
+		closed: true,
+	}
 }
 
 // List returns all items associated with key via Open or AddEdge.
@@ -202,5 +304,13 @@ func (t *Tracker) list(a *[]*Item, key string) {
 	}
 	for child := range t.edge[key] {
 		t.list(a, child)
+	}
+}
+
+// parents collects parents reachable from key. Must be called with t.mu held.
+func (t *Tracker) parents(m map[string]bool, key string) {
+	for p := range t.back[key] {
+		m[p] = true
+		t.parents(m, p)
 	}
 }

@@ -10,6 +10,7 @@ import (
 
 func app(title string, child ...html.Node) html.Node {
 	return base(title)()(
+		turbo.StreamSource("/events"),
 		html.Div(
 			attr.Attr("data-slot")("sidebar-wrapper"),
 			attr.Class(`

@@ -2,6 +2,8 @@ package turbo
 
 import (
 	"bytes"
+	"fmt"
+	"io"
 
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
@@ -10,11 +12,14 @@ import (
 var (
 	frame  = html.Tag("turbo-frame")
 	stream = html.Tag("turbo-stream")
+
+	streamSource = html.Tag("turbo-stream-source")
 )
 
 var (
-	action = attr.Attr("action")
-	target = attr.Attr("target")
+	action  = attr.Attr("action")
+	target  = attr.Attr("target")
+	targets = attr.Attr("targets")
 )
 
 var (
@@ -38,6 +43,23 @@ func Sink(id string, attrs ...attr.Node) html.Element {
 	)
 }
 
+func StreamSource(u string) html.Node {
+	return streamSource(attr.Src(u))
+}
+
+// EncodeSSE encodes node as an SSE message event.
+func EncodeSSE(w io.Writer, node html.Node) {
+	var buf bytes.Buffer
+	html.Render(&buf, node)
+	data := buf.Bytes()
+	// The turbo streams JS doesn't check for event types other than "message",
+	// and it doesn't inspect the ID field. No point in adding those fields.
+	for line := range bytes.SplitSeq(data, []byte("\n")) {
+		fmt.Fprintf(w, "data: %s\n", line)
+	}
+	io.WriteString(w, "\n")
+}
+
 func Prepend(id string, node ...html.Node) html.Node {
 	return stream(action("prepend"), target(id))(
 		html.Template()(node...),
@@ -48,6 +70,28 @@ func Append(id string, node ...html.Node) html.Node {
 	return stream(action("append"), target(id))(
 		html.Template()(node...),
 	)
+}
+
+func AppendTargets(selector string, node ...html.Node) html.Node {
+	return stream(action("append"), targets(selector))(
+		html.Template()(node...),
+	)
+}
+
+func ReplaceTargets(selector string, node ...html.Node) html.Node {
+	return stream(action("replace"), targets(selector))(
+		html.Template()(node...),
+	)
+}
+
+func UpdateTargets(selector string, node ...html.Node) html.Node {
+	return stream(action("update"), targets(selector))(
+		html.Template()(node...),
+	)
+}
+
+func RemoveTargets(selector string) html.Node {
+	return stream(action("remove"), targets(selector))
 }
 
 var streamTagMagic = func() []byte {

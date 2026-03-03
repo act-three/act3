@@ -2,6 +2,7 @@ package progress
 
 import (
 	"errors"
+	"slices"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -260,6 +261,227 @@ func TestEMARateConverges(t *testing.T) {
 			t.Errorf("ETA = %v, want ~%v", got, want)
 		}
 	})
+}
+
+func TestHookOnOpen(t *testing.T) {
+	var tr Tracker
+	var got []*Item
+	tr.SetHook(func(_ string, m *Item) { got = append(got, m) })
+	tr.Open("v1", "Encoding", "pass 1")
+	if len(got) != 1 {
+		t.Fatalf("hook called %d times, want 1", len(got))
+	}
+	if got[0].Description() != "Encoding" {
+		t.Errorf("desc = %q, want %q", got[0].Description(), "Encoding")
+	}
+}
+
+func TestHookOnUpdate(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		var tr Tracker
+		var got []*Item
+		tr.SetHook(func(_ string, m *Item) { got = append(got, m) })
+		tr.Open("v1", "Encoding", "")
+		time.Sleep(1 * time.Second)
+		tr.Update("v1", 0.5)
+		if len(got) != 2 {
+			t.Fatalf("hook called %d times, want 2", len(got))
+		}
+		if got[1].Progress() != 0.5 {
+			t.Errorf("progress = %f, want 0.5", got[1].Progress())
+		}
+	})
+}
+
+func TestHookOnUpdateStatus(t *testing.T) {
+	var tr Tracker
+	var got []*Item
+	tr.SetHook(func(_ string, m *Item) { got = append(got, m) })
+	tr.Open("v1", "Encoding", "pass 1")
+	tr.UpdateStatus("v1", "pass 2")
+	if len(got) != 2 {
+		t.Fatalf("hook called %d times, want 2", len(got))
+	}
+	if got[1].Status() != "pass 2" {
+		t.Errorf("status = %q, want %q", got[1].Status(), "pass 2")
+	}
+}
+
+func TestHookOnCloseSuccess(t *testing.T) {
+	var tr Tracker
+	var got []*Item
+	tr.SetHook(func(_ string, m *Item) { got = append(got, m) })
+	tr.Open("v1", "Encoding", "")
+	tr.Close("v1", nil)
+	if len(got) != 2 {
+		t.Fatalf("hook called %d times, want 2", len(got))
+	}
+}
+
+func TestHookOnCloseError(t *testing.T) {
+	var tr Tracker
+	var got []*Item
+	tr.SetHook(func(_ string, m *Item) { got = append(got, m) })
+	tr.Open("v1", "Encoding", "")
+	e := errors.New("fail")
+	tr.Close("v1", e)
+	if len(got) != 2 {
+		t.Fatalf("hook called %d times, want 2", len(got))
+	}
+	if got[1].Error() != e {
+		t.Errorf("error = %v, want %v", got[1].Error(), e)
+	}
+}
+
+func TestHookNotCalledForNoops(t *testing.T) {
+	var tr Tracker
+	var n int
+	tr.SetHook(func(_ string, m *Item) { n++ })
+	tr.Update("nonexistent", 0.5)
+	tr.UpdateStatus("nonexistent", "x")
+	tr.Close("nonexistent", nil)
+	if n != 0 {
+		t.Errorf("hook called %d times, want 0 (noop operations)", n)
+	}
+}
+
+func TestAddEdgeUpdatesParents(t *testing.T) {
+	var tr Tracker
+	tr.Open("v1", "Encoding", "")
+	tr.AddEdge("ep1", "v1")
+	items := tr.List("ep1")
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	parents := slices.Collect(items[0].Parents())
+	if len(parents) != 1 || parents[0] != "ep1" {
+		t.Errorf("parents = %v, want [ep1]", parents)
+	}
+}
+
+func TestAddEdgeTransitiveParents(t *testing.T) {
+	var tr Tracker
+	tr.Open("v1", "Encoding", "")
+	tr.AddEdge("ep1", "v1")
+	tr.AddEdge("series", "ep1")
+	items := tr.List("series")
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	parents := slices.Collect(items[0].Parents())
+	slices.Sort(parents)
+	if len(parents) != 2 || parents[0] != "ep1" || parents[1] != "series" {
+		t.Errorf("parents = %v, want [ep1 series]", parents)
+	}
+}
+
+func TestKeyReturnsStringKey(t *testing.T) {
+	var tr Tracker
+	tr.Open("v1", "Encoding", "")
+	items := tr.List("v1")
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	if items[0].Key() != "v1" {
+		t.Errorf("Key() = %v, want %q", items[0].Key(), "v1")
+	}
+}
+
+func TestOpenAfterAddEdgeSetsParents(t *testing.T) {
+	var tr Tracker
+	tr.AddEdge("ep1", "v1")
+	tr.Open("v1", "Encoding", "")
+	items := tr.List("ep1")
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	parents := slices.Collect(items[0].Parents())
+	if len(parents) != 1 || parents[0] != "ep1" {
+		t.Errorf("parents = %v, want [ep1]", parents)
+	}
+}
+
+func TestOpenAfterTransitiveAddEdgeSetsParents(t *testing.T) {
+	var tr Tracker
+	tr.AddEdge("series", "ep1")
+	tr.AddEdge("ep1", "v1")
+	tr.Open("v1", "Encoding", "")
+	items := tr.List("series")
+	if len(items) != 1 {
+		t.Fatalf("got %d items, want 1", len(items))
+	}
+	parents := slices.Collect(items[0].Parents())
+	slices.Sort(parents)
+	if len(parents) != 2 || parents[0] != "ep1" || parents[1] != "series" {
+		t.Errorf("parents = %v, want [ep1 series]", parents)
+	}
+}
+
+func TestValidKeyAcceptsAlphanumHyphenUnderscore(t *testing.T) {
+	var tr Tracker
+	// Should not panic.
+	tr.Open("abc-123_XYZ", "desc", "")
+	tr.AddEdge("parent-1", "abc-123_XYZ")
+}
+
+func TestValidKeyRejectsSlash(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for key with /")
+		}
+	}()
+	var tr Tracker
+	tr.Open("video/123", "desc", "")
+}
+
+func TestValidKeyRejectsDot(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for key with .")
+		}
+	}()
+	var tr Tracker
+	tr.Open("video.123", "desc", "")
+}
+
+func TestValidKeyRejectsSpace(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for key with space")
+		}
+	}()
+	var tr Tracker
+	tr.Open("video 123", "desc", "")
+}
+
+func TestValidKeyRejectsEmpty(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for empty key")
+		}
+	}()
+	var tr Tracker
+	tr.Open("", "desc", "")
+}
+
+func TestValidKeyAddEdgeRejectsInvalidParent(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for invalid parent key")
+		}
+	}()
+	var tr Tracker
+	tr.AddEdge("parent/1", "child")
+}
+
+func TestValidKeyAddEdgeRejectsInvalidChild(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatal("expected panic for invalid child key")
+		}
+	}()
+	var tr Tracker
+	tr.AddEdge("parent", "child:1")
 }
 
 func TestListSortedByCreationTime(t *testing.T) {

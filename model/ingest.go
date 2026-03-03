@@ -30,10 +30,10 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
+	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
 	hash, err := tx.m.store.Copy(args[1])
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
@@ -123,10 +123,10 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Starting")
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
+	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Starting")
 
 	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -239,17 +239,17 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	}
 
 	// Progress tracking: use rfs ID as key, link to video.
-	progKey := "rfs/" + rfs.ID
+	progKey := "rfs-" + rfs.ID
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
 	}
-	desc := rendDesc(rfs)
-	tx.m.prog.Open(progKey, vid.ReleasePath, desc+": starting")
 	tx.m.prog.AddEdge(vid.ID, progKey)
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
+	desc := rendDesc(rfs)
+	tx.m.prog.Open(progKey, vid.ReleasePath, desc+": starting")
 
 	src, err := tx.m.store.Open(vid.OriginalHash)
 	if err != nil {
@@ -395,10 +395,10 @@ func (tx *TxR) taskReingest(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Re-ingesting")
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
+	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Re-ingesting")
 
 	return tx.planAndCreateRenditions(ctx, vid)
 }
