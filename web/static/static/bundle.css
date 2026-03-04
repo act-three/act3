@@ -2186,7 +2186,7 @@
     border-radius: 9999px;
     background-color: var(--color-accent-9);
     transition-property: width;
-    transition-duration: 600ms;
+    transition-duration: 100ms;
     transition-timing-function: linear;
   }
   .u-progress\+size-sm {
