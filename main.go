@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -77,21 +79,34 @@ func main() {
 	slog.SetDefault(slog.New(logcontext.Handler(slog.Default().Handler())))
 	slog.Info("startup", "mod", bi.Main.Path, "version", bi.Main.Version)
 
-	dbr, dbw, err := database.Open(filepath.Join(databaseDir, "act3.db"))
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	dbPath := filepath.Join(databaseDir, "act3.db")
+	var dbr, dbw *sql.DB
+	for {
+		var err error
+		dbr, dbw, err = database.Open(dbPath)
+		if err == nil {
+			break
+		}
+		var sme *database.SchemaMismatchError
+		if !errors.As(err, &sme) {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		slog.Warn("schema mismatch, entering degraded mode",
+			"version", sme.Version,
+			"stored", sme.StoredDigest,
+			"expected", sme.ExpectedDigest,
+		)
+		serveDegraded(sme, dbPath)
 	}
 
 	casDir := filepath.Join(storageDir, "cas")
 	tmpDir := filepath.Join(storageDir, "tmp")
-	err = os.MkdirAll(casDir, 0755)
-	if err != nil {
+	if err := os.MkdirAll(casDir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	err = os.MkdirAll(tmpDir, 0755)
-	if err != nil {
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -104,8 +119,7 @@ func main() {
 		TVmaze:        tvmazeClient,
 	}))
 
-	err = initConfig(m)
-	if err != nil {
+	if err := initConfig(m); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -141,6 +155,36 @@ func initConfig(m *model.Model) error {
 		}
 		return nil
 	})
+}
+
+func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {
+	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	defer db.Close()
+
+	shutdown := make(chan bool)
+	srv := &http.Server{Addr: listen}
+	mux := &http.ServeMux{}
+	web.HandleDegraded(mux, sme, db, dbPath, func() {
+		go func() {
+			srv.Shutdown(context.Background())
+			close(shutdown)
+		}()
+	})
+	var h http.Handler = mux
+	h = panicstack.Handler(h)
+	h = timing.Handler(h)
+	h = requestid.Handler(h)
+	srv.Handler = h
+	slog.Info("degraded mode", "listen", listen)
+	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	<-shutdown
 }
 
 func must[T any](v T, err error) T {

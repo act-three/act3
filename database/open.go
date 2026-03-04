@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"embed"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -53,6 +54,21 @@ func init() {
 	})
 }
 
+// SchemaMismatchError is returned when the stored schema digest
+// does not match the expected digest for a given version.
+type SchemaMismatchError struct {
+	Version        string
+	StoredDigest   string
+	ExpectedDigest string
+	DBPath         string
+}
+
+func (e *SchemaMismatchError) Error() string {
+	return fmt.Sprintf("schema %s digest mismatch: stored %s != expected %s (db %s)",
+		e.Version, e.StoredDigest, e.ExpectedDigest, e.DBPath,
+	)
+}
+
 func Open(name string) (dbr, dbw *sql.DB, err error) {
 	defer errorfmt.Handlef("open db: %w", &err)
 
@@ -65,6 +81,12 @@ func Open(name string) (dbr, dbw *sql.DB, err error) {
 	dbw.SetMaxOpenConns(1)
 	err = updateSchema(dbw)
 	if err != nil {
+		var sme *SchemaMismatchError
+		if errors.As(err, &sme) {
+			sme.DBPath = name
+			dbw.Close()
+			return nil, nil, sme
+		}
 		return nil, nil, err
 	}
 
@@ -105,11 +127,11 @@ func updateSchema(db *sql.DB) (err error) {
 		update := string(b)
 		computedDigest = hash(computedDigest, update)
 		if cur.Version == version && cur.Digest != computedDigest {
-			return fmt.Errorf("schema %s digest %s != %s",
-				version,
-				cur.Digest,
-				computedDigest,
-			)
+			return &SchemaMismatchError{
+				Version:        version,
+				StoredDigest:   cur.Digest,
+				ExpectedDigest: computedDigest,
+			}
 		}
 		if cur.Version >= version {
 			continue

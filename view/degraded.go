@@ -1,0 +1,114 @@
+package view
+
+import (
+	"fmt"
+
+	"ily.dev/act3/database"
+	"ily.dev/act3/html"
+	"ily.dev/act3/html/attr"
+	. "ily.dev/act3/ui"
+)
+
+// Degraded renders the schema mismatch page shown when the
+// database cannot be opened due to a digest mismatch.
+func Degraded(
+	sme *database.SchemaMismatchError,
+	stats []database.TableStat,
+	dbFileSize string,
+) html.Node {
+	var totalRows int64
+	for _, s := range stats {
+		totalRows += s.RowCount
+	}
+	hasData := totalRows > 0
+
+	return base("Schema Mismatch")()(
+		FlexCol(Class("max-w-2xl mx-auto p-8"), Gap6)(
+			Text("Schema Mismatch", TextSize7, FontBold),
+			Text("The database schema does not match "+
+				"what this version of the server expects. "+
+				"The database must be reinitialized before "+
+				"the server can start.", TextSize3),
+			Code(CodeSize2, CodeWrap)(
+				html.Pre()(html.Text(fmt.Sprintf(
+					"Version:  %s\nStored:   %s\n"+
+						"Expected: %s\nDB Path:  %s",
+					sme.Version,
+					sme.StoredDigest,
+					sme.ExpectedDigest,
+					sme.DBPath,
+				))),
+			),
+			Text("Database Contents", TextSize5, FontBold),
+			TableRoot(TableSurface, TableSize2)(
+				TableHeader()(
+					TableRow()(
+						TableHead()(html.Text("Table")),
+						TableHead()(html.Text("Rows")),
+					),
+				),
+				TableBody()(
+					html.Range(stats, func(s database.TableStat) html.Node {
+						return TableRow()(
+							TableCell()(html.Text(s.Name)),
+							TableCell()(html.Text(
+								fmt.Sprintf("%d", s.RowCount),
+							)),
+						)
+					}),
+					TableRow()(
+						TableCell()(Text("Total", FontBold)),
+						TableCell()(Text(
+							fmt.Sprintf("%d", totalRows),
+							FontBold,
+						)),
+					),
+				),
+			),
+			Text("Database file size: "+dbFileSize, TextSize2),
+			degradedAction(hasData),
+		),
+	)
+}
+
+func degradedAction(hasData bool) html.Node {
+	if hasData {
+		return Group(
+			Card(Class("border-2 border-red-9"))(
+				CardContent()(
+					Text("Reinitializing will delete all "+
+						"existing data. This cannot be "+
+						"undone.", TextSize3),
+				),
+			),
+			html.Form(
+				attr.Method("POST"),
+				attr.Action("/-/do/reset-database"),
+				attr.Attr("data-turbo")("false"),
+			)(
+				Button(
+					ButtonDestructive,
+					ButtonSize3,
+					attr.Attr("type")("submit"),
+					attr.Attr("onclick")(
+						"return confirm("+
+							"'Delete all data and "+
+							"reinitialize the database?')",
+					),
+				)(html.Text("Delete and Reinitialize")),
+			),
+		)
+	}
+	return html.Form(
+		attr.Method("POST"),
+		attr.Action("/-/do/reset-database"),
+		attr.Attr("data-turbo")("false"),
+	)(
+		Button(
+			ButtonSolid,
+			ButtonSize3,
+			attr.Attr("type")("submit"),
+		)(html.Text("Reinitialize Database")),
+	)
+}
+
