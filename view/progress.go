@@ -29,7 +29,7 @@ func ProgressItemAppend(pi *progress.Item) html.Node {
 }
 
 func ProgressItemUpdate(pi *progress.Item) html.Node {
-	return turbo.ReplaceTargets("."+progressItemClass(pi),
+	return turbo.ReplaceTargets("."+progressItemClass(pi), turbo.Morph)(
 		ProgressItem(pi),
 	)
 }

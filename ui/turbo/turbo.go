@@ -27,6 +27,10 @@ var (
 	DataFrame  = attr.Attr("data-turbo-frame")
 )
 
+var (
+	Morph = attr.Attr("method")("morph")
+)
+
 func Frame(id string, attrs ...attr.Node) html.Element {
 	return frame(
 		attr.ID(id),
@@ -78,10 +82,12 @@ func AppendTargets(selector string, node ...html.Node) html.Node {
 	)
 }
 
-func ReplaceTargets(selector string, node ...html.Node) html.Node {
-	return stream(action("replace"), targets(selector))(
-		html.Template()(node...),
-	)
+func ReplaceTargets(selector string, attrs ...attr.Node) html.Element {
+	return func(node ...html.Node) html.Node {
+		return stream(action("replace"), targets(selector), attr.Group(attrs...))(
+			html.Template()(node...),
+		)
+	}
 }
 
 func UpdateTargets(selector string, node ...html.Node) html.Node {
