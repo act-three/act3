@@ -9,18 +9,20 @@ import (
 	"strings"
 )
 
-// fixEXTINF corrects EXTINF durations in an HLS playlist by parsing
-// the actual fMP4 segment data. ffmpeg's HLS muxer computes EXTINF
-// from raw encoder output packet timestamps, which can differ from
-// the actual fMP4 segment PTS spans when the video encoder introduces
-// a B-frame delay (e.g. libx265 medium preset with VFR telecine
-// input). This manifests as ~117ms "Playlist vs segment duration
+// fixEXTINF corrects EXTINF durations in an HLS playlist by
+// parsing the actual fMP4 segment data. ffmpeg's HLS muxer
+// computes EXTINF from raw encoder output packet timestamps,
+// which include a B-frame pipeline delay that inflates the first
+// segment's duration by ~117ms (libx265 medium preset with VFR
+// telecine input). This causes "Playlist vs segment duration
 // mismatch" errors in mediastreamvalidator.
 //
-// The fix: for each segment byte range in the playlist, parse the
-// fMP4 moof/trun boxes to find the video track's actual presentation
-// time span (min PTS to max PTS+duration), then replace the EXTINF
-// value with the correct duration.
+// Per RFC 8216, EXTINF for fMP4 segments is the sum of sample
+// durations in the track run. For each segment byte range, we
+// parse the moof's video traf to sum the sample durations from
+// the trun (or the tfhd default_sample_duration when per-sample
+// durations are absent), then divide by the track timescale from
+// the sidx box.
 //
 // If parsing fails for any segment, the original EXTINF is kept —
 // a slightly wrong duration is better than a missing playlist.
@@ -61,7 +63,7 @@ func fixEXTINF(playlist string, media []byte) string {
 	}
 
 	// For each segment, parse the fMP4 fragment to compute the
-	// actual video PTS span.
+	// video track's total sample duration (DTS span).
 	var maxDur float64
 	for _, seg := range segs {
 		if seg.offset < 0 || seg.offset+seg.size > int64(len(media)) {
@@ -139,110 +141,83 @@ func findByteRange(lines []string, idx int) (offset, size int64, ok bool) {
 	return 0, 0, false
 }
 
-// fmp4VideoDuration parses an fMP4 fragment (moof+mdat) and returns
-// the video track's presentation duration in seconds. It finds the
-// first video traf (identified by having sample composition time
-// offsets or by being track ID 1, the typical video track), reads
-// tfdt for the base decode time, and scans trun samples to compute
-// the PTS span: (max_sample_PTS + duration) - min_sample_PTS.
+// fmp4VideoDuration parses an fMP4 fragment (moof+mdat) and
+// returns the video track's decode duration in seconds: the sum
+// of all sample durations divided by the track timescale.
 //
-// The timescale is read from the mdhd box if a moov is present in
-// the data; otherwise it's inferred from the trun sample durations
-// and the expected ~24fps telecine frame rate. In practice the moov
-// is NOT in the segment chunk (it's at the start of the file), so
-// we need the caller to handle timescale. However, since we're
-// computing a ratio (actual_duration / timescale) and the EXTINF
-// is also in seconds, we can compute the duration in timescale
-// ticks and convert using the timescale from tfdt+trun data
-// combined with the original EXTINF as a reference.
-//
-// Actually, the simplest correct approach: compute the duration in
-// ticks from the trun, then find the timescale by looking at the
-// sidx box that precedes the moof. The sidx box contains the
-// timescale and the segment duration in that timescale — but the
-// sidx duration has the same bug as EXTINF (ffmpeg writes it from
-// the same source). So instead we scan the full media for the moov
-// to get the timescale.
-//
-// Revised approach: the caller passes the full media file, and we
-// accept a chunk range. But for simplicity, this function accepts
-// just the fragment and a timescale parameter.
+// Sample durations come from the trun box when the
+// sample-duration-present flag (0x100) is set, otherwise from
+// tfhd.default_sample_duration. The timescale comes from the
+// sidx box that precedes the moof.
 func fmp4VideoDuration(fragment []byte) (float64, error) {
-	// We need the timescale. It's in the moov/trak/mdia/mdhd box,
-	// but the fragment doesn't contain moov. We'll infer it:
-	// find the trun, compute total decode duration in ticks, and
-	// the PTS span in ticks. Then we need a timescale to convert
-	// to seconds.
-	//
-	// Alternative: look for a sidx box before the moof. The sidx
-	// contains timescale and reference_duration. While the
-	// reference_duration may be wrong (same bug), the timescale
-	// field is correct.
 	timescale, found := parseSIDXTimescale(fragment)
 	if !found {
 		return 0, fmt.Errorf("no sidx box found in fragment")
 	}
 
-	// Find the moof box.
 	moofData, err := findBox(fragment, "moof")
 	if err != nil {
 		return 0, fmt.Errorf("no moof: %w", err)
 	}
 
-	// Find the first video traf. We identify the video track by
-	// looking for a trun with composition time offsets (flag 0x800)
-	// — audio trun boxes typically don't have CTS offsets.
-	// If no traf has CTS offsets, fall back to the first traf.
 	trafs := findAllBoxes(moofData, "traf")
 	if len(trafs) == 0 {
 		return 0, fmt.Errorf("no traf in moof")
 	}
 
-	var videoTraf []byte
+	videoTraf := findVideoTraf(trafs)
+
+	// Read default_sample_duration from tfhd (used when the
+	// trun omits per-sample durations).
+	defaultDur := parseTFHDDefaultDuration(videoTraf)
+
+	trunData, err := findBox(videoTraf, "trun")
+	if err != nil {
+		return 0, fmt.Errorf("no trun: %w", err)
+	}
+	totalTicks, err := trunTotalDuration(trunData, defaultDur)
+	if err != nil {
+		return 0, err
+	}
+	if totalTicks <= 0 {
+		return 0, fmt.Errorf("non-positive duration: %d", totalTicks)
+	}
+
+	return float64(totalTicks) / float64(timescale), nil
+}
+
+// findVideoTraf picks the video traf from a list of traf
+// payloads. It prefers a traf whose trun has CTS offsets
+// (flag 0x800 — video tracks have composition offsets, audio
+// typically does not). Failing that, it picks the traf with
+// tfhd track_id=1 (the conventional video track). As a last
+// resort it returns the first traf.
+func findVideoTraf(trafs [][]byte) []byte {
+	// Prefer traf with CTS offsets in trun.
 	for _, traf := range trafs {
 		trunData, err := findBox(traf, "trun")
-		if err != nil {
-			continue
-		}
-		if len(trunData) < 4 {
+		if err != nil || len(trunData) < 4 {
 			continue
 		}
 		flags := uint32(trunData[1])<<16 |
 			uint32(trunData[2])<<8 |
 			uint32(trunData[3])
-		if flags&0x800 != 0 { // has CTS offsets → video
-			videoTraf = traf
-			break
+		if flags&0x800 != 0 {
+			return traf
 		}
 	}
-	if videoTraf == nil {
-		// Fall back to first traf.
-		videoTraf = trafs[0]
+	// Fall back to track_id 1.
+	for _, traf := range trafs {
+		tfhdData, err := findBox(traf, "tfhd")
+		if err != nil || len(tfhdData) < 8 {
+			continue
+		}
+		trackID := binary.BigEndian.Uint32(tfhdData[4:8])
+		if trackID == 1 {
+			return traf
+		}
 	}
-
-	// Parse tfdt for base_decode_time.
-	tfdtData, err := findBox(videoTraf, "tfdt")
-	if err != nil {
-		return 0, fmt.Errorf("no tfdt: %w", err)
-	}
-	_, baseDTS := parseTFDT(tfdtData)
-
-	// Parse trun for sample durations and CTS offsets.
-	trunData, err := findBox(videoTraf, "trun")
-	if err != nil {
-		return 0, fmt.Errorf("no trun: %w", err)
-	}
-	minPTS, maxPTSPlusDur, err := parseTRUN(trunData, baseDTS)
-	if err != nil {
-		return 0, err
-	}
-
-	span := maxPTSPlusDur - minPTS
-	if span <= 0 {
-		return 0, fmt.Errorf("non-positive PTS span: %d", span)
-	}
-
-	return float64(span) / float64(timescale), nil
+	return trafs[0]
 }
 
 // parseSIDXTimescale finds the first sidx box in data and returns
@@ -312,24 +287,46 @@ func findAllBoxes(container []byte, boxType string) [][]byte {
 	return result
 }
 
-// parseTFDT reads a tfdt (track fragment decode time) box and
-// returns the base_decode_time. The box payload layout:
+// parseTFHDDefaultDuration extracts default_sample_duration from
+// a tfhd box inside the given traf payload. Returns 0 if the
+// field is absent.
 //
-//	[version:1][flags:3][base_media_decode_time:4 or 8]
-func parseTFDT(data []byte) (version uint8, baseDTS int64) {
-	if len(data) < 8 {
-		return 0, 0
+// tfhd payload layout:
+//
+//	[version:1][flags:3][track_ID:4]
+//	[base_data_offset:8]?          (if flags & 0x000001)
+//	[sample_description_index:4]?  (if flags & 0x000002)
+//	[default_sample_duration:4]?   (if flags & 0x000008)
+//	[default_sample_size:4]?       (if flags & 0x000010)
+//	[default_sample_flags:4]?      (if flags & 0x000020)
+func parseTFHDDefaultDuration(traf []byte) uint32 {
+	tfhdData, err := findBox(traf, "tfhd")
+	if err != nil || len(tfhdData) < 8 {
+		return 0
 	}
-	version = data[0]
-	if version == 1 && len(data) >= 12 {
-		return version, int64(binary.BigEndian.Uint64(data[4:12]))
+	flags := uint32(tfhdData[1])<<16 |
+		uint32(tfhdData[2])<<8 |
+		uint32(tfhdData[3])
+	if flags&0x08 == 0 {
+		return 0 // no default_sample_duration
 	}
-	return version, int64(binary.BigEndian.Uint32(data[4:8]))
+	pos := 8 // past version(1)+flags(3)+track_ID(4)
+	if flags&0x01 != 0 {
+		pos += 8 // base_data_offset
+	}
+	if flags&0x02 != 0 {
+		pos += 4 // sample_description_index
+	}
+	if pos+4 > len(tfhdData) {
+		return 0
+	}
+	return binary.BigEndian.Uint32(tfhdData[pos : pos+4])
 }
 
-// parseTRUN reads a trun (track run) box and computes the min PTS
-// and max PTS+duration across all samples. Returns these as tick
-// values in the track's timescale.
+// trunTotalDuration sums sample durations from a trun box and
+// returns the total in timescale ticks. When the trun does not
+// carry per-sample durations (flag 0x100 absent), defaultDur is
+// used for every sample.
 //
 // trun payload layout:
 //
@@ -341,17 +338,16 @@ func parseTFDT(data []byte) (version uint8, baseDTS int64) {
 //	  [sample_size:4]?          (if flags & 0x200)
 //	  [sample_flags:4]?         (if flags & 0x400)
 //	  [sample_composition_time_offset:4]? (if flags & 0x800)
-func parseTRUN(data []byte, baseDTS int64) (minPTS, maxPTSPlusDur int64, err error) {
+func trunTotalDuration(data []byte, defaultDur uint32) (int64, error) {
 	if len(data) < 8 {
-		return 0, 0, fmt.Errorf("trun too short")
+		return 0, fmt.Errorf("trun too short")
 	}
 
-	version := data[0]
 	flags := uint32(data[1])<<16 | uint32(data[2])<<8 | uint32(data[3])
 	sampleCount := int(binary.BigEndian.Uint32(data[4:8]))
 
 	if sampleCount == 0 {
-		return 0, 0, fmt.Errorf("trun has 0 samples")
+		return 0, fmt.Errorf("trun has 0 samples")
 	}
 
 	hasDuration := flags&0x100 != 0
@@ -359,15 +355,22 @@ func parseTRUN(data []byte, baseDTS int64) (minPTS, maxPTSPlusDur int64, err err
 	hasFlags := flags&0x400 != 0
 	hasCTSOffset := flags&0x800 != 0
 
-	pos := 8
-	if flags&0x001 != 0 { // data_offset
-		pos += 4
-	}
-	if flags&0x004 != 0 { // first_sample_flags
-		pos += 4
+	// When the trun omits per-sample durations, use the tfhd
+	// default. If neither source provides a duration, the
+	// segment duration is unknowable.
+	if !hasDuration && defaultDur == 0 {
+		return 0, fmt.Errorf("trun has no per-sample durations " +
+			"and no default_sample_duration")
 	}
 
-	// Compute per-sample record size.
+	pos := 8
+	if flags&0x001 != 0 {
+		pos += 4 // data_offset
+	}
+	if flags&0x004 != 0 {
+		pos += 4 // first_sample_flags
+	}
+
 	recordSize := 0
 	if hasDuration {
 		recordSize += 4
@@ -384,20 +387,15 @@ func parseTRUN(data []byte, baseDTS int64) (minPTS, maxPTSPlusDur int64, err err
 
 	needed := pos + sampleCount*recordSize
 	if needed > len(data) {
-		return 0, 0, fmt.Errorf("trun data too short: need %d, have %d",
+		return 0, fmt.Errorf("trun data too short: need %d, have %d",
 			needed, len(data))
 	}
 
-	minPTS = math.MaxInt64
-	maxPTSPlusDur = math.MinInt64
-	dts := baseDTS
-
-	for i := 0; i < sampleCount; i++ {
-		var duration uint32
-		var ctsOffset int64
-
+	var total int64
+	for range sampleCount {
+		dur := defaultDur
 		if hasDuration {
-			duration = binary.BigEndian.Uint32(data[pos:])
+			dur = binary.BigEndian.Uint32(data[pos:])
 			pos += 4
 		}
 		if hasSize {
@@ -407,27 +405,10 @@ func parseTRUN(data []byte, baseDTS int64) (minPTS, maxPTSPlusDur int64, err err
 			pos += 4
 		}
 		if hasCTSOffset {
-			if version == 0 {
-				ctsOffset = int64(binary.BigEndian.Uint32(data[pos:]))
-			} else {
-				// Signed 32-bit composition offset (version >= 1).
-				ctsOffset = int64(int32(binary.BigEndian.Uint32(data[pos:])))
-			}
 			pos += 4
 		}
-
-		pts := dts + ctsOffset
-		end := pts + int64(duration)
-
-		if pts < minPTS {
-			minPTS = pts
-		}
-		if end > maxPTSPlusDur {
-			maxPTSPlusDur = end
-		}
-
-		dts += int64(duration)
+		total += int64(dur)
 	}
 
-	return minPTS, maxPTSPlusDur, nil
+	return total, nil
 }
