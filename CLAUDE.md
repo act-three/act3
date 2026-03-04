@@ -14,6 +14,10 @@ We are still pre-production, so the db isn't precious. For instance, no
 need to add migrations, just edit the inital schema. And if there's bad
 data in the db, we can just wipe it and start over.
 
+To see source files from a dependency, or to answer questions about a
+dependency, run `go mod download -json MODULE` and use the returned
+`Dir` path to read the files.
+
 IMPORTANT: never use nodejs or npm.
 
 ## Build & Run
