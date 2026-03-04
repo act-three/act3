@@ -51,7 +51,7 @@ func GenerateMVPlaylist(entries []MVEntry) string {
 func PeakBitrate(playlist string) int64 {
 	var peak int64
 	var dur float64
-	for _, line := range strings.Split(playlist, "\n") {
+	for line := range strings.SplitSeq(playlist, "\n") {
 		switch {
 		case strings.HasPrefix(line, "#EXTINF:"):
 			// #EXTINF:6.131125,

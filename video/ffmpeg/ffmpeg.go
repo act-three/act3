@@ -492,11 +492,12 @@ func buildFilterComplex(dsts []EncodeParams, idxs []int) (string, map[int]string
 	var parts []string
 
 	// [0:v]split=N[s0][s1]...
-	split := "[0:v]split=" + strconv.Itoa(n)
+	var split strings.Builder
+	split.WriteString("[0:v]split=" + strconv.Itoa(n))
 	for j := range n {
-		split += fmt.Sprintf("[s%d]", j)
+		fmt.Fprintf(&split, "[s%d]", j)
 	}
-	parts = append(parts, split)
+	parts = append(parts, split.String())
 
 	// Per-branch filters.
 	for j, i := range idxs {

@@ -365,19 +365,19 @@ func TestPatchTelecineTimestamps(t *testing.T) {
 //	frames.frame.N.key="value"   (strings)
 //	frames.frame.N.key=value     (numbers)
 func parseProbeLine(line string) (key, value string) {
-	eq := strings.IndexByte(line, '=')
-	if eq < 0 {
+	before, after, ok := strings.Cut(line, "=")
+	if !ok {
 		return "", ""
 	}
 	// The key is the last dot-separated component before '='.
-	fullKey := line[:eq]
+	fullKey := before
 	dot := strings.LastIndexByte(fullKey, '.')
 	if dot >= 0 {
 		key = fullKey[dot+1:]
 	} else {
 		key = fullKey
 	}
-	value = strings.Trim(line[eq+1:], "\"")
+	value = strings.Trim(after, "\"")
 	return key, value
 }
 
@@ -396,7 +396,7 @@ func parseProbeFlat(output string) []probeFrame {
 	var cur probeFrame
 	curIdx := -1
 
-	for _, line := range strings.Split(output, "\n") {
+	for line := range strings.SplitSeq(output, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
@@ -416,11 +416,11 @@ func parseProbeFlat(output string) []probeFrame {
 
 		// Extract frame index.
 		rest := line[len("frames.frame."):]
-		dotIdx := strings.IndexByte(rest, '.')
-		if dotIdx < 0 {
+		before, _, ok := strings.Cut(rest, ".")
+		if !ok {
 			continue
 		}
-		idx, err := strconv.Atoi(rest[:dotIdx])
+		idx, err := strconv.Atoi(before)
 		if err != nil {
 			continue
 		}

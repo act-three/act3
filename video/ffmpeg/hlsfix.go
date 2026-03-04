@@ -39,7 +39,7 @@ func fixEXTINF(playlist string, media []byte) string {
 	lines := strings.Split(playlist, "\n")
 	var segs []segment
 
-	for i := 0; i < len(lines); i++ {
+	for i := range lines {
 		dur, ok := parseEXTINF(lines[i])
 		if !ok {
 			continue

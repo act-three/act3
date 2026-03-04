@@ -119,11 +119,11 @@ func trimToLastNewline(b []byte) []byte {
 }
 
 func trimFromFirstNewline(b []byte) []byte {
-	i := bytes.IndexByte(b, '\n')
-	if i < 0 {
+	_, after, ok := bytes.Cut(b, []byte{'\n'})
+	if !ok {
 		return b
 	}
-	return b[i+1:]
+	return after
 }
 
 func appendSkipMarker(dst []byte, n int64) []byte {
