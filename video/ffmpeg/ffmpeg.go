@@ -284,14 +284,23 @@ func Pass2Single(ctx context.Context, src *os.File, dst EncodeParams,
 	}
 
 	// Copy media to caller's file and read playlist.
-	if err := copyFileData(dst.File, mediaPath); err != nil {
-		return "", fmt.Errorf("copy media: %w", err)
+	mediaData, err := os.ReadFile(mediaPath)
+	if err != nil {
+		return "", fmt.Errorf("read media: %w", err)
+	}
+	if _, err := dst.File.Write(mediaData); err != nil {
+		return "", fmt.Errorf("write media: %w", err)
 	}
 	b, err := os.ReadFile(plsPath)
 	if err != nil {
 		return "", fmt.Errorf("read playlist: %w", err)
 	}
-	return string(b), nil
+
+	// Correct EXTINF durations. ffmpeg's HLS muxer computes them
+	// from raw encoder packet timestamps which can be offset from
+	// the actual fMP4 segment PTS spans by the B-frame encoder
+	// delay (~117ms with medium preset on VFR telecine input).
+	return fixEXTINF(string(b), mediaData), nil
 }
 
 // RemuxSingle produces one HLS rendition by copying the video stream.
