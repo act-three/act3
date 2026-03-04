@@ -251,12 +251,12 @@ func TestEMARateConverges(t *testing.T) {
 		}
 
 		// Speed doubles to 0.2/s for one interval.
-		// EMA = 0.2*0.2 + 0.8*0.1 = 0.12
-		// remaining 0.6 → ETA = 5s
+		// EMA = 0.1*0.2 + 0.9*0.1 = 0.11
+		// remaining 0.6 / 0.11 ≈ 5.4545s
 		time.Sleep(1 * time.Second)
 		tr.Update("v1", 0.4)
 		got = tr.List("v1")[0].ETA()
-		want = 5 * time.Second
+		want = 60 * time.Second / 11
 		if diff := got - want; diff < -time.Millisecond || diff > time.Millisecond {
 			t.Errorf("ETA = %v, want ~%v", got, want)
 		}

@@ -32,9 +32,9 @@ func validKey(key string) {
 
 // emaAlpha controls how much weight is given to the most recent
 // sample when computing the exponential moving average of the
-// progress rate. A value of 0.2 gives an effective window of
-// roughly 5 samples.
-const emaAlpha = 0.2
+// progress rate. A value of 0.1 gives an effective window of
+// roughly 10 samples.
+const emaAlpha = 0.1
 
 const (
 	EventOpen   = "progress-open"
