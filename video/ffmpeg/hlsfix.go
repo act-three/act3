@@ -141,6 +141,29 @@ func findByteRange(lines []string, idx int) (offset, size int64, ok bool) {
 	return 0, 0, false
 }
 
+// fmp4VideoSampleCount parses an fMP4 fragment (moof+mdat) and
+// returns the video track's trun sample count.
+func fmp4VideoSampleCount(fragment []byte) (int, error) {
+	moofData, err := findBox(fragment, "moof")
+	if err != nil {
+		return 0, fmt.Errorf("no moof: %w", err)
+	}
+	trafs := findAllBoxes(moofData, "traf")
+	if len(trafs) == 0 {
+		return 0, fmt.Errorf("no traf in moof")
+	}
+	videoTraf := findVideoTraf(trafs)
+	trunData, err := findBox(videoTraf, "trun")
+	if err != nil {
+		return 0, fmt.Errorf("no trun: %w", err)
+	}
+	if len(trunData) < 8 {
+		return 0, fmt.Errorf("trun too short")
+	}
+	count := binary.BigEndian.Uint32(trunData[4:8])
+	return int(count), nil
+}
+
 // fmp4VideoDuration parses an fMP4 fragment (moof+mdat) and
 // returns the video track's decode duration in seconds: the sum
 // of all sample durations divided by the track timescale.

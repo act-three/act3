@@ -571,7 +571,8 @@ func twoPassArgs(codec string, pass int, passlog string) []string {
 	case "libx265":
 		return []string{
 			"-x265-params",
-			fmt.Sprintf("pass=%d:stats=%s", pass, passlog),
+			fmt.Sprintf("pass=%d:stats=%s:open-gop=0",
+				pass, passlog),
 		}
 	case "libx264":
 		return []string{

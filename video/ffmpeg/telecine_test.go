@@ -761,4 +761,132 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 			"EXTINF values do not match actual fMP4 segment " +
 			"durations")
 	}
+
+	// Step 6: Segment decodability check — detect open GOPs.
+	//
+	// For each segment, compare the trun sample count (frames the
+	// muxer wrote) against what ffprobe can decode standalone. With
+	// open GOPs, trailing B-frames reference the next segment's IDR
+	// and are undecoded standalone (e.g. trun=252 but ffprobe=249).
+	// With closed GOPs, the counts always match.
+	mediaData, err := os.ReadFile(filepath.Join(dir, MediaName(0)))
+	if err != nil {
+		t.Fatalf("read media: %v", err)
+	}
+
+	// Parse the init segment byte range from #EXT-X-MAP.
+	// Format: #EXT-X-MAP:URI="...",BYTERANGE="size@offset"
+	var initSeg []byte
+	lines := strings.Split(playlist, "\n")
+	for _, line := range lines {
+		if !strings.HasPrefix(line, "#EXT-X-MAP:") {
+			continue
+		}
+		m := byterangeRe.FindStringSubmatch(line)
+		if m == nil {
+			// Try the quoted BYTERANGE= form.
+			start := strings.Index(line, "BYTERANGE=\"")
+			if start < 0 {
+				break
+			}
+			rest := line[start+len("BYTERANGE=\""):]
+			end := strings.IndexByte(rest, '"')
+			if end < 0 {
+				break
+			}
+			br := rest[:end]
+			szStr, offStr, ok := strings.Cut(br, "@")
+			if !ok {
+				break
+			}
+			sz, _ := strconv.ParseInt(szStr, 10, 64)
+			off, _ := strconv.ParseInt(offStr, 10, 64)
+			if off >= 0 && off+sz <= int64(len(mediaData)) {
+				initSeg = mediaData[off : off+sz]
+			}
+		}
+		break
+	}
+	if len(initSeg) == 0 {
+		t.Fatal("could not parse init segment from EXT-X-MAP")
+	}
+
+	var mismatches int
+	var segments int
+	for i := range lines {
+		_, ok := parseEXTINF(lines[i])
+		if !ok {
+			continue
+		}
+		off, sz, found := findByteRange(lines, i+1)
+		if !found {
+			continue
+		}
+		if off < 0 || off+sz > int64(len(mediaData)) {
+			continue
+		}
+		chunk := mediaData[off : off+sz]
+
+		trunCount, err := fmp4VideoSampleCount(chunk)
+		if err != nil {
+			t.Logf("segment %d: skip fmp4 parse: %v",
+				segments, err)
+			segments++
+			continue
+		}
+
+		// Write init segment + fragment to a temp file so
+		// ffprobe can decode it standalone.
+		segPath := filepath.Join(dir,
+			"seg"+strconv.Itoa(segments)+".mp4")
+		segData := make([]byte, len(initSeg)+len(chunk))
+		copy(segData, initSeg)
+		copy(segData[len(initSeg):], chunk)
+		if err := os.WriteFile(segPath, segData, 0o644); err != nil {
+			t.Fatalf("write segment: %v", err)
+		}
+
+		// Count decoded video frames with ffprobe.
+		probeCmd := newCmd(ctx, "ffprobe",
+			"-v", "error",
+			"-select_streams", "v",
+			"-count_frames",
+			"-show_entries", "stream=nb_read_frames",
+			"-of", "csv=p=0",
+			segPath,
+		)
+		probeOut, err := probeCmd.CombinedOutput()
+		if err != nil {
+			t.Logf("segment %d: ffprobe error: %v\n%s",
+				segments, err, probeOut)
+			segments++
+			continue
+		}
+		// Take the last non-empty line — Docker platform
+		// warnings may precede the actual output.
+		outLines := strings.Split(
+			strings.TrimSpace(string(probeOut)), "\n")
+		lastLine := outLines[len(outLines)-1]
+		decoded, err := strconv.Atoi(
+			strings.TrimSpace(lastLine))
+		if err != nil {
+			t.Logf("segment %d: parse ffprobe output %q: %v",
+				segments, string(probeOut), err)
+			segments++
+			continue
+		}
+
+		if trunCount != decoded {
+			t.Errorf("segment %d: open GOP detected: "+
+				"trun=%d decoded=%d (delta=%d)",
+				segments, trunCount, decoded,
+				trunCount-decoded)
+			mismatches++
+		}
+		segments++
+	}
+	if segments == 0 {
+		t.Fatal("no segments found in playlist")
+	}
+	t.Logf("checked %d segments: %d mismatches", segments, mismatches)
 }
