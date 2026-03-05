@@ -1,6 +1,8 @@
 package view
 
 import (
+	"slices"
+
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
@@ -15,48 +17,84 @@ func MediaEpisode(
 	dls []*model.RenditionForDownload,
 ) html.Node {
 	return media(ep.Title())(
-		html.Div(
-			attr.Class("p-4 font-bold"),
-		)(
-			html.Text(ep.Title()),
-		),
-		html.Div(
-			attr.Class("p-4"),
-		)(
-			expr.IfElse(len(videos) > 0,
-				func() html.Node {
-					vid := videos[0] // TODO(april): rules for multiple videos
-					return html.Div()(
-						html.Video(
-							attr.Controls,
-							attr.Class("w-lg"),
-						)(
-							html.Source(
-								attr.Src("/-/plr/"+vid.ID+".m3u8"),
-								attr.Type("application/vnd.apple.mpegurl"),
-							),
-						),
-					)
-				},
-				func() html.Node {
-					return Text("No Streams")
-				},
+		Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
+			html.Img(
+				Class("w-full aspect-2/3 object-cover"),
+				attr.Src(ep.ImageURL()),
 			),
 		),
-		html.Div(
-			attr.Class("p-4"),
-		)(
-			html.Text("Downloads:"),
-			html.Range(dls, func(r *model.RenditionForDownload) html.Node {
-				return html.Div()(
-					html.A(
-						attr.Href(r.URL()),
-						attr.Download(r.Filename()),
-					)(
-						html.Text(r.Label()),
+		Grid12(Class("pt-16"))(
+			Box(ColSpan4)(
+				Box(Class("rounded-sm overflow-hidden"))(
+					html.Img(
+						Class("w-full aspect-16/9 object-cover"),
+						attr.Src(ep.ImageURL()),
 					),
-				)
-			}),
+				),
+			),
+			Box(),
+			FlexCol(ColSpan7, Class("gap-4"))(
+				Text(ep.SeriesHead().Title()),
+				Grid7()(
+					Text("S01E01", Class("text-gray-11")),
+					Box(ColSpan2)(
+						Text("2026-03-05", Class("text-gray-11")),
+					),
+				),
+				Text(ep.Title(), TextSize7),
+				FlexRow(Gap3)(
+					FlexCol(Class("w-[168px]"))(
+						playButton(ep),
+					),
+					FlexCol(Class("w-[168px]"))(
+						Button(Disabled(true), ButtonSize3)(Icon("play"), Text("Play from 5:18:02")),
+					),
+					FlexCol()(
+						Button(ButtonGhost, ButtonSize3)(Icon("square-dashed")),
+					),
+					FlexCol()(
+						Button(ButtonGhost, ButtonSize3)(Icon("square-check-big")),
+					),
+					FlexCol()(
+						Button(ButtonGhost, ButtonSize3)(Icon("download")),
+						//html.Range(dls, func(r *model.RenditionForDownload) html.Node {
+						//	return html.Div()(
+						//		html.A(
+						//			attr.Href(r.URL()),
+						//			attr.Download(r.Filename()),
+						//		)(
+						//			html.Text(r.Label()),
+						//		),
+						//	)
+						//}),
+					),
+					FlexCol()(
+						Button(ButtonGhost, ButtonSize3)(Icon("info")),
+					),
+				),
+				Button(ButtonSurface)(Text("Audio")),
+				Button(ButtonSurface)(Text("Subtitles")),
+				TextNode()(html.Safe(ep.Summary())),
+			),
 		),
+	)
+}
+
+func playButton(ep *model.Episode) html.Node {
+	v := ep.Videos()
+	// TODO(april): provide user-select if there are multiple videos.
+	playable := slices.IndexFunc(v, func(v *model.Video) bool {
+		return v.MVPlaylist() != ""
+	})
+	return expr.IfElse(playable >= 0,
+		func() html.Node {
+			return Button(
+				attr.Href(ep.PlayerURL(v[playable])),
+				attr.Attr("data-turbo-frame")("player"),
+				ButtonSize3)(Icon("play"), Text("Start"))
+		},
+		func() html.Node {
+			return Button(Disabled(true), ButtonSize3)(Icon("x"), Text("Start"))
+		},
 	)
 }

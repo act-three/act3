@@ -22,7 +22,7 @@ func MediaSeries(sr *model.Series) html.Node {
 				attr.Src(sr.TVmazeImageURL()),
 			),
 		),
-		Grid12(Class("pt-6"))(
+		Grid12(Class("pt-10"))(
 			Box(Class("col-span-3"))(
 				Box(Class("sticky top-20"))(
 					Box(Class("rounded-sm overflow-hidden"))(
