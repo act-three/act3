@@ -185,19 +185,30 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 							},
 							func() html.Node { return html.Group() },
 						),
-						expr.IfElse(v.OriginalHash != "",
-							func() html.Node {
-								return html.Form(
-									attr.Action("/-/do/reingest-video/"+v.ID),
-									attr.Method("POST"),
-									attr.Class("mt-2"),
-								)(
-									Button(ButtonDestructive)(
-										html.Text("Re-ingest"),
-									),
-								)
-							},
-							func() html.Node { return html.Group() },
+						html.Div(
+							attr.Class("mt-2 flex gap-2"),
+						)(
+							html.Form(
+								attr.Action("/-/do/reimport-video/"+v.ID),
+								attr.Method("POST"),
+							)(
+								Button(ButtonDestructive)(
+									html.Text("Re-import"),
+								),
+							),
+							expr.IfElse(v.OriginalHash != "",
+								func() html.Node {
+									return html.Form(
+										attr.Action("/-/do/reingest-video/"+v.ID),
+										attr.Method("POST"),
+									)(
+										Button(ButtonDestructive)(
+											html.Text("Re-ingest"),
+										),
+									)
+								},
+								func() html.Node { return html.Group() },
+							),
 						),
 					)
 				}),
@@ -284,6 +295,18 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 			),
 		), nil
 	})
+}
+
+func (c *Config) doReimportVideo(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	_, err := c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		return nil, tx.ReImportVideo(ctx, req.PathValue("id"))
+	})
+	if err != nil {
+		return nil, err
+	}
+	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
+	return nil, nil
 }
 
 func (c *Config) doReingestVideo(w http.ResponseWriter, req *http.Request) (html.Node, error) {

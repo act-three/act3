@@ -712,6 +712,17 @@ func (q *Queries) ReleaseCreate(ctx context.Context, arg ReleaseCreateParams) (R
 	return i, err
 }
 
+const releaseGet = `-- name: ReleaseGet :one
+SELECT id, name, infohash FROM Release WHERE ID = ?
+`
+
+func (q *Queries) ReleaseGet(ctx context.Context, id string) (Release, error) {
+	row := q.db.QueryRowContext(ctx, releaseGet, id)
+	var i Release
+	err := row.Scan(&i.ID, &i.Name, &i.InfoHash)
+	return i, err
+}
+
 const releaseGetByInfoHash = `-- name: ReleaseGetByInfoHash :one
 SELECT id, name, infohash FROM Release WHERE InfoHash = ?
 `

@@ -333,6 +333,108 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	return err
 }
 
+// ReImportVideo queues a reimport task for the given video.
+// The task will delete all existing renditions and the original
+// CAS blob, re-copy the source from the download path, and
+// restart the full ingestion pipeline.
+func (tx *TxRW) ReImportVideo(ctx Context, videoID string) error {
+	return tx.addTask(ctx, taskReimport, videoID)
+}
+
+// taskReimport deletes all existing renditions and the original
+// CAS blob for a video, re-copies the source from the download
+// path, and restarts the full ingestion pipeline.
+func (tx *TxR) taskReimport(ctx Context, args []string) error {
+	vid, err := tx.q.VideoGet(ctx, args[0])
+	if err != nil {
+		return err
+	}
+
+	// Look up the download path via Transmission.
+	rel, err := tx.q.ReleaseGet(ctx, vid.ReleaseID)
+	if err != nil {
+		return err
+	}
+	if rel.InfoHash == nil {
+		return fmt.Errorf("release %s has no info hash", rel.ID)
+	}
+	tm := tx.m.transmission.Load()
+	if tm == nil {
+		return fmt.Errorf("no transmission client available")
+	}
+	ts, err := tm.TorrentGetAllForHashes(ctx, []string{*rel.InfoHash})
+	if err != nil {
+		return err
+	}
+	if len(ts) != 1 {
+		return fmt.Errorf("torrent %s: got %d results, wanted 1",
+			*rel.InfoHash, len(ts))
+	}
+	srcPath := filepath.Join(
+		*ts[0].DownloadDir, *ts[0].Name, vid.ReleasePath,
+	)
+
+	// Delete existing rendition CAS blobs and pass1 stats.
+	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	for _, rfs := range rfsList {
+		if rfs.Hash != "" {
+			tx.m.store.Remove(rfs.Hash)
+		}
+		tx.m.removePass1Stats(vid.ID, rfs.ID)
+	}
+
+	// Remove old original from CAS.
+	if vid.OriginalHash != "" {
+		tx.m.store.Remove(vid.OriginalHash)
+	}
+
+	// Set up progress tracking.
+	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	for _, ev := range evs {
+		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
+	}
+
+	// Copy source from download path into CAS.
+	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
+	hash, err := tx.m.store.Copy(srcPath)
+	if err != nil {
+		tx.m.prog.Close(vid.ID, err)
+		return err
+	}
+
+	// Write all DB changes in a single transaction.
+	err = tx.m.WithTxRW(func(txw *TxRW) error {
+		err := txw.q.RenditionForStreamingDeleteByVideoID(ctx, vid.ID)
+		if err != nil {
+			return err
+		}
+		_, err = txw.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
+			ID:         vid.ID,
+			MVPlaylist: "",
+		})
+		if err != nil {
+			return err
+		}
+		vid, err = txw.q.VideoUpdateOriginalHash(ctx, schema.VideoUpdateOriginalHashParams{
+			ID:           vid.ID,
+			OriginalHash: hash,
+		})
+		return err
+	})
+	if err != nil {
+		tx.m.prog.Close(vid.ID, err)
+		return err
+	}
+
+	return tx.planAndCreateRenditions(ctx, vid)
+}
+
 // ReIngestVideo queues a reingest task for the given video.
 // The task will delete all existing renditions (CAS blobs and DB
 // records), re-probe the original source, plan new renditions,

@@ -144,6 +144,9 @@ INSERT INTO Release
 VALUES (?, ?)
 RETURNING *;
 
+-- name: ReleaseGet :one
+SELECT * FROM Release WHERE ID = ?;
+
 -- name: ReleaseGetByInfoHash :one
 SELECT * FROM Release WHERE InfoHash = ?;
 
