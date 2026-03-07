@@ -458,12 +458,12 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 	return tx.planAndCreateRenditions(ctx, vid)
 }
 
-// ReIngestVideo queues a reingest task for the given video.
+// ReencodeVideo queues a reencode task for the given video.
 // The task will delete all existing renditions (CAS blobs and DB
 // records), re-probe the original source, plan new renditions,
 // and restart the encoding pipeline.
-func (m *Model) ReIngestVideo(ctx Context, videoID string) (err error) {
-	defer errorfmt.Handlef("reingest video %s: %w", videoID, &err)
+func (m *Model) ReencodeVideo(ctx Context, videoID string) (err error) {
+	defer errorfmt.Handlef("reencode video %s: %w", videoID, &err)
 	vid, err := schema.New(m.dbr).VideoGet(ctx, videoID)
 	if err != nil {
 		return err
@@ -472,13 +472,13 @@ func (m *Model) ReIngestVideo(ctx Context, videoID string) (err error) {
 		return fmt.Errorf("video has no original hash")
 	}
 	return m.WithTxRW(func(tx *TxRW) error {
-		return tx.addTask(ctx, taskReingest, videoID)
+		return tx.addTask(ctx, taskReencode, videoID)
 	})
 }
 
-// taskReingest deletes all existing renditions for a video
+// taskReencode deletes all existing renditions for a video
 // and restarts the ingestion pipeline from the probe step.
-func (tx *TxR) taskReingest(ctx Context, args []string) error {
+func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	vid, err := tx.q.VideoGet(ctx, args[0])
 	if err != nil {
 		return err
@@ -527,7 +527,7 @@ func (tx *TxR) taskReingest(ctx Context, args []string) error {
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
-	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Re-ingesting")
+	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Re-encoding")
 
 	return tx.planAndCreateRenditions(ctx, vid)
 }

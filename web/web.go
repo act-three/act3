@@ -60,7 +60,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/delete-task/{id}", c.doDeleteTask)
 	handle(mux, "POST /-/do/kill-task/{id}", c.doKillTask)
 	handle(mux, "POST /-/do/reimport-video/{id}", c.doReimportVideo)
-	handle(mux, "POST /-/do/reingest-video/{id}", c.doReingestVideo)
+	handle(mux, "POST /-/do/reencode-video/{id}", c.doReencodeVideo)
 	mux.HandleFunc("GET /-/events", c.events)
 	mux.Handle("GET /-/static/", static.Handler())
 }

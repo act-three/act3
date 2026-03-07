@@ -199,11 +199,11 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 							expr.IfElse(v.OriginalHash != "",
 								func() html.Node {
 									return html.Form(
-										attr.Action("/-/do/reingest-video/"+v.ID),
+										attr.Action("/-/do/reencode-video/"+v.ID),
 										attr.Method("POST"),
 									)(
 										Button(ButtonDestructive)(
-											html.Text("Re-ingest"),
+											html.Text("Re-encode"),
 										),
 									)
 								},
@@ -309,9 +309,9 @@ func (c *Config) doReimportVideo(w http.ResponseWriter, req *http.Request) (html
 	return nil, nil
 }
 
-func (c *Config) doReingestVideo(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doReencodeVideo(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
-	err := c.Model.ReIngestVideo(ctx, req.PathValue("id"))
+	err := c.Model.ReencodeVideo(ctx, req.PathValue("id"))
 	if err != nil {
 		return nil, err
 	}
