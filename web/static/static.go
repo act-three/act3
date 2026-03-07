@@ -2,6 +2,7 @@ package static
 
 import (
 	"embed"
+	"net/http"
 
 	"ily.dev/act3/http/digest"
 )
@@ -9,12 +10,18 @@ import (
 //go:embed static
 var staticFS embed.FS
 
-var FS = newFS()
+var fs, err = digest.New(staticFS)
 
-func newFS() *digest.Handler {
-	fs, err := digest.New(staticFS)
+func init() {
 	if err != nil {
 		panic(err)
 	}
-	return fs
+}
+
+func Handler() http.Handler {
+	return http.StripPrefix("/-", fs)
+}
+
+func Path(name string) string {
+	return "/-" + fs.NameToDigest(name)
 }

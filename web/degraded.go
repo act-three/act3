@@ -23,8 +23,7 @@ func HandleDegraded(
 	dbPath string,
 	shutdown func(),
 ) {
-	mux.Handle("GET /-/static/",
-		http.StripPrefix("/-", static.FS))
+	mux.Handle("GET /-/static/", static.Handler())
 
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, req *http.Request) {
 		stats, err := database.TableStats(db)
