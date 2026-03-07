@@ -3,7 +3,6 @@ package view
 import (
 	"slices"
 
-	"ily.dev/act3/database/schema"
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
@@ -13,7 +12,6 @@ import (
 
 func MediaEpisode(
 	ep *model.Episode,
-	videos []schema.Video,
 	dls []*model.RenditionForDownload,
 ) html.Node {
 	return media(ep.Title(), ep.ImageURL())(

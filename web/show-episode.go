@@ -17,16 +17,11 @@ func (c *Config) showEpisode(_ http.ResponseWriter, req *http.Request) (html.Nod
 			return nil, err
 		}
 
-		videos, err := tx.VideoListByEpisodeID(ctx, ep.ID())
-		if err != nil {
-			return nil, err
-		}
-
 		dls, err := tx.RenditionForDownloadList(ctx, ep.ID())
 		if err != nil {
 			return nil, err
 		}
 
-		return view.MediaEpisode(ep, videos, dls), nil
+		return view.MediaEpisode(ep, dls), nil
 	})
 }

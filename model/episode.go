@@ -138,8 +138,17 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName string) (*Episode,
 	if err != nil {
 		return nil, err
 	}
+	vids, err := tx.q.VideoListByEpisodeID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var videos []*Video
+	for i := range vids {
+		videos = append(videos, &Video{vids[i]})
+	}
 	ep := &Episode{
-		ep: epRec,
+		ep:     epRec,
+		videos: videos,
 	}
 	for i, snep := range sneps {
 		sn, err := tx.q.SeasonGet(ctx, snep.SeasonID)
@@ -159,6 +168,7 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName string) (*Episode,
 		}
 		ep.snep = snep
 		ep.sn = &SeasonHead{sn}
+		ep.so = &SeriesEditionHead{seq}
 		ep.sr = &SeriesHead{sr}
 		return ep, nil
 	}
