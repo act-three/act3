@@ -15,13 +15,7 @@ func MediaSeries(sr *model.Series) html.Node {
 	if sed := sr.EditionByTitle(model.AirDate); sed != nil {
 		seasons = sed.Seasons()
 	}
-	return media(sr.Title())(
-		Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
-			html.Img(
-				Class("w-full aspect-2/3 object-cover"),
-				attr.Src(sr.TVmazeImageURL()),
-			),
-		),
+	return media(sr.Title(), sr.TVmazeImageURL())(
 		Grid12(Class("pt-10"))(
 			Box(Class("col-span-3"))(
 				Box(Class("sticky top-20"))(

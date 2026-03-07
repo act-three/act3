@@ -1,9 +1,6 @@
 package view
 
 import (
-	"math/rand/v2"
-
-	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
@@ -11,19 +8,7 @@ import (
 )
 
 func Home(a []*model.SeriesHead) html.Node {
-	return media("Act Three")(
-		expr.IfElse(len(a) > 0,
-			func() html.Node {
-				sr := a[rand.IntN(len(a))]
-				return Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
-					html.Img(
-						Class("w-full aspect-2/3 object-cover"),
-						attr.Src(sr.TVmazeImageURL()),
-					),
-				)
-			},
-			func() html.Node { return Group() },
-		),
+	return media("Act Three", homeWashURLs(a)...)(
 		Grid12(Class("pt-4"))(
 			FlexRow(ColSpan12, Gap4)(
 				ButtonGroup(ButtonGroupRadiusLarge)(
@@ -51,6 +36,13 @@ func Home(a []*model.SeriesHead) html.Node {
 		//html.Div()(html.A(attr.Href("/series"))(html.Text("All Series"))),
 
 	)
+}
+
+func homeWashURLs(a []*model.SeriesHead) (u []string) {
+	for _, sr := range a {
+		u = append(u, sr.TVmazeImageURL())
+	}
+	return u
 }
 
 func seriesPosterLink(sr *model.SeriesHead) html.Node {

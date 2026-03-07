@@ -1,8 +1,8 @@
 .u-grid {
 	display: grid;
-	width: fit-content;
-	gap: 1.5rem;
-	grid-template-columns: repeat(var(--cols), 4.5rem);
+	width: 100%;
+	gap: 0.75rem;
+	grid-template-columns: repeat(var(--cols), 1fr);
 	margin-inline: auto;
 }
 

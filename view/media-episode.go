@@ -16,23 +16,8 @@ func MediaEpisode(
 	videos []schema.Video,
 	dls []*model.RenditionForDownload,
 ) html.Node {
-	return media(ep.Title())(
-		Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
-			html.Img(
-				Class("w-full aspect-2/3 object-cover"),
-				attr.Src(ep.ImageURL()),
-			),
-		),
+	return media(ep.Title(), ep.ImageURL())(
 		Grid12(Class("pt-16"))(
-			Box(ColSpan4)(
-				Box(Class("rounded-sm overflow-hidden"))(
-					html.Img(
-						Class("w-full aspect-16/9 object-cover"),
-						attr.Src(ep.ImageURL()),
-					),
-				),
-			),
-			Box(),
 			FlexCol(ColSpan7, Class("gap-4"))(
 				Text(ep.SeriesHead().Title()),
 				Grid7()(
@@ -75,6 +60,15 @@ func MediaEpisode(
 				Button(ButtonSurface)(Text("Audio")),
 				Button(ButtonSurface)(Text("Subtitles")),
 				TextNode()(html.Safe(ep.Summary())),
+			),
+			Box(),
+			Box(ColSpan4)(
+				Box(Class("rounded-sm overflow-hidden"))(
+					html.Img(
+						Class("w-full aspect-16/9 object-cover"),
+						attr.Src(ep.ImageURL()),
+					),
+				),
 			),
 		),
 	)
