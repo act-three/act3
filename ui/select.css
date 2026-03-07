@@ -1,0 +1,157 @@
+/* select — base */
+.u-select {
+	position: relative;
+	display: inline-flex;
+}
+
+/* trigger */
+.u-select-trigger {
+	display: inline-flex;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	white-space: nowrap;
+	user-select: none;
+	vertical-align: top;
+	transition-property: color, background-color, border-color, box-shadow;
+	transition-duration: 150ms;
+	outline: none;
+	cursor: pointer;
+	font-size: inherit;
+	color: inherit;
+}
+.u-select-trigger:focus-visible {
+	outline: 2px solid var(--color-accent-8);
+	outline-offset: -1px;
+}
+.u-select-trigger svg {
+	pointer-events: none;
+	flex-shrink: 0;
+	opacity: 0.9;
+}
+.u-select-trigger svg:not([class*='size-']) {
+	width: 1em;
+	height: 1em;
+}
+
+/* label inside trigger */
+.u-select-label {
+	flex: 1;
+	text-align: left;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* variant: surface */
+.u-select\+surface {
+	color: var(--color-accent-a11);
+}
+.u-select\+surface > .u-select-trigger {
+	background-color: var(--color-accent-a2);
+	box-shadow: inset 0 0 0 1px var(--color-accent-a7);
+}
+@media (hover: hover) {
+	.u-select\+surface > .u-select-trigger:hover {
+		box-shadow: inset 0 0 0 1px var(--color-accent-a8);
+	}
+}
+
+/* sizes — set on .u-select, inherited by trigger + items */
+.u-select\+size-1 {
+	font-size: calc(0.75rem * var(--scale));
+	line-height: calc(1rem * var(--scale));
+	--select-height: calc(1.5rem * var(--scale));
+	--select-padding-x: calc(0.5rem * var(--scale));
+	--select-gap: calc(0.25rem * var(--scale));
+	--select-radius: max(var(--radius-1), var(--radius-full));
+	--select-content-padding: 4px;
+	--select-indicator-width: calc(1.25rem * var(--scale));
+}
+.u-select:where(:not(.u-select\+size-1, .u-select\+size-3)) {
+	font-size: calc(0.875rem * var(--scale));
+	line-height: calc(1.25rem * var(--scale));
+	--select-height: calc(2rem * var(--scale));
+	--select-padding-x: calc(0.75rem * var(--scale));
+	--select-gap: calc(0.5rem * var(--scale));
+	--select-radius: max(var(--radius-2), var(--radius-full));
+	--select-content-padding: 6px;
+	--select-indicator-width: calc(1.5rem * var(--scale));
+}
+.u-select\+size-3 {
+	font-size: calc(1rem * var(--scale));
+	line-height: calc(1.5rem * var(--scale));
+	--select-height: calc(2.5rem * var(--scale));
+	--select-padding-x: calc(1rem * var(--scale));
+	--select-gap: calc(0.75rem * var(--scale));
+	--select-radius: max(var(--radius-3), var(--radius-full));
+	--select-content-padding: 6px;
+	--select-indicator-width: calc(1.5rem * var(--scale));
+}
+
+.u-select-trigger {
+	height: var(--select-height);
+	padding-inline: var(--select-padding-x);
+	gap: var(--select-gap);
+	border-radius: var(--select-radius);
+}
+
+/* content (dropdown overlay) */
+.u-select-content {
+	display: none;
+	position: absolute;
+	left: 0;
+	top: 0;
+	z-index: 50;
+	min-width: 100%;
+	padding: var(--select-content-padding);
+	background-color: var(--color-gray-2);
+	border: 1px solid var(--color-gray-6);
+	border-radius: var(--select-radius);
+	box-shadow:
+		0 12px 60px rgba(0, 0, 0, 0.3),
+		0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.u-select[data-open] > .u-select-content {
+	display: flex;
+	flex-direction: column;
+}
+
+/* item */
+.u-select-item {
+	display: flex;
+	align-items: center;
+	height: var(--select-height);
+	padding-left: var(--select-indicator-width);
+	padding-right: var(--select-padding-x);
+	border-radius: calc(var(--select-radius) * 0.6);
+	cursor: pointer;
+	font-size: inherit;
+	line-height: inherit;
+	color: var(--color-gray-12);
+	white-space: nowrap;
+	outline: none;
+	position: relative;
+}
+.u-select-item[data-selected]::before {
+	content: "";
+	position: absolute;
+	left: calc((var(--select-indicator-width) - 15px) / 2);
+	width: 15px;
+	height: 15px;
+	background-color: currentColor;
+	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+	mask-size: contain;
+	mask-repeat: no-repeat;
+}
+@media (hover: hover) {
+	.u-select-item:hover {
+		background-color: var(--color-accent-a3);
+	}
+}
+.u-select-item:focus-visible {
+	background-color: var(--color-accent-a3);
+}
+.u-select-item[data-selected] {
+	background-color: var(--color-accent-a4);
+}

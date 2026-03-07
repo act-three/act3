@@ -21,6 +21,7 @@
 @import "./ui/table.css" layer(components);
 @import "./ui/toolbar.css" layer(components);
 @import "./ui/note.css" layer(components);
+@import "./ui/select.css" layer(components);
 @import "./view/player.css";
 
 @theme {

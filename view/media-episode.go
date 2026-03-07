@@ -55,7 +55,7 @@ func MediaEpisode(
 						Button(ButtonGhost, ButtonSize3)(Icon("info")),
 					),
 				),
-				Button(ButtonSurface)(Text("Audio")),
+				audioTrackSelect(ep),
 				Button(ButtonSurface)(Text("Subtitles")),
 				TextNode()(html.Safe(ep.Summary())),
 			),
@@ -68,6 +68,31 @@ func MediaEpisode(
 					),
 				),
 			),
+		),
+	)
+}
+
+func audioTrackSelect(ep *model.Episode) html.Node {
+	v := ep.Videos()
+	playable := slices.IndexFunc(v, func(v *model.Video) bool {
+		return v.MVPlaylist() != ""
+	})
+	if playable < 0 {
+		return html.Group()
+	}
+	tracks := v[playable].AudioTracks()
+	if len(tracks) == 0 {
+		return html.Group()
+	}
+	return Select(SelectSurface, SelectSize3, SelectValue(tracks[0].ID()))(
+		SelectTrigger()(
+			Icon("audio-lines"),
+			SelectLabel(tracks[0].Label()),
+		),
+		SelectContent()(
+			html.Range(tracks, func(t *model.AudioTrack) html.Node {
+				return SelectItem(t.ID())(html.Text(t.Label()))
+			}),
 		),
 	)
 }
