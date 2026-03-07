@@ -2105,6 +2105,17 @@
   }
 }
 @layer components {
+  .u-icon {
+    width: 1em;
+    height: 1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+@layer components {
   .u-inset {
     overflow: hidden;
   }
@@ -3069,9 +3080,6 @@
     text-size-adjust: none;
     -webkit-user-select: none;
     user-select: none;
-  }
-  svg[width="24"][height="24"] {
-    stroke-width: 1.5;
   }
   body:has(.app), body:has(#full-player) {
     overflow: hidden;

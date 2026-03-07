@@ -10,9 +10,9 @@ package main
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -117,10 +117,20 @@ func getTarballURL() (string, error) {
 	return meta.Dist.Tarball, nil
 }
 
-var classAttr = regexp.MustCompile(`\n\s*class="lucide[^"]*"`)
+var stripAttr = regexp.MustCompile(`\n\s*(?:` +
+	`class="lucide[^"]*"|` +
+	`xmlns="[^"]*"|` +
+	`width="[^"]*"|` +
+	`height="[^"]*"|` +
+	`fill="[^"]*"|` +
+	`stroke="[^"]*"|` +
+	`stroke-width="[^"]*"|` +
+	`stroke-linecap="[^"]*"|` +
+	`stroke-linejoin="[^"]*"` +
+	`)`)
 
-// cleanSVG strips the license comment and class attribute
-// added by lucide-static.
+// cleanSVG strips the license comment and presentational
+// attributes (handled by icon.css), and adds class="u-icon".
 func cleanSVG(data []byte) []byte {
 	// Remove <!-- @license ... --> comment line.
 	if i := bytes.Index(data, []byte("<!--")); i >= 0 {
@@ -128,7 +138,7 @@ func cleanSVG(data []byte) []byte {
 			data = append(data[:i], data[i+j+4:]...)
 		}
 	}
-	// Remove class="lucide lucide-*" attribute.
-	data = classAttr.ReplaceAll(data, nil)
+	data = stripAttr.ReplaceAll(data, nil)
+	data = bytes.Replace(data, []byte("<svg"), []byte(`<svg class="u-icon"`), 1)
 	return data
 }
