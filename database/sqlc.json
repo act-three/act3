@@ -12,7 +12,9 @@
 					"emit_exact_table_names": true,
 					"emit_pointers_for_null_types": true,
 					"rename": {
+						"audiotrack": "AudioTrack",
 						"artworkkey": "ArtworkKey",
+						"channellayout": "ChannelLayout",
 						"baseurl": "BaseURL",
 						"configtransmission": "ConfigTransmission",
 						"editionid": "EditionID",
@@ -41,6 +43,7 @@
 						"seriesid": "SeriesID",
 						"seriesedition": "SeriesEdition",
 						"sortkey": "SortKey",
+						"streamindex": "StreamIndex",
 						"tagid": "TagID",
 						"tvdbid": "TVDBID",
 						"tvmazeid": "TVmazeID",

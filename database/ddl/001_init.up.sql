@@ -182,6 +182,20 @@ CREATE TABLE Video
 )
 STRICT;
 
+CREATE TABLE AudioTrack
+(
+	ID            TEXT PRIMARY KEY DEFAULT ('at'||newID()),
+	VideoID       TEXT NOT NULL REFERENCES Video,
+	StreamIndex   INTEGER NOT NULL,
+	Language      TEXT NOT NULL,
+	Title         TEXT NOT NULL,
+	Channels      INTEGER NOT NULL,
+	ChannelLayout TEXT NOT NULL,
+	Codec         TEXT NOT NULL,
+	UNIQUE (VideoID, StreamIndex)
+)
+STRICT;
+
 CREATE TABLE RenditionForStreaming
 (
 	ID            TEXT PRIMARY KEY DEFAULT ('rfs'||newID()),

@@ -53,8 +53,16 @@ func (f FrameRate) String() string { return fmt.Sprintf("%d/%d", f.Num, f.Den) }
 // ProbeResult holds information about a media file's streams.
 type ProbeResult struct {
 	Duration time.Duration
-	Video    *VideoStream // first video stream, or nil
-	Audio    *AudioStream // first audio stream, or nil
+	Video    *VideoStream  // first video stream, or nil
+	Audio    []AudioStream // all audio streams
+}
+
+// FirstAudio returns the first audio stream, or nil if none.
+func (p *ProbeResult) FirstAudio() *AudioStream {
+	if len(p.Audio) == 0 {
+		return nil
+	}
+	return &p.Audio[0]
 }
 
 // VideoStream describes a video stream.
@@ -68,10 +76,13 @@ type VideoStream struct {
 
 // AudioStream describes an audio stream.
 type AudioStream struct {
+	Index         int    // audio stream index (0-based among audio streams)
 	CodecName     string // e.g. "aac", "ac3", "dts"
 	BitRate       int64  // bits per second (0 if unknown)
 	Channels      int    // number of channels (e.g. 2, 6)
 	ChannelLayout string // e.g. "stereo", "5.1(side)", "5.1" (empty if unknown)
+	Language      string // e.g. "eng", "jpn" (empty if unknown)
+	Title         string // e.g. "English", "Commentary" (empty if unknown)
 }
 
 // EncodeParams describes how to produce one rendition.
@@ -119,6 +130,10 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			RFrameRate    string `json:"r_frame_rate"`
 			Channels      int    `json:"channels"`
 			ChannelLayout string `json:"channel_layout"`
+			Tags          struct {
+				Language string `json:"language"`
+				Title    string `json:"title"`
+			} `json:"tags"`
 		} `json:"streams"`
 	}
 	err = json.Unmarshal(stdout.Bytes(), &raw)
@@ -131,6 +146,7 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 		Duration: time.Duration(durSec * float64(time.Second)),
 	}
 
+	audioIdx := 0
 	for _, s := range raw.Streams {
 		switch s.CodecType {
 		case "video":
@@ -145,15 +161,17 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 				}
 			}
 		case "audio":
-			if result.Audio == nil {
-				br, _ := strconv.ParseInt(s.BitRate, 10, 64)
-				result.Audio = &AudioStream{
-					CodecName:     s.CodecName,
-					BitRate:       br,
-					Channels:      s.Channels,
-					ChannelLayout: s.ChannelLayout,
-				}
-			}
+			br, _ := strconv.ParseInt(s.BitRate, 10, 64)
+			result.Audio = append(result.Audio, AudioStream{
+				Index:         audioIdx,
+				CodecName:     s.CodecName,
+				BitRate:       br,
+				Channels:      s.Channels,
+				ChannelLayout: s.ChannelLayout,
+				Language:      s.Tags.Language,
+				Title:         s.Tags.Title,
+			})
+			audioIdx++
 		}
 	}
 
@@ -162,8 +180,8 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	if result.Video != nil && result.Video.BitRate == 0 {
 		fmtBr, _ := strconv.ParseInt(raw.Format.BitRate, 10, 64)
 		audioBr := int64(0)
-		if result.Audio != nil {
-			audioBr = result.Audio.BitRate
+		if a := result.FirstAudio(); a != nil {
+			audioBr = a.BitRate
 		}
 		if fmtBr > audioBr {
 			result.Video.BitRate = fmtBr - audioBr

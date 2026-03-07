@@ -4,6 +4,17 @@
 
 package schema
 
+type AudioTrack struct {
+	ID            string
+	VideoID       string
+	StreamIndex   int64
+	Language      string
+	Title         string
+	Channels      int64
+	ChannelLayout string
+	Codec         string
+}
+
 type ConfigTransmission struct {
 	Single  int64
 	Path    string

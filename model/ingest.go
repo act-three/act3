@@ -96,8 +96,27 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 		})
 	}
 
+	var atParams []schema.AudioTrackCreateParams
+	for _, as := range probe.Audio {
+		atParams = append(atParams, schema.AudioTrackCreateParams{
+			VideoID:       vid.ID,
+			StreamIndex:   int64(as.Index),
+			Language:      as.Language,
+			Title:         as.Title,
+			Channels:      int64(as.Channels),
+			ChannelLayout: as.ChannelLayout,
+			Codec:         as.CodecName,
+		})
+	}
+
 	tx.m.prog.UpdateStatus(vid.ID, "Queued")
 	return tx.m.WithTxRW(func(txw *TxRW) error {
+		for _, at := range atParams {
+			_, err = txw.q.AudioTrackCreate(ctx, at)
+			if err != nil {
+				return err
+			}
+		}
 		for _, rfs := range rfsParams {
 			_, err = txw.q.RenditionForStreamingCreate(ctx, rfs)
 			if err != nil {
@@ -410,7 +429,11 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 
 	// Write all DB changes in a single transaction.
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		err := txw.q.RenditionForStreamingDeleteByVideoID(ctx, vid.ID)
+		err := txw.q.AudioTrackDeleteByVideoID(ctx, vid.ID)
+		if err != nil {
+			return err
+		}
+		err = txw.q.RenditionForStreamingDeleteByVideoID(ctx, vid.ID)
 		if err != nil {
 			return err
 		}
@@ -476,9 +499,13 @@ func (tx *TxR) taskReingest(ctx Context, args []string) error {
 		tx.m.removePass1Stats(vid.ID, rfs.ID)
 	}
 
-	// Delete rendition DB records and clear MV playlist.
+	// Delete rendition and audio track DB records, clear MV playlist.
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		err := txw.q.RenditionForStreamingDeleteByVideoID(ctx, vid.ID)
+		err := txw.q.AudioTrackDeleteByVideoID(ctx, vid.ID)
+		if err != nil {
+			return err
+		}
+		err = txw.q.RenditionForStreamingDeleteByVideoID(ctx, vid.ID)
 		if err != nil {
 			return err
 		}

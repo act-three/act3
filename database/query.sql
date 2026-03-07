@@ -132,6 +132,21 @@ WHERE EpisodeID IN (
 	)
 );
 
+-- name: AudioTrackCreate :one
+INSERT INTO AudioTrack (
+	VideoID, StreamIndex, Language, Title,
+	Channels, ChannelLayout, Codec
+) VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: AudioTrackListByVideoID :many
+SELECT * FROM AudioTrack
+WHERE VideoID = ?
+ORDER BY StreamIndex;
+
+-- name: AudioTrackDeleteByVideoID :exec
+DELETE FROM AudioTrack WHERE VideoID = ?;
+
 -- name: MovieList :many
 SELECT ID, Title, ArtworkKey FROM Movie;
 

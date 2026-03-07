@@ -5,7 +5,8 @@ import (
 )
 
 type Video struct {
-	v schema.Video
+	v           schema.Video
+	audioTracks []*AudioTrack
 }
 
 func (v *Video) ID() string           { return v.v.ID }
@@ -13,14 +14,15 @@ func (v *Video) ReleaseID() string    { return v.v.ReleaseID }
 func (v *Video) ReleasePath() string  { return v.v.ReleasePath }
 func (v *Video) OriginalHash() string { return v.v.OriginalHash }
 func (v *Video) MVPlaylist() string   { return v.v.MVPlaylist }
-func (v *Video) PlaylistURL() string  { return "/-/plr/" + v.ID() + ".m3u8" }
+func (v *Video) PlaylistURL() string      { return "/-/plr/" + v.ID() + ".m3u8" }
+func (v *Video) AudioTracks() []*AudioTrack { return v.audioTracks }
 
 func (tx *TxR) Video(ctx Context, id string) (*Video, error) {
 	v, err := tx.q.VideoGet(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return &Video{v}, nil
+	return &Video{v: v}, nil
 }
 
 func (tx *TxR) VideoListByEpisodeID(ctx Context, epID string) ([]schema.Video, error) {
@@ -30,7 +32,7 @@ func (tx *TxR) VideoListByEpisodeID(ctx Context, epID string) ([]schema.Video, e
 func vidMapByID(vids []schema.Video) map[string]*Video {
 	m := map[string]*Video{}
 	for i := range vids {
-		m[vids[i].ID] = &Video{vids[i]}
+		m[vids[i].ID] = &Video{v: vids[i]}
 	}
 	return m
 }

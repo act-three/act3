@@ -121,11 +121,11 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 	// 5.1(side), which CoreMedia's HLS parser rejects.
 	copyAudio := false
 	hasSurround := false
-	if probe.Audio != nil {
-		if probe.Audio.CodecName == "aac" && probe.Audio.Channels <= 2 {
+	if a := probe.FirstAudio(); a != nil {
+		if a.CodecName == "aac" && a.Channels <= 2 {
 			copyAudio = true
 		}
-		if probe.Audio.Channels > 2 {
+		if a.Channels > 2 {
 			hasSurround = true
 		}
 	}

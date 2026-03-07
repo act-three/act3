@@ -10,6 +10,95 @@ import (
 	"strings"
 )
 
+const audioTrackCreate = `-- name: AudioTrackCreate :one
+INSERT INTO AudioTrack (
+	VideoID, StreamIndex, Language, Title,
+	Channels, ChannelLayout, Codec
+) VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING id, videoid, streamindex, language, title, channels, channellayout, codec
+`
+
+type AudioTrackCreateParams struct {
+	VideoID       string
+	StreamIndex   int64
+	Language      string
+	Title         string
+	Channels      int64
+	ChannelLayout string
+	Codec         string
+}
+
+func (q *Queries) AudioTrackCreate(ctx context.Context, arg AudioTrackCreateParams) (AudioTrack, error) {
+	row := q.db.QueryRowContext(ctx, audioTrackCreate,
+		arg.VideoID,
+		arg.StreamIndex,
+		arg.Language,
+		arg.Title,
+		arg.Channels,
+		arg.ChannelLayout,
+		arg.Codec,
+	)
+	var i AudioTrack
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.StreamIndex,
+		&i.Language,
+		&i.Title,
+		&i.Channels,
+		&i.ChannelLayout,
+		&i.Codec,
+	)
+	return i, err
+}
+
+const audioTrackDeleteByVideoID = `-- name: AudioTrackDeleteByVideoID :exec
+DELETE FROM AudioTrack WHERE VideoID = ?
+`
+
+func (q *Queries) AudioTrackDeleteByVideoID(ctx context.Context, videoid string) error {
+	_, err := q.db.ExecContext(ctx, audioTrackDeleteByVideoID, videoid)
+	return err
+}
+
+const audioTrackListByVideoID = `-- name: AudioTrackListByVideoID :many
+SELECT id, videoid, streamindex, language, title, channels, channellayout, codec FROM AudioTrack
+WHERE VideoID = ?
+ORDER BY StreamIndex
+`
+
+func (q *Queries) AudioTrackListByVideoID(ctx context.Context, videoid string) ([]AudioTrack, error) {
+	rows, err := q.db.QueryContext(ctx, audioTrackListByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AudioTrack
+	for rows.Next() {
+		var i AudioTrack
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.StreamIndex,
+			&i.Language,
+			&i.Title,
+			&i.Channels,
+			&i.ChannelLayout,
+			&i.Codec,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const authorCreate = `-- name: AuthorCreate :one
 INSERT INTO User (Name) VALUES (?)
 RETURNING ID

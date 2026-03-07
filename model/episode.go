@@ -144,7 +144,15 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName string) (*Episode,
 	}
 	var videos []*Video
 	for i := range vids {
-		videos = append(videos, &Video{vids[i]})
+		v := &Video{v: vids[i]}
+		ats, err := tx.q.AudioTrackListByVideoID(ctx, vids[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		for j := range ats {
+			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
+		}
+		videos = append(videos, v)
 	}
 	ep := &Episode{
 		ep:     epRec,
