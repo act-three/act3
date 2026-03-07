@@ -10,6 +10,7 @@ import (
 	"kr.dev/errorfmt"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/priority"
 	"ily.dev/act3/video"
 	"ily.dev/act3/video/ffmpeg"
 )
@@ -123,7 +124,7 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 				return err
 			}
 		}
-		txw.addTaskWithPriority(ctx, video.Pass1Priority, taskIngestPass1, vid.ID)
+		txw.addTaskWithPriority(ctx, priority.Pass1, taskIngestPass1, vid.ID)
 		return nil
 	})
 }
@@ -226,9 +227,8 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 	}
 
 	// Queue one taskIngestEncodeRend per rendition.
-	// Rendition priorities are set by video.PlanRenditions:
-	// 0 = best, 2+ = remaining tiers. Pass1 uses priority 1,
-	// so best renditions from all videos encode before any pass1 runs.
+	// Rendition priorities are set by video.PlanRenditions
+	// using constants from the priority package.
 	tx.m.prog.UpdateStatus(vid.ID, "Queuing renditions")
 	tx.m.prog.Close(vid.ID, nil)
 

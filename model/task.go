@@ -15,6 +15,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/log/logcontext"
+	"ily.dev/act3/priority"
 	"ily.dev/act3/tlog"
 	"kr.dev/errorfmt"
 )
@@ -345,7 +346,7 @@ func (tx *TxRW) TaskDelete(ctx Context, id string) error {
 }
 
 func (t *TxRW) addTask(ctx Context, ttype string, args ...string) error {
-	return t.addTaskWithPriority(ctx, 0, ttype, args...)
+	return t.addTaskWithPriority(ctx, priority.Default, ttype, args...)
 }
 
 func (t *TxRW) addTaskWithPriority(ctx Context, priority int64, ttype string, args ...string) error {
