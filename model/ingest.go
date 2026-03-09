@@ -325,9 +325,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	}
 
 	// Fixup media playlist: replace temp media filename with storage hash.
-	playlist = video.FixupMediaPlaylist(
-		playlist, ffmpeg.MediaName(0), "/-/vid/"+hashes[0]+".mp4",
-	)
+	playlist = video.FixupMediaPlaylist(playlist, ffmpeg.MediaName(0), "/-/vid/"+hashes[0]+".mp4")
 
 	tx.m.prog.UpdateStatus(progKey, desc+": saving")
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
@@ -386,12 +384,9 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 		return err
 	}
 	if len(ts) != 1 {
-		return fmt.Errorf("torrent %s: got %d results, wanted 1",
-			*rel.InfoHash, len(ts))
+		return fmt.Errorf("torrent %s: got %d results, wanted 1", *rel.InfoHash, len(ts))
 	}
-	srcPath := filepath.Join(
-		*ts[0].DownloadDir, *ts[0].Name, vid.ReleasePath,
-	)
+	srcPath := filepath.Join(*ts[0].DownloadDir, *ts[0].Name, vid.ReleasePath)
 
 	// Delete existing rendition CAS blobs and pass1 stats.
 	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)

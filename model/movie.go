@@ -165,16 +165,14 @@ func (tx *TxRW) MovieCreateByTMDBID(
 
 	var year int64
 	if len(movie.ReleaseDate) >= 4 {
-		y, err := strconv.ParseInt(
-			movie.ReleaseDate[:4], 10, 64)
+		y, err := strconv.ParseInt(movie.ReleaseDate[:4], 10, 64)
 		if err == nil {
 			year = y
 		}
 	}
 
 	moID := "mo" + flurry.NewID()
-	slug, err := tx.generateMovieSlug(
-		ctx, movie.Title, year, moID)
+	slug, err := tx.generateMovieSlug(ctx, movie.Title, year, moID)
 	if err != nil {
 		return nil, err
 	}

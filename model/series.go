@@ -78,10 +78,7 @@ func newSeries(
 
 	for _, soData := range seds {
 		sns := snByEditionID[soData.ID]
-		sed := newSeriesEdition(&sr.SeriesHead, soData, sns, snepBySeasonID, epByID,
-			progByEpisodeID,
-			videosByEpisodeID,
-		)
+		sed := newSeriesEdition(&sr.SeriesHead, soData, sns, snepBySeasonID, epByID, progByEpisodeID, videosByEpisodeID)
 		sr.soByID[sed.ID()] = sed
 		sr.soByTitle[sed.Title()] = sed
 		slog.Debug("loaded series edition", "id", sed.ID(), "title", sed.Title())
@@ -261,9 +258,6 @@ func (tx *TxR) seriesFromData(ctx Context, srData schema.Series) (*Series, error
 	vidByID := vidMapByID(vids)
 	videosByEpisodeID := vidMapByEpisodeID(evs, vidByID)
 
-	sr := newSeries(srData, seds, sns, sneps, eps,
-		tx.m.prog.List,
-		videosByEpisodeID,
-	)
+	sr := newSeries(srData, seds, sns, sneps, eps, tx.m.prog.List, videosByEpisodeID)
 	return sr, nil
 }

@@ -78,12 +78,9 @@ func (c *Client) getCacheMovie(id int) *Movie {
 }
 
 // Search searches for movies by title.
-func (c *Client) Search(
-	ctx context.Context, q string,
-) ([]SearchResult, error) {
+func (c *Client) Search(ctx context.Context, q string) ([]SearchResult, error) {
 	var v SearchResponse
-	err := c.getf(ctx, &v,
-		"/3/search/movie", params("query", q))
+	err := c.getf(ctx, &v, "/3/search/movie", params("query", q))
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +88,7 @@ func (c *Client) Search(
 }
 
 // GetMovie fetches full movie details by TMDB ID.
-func (c *Client) GetMovie(
-	ctx context.Context, id int,
-) (*Movie, error) {
+func (c *Client) GetMovie(ctx context.Context, id int) (*Movie, error) {
 	m := c.getCacheMovie(id)
 	if m != nil {
 		return m, nil
@@ -107,20 +102,14 @@ func (c *Client) GetMovie(
 	return v, nil
 }
 
-func (c *Client) getf(
-	ctx context.Context, v any,
-	format string, args ...any,
-) (err error) {
-	defer errorfmt.Handlef("tmdb getf %s %v: %w",
-		format, args, &err)
-	slog.InfoContext(ctx, "tmdb getf",
-		"format", format, "args", args)
+func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (err error) {
+	defer errorfmt.Handlef("tmdb getf %s %v: %w", format, args, &err)
+	slog.InfoContext(ctx, "tmdb getf", "format", format, "args", args)
 	token := c.getToken()
 	if token == "" {
 		return fmt.Errorf("TMDB access token not configured")
 	}
-	req, err := http.NewRequestWithContext(
-		ctx, "GET", "", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", "", nil)
 	if err != nil {
 		return err
 	}
@@ -134,12 +123,9 @@ func (c *Client) getf(
 		return err
 	}
 	defer resp.Body.Close()
-	slog.InfoContext(ctx, "tmdb response",
-		"status", resp.StatusCode,
-		"elapsed", time.Since(t0))
+	slog.InfoContext(ctx, "tmdb response", "status", resp.StatusCode, "elapsed", time.Since(t0))
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("bad status %d: %s",
-			resp.StatusCode, resp.Status)
+		return fmt.Errorf("bad status %d: %s", resp.StatusCode, resp.Status)
 	}
 	err = json.UnmarshalRead(resp.Body, v)
 	if err != nil {
@@ -148,9 +134,7 @@ func (c *Client) getf(
 	return nil
 }
 
-func (c *Client) urlf(
-	format string, args ...any,
-) *url.URL {
+func (c *Client) urlf(format string, args ...any) *url.URL {
 	var u url.URL
 	u = baseURL
 	if len(args) > 0 {
@@ -160,8 +144,7 @@ func (c *Client) urlf(
 			args = args[:len(args)-1]
 		}
 	}
-	u.Path = path.Join(baseURL.Path,
-		fmt.Sprintf(format, args...))
+	u.Path = path.Join(baseURL.Path, fmt.Sprintf(format, args...))
 	return &u
 }
 

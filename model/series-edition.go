@@ -46,10 +46,7 @@ func newSeriesEdition(
 	}
 	for _, snData := range sns {
 		sneps := snepBySeasonID[snData.ID]
-		sn := newSeason(sr, &sed.SeriesEditionHead, snData, sneps, epByID,
-			progByEpisodeID,
-			videosByEpisodeID,
-		)
+		sn := newSeason(sr, &sed.SeriesEditionHead, snData, sneps, epByID, progByEpisodeID, videosByEpisodeID)
 		sed.sns = append(sed.sns, sn)
 		sed.snByID[sn.ID()] = sn
 	}
@@ -175,9 +172,6 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 	sr := &SeriesHead{srData}
 	epByID := epMapByID(eps)
 	snepBySeasonID := snepMapBySeasonID(sneps)
-	sed := newSeriesEdition(sr, sedData, sns, snepBySeasonID, epByID,
-		tx.m.prog.List,
-		videosByEpisodeID,
-	)
+	sed := newSeriesEdition(sr, sedData, sns, snepBySeasonID, epByID, tx.m.prog.List, videosByEpisodeID)
 	return sed, nil
 }

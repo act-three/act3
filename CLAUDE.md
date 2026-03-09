@@ -96,7 +96,9 @@ main.go
 - `x`-prefixed packages (`xbufio`, `xiter`, `xslices`,
   `xstrings`) are small stdlib extensions
 - Static assets use digest-based cache busting via `http/digest/`
-- Wrap documentation (markdown, code comments) to roughly 72 characters
+- Go code can go beyond 80 columns (just not by a lot).
+  Don't insert needless line breaks.
+- Wrap *documentation* (markdown, code comments) to roughly 72 characters
   (shown below).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
