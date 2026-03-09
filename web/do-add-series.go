@@ -12,9 +12,17 @@ import (
 )
 
 func (c *Config) doAddSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	id, err := strconv.Atoi(req.FormValue("id"))
+	if err != nil {
+		return nil, &model.ValidationError{Op: "TVmaze ID", Err: err}
+	}
+	show, err := c.TVmaze.GetShow(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-		ctx := req.Context()
-		ss, err := tx.SeriesCreateByTVmazeID(ctx, req.FormValue("id"))
+		ss, err := tx.SeriesCreateByTVmazeID(ctx, show)
 		if err != nil {
 			return nil, err
 		}

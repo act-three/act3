@@ -11,6 +11,7 @@ import (
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
+	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/xstrings"
 )
 
@@ -166,15 +167,8 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string,
 	return slug + "-" + id, nil
 }
 
-func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, id string) (*SeriesHead, error) {
-	id64, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return nil, &ValidationError{Op: "TVmaze ID", Err: err}
-	}
-	show, err := tx.m.tvmaze.GetShow(ctx, int(id64))
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesHead, error) {
+	id64 := int64(show.ID)
 
 	srID := "sr" + flurry.NewID()
 	slug, err := tx.generateSeriesSlug(ctx,

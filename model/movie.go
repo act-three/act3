@@ -159,18 +159,9 @@ func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieHead, 
 }
 
 func (tx *TxRW) MovieCreateByTMDBID(
-	ctx Context, id string,
+	ctx Context, movie *tmdb.Movie,
 ) (*MovieHead, error) {
-	id64, err := strconv.ParseInt(id, 10, 64)
-	if err != nil {
-		return nil, &ValidationError{
-			Op: "TMDB ID", Err: err,
-		}
-	}
-	movie, err := tx.m.tmdb.GetMovie(ctx, int(id64))
-	if err != nil {
-		return nil, err
-	}
+	id64 := int64(movie.ID)
 
 	var year int64
 	if len(movie.ReleaseDate) >= 4 {

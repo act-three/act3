@@ -72,9 +72,17 @@ func (c *Config) doAddMovie(w http.ResponseWriter, req *http.Request) (html.Node
 }
 
 func (c *Config) doAddMovieTMDB(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	id, err := strconv.Atoi(req.FormValue("id"))
+	if err != nil {
+		return nil, &model.ValidationError{Op: "TMDB ID", Err: err}
+	}
+	movie, err := c.TMDB.GetMovie(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-		ctx := req.Context()
-		mo, err := tx.MovieCreateByTMDBID(ctx, req.FormValue("id"))
+		mo, err := tx.MovieCreateByTMDBID(ctx, movie)
 		if err != nil {
 			return nil, err
 		}
