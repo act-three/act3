@@ -18,11 +18,12 @@ var combining = map[string]string{
 // into a single attribute in the rendered output.
 //
 // RegisterCombining must be called before Render.
-// This is typically done in an [init] function in packages
+// This is typically done in an init function in packages
 // that define custom attributes.
 //
 // The initial set of combining attributes is:
 //
+//	name  sep
 //	class " "
 //	style ";"
 func RegisterCombining(name, sep string) {
@@ -31,18 +32,7 @@ func RegisterCombining(name, sep string) {
 
 type seq iter.Seq[Node]
 
-// Group returns a Node that renders all items in attr
-// separated by spaces.
-//
-// The returned Node does not repeat attributes:
-//
-//  1. For each *combining* attribute present,
-//     it combines the given values into a single value,
-//     separated by spaces.
-//     Initially, "class" is the only combining attribute.
-//     More can be registered with [RegisterCombining].
-//  2. For all other attributes,
-//     it outputs only the first occurrence of each.
+// Group renders all items in attr.
 func Group(attr ...Node) Node {
 	return seq(func(yield func(Node) bool) {
 		for _, v := range attr {

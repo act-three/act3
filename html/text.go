@@ -11,7 +11,8 @@ type raw string
 // Raw renders its contents directly to its output,
 // with no further processing.
 // This should be used only with trustworthy data,
-// since any HTML special characters
+// since any HTML special characters,
+// including JavaScript,
 // will be interpreted by the browser.
 func Raw(s string) Node {
 	return raw(s)

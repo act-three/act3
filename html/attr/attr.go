@@ -1,3 +1,15 @@
+// Package attr represents HTML attributes as Go expressions.
+// Construct lists of attributes:
+//
+//	g := Group(ID("results"), Class("text-red-50"))
+//
+// Render to HTML code:
+//
+//	b := &bytes.Buffer{}
+//	Render(&b, g)
+//	// b contains ` id=results class=text-red-50`
+//
+// When rendered, each attribute is preceded by a space character.
 package attr
 
 import (
@@ -9,11 +21,25 @@ import (
 
 //go:generate go run gen.go -output all.go
 
+// Render writes the attributes in n to w as HTML code,
+// The only errors returned are from w.
+//
+// Render does not repeat attributes:
+//
+//  1. For each combining attribute present,
+//     it combines the values into a single value.
+//     See [RegisterCombining] for more.
+//  2. For all other attributes,
+//     it outputs only the first occurrence of each.
 func Render(w io.Writer, n Node) error {
 	return n.renderTo(w)
 }
 
+// Node is a list of HTML attributes.
+// It can be rendered to HTML code using [Render].
 type Node interface {
+	// Has returns whether the receiver is or contains
+	// an attribute with the given name.
 	Has(name string) bool
 	renderTo(io.Writer) error
 	attr()
@@ -27,12 +53,14 @@ type Node interface {
 // it writes just the attribute name, with no equals sign and no value.
 type AttrName func(value string) Node
 
+// Attr returns an [AttrName] for the attribute with the given name.
 func Attr(name string) AttrName {
 	return func(value string) Node {
 		return attrValue{name, value}
 	}
 }
 
+// Has returns whether a has the given name.
 func (a AttrName) Has(name string) bool {
 	return a(empty).Has(name)
 }
@@ -68,6 +96,7 @@ func (a attrValue) renderTo(w io.Writer) error {
 
 func (attrValue) attr() {}
 
+// The only errors returned are from w.
 func render(w io.Writer, name string, v string) error {
 	_, err := io.WriteString(w, name)
 	if isSameString(v, empty) {

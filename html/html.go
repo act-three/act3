@@ -1,3 +1,15 @@
+// Package html representes HTML as Go function calls.
+// Construct trees of HTML nodes:
+//
+//	h := Div(attr.Class("text-red-50"))(
+//	    P()(Text("Watch ")), I()(Text("Casablanca")), Text(" tonight!")),
+//	)
+//
+// Render to HTML code:
+//
+//	b := &bytes.Buffer{}
+//	Render(&b, h)
+//	// b contains <div class=text-red-50><p>Watch <i>Casablanca</i> tonight!</p></div>
 package html
 
 import (
@@ -8,17 +20,22 @@ import (
 
 //go:generate go run gen.go -output tag.go
 
+// Render writes n to w as HTML code.
+// The only errors returned are from w.
 func Render(w io.Writer, n Node) error {
 	return n.renderTo(w)
 }
 
+// Node is an HTML node (element or text).
+// Its complete tree (including children)
+// can be rendered to HTML code using [Render].
 type Node interface {
 	renderTo(io.Writer) error
 }
 
 // Tag returns a new HTML tag with the given name.
 // The tag is a function;
-// it should be called with a list of attributes.
+// call it to add attributes.
 func Tag(name string) func(...attr.Node) Element {
 	return func(attrs ...attr.Node) Element {
 		return func(child ...Node) Node {
@@ -31,9 +48,12 @@ func Tag(name string) func(...attr.Node) Element {
 	}
 }
 
-// Element represents an element.
-// It already contains attributes.
-// Children can be added by calling it.
+// Element represents an open HTML element,
+// with tag name and attributes as given by [Tag].
+//
+// An Element is a function; call it to add children.
+// For convenience, Element also implements Node;
+// Render(w, e) is equivalent to Render(w, e()).
 type Element func(...Node) Node
 
 // renderTo renders e with no children.
@@ -68,8 +88,6 @@ func (e element) renderTo(w io.Writer) error {
 	_, err = w.Write(gt)
 	return err
 }
-
-func (element) node() {}
 
 var (
 	lt      = []byte(`<`)
