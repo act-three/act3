@@ -13,6 +13,7 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/http/timing"
 	"ily.dev/act3/model"
+	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/service/tvmaze"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/icon"
@@ -30,6 +31,7 @@ type handlerFunc func(http.ResponseWriter, *http.Request) (html.Node, error)
 type Config struct {
 	Model  *model.Model
 	Store  fs.FS
+	TMDB   *tmdb.Client
 	TVmaze *tvmaze.Client
 }
 
@@ -47,9 +49,12 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /app/series/{id}", c.editSeriesDetail)
 	handle(mux, "GET /-/player/{id}/{epID}/{sedID}", c.showPlayerForEpisode)
 	handle(mux, "GET /-/player/{id}/{moID}", c.showPlayerForMovie)
+	handle(mux, "GET /-/dialog/movie-add", c.movieAddDialogReq)
+	handle(mux, "GET /-/part/movie-search", c.movieSearch)
 	handle(mux, "GET /-/part/series-search", c.seriesSearch)
 	handle(mux, "GET /app/storage", c.systemStorage)
 	handle(mux, "GET /app/tasks", c.systemTasks)
+	handle(mux, "GET /app/tmdb", c.systemTMDB)
 	handle(mux, "GET /app/transmission", c.systemTransmission)
 	handle(mux, "GET /-/plr/{id}", c.videoPlaylist)
 	handle(mux, "GET /-/pls/{id}", c.videoRenditionPlaylist)
@@ -58,8 +63,10 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /{slug}", c.showSeriesOrMovie)
 	handle(mux, "GET /{slug}/{epSlug}", c.showEpisode)
 	handle(mux, "POST /-/do/add-movie", c.doAddMovie)
+	handle(mux, "POST /-/do/add-movie-tmdb", c.doAddMovieTMDB)
 	handle(mux, "POST /-/do/add-series", c.doAddSeries)
 	handle(mux, "POST /-/do/add-torrent", c.doAddTorrent)
+	handle(mux, "POST /-/do/update-tmdb-settings", c.doUpdateTMDBSettings)
 	handle(mux, "POST /-/do/update-transmission-settings", c.doUpdateTransmissionSettings)
 	handle(mux, "POST /-/do/run-task/{id}", c.doRunTask)
 	handle(mux, "POST /-/do/delete-task/{id}", c.doDeleteTask)

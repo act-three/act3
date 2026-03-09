@@ -19,6 +19,7 @@ import (
 	"ily.dev/act3/http/timing"
 	"ily.dev/act3/log/logcontext"
 	"ily.dev/act3/model"
+	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/storage"
 	"ily.dev/act3/web"
@@ -113,10 +114,12 @@ func main() {
 	}
 
 	store := must(storage.Open(casDir))
+	tmdbClient := tmdb.New()
 	tvmazeClient := must(tvmaze.New(dbw))
 	m := must(model.New(dbr, dbw, model.Config{
 		Store:         store,
 		PersistentTmp: tmpDir,
+		TMDB:          tmdbClient,
 		TVmaze:        tvmazeClient,
 	}))
 
@@ -129,6 +132,7 @@ func main() {
 	web.Handle(mux, &web.Config{
 		Model:  m,
 		Store:  store.FS(),
+		TMDB:   tmdbClient,
 		TVmaze: tvmazeClient,
 	})
 	h := http.Handler(mux)

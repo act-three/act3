@@ -6,7 +6,10 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/turbo"
 )
+
+const EditMediaMoviesListItems = "movie-list-items"
 
 func EditMediaMovies(
 	title string,
@@ -15,12 +18,17 @@ func EditMediaMovies(
 ) html.Node {
 	return app(title, FlexCol(attr.Class("place-self-stretch"))(
 		ToolbarPrimary()(
-			editMediaMoviesAddForm(),
+			DialogButton("/-/dialog/movie-add")(
+				Icon("line/plus"),
+				html.Text("Add Movie"),
+			),
 			html.Div(),
 		),
 		Split()(
 			List("/app/movies/", "detail")(
-				ListItems(s, EditMediaMoviesListItem),
+				turbo.Sink(EditMediaMoviesListItems)(
+					ListItems(s, EditMediaMoviesListItem),
+				),
 			),
 			expr.IfElse(detail != nil,
 				func() html.Node {
@@ -56,23 +64,6 @@ func EditMediaMoviesListItem(
 			CardDescription(attr.Class("line-clamp-2"))(
 				html.Text(mo.YearDisplay()),
 			),
-		),
-	)
-}
-
-func editMediaMoviesAddForm() html.Node {
-	return html.Form(
-		attr.Class("flex flex-row gap-2 items-center"),
-		attr.Method("POST"),
-		attr.Action("/-/do/add-movie"),
-	)(
-		InputText(
-			attr.Name("title"),
-			attr.Placeholder("Movie title…"),
-		),
-		Button(ButtonSurface, ButtonRadiusMedium)(
-			Icon("line/plus"),
-			html.Text("Add Movie"),
 		),
 	)
 }

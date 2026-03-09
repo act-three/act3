@@ -6,6 +6,7 @@ import (
 
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/xstrings"
 )
 
@@ -28,7 +29,9 @@ func (mo *MovieHead) Title() string    { return mo.mo.Title }
 func (mo *MovieHead) Summary() string  { return mo.mo.Summary }
 func (mo *MovieHead) Year() int64      { return mo.mo.Year }
 func (mo *MovieHead) Runtime() int64   { return mo.mo.Runtime }
-func (mo *MovieHead) ImageURL() string { return mo.mo.ImageURL }
+func (mo *MovieHead) ImageURL() string  { return mo.mo.ImageURL }
+func (mo *MovieHead) TMDBID() *int64    { return mo.mo.TMDBID }
+func (mo *MovieHead) IMDBID() *string   { return mo.mo.IMDBID }
 
 func (mo *MovieHead) PlayURL() string {
 	return "/" + mo.mo.Slug
@@ -153,6 +156,64 @@ func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieHead, 
 		return nil, err
 	}
 	return &MovieHead{moData}, nil
+}
+
+func (tx *TxRW) MovieCreateByTMDBID(
+	ctx Context, id string,
+) (*MovieHead, error) {
+	id64, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return nil, &ValidationError{
+			Op: "TMDB ID", Err: err,
+		}
+	}
+	movie, err := tx.m.tmdb.GetMovie(ctx, int(id64))
+	if err != nil {
+		return nil, err
+	}
+
+	var year int64
+	if len(movie.ReleaseDate) >= 4 {
+		y, err := strconv.ParseInt(
+			movie.ReleaseDate[:4], 10, 64)
+		if err == nil {
+			year = y
+		}
+	}
+
+	moID := "mo" + flurry.NewID()
+	slug, err := tx.generateMovieSlug(
+		ctx, movie.Title, year, moID)
+	if err != nil {
+		return nil, err
+	}
+
+	moData, err := tx.q.MovieCreate(ctx,
+		schema.MovieCreateParams{
+			ID:       moID,
+			Slug:     slug,
+			Title:    movie.Title,
+			Summary:  movie.Overview,
+			Year:     year,
+			Runtime:  int64(movie.Runtime),
+			ImageURL: tmdb.ImageURL(movie.PosterPath),
+			TMDBID:   &id64,
+			IMDBID:   movie.IMDBID,
+		})
+	if err != nil {
+		return nil, err
+	}
+	return &MovieHead{moData}, nil
+}
+
+func (tx *TxR) MovieHeadListByTMDBID(
+	ctx Context, ids []*int64,
+) ([]*MovieHead, error) {
+	a, err := tx.q.MovieListByTMDBID(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	return newMovieHeadList(a), nil
 }
 
 func (tx *TxRW) generateMovieSlug(ctx Context, title string, year int64, id string) (string, error) {

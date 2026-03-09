@@ -17,6 +17,31 @@ var excludeFSType = map[string]bool{
 	"tmpfs":    true,
 }
 
+func (c *Config) systemTMDB(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		config, err := tx.TMDB(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return view.EditSystemTMDB(config), nil
+	})
+}
+
+func (c *Config) doUpdateTMDBSettings(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		err := tx.TMDBSet(ctx, model.ConfigTMDB{
+			AccessToken: req.FormValue("token"),
+		})
+		if err != nil {
+			return nil, err
+		}
+		http.Redirect(w, req, "/app/tmdb", http.StatusSeeOther)
+		return nil, nil
+	})
+}
+
 func (c *Config) systemTransmission(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()

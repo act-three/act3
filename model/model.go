@@ -12,6 +12,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
+	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/storage"
 )
@@ -21,12 +22,14 @@ type Context = context.Context
 type Config struct {
 	Store         *storage.Dir
 	PersistentTmp string
+	TMDB          *tmdb.Client
 	TVmaze        *tvmaze.Client
 }
 
 type Model struct {
 	store         *storage.Dir
 	persistentTmp string
+	tmdb          *tmdb.Client
 	tvmaze        *tvmaze.Client
 
 	dbr   *sql.DB
@@ -51,6 +54,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	m = &Model{
 		store:          c.Store,
 		persistentTmp:  c.PersistentTmp,
+		tmdb:           c.TMDB,
 		tvmaze:         c.TVmaze,
 		dbr:            dbr,
 		dbw:            dbw,
@@ -88,6 +92,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 }
 
 var configLoaders = []func(*TxR, Context) error{
+	(*TxR).loadTMDBConfig,
 	(*TxR).loadTransmissionConfig,
 }
 

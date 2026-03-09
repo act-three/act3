@@ -48,6 +48,7 @@ func sidebarData() []MenuSection {
 			Label: "System",
 			Items: []MenuItem{
 				{"line/cloud-01", "/app/transmission", "Download Client", nil},
+				{"line/database-01", "/app/tmdb", "TMDB", nil},
 				{"line/hard-drive", "/app/storage", "Storage", nil},
 				{"line/calendar-check-01", "/app/tasks", "Tasks", nil},
 			},

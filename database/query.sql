@@ -148,8 +148,8 @@ ORDER BY StreamIndex;
 DELETE FROM AudioTrack WHERE VideoID = ?;
 
 -- name: MovieCreate :one
-INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL, TMDBID, IMDBID)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieGet :one
@@ -164,6 +164,9 @@ SELECT COUNT(*) FROM Movie WHERE Slug = ?;
 -- name: MovieList :many
 SELECT * FROM Movie
 ORDER BY Title;
+
+-- name: MovieListByTMDBID :many
+SELECT * FROM Movie WHERE TMDBID IN (sqlc.slice(ids));
 
 -- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieID, VideoID)
@@ -414,6 +417,13 @@ UPDATE Task SET
 	Failures = ?,
 	FailureDesc = ?
 WHERE ID = ?;
+
+-- name: TMDBGet :one
+SELECT AccessToken FROM ConfigTMDB LIMIT 1;
+
+-- name: TMDBSet :exec
+INSERT INTO ConfigTMDB (Single, AccessToken) VALUES (0, ?1)
+ON CONFLICT (Single) DO UPDATE SET AccessToken = ?1;
 
 -- name: TransmissionGet :one
 SELECT Path, BaseURL FROM ConfigTransmission LIMIT 1;

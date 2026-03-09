@@ -15,6 +15,11 @@ type AudioTrack struct {
 	Codec         string
 }
 
+type ConfigTMDB struct {
+	Single      int64
+	AccessToken string
+}
+
 type ConfigTransmission struct {
 	Single  int64
 	Path    string
@@ -59,6 +64,8 @@ type Movie struct {
 	Year     int64
 	Runtime  int64
 	ImageURL string
+	TMDBID   *int64
+	IMDBID   *string
 }
 
 type Movievideo struct {

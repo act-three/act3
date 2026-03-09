@@ -753,9 +753,9 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 }
 
 const movieCreate = `-- name: MovieCreate :one
-INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, title, summary, year, runtime, imageurl
+INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL, TMDBID, IMDBID)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid
 `
 
 type MovieCreateParams struct {
@@ -766,6 +766,8 @@ type MovieCreateParams struct {
 	Year     int64
 	Runtime  int64
 	ImageURL string
+	TMDBID   *int64
+	IMDBID   *string
 }
 
 func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie, error) {
@@ -777,6 +779,8 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 		arg.Year,
 		arg.Runtime,
 		arg.ImageURL,
+		arg.TMDBID,
+		arg.IMDBID,
 	)
 	var i Movie
 	err := row.Scan(
@@ -787,12 +791,14 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 		&i.Year,
 		&i.Runtime,
 		&i.ImageURL,
+		&i.TMDBID,
+		&i.IMDBID,
 	)
 	return i, err
 }
 
 const movieGet = `-- name: MovieGet :one
-SELECT id, slug, title, summary, year, runtime, imageurl FROM Movie WHERE ID = ?
+SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie WHERE ID = ?
 `
 
 func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
@@ -806,12 +812,14 @@ func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
 		&i.Year,
 		&i.Runtime,
 		&i.ImageURL,
+		&i.TMDBID,
+		&i.IMDBID,
 	)
 	return i, err
 }
 
 const movieGetBySlug = `-- name: MovieGetBySlug :one
-SELECT id, slug, title, summary, year, runtime, imageurl FROM Movie WHERE Slug = ?
+SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie WHERE Slug = ?
 `
 
 func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error) {
@@ -825,12 +833,14 @@ func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error
 		&i.Year,
 		&i.Runtime,
 		&i.ImageURL,
+		&i.TMDBID,
+		&i.IMDBID,
 	)
 	return i, err
 }
 
 const movieList = `-- name: MovieList :many
-SELECT id, slug, title, summary, year, runtime, imageurl FROM Movie
+SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie
 ORDER BY Title
 `
 
@@ -851,6 +861,55 @@ func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
 			&i.Year,
 			&i.Runtime,
 			&i.ImageURL,
+			&i.TMDBID,
+			&i.IMDBID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const movieListByTMDBID = `-- name: MovieListByTMDBID :many
+SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie WHERE TMDBID IN (/*SLICE:ids*/?)
+`
+
+func (q *Queries) MovieListByTMDBID(ctx context.Context, ids []*int64) ([]Movie, error) {
+	query := movieListByTMDBID
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Movie
+	for rows.Next() {
+		var i Movie
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Summary,
+			&i.Year,
+			&i.Runtime,
+			&i.ImageURL,
+			&i.TMDBID,
+			&i.IMDBID,
 		); err != nil {
 			return nil, err
 		}
@@ -2049,6 +2108,27 @@ func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const tMDBGet = `-- name: TMDBGet :one
+SELECT AccessToken FROM ConfigTMDB LIMIT 1
+`
+
+func (q *Queries) TMDBGet(ctx context.Context) (string, error) {
+	row := q.db.QueryRowContext(ctx, tMDBGet)
+	var accesstoken string
+	err := row.Scan(&accesstoken)
+	return accesstoken, err
+}
+
+const tMDBSet = `-- name: TMDBSet :exec
+INSERT INTO ConfigTMDB (Single, AccessToken) VALUES (0, ?1)
+ON CONFLICT (Single) DO UPDATE SET AccessToken = ?1
+`
+
+func (q *Queries) TMDBSet(ctx context.Context, accesstoken string) error {
+	_, err := q.db.ExecContext(ctx, tMDBSet, accesstoken)
+	return err
 }
 
 const taskCreate = `-- name: TaskCreate :one

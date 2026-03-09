@@ -7,6 +7,13 @@ CREATE TABLE User
 )
 STRICT;
 
+CREATE TABLE ConfigTMDB
+(
+	Single      INTEGER PRIMARY KEY CHECK (single = 0),
+	AccessToken TEXT NOT NULL
+)
+STRICT;
+
 CREATE TABLE ConfigTransmission
 (
 	Single  INTEGER PRIMARY KEY CHECK (single = 0),
@@ -119,9 +126,11 @@ CREATE TABLE Movie
 	Slug     TEXT NOT NULL UNIQUE,
 	Title    TEXT NOT NULL,
 	Summary  TEXT NOT NULL DEFAULT (''),
-	Year     INTEGER NOT NULL DEFAULT (0), -- 0 = unknown
-	Runtime  INTEGER NOT NULL DEFAULT (0), -- minutes
-	ImageURL TEXT NOT NULL DEFAULT ('')
+	Year     INTEGER NOT NULL DEFAULT (0),    -- 0 = unknown
+	Runtime  INTEGER NOT NULL DEFAULT (0),    -- minutes
+	ImageURL TEXT NOT NULL DEFAULT (''),
+	TMDBID   INTEGER UNIQUE,
+	IMDBID   TEXT UNIQUE
 )
 STRICT;
 
