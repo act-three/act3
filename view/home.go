@@ -7,11 +7,11 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func Home(series []*model.SeriesHead, movies []*model.MovieHead) html.Node {
-	washURLs := homeWashURLs(series)
-	for _, mo := range movies {
-		if mo.ImageURL() != "" {
-			washURLs = append(washURLs, mo.ImageURL())
+func Home(works []*model.Work) html.Node {
+	var washURLs []string
+	for _, w := range works {
+		if w.ImageURL() != "" {
+			washURLs = append(washURLs, w.ImageURL())
 		}
 	}
 	return media("Act Three", washURLs...)(
@@ -35,21 +35,13 @@ func Home(series []*model.SeriesHead, movies []*model.MovieHead) html.Node {
 					content-start
 					gap-[1px]
 				`))(
-				html.Range(movies, moviePosterLink),
-				html.Range(series, seriesPosterLink),
+				html.Range(works, workPosterLink),
 			),
 		),
 	)
 }
 
-func homeWashURLs(a []*model.SeriesHead) (u []string) {
-	for _, sr := range a {
-		u = append(u, sr.TVmazeImageURL())
-	}
-	return u
-}
-
-func moviePosterLink(mo *model.MovieHead) html.Node {
+func workPosterLink(w *model.Work) html.Node {
 	return html.Div(Class(`
 		aspect-2/3
 		w-[187px]
@@ -62,34 +54,11 @@ func moviePosterLink(mo *model.MovieHead) html.Node {
 		`))(
 		html.A(
 			Class("block w-full h-full"),
-			attr.Href(mo.PlayURL()),
+			attr.Href(w.PlayURL()),
 		)(
 			html.Img(
 				Class("w-full h-full object-cover"),
-				attr.Src(mo.ImageURL()),
-			),
-		),
-	)
-}
-
-func seriesPosterLink(sr *model.SeriesHead) html.Node {
-	return html.Div(Class(`
-		aspect-2/3
-		w-[187px]
-		relative
-		hover:after:content-[""]
-		hover:after:absolute
-		hover:after:inset-0
-		hover:after:bg-black/40
-		hover:after:pointer-events-none
-		`))(
-		html.A(
-			Class("block w-full h-full"),
-			attr.Href(sr.PlayURL()),
-		)(
-			html.Img(
-				Class("w-full h-full object-cover"),
-				attr.Src(sr.TVmazeImageURL()),
+				attr.Src(w.ImageURL()),
 			),
 		),
 	)
