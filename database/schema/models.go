@@ -52,9 +52,13 @@ type EpisodeVideo struct {
 }
 
 type Movie struct {
-	ID         string
-	Title      string
-	ArtworkKey string
+	ID       string
+	Slug     string
+	Title    string
+	Summary  string
+	Year     int64
+	Runtime  int64
+	ImageURL string
 }
 
 type Movievideo struct {

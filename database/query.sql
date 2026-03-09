@@ -147,8 +147,40 @@ ORDER BY StreamIndex;
 -- name: AudioTrackDeleteByVideoID :exec
 DELETE FROM AudioTrack WHERE VideoID = ?;
 
+-- name: MovieCreate :one
+INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: MovieGet :one
+SELECT * FROM Movie WHERE ID = ?;
+
+-- name: MovieGetBySlug :one
+SELECT * FROM Movie WHERE Slug = ?;
+
+-- name: MovieSlugExists :one
+SELECT COUNT(*) FROM Movie WHERE Slug = ?;
+
 -- name: MovieList :many
-SELECT ID, Title, ArtworkKey FROM Movie;
+SELECT * FROM Movie
+ORDER BY Title;
+
+-- name: MovieVideoCreate :one
+INSERT INTO MovieVideo (MovieID, VideoID)
+VALUES (?, ?)
+RETURNING *;
+
+-- name: MovieVideoListByMovieID :many
+SELECT * FROM MovieVideo
+WHERE MovieID = ?;
+
+-- name: VideoListByMovieID :many
+SELECT * FROM Video
+WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieID = ?);
+
+-- name: RenditionForStreamingListByMovieID :many
+SELECT * FROM RenditionForStreaming
+WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieID = ?);
 
 -- name: ReleaseCreate :one
 INSERT INTO Release

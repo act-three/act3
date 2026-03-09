@@ -1,6 +1,7 @@
 package web
 
 import (
+	"database/sql"
 	"net/http"
 
 	"ily.dev/act3/html"
@@ -8,13 +9,30 @@ import (
 	"ily.dev/act3/view"
 )
 
-func (c *Config) showSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) showSeriesOrMovie(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		sr, err := tr.SeriesBySlug(ctx, req.PathValue("slug"))
-		if err != nil {
+		slug := req.PathValue("slug")
+
+		sr, err := tr.SeriesBySlug(ctx, slug)
+		if err == nil {
+			return view.MediaSeries(sr), nil
+		}
+		if err != sql.ErrNoRows {
 			return nil, err
 		}
-		return view.MediaSeries(sr), nil
+
+		mo, err := tr.MovieBySlug(ctx, slug)
+		if err == sql.ErrNoRows {
+			return nil, errNotFound
+		} else if err != nil {
+			return nil, err
+		}
+
+		dls, dlErr := tr.RenditionForDownloadListForMovie(ctx, mo.ID())
+		if dlErr != nil {
+			return nil, dlErr
+		}
+		return view.MediaMovie(mo, dls), nil
 	})
 }

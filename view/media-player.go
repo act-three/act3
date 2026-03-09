@@ -16,6 +16,17 @@ func MediaPlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []mode
 	return mediaPlayer(v, mediaPlayerTitleForEpisode(ep), qualityOpts)
 }
 
+func MediaPlayerForMovie(v *model.Video, mo *model.Movie, qualityOpts []model.QualityOption) html.Node {
+	return mediaPlayer(v, mediaPlayerTitleForMovie(mo), qualityOpts)
+}
+
+func mediaPlayerTitleForMovie(mo *model.Movie) string {
+	if y := mo.Year(); y != 0 {
+		return fmt.Sprintf("%s (%d)", mo.Title(), y)
+	}
+	return mo.Title()
+}
+
 func mediaPlayer(v *model.Video, title string, qualityOpts []model.QualityOption) html.Node {
 	return turbo.Frame("player")(
 		html.Div(

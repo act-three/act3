@@ -56,6 +56,7 @@
 						"maxfps": "MaxFPS",
 						"maxheight": "MaxHeight",
 						"surroundaudio": "SurroundAudio",
+						"imageurl": "ImageURL",
 						"videoid": "VideoID",
 					},
 					"overrides": [

@@ -7,8 +7,14 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func Home(a []*model.SeriesHead) html.Node {
-	return media("Act Three", homeWashURLs(a)...)(
+func Home(series []*model.SeriesHead, movies []*model.MovieHead) html.Node {
+	washURLs := homeWashURLs(series)
+	for _, mo := range movies {
+		if mo.ImageURL() != "" {
+			washURLs = append(washURLs, mo.ImageURL())
+		}
+	}
+	return media("Act Three", washURLs...)(
 		Grid12(Class("pt-4"))(
 			FlexRow(ColSpan12, Gap4)(
 				ButtonGroup(ButtonGroupRadiusLarge)(
@@ -29,12 +35,10 @@ func Home(a []*model.SeriesHead) html.Node {
 					content-start
 					gap-[1px]
 				`))(
-				html.Range(a, seriesPosterLink),
+				html.Range(movies, moviePosterLink),
+				html.Range(series, seriesPosterLink),
 			),
 		),
-		//html.Div()(html.A(attr.Href("/movies"))(html.Text("All Movies"))),
-		//html.Div()(html.A(attr.Href("/series"))(html.Text("All Series"))),
-
 	)
 }
 
@@ -43,6 +47,29 @@ func homeWashURLs(a []*model.SeriesHead) (u []string) {
 		u = append(u, sr.TVmazeImageURL())
 	}
 	return u
+}
+
+func moviePosterLink(mo *model.MovieHead) html.Node {
+	return html.Div(Class(`
+		aspect-2/3
+		w-[187px]
+		relative
+		hover:after:content-[""]
+		hover:after:absolute
+		hover:after:inset-0
+		hover:after:bg-black/40
+		hover:after:pointer-events-none
+		`))(
+		html.A(
+			Class("block w-full h-full"),
+			attr.Href(mo.PlayURL()),
+		)(
+			html.Img(
+				Class("w-full h-full object-cover"),
+				attr.Src(mo.ImageURL()),
+			),
+		),
+	)
 }
 
 func seriesPosterLink(sr *model.SeriesHead) html.Node {

@@ -32,6 +32,25 @@ func (c *Config) showPlayerForEpisode(_ http.ResponseWriter, req *http.Request) 
 	})
 }
 
+func (c *Config) showPlayerForMovie(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		v, err := tr.Video(ctx, req.PathValue("id"))
+		if err != nil {
+			return nil, err
+		}
+		mo, err := tr.Movie(ctx, req.PathValue("moID"))
+		if err != nil {
+			return nil, err
+		}
+		qualityOpts, err := tr.QualityOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		return view.MediaPlayerForMovie(v, mo, qualityOpts), nil
+	})
+}
+
 func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()

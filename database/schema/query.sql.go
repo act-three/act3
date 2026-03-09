@@ -752,8 +752,86 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 	return items, nil
 }
 
+const movieCreate = `-- name: MovieCreate :one
+INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING id, slug, title, summary, year, runtime, imageurl
+`
+
+type MovieCreateParams struct {
+	ID       string
+	Slug     string
+	Title    string
+	Summary  string
+	Year     int64
+	Runtime  int64
+	ImageURL string
+}
+
+func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie, error) {
+	row := q.db.QueryRowContext(ctx, movieCreate,
+		arg.ID,
+		arg.Slug,
+		arg.Title,
+		arg.Summary,
+		arg.Year,
+		arg.Runtime,
+		arg.ImageURL,
+	)
+	var i Movie
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Summary,
+		&i.Year,
+		&i.Runtime,
+		&i.ImageURL,
+	)
+	return i, err
+}
+
+const movieGet = `-- name: MovieGet :one
+SELECT id, slug, title, summary, year, runtime, imageurl FROM Movie WHERE ID = ?
+`
+
+func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
+	row := q.db.QueryRowContext(ctx, movieGet, id)
+	var i Movie
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Summary,
+		&i.Year,
+		&i.Runtime,
+		&i.ImageURL,
+	)
+	return i, err
+}
+
+const movieGetBySlug = `-- name: MovieGetBySlug :one
+SELECT id, slug, title, summary, year, runtime, imageurl FROM Movie WHERE Slug = ?
+`
+
+func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error) {
+	row := q.db.QueryRowContext(ctx, movieGetBySlug, slug)
+	var i Movie
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.Summary,
+		&i.Year,
+		&i.Runtime,
+		&i.ImageURL,
+	)
+	return i, err
+}
+
 const movieList = `-- name: MovieList :many
-SELECT ID, Title, ArtworkKey FROM Movie
+SELECT id, slug, title, summary, year, runtime, imageurl FROM Movie
+ORDER BY Title
 `
 
 func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
@@ -765,7 +843,72 @@ func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
 	var items []Movie
 	for rows.Next() {
 		var i Movie
-		if err := rows.Scan(&i.ID, &i.Title, &i.ArtworkKey); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Summary,
+			&i.Year,
+			&i.Runtime,
+			&i.ImageURL,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const movieSlugExists = `-- name: MovieSlugExists :one
+SELECT COUNT(*) FROM Movie WHERE Slug = ?
+`
+
+func (q *Queries) MovieSlugExists(ctx context.Context, slug string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, movieSlugExists, slug)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const movieVideoCreate = `-- name: MovieVideoCreate :one
+INSERT INTO MovieVideo (MovieID, VideoID)
+VALUES (?, ?)
+RETURNING movieid, videoid
+`
+
+type MovieVideoCreateParams struct {
+	MovieID string
+	VideoID string
+}
+
+func (q *Queries) MovieVideoCreate(ctx context.Context, arg MovieVideoCreateParams) (Movievideo, error) {
+	row := q.db.QueryRowContext(ctx, movieVideoCreate, arg.MovieID, arg.VideoID)
+	var i Movievideo
+	err := row.Scan(&i.MovieID, &i.VideoID)
+	return i, err
+}
+
+const movieVideoListByMovieID = `-- name: MovieVideoListByMovieID :many
+SELECT movieid, videoid FROM MovieVideo
+WHERE MovieID = ?
+`
+
+func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) ([]Movievideo, error) {
+	rows, err := q.db.QueryContext(ctx, movieVideoListByMovieID, movieid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Movievideo
+	for rows.Next() {
+		var i Movievideo
+		if err := rows.Scan(&i.MovieID, &i.VideoID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -925,6 +1068,47 @@ func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (Rend
 		&i.Priority,
 	)
 	return i, err
+}
+
+const renditionForStreamingListByMovieID = `-- name: RenditionForStreamingListByMovieID :many
+SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
+WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieID = ?)
+`
+
+func (q *Queries) RenditionForStreamingListByMovieID(ctx context.Context, movieid string) ([]RenditionForStreaming, error) {
+	rows, err := q.db.QueryContext(ctx, renditionForStreamingListByMovieID, movieid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RenditionForStreaming
+	for rows.Next() {
+		var i RenditionForStreaming
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.Remux,
+			&i.Codec,
+			&i.TargetBitrate,
+			&i.MaxHeight,
+			&i.MaxFPS,
+			&i.CopyAudio,
+			&i.SurroundAudio,
+			&i.Hash,
+			&i.Playlist,
+			&i.Priority,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const renditionForStreamingListByVideoID = `-- name: RenditionForStreamingListByVideoID :many
@@ -2254,6 +2438,40 @@ WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 
 func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([]Video, error) {
 	rows, err := q.db.QueryContext(ctx, videoListByEpisodeID, episodeid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Video
+	for rows.Next() {
+		var i Video
+		if err := rows.Scan(
+			&i.ID,
+			&i.ReleaseID,
+			&i.ReleasePath,
+			&i.OriginalHash,
+			&i.MVPlaylist,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const videoListByMovieID = `-- name: VideoListByMovieID :many
+SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
+WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieID = ?)
+`
+
+func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Video, error) {
+	rows, err := q.db.QueryContext(ctx, videoListByMovieID, movieid)
 	if err != nil {
 		return nil, err
 	}
