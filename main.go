@@ -158,6 +158,19 @@ func initConfig(m *model.Model) error {
 				return err
 			}
 		}
+		tmdbConfig, err := tx.TMDB(ctx)
+		if err != nil {
+			return err
+		}
+		if tmdbConfig.AccessToken == "" {
+			tmdbConfig.AccessToken = os.Getenv("A3TMDBTOKEN")
+			if tmdbConfig.AccessToken != "" {
+				err = tx.TMDBSet(ctx, *tmdbConfig)
+				if err != nil {
+					return err
+				}
+			}
+		}
 		return nil
 	})
 }
