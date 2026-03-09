@@ -71,8 +71,7 @@ type element struct {
 func (e element) renderTo(w io.Writer) error {
 	w.Write(lt)
 	io.WriteString(w, e.tag)
-	w.Write(space)
-	err := attr.Render(w, e.attrs)
+	err := attr.Render(w, e.attrs) // includes preceding space
 	if err != nil {
 		return err
 	}
@@ -93,7 +92,6 @@ var (
 	lt      = []byte(`<`)
 	gt      = []byte(`>`)
 	ltSlash = []byte(`</`)
-	space   = []byte(` `)
 )
 
 var isVoid = map[string]bool{
