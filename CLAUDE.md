@@ -98,7 +98,7 @@ main.go
 - Static assets use digest-based cache busting via `http/digest/`
 - Go code can go beyond 80 columns (just not by a lot).
   Don't insert needless line breaks.
-- Wrap *documentation* (markdown, code comments) to roughly 72 characters
-  (shown below).
+- Use [semantic linebreaks] in Godoc comments and Markdown.
+  Hard wrap other code comments and preformatted documentation to 72 columns.
 
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+[semantic linebreaks]: https://rhodesmill.org/brandon/2012/one-sentence-per-line/
