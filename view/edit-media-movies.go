@@ -1,10 +1,13 @@
 package view
 
 import (
+	"strconv"
+
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/service/tmdb"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 )
@@ -106,6 +109,130 @@ func EditMediaMoviesDetail(mo *model.Movie) html.Node {
 				),
 				editMediaMoviesDetailVideos(mo),
 			),
+		),
+	)
+}
+
+func EditMovieAddDialog() html.Node {
+	return Dialog(
+		html.Div(
+			attr.Class(`
+				w-2xl
+				h-full
+				flex
+				flex-col
+				gap-2
+			`),
+		)(
+			html.Div(
+				attr.Class("flex-none"),
+			)(
+				html.Text("Add Movie"),
+			),
+			html.Form(
+				attr.Action("/-/part/movie-search"),
+				attr.Attr("data-turbo-frame")("results"),
+			)(
+				InputText(
+					attr.Attr("autofocus"),
+					attr.Class("flex-none"),
+					attr.Name("q"),
+				),
+			),
+			html.Div(
+				attr.Class(`
+					flex-initial
+					overflow-auto
+					overscroll-contain
+					h-dvh
+					max-h-full
+					border
+					rounded-sm
+				`),
+			)(
+				turbo.Frame("results"),
+			),
+		),
+	)
+}
+
+// MovieSearchResult pairs a TMDB search result with an
+// optional local movie entry.
+type MovieSearchResult struct {
+	TMDB  tmdb.SearchResult
+	Local *model.MovieHead
+}
+
+// EditMovieSearchResults renders the search results for
+// adding a movie.
+func EditMovieSearchResults(results []MovieSearchResult) html.Node {
+	return turbo.Frame("results")(
+		FlexCol(Gap4, Class("p-4"))(
+			html.Range(results, func(t MovieSearchResult) html.Node {
+				frameID := "tmdb-" + strconv.Itoa(t.TMDB.ID)
+				return Card(CardSurface, CardSize3,
+					Class("h-[200px]"),
+				)(
+					FlexRow(Gap4, Class("h-full"))(
+						Inset(InsetSideLeft,
+							Class("flex-none"),
+						)(
+							html.Img(
+								Class("block h-full aspect-2/3 object-cover"),
+								attr.Src(tmdb.ImageURL(t.TMDB.PosterPath)),
+							),
+						),
+						FlexCol(Gap2)(
+							movieSearchTitle(t.TMDB),
+							movieSearchAction(frameID, t),
+							TextNode(LineClamp3)(
+								html.Text(t.TMDB.Overview),
+							),
+						),
+					),
+				)
+			}),
+		),
+	)
+}
+
+func movieSearchTitle(m tmdb.SearchResult) html.Node {
+	title := m.Title
+	if len(m.ReleaseDate) >= 4 {
+		title += " (" + m.ReleaseDate[:4] + ")"
+	}
+	return html.Text(title)
+}
+
+func movieSearchAction(frameID string, t MovieSearchResult) html.Node {
+	if t.Local != nil {
+		return MovieResultLink(t.Local)
+	}
+	return turbo.Frame(frameID)(
+		html.Form(
+			attr.Method("post"),
+			attr.Action("/-/do/add-movie-tmdb"),
+			turbo.DataFrame(frameID),
+		)(
+			html.Input(
+				attr.Type("hidden"),
+				attr.Name("id"),
+				attr.Value(strconv.Itoa(t.TMDB.ID)),
+			),
+			Button(ButtonSurface)(html.Text("Add")),
+		),
+	)
+}
+
+func MovieResultLink(mo *model.MovieHead) html.Node {
+	return FlexRow(Gap2)(
+		Label("line/check-circle", "In Library"),
+		Button(
+			Href(mo.EditURL()),
+			Attr("data-turbo-frame")("detail"),
+			Attr("data-action")("click->dialog#dismiss"),
+		)(
+			Text("Edit"),
 		),
 	)
 }

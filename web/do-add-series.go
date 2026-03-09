@@ -19,7 +19,7 @@ func (c *Config) doAddSeries(_ http.ResponseWriter, req *http.Request) (html.Nod
 			return nil, err
 		}
 		return turbo.Frame("tvmaze-"+strconv.FormatInt(*ss.TVmazeID(), 10))(
-			seriesResultLink(ss),
+			view.SeriesResultLink(ss),
 			turbo.Prepend(view.EditMediaSeriesListItems,
 				ListItems([]*model.SeriesHead{ss}, view.EditMediaSeriesListItem),
 			),
