@@ -23,7 +23,7 @@ func EditMediaSeries(
 	return app(title, FlexCol(attr.Class("place-self-stretch"))(
 		ToolbarPrimary()(
 			DialogButton("/-/dialog/series-add", ButtonRadiusMedium, ButtonSurface)(
-				Icon("plus"),
+				Icon("line/plus"),
 				html.Text("Add Series"),
 			),
 			html.Div(attr.Class("relative w-md"))(
@@ -234,7 +234,7 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 				html.Text(ep.Label()),
 			),
 			html.Div()(
-				DialogButton(ep.EditDialogURL(), ButtonGhost)(Icon("info")),
+				DialogButton(ep.EditDialogURL(), ButtonGhost)(Icon("line/info-circle")),
 			),
 		),
 		ProgressContainer(ep.ID(), ep.Progress()),

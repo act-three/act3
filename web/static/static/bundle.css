@@ -2068,6 +2068,11 @@
     stroke-linecap: round;
     stroke-linejoin: round;
   }
+  .u-icon-solid {
+    width: 1em;
+    height: 1em;
+    fill: currentColor;
+  }
   .u-input {
     display: flex;
     width: 100%;

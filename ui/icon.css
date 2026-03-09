@@ -7,3 +7,9 @@
 	stroke-linecap: round;
 	stroke-linejoin: round;
 }
+
+.u-icon-solid {
+	width: 1em;
+	height: 1em;
+	fill: currentColor;
+}

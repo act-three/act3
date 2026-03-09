@@ -13,13 +13,13 @@ func Home(a []*model.SeriesHead) html.Node {
 			FlexRow(ColSpan12, Gap4)(
 				ButtonGroup(ButtonGroupRadiusLarge)(
 					Button(ButtonSurface)(Text("Title")),
-					Button(ButtonSurface)(Icon("arrow-down-a-z")),
+					Button(ButtonSurface)(Icon("line/switch-vertical-01")),
 				),
 				ButtonGroup(ButtonGroupRadiusLarge)(
 					Button(ButtonSurface)(Text("Movies")),
 					Button(ButtonSurface)(Text("Series")),
 				),
-				Button(ButtonSurface, ButtonRadiusLarge)(Icon("list-filter")),
+				Button(ButtonSurface, ButtonRadiusLarge)(Icon("line/filter-lines")),
 				InputText()(),
 			),
 			FlexRow(ColSpan12, Class(`

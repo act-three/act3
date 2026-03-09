@@ -24,32 +24,32 @@ func sidebarData() []MenuSection {
 	return []MenuSection{
 		{
 			Items: []MenuItem{
-				{"spotlight", "/", "Act Three", attr.Attr("data-turbo-frame")("_top")},
+				{"line/spotlight", "/", "Act Three", attr.Attr("data-turbo-frame")("_top")},
 			},
 		},
 		{
 			Label: "Account",
 			Items: []MenuItem{
-				{"circle-user-round", "/app/profile", "Profile", nil},
-				{"fingerprint-pattern", "/app/security", "Security", nil},
+				{"line/user-circle", "/app/profile", "Profile", nil},
+				{"line/fingerprint-04", "/app/security", "Security", nil},
 			},
 		},
 		{
 			Label: "Edit Media",
 			Items: []MenuItem{
-				{"circle-arrow-down", "/app/downloads", "Downloads", nil},
-				{"file-question-mark", "/app/missing", "Missing Media", nil},
-				{"trash-2", "/app/trash", "Trash", nil},
-				{"film", "/app/movies", "All Movies", nil},
-				{"tv", "/app/series", "All Series", nil},
+				{"line/arrow-circle-down", "/app/downloads", "Downloads", nil},
+				{"line/file-question-03", "/app/missing", "Missing Media", nil},
+				{"line/trash-01", "/app/trash", "Trash", nil},
+				{"line/film-01", "/app/movies", "All Movies", nil},
+				{"line/tv-03", "/app/series", "All Series", nil},
 			},
 		},
 		{
 			Label: "System",
 			Items: []MenuItem{
-				{"cloud", "/app/transmission", "Download Client", nil},
-				{"hard-drive", "/app/storage", "Storage", nil},
-				{"calendar-check", "/app/tasks", "Tasks", nil},
+				{"line/cloud-01", "/app/transmission", "Download Client", nil},
+				{"line/hard-drive", "/app/storage", "Storage", nil},
+				{"line/calendar-check-01", "/app/tasks", "Tasks", nil},
 			},
 		},
 	}

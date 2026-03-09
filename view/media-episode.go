@@ -30,16 +30,16 @@ func MediaEpisode(
 						playButton(ep),
 					),
 					FlexCol(Class("w-[168px]"))(
-						Button(Disabled(true), ButtonSize3)(Icon("play"), Text("Play from 5:18:02")),
+						Button(Disabled(true), ButtonSize3)(Icon("solid/play"), Text("Play from 5:18:02")),
 					),
 					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(Icon("square-dashed")),
+						Button(ButtonGhost, ButtonSize3)(Icon("line/check-circle")),
 					),
 					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(Icon("square-check-big")),
+						Button(ButtonGhost, ButtonSize3)(Icon("solid/check-circle")),
 					),
 					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(Icon("download")),
+						Button(ButtonGhost, ButtonSize3)(Icon("line/download-01")),
 						//html.Range(dls, func(r *model.RenditionForDownload) html.Node {
 						//	return html.Div()(
 						//		html.A(
@@ -52,7 +52,7 @@ func MediaEpisode(
 						//}),
 					),
 					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(Icon("info")),
+						Button(ButtonGhost, ButtonSize3)(Icon("line/info-circle")),
 					),
 				),
 				audioTrackSelect(ep),
@@ -86,7 +86,7 @@ func audioTrackSelect(ep *model.Episode) html.Node {
 	}
 	return Select(SelectSurface, SelectSize3, SelectValue(tracks[0].ID()))(
 		SelectTrigger()(
-			Icon("audio-lines"),
+			Icon("line/recording-01"),
 			SelectLabel(tracks[0].Label()),
 		),
 		SelectContent()(
@@ -108,10 +108,10 @@ func playButton(ep *model.Episode) html.Node {
 			return Button(
 				attr.Href(ep.PlayerURL(v[playable])),
 				attr.Attr("data-turbo-frame")("player"),
-				ButtonSize3)(Icon("play"), Text("Start"))
+				ButtonSize3)(Icon("solid/play"), Text("Start"))
 		},
 		func() html.Node {
-			return Button(Disabled(true), ButtonSize3)(Icon("x"), Text("Start"))
+			return Button(Disabled(true), ButtonSize3)(Icon("line/x-close"), Text("Start"))
 		},
 	)
 }

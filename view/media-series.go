@@ -84,10 +84,10 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 								attr.Attr("data-turbo-frame")("player"),
 								ButtonSurface,
 								ButtonCircle,
-							)(Icon("play"))
+							)(Icon("solid/play"))
 						},
 						func() html.Node {
-							return Button(Disabled(true), ButtonSurface, ButtonCircle)(Icon("x"))
+							return Button(Disabled(true), ButtonSurface, ButtonCircle)(Icon("line/x-close"))
 						},
 					),
 				),

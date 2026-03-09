@@ -402,7 +402,7 @@ func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.No
 
 func seriesResultLink(ss *model.SeriesHead) html.Node {
 	return FlexRow(Gap2)(
-		Label("circle-check", "In Library"),
+		Label("line/check-circle", "In Library"),
 		Button(
 			Href(ss.EditURL()),
 			Attr("data-turbo-frame")("detail"),

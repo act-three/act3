@@ -63,10 +63,10 @@ func mediaNavigationMenu() html.Node {
 						py-4
 					`),
 				)(
-					Button(attr.Href("/"), ButtonGhost)(Icon("spotlight"), Text("Act Three")),
+					Button(attr.Href("/"), ButtonGhost)(Icon("line/spotlight"), Text("Act Three")),
 					Button(attr.Href("/collections"), ButtonGhost)(Text("Collections")),
 					Box(Class("grow")),
-					Button(attr.Href("/app/profile"), ButtonGhost)(Icon("settings")),
+					Button(attr.Href("/app/profile"), ButtonGhost)(Icon("line/settings-01")),
 				),
 			),
 		),

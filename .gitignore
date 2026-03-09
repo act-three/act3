@@ -5,5 +5,8 @@
 /deploy
 /node_modules
 /src
+/ui/icon/svg/line
+/ui/icon/svg/solid
+/ui/icon/untitled-icons.zip
 /ui/static/static/bundle.*
 validation_data.json

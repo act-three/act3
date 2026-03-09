@@ -15,6 +15,7 @@ import (
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tvmaze"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/icon"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
@@ -62,6 +63,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/reimport-video/{id}", c.doReimportVideo)
 	handle(mux, "POST /-/do/reencode-video/{id}", c.doReencodeVideo)
 	mux.HandleFunc("GET /-/events", c.events)
+	mux.Handle("GET /-/icon/", http.StripPrefix("/-/icon", icon.Handler()))
 	mux.Handle("GET /-/static/", static.Handler())
 }
 

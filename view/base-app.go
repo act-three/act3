@@ -122,7 +122,7 @@ func Dialog(children ...html.Node) html.Node {
 						`),
 						attr.Attr("data-action")("click->dialog#dismiss"),
 					)(
-						Icon("x"),
+						Icon("line/x-close"),
 					),
 				),
 			),

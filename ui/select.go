@@ -27,7 +27,7 @@ func SelectTrigger(attrs ...attr.Node) html.Element {
 			stimulus.Target("select", "trigger"),
 			stimulus.Action("click->select#open"),
 			attr.Group(attrs...),
-		)(append(nodes, Icon("chevron-down"))...)
+		)(append(nodes, Icon("line/chevron-selector-vertical"))...)
 	}
 }
 
