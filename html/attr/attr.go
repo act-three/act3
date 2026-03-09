@@ -42,7 +42,6 @@ type Node interface {
 	// an attribute with the given name.
 	Has(name string) bool
 	renderTo(io.Writer) error
-	attr()
 }
 
 // AttrName represents a named attribute.
@@ -69,8 +68,6 @@ func (a AttrName) renderTo(w io.Writer) error {
 	return a(empty).renderTo(w)
 }
 
-func (AttrName) attr() {}
-
 // Stylef returns a style attribute with a formatted value.
 func Stylef(format string, a ...any) Node {
 	return Style(fmt.Sprintf(format, a...))
@@ -93,8 +90,6 @@ func (a attrValue) Name() string {
 func (a attrValue) renderTo(w io.Writer) error {
 	return render(w, a.name, a.value)
 }
-
-func (attrValue) attr() {}
 
 // The only errors returned are from w.
 func render(w io.Writer, name string, v string) error {

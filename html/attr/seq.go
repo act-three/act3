@@ -102,5 +102,3 @@ func (s seq) renderTo(w io.Writer) error {
 	}
 	return nil
 }
-
-func (seq) attr() {}
