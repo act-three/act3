@@ -15,41 +15,41 @@
 }
 
 /* horizontal (default) — radius on outer edges */
-.u-button-group:where(:not(.u-button-group\+vertical))
+.u-button-group:not([data-vertical])
 		> :where(.u-button:first-child) {
 	border-top-left-radius: inherit;
 	border-bottom-left-radius: inherit;
 }
-.u-button-group:where(:not(.u-button-group\+vertical))
+.u-button-group:not([data-vertical])
 		> :where(.u-button:last-child) {
 	border-top-right-radius: inherit;
 	border-bottom-right-radius: inherit;
 }
 /* collapse box-shadow borders between adjacent buttons */
-.u-button-group:where(:not(.u-button-group\+vertical))
+.u-button-group:not([data-vertical])
 		> :where(.u-button:not(:first-child)) {
 	margin-left: -1px;
 }
 
 /* vertical */
-.u-button-group\+vertical {
+.u-button-group[data-vertical] {
 	flex-direction: column;
 }
-.u-button-group\+vertical > :where(.u-button:first-child) {
+.u-button-group[data-vertical] > :where(.u-button:first-child) {
 	border-top-left-radius: inherit;
 	border-top-right-radius: inherit;
 }
-.u-button-group\+vertical > :where(.u-button:last-child) {
+.u-button-group[data-vertical] > :where(.u-button:last-child) {
 	border-bottom-left-radius: inherit;
 	border-bottom-right-radius: inherit;
 }
-.u-button-group\+vertical > :where(.u-button:not(:first-child)) {
+.u-button-group[data-vertical] > :where(.u-button:not(:first-child)) {
 	margin-top: -1px;
 }
 
 /* radius variants */
-.u-button-group\+radius-none   { --radius-factor: 0; --radius-full: 0px; }
-.u-button-group\+radius-small  { --radius-factor: 0.75; --radius-full: 0px; }
-.u-button-group\+radius-medium { --radius-factor: 1; --radius-full: 0px; }
-.u-button-group\+radius-large  { --radius-factor: 1.5; --radius-full: 0px; }
-.u-button-group\+radius-full   { --radius-full: 9999px; }
+.u-button-group[data-radius="none"]   { --radius-factor: 0; --radius-full: 0px; }
+.u-button-group[data-radius="small"]  { --radius-factor: 0.75; --radius-full: 0px; }
+.u-button-group[data-radius="medium"] { --radius-factor: 1; --radius-full: 0px; }
+.u-button-group[data-radius="large"]  { --radius-factor: 1.5; --radius-full: 0px; }
+.u-button-group[data-radius="full"]   { --radius-full: 9999px; }

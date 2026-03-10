@@ -20,7 +20,7 @@ var spinnerLeaves = func() (a []html.Node) {
 }()
 
 var (
-	SpinnerSM = attr.Class("u-spinner+size-sm")
-	SpinnerMD = attr.Class("u-spinner+size-md")
-	SpinnerLG = attr.Class("u-spinner+size-lg")
+	SpinnerSM = attr.Attr("data-size")("sm")
+	SpinnerMD = attr.Attr("data-size")("md")
+	SpinnerLG = attr.Attr("data-size")("lg")
 )

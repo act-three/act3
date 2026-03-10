@@ -6,13 +6,13 @@ import (
 )
 
 var (
-	InsetSideAll    = Class("u-inset+all")
-	InsetSideX      = Class("u-inset+x")
-	InsetSideY      = Class("u-inset+y")
-	InsetSideTop    = Class("u-inset+top")
-	InsetSideBottom = Class("u-inset+bottom")
-	InsetSideLeft   = Class("u-inset+left")
-	InsetSideRight  = Class("u-inset+right")
+	InsetSideAll    = attr.Attr("data-side")("all")
+	InsetSideX      = attr.Attr("data-side")("x")
+	InsetSideY      = attr.Attr("data-side")("y")
+	InsetSideTop    = attr.Attr("data-side")("top")
+	InsetSideBottom = attr.Attr("data-side")("bottom")
+	InsetSideLeft   = attr.Attr("data-side")("left")
+	InsetSideRight  = attr.Attr("data-side")("right")
 )
 
 func Inset(attrs ...attr.Node) html.Element {

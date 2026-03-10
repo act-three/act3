@@ -8,13 +8,13 @@
 }
 
 /* surface variant */
-.u-card\+surface {
+.u-card[data-variant="surface"] {
 	background-color: color-mix(in oklch, var(--color-gray-1) 70%, transparent);
 	box-shadow: inset 0 0 0 1px var(--color-gray-a5);
 }
 
 /* classic variant */
-.u-card\+classic {
+.u-card[data-variant="classic"] {
 	background-color: var(--color-panel);
 	backdrop-filter: blur(64px);
 	box-shadow:
@@ -25,7 +25,7 @@
 }
 
 /* ghost variant */
-.u-card\+ghost {
+.u-card[data-variant="ghost"] {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -37,41 +37,41 @@
 	gap: 0.5rem;
 	padding: 0.5rem;
 }
-.u-card\+ghost:focus-visible {
+.u-card[data-variant="ghost"]:focus-visible {
 	border-color: var(--color-gray-a6);
 	box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-gray-a6) 50%, transparent);
 }
-.u-card\+ghost[data-selected] {
+.u-card[data-variant="ghost"][data-selected] {
 	background-color: var(--color-accent-9);
 	color: var(--color-accent-12);
 }
 
 /* sizes */
-.u-card\+size-1 {
+.u-card[data-size="1"] {
 	padding: calc(0.75rem * var(--scale));
 	border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
 	--inset-padding: calc(-12px * var(--scale));
 	--inset-rounded: calc(8px * var(--scale));
 }
-.u-card\+size-2 {
+.u-card[data-size="2"] {
 	padding: calc(1rem * var(--scale));
 	border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
 	--inset-padding: calc(-16px * var(--scale));
 	--inset-rounded: calc(8px * var(--scale));
 }
-.u-card\+size-3 {
+.u-card[data-size="3"] {
 	padding: calc(1.5rem * var(--scale));
 	border-radius: calc(0.75rem * var(--scale) * var(--radius-factor, 1));
 	--inset-padding: calc(-24px * var(--scale));
 	--inset-rounded: calc(12px * var(--scale));
 }
-.u-card\+size-4 {
+.u-card[data-size="4"] {
 	padding: calc(2rem * var(--scale));
 	border-radius: calc(0.75rem * var(--scale) * var(--radius-factor, 1));
 	--inset-padding: calc(-32px * var(--scale));
 	--inset-rounded: calc(12px * var(--scale));
 }
-.u-card\+size-5 {
+.u-card[data-size="5"] {
 	padding: calc(3rem * var(--scale));
 	border-radius: calc(1rem * var(--scale) * var(--radius-factor, 1));
 	--inset-padding: calc(-48px * var(--scale));
@@ -135,21 +135,21 @@
 	text-underline-offset: 4px;
 }
 
-.u-card\+ghost:has(.u-card-description) .u-card-media {
+.u-card[data-variant="ghost"]:has(.u-card-description) .u-card-media {
 	transform: translateY(0.125rem);
 	align-self: flex-start;
 }
 
 @media (hover: hover) {
-	a.u-card\+ghost:hover {
+	a.u-card[data-variant="ghost"]:hover {
 		background-color: var(--color-gray-a3);
 	}
-	a.u-card\+classic:hover {
+	a.u-card[data-variant="classic"]:hover {
 		box-shadow:
 			0 4px 6px -1px rgb(0 0 0 / 0.1),
 			0 2px 4px -2px rgb(0 0 0 / 0.1);
 	}
-	a.u-card\+classic:active {
+	a.u-card[data-variant="classic"]:active {
 		box-shadow:
 			0 1px 2px 0 rgb(0 0 0 / 0.05);
 	}

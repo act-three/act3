@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	CardSurface = Class("u-card+surface")
-	CardGhost   = Class("u-card+ghost")
-	CardClassic = Class("u-card+classic")
+	CardSurface = attr.Attr("data-variant")("surface")
+	CardGhost   = attr.Attr("data-variant")("ghost")
+	CardClassic = attr.Attr("data-variant")("classic")
 )
 
 var (
@@ -16,11 +16,11 @@ var (
 )
 
 var (
-	CardSize1 = Class("u-card+size-1")
-	CardSize2 = Class("u-card+size-2")
-	CardSize3 = Class("u-card+size-3")
-	CardSize4 = Class("u-card+size-4")
-	CardSize5 = Class("u-card+size-5")
+	CardSize1 = attr.Attr("data-size")("1")
+	CardSize2 = attr.Attr("data-size")("2")
+	CardSize3 = attr.Attr("data-size")("3")
+	CardSize4 = attr.Attr("data-size")("4")
+	CardSize5 = attr.Attr("data-size")("5")
 )
 
 func Card(attrs ...attr.Node) html.Element {

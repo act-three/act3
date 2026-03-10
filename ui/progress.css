@@ -17,14 +17,13 @@
 	transition-timing-function: linear;
 }
 
-/* sizes */
-.u-progress\+size-sm {
-	height: calc(0.25rem * var(--scale));
-}
-/* size-md (default) */
-.u-progress:where(:not(.u-progress\+size-sm, .u-progress\+size-lg)) {
+/* size: md (default) */
+.u-progress {
 	height: calc(0.5rem * var(--scale));
 }
-.u-progress\+size-lg {
+.u-progress[data-size="sm"] {
+	height: calc(0.25rem * var(--scale));
+}
+.u-progress[data-size="lg"] {
 	height: calc(0.75rem * var(--scale));
 }

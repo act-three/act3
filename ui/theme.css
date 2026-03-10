@@ -15,42 +15,42 @@
 }
 
 /* scale presets */
-.u-theme\+scale\+1 {
+.u-theme[data-scale="1"] {
 	--scale: 0.9;
 }
-.u-theme\+scale\+2 {
+.u-theme[data-scale="2"] {
 	--scale: 0.95;
 }
-.u-theme\+scale\+3 {
+.u-theme[data-scale="3"] {
 	--scale: 1;
 }
-.u-theme\+scale\+4 {
+.u-theme[data-scale="4"] {
 	--scale: 1.05;
 }
-.u-theme\+scale\+5 {
+.u-theme[data-scale="5"] {
 	--scale: 1.1;
 }
 
 /* radius presets */
-.u-theme\+radius\+none {
+.u-theme[data-radius="none"] {
 	--radius-factor: 0;
 }
-.u-theme\+radius\+small {
+.u-theme[data-radius="small"] {
 	--radius-factor: 0.75;
 }
-.u-theme\+radius\+medium {
+.u-theme[data-radius="medium"] {
 	--radius-factor: 1;
 }
-.u-theme\+radius\+large {
+.u-theme[data-radius="large"] {
 	--radius-factor: 1.5;
 }
-.u-theme\+radius\+full {
+.u-theme[data-radius="full"] {
 	--radius-factor: 1.5;
 	--radius-full: 9999px;
 }
 
 /* accent color: crimson */
-.u-theme\+accent-color\+crimson {
+.u-theme[data-accent="crimson"] {
 	--color-accent-1: var(--color-crimson-1);
 	--color-accent-2: var(--color-crimson-2);
 	--color-accent-3: var(--color-crimson-3);

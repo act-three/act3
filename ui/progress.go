@@ -32,7 +32,7 @@ func Progress(value float64, attrs ...attr.Node) html.Node {
 }
 
 var (
-	ProgressSM = attr.Class("u-progress+size-sm")
-	ProgressMD = attr.Class("u-progress+size-md")
-	ProgressLG = attr.Class("u-progress+size-lg")
+	ProgressSM = attr.Attr("data-size")("sm")
+	ProgressMD = attr.Attr("data-size")("md")
+	ProgressLG = attr.Attr("data-size")("lg")
 )

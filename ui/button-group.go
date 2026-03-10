@@ -15,12 +15,12 @@ func ButtonGroup(attrs ...attr.Node) html.Element {
 	)
 }
 
-var ButtonGroupVertical = attr.Class("u-button-group+vertical")
+var ButtonGroupVertical = attr.Attr("data-vertical")
 
 var (
-	ButtonGroupRadiusNone   = attr.Class("u-button-group+radius-none")
-	ButtonGroupRadiusSmall  = attr.Class("u-button-group+radius-small")
-	ButtonGroupRadiusMedium = attr.Class("u-button-group+radius-medium")
-	ButtonGroupRadiusLarge  = attr.Class("u-button-group+radius-large")
-	ButtonGroupRadiusFull   = attr.Class("u-button-group+radius-full")
+	ButtonGroupRadiusNone   = attr.Attr("data-radius")("none")
+	ButtonGroupRadiusSmall  = attr.Attr("data-radius")("small")
+	ButtonGroupRadiusMedium = attr.Attr("data-radius")("medium")
+	ButtonGroupRadiusLarge  = attr.Attr("data-radius")("large")
+	ButtonGroupRadiusFull   = attr.Attr("data-radius")("full")
 )

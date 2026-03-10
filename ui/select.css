@@ -44,31 +44,21 @@
 }
 
 /* variant: surface */
-.u-select\+surface {
+.u-select[data-variant="surface"] {
 	color: var(--color-accent-a11);
 }
-.u-select\+surface > .u-select-trigger {
+.u-select[data-variant="surface"] > .u-select-trigger {
 	background-color: var(--color-accent-a2);
 	box-shadow: inset 0 0 0 1px var(--color-accent-a7);
 }
 @media (hover: hover) {
-	.u-select\+surface > .u-select-trigger:hover {
+	.u-select[data-variant="surface"] > .u-select-trigger:hover {
 		box-shadow: inset 0 0 0 1px var(--color-accent-a8);
 	}
 }
 
-/* sizes — set on .u-select, inherited by trigger + items */
-.u-select\+size-1 {
-	font-size: calc(0.75rem * var(--scale));
-	line-height: calc(1rem * var(--scale));
-	--select-height: calc(1.5rem * var(--scale));
-	--select-padding-x: calc(0.5rem * var(--scale));
-	--select-gap: calc(0.25rem * var(--scale));
-	--select-radius: max(var(--radius-1), var(--radius-full));
-	--select-content-padding: 4px;
-	--select-indicator-width: calc(1.25rem * var(--scale));
-}
-.u-select:where(:not(.u-select\+size-1, .u-select\+size-3)) {
+/* size-2 (default) */
+.u-select {
 	font-size: calc(0.875rem * var(--scale));
 	line-height: calc(1.25rem * var(--scale));
 	--select-height: calc(2rem * var(--scale));
@@ -78,7 +68,17 @@
 	--select-content-padding: 6px;
 	--select-indicator-width: calc(1.5rem * var(--scale));
 }
-.u-select\+size-3 {
+.u-select[data-size="1"] {
+	font-size: calc(0.75rem * var(--scale));
+	line-height: calc(1rem * var(--scale));
+	--select-height: calc(1.5rem * var(--scale));
+	--select-padding-x: calc(0.5rem * var(--scale));
+	--select-gap: calc(0.25rem * var(--scale));
+	--select-radius: max(var(--radius-1), var(--radius-full));
+	--select-content-padding: 4px;
+	--select-indicator-width: calc(1.25rem * var(--scale));
+}
+.u-select[data-size="3"] {
 	font-size: calc(1rem * var(--scale));
 	line-height: calc(1.5rem * var(--scale));
 	--select-height: calc(2.5rem * var(--scale));

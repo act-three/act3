@@ -11,10 +11,10 @@ const notePortController = "note-port"
 
 // Variants
 var (
-	NoteInfo    = Class("u-note+info") // default
-	NoteSuccess = Class("u-note+success")
-	NoteError   = Class("u-note+error")
-	NoteWarning = Class("u-note+warning")
+	NoteInfo    = attr.Attr("data-variant")("info") // default
+	NoteSuccess = attr.Attr("data-variant")("success")
+	NoteError   = attr.Attr("data-variant")("error")
+	NoteWarning = attr.Attr("data-variant")("warning")
 )
 
 // NotePort is the fixed-position container where notes

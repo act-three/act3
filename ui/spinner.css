@@ -51,17 +51,16 @@
 .u-spinner > span:nth-child(7)::before { animation-delay: -200ms; }
 .u-spinner > span:nth-child(8)::before { animation-delay: -100ms; }
 
-/* sizes */
-.u-spinner\+size-sm {
-	width: calc(0.75rem * var(--scale));
-	height: calc(0.75rem * var(--scale));
-}
-/* size-md (default) */
-.u-spinner:where(:not(.u-spinner\+size-sm, .u-spinner\+size-lg)) {
+/* size: md (default) */
+.u-spinner {
 	width: calc(1rem * var(--scale));
 	height: calc(1rem * var(--scale));
 }
-.u-spinner\+size-lg {
+.u-spinner[data-size="sm"] {
+	width: calc(0.75rem * var(--scale));
+	height: calc(0.75rem * var(--scale));
+}
+.u-spinner[data-size="lg"] {
 	width: calc(1.25rem * var(--scale));
 	height: calc(1.25rem * var(--scale));
 }

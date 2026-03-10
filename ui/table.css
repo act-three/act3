@@ -1,61 +1,58 @@
 .u-table {
 	caption-side: bottom;
-}
-
-/* ghost variant (default) */
-.u-table:where(:not(.u-table\+surface)) {
 	background-color: transparent;
 }
 
 /* surface variant */
-.u-table\+surface {
+.u-table[data-variant="surface"] {
 	border: 1px solid var(--color-gray-a5);
 	border-radius: calc(0.5rem * var(--radius-factor, 1));
 	background-color: var(--color-panel);
 	backdrop-filter: blur(64px);
 	overflow: hidden;
 }
-.u-table\+surface .u-table-header .u-table-row {
+.u-table[data-variant="surface"] .u-table-header .u-table-row {
 	background-color: var(--color-gray-a2);
 }
 
-/* sizes */
-.u-table\+size-1 {
-	font-size: calc(0.875rem * var(--scale));
-	line-height: calc(1.25rem * var(--scale));
-}
-.u-table\+size-1 .u-table-head {
-	height: calc(2rem * var(--scale));
-	padding: calc(0.5rem * var(--scale));
-}
-.u-table\+size-1 .u-table-cell {
-	padding: calc(0.5rem * var(--scale));
-	min-height: calc(36px * var(--scale));
-}
-
 /* size-2 (default) */
-.u-table:where(:not(.u-table\+size-1, .u-table\+size-3)) {
+.u-table {
 	font-size: calc(0.875rem * var(--scale));
 	line-height: calc(1.25rem * var(--scale));
 }
-.u-table:where(:not(.u-table\+size-1, .u-table\+size-3)) .u-table-head {
+.u-table .u-table-head {
 	height: calc(2.5rem * var(--scale));
 	padding: calc(0.75rem * var(--scale));
 }
-.u-table:where(:not(.u-table\+size-1, .u-table\+size-3)) .u-table-cell {
+.u-table .u-table-cell {
 	padding: calc(0.75rem * var(--scale));
 	min-height: calc(44px * var(--scale));
 }
 
-.u-table\+size-3 {
+/* size-1 */
+.u-table[data-size="1"] {
+	font-size: calc(0.875rem * var(--scale));
+	line-height: calc(1.25rem * var(--scale));
+}
+.u-table[data-size="1"] .u-table-head {
+	height: calc(2rem * var(--scale));
+	padding: calc(0.5rem * var(--scale));
+}
+.u-table[data-size="1"] .u-table-cell {
+	padding: calc(0.5rem * var(--scale));
+	min-height: calc(36px * var(--scale));
+}
+
+/* size-3 */
+.u-table[data-size="3"] {
 	font-size: calc(1rem * var(--scale));
 	line-height: calc(1.5rem * var(--scale));
 }
-.u-table\+size-3 .u-table-head {
+.u-table[data-size="3"] .u-table-head {
 	height: calc(2.75rem * var(--scale));
 	padding: calc(0.75rem * var(--scale)) calc(1rem * var(--scale));
 }
-.u-table\+size-3 .u-table-cell {
+.u-table[data-size="3"] .u-table-cell {
 	padding: calc(0.75rem * var(--scale)) calc(1rem * var(--scale));
 	min-height: calc(48px * var(--scale));
 }

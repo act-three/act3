@@ -27,54 +27,54 @@ func TextNode(attrs ...attr.Node) html.Element {
 }
 
 var (
-	FontLight  = attr.Class("u-text+weight-light")
-	FontNormal = attr.Class("u-text+weight-normal")
-	FontMedium = attr.Class("u-text+weight-medium")
-	FontBold   = attr.Class("u-text+weight-bold")
+	FontLight  = attr.Attr("data-weight")("light")
+	FontNormal = attr.Attr("data-weight")("normal")
+	FontMedium = attr.Attr("data-weight")("medium")
+	FontBold   = attr.Attr("data-weight")("bold")
 )
 
 var (
-	TextAlignLeft   = attr.Class("u-text+align-left")
-	TextAlignCenter = attr.Class("u-text+align-center")
-	TextAlignRight  = attr.Class("u-text+align-right")
+	TextAlignLeft   = attr.Attr("data-align")("left")
+	TextAlignCenter = attr.Attr("data-align")("center")
+	TextAlignRight  = attr.Attr("data-align")("right")
 )
 
 var (
-	TextWrap    = attr.Class("u-text+wrap-wrap")
-	TextNowrap  = attr.Class("u-text+wrap-nowrap")
-	TextPretty  = attr.Class("u-text+wrap-pretty")
-	TextBalance = attr.Class("u-text+wrap-balance")
+	TextWrap    = attr.Attr("data-wrap")("wrap")
+	TextNowrap  = attr.Attr("data-wrap")("nowrap")
+	TextPretty  = attr.Attr("data-wrap")("pretty")
+	TextBalance = attr.Attr("data-wrap")("balance")
 )
 
 var (
-	LineClamp1 = attr.Class("u-text+clamp-1")
-	LineClamp2 = attr.Class("u-text+clamp-2")
-	LineClamp3 = attr.Class("u-text+clamp-3")
-	LineClamp4 = attr.Class("u-text+clamp-4")
-	LineClamp5 = attr.Class("u-text+clamp-5")
+	LineClamp1 = attr.Attr("data-clamp")("1")
+	LineClamp2 = attr.Attr("data-clamp")("2")
+	LineClamp3 = attr.Attr("data-clamp")("3")
+	LineClamp4 = attr.Attr("data-clamp")("4")
+	LineClamp5 = attr.Attr("data-clamp")("5")
 )
 
 var (
-	TextSelectAuto = attr.Class("u-text+select-auto")
-	TextSelectNone = attr.Class("u-text+select-none")
+	TextSelectAuto = attr.Attr("data-select")("auto")
+	TextSelectNone = attr.Attr("data-select")("none")
 )
 
 var (
-	TextSize1 = attr.Class("u-text+size-1")
-	TextSize2 = attr.Class("u-text+size-2")
-	TextSize3 = attr.Class("u-text+size-3")
-	TextSize4 = attr.Class("u-text+size-4")
-	TextSize5 = attr.Class("u-text+size-5")
-	TextSize6 = attr.Class("u-text+size-6")
-	TextSize7 = attr.Class("u-text+size-7")
-	TextSize8 = attr.Class("u-text+size-8")
-	TextSize9 = attr.Class("u-text+size-9")
+	TextSize1 = attr.Attr("data-size")("1")
+	TextSize2 = attr.Attr("data-size")("2")
+	TextSize3 = attr.Attr("data-size")("3")
+	TextSize4 = attr.Attr("data-size")("4")
+	TextSize5 = attr.Attr("data-size")("5")
+	TextSize6 = attr.Attr("data-size")("6")
+	TextSize7 = attr.Attr("data-size")("7")
+	TextSize8 = attr.Attr("data-size")("8")
+	TextSize9 = attr.Attr("data-size")("9")
 )
 
 var (
-	TextTrimStart = attr.Class("u-text+trim-start")
-	TextTrimEnd   = attr.Class("u-text+trim-end")
-	TextTrimBoth  = attr.Class("u-text+trim-both")
+	TextTrimStart = attr.Attr("data-trim")("start")
+	TextTrimEnd   = attr.Attr("data-trim")("end")
+	TextTrimBoth  = attr.Attr("data-trim")("both")
 )
 
-var TextTruncate = attr.Class("u-text+truncate")
+var TextTruncate = attr.Attr("data-truncate")

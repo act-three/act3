@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	PosterFill      = Class("u-poster+fill")
-	PosterAspect23  = Class("u-poster+2-3")
-	PosterAspect169 = Class("u-poster+16-9")
+	PosterFill      = attr.Attr("data-fill")
+	PosterAspect23  = attr.Attr("data-aspect")("2-3")
+	PosterAspect169 = attr.Attr("data-aspect")("16-9")
 )
 
 // PosterImg renders an <img> styled for poster display.

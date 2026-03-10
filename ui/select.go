@@ -69,12 +69,12 @@ var SelectItemSelected = attr.Attr("data-selected")
 
 // Variants
 var (
-	SelectSurface = attr.Class("u-select+surface")
+	SelectSurface = attr.Attr("data-variant")("surface")
 )
 
 // Sizes
 var (
-	SelectSize1 = attr.Class("u-select+size-1")
-	SelectSize2 = attr.Class("u-select+size-2")
-	SelectSize3 = attr.Class("u-select+size-3")
+	SelectSize1 = attr.Attr("data-size")("1")
+	SelectSize2 = attr.Attr("data-size")("2")
+	SelectSize3 = attr.Attr("data-size")("3")
 )

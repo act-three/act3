@@ -14,7 +14,7 @@ func Link(url string, attrs ...attr.Node) html.Element {
 }
 
 var (
-	LinkUnderlineAuto   = attr.Class("u-link+underline-auto")
-	LinkUnderlineAlways = attr.Class("u-link+underline-always")
-	LinkUnderlineHover  = attr.Class("u-link+underline-hover")
+	LinkUnderlineAuto   = attr.Attr("data-underline")("auto")
+	LinkUnderlineAlways = attr.Attr("data-underline")("always")
+	LinkUnderlineHover  = attr.Attr("data-underline")("hover")
 )

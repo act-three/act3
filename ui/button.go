@@ -21,28 +21,28 @@ func Button(attrs ...attr.Node) html.Element {
 
 // Variants
 var (
-	ButtonSolid       = attr.Class("u-button+solid")
-	ButtonSoft        = attr.Class("u-button+soft")
-	ButtonSurface     = attr.Class("u-button+surface")
-	ButtonOutline     = attr.Class("u-button+outline")
-	ButtonGhost       = attr.Class("u-button+ghost")
-	ButtonDestructive = attr.Class("u-button+destructive")
+	ButtonSolid       = attr.Attr("data-variant")("solid")
+	ButtonSoft        = attr.Attr("data-variant")("soft")
+	ButtonSurface     = attr.Attr("data-variant")("surface")
+	ButtonOutline     = attr.Attr("data-variant")("outline")
+	ButtonGhost       = attr.Attr("data-variant")("ghost")
+	ButtonDestructive = attr.Attr("data-variant")("destructive")
 )
 
 // Sizes
 var (
-	ButtonSize1 = attr.Class("u-button+size-1")
-	ButtonSize2 = attr.Class("u-button+size-2")
-	ButtonSize3 = attr.Class("u-button+size-3")
-	ButtonSize4 = attr.Class("u-button+size-4")
+	ButtonSize1 = attr.Attr("data-size")("1")
+	ButtonSize2 = attr.Attr("data-size")("2")
+	ButtonSize3 = attr.Attr("data-size")("3")
+	ButtonSize4 = attr.Attr("data-size")("4")
 )
 
 // Shapes / radius
 var (
-	ButtonRadiusNone   = attr.Class("u-button+radius-none")
-	ButtonRadiusSmall  = attr.Class("u-button+radius-small")
-	ButtonRadiusMedium = attr.Class("u-button+radius-medium")
-	ButtonRadiusLarge  = attr.Class("u-button+radius-large")
-	ButtonRadiusFull   = attr.Class("u-button+radius-full")
-	ButtonCircle       = attr.Class("u-button+radius-circle")
+	ButtonRadiusNone   = attr.Attr("data-radius")("none")
+	ButtonRadiusSmall  = attr.Attr("data-radius")("small")
+	ButtonRadiusMedium = attr.Attr("data-radius")("medium")
+	ButtonRadiusLarge  = attr.Attr("data-radius")("large")
+	ButtonRadiusFull   = attr.Attr("data-radius")("full")
+	ButtonCircle       = attr.Attr("data-radius")("circle")
 )
