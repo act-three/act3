@@ -23,20 +23,23 @@ IMPORTANT: never use nodejs or npm.
 ## Build & Run
 
 ```sh
-go test -tags goexperiment.jsonv2 ./...
-go test -tags goexperiment.jsonv2 ./model/...
+go build ./... # avoids littering `act3` build artifact
+go test ./...
+go test ./model/...
 go generate ./...
 ./deploy.sh
 ```
 
-The `-tags goexperiment.jsonv2` build tag is required — the project uses
-`encoding/json/v2`.
+The project uses `encoding/json/v2`,
+and the environment carries `GOEXPERIMENT=jsonv2`.
+(No need to explicitly specify `-tags goexperiment.jsonv2`.)
 
 Run locally: `go run . [-v] [-listen :4444]`
 
 Environment variables:
 - `A3DATABASE` — dir for SQLite DB (default `.`)
 - `A3STORAGE` — CAS root (default `/var/lib/act3`)
+- `A3TMDBTOKEN` - The Movie DB personal access token
 - `A3TRANSMISSION` — Transmission RPC URL
 - `A3FFMPEGVIDEOPRESET` — override ffmpeg preset (e.g. `ultrafast` for dev)
 
