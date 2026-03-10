@@ -61,11 +61,8 @@ func MediaEpisode(
 			),
 			Box(),
 			Box(ColSpan4)(
-				Box(Class("rounded-sm overflow-hidden"))(
-					html.Img(
-						Class("w-full aspect-16/9 object-cover"),
-						attr.Src(ep.ImageURL()),
-					),
+				ImageFrame()(
+					PosterImg(PosterFill, PosterAspect169, attr.Src(ep.ImageURL())),
 				),
 			),
 		),

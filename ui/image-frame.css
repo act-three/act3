@@ -1,0 +1,16 @@
+.u-image-frame {
+	border-radius: calc(0.125rem * var(--radius-factor, 1));
+	overflow: hidden;
+}
+
+.u-hover-overlay {
+	position: relative;
+}
+
+.u-hover-overlay:hover::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgb(0 0 0 / 0.4);
+	pointer-events: none;
+}

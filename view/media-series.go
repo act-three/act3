@@ -19,13 +19,10 @@ func MediaSeries(sr *model.Series) html.Node {
 		Grid12(Class("pt-10"))(
 			Box(Class("col-span-3"))(
 				Box(Class("sticky top-20"))(
-					Box(Class("rounded-sm overflow-hidden"))(
-						html.Img(
-							Class("w-full aspect-2/3 object-cover"),
-							attr.Src(sr.TVmazeImageURL()),
-						),
+					ImageFrame()(
+						PosterImg(PosterFill, attr.Src(sr.TVmazeImageURL())),
 					),
-					Box(Class("p-4 font-bold"))(Text(sr.Title())),
+					Box(Class("p-4"))(Text(sr.Title(), FontBold)),
 					Box(Class("p-4"))(
 						Text("Show: regular & specials"),
 					),
@@ -98,7 +95,7 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 								text-gray-11/60
 								decoration-gray-11/60!
 							`),
-						)(Text(ep.SnnEnn(), Class("font-normal"))),
+						)(Text(ep.SnnEnn(), FontNormal)),
 						FlexRow()(
 							Box()(Text(ep.Title(),
 								Class("font-semibold"),
@@ -119,24 +116,14 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 				),
 			),
 		),
-		Box(Class(`
-			col-span-3
+		Box(HoverOverlay, Class(`col-span-3
 			aspect-16/9
 			bg-gray-6
-			relative
 			rounded-xs
 			overflow-hidden
-			hover:after:content-[""]
-			hover:after:absolute
-			hover:after:inset-0
-			hover:after:bg-black/40
-			hover:after:pointer-events-none
 		`))(
 			html.A(attr.Href(ep.DetailURL()))(
-				html.Img(
-					Class("w-full h-full object-cover"),
-					attr.Src(ep.ImageURL()),
-				),
+				PosterImg(PosterFill, PosterAspect169, Class("h-full"), attr.Src(ep.ImageURL())),
 			),
 			Box(
 				Class(`

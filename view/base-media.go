@@ -30,10 +30,7 @@ func mediaWash(urls []string) html.Node {
 		url = urls[rand.IntN(len(urls))]
 	}
 	return Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
-		html.Img(
-			Class("w-full h-full object-cover"),
-			attr.Src(url),
-		),
+		PosterImg(PosterFill, Class("h-full"), attr.Src(url)),
 	)
 }
 

@@ -45,15 +45,9 @@ func EditMediaSeries(
 					return Group(detail...)
 				},
 				func() html.Node {
-					return html.Div(
-						attr.Class(`
-								grid
-								h-full
-								w-full
-								place-items-center
-								text-gray-11/50
-							`),
-					)(html.Text("No Series Selected"))
+					return Center(Class("text-gray-11/50"))(
+						html.Text("No Series Selected"),
+					)
 				},
 			),
 		),
@@ -84,20 +78,14 @@ func EditMediaSeriesDetail(
 	sed *model.SeriesEdition,
 	dls []*model.DownloadHead,
 ) html.Node {
-	return html.Div(attr.Class("place-self-stretch h-full w-full flex flex-col"))(
+	return FlexCol(Class("place-self-stretch h-full w-full"))(
 		ScrollY(
-			attr.Class("p-4"),
+			Class("p-4"),
 		)(
-			html.Div(
-				attr.Class("flex flex-col gap-4"),
-			)(
-				html.Div(
-					attr.Class("flex gap-2"),
-				)(
+			FlexCol(Gap4)(
+				FlexRow(Gap2)(
 					html.Img(),
-					html.Div(
-						attr.Class("flex flex-col gap-4 p-4"),
-					)(
+					FlexCol(Gap4, Class("p-4"))(
 						html.H1()(html.Text(sr.Title())),
 						html.P()(html.Safe(sr.Summary())),
 					),
@@ -202,18 +190,14 @@ func editMediaSeriesListDownloadDetailItem(dl *model.DownloadHead) html.Node {
 }
 
 func editMediaSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
-	return html.Div(
-		attr.Class("flex flex-col gap-2"),
-	)(
+	return FlexCol(Gap2)(
 		expr.IfElse(sed == nil,
 			func() html.Node {
 				return html.Div()(html.Text("Unknown Order"))
 			},
 			func() html.Node {
 				return html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
-					return html.Div(
-						attr.Class("flex gap-2"),
-					)(
+					return FlexRow(Gap2)(
 						html.Div()(html.Text(sn.Name())),
 						html.Div()(html.Textf("%d", sn.NumEpisodes(model.Significant))),
 						html.Div()(
@@ -227,12 +211,8 @@ func editMediaSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
 }
 
 func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
-	return html.Div(
-		attr.Class("flex flex-col gap-1"),
-	)(
-		html.Div(
-			attr.Class("flex flex-row"),
-		)(
+	return FlexCol(Gap1)(
+		FlexRow()(
 			html.Div()(
 				html.Text(ep.Label()),
 			),
@@ -246,15 +226,10 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 
 func EditSeriesAddDialog() html.Node {
 	return Dialog(
-		html.Div(
+		FlexCol(
 			attr.Attr("data-controller")("add-series"),
-			attr.Class(`
-				w-2xl
-				h-full
-				flex
-				flex-col
-				gap-2
-			`),
+			Gap2,
+			Class("w-2xl h-full"),
 		)(
 			html.Div(
 				attr.Class("flex-none"),
@@ -308,9 +283,7 @@ func EditEpisodeDialog(
 				html.Text(ep.Label()),
 			),
 
-			html.Div(
-				attr.Class("mt-4 font-bold"),
-			)(html.Text("Videos")),
+			TextNode(FontBold, Class("mt-4"))(html.Text("Videos")),
 			expr.IfElse(len(videos) == 0,
 				func() html.Node {
 					return html.Div(
@@ -323,9 +296,7 @@ func EditEpisodeDialog(
 				return editEpisodeDialogVideo(v)
 			}),
 
-			html.Div(
-				attr.Class("mt-4 font-bold"),
-			)(html.Text("Renditions for Streaming")),
+			TextNode(FontBold, Class("mt-4"))(html.Text("Renditions for Streaming")),
 			expr.IfElse(len(renditions) == 0,
 				func() html.Node {
 					return html.Div(
@@ -338,9 +309,7 @@ func EditEpisodeDialog(
 				return editEpisodeDialogRendition(r)
 			}),
 
-			html.Div(
-				attr.Class("mt-4 font-bold"),
-			)(html.Text("Metadata")),
+			TextNode(FontBold, Class("mt-4"))(html.Text("Metadata")),
 			html.Div()(html.Text("Title")),
 			html.Div()(html.Text("Sort Title")),
 			html.Div()(html.Text("Season Number")),
@@ -384,9 +353,7 @@ func editEpisodeDialogVideo(v schema.Video) html.Node {
 			},
 			func() html.Node { return html.Group() },
 		),
-		html.Div(
-			attr.Class("mt-2 flex gap-2"),
-		)(
+		FlexRow(Gap2, Class("mt-2"))(
 			html.Form(
 				attr.Action("/-/do/reimport-video/"+v.ID),
 				attr.Method("POST"),
@@ -482,10 +449,7 @@ func EditSeriesSearchResults(results []SeriesSearchResult) html.Node {
 				return Card(CardSurface, CardSize3, Class("h-[200px]"))(
 					FlexRow(Gap4, Class("h-full"))(
 						Inset(InsetSideLeft, Class("flex-none"))(
-							html.Img(
-								Class("block h-full aspect-2/3 object-cover"),
-								attr.Src(t.TVmaze.Image.Medium()),
-							),
+							PosterImg(Class("h-full"), attr.Src(t.TVmaze.Image.Medium())),
 						),
 						FlexCol(Gap2)(
 							html.Text(t.TVmaze.Name),

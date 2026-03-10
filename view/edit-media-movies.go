@@ -38,15 +38,9 @@ func EditMediaMovies(
 					return Group(detail...)
 				},
 				func() html.Node {
-					return html.Div(
-						attr.Class(`
-							grid
-							h-full
-							w-full
-							place-items-center
-							text-gray-11/50
-						`),
-					)(html.Text("No Movie Selected"))
+					return Center(Class("text-gray-11/50"))(
+						html.Text("No Movie Selected"),
+					)
 				},
 			),
 		),
@@ -72,34 +66,23 @@ func EditMediaMoviesListItem(
 }
 
 func EditMediaMoviesDetail(mo *model.Movie) html.Node {
-	return html.Div(
-		attr.Class("place-self-stretch h-full w-full flex flex-col"),
-	)(
+	return FlexCol(Class("place-self-stretch h-full w-full"))(
 		ScrollY(
-			attr.Class("p-4"),
+			Class("p-4"),
 		)(
-			html.Div(
-				attr.Class("flex flex-col gap-4"),
-			)(
-				html.Div(
-					attr.Class("flex gap-2"),
-				)(
+			FlexCol(Gap4)(
+				FlexRow(Gap2)(
 					expr.IfElse(mo.ImageURL() != "",
 						func() html.Node {
-							return html.Img(
-								attr.Src(mo.ImageURL()),
-								attr.Class(
-									"w-[180px] aspect-2/3 object-cover rounded-sm",
-								),
+							return ImageFrame()(
+								PosterImg(PosterFill, attr.Src(mo.ImageURL())),
 							)
 						},
 						func() html.Node {
 							return html.Group()
 						},
 					),
-					html.Div(
-						attr.Class("flex flex-col gap-4 p-4"),
-					)(
+					FlexCol(Gap4, Class("p-4"))(
 						html.H1()(html.Text(mo.Title())),
 						html.If(mo.YearDisplay() != "", func() html.Node {
 							return html.P()(html.Text(mo.YearDisplay()))
@@ -115,15 +98,7 @@ func EditMediaMoviesDetail(mo *model.Movie) html.Node {
 
 func EditMovieAddDialog() html.Node {
 	return Dialog(
-		html.Div(
-			attr.Class(`
-				w-2xl
-				h-full
-				flex
-				flex-col
-				gap-2
-			`),
-		)(
+		FlexCol(Gap2, Class("w-2xl h-full"))(
 			html.Div(
 				attr.Class("flex-none"),
 			)(
@@ -174,13 +149,8 @@ func EditMovieSearchResults(results []MovieSearchResult) html.Node {
 					Class("h-[200px]"),
 				)(
 					FlexRow(Gap4, Class("h-full"))(
-						Inset(InsetSideLeft,
-							Class("flex-none"),
-						)(
-							html.Img(
-								Class("block h-full aspect-2/3 object-cover"),
-								attr.Src(tmdb.ImageURL(t.TMDB.PosterPath)),
-							),
+						Inset(InsetSideLeft, Class("flex-none"))(
+							PosterImg(Class("h-full"), attr.Src(tmdb.ImageURL(t.TMDB.PosterPath))),
 						),
 						FlexCol(Gap2)(
 							movieSearchTitle(t.TMDB),
@@ -244,14 +214,10 @@ func editMediaMoviesDetailVideos(mo *model.Movie) html.Node {
 			attr.Class("text-gray-11/50"),
 		)(html.Text("No videos"))
 	}
-	return html.Div(
-		attr.Class("flex flex-col gap-2"),
-	)(
-		html.Div(attr.Class("font-bold"))(
-			html.Text("Videos"),
-		),
+	return FlexCol(Gap2)(
+		TextNode(FontBold)(html.Text("Videos")),
 		html.Range(vids, func(v *model.Video) html.Node {
-			return html.Div(attr.Class("ml-4 mt-2"))(
+			return html.Div(Class("ml-4 mt-2"))(
 				html.Div()(
 					html.Text("ID: "),
 					html.Text(v.ID()),
@@ -260,9 +226,7 @@ func editMediaMoviesDetailVideos(mo *model.Movie) html.Node {
 					html.Text("Path: "),
 					html.Text(v.ReleasePath()),
 				),
-				html.Div(
-					attr.Class("mt-2 flex gap-2"),
-				)(
+				FlexRow(Gap2, Class("mt-2"))(
 					html.Form(
 						attr.Action("/-/do/reimport-video/"+v.ID()),
 						attr.Method("POST"),

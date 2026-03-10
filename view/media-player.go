@@ -377,7 +377,7 @@ func mediaPlayerSeekBar() html.Node {
 }
 
 func mediaPlayerVolumeBar() html.Node {
-	return FlexRow(Class("items-center gap-2"))(
+	return FlexRow(Gap2, Class("items-center"))(
 		Button(stimulus.Action("click->player#toggleMute"), ButtonSurface, ButtonCircle)(Icon("line/volume-max")),
 		html.Div(Class("w-20"))(
 			html.Div(Class("relative"))(

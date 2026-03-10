@@ -41,15 +41,9 @@ func EditMediaDownloads(
 						return editMediaDownloadsDetail(selected)
 					},
 					func() html.Node {
-						return html.Div(
-							attr.Class(`
-								grid
-								h-full
-								w-full
-								place-items-center
-								text-gray-11/50
-							`),
-						)(html.Text("No Download Selected"))
+						return Center(Class("text-gray-11/50"))(
+							html.Text("No Download Selected"),
+						)
 					},
 				),
 			),
@@ -131,9 +125,7 @@ func editMediaDownloadsDetail(dl *model.Download) html.Node {
 			html.Div()(
 				editMediaDownloadsDoImportButton(dl.ID()),
 			),
-			html.Div(
-				attr.Class("flex flex-col gap-2"),
-			)(
+			FlexCol(Gap2)(
 				html.RangeSeq2(
 					xslices.GroupBy(dl.Files(), (*model.DownloadFile).Season),
 					editMediaDownloadsFileGroup,

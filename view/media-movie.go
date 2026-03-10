@@ -47,11 +47,8 @@ func MediaMovie(
 			),
 			Box(),
 			Box(ColSpan4)(
-				Box(Class("rounded-sm overflow-hidden"))(
-					html.Img(
-						Class("w-full aspect-2/3 object-cover"),
-						attr.Src(mo.ImageURL()),
-					),
+				ImageFrame()(
+					PosterImg(PosterFill, attr.Src(mo.ImageURL())),
 				),
 			),
 		),

@@ -68,7 +68,7 @@ func ProgressItem(pi *progress.Item) html.Node {
 		Class(progressItemClass(pi)),
 		Class("text-gray-11/80 text-sm"),
 	)(
-		FlexRow(Class("gap-2"))(
+		FlexRow(Gap2)(
 			Text(pi.Description()),
 			html.Div(Class("text-gray-11/50"))(
 				Text(pi.Status()),

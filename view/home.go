@@ -42,24 +42,12 @@ func Home(works []*model.Work) html.Node {
 }
 
 func workPosterLink(w *model.Work) html.Node {
-	return html.Div(Class(`
-		aspect-2/3
-		w-[187px]
-		relative
-		hover:after:content-[""]
-		hover:after:absolute
-		hover:after:inset-0
-		hover:after:bg-black/40
-		hover:after:pointer-events-none
-		`))(
+	return Box(HoverOverlay, Class("aspect-2/3 w-[187px]"))(
 		html.A(
 			Class("block w-full h-full"),
 			attr.Href(w.PlayURL()),
 		)(
-			html.Img(
-				Class("w-full h-full object-cover"),
-				attr.Src(w.ImageURL()),
-			),
+			PosterImg(PosterFill, Class("h-full"), attr.Src(w.ImageURL())),
 		),
 	)
 }
