@@ -86,7 +86,7 @@ main.go
   no I/O allowed.
 - **model TxR/TxRW** methods are the only place for DB access.
 - **schema objects** should be consumed only by model code.
-
+- **ui/** can not depend on model; **view/** can.
 
 ## Code Generation
 
