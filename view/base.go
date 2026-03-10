@@ -43,7 +43,7 @@ func base(title string, head ...html.Node) func(...attr.Node) html.Element {
 }
 
 func pageContainer(child ...html.Node) html.Node {
-	return Box(Class("w-full max-w-318 px-6 mx-auto"))(
+	return FlexCol(Class("w-full max-w-318 px-6 mx-auto"))(
 		Group(child...),
 	)
 }

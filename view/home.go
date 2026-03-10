@@ -15,28 +15,26 @@ func Home(works []*model.Work) html.Node {
 		}
 	}
 	return media("Act Three", washURLs...)(
-		Grid12(Class("pt-4"))(
-			FlexRow(ColSpan12, Gap4)(
-				ButtonGroup(ButtonGroupRadiusLarge)(
-					Button(ButtonSurface)(Text("Title")),
-					Button(ButtonSurface)(Icon("line/switch-vertical-01")),
-				),
-				ButtonGroup(ButtonGroupRadiusLarge)(
-					Button(ButtonSurface)(Text("Movies")),
-					Button(ButtonSurface)(Text("Series")),
-				),
-				Button(ButtonSurface, ButtonRadiusLarge)(Icon("line/filter-lines")),
-				InputText()(),
+		FlexRow(Gap4, Class("py-4"))(
+			ButtonGroup(ButtonGroupRadiusLarge)(
+				Button(ButtonSurface)(Text("Title")),
+				Button(ButtonSurface)(Icon("line/switch-vertical-01")),
 			),
-			FlexRow(ColSpan12, Class(`
+			ButtonGroup(ButtonGroupRadiusLarge)(
+				Button(ButtonSurface)(Text("Movies")),
+				Button(ButtonSurface)(Text("Series")),
+			),
+			Button(ButtonSurface, ButtonRadiusLarge)(Icon("line/filter-lines")),
+			InputText()(),
+		),
+		FlexRow(Class(`
 					w-full
 					flex-wrap
 					justify-center
 					content-start
 					gap-[1px]
 				`))(
-				html.Range(works, workPosterLink),
-			),
+			html.Range(works, workPosterLink),
 		),
 	)
 }
