@@ -75,6 +75,16 @@ main.go
   generation, ffmpeg 2-pass encoding. See `video/doc.go` for the full
   video strategy.
 
+## Dataflow Rules
+
+- **model data objects** (Movie, Series, Episode, etc.) are readonly,
+  carry no DB handles, perform no I/O, and don't mutate.
+- **view/** is pure: functions take model objects, return HTML trees,
+  no I/O allowed.
+- **model TxR/TxRW** methods are the only place for DB access.
+- **schema objects** should be consumed only by model code.
+
+
 ## Code Generation
 
 - **sqlc**: `database/query.sql` + `database/ddl/*.sql` →

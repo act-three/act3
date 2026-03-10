@@ -1,3 +1,6 @@
+// Package view (along with its subdirectories) holds pure functions
+// for generating HTML trees from model objects.
+// Code in these packages must not perform I/O (e.g. database or network).
 package view
 
 import "ily.dev/act3/html/attr"

@@ -1,3 +1,18 @@
+// Package model contains the core logic of Act Three.
+// Code is organized into database-access (Model, TxR, TxRW)
+// and data objects (Movie, Series, Episode, etc).
+//
+// The database access interface is responsible
+// for coordinating I/O, running background tasks, measuring progress, etc.
+// Methods on TxR return data objects
+// for use by the rest of the system (e.g. view code);
+// methods on TxRW modify the database and return data objects.
+//
+// Data objects carry readonly data.
+// They're constructed by package model from database entries
+// and other sources.
+// They don't carry database handles, they perform no I/O,
+// and they don't mutate.
 package model
 
 import (
