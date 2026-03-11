@@ -1,0 +1,67 @@
+FROM golang:alpine
+
+# Core system packages: shell, VCS, networking, certs, editors
+RUN apk add --no-cache \
+	bash \
+	ca-certificates \
+	curl \
+	git \
+	gnupg \
+	jq \
+	less \
+	mandoc \
+	openssh-client \
+	openssh-server \
+	rsync \
+	tzdata \
+	zsh
+
+# Video processing (dev builds; deploy.sh builds its own static ffmpeg)
+RUN apk add --no-cache \
+	ffmpeg
+
+# Non-root user (unlock account so sshd allows pubkey auth)
+RUN addgroup -g 501 dev && adduser -u 501 -G dev -h /home/dev -s /bin/bash -D dev \
+	&& passwd -u dev
+
+# Claude Code CLI (native installer)
+USER dev
+RUN curl -fsSL https://claude.ai/install.sh | bash
+USER root
+ENV PATH="/home/dev/.local/bin:${PATH}"
+
+# sqlc — SQL code generator
+RUN GOBIN=/usr/local/bin go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+
+# tailwindcss v4 standalone CLI
+RUN ARCH=$(uname -m) && \
+	case "$ARCH" in \
+		x86_64)  TW_ARCH="x64" ;; \
+		aarch64) TW_ARCH="arm64" ;; \
+		*)       echo "unsupported arch: $ARCH" && exit 1 ;; \
+	esac && \
+	curl -fsSL -o /usr/local/bin/tailwindcss \
+		"https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-linux-${TW_ARCH}-musl" && \
+	chmod +x /usr/local/bin/tailwindcss
+
+# Login environment for SSH sessions (Docker ENV doesn't apply to sshd)
+RUN printf '%s\n' \
+	'export PATH="/home/dev/.local/bin:/usr/local/go/bin:$PATH"' \
+	'export GOEXPERIMENT=jsonv2' \
+	'export A3STORAGE=/home/dev/.local/act3' \
+	> /home/dev/.profile
+
+# SSH server setup
+RUN ssh-keygen -A
+RUN mkdir -p /home/dev/.ssh && chmod 700 /home/dev/.ssh \
+	&& ssh-keyscan github.com >> /home/dev/.ssh/known_hosts \
+	&& chown -R dev:dev /home/dev
+EXPOSE 22
+
+# Set Go environment
+ENV GOEXPERIMENT=jsonv2
+
+# Default working directory
+WORKDIR /home/dev
+
+CMD ["/usr/sbin/sshd", "-D", "-e"]
