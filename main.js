@@ -1,7 +1,7 @@
 import "./web/turbo.es2017-esm.js";
 import { Application } from "./web/stimulus.js";
 import DialogController from "./view/dialog-controller.js";
-import PlayerController from "./view/player-controller.js";
+import PlayerController from "./ui/player.js";
 import ListController from "./ui/list.js";
 import SidebarController from "./view/sidebar/sidebar-controller.js";
 import AddTorrentController from "./view/add-torrent-controller.js";

@@ -7892,8 +7892,8 @@
     }
   };
 
-  // view/player-controller.js
-  var player_controller_default = class extends Controller {
+  // ui/player.js
+  var player_default = class extends Controller {
     static targets = [
       "video",
       "volume",
@@ -7906,7 +7906,6 @@
       "qualityMenu"
     ];
     static values = {
-      iconUrl: String,
       title: String,
       playing: Boolean,
       paused: Boolean,
@@ -8813,7 +8812,7 @@
   // main.js
   window.Stimulus = Application.start();
   Stimulus.register("dialog", dialog_controller_default);
-  Stimulus.register("player", player_controller_default);
+  Stimulus.register("player", player_default);
   Stimulus.register("list", list_default);
   Stimulus.register("sidebar", sidebar_controller_default);
   Stimulus.register("add-torrent", add_torrent_controller_default);

@@ -10,7 +10,6 @@ import (
 var (
 	styleBundleURL  = static.Path("/static/bundle.css")
 	scriptBundleURL = static.Path("/static/bundle.js")
-	PlyrIconURL     = static.Path("/static/plyr.svg")
 )
 
 func base(title string, head ...html.Node) func(...attr.Node) html.Element {
