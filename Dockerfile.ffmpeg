@@ -2,7 +2,7 @@
 # Based on shaka-project/static-ffmpeg-binaries build scripts.
 #
 # Usage:
-#   docker build -t act3-ffmpeg video/ffmpeg/
+#   docker build -t act3-ffmpeg -f Dockerfile.ffmpeg video/ffmpeg
 #   docker run --rm act3-ffmpeg cat /out/ffmpeg > ffmpeg && chmod +x ffmpeg
 #   docker run --rm act3-ffmpeg cat /out/ffprobe > ffprobe && chmod +x ffprobe
 
