@@ -113,6 +113,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	if v := os.Getenv("A3TRANSMISSION"); v != "" {
+		model.SettingDefaultString(model.SettingKeyTransmissionBaseURL, v)
+	}
+	if v := os.Getenv("A3TMDBTOKEN"); v != "" {
+		model.SettingDefaultString(model.SettingKeyTMDBAccessToken, v)
+	}
+
 	store := must(storage.Open(casDir))
 	tmdbClient := tmdb.New()
 	tvmazeClient := must(tvmaze.New(dbw))
@@ -122,11 +129,6 @@ func main() {
 		TMDB:          tmdbClient,
 		TVmaze:        tvmazeClient,
 	}))
-
-	if err := initConfig(m); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
 
 	mux := &http.ServeMux{}
 	web.Handle(mux, &web.Config{
@@ -142,37 +144,6 @@ func main() {
 	h = (&http.CrossOriginProtection{}).Handler(h)
 	slog.Info("listen", "listen", listen)
 	panic(http.ListenAndServe(listen, h))
-}
-
-func initConfig(m *model.Model) error {
-	return m.WithTxRW(func(tx *model.TxRW) error {
-		ctx := context.Background()
-		ct, err := tx.Transmission(ctx)
-		if err != nil {
-			return err
-		}
-		if ct.BaseURL == "" {
-			ct.BaseURL = os.Getenv("A3TRANSMISSION")
-			err = tx.TransmissionSet(ctx, *ct)
-			if err != nil {
-				return err
-			}
-		}
-		tmdbConfig, err := tx.TMDB(ctx)
-		if err != nil {
-			return err
-		}
-		if tmdbConfig.AccessToken == "" {
-			tmdbConfig.AccessToken = os.Getenv("A3TMDBTOKEN")
-			if tmdbConfig.AccessToken != "" {
-				err = tx.TMDBSet(ctx, *tmdbConfig)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	})
 }
 
 func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {

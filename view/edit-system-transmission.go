@@ -7,7 +7,7 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func EditSystemTransmission(config *model.ConfigTransmission) html.Node {
+func EditSystemTransmission(settings model.Settings) html.Node {
 	return app("Transmission",
 		html.Div(
 			attr.Class("h-full w-full p-4"),
@@ -22,7 +22,7 @@ func EditSystemTransmission(config *model.ConfigTransmission) html.Node {
 					InputText(
 						attr.Name("url"),
 						attr.Class("max-w-xs"),
-						attr.Value(config.BaseURL),
+						attr.Value(settings[model.SettingKeyTransmissionBaseURL].String()),
 					),
 				),
 				html.Div(attr.Class("py-4"))(
@@ -30,7 +30,7 @@ func EditSystemTransmission(config *model.ConfigTransmission) html.Node {
 					InputText(
 						attr.Name("path"),
 						attr.Class("max-w-xs"),
-						attr.Value(config.Path),
+						attr.Value(settings[model.SettingKeyTransmissionPath].String()),
 					),
 				),
 				html.Div(attr.Class("py-4"))(

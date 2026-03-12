@@ -7,7 +7,7 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func EditSystemTMDB(config *model.ConfigTMDB) html.Node {
+func EditSystemTMDB(settings model.Settings) html.Node {
 	return app("TMDB",
 		html.Div(
 			attr.Class("h-full w-full p-4"),
@@ -24,7 +24,7 @@ func EditSystemTMDB(config *model.ConfigTMDB) html.Node {
 					InputText(
 						attr.Name("token"),
 						attr.Class("max-w-xs"),
-						attr.Value(config.AccessToken),
+						attr.Value(settings[model.SettingKeyTMDBAccessToken].String()),
 					),
 				),
 				html.Div(attr.Class("py-4"))(

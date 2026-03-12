@@ -15,17 +15,6 @@ type AudioTrack struct {
 	Codec         string
 }
 
-type ConfigTMDB struct {
-	Single      int64
-	AccessToken string
-}
-
-type ConfigTransmission struct {
-	Single  int64
-	Path    string
-	BaseURL string
-}
-
 type Download struct {
 	ID                  string
 	Createdat           int64
@@ -149,6 +138,12 @@ type SeriesEdition struct {
 type Seriesgenre struct {
 	SeriesID  string
 	GenreName string
+}
+
+type Setting struct {
+	Key   string
+	Group string
+	Value string
 }
 
 type Storage struct {

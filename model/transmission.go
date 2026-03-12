@@ -1,60 +1,44 @@
 package model
 
 import (
-	"database/sql"
 	urlpkg "net/url"
 
 	"github.com/hekmon/transmissionrpc/v3"
 	"kr.dev/errorfmt"
-
-	"ily.dev/act3/database/schema"
 )
 
-type ConfigTransmission struct {
-	Path    string
-	BaseURL string
+func (m *Model) registerTransmissionSettingHooks() {
+	SettingHook(SettingKeyTransmissionBaseURL, func(s *Setting) {
+		u, err := urlpkg.Parse(s.String())
+		if err != nil {
+			return
+		}
+		m.setTransmissionBaseURL(u)
+	})
 }
 
 func (tx *TxR) loadTransmissionConfig(ctx Context) (err error) {
 	defer errorfmt.Handlef("transmission: %w", &err)
-	ct, err := tx.q.TransmissionGet(ctx)
-	if err == sql.ErrNoRows {
+	settings, err := tx.SettingGetByGroup(ctx, "transmission")
+	if err != nil {
+		return err
+	}
+	baseURL := settings[SettingKeyTransmissionBaseURL].String()
+	if baseURL == "" {
 		return nil
-	} else if err != nil {
-		return err
 	}
-	u, err := urlpkg.Parse(ct.BaseURL)
+	u, err := urlpkg.Parse(baseURL)
 	if err != nil {
 		return err
 	}
-	return tx.m.setTransmissionBaseURL(ctx, u)
+	tx.m.setTransmissionBaseURL(u)
+	return nil
 }
 
-func (tx *TxR) Transmission(ctx Context) (*ConfigTransmission, error) {
-	ct, err := tx.q.TransmissionGet(ctx)
-	if err == sql.ErrNoRows {
-		return &ConfigTransmission{}, nil
-	}
-	return (*ConfigTransmission)(&ct), err
-}
-
-func (tx *TxRW) TransmissionSet(ctx Context, c ConfigTransmission) error {
-	u, err := urlpkg.Parse(c.BaseURL)
-	if err != nil {
-		return err
-	}
-	err = tx.q.TransmissionSet(ctx, schema.TransmissionSetParams(c))
-	if err != nil {
-		return err
-	}
-	return tx.m.setTransmissionBaseURL(ctx, u)
-}
-
-func (m *Model) setTransmissionBaseURL(ctx Context, u *urlpkg.URL) error {
+func (m *Model) setTransmissionBaseURL(u *urlpkg.URL) {
 	c, err := transmissionrpc.New(u, nil)
 	if err != nil {
-		return err
+		return
 	}
 	m.transmission.Store(c)
-	return nil
 }

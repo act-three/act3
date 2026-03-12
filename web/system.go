@@ -20,20 +20,18 @@ var excludeFSType = map[string]bool{
 func (c *Config) systemTMDB(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		config, err := tx.TMDB(ctx)
+		settings, err := tx.SettingGetByGroup(ctx, "tmdb")
 		if err != nil {
 			return nil, err
 		}
-		return view.EditSystemTMDB(config), nil
+		return view.EditSystemTMDB(settings), nil
 	})
 }
 
 func (c *Config) doUpdateTMDBSettings(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
-		err := tx.TMDBSet(ctx, model.ConfigTMDB{
-			AccessToken: req.FormValue("token"),
-		})
+		err := tx.SettingSetString(ctx, model.SettingKeyTMDBAccessToken, req.FormValue("token"))
 		if err != nil {
 			return nil, err
 		}
@@ -45,21 +43,22 @@ func (c *Config) doUpdateTMDBSettings(w http.ResponseWriter, req *http.Request) 
 func (c *Config) systemTransmission(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		config, err := tx.Transmission(ctx)
+		settings, err := tx.SettingGetByGroup(ctx, "transmission")
 		if err != nil {
 			return nil, err
 		}
-		return view.EditSystemTransmission(config), nil
+		return view.EditSystemTransmission(settings), nil
 	})
 }
 
 func (c *Config) doUpdateTransmissionSettings(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
-		err := tx.TransmissionSet(ctx, model.ConfigTransmission{
-			Path:    req.FormValue("path"),
-			BaseURL: req.FormValue("url"),
-		})
+		err := tx.SettingSetString(ctx, model.SettingKeyTransmissionBaseURL, req.FormValue("url"))
+		if err != nil {
+			return nil, err
+		}
+		err = tx.SettingSetString(ctx, model.SettingKeyTransmissionPath, req.FormValue("path"))
 		if err != nil {
 			return nil, err
 		}

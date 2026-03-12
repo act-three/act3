@@ -2069,6 +2069,49 @@ func (q *Queries) SeriesSlugExists(ctx context.Context, slug string) (int64, err
 	return count, err
 }
 
+const settingListByGroup = `-- name: SettingListByGroup :many
+SELECT "key", "Group", value FROM Setting WHERE "Group" = ?
+`
+
+func (q *Queries) SettingListByGroup(ctx context.Context, group string) ([]Setting, error) {
+	rows, err := q.db.QueryContext(ctx, settingListByGroup, group)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Setting
+	for rows.Next() {
+		var i Setting
+		if err := rows.Scan(&i.Key, &i.Group, &i.Value); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const settingSet = `-- name: SettingSet :exec
+INSERT INTO Setting (Key, "Group", Value) VALUES (?, ?, ?)
+ON CONFLICT (Key) DO UPDATE SET Value = ?3
+`
+
+type SettingSetParams struct {
+	Key   string
+	Group string
+	Value string
+}
+
+func (q *Queries) SettingSet(ctx context.Context, arg SettingSetParams) error {
+	_, err := q.db.ExecContext(ctx, settingSet, arg.Key, arg.Group, arg.Value)
+	return err
+}
+
 const storageCreate = `-- name: StorageCreate :exec
 INSERT INTO Storage (Path, Contents) VALUES (?, ?)
 `
@@ -2108,27 +2151,6 @@ func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
 		return nil, err
 	}
 	return items, nil
-}
-
-const tMDBGet = `-- name: TMDBGet :one
-SELECT AccessToken FROM ConfigTMDB LIMIT 1
-`
-
-func (q *Queries) TMDBGet(ctx context.Context) (string, error) {
-	row := q.db.QueryRowContext(ctx, tMDBGet)
-	var accesstoken string
-	err := row.Scan(&accesstoken)
-	return accesstoken, err
-}
-
-const tMDBSet = `-- name: TMDBSet :exec
-INSERT INTO ConfigTMDB (Single, AccessToken) VALUES (0, ?1)
-ON CONFLICT (Single) DO UPDATE SET AccessToken = ?1
-`
-
-func (q *Queries) TMDBSet(ctx context.Context, accesstoken string) error {
-	_, err := q.db.ExecContext(ctx, tMDBSet, accesstoken)
-	return err
 }
 
 const taskCreate = `-- name: TaskCreate :one
@@ -2370,37 +2392,6 @@ UPDATE Task SET Running = 0 WHERE ID = ?
 
 func (q *Queries) TaskUnlock(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, taskUnlock, id)
-	return err
-}
-
-const transmissionGet = `-- name: TransmissionGet :one
-SELECT Path, BaseURL FROM ConfigTransmission LIMIT 1
-`
-
-type TransmissionGetRow struct {
-	Path    string
-	BaseURL string
-}
-
-func (q *Queries) TransmissionGet(ctx context.Context) (TransmissionGetRow, error) {
-	row := q.db.QueryRowContext(ctx, transmissionGet)
-	var i TransmissionGetRow
-	err := row.Scan(&i.Path, &i.BaseURL)
-	return i, err
-}
-
-const transmissionSet = `-- name: TransmissionSet :exec
-INSERT INTO ConfigTransmission (Single, Path, BaseURL) VALUES (0, ?1, ?2)
-ON CONFLICT (Single) DO UPDATE SET Path = ?1, BaseURL = ?2
-`
-
-type TransmissionSetParams struct {
-	Path    string
-	BaseURL string
-}
-
-func (q *Queries) TransmissionSet(ctx context.Context, arg TransmissionSetParams) error {
-	_, err := q.db.ExecContext(ctx, transmissionSet, arg.Path, arg.BaseURL)
 	return err
 }
 

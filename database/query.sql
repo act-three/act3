@@ -418,20 +418,6 @@ UPDATE Task SET
 	FailureDesc = ?
 WHERE ID = ?;
 
--- name: TMDBGet :one
-SELECT AccessToken FROM ConfigTMDB LIMIT 1;
-
--- name: TMDBSet :exec
-INSERT INTO ConfigTMDB (Single, AccessToken) VALUES (0, ?1)
-ON CONFLICT (Single) DO UPDATE SET AccessToken = ?1;
-
--- name: TransmissionGet :one
-SELECT Path, BaseURL FROM ConfigTransmission LIMIT 1;
-
--- name: TransmissionSet :exec
-INSERT INTO ConfigTransmission (Single, Path, BaseURL) VALUES (0, ?1, ?2)
-ON CONFLICT (Single) DO UPDATE SET Path = ?1, BaseURL = ?2;
-
 -- name: VideoCreate :one
 INSERT INTO Video
 (
@@ -481,3 +467,10 @@ RETURNING *;
 -- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?
 RETURNING *;
+
+-- name: SettingListByGroup :many
+SELECT * FROM Setting WHERE "Group" = ?;
+
+-- name: SettingSet :exec
+INSERT INTO Setting (Key, "Group", Value) VALUES (?, ?, ?)
+ON CONFLICT (Key) DO UPDATE SET Value = ?3;

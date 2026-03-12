@@ -1,45 +1,22 @@
 package model
 
-import (
-	"database/sql"
+import "kr.dev/errorfmt"
 
-	"kr.dev/errorfmt"
-)
-
-type ConfigTMDB struct {
-	AccessToken string
+func (m *Model) registerTMDBSettingHooks() {
+	SettingHook(SettingKeyTMDBAccessToken, func(s *Setting) {
+		m.tmdb.SetToken(s.String())
+	})
 }
 
 func (tx *TxR) loadTMDBConfig(ctx Context) (err error) {
 	defer errorfmt.Handlef("tmdb: %w", &err)
-	ct, err := tx.q.TMDBGet(ctx)
-	if err == sql.ErrNoRows {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	tx.m.tmdb.SetToken(ct)
-	return nil
-}
-
-func (tx *TxR) TMDB(ctx Context) (*ConfigTMDB, error) {
-	token, err := tx.q.TMDBGet(ctx)
-	if err == sql.ErrNoRows {
-		return &ConfigTMDB{}, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	return &ConfigTMDB{AccessToken: token}, nil
-}
-
-func (tx *TxRW) TMDBSet(
-	ctx Context, c ConfigTMDB,
-) error {
-	err := tx.q.TMDBSet(ctx, c.AccessToken)
+	settings, err := tx.SettingGetByGroup(ctx, "tmdb")
 	if err != nil {
 		return err
 	}
-	tx.m.tmdb.SetToken(c.AccessToken)
+	token := settings[SettingKeyTMDBAccessToken].String()
+	if token != "" {
+		tx.m.tmdb.SetToken(token)
+	}
 	return nil
 }

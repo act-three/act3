@@ -937,6 +937,12 @@
       color: color-mix(in oklab, var(--color-white) 80%, transparent);
     }
   }
+  .lowercase {
+    text-transform: lowercase;
+  }
+  .uppercase {
+    text-transform: uppercase;
+  }
   .italic {
     font-style: italic;
   }

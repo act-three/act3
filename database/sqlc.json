@@ -17,8 +17,6 @@
 						"channellayout": "ChannelLayout",
 						"baseurl": "BaseURL",
 						"accesstoken": "AccessToken",
-						"configtmdb": "ConfigTMDB",
-						"configtransmission": "ConfigTransmission",
 						"editionid": "EditionID",
 						"endedon": "EndedOn",
 						"episodeid": "EpisodeID",
@@ -61,6 +59,7 @@
 						"surroundaudio": "SurroundAudio",
 						"imageurl": "ImageURL",
 						"videoid": "VideoID",
+						"group": "Group",
 					},
 					"overrides": [
 						{

@@ -7,21 +7,6 @@ CREATE TABLE User
 )
 STRICT;
 
-CREATE TABLE ConfigTMDB
-(
-	Single      INTEGER PRIMARY KEY CHECK (single = 0),
-	AccessToken TEXT NOT NULL
-)
-STRICT;
-
-CREATE TABLE ConfigTransmission
-(
-	Single  INTEGER PRIMARY KEY CHECK (single = 0),
-	Path    TEXT NOT NULL,
-	BaseURL TEXT NOT NULL
-)
-STRICT;
-
 CREATE TABLE Storage
 (
 	Path     TEXT PRIMARY KEY,
@@ -262,3 +247,12 @@ CREATE TABLE Download
 STRICT;
 CREATE INDEX Index_Download_PlanEditionID ON Download (PlanSeriesEditionID)
 WHERE PlanSeriesEditionID IS NOT NULL;
+
+CREATE TABLE Setting
+(
+	Key      TEXT PRIMARY KEY,
+	"Group" TEXT NOT NULL,
+	Value    TEXT NOT NULL  -- JSON-encoded
+)
+STRICT, WITHOUT ROWID;
+CREATE INDEX Index_Setting_Group ON Setting ("Group");
