@@ -7,8 +7,9 @@ with code in this repository.
 
 Act Three (`ily.dev/act3`) is a self-hosted media server for TV series
 and movies. Single Go binary serving a web UI, managing torrent
-downloads via Transmission, fetching metadata from TVmaze, ingesting
-video into a content-addressed store, and transcoding to HLS via ffmpeg.
+downloads via Transmission, fetching metadata from TMDB and TVmaze,
+ingesting video into a content-addressed store,
+and transcoding to HLS via ffmpeg.
 
 We are still pre-production, so the db isn't precious. For instance, no
 need to add migrations, just edit the inital schema. And if there's bad
@@ -27,7 +28,7 @@ go build ./... # avoids littering `act3` build artifact
 go test ./...
 go test ./model/...
 go generate ./...
-./deploy.sh
+./mk deploy
 ```
 
 The project uses `encoding/json/v2`,
@@ -53,6 +54,7 @@ main.go
        ├→ database/schema/ (sqlc)
        ├→ storage/ (CAS, BLAKE3)
        ├→ video/ffmpeg/ (encode)
+       ├→ service/tmdb/
        └→ service/tvmaze/
 ```
 
