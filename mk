@@ -143,8 +143,12 @@ case "${1:-}" in
 		echo $image >deploy/latest
         ;;
     git-setup)
+	go build -o .git/hooks/act3vet ./analysis/cmd/act3vet
 	cat >.git/hooks/pre-commit <<'HOOK'
 #!/bin/sh
+set -e
+
+# Check that staged .go files are formatted.
 unformatted=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | while read f; do
 	if [ -n "$(gofmt -l "$f")" ]; then
 		echo "$f"
@@ -155,6 +159,9 @@ if [ -n "$unformatted" ]; then
 	echo "$unformatted"
 	exit 1
 fi
+
+# Check for direct env var reads outside of package main.
+go vet -vettool=.git/hooks/act3vet ./...
 HOOK
 	chmod +x .git/hooks/pre-commit
 	echo "Installed .git/hooks/pre-commit"

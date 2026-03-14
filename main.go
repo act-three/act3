@@ -22,6 +22,7 @@ import (
 	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/storage"
+	"ily.dev/act3/video/ffmpeg"
 	"ily.dev/act3/web"
 )
 
@@ -118,6 +119,9 @@ func main() {
 	}
 	if v := os.Getenv("A3TMDBTOKEN"); v != "" {
 		model.SettingDefaultString(model.SettingKeyTMDBAccessToken, v)
+	}
+	if v := os.Getenv("A3FFMPEGVIDEOPRESET"); v != "" {
+		ffmpeg.OverridePreset(v)
 	}
 
 	store := must(storage.Open(casDir))

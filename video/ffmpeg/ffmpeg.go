@@ -20,7 +20,13 @@ import (
 	"ily.dev/act3/xbufio"
 )
 
-var overridePreset = os.Getenv("A3FFMPEGVIDEOPRESET")
+var overridePreset string
+
+// OverridePreset sets a global preset override for all ffmpeg
+// encoding operations (e.g. "ultrafast" for development).
+func OverridePreset(preset string) {
+	overridePreset = preset
+}
 
 // newCmd creates an *exec.Cmd for the named tool (ffmpeg or ffprobe).
 // Tests override this to run tools inside Docker.
