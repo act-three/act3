@@ -52,13 +52,13 @@ func main() {
 
 func run() error {
 	result := api.Build(api.BuildOptions{
-		EntryPoints: []string{cssFile},
-		Outfile:     cssFile,
-		Bundle:      true,
-		Write:       true,
+		EntryPoints:    []string{cssFile},
+		Outfile:        cssFile,
+		Bundle:         true,
+		Write:          true,
 		AllowOverwrite: true,
-		LogLevel:    api.LogLevelWarning,
-		Plugins:     []api.Plugin{iconPlugin()},
+		LogLevel:       api.LogLevelWarning,
+		Plugins:        []api.Plugin{iconPlugin()},
 	})
 	if len(result.Errors) > 0 {
 		return fmt.Errorf("esbuild: %s", result.Errors[0].Text)

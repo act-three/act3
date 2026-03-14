@@ -49,12 +49,12 @@ func buildSIDX(refID, timescale uint32) []byte {
 	payload := concat(
 		put32(refID),
 		put32(timescale),
-		put32(0),          // earliest_presentation_time
-		put32(0),          // first_offset
+		put32(0),           // earliest_presentation_time
+		put32(0),           // first_offset
 		[]byte{0, 0, 0, 1}, // reserved(2) + reference_count(2)=1
-		put32(0),          // reference (type+size)
-		put32(0),          // subsegment_duration
-		put32(0),          // SAP info
+		put32(0),           // reference (type+size)
+		put32(0),           // subsegment_duration
+		put32(0),           // SAP info
 	)
 	return fullbox("sidx", 0, 0, payload)
 }
@@ -147,8 +147,8 @@ func buildFragment(
 // having duration 0.
 func TestFmp4VideoDuration_DefaultSampleDuration(t *testing.T) {
 	const (
-		timescale  = 15360 // 30fps track
-		frameDur   = 512   // 15360/30
+		timescale   = 15360 // 30fps track
+		frameDur    = 512   // 15360/30
 		sampleCount = 10
 	)
 	defaultDur := uint32(frameDur)
@@ -241,7 +241,7 @@ func TestFmp4VideoDuration_DTSSpanNotPTSSpan(t *testing.T) {
 		t.Fatalf("fmp4VideoDuration: %v", err)
 	}
 
-	dtsDur := float64(3*3003) / float64(timescale) // 0.100100
+	dtsDur := float64(3*3003) / float64(timescale)    // 0.100100
 	ptsDur := float64(9009-3003) / float64(timescale) // 0.066733
 
 	if math.Abs(got-ptsDur) < 0.0001 {

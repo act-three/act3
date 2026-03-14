@@ -29,9 +29,9 @@ func (mo *MovieHead) Title() string    { return mo.mo.Title }
 func (mo *MovieHead) Summary() string  { return mo.mo.Summary }
 func (mo *MovieHead) Year() int64      { return mo.mo.Year }
 func (mo *MovieHead) Runtime() int64   { return mo.mo.Runtime }
-func (mo *MovieHead) ImageURL() string  { return mo.mo.ImageURL }
-func (mo *MovieHead) TMDBID() *int64    { return mo.mo.TMDBID }
-func (mo *MovieHead) IMDBID() *string   { return mo.mo.IMDBID }
+func (mo *MovieHead) ImageURL() string { return mo.mo.ImageURL }
+func (mo *MovieHead) TMDBID() *int64   { return mo.mo.TMDBID }
+func (mo *MovieHead) IMDBID() *string  { return mo.mo.IMDBID }
 
 func (mo *MovieHead) PlayURL() string {
 	return "/" + mo.mo.Slug

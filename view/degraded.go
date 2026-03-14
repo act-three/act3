@@ -111,4 +111,3 @@ func degradedAction(hasData bool) html.Node {
 		)(html.Text("Reinitialize Database")),
 	)
 }
-

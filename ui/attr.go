@@ -29,4 +29,3 @@ var (
 	Gap7 = Class("gap-7")
 	Gap8 = Class("gap-8")
 )
-
