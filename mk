@@ -84,7 +84,7 @@ case "${1:-}" in
 
 		# Use SSH here (instead of docker exec) for agent forwarding.
 		echo "Cloning repo..."
-		ssh act3-dev "git clone git@github.com:em-ily-dev/act3.git ~/act3 && mkdir -p ~/.local/act3"
+		ssh act3-dev "git clone git@github.com:em-ily-dev/act3.git ~/act3 && mkdir -p ~/.local/act3 && cd ~/act3 && ./mk git-setup"
 
 		# Copy gitignored files not included in the clone
 		docker cp ui/icon/untitled-icons.zip "$container:/home/dev/act3/ui/icon/untitled-icons.zip"
@@ -142,6 +142,23 @@ case "${1:-}" in
 	    ssh root@pepper boxup act3
 		echo $image >deploy/latest
         ;;
+    git-setup)
+	cat >.git/hooks/pre-commit <<'HOOK'
+#!/bin/sh
+unformatted=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | while read f; do
+	if [ -n "$(gofmt -l "$f")" ]; then
+		echo "$f"
+	fi
+done)
+if [ -n "$unformatted" ]; then
+	echo "gofmt: these files are not formatted:"
+	echo "$unformatted"
+	exit 1
+fi
+HOOK
+	chmod +x .git/hooks/pre-commit
+	echo "Installed .git/hooks/pre-commit"
+	;;
     "")
         echo "Usage: $0 [command]"
         echo
@@ -149,6 +166,7 @@ case "${1:-}" in
         echo
         echo "    container  Build & run container for dev"
         echo "    deploy     Deploy the image to the USB stick"
+        echo "    git-setup  Install git hooks"
         echo
         echo "Last deployed: $(latest_deployed_image)"
         echo "Latest image:  $(latest_image)"
