@@ -33,6 +33,8 @@ ENV PATH="/home/dev/.local/bin:${PATH}"
 # sqlc — SQL code generator
 RUN GOBIN=/usr/local/bin go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 
+RUN GOBIN=/usr/local/bin go install golang.org/x/tools/cmd/goimports@latest
+
 # tailwindcss v4 standalone CLI
 RUN ARCH=$(uname -m) && \
 	case "$ARCH" in \
