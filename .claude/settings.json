@@ -22,6 +22,17 @@
             "filter": "endswith('.go')"
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat >/dev/null && go generate ./database/...",
+            "name": "Run sqlc after schema changes",
+            "filter": "contains('database/ddl/') or contains('database/query.sql') or contains('database/sqlc.json')"
+          }
+        ]
       }
     ]
   }
