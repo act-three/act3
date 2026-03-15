@@ -17,9 +17,20 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat >/dev/null && go generate ./database/...",
+            "command": "cat >/dev/null && go generate ./database",
             "name": "Run sqlc after schema changes",
             "filter": "contains('database/ddl/') or contains('database/query.sql') or contains('database/sqlc.json')"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cat >/dev/null && go generate . 2>/dev/null",
+            "name": "Rebuild CSS/JS bundles",
+            "filter": "endswith('.js') or endswith('.css') or (contains('/ui/') and endswith('.go')) or (contains('/view/') and endswith('.go'))"
           }
         ]
       }
