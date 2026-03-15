@@ -2,18 +2,7 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -r '.tool_input.file_path' | xargs goimports -w",
-            "name": "Run goimports on Go files",
-            "filter": "endswith('.go')"
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
+        "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
