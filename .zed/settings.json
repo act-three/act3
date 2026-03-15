@@ -4,11 +4,20 @@
 // folder-specific settings, see the documentation:
 // https://zed.dev/docs/configuring-zed#settings-files
 {
+	"auto_indent_on_paste": true,
 	"lsp": {
 		"gopls": {
 			"initialization_options": {
 				"buildFlags": ["-tags", "goexperiment.jsonv2"]
-			}
-		}
-	}
+			},
+		},
+ },
+ "languages": {
+	"JavaScript": {
+       "language_servers": [
+         "!package-version-server",
+         "...",
+       ],
+     },
+ },
 }
