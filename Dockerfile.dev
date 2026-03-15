@@ -9,6 +9,7 @@ RUN apk add --no-cache \
 	gnupg \
 	jq \
 	less \
+	ripgrep \
 	mandoc \
 	openssh-client \
 	openssh-server \
