@@ -5,9 +5,7 @@ import (
 	"slices"
 
 	"ily.dev/act3/database/schema"
-	"ily.dev/act3/expr"
 	"ily.dev/act3/model/progress"
-	"ily.dev/act3/xiter"
 )
 
 const (
@@ -116,24 +114,6 @@ func (sed *SeriesEdition) Episodes(include EpisodeType) iter.Seq[*Episode] {
 			}
 		}
 	}
-}
-
-func (sed *SeriesEdition) episodesBySpan(epID string, n int) iter.Seq[*Episode] {
-	if ep := sed.episodeByID(epID); ep != nil && ep.type_&AnySpecial != 0 {
-		return episodesBySpan(sed.Episodes(AnySpecial), epID, n)
-	}
-	if sn := sed.seasonByEpisodeID(epID); sn != nil {
-		return episodesBySpan(sn.Episodes(Regular), epID, n)
-	}
-	return expr.Empty[*Episode]()
-}
-
-func episodesBySpan(s iter.Seq[*Episode], epID string, n int) iter.Seq[*Episode] {
-	s = xiter.DropUntil(s, func(e *Episode) bool {
-		return e.ID() == epID
-	})
-	s = xiter.Keep(s, n)
-	return s
 }
 
 func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {

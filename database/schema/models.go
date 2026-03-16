@@ -27,7 +27,13 @@ type Download struct {
 	Autoimport          int64
 	PlanSeriesEditionID *string
 	PlanMovieEditionID  *string
-	Plan                string
+}
+
+type DownloadPlan struct {
+	DownloadID     string
+	Path           string
+	EpisodeID      *string
+	MovieEditionID *string
 }
 
 type Episode struct {

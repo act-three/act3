@@ -22,12 +22,9 @@ INSERT INTO Download
 	State,
 	Title,
 	Torrent,
-	InfoHash,
-	PlanSeriesEditionID,
-	PlanMovieEditionID,
-	Plan
+	InfoHash
 )
-VALUES (?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: DownloadGet :one
@@ -59,15 +56,13 @@ UPDATE Download SET State = 'error', Error = ? WHERE ID = ? RETURNING *;
 
 -- name: DownloadUpdatePlanSeries :one
 UPDATE Download SET
-	PlanSeriesEditionID = ?,
-	Plan = ?
+	PlanSeriesEditionID = ?
 WHERE ID = ?
 RETURNING *;
 
 -- name: DownloadUpdatePlanMovie :one
 UPDATE Download SET
-	PlanMovieEditionID = ?,
-	Plan = ?
+	PlanMovieEditionID = ?
 WHERE ID = ?
 RETURNING *;
 
@@ -77,10 +72,25 @@ UPDATE Download SET AutoImport = ? WHERE ID = ? RETURNING *;
 -- name: DownloadUpdateProgress :one
 UPDATE Download SET
 	State = ?,
-	Plan = ?,
 	Progress = ?,
 	Error = ''
 WHERE ID = ? RETURNING *;
+
+-- name: DownloadPlanCreate :exec
+INSERT INTO DownloadPlan (DownloadID, Path, EpisodeID, MovieEditionID)
+VALUES (?, ?, ?, ?);
+
+-- name: DownloadPlanDeleteByDownloadIDPath :exec
+DELETE FROM DownloadPlan WHERE DownloadID = ? AND Path = ?;
+
+-- name: DownloadPlanDeleteByDownloadID :exec
+DELETE FROM DownloadPlan WHERE DownloadID = ?;
+
+-- name: DownloadPlanListByDownloadID :many
+SELECT * FROM DownloadPlan WHERE DownloadID = ?;
+
+-- name: DownloadPlanCountByDownloadID :one
+SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ?;
 
 -- name: EpisodeCreate :one
 INSERT INTO Episode

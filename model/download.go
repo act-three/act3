@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -33,24 +32,11 @@ import (
 )
 
 type DownloadHead struct {
-	d schema.Download
-
-	planLenOnce sync.Once
-	planLen     int
+	d       schema.Download
+	planLen int
 
 	filesLenOnce sync.Once
 	filesLen     int
-}
-
-func newDownloadHeadList(dls []schema.Download, err error) ([]*DownloadHead, error) {
-	if err != nil {
-		return nil, err
-	}
-	res := make([]*DownloadHead, len(dls))
-	for i := range dls {
-		res[i] = &DownloadHead{d: dls[i]}
-	}
-	return res, nil
 }
 
 func (d *DownloadHead) URL() string       { return "/app/downloads/" + d.d.ID }
@@ -61,17 +47,7 @@ func (d *DownloadHead) Error() string     { return d.d.Error }
 func (d *DownloadHead) Progress() float64 { return d.d.Progress }
 func (d *DownloadHead) AutoImport() bool  { return d.d.Autoimport != 0 }
 
-func (d *DownloadHead) PlanLen() int {
-	d.planLenOnce.Do(func() {
-		var plan map[string]span
-		err := json.Unmarshal([]byte(d.d.Plan), &plan)
-		if err != nil {
-			panic(err)
-		}
-		d.planLen = len(plan)
-	})
-	return d.planLen
-}
+func (d *DownloadHead) PlanLen() int { return d.planLen }
 
 func (d *DownloadHead) FilesLen() int {
 	d.filesLenOnce.Do(func() {
@@ -91,7 +67,7 @@ func (d *DownloadHead) FilesLen() int {
 type DownloadFile struct {
 	d    *Download
 	fi   metainfo.FileInfo
-	plan span
+	plan *schema.DownloadPlan
 	path string // set for single-file torrents
 }
 
@@ -118,19 +94,19 @@ func (df *DownloadFile) Progress() float64 {
 func (df *DownloadFile) Episode() *Episode {
 	// TODO(april): return actual episode (not planned episode) after import
 	sed := df.SeriesEdition()
-	if sed == nil {
+	if sed == nil || df.plan == nil || df.plan.EpisodeID == nil {
 		return nil
 	}
-	return sed.episodeByID(df.plan.ID)
+	return sed.episodeByID(*df.plan.EpisodeID)
 }
 
 func (df *DownloadFile) Season() *Season {
 	// TODO(april): return actual season (not planned season) after import
 	sed := df.SeriesEdition()
-	if sed == nil {
+	if sed == nil || df.plan == nil || df.plan.EpisodeID == nil {
 		return nil
 	}
-	return sed.seasonByEpisodeID(df.plan.ID)
+	return sed.seasonByEpisodeID(*df.plan.EpisodeID)
 }
 
 func (df *DownloadFile) SeriesEdition() *SeriesEdition {
@@ -146,18 +122,14 @@ type Download struct {
 	DownloadHead
 	metaInfo     *metainfo.MetaInfo
 	info         metainfo.Info
-	plan         map[string]span
+	plans        []schema.DownloadPlan
+	planByPath   map[string]*schema.DownloadPlan
 	planEd       *SeriesEdition
 	planMovieEd  *MovieEdition
 	fileProgress map[string]float64 // path -> fraction [0,1], nil if unknown
 }
 
 type addr struct{ Snn, Enn int }
-
-type span struct {
-	ID string // first episode ID
-	N  int    // num episodes
-}
 
 func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 	d := &Download{DownloadHead: DownloadHead{d: dl}}
@@ -172,10 +144,16 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal([]byte(d.d.Plan), &d.plan)
+	d.plans, err = tx.q.DownloadPlanListByDownloadID(ctx, dl.ID)
 	if err != nil {
 		return nil, err
 	}
+	d.planByPath = make(map[string]*schema.DownloadPlan, len(d.plans))
+	for i := range d.plans {
+		d.planByPath[d.plans[i].Path] = &d.plans[i]
+	}
+	d.planLen = len(d.plans)
+
 	if dl.PlanSeriesEditionID != nil {
 		d.planEd, err = tx.SeriesEdition(ctx, *dl.PlanSeriesEditionID)
 		if err != nil {
@@ -201,17 +179,25 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 func (d *Download) PlanSeriesEdition() *SeriesEdition { return d.planEd }
 func (d *Download) PlanMovieEdition() *MovieEdition   { return d.planMovieEd }
 
-func (d *Download) PlanFor(path string) (epID string, span int) {
-	p := d.plan[path]
-	return p.ID, p.N
+func (d *Download) PlanFor(path string) string {
+	p := d.planByPath[path]
+	if p == nil {
+		return ""
+	}
+	if p.EpisodeID != nil {
+		return *p.EpisodeID
+	}
+	if p.MovieEditionID != nil {
+		return *p.MovieEditionID
+	}
+	return ""
 }
 
 func (d *Download) PlanEpisode(path string) *Episode {
 	if d.planEd == nil {
 		return nil
 	}
-	id, _ := d.PlanFor(path)
-	return d.planEd.episodeByID(id)
+	return d.planEd.episodeByID(d.PlanFor(path))
 }
 
 func (d *Download) Paths() iter.Seq[string] {
@@ -233,31 +219,47 @@ func (d *Download) Files() []*DownloadFile {
 		return []*DownloadFile{{
 			d:    d,
 			fi:   metainfo.FileInfo{Length: d.info.Length},
-			plan: d.plan[d.info.Name],
+			plan: d.planByPath[d.info.Name],
 			path: d.info.Name,
 		}}
 	}
 	dfs := make([]*DownloadFile, len(d.info.Files))
 	for i, fi := range d.info.Files {
+		p := fiPath(&fi)
 		dfs[i] = &DownloadFile{
 			d:    d,
 			fi:   fi,
-			plan: d.plan[fiPath(&fi)],
+			plan: d.planByPath[p],
 		}
 	}
 	return dfs
 }
 
+func (tx *TxR) newDownloadHeadList(dls []schema.Download, err error) ([]*DownloadHead, error) {
+	if err != nil {
+		return nil, err
+	}
+	res := make([]*DownloadHead, len(dls))
+	for i := range dls {
+		n, err := tx.q.DownloadPlanCountByDownloadID(context.Background(), dls[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = &DownloadHead{d: dls[i], planLen: int(n)}
+	}
+	return res, nil
+}
+
 func (tx *TxR) DownloadHeadList(ctx Context) ([]*DownloadHead, error) {
-	return newDownloadHeadList(tx.q.DownloadList(ctx))
+	return tx.newDownloadHeadList(tx.q.DownloadList(ctx))
 }
 
 func (tx *TxR) DownloadHeadListBySeriesEditionID(ctx Context, id string) ([]*DownloadHead, error) {
-	return newDownloadHeadList(tx.q.DownloadListByPlanSeriesEditionID(ctx, &id))
+	return tx.newDownloadHeadList(tx.q.DownloadListByPlanSeriesEditionID(ctx, &id))
 }
 
 func (tx *TxR) DownloadHeadListByMovieEditionID(ctx Context, id string) ([]*DownloadHead, error) {
-	return newDownloadHeadList(tx.q.DownloadListByPlanMovieEditionID(ctx, &id))
+	return tx.newDownloadHeadList(tx.q.DownloadListByPlanMovieEditionID(ctx, &id))
 }
 
 func (tx *TxR) Download(ctx Context, id string) (*Download, error) {
@@ -320,7 +322,7 @@ func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
 		}
 	}
 	for path := range d.Paths() {
-		planID, _ := d.PlanFor(path)
+		planID := d.PlanFor(path)
 		if planID == "" || !done[path] {
 			continue
 		}
@@ -328,14 +330,20 @@ func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
 		if err != nil {
 			return err
 		}
-		delete(d.plan, path)
+		err = tx.q.DownloadPlanDeleteByDownloadIDPath(ctx, schema.DownloadPlanDeleteByDownloadIDPathParams{
+			DownloadID: d.ID(),
+			Path:       path,
+		})
+		if err != nil {
+			return err
+		}
 	}
-	b, err := json.Marshal(d.plan)
+	remaining, err := tx.q.DownloadPlanCountByDownloadID(ctx, d.ID())
 	if err != nil {
 		return err
 	}
 	state := "downloading"
-	if len(d.plan) == 0 {
+	if remaining == 0 {
 		state = "imported"
 	}
 	tx.onCommit(func() {
@@ -345,7 +353,6 @@ func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
 		ID:       d.ID(),
 		State:    state,
 		Progress: d.Progress(),
-		Plan:     string(b),
 	})
 	return err
 }
@@ -374,7 +381,6 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err
 		Title:    info.Name,
 		Torrent:  b,
 		InfoHash: infoHash,
-		Plan:     "{}",
 	})
 	if err != nil {
 		return nil, err
@@ -447,14 +453,36 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Down
 	if err != nil {
 		return nil, err
 	}
-	plan, err := tx.planSeries(ctx, info, sedID)
+	sed, err := tx.SeriesEdition(ctx, sedID)
 	if err != nil {
 		return nil, err
+	}
+	err = tx.q.DownloadPlanDeleteByDownloadID(ctx, dl.ID)
+	if err != nil {
+		return nil, err
+	}
+	for _, fi := range info.Files {
+		p := fiPath(&fi)
+		a, n := scanSpan(p)
+		if n == 0 {
+			continue
+		}
+		ep := sed.episodeByNumber(a.Snn, a.Enn)
+		if ep == nil {
+			continue
+		}
+		err = tx.q.DownloadPlanCreate(ctx, schema.DownloadPlanCreateParams{
+			DownloadID: dl.ID,
+			Path:       p,
+			EpisodeID:  &ep.ep.ID,
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 	dl, err = tx.q.DownloadUpdatePlanSeries(ctx, schema.DownloadUpdatePlanSeriesParams{
 		ID:                  dl.ID,
 		PlanSeriesEditionID: &sedID,
-		Plan:                string(plan),
 	})
 	if err != nil {
 		return nil, err
@@ -468,65 +496,39 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, id, medID string) (d *Downl
 	if err != nil {
 		return nil, err
 	}
-	plan := planMovie(info, medID)
-	b, err := json.Marshal(plan)
+	err = tx.q.DownloadPlanDeleteByDownloadID(ctx, dl.ID)
 	if err != nil {
 		return nil, err
+	}
+	createPlan := func(path string) error {
+		if !hasVideoExtension(path) {
+			return nil
+		}
+		return tx.q.DownloadPlanCreate(ctx, schema.DownloadPlanCreateParams{
+			DownloadID:     dl.ID,
+			Path:           path,
+			MovieEditionID: &medID,
+		})
+	}
+	if !info.IsDir() {
+		if err := createPlan(info.Name); err != nil {
+			return nil, err
+		}
+	} else {
+		for _, fi := range info.Files {
+			if err := createPlan(fiPath(&fi)); err != nil {
+				return nil, err
+			}
+		}
 	}
 	dl, err = tx.q.DownloadUpdatePlanMovie(ctx, schema.DownloadUpdatePlanMovieParams{
 		ID:                 dl.ID,
 		PlanMovieEditionID: &medID,
-		Plan:               string(b),
 	})
 	if err != nil {
 		return nil, err
 	}
 	return tx.newDownload(ctx, dl)
-}
-
-// planMovie assigns all video files in the torrent to the
-// given movie edition.
-// The span ID is the movie edition ID itself;
-// N=1 for each file.
-func planMovie(info *metainfo.Info, medID string) map[string]span {
-	plan := map[string]span{}
-	if !info.IsDir() {
-		// Single-file torrent: the path is info.Name.
-		if hasVideoExtension(info.Name) {
-			plan[info.Name] = span{medID, 1}
-		}
-		return plan
-	}
-	for _, fi := range info.Files {
-		p := fiPath(&fi)
-		if !hasVideoExtension(p) {
-			continue
-		}
-		plan[p] = span{medID, 1}
-	}
-	return plan
-}
-
-func (tx *TxR) planSeries(ctx Context, info *metainfo.Info, sedID string) (b []byte, err error) {
-	defer errorfmt.Handlef("planSeries(%s): %w", sedID, &err)
-	sed, err := tx.SeriesEdition(ctx, sedID)
-	if err != nil {
-		return nil, err
-	}
-	plan := map[string]span{}
-	for _, fi := range info.Files {
-		p := fiPath(&fi)
-		a, n := scanSpan(p)
-		if n == 0 {
-			continue
-		}
-		ep := sed.episodeByNumber(a.Snn, a.Enn)
-		if ep == nil {
-			continue
-		}
-		plan[p] = span{ep.ep.ID, n}
-	}
-	return json.Marshal(plan)
 }
 
 func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.Download, error) {
@@ -561,7 +563,7 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 	// Check whether all planned files have finished downloading.
 	allPlannedDone := true
 	for path := range d.Paths() {
-		planID, _ := d.PlanFor(path)
+		planID := d.PlanFor(path)
 		if planID != "" && !done[path] {
 			allPlannedDone = false
 			break
@@ -570,7 +572,7 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 
 	if d.AutoImport() && allPlannedDone {
 		for path := range d.Paths() {
-			planID, _ := d.PlanFor(path)
+			planID := d.PlanFor(path)
 			if planID == "" {
 				continue
 			}
@@ -578,16 +580,22 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 			if err != nil {
 				return schema.Download{}, err
 			}
-			delete(d.plan, path)
+			err = tx.q.DownloadPlanDeleteByDownloadIDPath(ctx, schema.DownloadPlanDeleteByDownloadIDPathParams{
+				DownloadID: d.ID(),
+				Path:       path,
+			})
+			if err != nil {
+				return schema.Download{}, err
+			}
 		}
 	}
 
-	b, err := json.Marshal(d.plan)
+	remaining, err := tx.q.DownloadPlanCountByDownloadID(ctx, d.ID())
 	if err != nil {
 		return schema.Download{}, err
 	}
 	state := "downloading"
-	if len(d.plan) == 0 {
+	if remaining == 0 {
 		state = "imported"
 	} else if allPlannedDone {
 		state = "downloaded"
@@ -603,24 +611,19 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 		ID:       d.ID(),
 		State:    state,
 		Progress: doneness,
-		Plan:     string(b),
 	})
 }
 
 func (tx *TxRW) importDownloadPath(ctx Context, d *Download, t *transmissionrpc.Torrent, path string) error {
-	if med := d.PlanMovieEdition(); med != nil {
-		return tx.importMovieVideo(ctx, t, med.ID(), path)
-	}
-	startEpID, n := d.PlanFor(path)
-	sed := d.PlanSeriesEdition()
-	if sed == nil {
+	p := d.planByPath[path]
+	if p == nil {
 		return nil
 	}
-	for ep := range sed.episodesBySpan(startEpID, n) {
-		err := tx.importEpisode(ctx, t, ep.ep.ID, path)
-		if err != nil {
-			return err
-		}
+	if p.MovieEditionID != nil {
+		return tx.importMovieVideo(ctx, t, *p.MovieEditionID, path)
+	}
+	if p.EpisodeID != nil {
+		return tx.importEpisode(ctx, t, *p.EpisodeID, path)
 	}
 	return nil
 }
@@ -771,7 +774,7 @@ func (m *Model) pollTransmissionOnce() error {
 func (m *Model) updateFileProgress(t *transmissionrpc.Torrent, dl *Download) {
 	for _, tf := range t.Files {
 		_, p, _ := strings.Cut(tf.Name, "/")
-		epID, _ := dl.PlanFor(p)
+		epID := dl.PlanFor(p)
 		if epID == "" {
 			continue
 		}

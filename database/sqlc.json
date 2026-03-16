@@ -63,6 +63,8 @@
 						"surroundaudio": "SurroundAudio",
 						"imageurl": "ImageURL",
 						"videoid": "VideoID",
+						"downloadplan": "DownloadPlan",
+						"downloadid": "DownloadID",
 						"group": "Group",
 					},
 					"overrides": [

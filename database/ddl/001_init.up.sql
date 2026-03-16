@@ -253,14 +253,24 @@ CREATE TABLE Download
 	Progress            REAL NOT NULL DEFAULT (0.0),
 	AutoImport          INTEGER NOT NULL DEFAULT (0),
 	PlanSeriesEditionID TEXT REFERENCES SeriesEdition,
-	PlanMovieEditionID  TEXT REFERENCES MovieEdition,
-	Plan                TEXT NOT NULL DEFAULT ('{}')
+	PlanMovieEditionID  TEXT REFERENCES MovieEdition
 )
 STRICT;
 CREATE INDEX Index_Download_PlanSeriesEditionID ON Download (PlanSeriesEditionID)
 WHERE PlanSeriesEditionID IS NOT NULL;
 CREATE INDEX Index_Download_PlanMovieEditionID ON Download (PlanMovieEditionID)
 WHERE PlanMovieEditionID IS NOT NULL;
+
+CREATE TABLE DownloadPlan
+(
+	DownloadID     TEXT NOT NULL REFERENCES Download,
+	Path           TEXT NOT NULL,
+	EpisodeID      TEXT REFERENCES Episode,
+	MovieEditionID TEXT REFERENCES MovieEdition,
+	PRIMARY KEY (DownloadID, Path),
+	CHECK (EpisodeID IS NULL OR MovieEditionID IS NULL)
+)
+STRICT, WITHOUT ROWID;
 
 CREATE TABLE Setting
 (
