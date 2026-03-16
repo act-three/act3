@@ -1,4 +1,5 @@
 import { Controller } from "../web/stimulus.js";
+import { notify } from "./note-port.js";
 
 export default class extends Controller {
 	static targets = ["track", "input"];
@@ -27,6 +28,7 @@ export default class extends Controller {
 				if (!resp.ok) {
 					track.setAttribute("aria-checked", String(was));
 					input.value = String(was);
+					notify("Something went wrong");
 				}
 				track.disabled = false;
 			},
@@ -34,6 +36,7 @@ export default class extends Controller {
 				track.setAttribute("aria-checked", String(was));
 				input.value = String(was);
 				track.disabled = false;
+				notify("Could not reach the server");
 			},
 		);
 	}

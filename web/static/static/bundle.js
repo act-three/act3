@@ -8471,6 +8471,25 @@
   var VISIBLE = 3;
   var SWIPE_THRESHOLD = 20;
   var VELOCITY_THRESHOLD = 0.11;
+  function notify(msg, variant = "error") {
+    const port = document.getElementById("note-port");
+    if (!port) return;
+    const title = document.createElement("div");
+    title.className = "u-note-title";
+    title.textContent = msg;
+    const note = document.createElement("div");
+    note.className = "u-note";
+    note.setAttribute("role", "status");
+    note.setAttribute("aria-live", "polite");
+    note.setAttribute("data-variant", variant);
+    note.setAttribute("data-note-port-target", "note");
+    note.setAttribute(
+      "data-action",
+      "pointerdown->note-port#swipeStart pointermove->note-port#swipeMove pointerup->note-port#swipeEnd"
+    );
+    note.appendChild(title);
+    port.appendChild(note);
+  }
   var note_port_default = class extends Controller {
     static targets = ["note"];
     connect() {
@@ -8818,6 +8837,7 @@
           if (!resp.ok) {
             track.setAttribute("aria-checked", String(was));
             input.value = String(was);
+            notify("Something went wrong");
           }
           track.disabled = false;
         },
@@ -8825,6 +8845,7 @@
           track.setAttribute("aria-checked", String(was));
           input.value = String(was);
           track.disabled = false;
+          notify("Could not reach the server");
         }
       );
     }

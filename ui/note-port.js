@@ -6,6 +6,32 @@ const VISIBLE = 3;
 const SWIPE_THRESHOLD = 20;
 const VELOCITY_THRESHOLD = 0.11;
 
+// notify appends an error note to the note-port from JS.
+// The note-port controller picks it up automatically via
+// noteTargetConnected.
+export function notify(msg, variant = "error") {
+	const port = document.getElementById("note-port");
+	if (!port) return;
+
+	const title = document.createElement("div");
+	title.className = "u-note-title";
+	title.textContent = msg;
+
+	const note = document.createElement("div");
+	note.className = "u-note";
+	note.setAttribute("role", "status");
+	note.setAttribute("aria-live", "polite");
+	note.setAttribute("data-variant", variant);
+	note.setAttribute("data-note-port-target", "note");
+	note.setAttribute("data-action",
+		"pointerdown->note-port#swipeStart " +
+		"pointermove->note-port#swipeMove " +
+		"pointerup->note-port#swipeEnd");
+	note.appendChild(title);
+
+	port.appendChild(note);
+}
+
 export default class extends Controller {
 	static targets = ["note"];
 
