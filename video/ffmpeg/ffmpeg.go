@@ -197,15 +197,6 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	return result, nil
 }
 
-// ProbeDuration is a convenience wrapper that returns only the duration.
-func ProbeDuration(ctx context.Context, r *os.File) (time.Duration, error) {
-	p, err := Probe(ctx, r)
-	if err != nil {
-		return 0, err
-	}
-	return p.Duration, nil
-}
-
 // MediaName returns the media file name for rendition i.
 // The caller uses this to fix up playlist references after hashing.
 func MediaName(i int) string {
