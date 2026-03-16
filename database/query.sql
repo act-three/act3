@@ -71,6 +71,9 @@ UPDATE Download SET
 WHERE ID = ?
 RETURNING *;
 
+-- name: DownloadUpdateAutoImport :one
+UPDATE Download SET AutoImport = ? WHERE ID = ? RETURNING *;
+
 -- name: DownloadUpdateProgress :one
 UPDATE Download SET
 	State = ?,

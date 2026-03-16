@@ -242,6 +242,7 @@ CREATE TABLE Download
 	State     TEXT NOT NULL CHECK (State IN (
 		'added',
 		'active',
+		'complete',
 		'done',
 		'error'
 	)),
@@ -250,6 +251,7 @@ CREATE TABLE Download
 	Torrent             BLOB NOT NULL,
 	InfoHash            TEXT NOT NULL UNIQUE,
 	Progress            REAL NOT NULL DEFAULT (0.0),
+	AutoImport          INTEGER NOT NULL DEFAULT (0),
 	PlanSeriesEditionID TEXT REFERENCES SeriesEdition,
 	PlanMovieEditionID  TEXT REFERENCES MovieEdition,
 	Plan                TEXT NOT NULL DEFAULT ('{}')

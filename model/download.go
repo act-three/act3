@@ -53,11 +53,13 @@ func newDownloadHeadList(dls []schema.Download, err error) ([]*DownloadHead, err
 	return res, nil
 }
 
-func (d *DownloadHead) URL() string   { return "/app/downloads/" + d.d.ID }
-func (d *DownloadHead) ID() string    { return d.d.ID }
-func (d *DownloadHead) State() string { return d.d.State }
-func (d *DownloadHead) Title() string { return d.d.Title }
-func (d *DownloadHead) Error() string { return d.d.Error }
+func (d *DownloadHead) URL() string       { return "/app/downloads/" + d.d.ID }
+func (d *DownloadHead) ID() string        { return d.d.ID }
+func (d *DownloadHead) State() string     { return d.d.State }
+func (d *DownloadHead) Title() string     { return d.d.Title }
+func (d *DownloadHead) Error() string     { return d.d.Error }
+func (d *DownloadHead) Progress() float64 { return d.d.Progress }
+func (d *DownloadHead) AutoImport() bool  { return d.d.Autoimport != 0 }
 
 func (d *DownloadHead) PlanLen() int {
 	d.planLenOnce.Do(func() {
@@ -274,6 +276,80 @@ func (tx *TxR) DownloadByInfoHash(ctx Context, hash string) (*Download, error) {
 	return tx.newDownload(ctx, dl)
 }
 
+func (tx *TxRW) DownloadAutoImportSet(ctx Context, id string, auto bool) error {
+	v := int64(0)
+	if auto {
+		v = 1
+	}
+	_, err := tx.q.DownloadUpdateAutoImport(ctx, schema.DownloadUpdateAutoImportParams{
+		Autoimport: v,
+		ID:         id,
+	})
+	return err
+}
+
+// DownloadImport imports all planned files for a download.
+// It fetches the torrent state from Transmission and imports
+// each completed file that has a plan entry.
+func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
+	defer errorfmt.Handlef("DownloadImport(%s): %w", id, &err)
+	d, err := tx.Download(ctx, id)
+	if err != nil {
+		return err
+	}
+	tm := tx.m.transmission.Load()
+	if tm == nil {
+		return fmt.Errorf("no transmission client available")
+	}
+	ts, err := tm.TorrentGetAllForHashes(ctx, []string{d.d.InfoHash})
+	if err != nil {
+		return err
+	}
+	if len(ts) != 1 {
+		return fmt.Errorf("torrent %s: got %d results, wanted 1", d.d.InfoHash, len(ts))
+	}
+	t := &ts[0]
+	done := map[string]bool{}
+	for _, tf := range t.Files {
+		p := tf.Name
+		if _, after, ok := strings.Cut(tf.Name, "/"); ok {
+			p = after
+		}
+		if tf.BytesCompleted == tf.Length {
+			done[p] = true
+		}
+	}
+	for path := range d.Paths() {
+		planID, _ := d.PlanFor(path)
+		if planID == "" || !done[path] {
+			continue
+		}
+		err = tx.importDownloadPath(ctx, d, t, path)
+		if err != nil {
+			return err
+		}
+		delete(d.plan, path)
+	}
+	b, err := json.Marshal(d.plan)
+	if err != nil {
+		return err
+	}
+	state := "active"
+	if len(d.plan) == 0 {
+		state = "done"
+	}
+	tx.onCommit(func() {
+		tx.m.setInfoHashActive(d.d.InfoHash, state == "active")
+	})
+	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
+		ID:       d.ID(),
+		State:    state,
+		Progress: d.Progress(),
+		Plan:     string(b),
+	})
+	return err
+}
+
 func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err error) {
 	defer errorfmt.Handlef("CreateDownload: %w", &err)
 	b, err := io.ReadAll(torrent)
@@ -349,7 +425,7 @@ func (tx *TxRW) downloadForPlanning(ctx Context, id string) (schema.Download, *m
 		return dl, nil, err
 	}
 	switch dl.State {
-	case "done", "error":
+	case "complete", "done", "error":
 		return dl, nil, &ValidationError{
 			Op:  "create download",
 			Err: errors.New("already imported"),
@@ -482,16 +558,28 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 		}
 	}
 
+	// Check whether all planned files have finished downloading.
+	allPlannedDone := true
 	for path := range d.Paths() {
 		planID, _ := d.PlanFor(path)
-		if planID == "" || !done[path] {
-			continue
+		if planID != "" && !done[path] {
+			allPlannedDone = false
+			break
 		}
-		err = tx.importDownloadPath(ctx, d, t, path)
-		if err != nil {
-			return schema.Download{}, err
+	}
+
+	if d.AutoImport() && allPlannedDone {
+		for path := range d.Paths() {
+			planID, _ := d.PlanFor(path)
+			if planID == "" {
+				continue
+			}
+			err = tx.importDownloadPath(ctx, d, t, path)
+			if err != nil {
+				return schema.Download{}, err
+			}
+			delete(d.plan, path)
 		}
-		delete(d.plan, path)
 	}
 
 	b, err := json.Marshal(d.plan)
@@ -501,6 +589,8 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 	state := "active"
 	if len(d.plan) == 0 {
 		state = "done"
+	} else if allPlannedDone {
+		state = "complete"
 	}
 	tx.onCommit(func() {
 		tx.m.setInfoHashActive(*t.HashString, state == "active")

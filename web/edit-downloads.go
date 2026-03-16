@@ -46,6 +46,33 @@ func (c *Config) editDownloadsDetail(w http.ResponseWriter, req *http.Request) (
 	})
 }
 
+func (c *Config) doAutoImportDownload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		auto := req.FormValue("auto-import") == "1"
+		err := tx.DownloadAutoImportSet(ctx, id, auto)
+		if err != nil {
+			return nil, err
+		}
+		http.Redirect(w, req, "/app/downloads/"+id, http.StatusSeeOther)
+		return nil, nil
+	})
+}
+
+func (c *Config) doImportDownload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		err := tx.DownloadImport(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		http.Redirect(w, req, "/app/downloads/"+id, http.StatusSeeOther)
+		return nil, nil
+	})
+}
+
 func (c *Config) doAddTorrent(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

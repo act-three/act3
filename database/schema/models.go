@@ -24,6 +24,7 @@ type Download struct {
 	Torrent             []byte
 	InfoHash            string
 	Progress            float64
+	Autoimport          int64
 	PlanSeriesEditionID *string
 	PlanMovieEditionID  *string
 	Plan                string
