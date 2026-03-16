@@ -24,9 +24,10 @@ INSERT INTO Download
 	Torrent,
 	InfoHash,
 	PlanSeriesEditionID,
+	PlanMovieEditionID,
 	Plan
 )
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: DownloadGet :one
@@ -44,6 +45,11 @@ SELECT * FROM Download
 WHERE PlanSeriesEditionID = ?
 ORDER BY ID DESC;
 
+-- name: DownloadListByPlanMovieEditionID :many
+SELECT * FROM Download
+WHERE PlanMovieEditionID = ?
+ORDER BY ID DESC;
+
 -- name: DownloadListInfoHashesActive :many
 SELECT InfoHash FROM Download
 WHERE State = 'active';
@@ -51,9 +57,16 @@ WHERE State = 'active';
 -- name: DownloadUpdateError :one
 UPDATE Download SET State = 'error', Error = ? WHERE ID = ? RETURNING *;
 
--- name: DownloadUpdatePlan :one
+-- name: DownloadUpdatePlanSeries :one
 UPDATE Download SET
 	PlanSeriesEditionID = ?,
+	Plan = ?
+WHERE ID = ?
+RETURNING *;
+
+-- name: DownloadUpdatePlanMovie :one
+UPDATE Download SET
+	PlanMovieEditionID = ?,
 	Plan = ?
 WHERE ID = ?
 RETURNING *;
@@ -168,22 +181,54 @@ ORDER BY Title;
 -- name: MovieListByTMDBID :many
 SELECT * FROM Movie WHERE TMDBID IN (sqlc.slice(ids));
 
+-- name: MovieEditionCreate :one
+INSERT INTO MovieEdition (Title, MovieID) VALUES (?, ?)
+RETURNING *;
+
+-- name: MovieEditionGet :one
+SELECT * FROM MovieEdition WHERE ID = ?;
+
+-- name: MovieEditionListByMovieID :many
+SELECT * FROM MovieEdition WHERE MovieID = ?;
+
+-- name: MovieGetByEditionID :one
+SELECT * FROM Movie
+WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID = ?);
+
 -- name: MovieVideoCreate :one
-INSERT INTO MovieVideo (MovieID, VideoID)
+INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)
 RETURNING *;
 
+-- name: MovieVideoListByMovieEditionID :many
+SELECT * FROM MovieVideo
+WHERE MovieEditionID = ?;
+
 -- name: MovieVideoListByMovieID :many
 SELECT * FROM MovieVideo
-WHERE MovieID = ?;
+WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?);
+
+-- name: VideoListByMovieEditionID :many
+SELECT * FROM Video
+WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
 
 -- name: VideoListByMovieID :many
 SELECT * FROM Video
-WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieID = ?);
+WHERE ID IN (
+	SELECT VideoID FROM MovieVideo
+	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
+);
+
+-- name: RenditionForStreamingListByMovieEditionID :many
+SELECT * FROM RenditionForStreaming
+WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
 
 -- name: RenditionForStreamingListByMovieID :many
 SELECT * FROM RenditionForStreaming
-WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieID = ?);
+WHERE VideoID IN (
+	SELECT VideoID FROM MovieVideo
+	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
+);
 
 -- name: ReleaseCreate :one
 INSERT INTO Release

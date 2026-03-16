@@ -1,6 +1,7 @@
 package model
 
 import (
+	"iter"
 	"strconv"
 	"strings"
 
@@ -50,14 +51,45 @@ func (mo *MovieHead) YearDisplay() string {
 	return ""
 }
 
-// Movie is the full representation with associated videos.
+// Movie is the full representation with editions and their videos.
 type Movie struct {
 	MovieHead
-	videos []*Video
+	editions  []*MovieEdition
+	edByID    map[string]*MovieEdition
+	edByTitle map[string]*MovieEdition
 }
 
-func (mo *Movie) Videos() []*Video { return mo.videos }
+func newMovie(
+	moData schema.Movie,
+	meds []schema.MovieEdition,
+	videosByEditionID map[string][]*Video,
+) *Movie {
+	mo := &Movie{
+		MovieHead: MovieHead{moData},
+		edByID:    map[string]*MovieEdition{},
+		edByTitle: map[string]*MovieEdition{},
+	}
+	for _, medData := range meds {
+		med := newMovieEdition(&mo.MovieHead, medData, videosByEditionID)
+		mo.editions = append(mo.editions, med)
+		mo.edByID[med.ID()] = med
+		mo.edByTitle[med.Title()] = med
+	}
+	return mo
+}
 
+func (mo *Movie) EditionByTitle(title string) *MovieEdition {
+	if mo == nil {
+		return nil
+	}
+	return mo.edByTitle[title]
+}
+
+func (mo *Movie) MovieEditionSeq() iter.Seq[*MovieEdition] {
+	return movieEditionSeq(mo.editions)
+}
+
+// PlayerURL returns the player URL for a video within this movie.
 func (mo *Movie) PlayerURL(v *Video) string {
 	return "/-/player/" + v.ID() + "/" + mo.ID()
 }
@@ -89,26 +121,33 @@ func (tx *TxR) Movie(ctx Context, id string) (*Movie, error) {
 }
 
 func (tx *TxR) movieFromData(ctx Context, moData schema.Movie) (*Movie, error) {
+	meds, err := tx.q.MovieEditionListByMovieID(ctx, moData.ID)
+	if err != nil {
+		return nil, err
+	}
+	mvs, err := tx.q.MovieVideoListByMovieID(ctx, moData.ID)
+	if err != nil {
+		return nil, err
+	}
 	vids, err := tx.q.VideoListByMovieID(ctx, moData.ID)
 	if err != nil {
 		return nil, err
 	}
-	var videos []*Video
-	for i := range vids {
-		v := &Video{v: vids[i]}
-		ats, err := tx.q.AudioTrackListByVideoID(ctx, vids[i].ID)
+
+	vidByID := vidMapByID(vids)
+	// Load audio tracks for each video.
+	for _, v := range vidByID {
+		ats, err := tx.q.AudioTrackListByVideoID(ctx, v.v.ID)
 		if err != nil {
 			return nil, err
 		}
 		for j := range ats {
 			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
 		}
-		videos = append(videos, v)
 	}
-	return &Movie{
-		MovieHead: MovieHead{moData},
-		videos:    videos,
-	}, nil
+	videosByEditionID := vidMapByMovieEditionID(mvs, vidByID)
+
+	return newMovie(moData, meds, videosByEditionID), nil
 }
 
 func (tx *TxR) RenditionForStreamingListByMovieID(
@@ -155,6 +194,13 @@ func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieHead, 
 	if err != nil {
 		return nil, err
 	}
+	_, err = tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
+		Title:   DefaultEdition,
+		MovieID: moID,
+	})
+	if err != nil {
+		return nil, err
+	}
 	return &MovieHead{moData}, nil
 }
 
@@ -189,6 +235,13 @@ func (tx *TxRW) MovieCreateByTMDBID(
 			TMDBID:   &id64,
 			IMDBID:   movie.IMDBID,
 		})
+	if err != nil {
+		return nil, err
+	}
+	_, err = tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
+		Title:   DefaultEdition,
+		MovieID: moID,
+	})
 	if err != nil {
 		return nil, err
 	}

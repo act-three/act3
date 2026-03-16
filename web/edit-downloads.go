@@ -57,12 +57,22 @@ func (c *Config) doAddTorrent(w http.ResponseWriter, req *http.Request) (html.No
 		if err != nil {
 			return nil, err
 		}
-		dl, err = tx.DownloadCreatePlanSeries(ctx, dl.ID(), req.FormValue("sed-id"))
+
+		// Plan for either a series edition or a movie edition,
+		// depending on which hidden field is present.
+		var edID string
+		if sedID := req.FormValue("sed-id"); sedID != "" {
+			dl, err = tx.DownloadCreatePlanSeries(ctx, dl.ID(), sedID)
+			edID = sedID
+		} else if medID := req.FormValue("med-id"); medID != "" {
+			dl, err = tx.DownloadCreatePlanMovie(ctx, dl.ID(), medID)
+			edID = medID
+		}
 		if err != nil {
 			return nil, err
 		}
 		dls := []*model.DownloadHead{&dl.DownloadHead}
 
-		return view.EditMediaDownloadsStream(dls, req.FormValue("sed-id")), nil
+		return view.EditMediaDownloadsStream(dls, edID), nil
 	})
 }

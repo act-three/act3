@@ -1,8 +1,6 @@
 package view
 
 import (
-	"slices"
-
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
@@ -14,6 +12,7 @@ func MediaMovie(
 	mo *model.Movie,
 	dls []*model.RenditionForDownload,
 ) html.Node {
+	med := mo.EditionByTitle(model.DefaultEdition)
 	return media(mo.Title(), mo.ImageURL())(
 		Grid12(Class("pt-16"))(
 			FlexCol(ColSpan7, Class("gap-4"))(
@@ -27,7 +26,7 @@ func MediaMovie(
 				Text(mo.Title(), TextSize7),
 				FlexRow(Gap3)(
 					FlexCol(Class("w-[168px]"))(
-						moviePlayButton(mo),
+						moviePlayButton(mo, med),
 					),
 					FlexCol()(
 						Button(ButtonGhost, ButtonSize3)(
@@ -42,7 +41,7 @@ func MediaMovie(
 							Icon("line/info-circle")),
 					),
 				),
-				movieAudioTrackSelect(mo),
+				movieAudioTrackSelect(med),
 				TextNode()(html.Safe(mo.Summary())),
 			),
 			Box(),
@@ -55,15 +54,16 @@ func MediaMovie(
 	)
 }
 
-func moviePlayButton(mo *model.Movie) html.Node {
-	v := mo.Videos()
-	playable := slices.IndexFunc(v, func(v *model.Video) bool {
-		return v.MVPlaylist() != ""
-	})
-	return expr.IfElse(playable >= 0,
+func moviePlayButton(mo *model.Movie, med *model.MovieEdition) html.Node {
+	if med == nil {
+		return Button(Disabled(true), ButtonSize3)(
+			Icon("line/x-close"), Text("Play"))
+	}
+	v := med.Playable()
+	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
-				attr.Href(mo.PlayerURL(v[playable])),
+				attr.Href(mo.PlayerURL(v)),
 				attr.Attr("data-turbo-frame")("player"),
 				ButtonSize3,
 			)(Icon("solid/play"), Text("Play"))
@@ -75,15 +75,15 @@ func moviePlayButton(mo *model.Movie) html.Node {
 	)
 }
 
-func movieAudioTrackSelect(mo *model.Movie) html.Node {
-	v := mo.Videos()
-	playable := slices.IndexFunc(v, func(v *model.Video) bool {
-		return v.MVPlaylist() != ""
-	})
-	if playable < 0 {
+func movieAudioTrackSelect(med *model.MovieEdition) html.Node {
+	if med == nil {
 		return html.Group()
 	}
-	tracks := v[playable].AudioTracks()
+	v := med.Playable()
+	if v == nil {
+		return html.Group()
+	}
+	tracks := v.AudioTracks()
 	if len(tracks) == 0 {
 		return html.Group()
 	}

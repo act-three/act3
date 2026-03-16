@@ -119,6 +119,15 @@ CREATE TABLE Movie
 )
 STRICT;
 
+CREATE TABLE MovieEdition
+(
+	ID      TEXT PRIMARY KEY DEFAULT ('med'||newID()),
+	Title   TEXT NOT NULL,
+	MovieID TEXT NOT NULL REFERENCES Movie,
+	UNIQUE (MovieID, Title)
+)
+STRICT;
+
 CREATE TABLE Tag
 (
 	ID      TEXT PRIMARY KEY DEFAULT ('t'||newID()),
@@ -163,9 +172,9 @@ STRICT;
 
 CREATE TABLE MovieVideo
 (
-	MovieID   TEXT NOT NULL REFERENCES Movie,
-	VideoID   TEXT NOT NULL REFERENCES Video,
-	PRIMARY KEY (MovieID, VideoID)
+	MovieEditionID TEXT NOT NULL REFERENCES MovieEdition,
+	VideoID        TEXT NOT NULL REFERENCES Video,
+	PRIMARY KEY (MovieEditionID, VideoID)
 )
 STRICT, WITHOUT ROWID;
 
@@ -242,11 +251,14 @@ CREATE TABLE Download
 	InfoHash            TEXT NOT NULL UNIQUE,
 	Progress            REAL NOT NULL DEFAULT (0.0),
 	PlanSeriesEditionID TEXT REFERENCES SeriesEdition,
+	PlanMovieEditionID  TEXT REFERENCES MovieEdition,
 	Plan                TEXT NOT NULL DEFAULT ('{}')
 )
 STRICT;
-CREATE INDEX Index_Download_PlanEditionID ON Download (PlanSeriesEditionID)
+CREATE INDEX Index_Download_PlanSeriesEditionID ON Download (PlanSeriesEditionID)
 WHERE PlanSeriesEditionID IS NOT NULL;
+CREATE INDEX Index_Download_PlanMovieEditionID ON Download (PlanMovieEditionID)
+WHERE PlanMovieEditionID IS NOT NULL;
 
 CREATE TABLE Setting
 (

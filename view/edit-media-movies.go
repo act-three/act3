@@ -9,6 +9,7 @@ import (
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tmdb"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 )
 
@@ -65,7 +66,11 @@ func EditMediaMoviesListItem(
 	)
 }
 
-func EditMediaMoviesDetail(mo *model.Movie) html.Node {
+func EditMediaMoviesDetail(
+	mo *model.Movie,
+	med *model.MovieEdition,
+	dls []*model.DownloadHead,
+) html.Node {
 	return FlexCol(Class("place-self-stretch h-full w-full"))(
 		ScrollY(
 			Class("p-4"),
@@ -90,7 +95,7 @@ func EditMediaMoviesDetail(mo *model.Movie) html.Node {
 						html.P()(html.Safe(mo.Summary())),
 					),
 				),
-				editMediaMoviesDetailVideos(mo),
+				editMediaMoviesDetailEdition(mo, med, dls),
 			),
 		),
 	)
@@ -207,8 +212,96 @@ func MovieResultLink(mo *model.MovieHead) html.Node {
 	)
 }
 
-func editMediaMoviesDetailVideos(mo *model.Movie) html.Node {
-	vids := mo.Videos()
+func editMediaMoviesDetailEdition(
+	mo *model.Movie,
+	med *model.MovieEdition,
+	dls []*model.DownloadHead,
+) html.Node {
+	if med == nil {
+		return html.Div()(html.Text("Unknown Edition"))
+	}
+	return html.Div()(
+		editMediaMoviesEditionSelector(mo),
+		editMediaMoviesAddTorrentButton(med.ID()),
+		html.Div(
+			attr.Class("border"),
+		)(
+			turbo.Sink("edition-torrents-"+med.ID())(
+				editMediaMoviesListDownloadDetail(dls),
+			),
+		),
+		editMediaMoviesDetailVideos(med),
+	)
+}
+
+func editMediaMoviesEditionSelector(mo *model.Movie) html.Node {
+	return html.Div(
+		attr.Name("edition"),
+	)(
+		html.Div(
+			attr.Class("w-[180px]"),
+		)(
+			html.Text("edition"),
+		),
+		html.Div()(
+			html.RangeSeq(mo.MovieEditionSeq(), func(med *model.MovieEdition) html.Node {
+				return html.Div(
+					attr.Value(med.Title()),
+				)(
+					html.Label()(html.Text(med.Title())),
+				)
+			}),
+		),
+	)
+}
+
+func editMediaMoviesAddTorrentButton(medID string) html.Node {
+	return html.Form(
+		attr.Class("flex flex-row gap-1 group"),
+		attr.Method("POST"),
+		attr.Enctype("multipart/form-data"),
+		attr.Action("/-/do/add-torrent"),
+		stimulus.Controller("add-torrent"),
+		stimulus.Action("turbo:submit-end->add-torrent#reset"),
+	)(
+		html.Input(
+			attr.Type("hidden"),
+			attr.Name("med-id"),
+			attr.Value(medID),
+		),
+		html.Input(
+			attr.Class("hidden"),
+			attr.Type("file"),
+			attr.Name("torrent"),
+			stimulus.Target("add-torrent", "picker"),
+			stimulus.Action("change->add-torrent#upload"),
+		),
+		Button(
+			stimulus.Target("add-torrent", "button"),
+			stimulus.Action("click->add-torrent#open:prevent"),
+		)(
+			html.Text("Add Torrent…"),
+		),
+	)
+}
+
+func editMediaMoviesListDownloadDetail(dls []*model.DownloadHead) html.Node {
+	return html.Range(dls, func(dl *model.DownloadHead) html.Node {
+		return html.Div(
+			attr.Class("p-1"),
+		)(
+			html.A(
+				attr.Href(dl.URL()),
+				turbo.DataFrame("main"),
+			)(
+				html.Text(dl.Title()),
+			),
+		)
+	})
+}
+
+func editMediaMoviesDetailVideos(med *model.MovieEdition) html.Node {
+	vids := med.Videos()
 	if len(vids) == 0 {
 		return html.Div(
 			attr.Class("text-gray-11/50"),

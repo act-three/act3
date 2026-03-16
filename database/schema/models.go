@@ -25,6 +25,7 @@ type Download struct {
 	InfoHash            string
 	Progress            float64
 	PlanSeriesEditionID *string
+	PlanMovieEditionID  *string
 	Plan                string
 }
 
@@ -57,9 +58,15 @@ type Movie struct {
 	IMDBID   *string
 }
 
-type Movievideo struct {
+type MovieEdition struct {
+	ID      string
+	Title   string
 	MovieID string
-	VideoID string
+}
+
+type MovieVideo struct {
+	MovieEditionID string
+	VideoID        string
 }
 
 type Release struct {

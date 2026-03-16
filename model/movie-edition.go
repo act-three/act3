@@ -1,0 +1,130 @@
+package model
+
+import (
+	"iter"
+	"slices"
+
+	"ily.dev/act3/database/schema"
+)
+
+const (
+	// DefaultEdition is the primary edition,
+	// present in every movie.
+	// Other editions (e.g. "Director's Cut") are optional.
+	DefaultEdition = "Default"
+)
+
+type MovieEditionHead struct {
+	med schema.MovieEdition
+}
+
+func (med *MovieEditionHead) ID() string    { return med.med.ID }
+func (med *MovieEditionHead) Title() string { return med.med.Title }
+
+type MovieEdition struct {
+	MovieEditionHead
+	videos []*Video
+	mo     *MovieHead
+}
+
+func newMovieEdition(
+	mo *MovieHead,
+	medData schema.MovieEdition,
+	videosByEditionID map[string][]*Video,
+) *MovieEdition {
+	med := &MovieEdition{
+		MovieEditionHead: MovieEditionHead{medData},
+		mo:               mo,
+		videos:           videosByEditionID[medData.ID],
+	}
+	return med
+}
+
+func (med *MovieEdition) Videos() []*Video      { return med.videos }
+func (med *MovieEdition) MovieHead() *MovieHead { return med.mo }
+
+// Playable returns the first video with a playlist, or nil.
+func (med *MovieEdition) Playable() *Video {
+	for _, v := range med.videos {
+		if v.MVPlaylist() != "" {
+			return v
+		}
+	}
+	return nil
+}
+
+// Transaction methods
+
+func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
+	medData, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	moData, err := tx.q.MovieGetByEditionID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	vids, err := tx.q.VideoListByMovieEditionID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	mo := &MovieHead{moData}
+	videosByEditionID := map[string][]*Video{}
+	for i := range vids {
+		v := &Video{v: vids[i]}
+		ats, err := tx.q.AudioTrackListByVideoID(ctx, vids[i].ID)
+		if err != nil {
+			return nil, err
+		}
+		for j := range ats {
+			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
+		}
+		videosByEditionID[id] = append(videosByEditionID[id], v)
+	}
+	return newMovieEdition(mo, medData, videosByEditionID), nil
+}
+
+func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string) (*MovieEditionHead, error) {
+	medData, err := tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
+		Title:   title,
+		MovieID: movieID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &MovieEditionHead{medData}, nil
+}
+
+// vidMapByMovieEditionID groups videos by their movie edition ID.
+func vidMapByMovieEditionID(mvs []schema.MovieVideo, vidByID map[string]*Video) map[string][]*Video {
+	m := map[string][]*Video{}
+	for _, mv := range mvs {
+		if v := vidByID[mv.VideoID]; v != nil {
+			m[mv.MovieEditionID] = append(m[mv.MovieEditionID], v)
+		}
+	}
+	return m
+}
+
+// MovieEditionSeq returns an iterator over editions
+// sorted by title, for use in UI selectors.
+func movieEditionSeq(meds []*MovieEdition) iter.Seq[*MovieEdition] {
+	sorted := slices.Clone(meds)
+	slices.SortFunc(sorted, func(a, b *MovieEdition) int {
+		if a.Title() == DefaultEdition {
+			return -1
+		}
+		if b.Title() == DefaultEdition {
+			return 1
+		}
+		if a.Title() < b.Title() {
+			return -1
+		}
+		if a.Title() > b.Title() {
+			return 1
+		}
+		return 0
+	})
+	return slices.Values(sorted)
+}

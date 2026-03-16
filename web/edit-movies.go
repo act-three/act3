@@ -2,6 +2,7 @@ package web
 
 import (
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -39,7 +40,21 @@ func (c *Config) editMoviesDetail(w http.ResponseWriter, req *http.Request) (htm
 			return nil, err
 		}
 
-		detail := view.EditMediaMoviesDetail(mo)
+		edTitle := req.FormValue("edition")
+		if edTitle == "" {
+			edTitle = model.DefaultEdition
+		}
+		med := mo.EditionByTitle(edTitle)
+		if med == nil {
+			return nil, fmt.Errorf("unknown edition: %s", edTitle)
+		}
+
+		dls, err := tx.DownloadHeadListByMovieEditionID(ctx, med.ID())
+		if err != nil {
+			return nil, err
+		}
+
+		detail := view.EditMediaMoviesDetail(mo, med, dls)
 		if req.Header.Get("turbo-frame") == "detail" {
 			return view.PageFrame(mo.Title(), "detail", detail), nil
 		}

@@ -78,7 +78,11 @@ func (d *DownloadHead) FilesLen() int {
 		if err != nil {
 			panic(err)
 		}
-		d.filesLen = len(info.Files)
+		if info.IsDir() {
+			d.filesLen = len(info.Files)
+		} else {
+			d.filesLen = 1
+		}
 	})
 	return d.filesLen
 }
@@ -87,9 +91,13 @@ type DownloadFile struct {
 	d    *Download
 	fi   metainfo.FileInfo
 	plan span
+	path string // set for single-file torrents
 }
 
 func (df *DownloadFile) Path() string {
+	if df.path != "" {
+		return df.path
+	}
 	return fiPath(&df.fi)
 }
 
@@ -108,17 +116,29 @@ func (df *DownloadFile) Progress() float64 {
 
 func (df *DownloadFile) Episode() *Episode {
 	// TODO(april): return actual episode (not planned episode) after import
-	return df.SeriesEdition().episodeByID(df.plan.ID)
+	sed := df.SeriesEdition()
+	if sed == nil {
+		return nil
+	}
+	return sed.episodeByID(df.plan.ID)
 }
 
 func (df *DownloadFile) Season() *Season {
 	// TODO(april): return actual season (not planned season) after import
-	return df.SeriesEdition().seasonByEpisodeID(df.plan.ID)
+	sed := df.SeriesEdition()
+	if sed == nil {
+		return nil
+	}
+	return sed.seasonByEpisodeID(df.plan.ID)
 }
 
 func (df *DownloadFile) SeriesEdition() *SeriesEdition {
 	// TODO(april): return actual series (not planned series) after import
 	return df.d.PlanSeriesEdition()
+}
+
+func (df *DownloadFile) MovieEdition() *MovieEdition {
+	return df.d.PlanMovieEdition()
 }
 
 type Download struct {
@@ -127,6 +147,7 @@ type Download struct {
 	info         metainfo.Info
 	plan         map[string]span
 	planEd       *SeriesEdition
+	planMovieEd  *MovieEdition
 	fileProgress map[string]float64 // path -> fraction [0,1], nil if unknown
 }
 
@@ -160,6 +181,12 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 			return nil, err
 		}
 	}
+	if dl.PlanMovieEditionID != nil {
+		d.planMovieEd, err = tx.MovieEdition(ctx, *dl.PlanMovieEditionID)
+		if err != nil {
+			return nil, err
+		}
+	}
 	items := tx.m.prog.List("dl-" + dl.ID)
 	if len(items) > 0 {
 		d.fileProgress = map[string]float64{}
@@ -171,6 +198,7 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 }
 
 func (d *Download) PlanSeriesEdition() *SeriesEdition { return d.planEd }
+func (d *Download) PlanMovieEdition() *MovieEdition   { return d.planMovieEd }
 
 func (d *Download) PlanFor(path string) (epID string, span int) {
 	p := d.plan[path]
@@ -187,6 +215,10 @@ func (d *Download) PlanEpisode(path string) *Episode {
 
 func (d *Download) Paths() iter.Seq[string] {
 	return func(yield func(string) bool) {
+		if !d.info.IsDir() {
+			yield(d.info.Name)
+			return
+		}
 		for i := range d.info.Files {
 			if !yield(fiPath(&d.info.Files[i])) {
 				return
@@ -196,6 +228,14 @@ func (d *Download) Paths() iter.Seq[string] {
 }
 
 func (d *Download) Files() []*DownloadFile {
+	if !d.info.IsDir() {
+		return []*DownloadFile{{
+			d:    d,
+			fi:   metainfo.FileInfo{Length: d.info.Length},
+			plan: d.plan[d.info.Name],
+			path: d.info.Name,
+		}}
+	}
 	dfs := make([]*DownloadFile, len(d.info.Files))
 	for i, fi := range d.info.Files {
 		dfs[i] = &DownloadFile{
@@ -213,6 +253,10 @@ func (tx *TxR) DownloadHeadList(ctx Context) ([]*DownloadHead, error) {
 
 func (tx *TxR) DownloadHeadListBySeriesEditionID(ctx Context, id string) ([]*DownloadHead, error) {
 	return newDownloadHeadList(tx.q.DownloadListByPlanSeriesEditionID(ctx, &id))
+}
+
+func (tx *TxR) DownloadHeadListByMovieEditionID(ctx Context, id string) ([]*DownloadHead, error) {
+	return newDownloadHeadList(tx.q.DownloadListByPlanMovieEditionID(ctx, &id))
 }
 
 func (tx *TxR) Download(ctx Context, id string) (*Download, error) {
@@ -323,7 +367,7 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Down
 	if err != nil {
 		return nil, err
 	}
-	dl, err = tx.q.DownloadUpdatePlan(ctx, schema.DownloadUpdatePlanParams{
+	dl, err = tx.q.DownloadUpdatePlanSeries(ctx, schema.DownloadUpdatePlanSeriesParams{
 		ID:                  dl.ID,
 		PlanSeriesEditionID: &sedID,
 		Plan:                string(plan),
@@ -332,6 +376,67 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Down
 		return nil, err
 	}
 	return tx.newDownload(ctx, dl)
+}
+
+func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, id, medID string) (d *Download, err error) {
+	defer errorfmt.Handlef("CreateDownloadPlanMovie(%s, %s): %w", id, medID, &err)
+	dl, err := tx.q.DownloadGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	switch dl.State {
+	case "done", "error":
+		return nil, &ValidationError{
+			Op:  "create download",
+			Err: errors.New("already imported"),
+		}
+	}
+
+	_, info, err := ParseTorrent(dl.Torrent)
+	if err != nil {
+		return nil, &ValidationError{
+			Op:  "parse torrent",
+			Err: err,
+		}
+	}
+
+	plan := planMovie(info, medID)
+	b, err := json.Marshal(plan)
+	if err != nil {
+		return nil, err
+	}
+	dl, err = tx.q.DownloadUpdatePlanMovie(ctx, schema.DownloadUpdatePlanMovieParams{
+		ID:                 dl.ID,
+		PlanMovieEditionID: &medID,
+		Plan:               string(b),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tx.newDownload(ctx, dl)
+}
+
+// planMovie assigns all video files in the torrent to the
+// given movie edition.
+// The span ID is the movie edition ID itself;
+// N=1 for each file.
+func planMovie(info *metainfo.Info, medID string) map[string]span {
+	plan := map[string]span{}
+	if !info.IsDir() {
+		// Single-file torrent: the path is info.Name.
+		if hasVideoExtension(info.Name) {
+			plan[info.Name] = span{medID, 1}
+		}
+		return plan
+	}
+	for _, fi := range info.Files {
+		p := fiPath(&fi)
+		if !hasVideoExtension(p) {
+			continue
+		}
+		plan[p] = span{medID, 1}
+	}
+	return plan
 }
 
 func (tx *TxR) planSeries(ctx Context, info *metainfo.Info, sedID string) (b []byte, err error) {
@@ -374,15 +479,20 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 
 	done := map[string]bool{}
 	for _, tf := range t.Files {
-		_, path, _ := strings.Cut(tf.Name, "/")
+		// Multi-file torrents have paths like "dirname/path";
+		// single-file torrents have just the filename.
+		p := tf.Name
+		if _, after, ok := strings.Cut(tf.Name, "/"); ok {
+			p = after
+		}
 		if tf.BytesCompleted == tf.Length {
-			done[path] = true
+			done[p] = true
 		}
 	}
 
 	for path := range d.Paths() {
-		epID, _ := d.PlanFor(path)
-		if epID == "" || !done[path] {
+		planID, _ := d.PlanFor(path)
+		if planID == "" || !done[path] {
 			continue
 		}
 		err = tx.importDownloadPath(ctx, d, t, path)
@@ -416,6 +526,9 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 }
 
 func (tx *TxRW) importDownloadPath(ctx Context, d *Download, t *transmissionrpc.Torrent, path string) error {
+	if med := d.PlanMovieEdition(); med != nil {
+		return tx.importMovieVideo(ctx, t, med.ID(), path)
+	}
 	startEpID, n := d.PlanFor(path)
 	sed := d.PlanSeriesEdition()
 	if sed == nil {
@@ -427,6 +540,26 @@ func (tx *TxRW) importDownloadPath(ctx Context, d *Download, t *transmissionrpc.
 			return err
 		}
 	}
+	return nil
+}
+
+func (tx *TxRW) importMovieVideo(ctx Context,
+	t *transmissionrpc.Torrent,
+	medID, path string,
+) (err error) {
+	defer errorfmt.Handlef("importMovieVideo(%s, %s): %w", path, medID, &err)
+	vid, err := tx.importVideo(ctx, t, path)
+	if err != nil {
+		return err
+	}
+	_, err = tx.q.MovieVideoCreate(ctx, schema.MovieVideoCreateParams{
+		MovieEditionID: medID,
+		VideoID:        vid.ID,
+	})
+	if err != nil {
+		return err
+	}
+	slog.InfoContext(ctx, "import movie", "med", medID, "vid", vid.ID)
 	return nil
 }
 
@@ -483,9 +616,14 @@ func (tx *TxRW) importVideo(ctx Context, t *transmissionrpc.Torrent, path string
 		return nil, err
 	}
 
-	err = tx.addTask(ctx, taskIngest, vid.ID,
-		filepath.Join(*t.DownloadDir, *t.Name, path),
-	)
+	// For single-file torrents, the download path is just
+	// downloadDir/name (path == name).
+	// For multi-file torrents, it's downloadDir/name/path.
+	diskPath := filepath.Join(*t.DownloadDir, *t.Name, path)
+	if *t.Name == path {
+		diskPath = filepath.Join(*t.DownloadDir, path)
+	}
+	err = tx.addTask(ctx, taskIngest, vid.ID, diskPath)
 	if err != nil {
 		return nil, err
 	}
