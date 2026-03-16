@@ -177,11 +177,11 @@ func editMediaDownloadsDetail(dl *model.Download) html.Node {
 
 func editMediaDownloadsImportControl(dl *model.Download) html.Node {
 	switch dl.State() {
-	case "complete":
+	case "downloaded":
 		return editMediaDownloadsImportButton(dl.ID())
-	case "added", "active":
+	case "queued", "downloading":
 		return editMediaDownloadsAutoImportCheckbox(dl)
-	default: // "done", "error"
+	default: // "imported", "error"
 		return html.Group()
 	}
 }

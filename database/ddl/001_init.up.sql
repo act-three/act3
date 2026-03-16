@@ -240,10 +240,10 @@ CREATE TABLE Download
 	ID        TEXT PRIMARY KEY DEFAULT ('dl'||newID()),
 	CreatedAt INTEGER NOT NULL DEFAULT (unixepoch()),
 	State     TEXT NOT NULL CHECK (State IN (
-		'added',
-		'active',
-		'complete',
-		'done',
+		'queued',
+		'downloading',
+		'downloaded',
+		'imported',
 		'error'
 	)),
 	Title               TEXT NOT NULL,

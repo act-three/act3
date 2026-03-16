@@ -334,12 +334,12 @@ func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
 	if err != nil {
 		return err
 	}
-	state := "active"
+	state := "downloading"
 	if len(d.plan) == 0 {
-		state = "done"
+		state = "imported"
 	}
 	tx.onCommit(func() {
-		tx.m.setInfoHashActive(d.d.InfoHash, state == "active")
+		tx.m.setInfoHashActive(d.d.InfoHash, state == "downloading")
 	})
 	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
 		ID:       d.ID(),
@@ -370,7 +370,7 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err
 		return tx.newDownload(ctx, dl)
 	}
 	dl, err := tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
-		State:    "added",
+		State:    "queued",
 		Title:    info.Name,
 		Torrent:  b,
 		InfoHash: infoHash,
@@ -425,7 +425,7 @@ func (tx *TxRW) downloadForPlanning(ctx Context, id string) (schema.Download, *m
 		return dl, nil, err
 	}
 	switch dl.State {
-	case "complete", "done", "error":
+	case "downloaded", "imported", "error":
 		return dl, nil, &ValidationError{
 			Op:  "create download",
 			Err: errors.New("already imported"),
@@ -586,14 +586,14 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 	if err != nil {
 		return schema.Download{}, err
 	}
-	state := "active"
+	state := "downloading"
 	if len(d.plan) == 0 {
-		state = "done"
+		state = "imported"
 	} else if allPlannedDone {
-		state = "complete"
+		state = "downloaded"
 	}
 	tx.onCommit(func() {
-		tx.m.setInfoHashActive(*t.HashString, state == "active")
+		tx.m.setInfoHashActive(*t.HashString, state == "downloading")
 	})
 	doneness := 0.0
 	if t.PercentDone != nil {

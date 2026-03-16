@@ -50,9 +50,9 @@ SELECT * FROM Download
 WHERE PlanMovieEditionID = ?
 ORDER BY ID DESC;
 
--- name: DownloadListInfoHashesActive :many
+-- name: DownloadListInfoHashesDownloading :many
 SELECT InfoHash FROM Download
-WHERE State = 'active';
+WHERE State = 'downloading';
 
 -- name: DownloadUpdateError :one
 UPDATE Download SET State = 'error', Error = ? WHERE ID = ? RETURNING *;
