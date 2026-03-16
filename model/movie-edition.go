@@ -3,6 +3,7 @@ package model
 import (
 	"iter"
 	"slices"
+	"strings"
 
 	"ily.dev/act3/database/schema"
 )
@@ -70,7 +71,7 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 	}
 
 	mo := &MovieHead{moData}
-	videosByEditionID := map[string][]*Video{}
+	var videos []*Video
 	for i := range vids {
 		v := &Video{v: vids[i]}
 		ats, err := tx.q.AudioTrackListByVideoID(ctx, vids[i].ID)
@@ -80,9 +81,9 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 		for j := range ats {
 			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
 		}
-		videosByEditionID[id] = append(videosByEditionID[id], v)
+		videos = append(videos, v)
 	}
-	return newMovieEdition(mo, medData, videosByEditionID), nil
+	return newMovieEdition(mo, medData, map[string][]*Video{id: videos}), nil
 }
 
 func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string) (*MovieEditionHead, error) {
@@ -112,19 +113,16 @@ func vidMapByMovieEditionID(mvs []schema.MovieVideo, vidByID map[string]*Video) 
 func movieEditionSeq(meds []*MovieEdition) iter.Seq[*MovieEdition] {
 	sorted := slices.Clone(meds)
 	slices.SortFunc(sorted, func(a, b *MovieEdition) int {
-		if a.Title() == DefaultEdition {
-			return -1
-		}
-		if b.Title() == DefaultEdition {
+		// Pin the default edition first.
+		aDefault := a.Title() == DefaultEdition
+		bDefault := b.Title() == DefaultEdition
+		if aDefault != bDefault {
+			if aDefault {
+				return -1
+			}
 			return 1
 		}
-		if a.Title() < b.Title() {
-			return -1
-		}
-		if a.Title() > b.Title() {
-			return 1
-		}
-		return 0
+		return strings.Compare(a.Title(), b.Title())
 	})
 	return slices.Values(sorted)
 }

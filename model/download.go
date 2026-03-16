@@ -341,28 +341,37 @@ func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) error {
 	})
 }
 
-func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Download, err error) {
-	defer errorfmt.Handlef("CreateDownloadPlanSeries(%s, %s): %w", id, sedID, &err)
+// downloadForPlanning fetches a download and validates it
+// can still be planned (not already done/error),
+// then parses the torrent info.
+func (tx *TxRW) downloadForPlanning(ctx Context, id string) (schema.Download, *metainfo.Info, error) {
 	dl, err := tx.q.DownloadGet(ctx, id)
 	if err != nil {
-		return nil, err
+		return dl, nil, err
 	}
 	switch dl.State {
 	case "done", "error":
-		return nil, &ValidationError{
+		return dl, nil, &ValidationError{
 			Op:  "create download",
 			Err: errors.New("already imported"),
 		}
 	}
-
 	_, info, err := ParseTorrent(dl.Torrent)
 	if err != nil {
-		return nil, &ValidationError{
+		return dl, nil, &ValidationError{
 			Op:  "parse torrent",
 			Err: err,
 		}
 	}
+	return dl, info, nil
+}
 
+func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Download, err error) {
+	defer errorfmt.Handlef("CreateDownloadPlanSeries(%s, %s): %w", id, sedID, &err)
+	dl, info, err := tx.downloadForPlanning(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 	plan, err := tx.planSeries(ctx, info, sedID)
 	if err != nil {
 		return nil, err
@@ -380,26 +389,10 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Down
 
 func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, id, medID string) (d *Download, err error) {
 	defer errorfmt.Handlef("CreateDownloadPlanMovie(%s, %s): %w", id, medID, &err)
-	dl, err := tx.q.DownloadGet(ctx, id)
+	dl, info, err := tx.downloadForPlanning(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	switch dl.State {
-	case "done", "error":
-		return nil, &ValidationError{
-			Op:  "create download",
-			Err: errors.New("already imported"),
-		}
-	}
-
-	_, info, err := ParseTorrent(dl.Torrent)
-	if err != nil {
-		return nil, &ValidationError{
-			Op:  "parse torrent",
-			Err: err,
-		}
-	}
-
 	plan := planMovie(info, medID)
 	b, err := json.Marshal(plan)
 	if err != nil {

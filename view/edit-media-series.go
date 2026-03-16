@@ -12,7 +12,6 @@ import (
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tvmaze"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 )
 
@@ -130,62 +129,15 @@ func editMediaSeriesDetailEdition(
 	dls []*model.DownloadHead,
 ) html.Node {
 	return html.Div()(
-		editMediaSeriesAddTorrentButton(sed.ID()),
+		AddTorrentButton("sed-id", sed.ID()),
 		html.Div(
 			attr.Class("border"),
 		)(
 			turbo.Sink("edition-torrents-"+sed.ID())(
-				editMediaSeriesListDownloadDetail(dls),
+				html.Range(dls, DownloadListItem),
 			),
 		),
 		editMediaSeriesDetailEpisodeList(sed),
-	)
-}
-
-func editMediaSeriesAddTorrentButton(sedID string) html.Node {
-	return html.Form(
-		attr.Class("flex flex-row gap-1 group"),
-		attr.Method("POST"),
-		attr.Enctype("multipart/form-data"),
-		attr.Action("/-/do/add-torrent"),
-		stimulus.Controller("add-torrent"),
-		stimulus.Action("turbo:submit-end->add-torrent#reset"),
-	)(
-		html.Input(
-			attr.Type("hidden"),
-			attr.Name("sed-id"),
-			attr.Value(sedID),
-		),
-		html.Input(
-			attr.Class("hidden"),
-			attr.Type("file"),
-			attr.Name("torrent"),
-			stimulus.Target("add-torrent", "picker"),
-			stimulus.Action("change->add-torrent#upload"),
-		),
-		Button(
-			stimulus.Target("add-torrent", "button"),
-			stimulus.Action("click->add-torrent#open:prevent"),
-		)(
-			html.Text("Add Torrent…"),
-		),
-	)
-}
-
-func editMediaSeriesListDownloadDetail(dls []*model.DownloadHead) html.Node {
-	return html.Range(dls, editMediaSeriesListDownloadDetailItem)
-}
-
-func editMediaSeriesListDownloadDetailItem(dl *model.DownloadHead) html.Node {
-	return html.Div(
-		attr.Class("p-1"),
-	)(
-		html.A(
-			attr.Href(dl.URL()),
-			turbo.DataFrame("main"),
-		)(
-			html.Text(dl.Title()),
-		),
 	)
 }
 

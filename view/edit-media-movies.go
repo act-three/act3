@@ -9,7 +9,6 @@ import (
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tmdb"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 )
 
@@ -222,12 +221,12 @@ func editMediaMoviesDetailEdition(
 	}
 	return html.Div()(
 		editMediaMoviesEditionSelector(mo),
-		editMediaMoviesAddTorrentButton(med.ID()),
+		AddTorrentButton("med-id", med.ID()),
 		html.Div(
 			attr.Class("border"),
 		)(
 			turbo.Sink("edition-torrents-"+med.ID())(
-				editMediaMoviesListDownloadDetail(dls),
+				html.Range(dls, DownloadListItem),
 			),
 		),
 		editMediaMoviesDetailVideos(med),
@@ -253,51 +252,6 @@ func editMediaMoviesEditionSelector(mo *model.Movie) html.Node {
 			}),
 		),
 	)
-}
-
-func editMediaMoviesAddTorrentButton(medID string) html.Node {
-	return html.Form(
-		attr.Class("flex flex-row gap-1 group"),
-		attr.Method("POST"),
-		attr.Enctype("multipart/form-data"),
-		attr.Action("/-/do/add-torrent"),
-		stimulus.Controller("add-torrent"),
-		stimulus.Action("turbo:submit-end->add-torrent#reset"),
-	)(
-		html.Input(
-			attr.Type("hidden"),
-			attr.Name("med-id"),
-			attr.Value(medID),
-		),
-		html.Input(
-			attr.Class("hidden"),
-			attr.Type("file"),
-			attr.Name("torrent"),
-			stimulus.Target("add-torrent", "picker"),
-			stimulus.Action("change->add-torrent#upload"),
-		),
-		Button(
-			stimulus.Target("add-torrent", "button"),
-			stimulus.Action("click->add-torrent#open:prevent"),
-		)(
-			html.Text("Add Torrent…"),
-		),
-	)
-}
-
-func editMediaMoviesListDownloadDetail(dls []*model.DownloadHead) html.Node {
-	return html.Range(dls, func(dl *model.DownloadHead) html.Node {
-		return html.Div(
-			attr.Class("p-1"),
-		)(
-			html.A(
-				attr.Href(dl.URL()),
-				turbo.DataFrame("main"),
-			)(
-				html.Text(dl.Title()),
-			),
-		)
-	})
 }
 
 func editMediaMoviesDetailVideos(med *model.MovieEdition) html.Node {

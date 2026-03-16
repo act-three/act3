@@ -9,6 +9,7 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/xslices"
 	"ily.dev/act3/xstrings"
@@ -98,6 +99,12 @@ func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html
 }
 
 func editMediaDownloadsStreamItem(dl *model.DownloadHead) html.Node {
+	return DownloadListItem(dl)
+}
+
+// DownloadListItem renders a single download as a clickable link.
+// Shared by the series, movie, and download views.
+func DownloadListItem(dl *model.DownloadHead) html.Node {
 	return html.Div(
 		attr.Class("p-1"),
 	)(
@@ -106,6 +113,39 @@ func editMediaDownloadsStreamItem(dl *model.DownloadHead) html.Node {
 			turbo.DataFrame("main"),
 		)(
 			html.Text(dl.Title()),
+		),
+	)
+}
+
+// AddTorrentButton renders a file-upload form for adding a
+// torrent to an edition.
+// Shared by the series and movie edit views.
+func AddTorrentButton(inputName, inputValue string) html.Node {
+	return html.Form(
+		attr.Class("flex flex-row gap-1 group"),
+		attr.Method("POST"),
+		attr.Enctype("multipart/form-data"),
+		attr.Action("/-/do/add-torrent"),
+		stimulus.Controller("add-torrent"),
+		stimulus.Action("turbo:submit-end->add-torrent#reset"),
+	)(
+		html.Input(
+			attr.Type("hidden"),
+			attr.Name(inputName),
+			attr.Value(inputValue),
+		),
+		html.Input(
+			attr.Class("hidden"),
+			attr.Type("file"),
+			attr.Name("torrent"),
+			stimulus.Target("add-torrent", "picker"),
+			stimulus.Action("change->add-torrent#upload"),
+		),
+		Button(
+			stimulus.Target("add-torrent", "button"),
+			stimulus.Action("click->add-torrent#open:prevent"),
+		)(
+			html.Text("Add Torrent…"),
 		),
 	)
 }
