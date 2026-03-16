@@ -267,6 +267,11 @@ CREATE TABLE DownloadPlan
 	Path           TEXT NOT NULL,
 	EpisodeID      TEXT REFERENCES Episode,
 	MovieEditionID TEXT REFERENCES MovieEdition,
+	State          TEXT NOT NULL DEFAULT 'downloading' CHECK (State IN (
+		'downloading',
+		'downloaded',
+		'imported'
+	)),
 	PRIMARY KEY (DownloadID, Path),
 	CHECK (EpisodeID IS NULL OR MovieEditionID IS NULL)
 )

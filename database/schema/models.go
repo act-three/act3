@@ -34,6 +34,7 @@ type DownloadPlan struct {
 	Path           string
 	EpisodeID      *string
 	MovieEditionID *string
+	State          string
 }
 
 type Episode struct {

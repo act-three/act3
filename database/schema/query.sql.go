@@ -403,6 +403,17 @@ func (q *Queries) DownloadListInfoHashesDownloading(ctx context.Context) ([]stri
 	return items, nil
 }
 
+const downloadPlanCountActiveByDownloadID = `-- name: DownloadPlanCountActiveByDownloadID :one
+SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ? AND State != 'imported'
+`
+
+func (q *Queries) DownloadPlanCountActiveByDownloadID(ctx context.Context, downloadid string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, downloadPlanCountActiveByDownloadID, downloadid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const downloadPlanCountByDownloadID = `-- name: DownloadPlanCountByDownloadID :one
 SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ?
 `
@@ -445,22 +456,8 @@ func (q *Queries) DownloadPlanDeleteByDownloadID(ctx context.Context, downloadid
 	return err
 }
 
-const downloadPlanDeleteByDownloadIDPath = `-- name: DownloadPlanDeleteByDownloadIDPath :exec
-DELETE FROM DownloadPlan WHERE DownloadID = ? AND Path = ?
-`
-
-type DownloadPlanDeleteByDownloadIDPathParams struct {
-	DownloadID string
-	Path       string
-}
-
-func (q *Queries) DownloadPlanDeleteByDownloadIDPath(ctx context.Context, arg DownloadPlanDeleteByDownloadIDPathParams) error {
-	_, err := q.db.ExecContext(ctx, downloadPlanDeleteByDownloadIDPath, arg.DownloadID, arg.Path)
-	return err
-}
-
 const downloadPlanListByDownloadID = `-- name: DownloadPlanListByDownloadID :many
-SELECT downloadid, path, episodeid, movieeditionid FROM DownloadPlan WHERE DownloadID = ?
+SELECT downloadid, path, episodeid, movieeditionid, state FROM DownloadPlan WHERE DownloadID = ?
 `
 
 func (q *Queries) DownloadPlanListByDownloadID(ctx context.Context, downloadid string) ([]DownloadPlan, error) {
@@ -477,6 +474,7 @@ func (q *Queries) DownloadPlanListByDownloadID(ctx context.Context, downloadid s
 			&i.Path,
 			&i.EpisodeID,
 			&i.MovieEditionID,
+			&i.State,
 		); err != nil {
 			return nil, err
 		}
@@ -489,6 +487,21 @@ func (q *Queries) DownloadPlanListByDownloadID(ctx context.Context, downloadid s
 		return nil, err
 	}
 	return items, nil
+}
+
+const downloadPlanUpdateState = `-- name: DownloadPlanUpdateState :exec
+UPDATE DownloadPlan SET State = ? WHERE DownloadID = ? AND Path = ?
+`
+
+type DownloadPlanUpdateStateParams struct {
+	State      string
+	DownloadID string
+	Path       string
+}
+
+func (q *Queries) DownloadPlanUpdateState(ctx context.Context, arg DownloadPlanUpdateStateParams) error {
+	_, err := q.db.ExecContext(ctx, downloadPlanUpdateState, arg.State, arg.DownloadID, arg.Path)
+	return err
 }
 
 const downloadUpdateAutoImport = `-- name: DownloadUpdateAutoImport :one

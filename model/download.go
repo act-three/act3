@@ -91,6 +91,13 @@ func (df *DownloadFile) Progress() float64 {
 	return p
 }
 
+func (df *DownloadFile) State() string {
+	if df.plan == nil {
+		return ""
+	}
+	return df.plan.State
+}
+
 func (df *DownloadFile) Episode() *Episode {
 	// TODO(april): return actual episode (not planned episode) after import
 	sed := df.SeriesEdition()
@@ -287,7 +294,13 @@ func (tx *TxRW) DownloadAutoImportSet(ctx Context, id string, auto bool) error {
 		Autoimport: v,
 		ID:         id,
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	if auto {
+		return tx.DownloadImport(ctx, id)
+	}
+	return nil
 }
 
 // DownloadImport imports all planned files for a download.
@@ -322,15 +335,16 @@ func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
 		}
 	}
 	for path := range d.Paths() {
-		planID := d.PlanFor(path)
-		if planID == "" || !done[path] {
+		plan := d.planByPath[path]
+		if plan == nil || plan.State == "imported" || !done[path] {
 			continue
 		}
 		err = tx.importDownloadPath(ctx, d, t, path)
 		if err != nil {
 			return err
 		}
-		err = tx.q.DownloadPlanDeleteByDownloadIDPath(ctx, schema.DownloadPlanDeleteByDownloadIDPathParams{
+		err = tx.q.DownloadPlanUpdateState(ctx, schema.DownloadPlanUpdateStateParams{
+			State:      "imported",
 			DownloadID: d.ID(),
 			Path:       path,
 		})
@@ -338,23 +352,7 @@ func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
 			return err
 		}
 	}
-	remaining, err := tx.q.DownloadPlanCountByDownloadID(ctx, d.ID())
-	if err != nil {
-		return err
-	}
-	state := "downloading"
-	if remaining == 0 {
-		state = "imported"
-	}
-	tx.onCommit(func() {
-		tx.m.setInfoHashActive(d.d.InfoHash, state == "downloading")
-	})
-	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
-		ID:       d.ID(),
-		State:    state,
-		Progress: d.Progress(),
-	})
-	return err
+	return tx.downloadUpdateState(ctx, d)
 }
 
 func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err error) {
@@ -560,58 +558,99 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 		}
 	}
 
-	// Check whether all planned files have finished downloading.
-	allPlannedDone := true
+	// Mark completed files as "downloaded".
 	for path := range d.Paths() {
-		planID := d.PlanFor(path)
-		if planID != "" && !done[path] {
-			allPlannedDone = false
-			break
+		plan := d.planByPath[path]
+		if plan == nil || plan.State != "downloading" || !done[path] {
+			continue
 		}
+		err = tx.q.DownloadPlanUpdateState(ctx, schema.DownloadPlanUpdateStateParams{
+			State:      "downloaded",
+			DownloadID: d.ID(),
+			Path:       path,
+		})
+		if err != nil {
+			return schema.Download{}, err
+		}
+		plan.State = "downloaded"
 	}
 
-	if d.AutoImport() && allPlannedDone {
+	// Auto-import: import all downloaded files immediately.
+	if d.AutoImport() {
 		for path := range d.Paths() {
-			planID := d.PlanFor(path)
-			if planID == "" {
+			plan := d.planByPath[path]
+			if plan == nil || plan.State != "downloaded" {
 				continue
 			}
 			err = tx.importDownloadPath(ctx, d, t, path)
 			if err != nil {
 				return schema.Download{}, err
 			}
-			err = tx.q.DownloadPlanDeleteByDownloadIDPath(ctx, schema.DownloadPlanDeleteByDownloadIDPathParams{
+			err = tx.q.DownloadPlanUpdateState(ctx, schema.DownloadPlanUpdateStateParams{
+				State:      "imported",
 				DownloadID: d.ID(),
 				Path:       path,
 			})
 			if err != nil {
 				return schema.Download{}, err
 			}
+			plan.State = "imported"
 		}
 	}
 
-	remaining, err := tx.q.DownloadPlanCountByDownloadID(ctx, d.ID())
-	if err != nil {
-		return schema.Download{}, err
-	}
-	state := "downloading"
-	if remaining == 0 {
-		state = "imported"
-	} else if allPlannedDone {
-		state = "downloaded"
-	}
-	tx.onCommit(func() {
-		tx.m.setInfoHashActive(*t.HashString, state == "downloading")
-	})
 	doneness := 0.0
 	if t.PercentDone != nil {
 		doneness = *t.PercentDone
 	}
-	return tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
+	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
 		ID:       d.ID(),
-		State:    state,
+		State:    d.deriveState(),
 		Progress: doneness,
 	})
+	if err != nil {
+		return schema.Download{}, err
+	}
+	tx.onCommit(func() {
+		tx.m.setInfoHashActive(*t.HashString, d.deriveState() == "downloading")
+	})
+	return d.d, nil
+}
+
+// deriveState computes the download-level state from plan states.
+func (d *Download) deriveState() string {
+	hasActive := false
+	hasDownloading := false
+	for _, p := range d.plans {
+		switch p.State {
+		case "downloading":
+			hasDownloading = true
+			hasActive = true
+		case "downloaded":
+			hasActive = true
+		}
+	}
+	if !hasActive {
+		return "imported"
+	}
+	if hasDownloading {
+		return "downloading"
+	}
+	return "downloaded"
+}
+
+// downloadUpdateState derives the download state from plan states
+// and updates it in the database.
+func (tx *TxRW) downloadUpdateState(ctx Context, d *Download) error {
+	state := d.deriveState()
+	tx.onCommit(func() {
+		tx.m.setInfoHashActive(d.d.InfoHash, state == "downloading")
+	})
+	_, err := tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
+		ID:       d.ID(),
+		State:    state,
+		Progress: d.Progress(),
+	})
+	return err
 }
 
 func (tx *TxRW) importDownloadPath(ctx Context, d *Download, t *transmissionrpc.Torrent, path string) error {

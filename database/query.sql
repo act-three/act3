@@ -67,6 +67,9 @@ ORDER BY ID DESC;
 SELECT InfoHash FROM Download
 WHERE State = 'downloading';
 
+-- name: DownloadPlanCountActiveByDownloadID :one
+SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ? AND State != 'imported';
+
 -- name: DownloadPlanCountByDownloadID :one
 SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ?;
 
@@ -77,11 +80,11 @@ VALUES (?, ?, ?, ?);
 -- name: DownloadPlanDeleteByDownloadID :exec
 DELETE FROM DownloadPlan WHERE DownloadID = ?;
 
--- name: DownloadPlanDeleteByDownloadIDPath :exec
-DELETE FROM DownloadPlan WHERE DownloadID = ? AND Path = ?;
-
 -- name: DownloadPlanListByDownloadID :many
 SELECT * FROM DownloadPlan WHERE DownloadID = ?;
+
+-- name: DownloadPlanUpdateState :exec
+UPDATE DownloadPlan SET State = ? WHERE DownloadID = ? AND Path = ?;
 
 -- name: DownloadUpdateAutoImport :one
 UPDATE Download SET AutoImport = ? WHERE ID = ? RETURNING *;
