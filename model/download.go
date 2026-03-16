@@ -612,9 +612,13 @@ func (tx *TxRW) importVideo(ctx Context, t *transmissionrpc.Torrent, path string
 	// For single-file torrents, the download path is just
 	// downloadDir/name (path == name).
 	// For multi-file torrents, it's downloadDir/name/path.
-	diskPath := filepath.Join(*t.DownloadDir, *t.Name, path)
+	downloadDir, err := tx.transmissionDownloadDir(ctx, *t.DownloadDir)
+	if err != nil {
+		return nil, err
+	}
+	diskPath := filepath.Join(downloadDir, *t.Name, path)
 	if *t.Name == path {
-		diskPath = filepath.Join(*t.DownloadDir, path)
+		diskPath = filepath.Join(downloadDir, path)
 	}
 	err = tx.addTask(ctx, taskIngest, vid.ID, diskPath)
 	if err != nil {

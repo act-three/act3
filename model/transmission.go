@@ -42,3 +42,19 @@ func (m *Model) setTransmissionBaseURL(u *urlpkg.URL) {
 	}
 	m.transmission.Store(c)
 }
+
+// transmissionDownloadDir returns the local directory for a torrent's
+// download dir.
+// If the transmission.path setting is configured,
+// it is used instead of the path reported by Transmission,
+// which may differ when Transmission runs on a different host.
+func (tx *TxR) transmissionDownloadDir(ctx Context, remoteDir string) (string, error) {
+	settings, err := tx.SettingGetByGroup(ctx, "transmission")
+	if err != nil {
+		return "", err
+	}
+	if p := settings[SettingKeyTransmissionPath].String(); p != "" {
+		return p, nil
+	}
+	return remoteDir, nil
+}

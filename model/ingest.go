@@ -386,7 +386,11 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 	if len(ts) != 1 {
 		return fmt.Errorf("torrent %s: got %d results, wanted 1", *rel.InfoHash, len(ts))
 	}
-	srcPath := filepath.Join(*ts[0].DownloadDir, *ts[0].Name, vid.ReleasePath)
+	downloadDir, err := tx.transmissionDownloadDir(ctx, *ts[0].DownloadDir)
+	if err != nil {
+		return err
+	}
+	srcPath := filepath.Join(downloadDir, *ts[0].Name, vid.ReleasePath)
 
 	// Delete existing rendition CAS blobs and pass1 stats.
 	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
