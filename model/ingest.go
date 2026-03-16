@@ -391,6 +391,9 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 		return err
 	}
 	srcPath := filepath.Join(downloadDir, *ts[0].Name, vid.ReleasePath)
+	if *ts[0].Name == vid.ReleasePath {
+		srcPath = filepath.Join(downloadDir, vid.ReleasePath)
+	}
 
 	// Delete existing rendition CAS blobs and pass1 stats.
 	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
