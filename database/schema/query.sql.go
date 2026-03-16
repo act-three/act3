@@ -11,6 +11,7 @@ import (
 )
 
 const audioTrackCreate = `-- name: AudioTrackCreate :one
+
 INSERT INTO AudioTrack (
 	VideoID, StreamIndex, Language, Title,
 	Channels, ChannelLayout, Codec
@@ -28,6 +29,7 @@ type AudioTrackCreateParams struct {
 	Codec         string
 }
 
+// keep sorted by name
 func (q *Queries) AudioTrackCreate(ctx context.Context, arg AudioTrackCreateParams) (AudioTrack, error) {
 	row := q.db.QueryRowContext(ctx, audioTrackCreate,
 		arg.VideoID,

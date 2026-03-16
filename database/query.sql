@@ -1,3 +1,19 @@
+-- keep sorted by name
+
+-- name: AudioTrackCreate :one
+INSERT INTO AudioTrack (
+	VideoID, StreamIndex, Language, Title,
+	Channels, ChannelLayout, Codec
+) VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: AudioTrackDeleteByVideoID :exec
+DELETE FROM AudioTrack WHERE VideoID = ?;
+
+-- name: AudioTrackListByVideoID :many
+SELECT * FROM AudioTrack
+WHERE VideoID = ?
+ORDER BY StreamIndex;
 
 -- name: AuthorCreate :one
 INSERT INTO User (Name) VALUES (?)
@@ -37,28 +53,41 @@ SELECT * FROM Download WHERE InfoHash = ?;
 SELECT * FROM Download
 ORDER BY ID DESC;
 
--- name: DownloadListByPlanSeriesEditionID :many
-SELECT * FROM Download
-WHERE PlanSeriesEditionID = ?
-ORDER BY ID DESC;
-
 -- name: DownloadListByPlanMovieEditionID :many
 SELECT * FROM Download
 WHERE PlanMovieEditionID = ?
+ORDER BY ID DESC;
+
+-- name: DownloadListByPlanSeriesEditionID :many
+SELECT * FROM Download
+WHERE PlanSeriesEditionID = ?
 ORDER BY ID DESC;
 
 -- name: DownloadListInfoHashesDownloading :many
 SELECT InfoHash FROM Download
 WHERE State = 'downloading';
 
+-- name: DownloadPlanCountByDownloadID :one
+SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ?;
+
+-- name: DownloadPlanCreate :exec
+INSERT INTO DownloadPlan (DownloadID, Path, EpisodeID, MovieEditionID)
+VALUES (?, ?, ?, ?);
+
+-- name: DownloadPlanDeleteByDownloadID :exec
+DELETE FROM DownloadPlan WHERE DownloadID = ?;
+
+-- name: DownloadPlanDeleteByDownloadIDPath :exec
+DELETE FROM DownloadPlan WHERE DownloadID = ? AND Path = ?;
+
+-- name: DownloadPlanListByDownloadID :many
+SELECT * FROM DownloadPlan WHERE DownloadID = ?;
+
+-- name: DownloadUpdateAutoImport :one
+UPDATE Download SET AutoImport = ? WHERE ID = ? RETURNING *;
+
 -- name: DownloadUpdateError :one
 UPDATE Download SET State = 'error', Error = ? WHERE ID = ? RETURNING *;
-
--- name: DownloadUpdatePlanSeries :one
-UPDATE Download SET
-	PlanSeriesEditionID = ?
-WHERE ID = ?
-RETURNING *;
 
 -- name: DownloadUpdatePlanMovie :one
 UPDATE Download SET
@@ -66,8 +95,11 @@ UPDATE Download SET
 WHERE ID = ?
 RETURNING *;
 
--- name: DownloadUpdateAutoImport :one
-UPDATE Download SET AutoImport = ? WHERE ID = ? RETURNING *;
+-- name: DownloadUpdatePlanSeries :one
+UPDATE Download SET
+	PlanSeriesEditionID = ?
+WHERE ID = ?
+RETURNING *;
 
 -- name: DownloadUpdateProgress :one
 UPDATE Download SET
@@ -75,22 +107,6 @@ UPDATE Download SET
 	Progress = ?,
 	Error = ''
 WHERE ID = ? RETURNING *;
-
--- name: DownloadPlanCreate :exec
-INSERT INTO DownloadPlan (DownloadID, Path, EpisodeID, MovieEditionID)
-VALUES (?, ?, ?, ?);
-
--- name: DownloadPlanDeleteByDownloadIDPath :exec
-DELETE FROM DownloadPlan WHERE DownloadID = ? AND Path = ?;
-
--- name: DownloadPlanDeleteByDownloadID :exec
-DELETE FROM DownloadPlan WHERE DownloadID = ?;
-
--- name: DownloadPlanListByDownloadID :many
-SELECT * FROM DownloadPlan WHERE DownloadID = ?;
-
--- name: DownloadPlanCountByDownloadID :one
-SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ?;
 
 -- name: EpisodeCreate :one
 INSERT INTO Episode
@@ -137,10 +153,6 @@ INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)
 RETURNING *;
 
--- name: EpisodeVideoListByVideoID :many
-SELECT * FROM EpisodeVideo
-WHERE VideoID = ?;
-
 -- name: EpisodeVideoListByEditionID :many
 SELECT * FROM EpisodeVideo
 WHERE EpisodeID IN (
@@ -158,41 +170,14 @@ WHERE EpisodeID IN (
 	)
 );
 
--- name: AudioTrackCreate :one
-INSERT INTO AudioTrack (
-	VideoID, StreamIndex, Language, Title,
-	Channels, ChannelLayout, Codec
-) VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING *;
-
--- name: AudioTrackListByVideoID :many
-SELECT * FROM AudioTrack
-WHERE VideoID = ?
-ORDER BY StreamIndex;
-
--- name: AudioTrackDeleteByVideoID :exec
-DELETE FROM AudioTrack WHERE VideoID = ?;
+-- name: EpisodeVideoListByVideoID :many
+SELECT * FROM EpisodeVideo
+WHERE VideoID = ?;
 
 -- name: MovieCreate :one
 INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL, TMDBID, IMDBID)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
-
--- name: MovieGet :one
-SELECT * FROM Movie WHERE ID = ?;
-
--- name: MovieGetBySlug :one
-SELECT * FROM Movie WHERE Slug = ?;
-
--- name: MovieSlugExists :one
-SELECT COUNT(*) FROM Movie WHERE Slug = ?;
-
--- name: MovieList :many
-SELECT * FROM Movie
-ORDER BY Title;
-
--- name: MovieListByTMDBID :many
-SELECT * FROM Movie WHERE TMDBID IN (sqlc.slice(ids));
 
 -- name: MovieEditionCreate :one
 INSERT INTO MovieEdition (Title, MovieID) VALUES (?, ?)
@@ -204,9 +189,25 @@ SELECT * FROM MovieEdition WHERE ID = ?;
 -- name: MovieEditionListByMovieID :many
 SELECT * FROM MovieEdition WHERE MovieID = ?;
 
+-- name: MovieGet :one
+SELECT * FROM Movie WHERE ID = ?;
+
 -- name: MovieGetByEditionID :one
 SELECT * FROM Movie
 WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID = ?);
+
+-- name: MovieGetBySlug :one
+SELECT * FROM Movie WHERE Slug = ?;
+
+-- name: MovieList :many
+SELECT * FROM Movie
+ORDER BY Title;
+
+-- name: MovieListByTMDBID :many
+SELECT * FROM Movie WHERE TMDBID IN (sqlc.slice(ids));
+
+-- name: MovieSlugExists :one
+SELECT COUNT(*) FROM Movie WHERE Slug = ?;
 
 -- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
@@ -220,28 +221,6 @@ WHERE MovieEditionID = ?;
 -- name: MovieVideoListByMovieID :many
 SELECT * FROM MovieVideo
 WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?);
-
--- name: VideoListByMovieEditionID :many
-SELECT * FROM Video
-WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
-
--- name: VideoListByMovieID :many
-SELECT * FROM Video
-WHERE ID IN (
-	SELECT VideoID FROM MovieVideo
-	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
-);
-
--- name: RenditionForStreamingListByMovieEditionID :many
-SELECT * FROM RenditionForStreaming
-WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
-
--- name: RenditionForStreamingListByMovieID :many
-SELECT * FROM RenditionForStreaming
-WHERE VideoID IN (
-	SELECT VideoID FROM MovieVideo
-	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
-);
 
 -- name: ReleaseCreate :one
 INSERT INTO Release
@@ -258,6 +237,10 @@ SELECT * FROM Release WHERE ID = ?;
 -- name: ReleaseGetByInfoHash :one
 SELECT * FROM Release WHERE InfoHash = ?;
 
+-- name: RenditionForStreamingCountUnencoded :one
+SELECT COUNT(*) FROM RenditionForStreaming
+WHERE VideoID = ? AND Hash = '';
+
 -- name: RenditionForStreamingCreate :one
 INSERT INTO RenditionForStreaming (
 	VideoID,
@@ -273,9 +256,23 @@ INSERT INTO RenditionForStreaming (
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
+-- name: RenditionForStreamingDeleteByVideoID :exec
+DELETE FROM RenditionForStreaming WHERE VideoID = ?;
+
 -- name: RenditionForStreamingGet :one
 SELECT * FROM RenditionForStreaming
 WHERE ID = ?;
+
+-- name: RenditionForStreamingListByMovieEditionID :many
+SELECT * FROM RenditionForStreaming
+WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
+
+-- name: RenditionForStreamingListByMovieID :many
+SELECT * FROM RenditionForStreaming
+WHERE VideoID IN (
+	SELECT VideoID FROM MovieVideo
+	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
+);
 
 -- name: RenditionForStreamingListByVideoID :many
 SELECT * FROM RenditionForStreaming
@@ -285,27 +282,20 @@ WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
 SELECT * FROM RenditionForStreaming
 WHERE VideoID = ?;
 
--- name: RenditionForStreamingDeleteByVideoID :exec
-DELETE FROM RenditionForStreaming WHERE VideoID = ?;
-
--- name: RenditionForStreamingUpdateEncode :one
-UPDATE RenditionForStreaming
-SET Hash = ?, Playlist = ?
-WHERE ID = ?
-RETURNING *;
+-- name: RenditionForStreamingListEncodedByVideoID :many
+SELECT * FROM RenditionForStreaming
+WHERE VideoID = ? AND Hash != '';
 
 -- name: RenditionForStreamingNextUnencoded :one
 SELECT * FROM RenditionForStreaming
 WHERE VideoID = ? AND Hash = ''
 ORDER BY Priority ASC LIMIT 1;
 
--- name: RenditionForStreamingCountUnencoded :one
-SELECT COUNT(*) FROM RenditionForStreaming
-WHERE VideoID = ? AND Hash = '';
-
--- name: RenditionForStreamingListEncodedByVideoID :many
-SELECT * FROM RenditionForStreaming
-WHERE VideoID = ? AND Hash != '';
+-- name: RenditionForStreamingUpdateEncode :one
+UPDATE RenditionForStreaming
+SET Hash = ?, Playlist = ?
+WHERE ID = ?
+RETURNING *;
 
 -- name: SchemaVersionGet :one
 SELECT version, digest FROM schema LIMIT 1;
@@ -403,15 +393,12 @@ SELECT GenreName FROM SeriesGenre WHERE SeriesID = ?;
 -- name: SeriesGet :one
 SELECT * FROM Series WHERE ID = ?;
 
--- name: SeriesGetBySlug :one
-SELECT * FROM Series WHERE Slug = ?;
-
--- name: SeriesSlugExists :one
-SELECT COUNT(*) FROM Series WHERE Slug = ?;
-
 -- name: SeriesGetByEditionID :one
 SELECT * FROM Series
 WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID = ?);
+
+-- name: SeriesGetBySlug :one
+SELECT * FROM Series WHERE Slug = ?;
 
 -- name: SeriesGetByTVmazeID :one
 SELECT * FROM Series WHERE TVmazeID = ?;
@@ -421,6 +408,16 @@ SELECT * FROM Series;
 
 -- name: SeriesListByTVmazeID :many
 SELECT * FROM Series WHERE TVmazeID IN (sqlc.slice(ids));
+
+-- name: SeriesSlugExists :one
+SELECT COUNT(*) FROM Series WHERE Slug = ?;
+
+-- name: SettingListByGroup :many
+SELECT * FROM Setting WHERE "Group" = ?;
+
+-- name: SettingSet :exec
+INSERT INTO Setting (Key, "Group", Value) VALUES (?, ?, ?)
+ON CONFLICT (Key) DO UPDATE SET Value = ?3;
 
 -- name: StorageCreate :exec
 INSERT INTO Storage (Path, Contents) VALUES (?, ?);
@@ -442,16 +439,10 @@ SELECT * FROM Task WHERE ID = ?;
 SELECT * FROM Task
 WHERE Running = 0;
 
--- name: TaskReschedule :one
-UPDATE Task SET
-	Failures = ?,
-	NextRun = ?,
-	FailureDesc = ?
-WHERE ID = ?
+-- name: TaskLock :one
+UPDATE Task SET Running = 1
+WHERE ID = ? AND Running = 0
 RETURNING *;
-
--- name: TaskSetNextRun :exec
-UPDATE Task SET NextRun = ? WHERE ID = ?;
 
 -- name: TaskNext :one
 SELECT * FROM Task
@@ -459,13 +450,13 @@ WHERE Queue = ? AND Running = 0 AND NextRun <= ?
 ORDER BY Priority, ID
 LIMIT 1;
 
--- name: TaskLock :one
-UPDATE Task SET Running = 1
-WHERE ID = ? AND Running = 0
+-- name: TaskReschedule :one
+UPDATE Task SET
+	Failures = ?,
+	NextRun = ?,
+	FailureDesc = ?
+WHERE ID = ?
 RETURNING *;
-
--- name: TaskUnlock :exec
-UPDATE Task SET Running = 0 WHERE ID = ?;
 
 -- name: TaskResetRunning :exec
 UPDATE Task SET Running = 0 WHERE Running = 1;
@@ -475,6 +466,12 @@ UPDATE Task SET
 	Failures = ?,
 	FailureDesc = ?
 WHERE ID = ?;
+
+-- name: TaskSetNextRun :exec
+UPDATE Task SET NextRun = ? WHERE ID = ?;
+
+-- name: TaskUnlock :exec
+UPDATE Task SET Running = 0 WHERE ID = ?;
 
 -- name: VideoCreate :one
 INSERT INTO Video
@@ -491,10 +488,6 @@ SELECT * FROM Video WHERE ID = ?;
 -- name: VideoGetByReleasePath :one
 SELECT * FROM Video WHERE ReleaseID = ? AND ReleasePath = ?;
 
--- name: VideoListByEpisodeID :many
-SELECT * FROM Video
-WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
-
 -- name: VideoListByEditionID :many
 SELECT * FROM Video
 WHERE ID IN (
@@ -503,6 +496,21 @@ WHERE ID IN (
 		SELECT EpisodeID FROM SeasonEpisode
 		WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
 	)
+);
+
+-- name: VideoListByEpisodeID :many
+SELECT * FROM Video
+WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
+
+-- name: VideoListByMovieEditionID :many
+SELECT * FROM Video
+WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
+
+-- name: VideoListByMovieID :many
+SELECT * FROM Video
+WHERE ID IN (
+	SELECT VideoID FROM MovieVideo
+	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
 );
 
 -- name: VideoListBySeriesID :many
@@ -518,17 +526,10 @@ WHERE ID IN (
 	)
 );
 
--- name: VideoUpdateOriginalHash :one
-UPDATE Video SET OriginalHash = ? WHERE ID = ?
-RETURNING *;
-
 -- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?
 RETURNING *;
 
--- name: SettingListByGroup :many
-SELECT * FROM Setting WHERE "Group" = ?;
-
--- name: SettingSet :exec
-INSERT INTO Setting (Key, "Group", Value) VALUES (?, ?, ?)
-ON CONFLICT (Key) DO UPDATE SET Value = ?3;
+-- name: VideoUpdateOriginalHash :one
+UPDATE Video SET OriginalHash = ? WHERE ID = ?
+RETURNING *;

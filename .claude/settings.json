@@ -17,6 +17,17 @@
         "hooks": [
           {
             "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/check-query-sort.sh\"",
+            "name": "Check query.sql sort order",
+            "filter": "endswith('database/query.sql')"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
             "command": "cat >/dev/null && go generate ./database",
             "name": "Run sqlc after schema changes",
             "filter": "contains('database/ddl/') or contains('database/query.sql') or contains('database/sqlc.json')"
