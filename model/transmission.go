@@ -2,6 +2,7 @@ package model
 
 import (
 	urlpkg "net/url"
+	"path/filepath"
 
 	"github.com/hekmon/transmissionrpc/v3"
 	"kr.dev/errorfmt"
@@ -43,18 +44,25 @@ func (m *Model) setTransmissionBaseURL(u *urlpkg.URL) {
 	m.transmission.Store(c)
 }
 
-// transmissionDownloadDir returns the local directory for a torrent's
-// download dir.
-// If the transmission.path setting is configured,
-// it is used instead of the path reported by Transmission,
-// which may differ when Transmission runs on a different host.
-func (tx *TxR) transmissionDownloadDir(ctx Context, remoteDir string) (string, error) {
+// transmissionDiskPath returns the local disk path for a file within
+// a Transmission torrent.
+// It resolves the download directory using the transmission.path
+// setting (falling back to the dir reported by Transmission),
+// and handles the single-file vs multi-file torrent distinction.
+func (tx *TxR) transmissionDiskPath(ctx Context, t *transmissionrpc.Torrent, relPath string) (string, error) {
+	dir := *t.DownloadDir
 	settings, err := tx.SettingGetByGroup(ctx, "transmission")
 	if err != nil {
 		return "", err
 	}
 	if p := settings[SettingKeyTransmissionPath].String(); p != "" {
-		return p, nil
+		dir = p
 	}
-	return remoteDir, nil
+	// For single-file torrents the torrent name is the filename
+	// itself, so the path is just dir/name.
+	// For multi-file torrents it's dir/name/relPath.
+	if *t.Name == relPath {
+		return filepath.Join(dir, relPath), nil
+	}
+	return filepath.Join(dir, *t.Name, relPath), nil
 }

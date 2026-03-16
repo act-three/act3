@@ -386,13 +386,9 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 	if len(ts) != 1 {
 		return fmt.Errorf("torrent %s: got %d results, wanted 1", *rel.InfoHash, len(ts))
 	}
-	downloadDir, err := tx.transmissionDownloadDir(ctx, *ts[0].DownloadDir)
+	srcPath, err := tx.transmissionDiskPath(ctx, &ts[0], vid.ReleasePath)
 	if err != nil {
 		return err
-	}
-	srcPath := filepath.Join(downloadDir, *ts[0].Name, vid.ReleasePath)
-	if *ts[0].Name == vid.ReleasePath {
-		srcPath = filepath.Join(downloadDir, vid.ReleasePath)
 	}
 
 	// Delete existing rendition CAS blobs and pass1 stats.
