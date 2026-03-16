@@ -180,7 +180,7 @@ func editMediaDownloadsImportControl(dl *model.Download) html.Node {
 	case "downloaded":
 		return editMediaDownloadsImportButton(dl.ID())
 	case "queued", "downloading":
-		return editMediaDownloadsAutoImportCheckbox(dl)
+		return editMediaDownloadsAutoImportToggle(dl)
 	default: // "imported", "error"
 		return html.Group()
 	}
@@ -196,25 +196,12 @@ func editMediaDownloadsImportButton(id string) html.Node {
 	)
 }
 
-func editMediaDownloadsAutoImportCheckbox(dl *model.Download) html.Node {
-	checkboxAttrs := []attr.Node{
-		attr.Type("checkbox"),
-		attr.Name("auto-import"),
-		attr.Value("1"),
-		attr.Attr("onchange")("this.form.requestSubmit()"),
-	}
-	if dl.AutoImport() {
-		checkboxAttrs = append(checkboxAttrs, attr.Checked)
-	}
-	return html.Form(
-		attr.Method("POST"),
-		attr.Action("/-/do/auto-import-download"),
-	)(
-		html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(dl.ID())),
-		html.Label(attr.Class("flex items-center gap-2"))(
-			html.Input(checkboxAttrs...),
-			html.Text("Automatically import when download completes"),
+func editMediaDownloadsAutoImportToggle(dl *model.Download) html.Node {
+	return html.Label(attr.Class("flex items-center gap-2"))(
+		Toggle("/-/do/auto-import-download", "auto-import", dl.AutoImport())(
+			html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(dl.ID())),
 		),
+		html.Text("Automatically import when download completes"),
 	)
 }
 

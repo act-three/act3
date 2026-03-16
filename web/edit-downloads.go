@@ -50,12 +50,12 @@ func (c *Config) doAutoImportDownload(w http.ResponseWriter, req *http.Request) 
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
-		auto := req.FormValue("auto-import") == "1"
+		auto := req.FormValue("auto-import") == "true"
 		err := tx.DownloadAutoImportSet(ctx, id, auto)
 		if err != nil {
 			return nil, err
 		}
-		http.Redirect(w, req, "/app/downloads/"+id, http.StatusSeeOther)
+		w.WriteHeader(http.StatusNoContent)
 		return nil, nil
 	})
 }

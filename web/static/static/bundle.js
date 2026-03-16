@@ -6021,13 +6021,13 @@
     }
   };
   function add(map, key, value) {
-    fetch(map, key).add(value);
+    fetch2(map, key).add(value);
   }
   function del(map, key, value) {
-    fetch(map, key).delete(value);
+    fetch2(map, key).delete(value);
     prune(map, key);
   }
-  function fetch(map, key) {
+  function fetch2(map, key) {
     let values = map.get(key);
     if (!values) {
       values = /* @__PURE__ */ new Set();
@@ -8796,6 +8796,40 @@
     }
   };
 
+  // ui/toggle.js
+  var toggle_default = class extends Controller {
+    static targets = ["track", "input"];
+    toggle() {
+      const track = this.trackTarget;
+      if (track.disabled) return;
+      const input = this.inputTarget;
+      const was = track.getAttribute("aria-checked") === "true";
+      const now = !was;
+      track.setAttribute("aria-checked", String(now));
+      input.value = String(now);
+      track.disabled = true;
+      track.dataset.animating = "";
+      track.addEventListener("transitionend", () => {
+        delete track.dataset.animating;
+      }, { once: true });
+      const data = new FormData(this.element);
+      fetch(this.element.action, { method: "POST", body: data }).then(
+        (resp) => {
+          if (!resp.ok) {
+            track.setAttribute("aria-checked", String(was));
+            input.value = String(was);
+          }
+          track.disabled = false;
+        },
+        () => {
+          track.setAttribute("aria-checked", String(was));
+          input.value = String(was);
+          track.disabled = false;
+        }
+      );
+    }
+  };
+
   // view/topbar-controller.js
   var topbar_controller_default = class extends Controller {
     #ro;
@@ -8819,6 +8853,7 @@
   Stimulus.register("add-torrent", add_torrent_controller_default);
   Stimulus.register("note-port", note_port_default);
   Stimulus.register("select", select_default);
+  Stimulus.register("toggle", toggle_default);
   Stimulus.register("topbar", topbar_controller_default);
 })();
 /*!
