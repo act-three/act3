@@ -2499,7 +2499,7 @@ func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
 }
 
 const taskCreate = `-- name: TaskCreate :one
-INSERT INTO Task (Type, Args, Priority, Queue) VALUES (?, ?, ?, ?)
+INSERT INTO Task (Type, Args, Priority, Queue, NextRun) VALUES (?, ?, ?, ?, ?)
 RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
 `
 
@@ -2508,6 +2508,7 @@ type TaskCreateParams struct {
 	Args     string
 	Priority int64
 	Queue    string
+	NextRun  int64
 }
 
 func (q *Queries) TaskCreate(ctx context.Context, arg TaskCreateParams) (Task, error) {
@@ -2516,6 +2517,7 @@ func (q *Queries) TaskCreate(ctx context.Context, arg TaskCreateParams) (Task, e
 		arg.Args,
 		arg.Priority,
 		arg.Queue,
+		arg.NextRun,
 	)
 	var i Task
 	err := row.Scan(

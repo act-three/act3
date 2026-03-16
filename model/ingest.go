@@ -2,10 +2,13 @@ package model
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
+	"time"
 
 	"kr.dev/errorfmt"
 
@@ -27,6 +30,19 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	// Transmission may still be copying the file to its final
+	// location. If the file doesn't exist yet, re-queue and
+	// check again shortly.
+	diskPath := args[1]
+	if _, err := os.Stat(diskPath); errors.Is(err, os.ErrNotExist) {
+		slog.InfoContext(ctx, "ingest: file not yet available, retrying",
+			"vid", vid.ID, "path", diskPath)
+		return tx.m.WithTxRW(func(txw *TxRW) error {
+			return txw.addTaskAfter(ctx, 5*time.Second, taskIngest, args...)
+		})
+	}
+
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
@@ -35,7 +51,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
-	hash, err := tx.m.store.Copy(args[1])
+	hash, err := tx.m.store.Copy(diskPath)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
 		return err

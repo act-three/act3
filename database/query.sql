@@ -429,7 +429,7 @@ INSERT INTO Storage (Path, Contents) VALUES (?, ?);
 SELECT * FROM Storage;
 
 -- name: TaskCreate :one
-INSERT INTO Task (Type, Args, Priority, Queue) VALUES (?, ?, ?, ?)
+INSERT INTO Task (Type, Args, Priority, Queue, NextRun) VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: TaskDelete :exec

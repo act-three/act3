@@ -346,19 +346,32 @@ func (tx *TxRW) TaskDelete(ctx Context, id string) error {
 }
 
 func (t *TxRW) addTask(ctx Context, ttype string, args ...string) error {
-	return t.addTaskWithPriority(ctx, priority.Default, ttype, args...)
+	return t.addTaskOpts(ctx, ttype, 0, priority.Default, args...)
+}
+
+func (t *TxRW) addTaskAfter(ctx Context, delay time.Duration, ttype string, args ...string) error {
+	return t.addTaskOpts(ctx, ttype, delay, priority.Default, args...)
 }
 
 func (t *TxRW) addTaskWithPriority(ctx Context, priority int64, ttype string, args ...string) error {
+	return t.addTaskOpts(ctx, ttype, 0, priority, args...)
+}
+
+func (t *TxRW) addTaskOpts(ctx Context, ttype string, delay time.Duration, pri int64, args ...string) error {
 	b, err := json.Marshal(args)
 	if err != nil {
 		return err
 	}
+	var nextRun int64
+	if delay > 0 {
+		nextRun = time.Now().Add(delay).UnixMilli()
+	}
 	_, err = t.q.TaskCreate(ctx, schema.TaskCreateParams{
 		Type:     ttype,
 		Args:     string(b),
-		Priority: priority,
+		Priority: pri,
 		Queue:    queueTab[ttype],
+		NextRun:  nextRun,
 	})
 	if err != nil {
 		return err
