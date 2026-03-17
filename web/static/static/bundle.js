@@ -7906,7 +7906,6 @@
       "qualityMenu"
     ];
     static values = {
-      iconUrl: String,
       title: String,
       playing: Boolean,
       paused: Boolean,

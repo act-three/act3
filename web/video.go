@@ -28,7 +28,7 @@ func (c *Config) showPlayerForEpisode(_ http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			return nil, err
 		}
-		return view.MediaPlayerForEpisode(v, ep, qualityOpts), nil
+		return view.PlayerForEpisode(v, ep, qualityOpts), nil
 	})
 }
 
@@ -47,7 +47,7 @@ func (c *Config) showPlayerForMovie(_ http.ResponseWriter, req *http.Request) (h
 		if err != nil {
 			return nil, err
 		}
-		return view.MediaPlayerForMovie(v, mo, qualityOpts), nil
+		return view.PlayerForMovie(v, mo, qualityOpts), nil
 	})
 }
 
