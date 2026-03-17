@@ -1,6 +1,5 @@
 #!/bin/sh
 set -e
-export PATH="$HOME/.dprint/bin:$PATH"
 
 # Check that staged .go files are formatted.
 unformatted=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | while read f; do
@@ -15,9 +14,7 @@ if [ -n "$unformatted" ]; then
 fi
 
 # Check that JS/CSS/JSON/SQL files are formatted.
-if command -v dprint >/dev/null 2>&1; then
-	dprint check
-fi
+dprint check
 
 # Check for direct env var reads outside of package main.
 go vet -vettool=.git/hooks/act3vet ./...

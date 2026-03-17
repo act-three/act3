@@ -36,6 +36,12 @@ RUN GOBIN=/usr/local/bin go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 
 RUN GOBIN=/usr/local/bin go install golang.org/x/tools/cmd/goimports@latest
 
+# shfmt — shell formatter
+RUN GOBIN=/usr/local/bin go install mvdan.cc/sh/v3/cmd/shfmt@latest
+
+# dprint — JS/CSS/JSON/SQL/shell formatter
+RUN curl -fsSL https://dprint.dev/install.sh | DPRINT_INSTALL=/usr/local sh
+
 # tailwindcss v4 standalone CLI
 RUN ARCH=$(uname -m) && \
 	case "$ARCH" in \

@@ -7,7 +7,7 @@ cd $(dirname $0)
 # The last two digits are a counter.
 
 latest_image() {
-    ls -1 deploy | fgrep .app | sort | tail -n 1
+	ls -1 deploy | fgrep .app | sort | tail -n 1
 }
 
 latest_deployed_image() {
@@ -15,28 +15,29 @@ latest_deployed_image() {
 }
 
 next_version() {
-    today=$(date +%Y%m%d)
-    n=1
-    while [ -f "deploy/act3.$today.$(printf %02d $n).app" ]
-    do n=$((n + 1))
-    done
-    echo "$today.$(printf %02d $n)"
+	today=$(date +%Y%m%d)
+	n=1
+	while [ -f "deploy/act3.$today.$(printf %02d $n).app" ]; do
+		n=$((n + 1))
+	done
+	echo "$today.$(printf %02d $n)"
 }
 
 fixup_version() {
-    today=$(date +%Y%m%d)
-    n=1
-    while [ -f "deploy/act3.$today.$(printf %02d $((n + 1))).app" ]
-    do n=$((n + 1))
-    done
-    echo "$today.$(printf %02d $n)"
+	today=$(date +%Y%m%d)
+	n=1
+	while [ -f "deploy/act3.$today.$(printf %02d $((n + 1))).app" ]; do
+		n=$((n + 1))
+	done
+	echo "$today.$(printf %02d $n)"
 }
 
 build_version() {
 	v=$(fixup_version)
-	if [ -e "images/pepper-$v/deployed" ]
-	then next_version
-	else echo $v
+	if [ -e "images/pepper-$v/deployed" ]; then
+		next_version
+	else
+		echo $v
 	fi
 }
 
@@ -45,8 +46,7 @@ case "${1:-}" in
 		container="act3-dev"
 		image="act3-dev"
 
-		if docker container inspect $container &>/dev/null
-		then
+		if docker container inspect $container &>/dev/null; then
 			echo "Container $container exists; aborting."
 			exit 1
 		fi
@@ -93,82 +93,74 @@ case "${1:-}" in
 		echo "Container $container is running."
 		echo "Connect with: zed ssh://act3-dev/home/dev/act3"
 		;;
-    deploy)
-	    mkdir -p deploy
-	    dir=$(mktemp -d /tmp/act3.XXXXXX)
-	    trap "rm -rf '$dir'" EXIT
+	deploy)
+		mkdir -p deploy
+		dir=$(mktemp -d /tmp/act3.XXXXXX)
+		trap "rm -rf '$dir'" EXIT
 
-	    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $dir/act3
+		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $dir/act3
 
-	    ## Build static ffmpeg and ffprobe from source via Docker.
-	    ## See Dockerfile.ffmpeg for the build configuration.
-	    ## Docker layer caching makes rebuilds fast when only the Go app changes.
-	    ffmpeg_image=act3-ffmpeg
-	    if ! docker image inspect "$ffmpeg_image" >/dev/null 2>&1; then
-	        docker build -t "$ffmpeg_image" -f Dockerfile.ffmpeg video/ffmpeg
-	    fi
-	    docker run --rm "$ffmpeg_image" cat /out/ffmpeg > "$dir/ffmpeg"
-	    docker run --rm "$ffmpeg_image" cat /out/ffprobe > "$dir/ffprobe"
-	    chmod +x "$dir/ffmpeg" "$dir/ffprobe"
+		## Build static ffmpeg and ffprobe from source via Docker.
+		## See Dockerfile.ffmpeg for the build configuration.
+		## Docker layer caching makes rebuilds fast when only the Go app changes.
+		ffmpeg_image=act3-ffmpeg
+		if ! docker image inspect "$ffmpeg_image" >/dev/null 2>&1; then
+			docker build -t "$ffmpeg_image" -f Dockerfile.ffmpeg video/ffmpeg
+		fi
+		docker run --rm "$ffmpeg_image" cat /out/ffmpeg >"$dir/ffmpeg"
+		docker run --rm "$ffmpeg_image" cat /out/ffprobe >"$dir/ffprobe"
+		chmod +x "$dir/ffmpeg" "$dir/ffprobe"
 
 		version=$(build_version)
-	    image="act3.$version.app"
+		image="act3.$version.app"
 
-	    ## Combines given files and directories into a squashfs file system image.
-	    mksquashfs \
-	        box.meta \
-	        "$dir/act3" \
-	        "$dir/ffmpeg" \
-	        "$dir/ffprobe" \
-	        deploy/$image \
-	        -p '/data d 0555 0 0' \
-	        -p '/database d 0555 0 0' \
-	        -p '/storage d 0555 0 0' \
-	        -p '/tmp d 0755 0 0' \
-	        -p '/dev d 0555 0 0' \
-	        -p '/etc d 0555 0 0' \
-	        -p '/etc/ssl d 0555 0 0' \
-	        -p '/etc/ssl/cert.pem f 0444 0 0 cat /etc/ssl/cert.pem' \
-	        -p '/etc/resolv.conf f 0444 0 0 cat /dev/null' \
-	        -p '/proc d 0555 0 0' \
-	        -p '/sys d 0555 0 0' \
-	        -force-uid 500\
-	        -force-gid 500\
-	        -default-mode 0755
+		## Combines given files and directories into a squashfs file system image.
+		mksquashfs \
+			box.meta \
+			"$dir/act3" \
+			"$dir/ffmpeg" \
+			"$dir/ffprobe" \
+			deploy/$image \
+			-p '/data d 0555 0 0' \
+			-p '/database d 0555 0 0' \
+			-p '/storage d 0555 0 0' \
+			-p '/tmp d 0755 0 0' \
+			-p '/dev d 0555 0 0' \
+			-p '/etc d 0555 0 0' \
+			-p '/etc/ssl d 0555 0 0' \
+			-p '/etc/ssl/cert.pem f 0444 0 0 cat /etc/ssl/cert.pem' \
+			-p '/etc/resolv.conf f 0444 0 0 cat /dev/null' \
+			-p '/proc d 0555 0 0' \
+			-p '/sys d 0555 0 0' \
+			-force-uid 500 -force-gid 500 -default-mode 0755
 
-	    ls -l "$dir" deploy/$image
-	    ssh root@pepper app update act3 $version <deploy/$image
-	    ssh root@pepper boxdown act3
-	    ssh root@pepper boxup act3
+		ls -l "$dir" deploy/$image
+		ssh root@pepper app update act3 $version <deploy/$image
+		ssh root@pepper boxdown act3
+		ssh root@pepper boxup act3
 		echo $image >deploy/latest
-        ;;
-    git-setup)
-	    go build -o .git/hooks/act3vet ./analysis/cmd/act3vet
-	    cp lib/pre-commit .git/hooks/pre-commit
-	    chmod +x .git/hooks/pre-commit
-	    echo "Installed .git/hooks/pre-commit"
-	    if ! command -v dprint >/dev/null 2>&1; then
-	        echo "Installing dprint..."
-	        curl -fsSL https://dprint.dev/install.sh | sh
-	        echo 'export PATH="$HOME/.dprint/bin:$PATH"' >> "$HOME/.profile"
-	        echo "Installed dprint (restart shell or source ~/.profile)"
-	    fi
-	    ;;
-    "")
-        echo "Usage: $0 [command]"
-        echo
-        echo "Commands:"
-        echo
-        echo "    container  Build & run container for dev"
-        echo "    deploy     Deploy the image to the USB stick"
-        echo "    git-setup  Install git hooks"
-        echo
-        echo "Last deployed: $(latest_deployed_image)"
-        echo "Latest image:  $(latest_image)"
-        echo
-        ;;
-    *)
-        echo "Error: Unknown subcommand '$1'"
-        exit 1
-        ;;
+		;;
+	git-setup)
+		go build -o .git/hooks/act3vet ./analysis/cmd/act3vet
+		cp lib/pre-commit.sh .git/hooks/pre-commit
+		chmod +x .git/hooks/pre-commit
+		echo "Installed .git/hooks/pre-commit"
+		;;
+	"")
+		echo "Usage: $0 [command]"
+		echo
+		echo "Commands:"
+		echo
+		echo "    container  Build & run container for dev"
+		echo "    deploy     Deploy the image to the USB stick"
+		echo "    git-setup  Install git hooks"
+		echo
+		echo "Last deployed: $(latest_deployed_image)"
+		echo "Latest image:  $(latest_image)"
+		echo
+		;;
+	*)
+		echo "Error: Unknown subcommand '$1'"
+		exit 1
+		;;
 esac
