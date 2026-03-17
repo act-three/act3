@@ -50,31 +50,31 @@ func ProgressItem(pi *progress.Item) html.Node {
 	if err := pi.Error(); err != nil {
 		return FlexCol(
 			Class(progressItemClass(pi)),
-			Class("text-sm text-red-11"),
+			Class("v-progress-item-error"),
 		)(
 			Text(pi.Description()),
-			html.Div(Class("text-red-11/60"))(
+			html.Div(Class("v-progress-item-error-detail"))(
 				Text(truncate(err.Error(), 60)),
 			),
 		)
 	}
 	var etaNode html.Node
 	if eta := pi.ETA(); eta > 0 {
-		etaNode = html.Div(Class("text-gray-11/50"))(
+		etaNode = html.Div(Class("v-progress-muted"))(
 			Text(formatDuration(eta)),
 		)
 	}
 	return FlexCol(
 		Class(progressItemClass(pi)),
-		Class("text-gray-11/80 text-sm"),
+		Class("v-progress-item"),
 	)(
 		FlexRow(Gap2)(
 			Text(pi.Description()),
-			html.Div(Class("text-gray-11/50"))(
+			html.Div(Class("v-progress-muted"))(
 				Text(pi.Status()),
 			),
 			etaNode,
 		),
-		Progress(pi.Progress(), attr.Class("max-w-xs"), ProgressSM),
+		Progress(pi.Progress(), attr.Class("v-progress-bar"), ProgressSM),
 	)
 }
