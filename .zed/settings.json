@@ -3,16 +3,16 @@
 	"lsp": {
 		"gopls": {
 			"initialization_options": {
-				"buildFlags": ["-tags", "goexperiment.jsonv2"]
-			}
-		}
+				"buildFlags": ["-tags", "goexperiment.jsonv2"],
+			},
+		},
 	},
 	"languages": {
 		"JavaScript": {
-			"language_servers": ["!package-version-server", "..."]
+			"language_servers": ["!package-version-server", "..."],
 		},
 		"CSS": {
-			"format_on_save": "off"
-		}
-	}
+			"format_on_save": "off",
+		},
+	},
 }
