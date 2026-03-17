@@ -12,9 +12,7 @@
 	flex-shrink: 0;
 }
 
-.u-toggle-track[aria-checked="true"] {
-	background-color: var(--color-accent-9);
-}
+.u-toggle-track[aria-checked="true"] { background-color: var(--color-accent-9); }
 
 .u-toggle-track:disabled:not([data-animating]) {
 	opacity: 0.4;
@@ -35,6 +33,4 @@
 	transition: transform 150ms ease;
 }
 
-.u-toggle-track[aria-checked="true"] .u-toggle-thumb {
-	transform: translateX(1rem);
-}
+.u-toggle-track[aria-checked="true"] .u-toggle-thumb { transform: translateX(1rem); }

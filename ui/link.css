@@ -18,9 +18,7 @@
 }
 
 /* underline: hover — underline only on hover */
-.u-link[data-underline="hover"] {
-	text-decoration: none;
-}
+.u-link[data-underline="hover"] { text-decoration: none; }
 
 @media (hover: hover) {
 	/* underline: auto (default) — underline on hover */

@@ -13,16 +13,10 @@
 }
 
 /* progress item error detail */
-.v-progress-item-error-detail {
-	color: color-mix(in oklab, var(--color-accent-11) 60%, transparent);
-}
+.v-progress-item-error-detail { color: color-mix(in oklab, var(--color-accent-11) 60%, transparent); }
 
 /* progress item muted text (status, ETA) */
-.v-progress-muted {
-	color: color-mix(in oklab, var(--color-gray-11) 50%, transparent);
-}
+.v-progress-muted { color: color-mix(in oklab, var(--color-gray-11) 50%, transparent); }
 
 /* progress bar width constraint */
-.v-progress-bar {
-	max-width: 20rem;
-}
+.v-progress-bar { max-width: 20rem; }

@@ -11,9 +11,7 @@
 	backdrop-filter: blur(64px);
 	overflow: hidden;
 }
-.u-table[data-variant="surface"] .u-table-header .u-table-row {
-	background-color: var(--color-gray-a2);
-}
+.u-table[data-variant="surface"] .u-table-header .u-table-row { background-color: var(--color-gray-a2); }
 
 /* size-2 (default) */
 .u-table {
@@ -63,12 +61,8 @@
 	transition-property: color, background-color;
 	transition-duration: 150ms;
 }
-.u-table-body .u-table-row:last-child {
-	box-shadow: none;
-}
-.u-table-row[data-state="selected"] {
-	background-color: var(--color-gray-a2);
-}
+.u-table-body .u-table-row:last-child { box-shadow: none; }
+.u-table-row[data-state="selected"] { background-color: var(--color-gray-a2); }
 
 /* column headers */
 .u-table-head {
@@ -80,9 +74,7 @@
 	white-space: nowrap;
 	width: 100px;
 }
-.u-table-head:has([role="checkbox"]) {
-	padding-inline-end: 0;
-}
+.u-table-head:has([role="checkbox"]) { padding-inline-end: 0; }
 
 /* cells */
 .u-table-cell {
@@ -90,13 +82,9 @@
 	vertical-align: middle;
 	white-space: nowrap;
 }
-.u-table-cell:has([role="checkbox"]) {
-	padding-inline-end: 0;
-}
+.u-table-cell:has([role="checkbox"]) { padding-inline-end: 0; }
 
 @media (hover: hover) {
 	.u-table-row:hover td,
-	.u-table-row:hover th {
-		background-color: color-mix(in oklch, var(--color-gray-2) 50%, transparent);
-	}
+	.u-table-row:hover th { background-color: color-mix(in oklch, var(--color-gray-2) 50%, transparent); }
 }

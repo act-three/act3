@@ -1,16 +1,16 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/post-write.sh\"",
-            "name": "Post-write: goimports, sqlc, bundles"
-          }
-        ]
-      }
-    ]
-  }
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Write|Edit",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/post-write.sh\"",
+						"name": "Post-write: goimports, dprint, sqlc, bundles"
+					}
+				]
+			}
+		]
+	}
 }

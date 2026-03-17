@@ -11,12 +11,18 @@ import (
 )
 
 const audioTrackCreate = `-- name: AudioTrackCreate :one
-
-INSERT INTO AudioTrack (
-	VideoID, StreamIndex, Language, Title,
-	Channels, ChannelLayout, Codec
-) VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, videoid, streamindex, language, title, channels, channellayout, codec
+INSERT INTO
+	AudioTrack (
+		VideoID,
+		StreamIndex,
+		Language,
+		Title,
+		Channels,
+		ChannelLayout,
+		Codec
+	)
+VALUES
+	(?, ?, ?, ?, ?, ?, ?) RETURNING id, videoid, streamindex, language, title, channels, channellayout, codec
 `
 
 type AudioTrackCreateParams struct {
@@ -55,7 +61,10 @@ func (q *Queries) AudioTrackCreate(ctx context.Context, arg AudioTrackCreatePara
 }
 
 const audioTrackDeleteByVideoID = `-- name: AudioTrackDeleteByVideoID :exec
-DELETE FROM AudioTrack WHERE VideoID = ?
+DELETE FROM
+	AudioTrack
+WHERE
+	VideoID = ?
 `
 
 func (q *Queries) AudioTrackDeleteByVideoID(ctx context.Context, videoid string) error {
@@ -64,9 +73,14 @@ func (q *Queries) AudioTrackDeleteByVideoID(ctx context.Context, videoid string)
 }
 
 const audioTrackListByVideoID = `-- name: AudioTrackListByVideoID :many
-SELECT id, videoid, streamindex, language, title, channels, channellayout, codec FROM AudioTrack
-WHERE VideoID = ?
-ORDER BY StreamIndex
+SELECT
+	id, videoid, streamindex, language, title, channels, channellayout, codec
+FROM
+	AudioTrack
+WHERE
+	VideoID = ?
+ORDER BY
+	StreamIndex
 `
 
 func (q *Queries) AudioTrackListByVideoID(ctx context.Context, videoid string) ([]AudioTrack, error) {
@@ -102,8 +116,10 @@ func (q *Queries) AudioTrackListByVideoID(ctx context.Context, videoid string) (
 }
 
 const authorCreate = `-- name: AuthorCreate :one
-INSERT INTO User (Name) VALUES (?)
-RETURNING ID
+INSERT INTO
+	User (Name)
+VALUES
+	(?) RETURNING ID
 `
 
 func (q *Queries) AuthorCreate(ctx context.Context, name string) (string, error) {
@@ -114,8 +130,10 @@ func (q *Queries) AuthorCreate(ctx context.Context, name string) (string, error)
 }
 
 const authorDelete = `-- name: AuthorDelete :exec
-DELETE FROM User
-WHERE ID = ?
+DELETE FROM
+	User
+WHERE
+	ID = ?
 `
 
 func (q *Queries) AuthorDelete(ctx context.Context, id string) error {
@@ -124,9 +142,14 @@ func (q *Queries) AuthorDelete(ctx context.Context, id string) error {
 }
 
 const authorGet = `-- name: AuthorGet :one
-SELECT id, name FROM User
-WHERE ID = ?
-LIMIT 1
+SELECT
+	id, name
+FROM
+	User
+WHERE
+	ID = ?
+LIMIT
+	1
 `
 
 func (q *Queries) AuthorGet(ctx context.Context, id string) (User, error) {
@@ -137,8 +160,12 @@ func (q *Queries) AuthorGet(ctx context.Context, id string) (User, error) {
 }
 
 const authorList = `-- name: AuthorList :many
-SELECT id, name FROM User
-ORDER BY Name
+SELECT
+	id, name
+FROM
+	User
+ORDER BY
+	Name
 `
 
 func (q *Queries) AuthorList(ctx context.Context) ([]User, error) {
@@ -165,15 +192,10 @@ func (q *Queries) AuthorList(ctx context.Context) ([]User, error) {
 }
 
 const downloadCreate = `-- name: DownloadCreate :one
-INSERT INTO Download
-(
-	State,
-	Title,
-	Torrent,
-	InfoHash
-)
-VALUES (?, ?, ?, ?)
-RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+INSERT INTO
+	Download (State, Title, Torrent, InfoHash)
+VALUES
+	(?, ?, ?, ?) RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
 `
 
 type DownloadCreateParams struct {
@@ -208,7 +230,12 @@ func (q *Queries) DownloadCreate(ctx context.Context, arg DownloadCreateParams) 
 }
 
 const downloadGet = `-- name: DownloadGet :one
-SELECT id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download WHERE ID = ?
+SELECT
+	id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+FROM
+	Download
+WHERE
+	ID = ?
 `
 
 func (q *Queries) DownloadGet(ctx context.Context, id string) (Download, error) {
@@ -231,7 +258,12 @@ func (q *Queries) DownloadGet(ctx context.Context, id string) (Download, error) 
 }
 
 const downloadGetByInfoHash = `-- name: DownloadGetByInfoHash :one
-SELECT id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download WHERE InfoHash = ?
+SELECT
+	id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+FROM
+	Download
+WHERE
+	InfoHash = ?
 `
 
 func (q *Queries) DownloadGetByInfoHash(ctx context.Context, infohash string) (Download, error) {
@@ -254,8 +286,12 @@ func (q *Queries) DownloadGetByInfoHash(ctx context.Context, infohash string) (D
 }
 
 const downloadList = `-- name: DownloadList :many
-SELECT id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download
-ORDER BY ID DESC
+SELECT
+	id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+FROM
+	Download
+ORDER BY
+	ID DESC
 `
 
 func (q *Queries) DownloadList(ctx context.Context) ([]Download, error) {
@@ -294,9 +330,14 @@ func (q *Queries) DownloadList(ctx context.Context) ([]Download, error) {
 }
 
 const downloadListByPlanMovieEditionID = `-- name: DownloadListByPlanMovieEditionID :many
-SELECT id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download
-WHERE PlanMovieEditionID = ?
-ORDER BY ID DESC
+SELECT
+	id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+FROM
+	Download
+WHERE
+	PlanMovieEditionID = ?
+ORDER BY
+	ID DESC
 `
 
 func (q *Queries) DownloadListByPlanMovieEditionID(ctx context.Context, planmovieeditionid *string) ([]Download, error) {
@@ -335,9 +376,14 @@ func (q *Queries) DownloadListByPlanMovieEditionID(ctx context.Context, planmovi
 }
 
 const downloadListByPlanSeriesEditionID = `-- name: DownloadListByPlanSeriesEditionID :many
-SELECT id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download
-WHERE PlanSeriesEditionID = ?
-ORDER BY ID DESC
+SELECT
+	id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+FROM
+	Download
+WHERE
+	PlanSeriesEditionID = ?
+ORDER BY
+	ID DESC
 `
 
 func (q *Queries) DownloadListByPlanSeriesEditionID(ctx context.Context, planserieseditionid *string) ([]Download, error) {
@@ -376,8 +422,12 @@ func (q *Queries) DownloadListByPlanSeriesEditionID(ctx context.Context, planser
 }
 
 const downloadListInfoHashesDownloading = `-- name: DownloadListInfoHashesDownloading :many
-SELECT InfoHash FROM Download
-WHERE State = 'downloading'
+SELECT
+	InfoHash
+FROM
+	Download
+WHERE
+	State = 'downloading'
 `
 
 func (q *Queries) DownloadListInfoHashesDownloading(ctx context.Context) ([]string, error) {
@@ -404,7 +454,13 @@ func (q *Queries) DownloadListInfoHashesDownloading(ctx context.Context) ([]stri
 }
 
 const downloadPlanCountActiveByDownloadID = `-- name: DownloadPlanCountActiveByDownloadID :one
-SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ? AND State != 'imported'
+SELECT
+	COUNT(*)
+FROM
+	DownloadPlan
+WHERE
+	DownloadID = ?
+	AND State != 'imported'
 `
 
 func (q *Queries) DownloadPlanCountActiveByDownloadID(ctx context.Context, downloadid string) (int64, error) {
@@ -415,7 +471,12 @@ func (q *Queries) DownloadPlanCountActiveByDownloadID(ctx context.Context, downl
 }
 
 const downloadPlanCountByDownloadID = `-- name: DownloadPlanCountByDownloadID :one
-SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ?
+SELECT
+	COUNT(*)
+FROM
+	DownloadPlan
+WHERE
+	DownloadID = ?
 `
 
 func (q *Queries) DownloadPlanCountByDownloadID(ctx context.Context, downloadid string) (int64, error) {
@@ -426,8 +487,10 @@ func (q *Queries) DownloadPlanCountByDownloadID(ctx context.Context, downloadid 
 }
 
 const downloadPlanCreate = `-- name: DownloadPlanCreate :exec
-INSERT INTO DownloadPlan (DownloadID, Path, EpisodeID, MovieEditionID)
-VALUES (?, ?, ?, ?)
+INSERT INTO
+	DownloadPlan (DownloadID, Path, EpisodeID, MovieEditionID)
+VALUES
+	(?, ?, ?, ?)
 `
 
 type DownloadPlanCreateParams struct {
@@ -448,7 +511,10 @@ func (q *Queries) DownloadPlanCreate(ctx context.Context, arg DownloadPlanCreate
 }
 
 const downloadPlanDeleteByDownloadID = `-- name: DownloadPlanDeleteByDownloadID :exec
-DELETE FROM DownloadPlan WHERE DownloadID = ?
+DELETE FROM
+	DownloadPlan
+WHERE
+	DownloadID = ?
 `
 
 func (q *Queries) DownloadPlanDeleteByDownloadID(ctx context.Context, downloadid string) error {
@@ -457,7 +523,12 @@ func (q *Queries) DownloadPlanDeleteByDownloadID(ctx context.Context, downloadid
 }
 
 const downloadPlanListByDownloadID = `-- name: DownloadPlanListByDownloadID :many
-SELECT downloadid, path, episodeid, movieeditionid, state FROM DownloadPlan WHERE DownloadID = ?
+SELECT
+	downloadid, path, episodeid, movieeditionid, state
+FROM
+	DownloadPlan
+WHERE
+	DownloadID = ?
 `
 
 func (q *Queries) DownloadPlanListByDownloadID(ctx context.Context, downloadid string) ([]DownloadPlan, error) {
@@ -490,7 +561,13 @@ func (q *Queries) DownloadPlanListByDownloadID(ctx context.Context, downloadid s
 }
 
 const downloadPlanUpdateState = `-- name: DownloadPlanUpdateState :exec
-UPDATE DownloadPlan SET State = ? WHERE DownloadID = ? AND Path = ?
+UPDATE
+	DownloadPlan
+SET
+	State = ?
+WHERE
+	DownloadID = ?
+	AND Path = ?
 `
 
 type DownloadPlanUpdateStateParams struct {
@@ -505,7 +582,12 @@ func (q *Queries) DownloadPlanUpdateState(ctx context.Context, arg DownloadPlanU
 }
 
 const downloadUpdateAutoImport = `-- name: DownloadUpdateAutoImport :one
-UPDATE Download SET AutoImport = ? WHERE ID = ? RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+UPDATE
+	Download
+SET
+	AutoImport = ?
+WHERE
+	ID = ? RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
 `
 
 type DownloadUpdateAutoImportParams struct {
@@ -533,7 +615,13 @@ func (q *Queries) DownloadUpdateAutoImport(ctx context.Context, arg DownloadUpda
 }
 
 const downloadUpdateError = `-- name: DownloadUpdateError :one
-UPDATE Download SET State = 'error', Error = ? WHERE ID = ? RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+UPDATE
+	Download
+SET
+	State = 'error',
+	Error = ?
+WHERE
+	ID = ? RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
 `
 
 type DownloadUpdateErrorParams struct {
@@ -561,10 +649,12 @@ func (q *Queries) DownloadUpdateError(ctx context.Context, arg DownloadUpdateErr
 }
 
 const downloadUpdatePlanMovie = `-- name: DownloadUpdatePlanMovie :one
-UPDATE Download SET
+UPDATE
+	Download
+SET
 	PlanMovieEditionID = ?
-WHERE ID = ?
-RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+WHERE
+	ID = ? RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
 `
 
 type DownloadUpdatePlanMovieParams struct {
@@ -592,10 +682,12 @@ func (q *Queries) DownloadUpdatePlanMovie(ctx context.Context, arg DownloadUpdat
 }
 
 const downloadUpdatePlanSeries = `-- name: DownloadUpdatePlanSeries :one
-UPDATE Download SET
+UPDATE
+	Download
+SET
 	PlanSeriesEditionID = ?
-WHERE ID = ?
-RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+WHERE
+	ID = ? RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
 `
 
 type DownloadUpdatePlanSeriesParams struct {
@@ -623,11 +715,14 @@ func (q *Queries) DownloadUpdatePlanSeries(ctx context.Context, arg DownloadUpda
 }
 
 const downloadUpdateProgress = `-- name: DownloadUpdateProgress :one
-UPDATE Download SET
+UPDATE
+	Download
+SET
 	State = ?,
 	Progress = ?,
 	Error = ''
-WHERE ID = ? RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
+WHERE
+	ID = ? RETURNING id, createdat, state, title, error, torrent, infohash, progress, autoimport, planserieseditionid, planmovieeditionid
 `
 
 type DownloadUpdateProgressParams struct {
@@ -656,19 +751,19 @@ func (q *Queries) DownloadUpdateProgress(ctx context.Context, arg DownloadUpdate
 }
 
 const episodeCreate = `-- name: EpisodeCreate :one
-INSERT INTO Episode
-(
-	Slug,
-	Title,
-	Summary,
-	Type,
-	Airdate,
-	Runtime,
-	TVmazeURL,
-	TVmazeImageURL
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl
+INSERT INTO
+	Episode (
+		Slug,
+		Title,
+		Summary,
+		Type,
+		Airdate,
+		Runtime,
+		TVmazeURL,
+		TVmazeImageURL
+	)
+VALUES
+	(?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl
 `
 
 type EpisodeCreateParams struct {
@@ -709,7 +804,12 @@ func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (E
 }
 
 const episodeGet = `-- name: EpisodeGet :one
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl FROM Episode WHERE ID = ?
+SELECT
+	id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl
+FROM
+	Episode
+WHERE
+	ID = ?
 `
 
 func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
@@ -730,7 +830,12 @@ func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
 }
 
 const episodeGetBySlug = `-- name: EpisodeGetBySlug :one
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl FROM Episode WHERE Slug = ?
+SELECT
+	id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl
+FROM
+	Episode
+WHERE
+	Slug = ?
 `
 
 func (q *Queries) EpisodeGetBySlug(ctx context.Context, slug string) (Episode, error) {
@@ -751,12 +856,28 @@ func (q *Queries) EpisodeGetBySlug(ctx context.Context, slug string) (Episode, e
 }
 
 const episodeListByEditionID = `-- name: EpisodeListByEditionID :many
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl FROM Episode
-WHERE ID IN (
-	SELECT ID FROM SeasonEpisode
-	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
-)
-ORDER BY ID
+SELECT
+	id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl
+FROM
+	Episode
+WHERE
+	ID IN (
+		SELECT
+			ID
+		FROM
+			SeasonEpisode
+		WHERE
+			SeasonID IN (
+				SELECT
+					ID
+				FROM
+					Season
+				WHERE
+					EditionID = ?
+			)
+	)
+ORDER BY
+	ID
 `
 
 func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) ([]Episode, error) {
@@ -793,15 +914,35 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 }
 
 const episodeListBySeriesID = `-- name: EpisodeListBySeriesID :many
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl FROM Episode
-WHERE ID IN (
-	SELECT ID FROM SeasonEpisode
-	WHERE SeasonID IN (
-		SELECT ID FROM Season
-		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+SELECT
+	id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl
+FROM
+	Episode
+WHERE
+	ID IN (
+		SELECT
+			ID
+		FROM
+			SeasonEpisode
+		WHERE
+			SeasonID IN (
+				SELECT
+					ID
+				FROM
+					Season
+				WHERE
+					EditionID IN (
+						SELECT
+							ID
+						FROM
+							SeriesEdition
+						WHERE
+							SeriesID = ?
+					)
+			)
 	)
-)
-ORDER BY ID
+ORDER BY
+	ID
 `
 
 func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([]Episode, error) {
@@ -838,9 +979,10 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 }
 
 const episodeVideoCreate = `-- name: EpisodeVideoCreate :one
-INSERT INTO EpisodeVideo (EpisodeID, VideoID)
-VALUES (?, ?)
-RETURNING episodeid, videoid
+INSERT INTO
+	EpisodeVideo (EpisodeID, VideoID)
+VALUES
+	(?, ?) RETURNING episodeid, videoid
 `
 
 type EpisodeVideoCreateParams struct {
@@ -856,11 +998,26 @@ func (q *Queries) EpisodeVideoCreate(ctx context.Context, arg EpisodeVideoCreate
 }
 
 const episodeVideoListByEditionID = `-- name: EpisodeVideoListByEditionID :many
-SELECT episodeid, videoid FROM EpisodeVideo
-WHERE EpisodeID IN (
-	SELECT EpisodeID FROM SeasonEpisode
-	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
-)
+SELECT
+	episodeid, videoid
+FROM
+	EpisodeVideo
+WHERE
+	EpisodeID IN (
+		SELECT
+			EpisodeID
+		FROM
+			SeasonEpisode
+		WHERE
+			SeasonID IN (
+				SELECT
+					ID
+				FROM
+					Season
+				WHERE
+					EditionID = ?
+			)
+	)
 `
 
 func (q *Queries) EpisodeVideoListByEditionID(ctx context.Context, editionid string) ([]EpisodeVideo, error) {
@@ -887,14 +1044,33 @@ func (q *Queries) EpisodeVideoListByEditionID(ctx context.Context, editionid str
 }
 
 const episodeVideoListBySeriesID = `-- name: EpisodeVideoListBySeriesID :many
-SELECT episodeid, videoid FROM EpisodeVideo
-WHERE EpisodeID IN (
-	SELECT EpisodeID FROM SeasonEpisode
-	WHERE SeasonID IN (
-		SELECT ID FROM Season
-		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+SELECT
+	episodeid, videoid
+FROM
+	EpisodeVideo
+WHERE
+	EpisodeID IN (
+		SELECT
+			EpisodeID
+		FROM
+			SeasonEpisode
+		WHERE
+			SeasonID IN (
+				SELECT
+					ID
+				FROM
+					Season
+				WHERE
+					EditionID IN (
+						SELECT
+							ID
+						FROM
+							SeriesEdition
+						WHERE
+							SeriesID = ?
+					)
+			)
 	)
-)
 `
 
 func (q *Queries) EpisodeVideoListBySeriesID(ctx context.Context, seriesid string) ([]EpisodeVideo, error) {
@@ -921,8 +1097,12 @@ func (q *Queries) EpisodeVideoListBySeriesID(ctx context.Context, seriesid strin
 }
 
 const episodeVideoListByVideoID = `-- name: EpisodeVideoListByVideoID :many
-SELECT episodeid, videoid FROM EpisodeVideo
-WHERE VideoID = ?
+SELECT
+	episodeid, videoid
+FROM
+	EpisodeVideo
+WHERE
+	VideoID = ?
 `
 
 func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string) ([]EpisodeVideo, error) {
@@ -949,9 +1129,20 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 }
 
 const movieCreate = `-- name: MovieCreate :one
-INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL, TMDBID, IMDBID)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid
+INSERT INTO
+	Movie (
+		ID,
+		Slug,
+		Title,
+		Summary,
+		Year,
+		Runtime,
+		ImageURL,
+		TMDBID,
+		IMDBID
+	)
+VALUES
+	(?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid
 `
 
 type MovieCreateParams struct {
@@ -994,8 +1185,10 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 }
 
 const movieEditionCreate = `-- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, MovieID) VALUES (?, ?)
-RETURNING id, title, movieid
+INSERT INTO
+	MovieEdition (Title, MovieID)
+VALUES
+	(?, ?) RETURNING id, title, movieid
 `
 
 type MovieEditionCreateParams struct {
@@ -1011,7 +1204,12 @@ func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreate
 }
 
 const movieEditionGet = `-- name: MovieEditionGet :one
-SELECT id, title, movieid FROM MovieEdition WHERE ID = ?
+SELECT
+	id, title, movieid
+FROM
+	MovieEdition
+WHERE
+	ID = ?
 `
 
 func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition, error) {
@@ -1022,7 +1220,12 @@ func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition,
 }
 
 const movieEditionListByMovieID = `-- name: MovieEditionListByMovieID :many
-SELECT id, title, movieid FROM MovieEdition WHERE MovieID = ?
+SELECT
+	id, title, movieid
+FROM
+	MovieEdition
+WHERE
+	MovieID = ?
 `
 
 func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string) ([]MovieEdition, error) {
@@ -1049,7 +1252,12 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 }
 
 const movieGet = `-- name: MovieGet :one
-SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie WHERE ID = ?
+SELECT
+	id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid
+FROM
+	Movie
+WHERE
+	ID = ?
 `
 
 func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
@@ -1070,8 +1278,19 @@ func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
 }
 
 const movieGetByEditionID = `-- name: MovieGetByEditionID :one
-SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie
-WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID = ?)
+SELECT
+	id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid
+FROM
+	Movie
+WHERE
+	ID IN (
+		SELECT
+			MovieID
+		FROM
+			MovieEdition
+		WHERE
+			MovieEdition.ID = ?
+	)
 `
 
 func (q *Queries) MovieGetByEditionID(ctx context.Context, id string) (Movie, error) {
@@ -1092,7 +1311,12 @@ func (q *Queries) MovieGetByEditionID(ctx context.Context, id string) (Movie, er
 }
 
 const movieGetBySlug = `-- name: MovieGetBySlug :one
-SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie WHERE Slug = ?
+SELECT
+	id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid
+FROM
+	Movie
+WHERE
+	Slug = ?
 `
 
 func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error) {
@@ -1113,8 +1337,12 @@ func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error
 }
 
 const movieList = `-- name: MovieList :many
-SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie
-ORDER BY Title
+SELECT
+	id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid
+FROM
+	Movie
+ORDER BY
+	Title
 `
 
 func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
@@ -1151,7 +1379,12 @@ func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
 }
 
 const movieListByTMDBID = `-- name: MovieListByTMDBID :many
-SELECT id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid FROM Movie WHERE TMDBID IN (/*SLICE:ids*/?)
+SELECT
+	id, slug, title, summary, year, runtime, imageurl, tmdbid, imdbid
+FROM
+	Movie
+WHERE
+	TMDBID IN (/*SLICE:ids*/?)
 `
 
 func (q *Queries) MovieListByTMDBID(ctx context.Context, ids []*int64) ([]Movie, error) {
@@ -1198,7 +1431,12 @@ func (q *Queries) MovieListByTMDBID(ctx context.Context, ids []*int64) ([]Movie,
 }
 
 const movieSlugExists = `-- name: MovieSlugExists :one
-SELECT COUNT(*) FROM Movie WHERE Slug = ?
+SELECT
+	COUNT(*)
+FROM
+	Movie
+WHERE
+	Slug = ?
 `
 
 func (q *Queries) MovieSlugExists(ctx context.Context, slug string) (int64, error) {
@@ -1209,9 +1447,10 @@ func (q *Queries) MovieSlugExists(ctx context.Context, slug string) (int64, erro
 }
 
 const movieVideoCreate = `-- name: MovieVideoCreate :one
-INSERT INTO MovieVideo (MovieEditionID, VideoID)
-VALUES (?, ?)
-RETURNING movieeditionid, videoid
+INSERT INTO
+	MovieVideo (MovieEditionID, VideoID)
+VALUES
+	(?, ?) RETURNING movieeditionid, videoid
 `
 
 type MovieVideoCreateParams struct {
@@ -1227,8 +1466,12 @@ func (q *Queries) MovieVideoCreate(ctx context.Context, arg MovieVideoCreatePara
 }
 
 const movieVideoListByMovieEditionID = `-- name: MovieVideoListByMovieEditionID :many
-SELECT movieeditionid, videoid FROM MovieVideo
-WHERE MovieEditionID = ?
+SELECT
+	movieeditionid, videoid
+FROM
+	MovieVideo
+WHERE
+	MovieEditionID = ?
 `
 
 func (q *Queries) MovieVideoListByMovieEditionID(ctx context.Context, movieeditionid string) ([]MovieVideo, error) {
@@ -1255,8 +1498,19 @@ func (q *Queries) MovieVideoListByMovieEditionID(ctx context.Context, movieediti
 }
 
 const movieVideoListByMovieID = `-- name: MovieVideoListByMovieID :many
-SELECT movieeditionid, videoid FROM MovieVideo
-WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
+SELECT
+	movieeditionid, videoid
+FROM
+	MovieVideo
+WHERE
+	MovieEditionID IN (
+		SELECT
+			ID
+		FROM
+			MovieEdition
+		WHERE
+			MovieID = ?
+	)
 `
 
 func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) ([]MovieVideo, error) {
@@ -1283,13 +1537,10 @@ func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) (
 }
 
 const releaseCreate = `-- name: ReleaseCreate :one
-INSERT INTO Release
-(
-	Name,
-	InfoHash
-)
-VALUES (?, ?)
-RETURNING id, name, infohash
+INSERT INTO
+	Release (Name, InfoHash)
+VALUES
+	(?, ?) RETURNING id, name, infohash
 `
 
 type ReleaseCreateParams struct {
@@ -1305,7 +1556,12 @@ func (q *Queries) ReleaseCreate(ctx context.Context, arg ReleaseCreateParams) (R
 }
 
 const releaseGet = `-- name: ReleaseGet :one
-SELECT id, name, infohash FROM Release WHERE ID = ?
+SELECT
+	id, name, infohash
+FROM
+	Release
+WHERE
+	ID = ?
 `
 
 func (q *Queries) ReleaseGet(ctx context.Context, id string) (Release, error) {
@@ -1316,7 +1572,12 @@ func (q *Queries) ReleaseGet(ctx context.Context, id string) (Release, error) {
 }
 
 const releaseGetByInfoHash = `-- name: ReleaseGetByInfoHash :one
-SELECT id, name, infohash FROM Release WHERE InfoHash = ?
+SELECT
+	id, name, infohash
+FROM
+	Release
+WHERE
+	InfoHash = ?
 `
 
 func (q *Queries) ReleaseGetByInfoHash(ctx context.Context, infohash *string) (Release, error) {
@@ -1327,8 +1588,13 @@ func (q *Queries) ReleaseGetByInfoHash(ctx context.Context, infohash *string) (R
 }
 
 const renditionForStreamingCountUnencoded = `-- name: RenditionForStreamingCountUnencoded :one
-SELECT COUNT(*) FROM RenditionForStreaming
-WHERE VideoID = ? AND Hash = ''
+SELECT
+	COUNT(*)
+FROM
+	RenditionForStreaming
+WHERE
+	VideoID = ?
+	AND Hash = ''
 `
 
 func (q *Queries) RenditionForStreamingCountUnencoded(ctx context.Context, videoid string) (int64, error) {
@@ -1339,19 +1605,20 @@ func (q *Queries) RenditionForStreamingCountUnencoded(ctx context.Context, video
 }
 
 const renditionForStreamingCreate = `-- name: RenditionForStreamingCreate :one
-INSERT INTO RenditionForStreaming (
-	VideoID,
-	Remux,
-	Codec,
-	TargetBitrate,
-	MaxHeight,
-	MaxFPS,
-	CopyAudio,
-	SurroundAudio,
-	Priority
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+INSERT INTO
+	RenditionForStreaming (
+		VideoID,
+		Remux,
+		Codec,
+		TargetBitrate,
+		MaxHeight,
+		MaxFPS,
+		CopyAudio,
+		SurroundAudio,
+		Priority
+	)
+VALUES
+	(?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
 `
 
 type RenditionForStreamingCreateParams struct {
@@ -1397,7 +1664,10 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 }
 
 const renditionForStreamingDeleteByVideoID = `-- name: RenditionForStreamingDeleteByVideoID :exec
-DELETE FROM RenditionForStreaming WHERE VideoID = ?
+DELETE FROM
+	RenditionForStreaming
+WHERE
+	VideoID = ?
 `
 
 func (q *Queries) RenditionForStreamingDeleteByVideoID(ctx context.Context, videoid string) error {
@@ -1406,8 +1676,12 @@ func (q *Queries) RenditionForStreamingDeleteByVideoID(ctx context.Context, vide
 }
 
 const renditionForStreamingGet = `-- name: RenditionForStreamingGet :one
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
-WHERE ID = ?
+SELECT
+	id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+FROM
+	RenditionForStreaming
+WHERE
+	ID = ?
 `
 
 func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (RenditionForStreaming, error) {
@@ -1431,8 +1705,19 @@ func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (Rend
 }
 
 const renditionForStreamingListByMovieEditionID = `-- name: RenditionForStreamingListByMovieEditionID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
-WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
+SELECT
+	id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+FROM
+	RenditionForStreaming
+WHERE
+	VideoID IN (
+		SELECT
+			VideoID
+		FROM
+			MovieVideo
+		WHERE
+			MovieEditionID = ?
+	)
 `
 
 func (q *Queries) RenditionForStreamingListByMovieEditionID(ctx context.Context, movieeditionid string) ([]RenditionForStreaming, error) {
@@ -1472,11 +1757,26 @@ func (q *Queries) RenditionForStreamingListByMovieEditionID(ctx context.Context,
 }
 
 const renditionForStreamingListByMovieID = `-- name: RenditionForStreamingListByMovieID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
-WHERE VideoID IN (
-	SELECT VideoID FROM MovieVideo
-	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
-)
+SELECT
+	id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+FROM
+	RenditionForStreaming
+WHERE
+	VideoID IN (
+		SELECT
+			VideoID
+		FROM
+			MovieVideo
+		WHERE
+			MovieEditionID IN (
+				SELECT
+					ID
+				FROM
+					MovieEdition
+				WHERE
+					MovieID = ?
+			)
+	)
 `
 
 func (q *Queries) RenditionForStreamingListByMovieID(ctx context.Context, movieid string) ([]RenditionForStreaming, error) {
@@ -1516,8 +1816,19 @@ func (q *Queries) RenditionForStreamingListByMovieID(ctx context.Context, moviei
 }
 
 const renditionForStreamingListByVideoID = `-- name: RenditionForStreamingListByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
-WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
+SELECT
+	id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+FROM
+	RenditionForStreaming
+WHERE
+	VideoID IN (
+		SELECT
+			VideoID
+		FROM
+			EpisodeVideo
+		WHERE
+			EpisodeID = ?
+	)
 `
 
 func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episodeid string) ([]RenditionForStreaming, error) {
@@ -1557,8 +1868,12 @@ func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episod
 }
 
 const renditionForStreamingListDirectByVideoID = `-- name: RenditionForStreamingListDirectByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
-WHERE VideoID = ?
+SELECT
+	id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+FROM
+	RenditionForStreaming
+WHERE
+	VideoID = ?
 `
 
 func (q *Queries) RenditionForStreamingListDirectByVideoID(ctx context.Context, videoid string) ([]RenditionForStreaming, error) {
@@ -1598,8 +1913,13 @@ func (q *Queries) RenditionForStreamingListDirectByVideoID(ctx context.Context, 
 }
 
 const renditionForStreamingListEncodedByVideoID = `-- name: RenditionForStreamingListEncodedByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
-WHERE VideoID = ? AND Hash != ''
+SELECT
+	id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+FROM
+	RenditionForStreaming
+WHERE
+	VideoID = ?
+	AND Hash != ''
 `
 
 func (q *Queries) RenditionForStreamingListEncodedByVideoID(ctx context.Context, videoid string) ([]RenditionForStreaming, error) {
@@ -1639,9 +1959,17 @@ func (q *Queries) RenditionForStreamingListEncodedByVideoID(ctx context.Context,
 }
 
 const renditionForStreamingNextUnencoded = `-- name: RenditionForStreamingNextUnencoded :one
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority FROM RenditionForStreaming
-WHERE VideoID = ? AND Hash = ''
-ORDER BY Priority ASC LIMIT 1
+SELECT
+	id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+FROM
+	RenditionForStreaming
+WHERE
+	VideoID = ?
+	AND Hash = ''
+ORDER BY
+	Priority ASC
+LIMIT
+	1
 `
 
 func (q *Queries) RenditionForStreamingNextUnencoded(ctx context.Context, videoid string) (RenditionForStreaming, error) {
@@ -1665,10 +1993,13 @@ func (q *Queries) RenditionForStreamingNextUnencoded(ctx context.Context, videoi
 }
 
 const renditionForStreamingUpdateEncode = `-- name: RenditionForStreamingUpdateEncode :one
-UPDATE RenditionForStreaming
-SET Hash = ?, Playlist = ?
-WHERE ID = ?
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
+UPDATE
+	RenditionForStreaming
+SET
+	Hash = ?,
+	Playlist = ?
+WHERE
+	ID = ? RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, hash, playlist, priority
 `
 
 type RenditionForStreamingUpdateEncodeParams struct {
@@ -1698,7 +2029,13 @@ func (q *Queries) RenditionForStreamingUpdateEncode(ctx context.Context, arg Ren
 }
 
 const schemaVersionGet = `-- name: SchemaVersionGet :one
-SELECT version, digest FROM schema LIMIT 1
+SELECT
+	version,
+	digest
+FROM
+	schema
+LIMIT
+	1
 `
 
 type SchemaVersionGetRow struct {
@@ -1714,7 +2051,11 @@ func (q *Queries) SchemaVersionGet(ctx context.Context) (SchemaVersionGetRow, er
 }
 
 const schemaVersionSet = `-- name: SchemaVersionSet :exec
-UPDATE schema SET version = ?, digest = ?
+UPDATE
+	schema
+SET
+	version = ?,
+	digest = ?
 `
 
 type SchemaVersionSetParams struct {
@@ -1728,21 +2069,21 @@ func (q *Queries) SchemaVersionSet(ctx context.Context, arg SchemaVersionSetPara
 }
 
 const seasonCreate = `-- name: SeasonCreate :one
-INSERT INTO Season
-(
-	EditionID,
-	SortKey,
-	Name,
-	Number,
-	TVmazeURL,
-	Summary,
-	EpisodeOrder,
-	PremieredOn,
-	EndedOn,
-	TVmazeImageURL
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl
+INSERT INTO
+	Season (
+		EditionID,
+		SortKey,
+		Name,
+		Number,
+		TVmazeURL,
+		Summary,
+		EpisodeOrder,
+		PremieredOn,
+		EndedOn,
+		TVmazeImageURL
+	)
+VALUES
+	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl
 `
 
 type SeasonCreateParams struct {
@@ -1789,8 +2130,10 @@ func (q *Queries) SeasonCreate(ctx context.Context, arg SeasonCreateParams) (Sea
 }
 
 const seasonEpisodeCreate = `-- name: SeasonEpisodeCreate :exec
-INSERT INTO SeasonEpisode (SeasonID, EpisodeID, SortKey, Label, Number)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO
+	SeasonEpisode (SeasonID, EpisodeID, SortKey, Label, Number)
+VALUES
+	(?, ?, ?, ?, ?)
 `
 
 type SeasonEpisodeCreateParams struct {
@@ -1813,9 +2156,21 @@ func (q *Queries) SeasonEpisodeCreate(ctx context.Context, arg SeasonEpisodeCrea
 }
 
 const seasonEpisodeListByEditionID = `-- name: SeasonEpisodeListByEditionID :many
-SELECT seasonid, episodeid, sortkey, label, number FROM SeasonEpisode
-WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
-ORDER BY SortKey
+SELECT
+	seasonid, episodeid, sortkey, label, number
+FROM
+	SeasonEpisode
+WHERE
+	SeasonID IN (
+		SELECT
+			ID
+		FROM
+			Season
+		WHERE
+			EditionID = ?
+	)
+ORDER BY
+	SortKey
 `
 
 func (q *Queries) SeasonEpisodeListByEditionID(ctx context.Context, editionid string) ([]SeasonEpisode, error) {
@@ -1848,7 +2203,12 @@ func (q *Queries) SeasonEpisodeListByEditionID(ctx context.Context, editionid st
 }
 
 const seasonEpisodeListByEpisodeID = `-- name: SeasonEpisodeListByEpisodeID :many
-SELECT seasonid, episodeid, sortkey, label, number FROM SeasonEpisode WHERE EpisodeID = ?
+SELECT
+	seasonid, episodeid, sortkey, label, number
+FROM
+	SeasonEpisode
+WHERE
+	EpisodeID = ?
 `
 
 func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid string) ([]SeasonEpisode, error) {
@@ -1881,12 +2241,28 @@ func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid st
 }
 
 const seasonEpisodeListBySeriesID = `-- name: SeasonEpisodeListBySeriesID :many
-SELECT seasonid, episodeid, sortkey, label, number FROM SeasonEpisode
-WHERE SeasonID IN (
-	SELECT ID FROM Season
-	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-)
-ORDER BY SortKey
+SELECT
+	seasonid, episodeid, sortkey, label, number
+FROM
+	SeasonEpisode
+WHERE
+	SeasonID IN (
+		SELECT
+			ID
+		FROM
+			Season
+		WHERE
+			EditionID IN (
+				SELECT
+					ID
+				FROM
+					SeriesEdition
+				WHERE
+					SeriesID = ?
+			)
+	)
+ORDER BY
+	SortKey
 `
 
 func (q *Queries) SeasonEpisodeListBySeriesID(ctx context.Context, seriesid string) ([]SeasonEpisode, error) {
@@ -1919,7 +2295,12 @@ func (q *Queries) SeasonEpisodeListBySeriesID(ctx context.Context, seriesid stri
 }
 
 const seasonGet = `-- name: SeasonGet :one
-SELECT id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl FROM Season WHERE ID = ?
+SELECT
+	id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl
+FROM
+	Season
+WHERE
+	ID = ?
 `
 
 func (q *Queries) SeasonGet(ctx context.Context, id string) (Season, error) {
@@ -1942,8 +2323,14 @@ func (q *Queries) SeasonGet(ctx context.Context, id string) (Season, error) {
 }
 
 const seasonListByEditionID = `-- name: SeasonListByEditionID :many
-SELECT id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl FROM Season WHERE EditionID = ?
-ORDER BY SortKey
+SELECT
+	id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl
+FROM
+	Season
+WHERE
+	EditionID = ?
+ORDER BY
+	SortKey
 `
 
 func (q *Queries) SeasonListByEditionID(ctx context.Context, editionid string) ([]Season, error) {
@@ -1982,9 +2369,21 @@ func (q *Queries) SeasonListByEditionID(ctx context.Context, editionid string) (
 }
 
 const seasonListBySeriesID = `-- name: SeasonListBySeriesID :many
-SELECT id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl FROM Season
-WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-ORDER BY SortKey
+SELECT
+	id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl
+FROM
+	Season
+WHERE
+	EditionID IN (
+		SELECT
+			ID
+		FROM
+			SeriesEdition
+		WHERE
+			SeriesID = ?
+	)
+ORDER BY
+	SortKey
 `
 
 func (q *Queries) SeasonListBySeriesID(ctx context.Context, seriesid string) ([]Season, error) {
@@ -2023,26 +2422,26 @@ func (q *Queries) SeasonListBySeriesID(ctx context.Context, seriesid string) ([]
 }
 
 const seriesCreate = `-- name: SeriesCreate :one
-INSERT INTO Series
-(
-	ID,
-	Slug,
-	Title,
-	Summary,
-	Status,
-	Language,
-	PremieredOn,
-	EndedOn,
-	TVmazeID,
-	TVmazeURL,
-	TVmazeImageURL,
-	TVmazeUpdatedAt,
-	IMDBID,
-	TVDBID,
-	TVRageID
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
+INSERT INTO
+	Series (
+		ID,
+		Slug,
+		Title,
+		Summary,
+		Status,
+		Language,
+		PremieredOn,
+		EndedOn,
+		TVmazeID,
+		TVmazeURL,
+		TVmazeImageURL,
+		TVmazeUpdatedAt,
+		IMDBID,
+		TVDBID,
+		TVRageID
+	)
+VALUES
+	(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
 `
 
 type SeriesCreateParams struct {
@@ -2103,8 +2502,10 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 }
 
 const seriesEditionCreate = `-- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Title, SeriesID) VALUES (?, ?)
-RETURNING id, title, seriesid
+INSERT INTO
+	SeriesEdition (Title, SeriesID)
+VALUES
+	(?, ?) RETURNING id, title, seriesid
 `
 
 type SeriesEditionCreateParams struct {
@@ -2120,7 +2521,12 @@ func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCrea
 }
 
 const seriesEditionGet = `-- name: SeriesEditionGet :one
-SELECT id, title, seriesid FROM SeriesEdition WHERE ID = ?
+SELECT
+	id, title, seriesid
+FROM
+	SeriesEdition
+WHERE
+	ID = ?
 `
 
 func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEdition, error) {
@@ -2131,7 +2537,12 @@ func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEditio
 }
 
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
-SELECT id, title, seriesid FROM SeriesEdition WHERE SeriesID = ?
+SELECT
+	id, title, seriesid
+FROM
+	SeriesEdition
+WHERE
+	SeriesID = ?
 `
 
 func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid string) ([]SeriesEdition, error) {
@@ -2158,7 +2569,10 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 }
 
 const seriesGenreAdd = `-- name: SeriesGenreAdd :exec
-INSERT INTO SeriesGenre (SeriesID, GenreName) VALUES (?, ?)
+INSERT INTO
+	SeriesGenre (SeriesID, GenreName)
+VALUES
+	(?, ?)
 `
 
 type SeriesGenreAddParams struct {
@@ -2172,7 +2586,12 @@ func (q *Queries) SeriesGenreAdd(ctx context.Context, arg SeriesGenreAddParams) 
 }
 
 const seriesGenreList = `-- name: SeriesGenreList :many
-SELECT GenreName FROM SeriesGenre WHERE SeriesID = ?
+SELECT
+	GenreName
+FROM
+	SeriesGenre
+WHERE
+	SeriesID = ?
 `
 
 func (q *Queries) SeriesGenreList(ctx context.Context, seriesid string) ([]string, error) {
@@ -2199,7 +2618,12 @@ func (q *Queries) SeriesGenreList(ctx context.Context, seriesid string) ([]strin
 }
 
 const seriesGet = `-- name: SeriesGet :one
-SELECT id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series WHERE ID = ?
+SELECT
+	id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
+FROM
+	Series
+WHERE
+	ID = ?
 `
 
 func (q *Queries) SeriesGet(ctx context.Context, id string) (Series, error) {
@@ -2226,8 +2650,19 @@ func (q *Queries) SeriesGet(ctx context.Context, id string) (Series, error) {
 }
 
 const seriesGetByEditionID = `-- name: SeriesGetByEditionID :one
-SELECT id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series
-WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID = ?)
+SELECT
+	id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
+FROM
+	Series
+WHERE
+	ID IN (
+		SELECT
+			SeriesID
+		FROM
+			SeriesEdition
+		WHERE
+			SeriesEdition.ID = ?
+	)
 `
 
 func (q *Queries) SeriesGetByEditionID(ctx context.Context, id string) (Series, error) {
@@ -2254,7 +2689,12 @@ func (q *Queries) SeriesGetByEditionID(ctx context.Context, id string) (Series, 
 }
 
 const seriesGetBySlug = `-- name: SeriesGetBySlug :one
-SELECT id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series WHERE Slug = ?
+SELECT
+	id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
+FROM
+	Series
+WHERE
+	Slug = ?
 `
 
 func (q *Queries) SeriesGetBySlug(ctx context.Context, slug string) (Series, error) {
@@ -2281,7 +2721,12 @@ func (q *Queries) SeriesGetBySlug(ctx context.Context, slug string) (Series, err
 }
 
 const seriesGetByTVmazeID = `-- name: SeriesGetByTVmazeID :one
-SELECT id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series WHERE TVmazeID = ?
+SELECT
+	id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
+FROM
+	Series
+WHERE
+	TVmazeID = ?
 `
 
 func (q *Queries) SeriesGetByTVmazeID(ctx context.Context, tvmazeid *int64) (Series, error) {
@@ -2308,7 +2753,10 @@ func (q *Queries) SeriesGetByTVmazeID(ctx context.Context, tvmazeid *int64) (Ser
 }
 
 const seriesList = `-- name: SeriesList :many
-SELECT id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series
+SELECT
+	id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
+FROM
+	Series
 `
 
 func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
@@ -2351,7 +2799,12 @@ func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
 }
 
 const seriesListByTVmazeID = `-- name: SeriesListByTVmazeID :many
-SELECT id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series WHERE TVmazeID IN (/*SLICE:ids*/?)
+SELECT
+	id, slug, title, summary, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeimageurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
+FROM
+	Series
+WHERE
+	TVmazeID IN (/*SLICE:ids*/?)
 `
 
 func (q *Queries) SeriesListByTVmazeID(ctx context.Context, ids []*int64) ([]Series, error) {
@@ -2404,7 +2857,12 @@ func (q *Queries) SeriesListByTVmazeID(ctx context.Context, ids []*int64) ([]Ser
 }
 
 const seriesSlugExists = `-- name: SeriesSlugExists :one
-SELECT COUNT(*) FROM Series WHERE Slug = ?
+SELECT
+	COUNT(*)
+FROM
+	Series
+WHERE
+	Slug = ?
 `
 
 func (q *Queries) SeriesSlugExists(ctx context.Context, slug string) (int64, error) {
@@ -2415,7 +2873,12 @@ func (q *Queries) SeriesSlugExists(ctx context.Context, slug string) (int64, err
 }
 
 const settingListByGroup = `-- name: SettingListByGroup :many
-SELECT "key", "Group", value FROM Setting WHERE "Group" = ?
+SELECT
+	"key", "Group", value
+FROM
+	Setting
+WHERE
+	"Group" = ?
 `
 
 func (q *Queries) SettingListByGroup(ctx context.Context, group string) ([]Setting, error) {
@@ -2442,8 +2905,13 @@ func (q *Queries) SettingListByGroup(ctx context.Context, group string) ([]Setti
 }
 
 const settingSet = `-- name: SettingSet :exec
-INSERT INTO Setting (Key, "Group", Value) VALUES (?, ?, ?)
-ON CONFLICT (Key) DO UPDATE SET Value = ?3
+INSERT INTO
+	Setting (Key, "Group", Value)
+VALUES
+	(?, ?, ?) ON CONFLICT (Key) DO
+UPDATE
+SET
+	Value = ?3
 `
 
 type SettingSetParams struct {
@@ -2458,7 +2926,10 @@ func (q *Queries) SettingSet(ctx context.Context, arg SettingSetParams) error {
 }
 
 const storageCreate = `-- name: StorageCreate :exec
-INSERT INTO Storage (Path, Contents) VALUES (?, ?)
+INSERT INTO
+	Storage (Path, Contents)
+VALUES
+	(?, ?)
 `
 
 type StorageCreateParams struct {
@@ -2472,7 +2943,10 @@ func (q *Queries) StorageCreate(ctx context.Context, arg StorageCreateParams) er
 }
 
 const storageList = `-- name: StorageList :many
-SELECT path, contents FROM Storage
+SELECT
+	path, contents
+FROM
+	Storage
 `
 
 func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
@@ -2499,8 +2973,10 @@ func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
 }
 
 const taskCreate = `-- name: TaskCreate :one
-INSERT INTO Task (Type, Args, Priority, Queue, NextRun) VALUES (?, ?, ?, ?, ?)
-RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
+INSERT INTO
+	Task (Type, Args, Priority, Queue, NextRun)
+VALUES
+	(?, ?, ?, ?, ?) RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
 `
 
 type TaskCreateParams struct {
@@ -2535,7 +3011,10 @@ func (q *Queries) TaskCreate(ctx context.Context, arg TaskCreateParams) (Task, e
 }
 
 const taskDelete = `-- name: TaskDelete :exec
-DELETE FROM Task WHERE ID = ?
+DELETE FROM
+	Task
+WHERE
+	ID = ?
 `
 
 func (q *Queries) TaskDelete(ctx context.Context, id string) error {
@@ -2544,7 +3023,12 @@ func (q *Queries) TaskDelete(ctx context.Context, id string) error {
 }
 
 const taskGet = `-- name: TaskGet :one
-SELECT id, type, args, failures, nextrun, failuredesc, priority, queue, running FROM Task WHERE ID = ?
+SELECT
+	id, type, args, failures, nextrun, failuredesc, priority, queue, running
+FROM
+	Task
+WHERE
+	ID = ?
 `
 
 func (q *Queries) TaskGet(ctx context.Context, id string) (Task, error) {
@@ -2565,8 +3049,12 @@ func (q *Queries) TaskGet(ctx context.Context, id string) (Task, error) {
 }
 
 const taskList = `-- name: TaskList :many
-SELECT id, type, args, failures, nextrun, failuredesc, priority, queue, running FROM Task
-WHERE Running = 0
+SELECT
+	id, type, args, failures, nextrun, failuredesc, priority, queue, running
+FROM
+	Task
+WHERE
+	Running = 0
 `
 
 func (q *Queries) TaskList(ctx context.Context) ([]Task, error) {
@@ -2603,9 +3091,13 @@ func (q *Queries) TaskList(ctx context.Context) ([]Task, error) {
 }
 
 const taskLock = `-- name: TaskLock :one
-UPDATE Task SET Running = 1
-WHERE ID = ? AND Running = 0
-RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
+UPDATE
+	Task
+SET
+	Running = 1
+WHERE
+	ID = ?
+	AND Running = 0 RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
 `
 
 func (q *Queries) TaskLock(ctx context.Context, id string) (Task, error) {
@@ -2626,10 +3118,19 @@ func (q *Queries) TaskLock(ctx context.Context, id string) (Task, error) {
 }
 
 const taskNext = `-- name: TaskNext :one
-SELECT id, type, args, failures, nextrun, failuredesc, priority, queue, running FROM Task
-WHERE Queue = ? AND Running = 0 AND NextRun <= ?
-ORDER BY Priority, ID
-LIMIT 1
+SELECT
+	id, type, args, failures, nextrun, failuredesc, priority, queue, running
+FROM
+	Task
+WHERE
+	Queue = ?
+	AND Running = 0
+	AND NextRun <= ?
+ORDER BY
+	Priority,
+	ID
+LIMIT
+	1
 `
 
 type TaskNextParams struct {
@@ -2655,12 +3156,14 @@ func (q *Queries) TaskNext(ctx context.Context, arg TaskNextParams) (Task, error
 }
 
 const taskReschedule = `-- name: TaskReschedule :one
-UPDATE Task SET
+UPDATE
+	Task
+SET
 	Failures = ?,
 	NextRun = ?,
 	FailureDesc = ?
-WHERE ID = ?
-RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
+WHERE
+	ID = ? RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running
 `
 
 type TaskRescheduleParams struct {
@@ -2693,7 +3196,12 @@ func (q *Queries) TaskReschedule(ctx context.Context, arg TaskRescheduleParams) 
 }
 
 const taskResetRunning = `-- name: TaskResetRunning :exec
-UPDATE Task SET Running = 0 WHERE Running = 1
+UPDATE
+	Task
+SET
+	Running = 0
+WHERE
+	Running = 1
 `
 
 func (q *Queries) TaskResetRunning(ctx context.Context) error {
@@ -2702,10 +3210,13 @@ func (q *Queries) TaskResetRunning(ctx context.Context) error {
 }
 
 const taskSaveOneOff = `-- name: TaskSaveOneOff :exec
-UPDATE Task SET
+UPDATE
+	Task
+SET
 	Failures = ?,
 	FailureDesc = ?
-WHERE ID = ?
+WHERE
+	ID = ?
 `
 
 type TaskSaveOneOffParams struct {
@@ -2720,7 +3231,12 @@ func (q *Queries) TaskSaveOneOff(ctx context.Context, arg TaskSaveOneOffParams) 
 }
 
 const taskSetNextRun = `-- name: TaskSetNextRun :exec
-UPDATE Task SET NextRun = ? WHERE ID = ?
+UPDATE
+	Task
+SET
+	NextRun = ?
+WHERE
+	ID = ?
 `
 
 type TaskSetNextRunParams struct {
@@ -2734,7 +3250,12 @@ func (q *Queries) TaskSetNextRun(ctx context.Context, arg TaskSetNextRunParams) 
 }
 
 const taskUnlock = `-- name: TaskUnlock :exec
-UPDATE Task SET Running = 0 WHERE ID = ?
+UPDATE
+	Task
+SET
+	Running = 0
+WHERE
+	ID = ?
 `
 
 func (q *Queries) TaskUnlock(ctx context.Context, id string) error {
@@ -2743,13 +3264,10 @@ func (q *Queries) TaskUnlock(ctx context.Context, id string) error {
 }
 
 const videoCreate = `-- name: VideoCreate :one
-INSERT INTO Video
-(
-	ReleaseID,
-	ReleasePath
-)
-VALUES (?, ?)
-RETURNING id, releaseid, releasepath, originalhash, mvplaylist
+INSERT INTO
+	Video (ReleaseID, ReleasePath)
+VALUES
+	(?, ?) RETURNING id, releaseid, releasepath, originalhash, mvplaylist
 `
 
 type VideoCreateParams struct {
@@ -2771,7 +3289,12 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 }
 
 const videoGet = `-- name: VideoGet :one
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video WHERE ID = ?
+SELECT
+	id, releaseid, releasepath, originalhash, mvplaylist
+FROM
+	Video
+WHERE
+	ID = ?
 `
 
 func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
@@ -2788,7 +3311,13 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 }
 
 const videoGetByReleasePath = `-- name: VideoGetByReleasePath :one
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video WHERE ReleaseID = ? AND ReleasePath = ?
+SELECT
+	id, releaseid, releasepath, originalhash, mvplaylist
+FROM
+	Video
+WHERE
+	ReleaseID = ?
+	AND ReleasePath = ?
 `
 
 type VideoGetByReleasePathParams struct {
@@ -2810,14 +3339,33 @@ func (q *Queries) VideoGetByReleasePath(ctx context.Context, arg VideoGetByRelea
 }
 
 const videoListByEditionID = `-- name: VideoListByEditionID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
-WHERE ID IN (
-	SELECT VideoID FROM EpisodeVideo
-	WHERE EpisodeID IN (
-		SELECT EpisodeID FROM SeasonEpisode
-		WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+SELECT
+	id, releaseid, releasepath, originalhash, mvplaylist
+FROM
+	Video
+WHERE
+	ID IN (
+		SELECT
+			VideoID
+		FROM
+			EpisodeVideo
+		WHERE
+			EpisodeID IN (
+				SELECT
+					EpisodeID
+				FROM
+					SeasonEpisode
+				WHERE
+					SeasonID IN (
+						SELECT
+							ID
+						FROM
+							Season
+						WHERE
+							EditionID = ?
+					)
+			)
 	)
-)
 `
 
 func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([]Video, error) {
@@ -2850,8 +3398,19 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 }
 
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
-WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
+SELECT
+	id, releaseid, releasepath, originalhash, mvplaylist
+FROM
+	Video
+WHERE
+	ID IN (
+		SELECT
+			VideoID
+		FROM
+			EpisodeVideo
+		WHERE
+			EpisodeID = ?
+	)
 `
 
 func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([]Video, error) {
@@ -2884,8 +3443,19 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 }
 
 const videoListByMovieEditionID = `-- name: VideoListByMovieEditionID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
-WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
+SELECT
+	id, releaseid, releasepath, originalhash, mvplaylist
+FROM
+	Video
+WHERE
+	ID IN (
+		SELECT
+			VideoID
+		FROM
+			MovieVideo
+		WHERE
+			MovieEditionID = ?
+	)
 `
 
 func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid string) ([]Video, error) {
@@ -2918,11 +3488,26 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 }
 
 const videoListByMovieID = `-- name: VideoListByMovieID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
-WHERE ID IN (
-	SELECT VideoID FROM MovieVideo
-	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
-)
+SELECT
+	id, releaseid, releasepath, originalhash, mvplaylist
+FROM
+	Video
+WHERE
+	ID IN (
+		SELECT
+			VideoID
+		FROM
+			MovieVideo
+		WHERE
+			MovieEditionID IN (
+				SELECT
+					ID
+				FROM
+					MovieEdition
+				WHERE
+					MovieID = ?
+			)
+	)
 `
 
 func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Video, error) {
@@ -2955,17 +3540,40 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 }
 
 const videoListBySeriesID = `-- name: VideoListBySeriesID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
-WHERE ID IN (
-	SELECT VideoID FROM EpisodeVideo
-	WHERE EpisodeID IN (
-		SELECT EpisodeID FROM SeasonEpisode
-		WHERE SeasonID IN (
-			SELECT ID FROM Season
-			WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-		)
+SELECT
+	id, releaseid, releasepath, originalhash, mvplaylist
+FROM
+	Video
+WHERE
+	ID IN (
+		SELECT
+			VideoID
+		FROM
+			EpisodeVideo
+		WHERE
+			EpisodeID IN (
+				SELECT
+					EpisodeID
+				FROM
+					SeasonEpisode
+				WHERE
+					SeasonID IN (
+						SELECT
+							ID
+						FROM
+							Season
+						WHERE
+							EditionID IN (
+								SELECT
+									ID
+								FROM
+									SeriesEdition
+								WHERE
+									SeriesID = ?
+							)
+					)
+			)
 	)
-)
 `
 
 func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]Video, error) {
@@ -2998,8 +3606,12 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 }
 
 const videoUpdateMVPlaylist = `-- name: VideoUpdateMVPlaylist :one
-UPDATE Video SET MVPlaylist = ? WHERE ID = ?
-RETURNING id, releaseid, releasepath, originalhash, mvplaylist
+UPDATE
+	Video
+SET
+	MVPlaylist = ?
+WHERE
+	ID = ? RETURNING id, releaseid, releasepath, originalhash, mvplaylist
 `
 
 type VideoUpdateMVPlaylistParams struct {
@@ -3021,8 +3633,12 @@ func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPl
 }
 
 const videoUpdateOriginalHash = `-- name: VideoUpdateOriginalHash :one
-UPDATE Video SET OriginalHash = ? WHERE ID = ?
-RETURNING id, releaseid, releasepath, originalhash, mvplaylist
+UPDATE
+	Video
+SET
+	OriginalHash = ?
+WHERE
+	ID = ? RETURNING id, releaseid, releasepath, originalhash, mvplaylist
 `
 
 type VideoUpdateOriginalHashParams struct {

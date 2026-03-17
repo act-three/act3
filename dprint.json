@@ -1,0 +1,28 @@
+{
+	"useTabs": true,
+	"indentWidth": 4,
+	"lineWidth": 120,
+	"excludes": [
+		"web/static/static/",
+		"web/stimulus.js",
+		"web/turbo.es2017-esm.js",
+		"database/schema/"
+	],
+	"plugins": [
+		"https://plugins.dprint.dev/typescript-0.93.3.wasm",
+		"https://plugins.dprint.dev/json-0.21.1.wasm",
+		"https://plugins.dprint.dev/g-plane/malva-v0.15.2.wasm",
+		"https://plugins.dprint.dev/sql-0.2.0.wasm"
+	],
+	"typescript": {
+		"module.sortImportDeclarations": "maintain",
+		"module.sortExportDeclarations": "maintain"
+	},
+	"malva": {
+		"singleLineBlockThreshold": 1
+	},
+	"sql": {
+		"useTabs": true,
+		"indentWidth": 4
+	}
+}

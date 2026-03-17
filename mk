@@ -147,6 +147,12 @@ case "${1:-}" in
 	    cp lib/pre-commit .git/hooks/pre-commit
 	    chmod +x .git/hooks/pre-commit
 	    echo "Installed .git/hooks/pre-commit"
+	    if ! command -v dprint >/dev/null 2>&1; then
+	        echo "Installing dprint..."
+	        curl -fsSL https://dprint.dev/install.sh | sh
+	        echo 'export PATH="$HOME/.dprint/bin:$PATH"' >> "$HOME/.profile"
+	        echo "Installed dprint (restart shell or source ~/.profile)"
+	    fi
 	    ;;
     "")
         echo "Usage: $0 [command]"

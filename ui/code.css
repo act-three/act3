@@ -20,7 +20,7 @@
 	text-wrap: wrap;
 }
 
-.u-code[data-wrap=nowrap]  { text-wrap: nowrap; }
+.u-code[data-wrap="nowrap"] { text-wrap: nowrap; }
 
 /* size scale (slightly smaller than text sizes for mono) */
 .u-code[data-size="1"] {

@@ -14,12 +14,8 @@
 	cursor: pointer;
 	font-weight: 500;
 }
-.u-button[data-variant="ghost"] {
-	font-weight: inherit;
-}
-.u-button:not([data-variant="ghost"]) svg {
-	opacity: 0.9;
-}
+.u-button[data-variant="ghost"] { font-weight: inherit; }
+.u-button:not([data-variant="ghost"]) svg { opacity: 0.9; }
 .u-button:focus-visible {
 	outline: 2px solid var(--color-accent-8);
 	outline-offset: 2px;
@@ -33,18 +29,14 @@
 	pointer-events: none;
 	flex-shrink: 0;
 }
-.u-button svg:not([class*='size-']) {
+.u-button svg:not([class*="size-"]) {
 	width: 1rem;
 	height: 1rem;
 }
 
 /* busy spinner */
-.u-button[aria-busy="true"] {
-	pointer-events: none;
-}
-.u-button[aria-busy="true"] > * {
-	visibility: hidden;
-}
+.u-button[aria-busy="true"] { pointer-events: none; }
+.u-button[aria-busy="true"] > * { visibility: hidden; }
 .u-button[aria-busy="true"]::after {
 	content: "";
 	position: absolute;
@@ -55,53 +47,37 @@
 	border-radius: 9999px;
 	animation: spin 600ms linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg) } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* variant: solid (default) */
 .u-button {
 	background-color: var(--color-accent-9);
 	color: white;
 }
-@media (hover: hover) {
-	.u-button:hover {
-		background-color: var(--color-accent-10);
-	}
-}
+@media (hover: hover) { .u-button:hover { background-color: var(--color-accent-10); } }
 .u-button:active:not(:disabled) {
 	background-color: var(--color-accent-10);
 	filter: brightness(0.92) saturate(1.1);
 }
 
 /* variant: soft */
-.u-button[data-variant="soft"]:focus-visible {
-	outline-offset: -1px;
-}
+.u-button[data-variant="soft"]:focus-visible { outline-offset: -1px; }
 .u-button[data-variant="soft"] {
 	background-color: var(--color-accent-a3);
 	color: var(--color-accent-a11);
 }
-@media (hover: hover) {
-	.u-button[data-variant="soft"]:hover {
-		background-color: var(--color-accent-a4);
-	}
-}
-.u-button[data-variant="soft"]:active:not(:disabled) {
-	background-color: var(--color-accent-a5);
-}
+@media (hover: hover) { .u-button[data-variant="soft"]:hover { background-color: var(--color-accent-a4); } }
+.u-button[data-variant="soft"]:active:not(:disabled) { background-color: var(--color-accent-a5); }
 
 /* variant: surface */
-.u-button[data-variant="surface"]:focus-visible {
-	outline-offset: -1px;
-}
+.u-button[data-variant="surface"]:focus-visible { outline-offset: -1px; }
 .u-button[data-variant="surface"] {
 	background-color: var(--color-accent-a2);
 	color: var(--color-accent-a11);
 	box-shadow: inset 0 0 0 1px var(--color-accent-a7);
 }
 @media (hover: hover) {
-	.u-button[data-variant="surface"]:hover {
-		box-shadow: inset 0 0 0 1px var(--color-accent-a8);
-	}
+	.u-button[data-variant="surface"]:hover { box-shadow: inset 0 0 0 1px var(--color-accent-a8); }
 }
 .u-button[data-variant="surface"]:active:not(:disabled) {
 	background-color: var(--color-accent-a3);
@@ -109,50 +85,30 @@
 }
 
 /* variant: outline */
-.u-button[data-variant="outline"]:focus-visible {
-	outline-offset: -1px;
-}
+.u-button[data-variant="outline"]:focus-visible { outline-offset: -1px; }
 .u-button[data-variant="outline"] {
 	background-color: transparent;
 	box-shadow: inset 0 0 0 1px var(--color-accent-a8);
 	color: var(--color-accent-a11);
 }
-@media (hover: hover) {
-	.u-button[data-variant="outline"]:hover {
-		background-color: var(--color-accent-a2);
-	}
-}
-.u-button[data-variant="outline"]:active:not(:disabled) {
-	background-color: var(--color-accent-a3);
-}
+@media (hover: hover) { .u-button[data-variant="outline"]:hover { background-color: var(--color-accent-a2); } }
+.u-button[data-variant="outline"]:active:not(:disabled) { background-color: var(--color-accent-a3); }
 
 /* variant: ghost */
-.u-button[data-variant="ghost"]:focus-visible {
-	outline-offset: -1px;
-}
+.u-button[data-variant="ghost"]:focus-visible { outline-offset: -1px; }
 .u-button[data-variant="ghost"] {
 	background-color: transparent;
 	color: var(--color-accent-a11);
 }
-@media (hover: hover) {
-	.u-button[data-variant="ghost"]:hover {
-		background-color: var(--color-accent-a3);
-	}
-}
-.u-button[data-variant="ghost"]:active:not(:disabled) {
-	background-color: var(--color-accent-a4);
-}
+@media (hover: hover) { .u-button[data-variant="ghost"]:hover { background-color: var(--color-accent-a3); } }
+.u-button[data-variant="ghost"]:active:not(:disabled) { background-color: var(--color-accent-a4); }
 
 /* variant: destructive */
 .u-button[data-variant="destructive"] {
 	background-color: var(--color-crimson-9);
 	color: white;
 }
-@media (hover: hover) {
-	.u-button[data-variant="destructive"]:hover {
-		background-color: var(--color-crimson-10);
-	}
-}
+@media (hover: hover) { .u-button[data-variant="destructive"]:hover { background-color: var(--color-crimson-10); } }
 .u-button[data-variant="destructive"]:active:not(:disabled) {
 	background-color: var(--color-crimson-10);
 	filter: brightness(0.92) saturate(1.1);
@@ -191,23 +147,27 @@
 }
 
 /* radius */
-.u-button {
-	border-radius: max(var(--radius-2), var(--radius-full));
+.u-button { border-radius: max(var(--radius-2), var(--radius-full)); }
+.u-button[data-size="1"] { border-radius: max(var(--radius-1), var(--radius-full)); }
+.u-button[data-size="3"] { border-radius: max(var(--radius-3), var(--radius-full)); }
+.u-button[data-size="4"] { border-radius: max(var(--radius-4), var(--radius-full)); }
+.u-button[data-radius="none"] {
+	--radius-factor: 0;
+	--radius-full: 0px;
 }
-.u-button[data-size="1"] {
-	border-radius: max(var(--radius-1), var(--radius-full));
+.u-button[data-radius="small"] {
+	--radius-factor: 0.75;
+	--radius-full: 0px;
 }
-.u-button[data-size="3"] {
-	border-radius: max(var(--radius-3), var(--radius-full));
+.u-button[data-radius="medium"] {
+	--radius-factor: 1;
+	--radius-full: 0px;
 }
-.u-button[data-size="4"] {
-	border-radius: max(var(--radius-4), var(--radius-full));
+.u-button[data-radius="large"] {
+	--radius-factor: 1.5;
+	--radius-full: 0px;
 }
-.u-button[data-radius="none"]   { --radius-factor: 0; --radius-full: 0px; }
-.u-button[data-radius="small"]  { --radius-factor: 0.75; --radius-full: 0px; }
-.u-button[data-radius="medium"] { --radius-factor: 1; --radius-full: 0px; }
-.u-button[data-radius="large"]  { --radius-factor: 1.5; --radius-full: 0px; }
-.u-button[data-radius="full"]   { --radius-full: 9999px; }
+.u-button[data-radius="full"] { --radius-full: 9999px; }
 .u-button[data-radius="circle"] {
 	--radius-full: 9999px;
 	aspect-ratio: 1;

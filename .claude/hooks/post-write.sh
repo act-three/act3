@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-# Post-write/post-edit hook: goimports, query sort check, sqlc, CSS/JS bundles.
+# Post-write/post-edit hook: goimports, dprint, query sort check, sqlc, CSS/JS bundles.
 # Receives tool JSON on stdin; dispatches by file path.
+export PATH="$HOME/.dprint/bin:$PATH"
 cd "$CLAUDE_PROJECT_DIR"
 abs=$(jq -r '.tool_input.file_path')
 f=${abs#"$CLAUDE_PROJECT_DIR"/}
@@ -11,6 +12,9 @@ exec </dev/null >/dev/null
 case "$f" in
 *.go)
 	goimports -w "$abs"
+	;;
+*.js | *.css | *.json | *.sql)
+	dprint fmt "$abs" 2>/dev/null || true
 	;;
 esac
 

@@ -3,9 +3,7 @@
 	overflow: hidden;
 }
 
-.u-hover-overlay {
-	position: relative;
-}
+.u-hover-overlay { position: relative; }
 
 .u-hover-overlay:hover::after {
 	content: "";

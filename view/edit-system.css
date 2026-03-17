@@ -6,16 +6,10 @@
 }
 
 /* edit-system-field */
-.v-system-field {
-	padding-block: 1rem;
-}
+.v-system-field { padding-block: 1rem; }
 
 /* edit-system-input -- constrained-width input */
-.v-system-input {
-	max-width: 20rem;
-}
+.v-system-input { max-width: 20rem; }
 
 /* edit-system-input-wide -- full-width input */
-.v-system-input-wide {
-	max-width: 100%;
-}
+.v-system-input-wide { max-width: 100%; }

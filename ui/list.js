@@ -59,7 +59,7 @@ export default class extends Controller {
 				const targetID = t.getAttribute("data-list-id-param");
 				if (targetID == selectedID) {
 					const url = t.getAttribute("data-list-url-param");
-					Turbo.visit(url, { frame: this.targetValue })
+					Turbo.visit(url, { frame: this.targetValue });
 				}
 			}
 		}

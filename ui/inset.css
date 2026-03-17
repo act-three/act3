@@ -1,7 +1,5 @@
 /* inset — base */
-.u-inset {
-	overflow: hidden;
-}
+.u-inset { overflow: hidden; }
 
 /* side: all (default) */
 .u-inset[data-side="all"] {
@@ -10,14 +8,10 @@
 }
 
 /* side: x */
-.u-inset[data-side="x"] {
-	margin-inline: var(--inset-padding);
-}
+.u-inset[data-side="x"] { margin-inline: var(--inset-padding); }
 
 /* side: y */
-.u-inset[data-side="y"] {
-	margin-block: var(--inset-padding);
-}
+.u-inset[data-side="y"] { margin-block: var(--inset-padding); }
 
 /* side: top */
 .u-inset[data-side="top"] {

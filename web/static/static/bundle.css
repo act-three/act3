@@ -1823,7 +1823,7 @@
       opacity: 1;
     }
     to {
-      opacity: .25;
+      opacity: 0.25;
     }
   }
   .u-spinner {

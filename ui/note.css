@@ -9,9 +9,7 @@
 	height: var(--port-height, 5rem);
 	pointer-events: none;
 }
-.u-note-port:hover {
-	pointer-events: auto;
-}
+.u-note-port:hover { pointer-events: auto; }
 /* Pseudo-element fills the gaps between stacked notes
    so the hover region is continuous. */
 .u-note-port::after {
@@ -38,9 +36,7 @@
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 
-	box-shadow:
-		0 4px 12px rgb(0 0 0 / 0.08),
-		0 0 0 1px rgb(0 0 0 / 0.03);
+	box-shadow: 0 4px 12px rgb(0 0 0 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.03);
 
 	/* before mounting: hidden below */
 	opacity: 0;
@@ -49,74 +45,40 @@
 
 	/* single transition drives enter, restack, and expand —
 	   all interruptible and retargetable mid-flight */
-	transition:
-		transform 400ms,
-		opacity 400ms,
-		height 400ms,
-		box-shadow 200ms;
+	transition: transform 400ms, opacity 400ms, height 400ms, box-shadow 200ms;
 }
 
 /* child content fades with stacking */
-.u-note > * {
-	transition: opacity 400ms;
-}
+.u-note > * { transition: opacity 400ms; }
 /* stacked non-front notes fade their content */
-.u-note[data-mounted]:not([data-front]):not(:hover) > * {
-	opacity: 0;
-}
-.u-note-port:hover .u-note[data-mounted] > * {
-	opacity: 1;
-}
+.u-note[data-mounted]:not([data-front]):not(:hover) > * { opacity: 0; }
+.u-note-port:hover .u-note[data-mounted] > * { opacity: 1; }
 
 /* mounted — visible in the stack */
 .u-note[data-mounted] {
 	opacity: 1;
-	transform:
-		translateY(
-			calc(var(--offset, 0px) * -1 + var(--swipe, 0px))
-		)
-		scale(calc(1 - var(--index, 0) * 0.05));
+	transform: translateY(calc(var(--offset, 0px) * -1 + var(--swipe, 0px))) scale(calc(1 - var(--index, 0) * 0.05));
 	height: var(--front-toast-height, auto);
 	overflow: hidden;
 }
 
 /* expanded (hovered) — full size, no scale-down */
 .u-note-port:hover .u-note[data-mounted] {
-	transform:
-		translateY(
-			calc(var(--offset, 0px) * -1 + var(--swipe, 0px))
-		)
-		scale(1);
+	transform: translateY(calc(var(--offset, 0px) * -1 + var(--swipe, 0px))) scale(1);
 }
 
 /* while swiping: disable transition for 1:1 tracking */
-.u-note[data-swiping] {
-	transition: none;
-}
+.u-note[data-swiping] { transition: none; }
 
 /* swipe-out exit animation */
-.u-note[data-swipe-out] {
-	animation: swipe-out 200ms ease-out forwards;
-}
+.u-note[data-swipe-out] { animation: swipe-out 200ms ease-out forwards; }
 @keyframes swipe-out {
 	from {
-		transform:
-			translateY(
-				calc(
-					var(--offset, 0px) * -1
-					+ var(--swipe, 0px)
-				)
-			);
+		transform: translateY(calc(var(--offset, 0px) * -1 + var(--swipe, 0px)));
 		opacity: 1;
 	}
 	to {
-		transform:
-			translateY(
-				calc(
-					var(--offset, 0px) * -1
-					+ var(--swipe, 0px) + 100%
-				)
-			);
+		transform: translateY(calc(var(--offset, 0px) * -1 + var(--swipe, 0px) + 100%));
 		opacity: 0;
 	}
 }
@@ -136,9 +98,7 @@
 .u-note[data-dismissed] {
 	opacity: 0;
 	transform: translateY(100%);
-	transition:
-		transform 500ms,
-		opacity 200ms;
+	transition: transform 500ms, opacity 200ms;
 	pointer-events: none;
 }
 
@@ -148,9 +108,7 @@
 	border: 1px solid var(--color-gray-a5);
 	color: var(--color-gray-12);
 }
-.u-note .u-note-description {
-	color: var(--color-gray-11);
-}
+.u-note .u-note-description { color: var(--color-gray-11); }
 
 /* variant: success */
 .u-note[data-variant="success"] {
@@ -158,9 +116,7 @@
 	border: 1px solid oklch(0.871 0.108 155 / 0.4);
 	color: oklch(0.266 0.065 152);
 }
-.u-note[data-variant="success"] .u-note-description {
-	color: oklch(0.407 0.086 153);
-}
+.u-note[data-variant="success"] .u-note-description { color: oklch(0.407 0.086 153); }
 
 /* variant: error */
 .u-note[data-variant="error"] {
@@ -168,9 +124,7 @@
 	border: 1px solid var(--color-crimson-a5);
 	color: var(--color-crimson-12);
 }
-.u-note[data-variant="error"] .u-note-description {
-	color: var(--color-crimson-11);
-}
+.u-note[data-variant="error"] .u-note-description { color: var(--color-crimson-11); }
 
 /* variant: warning */
 .u-note[data-variant="warning"] {
@@ -178,9 +132,7 @@
 	border: 1px solid oklch(0.82 0.12 84 / 0.4);
 	color: oklch(0.308 0.066 58);
 }
-.u-note[data-variant="warning"] .u-note-description {
-	color: oklch(0.432 0.079 65);
-}
+.u-note[data-variant="warning"] .u-note-description { color: oklch(0.432 0.079 65); }
 
 /* sub-parts */
 .u-note-icon {
@@ -196,18 +148,12 @@
 
 /* title and description flow into the content column */
 .u-note-title,
-.u-note-description {
-	grid-column: 2;
-}
+.u-note-description { grid-column: 2; }
 
 /* when there's no icon, span full width */
 .u-note-title:first-child,
-.u-note-description:first-child {
-	grid-column: 1 / -1;
-}
-.u-note-title:first-child ~ .u-note-description {
-	grid-column: 1 / -1;
-}
+.u-note-description:first-child { grid-column: 1 / -1; }
+.u-note-title:first-child ~ .u-note-description { grid-column: 1 / -1; }
 
 .u-note-title {
 	font-weight: 550;
@@ -239,9 +185,7 @@
 	opacity: 0.7;
 	transition: opacity 400ms, box-shadow 200ms;
 }
-.u-note-action:hover {
-	opacity: 1;
-}
+.u-note-action:hover { opacity: 1; }
 
 @media (prefers-reduced-motion) {
 	.u-note,

@@ -29,7 +29,7 @@ export default class extends Controller {
 			s.add(path);
 			path = this.#dirname(path);
 		}
-		return s
+		return s;
 	}
 
 	#dirname(path) {

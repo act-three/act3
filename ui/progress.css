@@ -18,12 +18,6 @@
 }
 
 /* size: md (default) */
-.u-progress {
-	height: calc(0.5rem * var(--scale));
-}
-.u-progress[data-size="sm"] {
-	height: calc(0.25rem * var(--scale));
-}
-.u-progress[data-size="lg"] {
-	height: calc(0.75rem * var(--scale));
-}
+.u-progress { height: calc(0.5rem * var(--scale)); }
+.u-progress[data-size="sm"] { height: calc(0.25rem * var(--scale)); }
+.u-progress[data-size="lg"] { height: calc(0.75rem * var(--scale)); }

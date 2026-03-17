@@ -1,7 +1,5 @@
 /* card — base */
-.u-card {
-	outline: none;
-}
+.u-card { outline: none; }
 .u-card:focus-visible {
 	outline: 2px solid var(--color-accent-8);
 	outline-offset: -1px;
@@ -17,9 +15,7 @@
 .u-card[data-variant="classic"] {
 	background-color: var(--color-panel);
 	backdrop-filter: blur(64px);
-	box-shadow:
-		0 1px 3px 0 rgb(0 0 0 / 0.1),
-		0 1px 2px -1px rgb(0 0 0 / 0.1);
+	box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 	transition-property: box-shadow;
 	transition-duration: 150ms;
 }
@@ -89,9 +85,7 @@
 	height: 3.75rem;
 	overflow: hidden;
 }
-.u-card-media svg {
-	pointer-events: none;
-}
+.u-card-media svg { pointer-events: none; }
 .u-card-media img {
 	width: 100%;
 	height: 100%;
@@ -104,9 +98,7 @@
 	flex-direction: column;
 	gap: 0.25rem;
 }
-.u-card-content + .u-card-content {
-	flex: none;
-}
+.u-card-content + .u-card-content { flex: none; }
 
 .u-card-title {
 	display: flex;
@@ -141,19 +133,10 @@
 }
 
 @media (hover: hover) {
-	a.u-card[data-variant="ghost"]:hover {
-		background-color: var(--color-gray-a3);
-	}
+	a.u-card[data-variant="ghost"]:hover { background-color: var(--color-gray-a3); }
 	a.u-card[data-variant="classic"]:hover {
-		box-shadow:
-			0 4px 6px -1px rgb(0 0 0 / 0.1),
-			0 2px 4px -2px rgb(0 0 0 / 0.1);
+		box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 	}
-	a.u-card[data-variant="classic"]:active {
-		box-shadow:
-			0 1px 2px 0 rgb(0 0 0 / 0.05);
-	}
-	.u-card-description > a:hover {
-		color: var(--color-gray-12);
-	}
+	a.u-card[data-variant="classic"]:active { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+	.u-card-description > a:hover { color: var(--color-gray-12); }
 }

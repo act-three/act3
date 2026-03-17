@@ -5,14 +5,8 @@
 	overscroll-behavior: contain;
 }
 
-.u-scroll\+x {
-	overflow: auto hidden;
-}
+.u-scroll\+x { overflow: auto hidden; }
 
-.u-scroll\+y {
-	overflow: hidden auto;
-}
+.u-scroll\+y { overflow: hidden auto; }
 
-.u-scroll\+xy {
-	overflow: auto;
-}
+.u-scroll\+xy { overflow: auto; }

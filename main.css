@@ -32,7 +32,5 @@
 		user-select: none;
 	}
 
-	body:has(.v-app), body:has(#full-player) {
-		overflow: hidden;
-	}
+	body:has(.v-app), body:has(#full-player) { overflow: hidden; }
 }

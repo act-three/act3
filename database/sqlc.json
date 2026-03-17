@@ -65,7 +65,7 @@
 						"videoid": "VideoID",
 						"downloadplan": "DownloadPlan",
 						"downloadid": "DownloadID",
-						"group": "Group",
+						"group": "Group"
 					},
 					"overrides": [
 						{

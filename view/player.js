@@ -46,14 +46,14 @@ export default class extends Controller {
 
 	handleControls(e) {
 		//// Remove button states for fullscreen
-		//const { controls: controlsElement } = elements;
-		//if (controlsElement && event.type === 'enterfullscreen') {
-		//	controlsElement.pressed = false;
-		//	controlsElement.hover = false;
-		//}
+		// const { controls: controlsElement } = elements;
+		// if (controlsElement && event.type === 'enterfullscreen') {
+		// 	controlsElement.pressed = false;
+		// 	controlsElement.hover = false;
+		// }
 
 		// Show, then hide after a timeout unless another control event occurs
-		const show = ['touchstart', 'touchmove', 'mousemove'].includes(e.type);
+		const show = ["touchstart", "touchmove", "mousemove"].includes(e.type);
 		let delay = 0;
 
 		if (show) {
@@ -71,7 +71,7 @@ export default class extends Controller {
 
 	handleKey(e) {
 		const { key, type, altKey, ctrlKey, metaKey, shiftKey } = e;
-		const pressed = type === 'keydown';
+		const pressed = type === "keydown";
 		const repeat = pressed && key === this.#lastKey;
 
 		// Bail if a modifier key is set.
@@ -82,17 +82,34 @@ export default class extends Controller {
 		if (pressed) {
 			const focused = document.activeElement;
 			if (focused) {
-				if (focused.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(focused.tagName)) return;
+				if (focused.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(focused.tagName)) return;
 				// Don't intercept space on buttons/menu items (let them activate).
-				if (key === ' ' && focused.matches('button, [role^="menuitem"]')) return;
+				if (key === " " && focused.matches("button, [role^=\"menuitem\"]")) return;
 			}
 		}
 
 		// Prevent default for handled keys (e.g. prevent scrolling for arrows).
 		const handled = [
-			' ', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown',
-			'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-			'c', 'f', 'k', 'l', 'm',
+			" ",
+			"ArrowLeft",
+			"ArrowUp",
+			"ArrowRight",
+			"ArrowDown",
+			"0",
+			"1",
+			"2",
+			"3",
+			"4",
+			"5",
+			"6",
+			"7",
+			"8",
+			"9",
+			"c",
+			"f",
+			"k",
+			"l",
+			"m",
 		];
 		if (pressed && handled.includes(key)) {
 			e.preventDefault();
@@ -104,62 +121,70 @@ export default class extends Controller {
 
 			switch (key) {
 				// Seek to N/10 of duration.
-				case '0': case '1': case '2': case '3': case '4':
-				case '5': case '6': case '7': case '8': case '9':
+				case "0":
+				case "1":
+				case "2":
+				case "3":
+				case "4":
+				case "5":
+				case "6":
+				case "7":
+				case "8":
+				case "9":
 					if (!repeat && this.#canSeek) {
 						video.currentTime = (video.duration / 10) * parseInt(key, 10);
 					}
 					break;
 
 				// Toggle play/pause.
-				case ' ':
-				case 'k':
+				case " ":
+				case "k":
 					if (!repeat) this.togglePlay();
 					break;
 
 				// Volume up.
-				case 'ArrowUp':
+				case "ArrowUp":
 					video.volume = Math.min(1, video.volume + 0.1);
 					break;
 
 				// Volume down.
-				case 'ArrowDown':
+				case "ArrowDown":
 					video.volume = Math.max(0, video.volume - 0.1);
 					break;
 
 				// Toggle mute.
-				case 'm':
+				case "m":
 					if (!repeat) this.toggleMute();
 					break;
 
 				// Seek forward.
-				case 'ArrowRight':
+				case "ArrowRight":
 					this.skipForward();
 					break;
 
 				// Seek backward.
-				case 'ArrowLeft':
+				case "ArrowLeft":
 					this.skipBackward();
 					break;
 
 				// Toggle fullscreen.
-				case 'f':
+				case "f":
 					if (!repeat) this.toggleFullscreen();
 					break;
 
 				// Toggle captions.
-				case 'c':
+				case "c":
 					if (!repeat) this.toggleCaptions();
 					break;
 
 				// Toggle loop.
-				case 'l':
-					if (!repeat) { video.loop = !video.loop; }
+				case "l":
+					if (!repeat) video.loop = !video.loop;
 					break;
 
 				// Close video player.
-				case 'Escape':
-					this.dismiss()
+				case "Escape":
+					this.dismiss();
 					break;
 			}
 
@@ -175,7 +200,7 @@ export default class extends Controller {
 		this.stoppedValue = this.videoTarget.stopped;
 
 		// Only update controls on non timeupdate events
-		if (e.type === 'timeupdate') {
+		if (e.type === "timeupdate") {
 			return;
 		}
 		this.#updateControlsVisibility();
@@ -197,14 +222,14 @@ export default class extends Controller {
 		this.hideControlsValue = !show;
 
 		//// Close menu
-		//if (
-		//	hiding
-		//	&& is.array(this.config.controls)
-		//	&& this.config.controls.includes('settings')
-		//	&& !is.empty(this.config.settings)
-		//) {
-		//	controls.toggleMenu.call(this, false);
-		//}
+		// if (
+		// 	hiding
+		// 	&& is.array(this.config.controls)
+		// 	&& this.config.controls.includes('settings')
+		// 	&& !is.empty(this.config.settings)
+		// ) {
+		// 	controls.toggleMenu.call(this, false);
+		// }
 
 		return show;
 	}
@@ -277,8 +302,8 @@ export default class extends Controller {
 	toggleCaptions() {
 		const video = this.videoTarget;
 		for (const track of video.textTracks) {
-			if (track.kind === 'captions' || track.kind === 'subtitles') {
-				track.mode = track.mode === 'showing' ? 'hidden' : 'showing';
+			if (track.kind === "captions" || track.kind === "subtitles") {
+				track.mode = track.mode === "showing" ? "hidden" : "showing";
 			}
 		}
 	}
@@ -319,7 +344,7 @@ export default class extends Controller {
 	}
 
 	#setVolumeFill(vol) {
-		this.volumeTarget.style.setProperty('--value', `${vol * 100}%`);
+		this.volumeTarget.style.setProperty("--value", `${vol * 100}%`);
 	}
 
 	// --- Seek bar handlers ---
@@ -327,9 +352,9 @@ export default class extends Controller {
 	handleSeek(e) {
 		const seek = e.currentTarget;
 		// Use seek-value if set (for tooltip consistency), otherwise use value.
-		let seekTo = seek.getAttribute('seek-value');
+		let seekTo = seek.getAttribute("seek-value");
 		if (seekTo == null) seekTo = seek.value;
-		seek.removeAttribute('seek-value');
+		seek.removeAttribute("seek-value");
 
 		const video = this.videoTarget;
 		if (video.duration) {
@@ -344,21 +369,21 @@ export default class extends Controller {
 		// Use clientX (viewport-relative) since getBoundingClientRect is also viewport-relative.
 		const rect = this.progressTarget.getBoundingClientRect();
 		const percent = (100 / rect.width) * (e.clientX - rect.left);
-		e.currentTarget.setAttribute('seek-value', Math.max(0, Math.min(100, percent)));
+		e.currentTarget.setAttribute("seek-value", Math.max(0, Math.min(100, percent)));
 	}
 
 	handleSeekPause(e) {
 		const seek = e.currentTarget;
-		const attr = 'data-play-on-seeked';
+		const attr = "data-play-on-seeked";
 
 		// Only handle arrow keys for keyboard events.
-		if (e instanceof KeyboardEvent && !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+		if (e instanceof KeyboardEvent && !["ArrowLeft", "ArrowRight"].includes(e.key)) return;
 
 		// Record seek time so controls stay visible after seeking.
 		this.#lastSeekTime = Date.now();
 
 		const wasPlaying = seek.hasAttribute(attr);
-		const done = ['mouseup', 'touchend', 'keyup'].includes(e.type);
+		const done = ["mouseup", "touchend", "keyup"].includes(e.type);
 		this.#userSeeking = !done;
 
 		// If done seeking and was playing, resume playback.
@@ -367,7 +392,7 @@ export default class extends Controller {
 			this.videoTarget.play();
 		} else if (!done && !this.videoTarget.paused) {
 			// Starting a seek while playing — pause and remember.
-			seek.setAttribute(attr, '');
+			seek.setAttribute(attr, "");
 			this.videoTarget.pause();
 		}
 	}
@@ -376,8 +401,8 @@ export default class extends Controller {
 		const tooltip = this.seekTooltipTarget;
 
 		// Hide tooltip on touch devices and on mouseleave.
-		if (this.#isTouch || e.type === 'mouseleave') {
-			tooltip.style.opacity = '0';
+		if (this.#isTouch || e.type === "mouseleave") {
+			tooltip.style.opacity = "0";
 			return;
 		}
 
@@ -391,7 +416,7 @@ export default class extends Controller {
 
 		tooltip.textContent = this.#formatTime(time);
 		tooltip.style.left = `${percent}%`;
-		tooltip.style.opacity = '1';
+		tooltip.style.opacity = "1";
 	}
 
 	skipBackward() {
@@ -416,7 +441,7 @@ export default class extends Controller {
 	}
 
 	handleLoading(e) {
-		const loading = ['stalled', 'waiting'].includes(e.type);
+		const loading = ["stalled", "waiting"].includes(e.type);
 
 		clearTimeout(this.#timerLoading);
 
@@ -443,7 +468,7 @@ export default class extends Controller {
 		// #userSeeking gates updates while the user is dragging.
 		// (We don't check video.seeking here — it can get permanently
 		// stuck on HLS streams if currentTime is set before segments load.)
-		const isTimeUpdate = e && e.type === 'timeupdate';
+		const isTimeUpdate = e && e.type === "timeupdate";
 		if (isTimeUpdate && !this.#userSeeking) {
 			this.seekTarget.value = percent;
 			this.#setSeekFill(percent);
@@ -465,7 +490,7 @@ export default class extends Controller {
 		}
 
 		// Update aria-valuemax on the seek input for accessibility.
-		this.seekTarget.setAttribute('aria-valuemax', duration);
+		this.seekTarget.setAttribute("aria-valuemax", duration);
 
 		this.durationTarget.textContent = this.#formatTime(duration);
 	}
@@ -484,11 +509,11 @@ export default class extends Controller {
 	// --- Seek bar helpers ---
 
 	#setSeekFill(percent) {
-		this.seekTarget.style.setProperty('--value', `${percent}%`);
+		this.seekTarget.style.setProperty("--value", `${percent}%`);
 	}
 
 	#formatTime(seconds) {
-		if (!isFinite(seconds) || seconds < 0) return '0:00';
+		if (!isFinite(seconds) || seconds < 0) return "0:00";
 		// Always show hours if the total duration is >= 1 hour,
 		// so the display width stays stable (e.g. "0:05:30" not "5:30").
 		const forceHours = this.videoTarget.duration >= 3600;
@@ -496,9 +521,9 @@ export default class extends Controller {
 		const mins = Math.floor((seconds % 3600) / 60);
 		const secs = Math.floor(seconds % 60);
 		if (hrs > 0 || forceHours) {
-			return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+			return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 		}
-		return `${mins}:${secs.toString().padStart(2, '0')}`;
+		return `${mins}:${secs.toString().padStart(2, "0")}`;
 	}
 
 	get #doShowControls() {
@@ -507,11 +532,11 @@ export default class extends Controller {
 		}
 		// Show controls if recentInteraction, loading, paused,
 		// button active, or recent touch seek, otherwise hide.
-		return this.#recentInteraction ||
-			this.loadingValue ||
-			this.videoTarget.paused ||
-			//controlsElement.pressed ||
-			//controlsElement.hover ||
-			this.#recentTouchSeek;
+		return this.#recentInteraction
+			|| this.loadingValue
+			|| this.videoTarget.paused
+			// controlsElement.pressed ||
+			// controlsElement.hover ||
+			|| this.#recentTouchSeek;
 	}
 }

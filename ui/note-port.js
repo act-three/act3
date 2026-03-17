@@ -23,10 +23,12 @@ export function notify(msg, variant = "error") {
 	note.setAttribute("aria-live", "polite");
 	note.setAttribute("data-variant", variant);
 	note.setAttribute("data-note-port-target", "note");
-	note.setAttribute("data-action",
-		"pointerdown->note-port#swipeStart " +
-		"pointermove->note-port#swipeMove " +
-		"pointerup->note-port#swipeEnd");
+	note.setAttribute(
+		"data-action",
+		"pointerdown->note-port#swipeStart "
+			+ "pointermove->note-port#swipeMove "
+			+ "pointerup->note-port#swipeEnd",
+	);
 	note.appendChild(title);
 
 	port.appendChild(note);
@@ -44,19 +46,22 @@ export default class extends Controller {
 			}
 		};
 		document.addEventListener(
-			"visibilitychange", this.#onVisibility,
+			"visibilitychange",
+			this.#onVisibility,
 		);
 	}
 
 	disconnect() {
 		document.removeEventListener(
-			"visibilitychange", this.#onVisibility,
+			"visibilitychange",
+			this.#onVisibility,
 		);
 	}
 
 	noteTargetConnected(el) {
 		el.style.setProperty(
-			"--initial-height", el.offsetHeight + "px",
+			"--initial-height",
+			el.offsetHeight + "px",
 		);
 
 		requestAnimationFrame(() => {
@@ -140,8 +145,10 @@ export default class extends Controller {
 		const dt = Date.now() - startTime;
 		const velocity = Math.abs(dy) / dt;
 
-		if (dy > SWIPE_THRESHOLD
-			|| velocity > VELOCITY_THRESHOLD) {
+		if (
+			dy > SWIPE_THRESHOLD
+			|| velocity > VELOCITY_THRESHOLD
+		) {
 			// Animate out via swipe-out keyframe.
 			this.#clearTimer(el);
 			el.removeAttribute("data-swiping");
@@ -171,7 +178,8 @@ export default class extends Controller {
 		this.#clearTimer(el);
 		if (this.#hovered || document.hidden) return;
 		const id = setTimeout(
-			() => this.dismiss(el), DURATION,
+			() => this.dismiss(el),
+			DURATION,
 		);
 		this.#timers.set(el, id);
 	}
@@ -201,7 +209,8 @@ export default class extends Controller {
 
 	#layout() {
 		const notes = this.noteTargets.filter(
-			(n) => !n.hasAttribute("data-dismissed")
+			(n) =>
+				!n.hasAttribute("data-dismissed")
 				&& !n.hasAttribute("data-swipe-out"),
 		);
 		const count = notes.length;
@@ -220,7 +229,8 @@ export default class extends Controller {
 			note.style.zIndex = count - idx;
 			note.style.setProperty("--index", idx);
 			note.style.setProperty(
-				"--front-toast-height", frontHeight + "px",
+				"--front-toast-height",
+				frontHeight + "px",
 			);
 			if (idx === 0) {
 				note.setAttribute("data-front", "");
@@ -230,12 +240,14 @@ export default class extends Controller {
 
 			if (expanded) {
 				note.style.setProperty(
-					"--offset", heightsBefore + "px",
+					"--offset",
+					heightsBefore + "px",
 				);
 				heightsBefore += h + GAP;
 			} else {
 				note.style.setProperty(
-					"--offset", (idx * GAP) + "px",
+					"--offset",
+					(idx * GAP) + "px",
 				);
 			}
 		}

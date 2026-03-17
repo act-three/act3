@@ -15,35 +15,17 @@
 }
 
 /* scale presets */
-.u-theme[data-scale="1"] {
-	--scale: 0.9;
-}
-.u-theme[data-scale="2"] {
-	--scale: 0.95;
-}
-.u-theme[data-scale="3"] {
-	--scale: 1;
-}
-.u-theme[data-scale="4"] {
-	--scale: 1.05;
-}
-.u-theme[data-scale="5"] {
-	--scale: 1.1;
-}
+.u-theme[data-scale="1"] { --scale: 0.9; }
+.u-theme[data-scale="2"] { --scale: 0.95; }
+.u-theme[data-scale="3"] { --scale: 1; }
+.u-theme[data-scale="4"] { --scale: 1.05; }
+.u-theme[data-scale="5"] { --scale: 1.1; }
 
 /* radius presets */
-.u-theme[data-radius="none"] {
-	--radius-factor: 0;
-}
-.u-theme[data-radius="small"] {
-	--radius-factor: 0.75;
-}
-.u-theme[data-radius="medium"] {
-	--radius-factor: 1;
-}
-.u-theme[data-radius="large"] {
-	--radius-factor: 1.5;
-}
+.u-theme[data-radius="none"] { --radius-factor: 0; }
+.u-theme[data-radius="small"] { --radius-factor: 0.75; }
+.u-theme[data-radius="medium"] { --radius-factor: 1; }
+.u-theme[data-radius="large"] { --radius-factor: 1.5; }
 .u-theme[data-radius="full"] {
 	--radius-factor: 1.5;
 	--radius-full: 9999px;

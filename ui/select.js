@@ -76,9 +76,8 @@ export default class extends Controller {
 	#positionContent() {
 		const content = this.contentTarget;
 		const trigger = this.triggerTarget;
-		const selected =
-			content.querySelector("[data-selected]") ||
-			this.itemTargets[0];
+		const selected = content.querySelector("[data-selected]")
+			|| this.itemTargets[0];
 		if (!selected) return;
 
 		const parentRect = this.element.getBoundingClientRect();
@@ -88,8 +87,7 @@ export default class extends Controller {
 
 		// Vertical: align selected item center with trigger center.
 		const triggerMid = triggerRect.top + triggerRect.height / 2;
-		const itemMidInContent =
-			itemRect.top - contentRect.top + itemRect.height / 2;
+		const itemMidInContent = itemRect.top - contentRect.top + itemRect.height / 2;
 		let top = triggerMid - itemMidInContent - parentRect.top;
 
 		// Horizontal: align item text with label text.

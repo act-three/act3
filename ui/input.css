@@ -11,9 +11,7 @@
 	transition-property: color, box-shadow, outline;
 	transition-duration: 150ms;
 }
-.u-input::placeholder {
-	color: var(--color-gray-a10);
-}
+.u-input::placeholder { color: var(--color-gray-a10); }
 .u-input::selection {
 	background-color: var(--color-accent-9);
 	color: white;

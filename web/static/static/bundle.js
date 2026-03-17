@@ -8034,9 +8034,7 @@
             break;
           // Toggle loop.
           case "l":
-            if (!repeat) {
-              video.loop = !video.loop;
-            }
+            if (!repeat) video.loop = !video.loop;
             break;
           // Close video player.
           case "Escape":
@@ -8279,9 +8277,7 @@
       if (this.#harlowMode) {
         return false;
       }
-      return this.#recentInteraction || this.loadingValue || this.videoTarget.paused || //controlsElement.pressed ||
-      //controlsElement.hover ||
-      this.#recentTouchSeek;
+      return this.#recentInteraction || this.loadingValue || this.videoTarget.paused || this.#recentTouchSeek;
     }
   };
 
