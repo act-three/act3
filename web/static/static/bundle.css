@@ -515,9 +515,6 @@
   .max-w-dvw {
     max-width: 100dvw;
   }
-  .max-w-full {
-    max-width: 100%;
-  }
   .max-w-xs {
     max-width: var(--container-xs);
   }
@@ -2460,6 +2457,20 @@
   }
 }
 @layer components {
+  .v-system {
+    height: 100%;
+    width: 100%;
+    padding: 1rem;
+  }
+  .v-system-field {
+    padding-block: 1rem;
+  }
+  .v-system-input {
+    max-width: 20rem;
+  }
+  .v-system-input-wide {
+    max-width: 100%;
+  }
   .v-player {
     position: fixed;
     inset: 0;

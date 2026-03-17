@@ -10,16 +10,14 @@ import (
 
 func EditSystemTasks(running []*model.RunningTask, queued []*model.Task) html.Node {
 	return app("Tasks",
-		ScrollY(
-			attr.Class("h-full w-full p-4"),
-		)(
+		ScrollY(attr.Class("v-system"))(
 			html.Div()(html.Text("Scheduled Tasks")),
 
-			html.Div(attr.Class("py-4"))(
+			html.Div(attr.Class("v-system-field"))(
 				html.Div()(html.Text("Running")),
 				expr.IfElse(len(running) > 0,
 					func() html.Node {
-						return TableRoot(attr.Class("max-w-full"))(
+						return TableRoot(attr.Class("v-system-input-wide"))(
 							TableHeader()(
 								TableRow()(
 									TableHead()(html.Text("Task")),
@@ -55,9 +53,9 @@ func EditSystemTasks(running []*model.RunningTask, queued []*model.Task) html.No
 				),
 			),
 
-			html.Div(attr.Class("py-4"))(
+			html.Div(attr.Class("v-system-field"))(
 				html.Div()(html.Text("Queued")),
-				TableRoot(attr.Class("max-w-full"))(
+				TableRoot(attr.Class("v-system-input-wide"))(
 					TableHeader()(
 						TableRow()(
 							TableHead()(html.Text("Task")),

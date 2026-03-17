@@ -22,7 +22,7 @@ func EditSystemStorage(
 	fs []*Filesystem,
 ) html.Node {
 	return app("Storage",
-		html.Div(attr.Class("settings/body"))(
+		html.Div(attr.Class("v-system"))(
 			html.H2()(html.Text("storage locations")),
 			html.Form(
 				attr.Attr("x-target")("dirs"),
@@ -62,7 +62,7 @@ func EditSystemStorage(
 						html.Text("filesystem path"),
 					),
 					InputText(
-						attr.Class("max-w-xs"),
+						attr.Class("v-system-input"),
 						attr.ID("path"),
 						attr.Name("path"),
 					),

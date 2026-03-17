@@ -1,0 +1,21 @@
+/* edit-system */
+.v-system {
+	height: 100%;
+	width: 100%;
+	padding: 1rem;
+}
+
+/* edit-system-field */
+.v-system-field {
+	padding-block: 1rem;
+}
+
+/* edit-system-input -- constrained-width input */
+.v-system-input {
+	max-width: 20rem;
+}
+
+/* edit-system-input-wide -- full-width input */
+.v-system-input-wide {
+	max-width: 100%;
+}
