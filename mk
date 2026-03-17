@@ -162,6 +162,14 @@ fi
 
 # Check for direct env var reads outside of package main.
 go vet -vettool=.git/hooks/act3vet ./...
+
+# Check that generated files are up to date.
+go generate ./...
+if ! git diff --quiet; then
+	echo "go generate: generated files are out of date, please stage them"
+	git diff --stat
+	exit 1
+fi
 HOOK
 	chmod +x .git/hooks/pre-commit
 	echo "Installed .git/hooks/pre-commit"
