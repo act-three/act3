@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+# Check that staged .go files are formatted.
+unformatted=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | while read f; do
+	if [ -n "$(gofmt -l "$f")" ]; then
+		echo "$f"
+	fi
+done)
+if [ -n "$unformatted" ]; then
+	echo "gofmt: these files are not formatted:"
+	echo "$unformatted"
+	exit 1
+fi
+
+# Check for direct env var reads outside of package main.
+go vet -vettool=.git/hooks/act3vet ./...
+
+# Check that generated files are up to date.
+go generate ./...
+if ! git diff --quiet; then
+	echo "go generate: generated files are out of date, please stage them"
+	git diff --stat
+	exit 1
+fi

@@ -143,37 +143,11 @@ case "${1:-}" in
 		echo $image >deploy/latest
         ;;
     git-setup)
-	go build -o .git/hooks/act3vet ./analysis/cmd/act3vet
-	cat >.git/hooks/pre-commit <<'HOOK'
-#!/bin/sh
-set -e
-
-# Check that staged .go files are formatted.
-unformatted=$(git diff --cached --name-only --diff-filter=ACM -- '*.go' | while read f; do
-	if [ -n "$(gofmt -l "$f")" ]; then
-		echo "$f"
-	fi
-done)
-if [ -n "$unformatted" ]; then
-	echo "gofmt: these files are not formatted:"
-	echo "$unformatted"
-	exit 1
-fi
-
-# Check for direct env var reads outside of package main.
-go vet -vettool=.git/hooks/act3vet ./...
-
-# Check that generated files are up to date.
-go generate ./...
-if ! git diff --quiet; then
-	echo "go generate: generated files are out of date, please stage them"
-	git diff --stat
-	exit 1
-fi
-HOOK
-	chmod +x .git/hooks/pre-commit
-	echo "Installed .git/hooks/pre-commit"
-	;;
+	    go build -o .git/hooks/act3vet ./analysis/cmd/act3vet
+	    cp lib/pre-commit .git/hooks/pre-commit
+	    chmod +x .git/hooks/pre-commit
+	    echo "Installed .git/hooks/pre-commit"
+	    ;;
     "")
         echo "Usage: $0 [command]"
         echo
