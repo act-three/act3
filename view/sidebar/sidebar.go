@@ -59,7 +59,7 @@ func sidebarData() []MenuSection {
 func Sidebar() html.Node {
 	return turbo.Frame("sidebar",
 		attr.Target("main"),
-		attr.Class("text-gray-12 group peer md:block"),
+		attr.Class("v-sidebar"),
 		attr.Attr("data-state")(""),
 		attr.Attr("data-collapsible")(""),
 		attr.Attr("data-variant")("inset"),
@@ -70,37 +70,16 @@ func Sidebar() html.Node {
 	)(
 		html.Div(
 			attr.Attr("data-slot")("sidebar-gap"),
-			attr.Class(`
-				w-(--sidebar-width)
-				relative
-				bg-transparent
-				duration-200
-			`),
+			attr.Class("v-sidebar-gap"),
 		),
 		html.Div(
 			attr.Attr("data-slot")("sidebar-container"),
-			attr.Class(`
-				w-(--sidebar-width)
-				fixed
-				inset-y-0
-				z-10
-				h-svh
-				duration-200
-				md:flex
-				start-0
-				p-2
-			`),
+			attr.Class("v-sidebar-container"),
 		)(
 			html.Div(
 				attr.Attr("data-sidebar")("sidebar"),
 				attr.Attr("data-slot")("sidebar-inner"),
-				attr.Class(`
-					bg-gray-2
-					flex
-					h-full
-					w-full
-					flex-col
-				`),
+				attr.Class("v-sidebar-inner"),
 			)(
 				sidebarContent(),
 			),
@@ -112,14 +91,7 @@ func sidebarContent() html.Node {
 	return html.Div(
 		attr.Attr("data-slot")("sidebar-content"),
 		attr.Attr("data-sidebar")("content"),
-		attr.Class(`
-			flex
-			min-h-0
-			flex-1
-			flex-col
-			gap-2
-			overflow-auto
-		`),
+		attr.Class("v-sidebar-content"),
 	)(
 		html.Range(sidebarData(), sidebarGroup),
 	)
@@ -129,7 +101,7 @@ func sidebarGroup(v MenuSection) html.Node {
 	return html.Div(
 		attr.Attr("data-slot")("sidebar-group"),
 		attr.Attr("data-sidebar")("group"),
-		attr.Class("relative flex w-full min-w-0 flex-col p-2"),
+		attr.Class("v-sidebar-group"),
 	)(
 		html.If(v.Label != "", func() html.Node {
 			return sidebarGroupLabel(v.Label)
@@ -142,23 +114,7 @@ func sidebarGroupLabel(s string) html.Node {
 	return html.Div(
 		attr.Attr("data-slot")("sidebar-group-label"),
 		attr.Attr("data-sidebar")("group-label"),
-		attr.Class(`
-				text-gray-11/70
-				ring-accent-6
-				outline-hidden
-				flex
-				h-8
-				shrink-0
-				items-center
-				rounded-md
-				px-2
-				text-xs
-				font-medium
-				duration-200
-				focus-visible:ring-2
-				[&>svg]:size-4
-				[&>svg]:shrink-0
-			`),
+		attr.Class("v-sidebar-group-label"),
 	)(
 		html.Text(s),
 	)
@@ -168,7 +124,7 @@ func sidebarGroupContent(items []MenuItem) html.Node {
 	return html.Div(
 		attr.Attr("data-slot")("sidebar-group-content"),
 		attr.Attr("data-sidebar")("group-content"),
-		attr.Class("w-full text-sm"),
+		attr.Class("v-sidebar-group-content"),
 	)(
 		sidebarMenu(items),
 	)
@@ -178,7 +134,7 @@ func sidebarMenu(items []MenuItem) html.Node {
 	return html.Ul(
 		attr.Attr("data-slot")("sidebar-menu"),
 		attr.Attr("data-sidebar")("menu"),
-		attr.Class("flex w-full min-w-0 flex-col gap-1 gap-0"),
+		attr.Class("v-sidebar-menu"),
 	)(
 		html.Range(items, sidebarMenuItem),
 	)
@@ -188,7 +144,7 @@ func sidebarMenuItem(it MenuItem) html.Node {
 	return html.Li(
 		attr.Attr("data-slot")("sidebar-menu-item"),
 		attr.Attr("data-sidebar")("menu-item"),
-		attr.Class("group/menu-item relative"),
+		attr.Class("v-sidebar-menu-item"),
 	)(
 		sidebarMenuButton(it),
 	)
@@ -196,33 +152,7 @@ func sidebarMenuItem(it MenuItem) html.Node {
 
 func sidebarMenuButton(it MenuItem) html.Node {
 	return html.A(
-		attr.Class(`
-			peer/menu-button
-			outline-hidden
-			ring-accent-6
-			flex
-			w-full
-			items-center
-			gap-2
-			overflow-hidden
-			rounded-md
-			p-2
-			text-start
-			text-sm
-			focus-visible:ring-2
-			disabled:pointer-events-none
-			disabled:opacity-50
-			aria-disabled:pointer-events-none
-			aria-disabled:opacity-50
-			[&>span:last-child]:truncate
-			[&>svg]:size-4
-			[&>svg]:shrink-0
-			h-8
-			text-sm
-			highlight-link
-			data-selected:bg-gray-5
-			data-selected:text-accent-10
-		`),
+		attr.Class("v-sidebar-menu-button"),
 		it.Attr,
 		attr.Href(it.Path),
 		stimulus.Target("sidebar", "link"),

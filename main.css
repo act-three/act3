@@ -3,6 +3,7 @@
 @import "./ui/color.css";
 @import "./ui/ui.css" layer(components);
 @import "./view/player.css";
+@import "./view/sidebar/sidebar.css" layer(components);
 
 @theme {
 	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
