@@ -22,13 +22,13 @@ func EditMediaSeries(
 	s []*model.SeriesHead,
 	detail ...html.Node,
 ) html.Node {
-	return app(title, FlexCol(attr.Class("place-self-stretch"))(
+	return app(title, FlexCol(attr.Class("v-media-page"))(
 		ToolbarPrimary()(
 			DialogButton("/-/dialog/series-add", ButtonRadiusMedium, ButtonSurface)(
 				Icon("line/plus"),
 				html.Text("Add Series"),
 			),
-			html.Div(attr.Class("relative w-md"))(
+			html.Div(attr.Class("v-media-searchbar"))(
 				editMediaSeriesSearchbar(),
 			),
 			html.Div(),
@@ -44,7 +44,7 @@ func EditMediaSeries(
 					return Group(detail...)
 				},
 				func() html.Node {
-					return Center(Class("text-gray-11/50"))(
+					return Center(Class("v-media-muted"))(
 						html.Text("No Series Selected"),
 					)
 				},
@@ -62,7 +62,7 @@ func EditMediaSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node
 		CardMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
 		CardContent()(
 			CardTitle()(html.Text(ss.Title())),
-			CardDescription(attr.Class("line-clamp-2"))(
+			CardDescription(LineClamp2)(
 				html.If(ss.PremieredOn() != nil,
 					func() html.Node { return html.Text(*ss.PremieredOn()) },
 				),
@@ -77,14 +77,14 @@ func EditMediaSeriesDetail(
 	sed *model.SeriesEdition,
 	dls []*model.DownloadHead,
 ) html.Node {
-	return FlexCol(Class("place-self-stretch h-full w-full"))(
+	return FlexCol(Class("v-media-detail"))(
 		ScrollY(
-			Class("p-4"),
+			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
 				FlexRow(Gap2)(
 					html.Img(),
-					FlexCol(Gap4, Class("p-4"))(
+					FlexCol(Gap4, Class("v-media-detail-body"))(
 						html.H1()(html.Text(sr.Title())),
 						html.P()(html.Safe(sr.Summary())),
 					),
@@ -93,7 +93,7 @@ func EditMediaSeriesDetail(
 					attr.Name("order"),
 				)(
 					html.Div(
-						attr.Class("w-[180px]"),
+						attr.Class("v-media-selector-label"),
 					)(
 						html.Text("order by"),
 					),
@@ -131,7 +131,7 @@ func editMediaSeriesDetailEdition(
 	return html.Div()(
 		AddTorrentButton("sed-id", sed.ID()),
 		html.Div(
-			attr.Class("border"),
+			attr.Class("v-media-download-list"),
 		)(
 			turbo.Sink("edition-torrents-"+sed.ID())(
 				html.Range(dls, DownloadListItem),
@@ -181,10 +181,10 @@ func EditSeriesAddDialog() html.Node {
 		FlexCol(
 			attr.Attr("data-controller")("add-series"),
 			Gap2,
-			Class("w-2xl h-full"),
+			Class("v-media-dialog"),
 		)(
 			html.Div(
-				attr.Class("flex-none"),
+				attr.Class("v-media-dialog-fixed"),
 			)(
 				html.Text("Add Series"),
 			),
@@ -195,20 +195,12 @@ func EditSeriesAddDialog() html.Node {
 				InputText(
 					attr.Attr("autofocus"),
 					attr.Attr("data-action")("add-series#search"),
-					attr.Class("flex-none"),
+					attr.Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 				),
 			),
 			html.Div(
-				attr.Class(`
-					flex-initial
-					overflow-auto
-					overscroll-contain
-					h-dvh
-					max-h-full
-					border
-					rounded-sm
-				`),
+				attr.Class("v-media-dialog-results"),
 			)(
 				turbo.Frame("results"),
 			),
@@ -235,11 +227,11 @@ func EditEpisodeDialog(
 				html.Text(ep.Label()),
 			),
 
-			TextNode(FontBold, Class("mt-4"))(html.Text("Videos")),
+			TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Videos")),
 			expr.IfElse(len(videos) == 0,
 				func() html.Node {
 					return html.Div(
-						attr.Class("text-gray-500"),
+						attr.Class("v-media-muted"),
 					)(html.Text("No videos found"))
 				},
 				func() html.Node { return html.Group() },
@@ -248,11 +240,11 @@ func EditEpisodeDialog(
 				return editEpisodeDialogVideo(v)
 			}),
 
-			TextNode(FontBold, Class("mt-4"))(html.Text("Renditions for Streaming")),
+			TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
 			expr.IfElse(len(renditions) == 0,
 				func() html.Node {
 					return html.Div(
-						attr.Class("text-gray-500"),
+						attr.Class("v-media-muted"),
 					)(html.Text("No renditions found"))
 				},
 				func() html.Node { return html.Group() },
@@ -261,7 +253,7 @@ func EditEpisodeDialog(
 				return editEpisodeDialogRendition(r)
 			}),
 
-			TextNode(FontBold, Class("mt-4"))(html.Text("Metadata")),
+			TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Metadata")),
 			html.Div()(html.Text("Title")),
 			html.Div()(html.Text("Sort Title")),
 			html.Div()(html.Text("Season Number")),
@@ -280,7 +272,7 @@ func EditEpisodeDialog(
 
 func editEpisodeDialogVideo(v schema.Video) html.Node {
 	return html.Div(
-		attr.Class("ml-4 mt-2"),
+		attr.Class("v-media-indent"),
 	)(
 		html.Div()(
 			html.Text("ID: "),
@@ -305,7 +297,7 @@ func editEpisodeDialogVideo(v schema.Video) html.Node {
 			},
 			func() html.Node { return html.Group() },
 		),
-		FlexRow(Gap2, Class("mt-2"))(
+		FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
 			html.Form(
 				attr.Action("/-/do/reimport-video/"+v.ID),
 				attr.Method("POST"),
@@ -333,7 +325,7 @@ func editEpisodeDialogVideo(v schema.Video) html.Node {
 
 func editEpisodeDialogRendition(r schema.RenditionForStreaming) html.Node {
 	return html.Div(
-		attr.Class("ml-4 mt-2"),
+		attr.Class("v-media-indent"),
 	)(
 		html.Div()(
 			html.Text("ID: "),
@@ -395,13 +387,13 @@ type SeriesSearchResult struct {
 // adding a series.
 func EditSeriesSearchResults(results []SeriesSearchResult) html.Node {
 	return turbo.Frame("results")(
-		FlexCol(Gap4, Class("p-4"))(
+		FlexCol(Gap4, Class("v-media-detail-body"))(
 			html.Range(results, func(t SeriesSearchResult) html.Node {
 				frameID := "tvmaze-" + strconv.Itoa(t.TVmaze.ID)
-				return Card(CardSurface, CardSize3, Class("h-[200px]"))(
-					FlexRow(Gap4, Class("h-full"))(
-						Inset(InsetSideLeft, Class("flex-none"))(
-							PosterImg(Class("h-full"), attr.Src(t.TVmaze.Image.Medium())),
+				return Card(CardSurface, CardSize3, Class("v-media-search-card"))(
+					FlexRow(Gap4, attr.Style("height: 100%"))(
+						Inset(InsetSideLeft, Class("v-media-search-poster"))(
+							PosterImg(attr.Style("height: 100%"), attr.Src(t.TVmaze.Image.Medium())),
 						),
 						FlexCol(Gap2)(
 							html.Text(t.TVmaze.Name),

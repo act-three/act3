@@ -1,0 +1,118 @@
+/* edit-media page */
+.v-media-page {
+	place-self: stretch;
+}
+
+/* edit-media detail panel */
+.v-media-detail {
+	place-self: stretch;
+	height: 100%;
+	width: 100%;
+}
+
+/* edit-media detail body (scrollable content area) */
+.v-media-detail-body {
+	padding: 1rem;
+}
+
+/* edit-media searchbar container */
+.v-media-searchbar {
+	position: relative;
+	width: 28rem;
+}
+
+/* edit-media muted placeholder text */
+.v-media-muted {
+	color: color-mix(in oklab, var(--color-gray-11) 50%, transparent);
+}
+
+/* edit-media add-dialog inner layout */
+.v-media-dialog {
+	width: 42rem;
+	height: 100%;
+}
+
+/* edit-media dialog fixed (non-shrinking) element */
+.v-media-dialog-fixed {
+	flex: none;
+}
+
+/* edit-media dialog scrollable results area */
+.v-media-dialog-results {
+	flex: 0 1 auto;
+	overflow: auto;
+	overscroll-behavior: contain;
+	height: 100dvh;
+	max-height: 100%;
+	border: 1px solid var(--color-gray-a6);
+	border-radius: 0.125rem;
+}
+
+/* edit-media search result card */
+.v-media-search-card {
+	height: 200px;
+}
+
+/* edit-media search result poster */
+.v-media-search-poster {
+	flex: none;
+}
+
+/* edit-media download file group */
+.v-media-file-group {
+	border: 1px solid var(--color-gray-a6);
+	border-radius: 0.125rem;
+}
+
+/* edit-media file group season header */
+.v-media-file-group-header {
+	background-color: var(--color-accent-9);
+	padding: 0.5rem;
+	position: sticky;
+	top: 0;
+}
+
+/* edit-media file group body */
+.v-media-file-group-body {
+	padding: 0.5rem;
+}
+
+/* edit-media add-torrent form */
+.v-media-torrent-form {
+	display: flex;
+	flex-direction: row;
+	gap: 0.25rem;
+}
+
+/* edit-media hidden file picker */
+.v-media-torrent-picker {
+	display: none;
+}
+
+/* edit-media auto-import toggle label */
+.v-media-auto-import {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+/* edit-media edition/order selector label */
+.v-media-selector-label {
+	width: 180px;
+}
+
+/* edit-media download list item */
+.v-media-download-item {
+	padding: 0.25rem;
+}
+
+/* edit-media download list container */
+.v-media-download-list {
+	border: 1px solid var(--color-gray-a6);
+}
+
+/* edit-media video/rendition detail item */
+.v-media-indent {
+	margin-left: 1rem;
+	margin-top: 0.5rem;
+}

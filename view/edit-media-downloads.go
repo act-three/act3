@@ -22,10 +22,10 @@ func EditMediaDownloads(
 ) html.Node {
 	const torrentListID = "torrent-list"
 	return app(title,
-		FlexCol(Class("place-self-stretch"))(
+		FlexCol(Class("v-media-page"))(
 			ToolbarPrimary()(
 				Box(),
-				Box(Class("relative w-md"))(
+				Box(Class("v-media-searchbar"))(
 					editMediaDownloadsSearchBar(),
 				),
 				Box(),
@@ -33,7 +33,7 @@ func EditMediaDownloads(
 			Split()(
 				List("/app/downloads/", "detail",
 					attr.ID(torrentListID),
-					Class("flex-1"),
+					attr.Style("flex: 1"),
 				)(
 					ListItems(items, editMediaDownloadsListItem),
 				),
@@ -42,7 +42,7 @@ func EditMediaDownloads(
 						return editMediaDownloadsDetail(selected)
 					},
 					func() html.Node {
-						return Center(Class("text-gray-11/50"))(
+						return Center(Class("v-media-muted"))(
 							html.Text("No Download Selected"),
 						)
 					},
@@ -77,7 +77,7 @@ func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html
 				func() html.Node {
 					return html.Group(
 						CardTitle()(Text(dl.Title())),
-						CardDescription(attr.Class("line-clamp-2"))(
+						CardDescription(LineClamp2)(
 							Text(dl.Error()),
 						),
 					)
@@ -106,7 +106,7 @@ func editMediaDownloadsStreamItem(dl *model.DownloadHead) html.Node {
 // Shared by the series, movie, and download views.
 func DownloadListItem(dl *model.DownloadHead) html.Node {
 	return html.Div(
-		attr.Class("p-1"),
+		attr.Class("v-media-download-item"),
 	)(
 		html.A(
 			attr.Href(dl.URL()),
@@ -122,7 +122,7 @@ func DownloadListItem(dl *model.DownloadHead) html.Node {
 // Shared by the series and movie edit views.
 func AddTorrentButton(inputName, inputValue string) html.Node {
 	return html.Form(
-		attr.Class("flex flex-row gap-1 group"),
+		attr.Class("v-media-torrent-form"),
 		attr.Method("POST"),
 		attr.Enctype("multipart/form-data"),
 		attr.Action("/-/do/add-torrent"),
@@ -135,7 +135,7 @@ func AddTorrentButton(inputName, inputValue string) html.Node {
 			attr.Value(inputValue),
 		),
 		html.Input(
-			attr.Class("hidden"),
+			attr.Class("v-media-torrent-picker"),
 			attr.Type("file"),
 			attr.Name("torrent"),
 			stimulus.Target("add-torrent", "picker"),
@@ -159,9 +159,9 @@ func editMediaDownloadsDetail(dl *model.Download) html.Node {
 	}
 	return ScrollY()(
 		html.Div(
-			attr.Class("p-2"),
+			attr.Class("v-media-file-group-body"),
 		)(
-			html.H1(attr.Class("mb-2"))(Text(dl.Title())),
+			html.H1(attr.Style("margin-bottom: 0.5rem"))(Text(dl.Title())),
 			html.Div()(
 				editMediaDownloadsImportControl(dl),
 			),
@@ -197,7 +197,7 @@ func editMediaDownloadsImportButton(id string) html.Node {
 }
 
 func editMediaDownloadsAutoImportToggle(dl *model.Download) html.Node {
-	return html.Label(attr.Class("flex items-center gap-2"))(
+	return html.Label(attr.Class("v-media-auto-import"))(
 		Toggle("/-/do/auto-import-download", "auto-import", dl.AutoImport())(
 			html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(dl.ID())),
 		),
@@ -208,13 +208,13 @@ func editMediaDownloadsAutoImportToggle(dl *model.Download) html.Node {
 func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) html.Node {
 	displayDir, prefix := downloadsDirPrefix(dfs)
 	return html.Div(
-		attr.Class("border rounded-sm"),
+		attr.Class("v-media-file-group"),
 	)(
 		expr.IfElse(sn != nil,
 			func() html.Node {
 				// TODO(april): handle movies
 				return html.Div(
-					attr.Class("bg-accent-9 p-2 sticky top-0"),
+					attr.Class("v-media-file-group-header"),
 				)(
 					html.B()(html.Text(sn.Series().Title() + " — " + sn.Name())),
 				)
@@ -224,12 +224,12 @@ func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) ht
 			},
 		),
 		html.Div(
-			attr.Class("p-2"),
+			attr.Class("v-media-file-group-body"),
 		)(
 			html.Text(displayDir),
 		),
 		html.Div(
-			attr.Class("p-2"),
+			attr.Class("v-media-file-group-body"),
 		)(
 			html.Range(dfs, func(df *model.DownloadFile) html.Node {
 				ep := df.Episode()
@@ -249,7 +249,7 @@ func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) ht
 						CardDescription()(html.Text(displayPath)),
 						expr.IfElse(df.Progress() >= 0,
 							func() html.Node {
-								return Progress(df.Progress(), Class("mt-1"), ProgressSM)
+								return Progress(df.Progress(), attr.Style("margin-top: 0.25rem"), ProgressSM)
 							},
 							func() html.Node {
 								return html.Group()

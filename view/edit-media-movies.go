@@ -19,7 +19,7 @@ func EditMediaMovies(
 	s []*model.MovieHead,
 	detail ...html.Node,
 ) html.Node {
-	return app(title, FlexCol(attr.Class("place-self-stretch"))(
+	return app(title, FlexCol(attr.Class("v-media-page"))(
 		ToolbarPrimary()(
 			DialogButton("/-/dialog/movie-add")(
 				Icon("line/plus"),
@@ -38,7 +38,7 @@ func EditMediaMovies(
 					return Group(detail...)
 				},
 				func() html.Node {
-					return Center(Class("text-gray-11/50"))(
+					return Center(Class("v-media-muted"))(
 						html.Text("No Movie Selected"),
 					)
 				},
@@ -58,7 +58,7 @@ func EditMediaMoviesListItem(
 		CardMedia()(html.Img(attr.Src(mo.ImageURL()))),
 		CardContent()(
 			CardTitle()(html.Text(mo.Title())),
-			CardDescription(attr.Class("line-clamp-2"))(
+			CardDescription(LineClamp2)(
 				html.Text(mo.YearDisplay()),
 			),
 		),
@@ -70,9 +70,9 @@ func EditMediaMoviesDetail(
 	med *model.MovieEdition,
 	dls []*model.DownloadHead,
 ) html.Node {
-	return FlexCol(Class("place-self-stretch h-full w-full"))(
+	return FlexCol(Class("v-media-detail"))(
 		ScrollY(
-			Class("p-4"),
+			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
 				FlexRow(Gap2)(
@@ -86,7 +86,7 @@ func EditMediaMoviesDetail(
 							return html.Group()
 						},
 					),
-					FlexCol(Gap4, Class("p-4"))(
+					FlexCol(Gap4, Class("v-media-detail-body"))(
 						html.H1()(html.Text(mo.Title())),
 						html.If(mo.YearDisplay() != "", func() html.Node {
 							return html.P()(html.Text(mo.YearDisplay()))
@@ -102,9 +102,9 @@ func EditMediaMoviesDetail(
 
 func EditMovieAddDialog() html.Node {
 	return Dialog(
-		FlexCol(Gap2, Class("w-2xl h-full"))(
+		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
-				attr.Class("flex-none"),
+				attr.Class("v-media-dialog-fixed"),
 			)(
 				html.Text("Add Movie"),
 			),
@@ -114,20 +114,12 @@ func EditMovieAddDialog() html.Node {
 			)(
 				InputText(
 					attr.Attr("autofocus"),
-					attr.Class("flex-none"),
+					attr.Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 				),
 			),
 			html.Div(
-				attr.Class(`
-					flex-initial
-					overflow-auto
-					overscroll-contain
-					h-dvh
-					max-h-full
-					border
-					rounded-sm
-				`),
+				attr.Class("v-media-dialog-results"),
 			)(
 				turbo.Frame("results"),
 			),
@@ -146,15 +138,15 @@ type MovieSearchResult struct {
 // adding a movie.
 func EditMovieSearchResults(results []MovieSearchResult) html.Node {
 	return turbo.Frame("results")(
-		FlexCol(Gap4, Class("p-4"))(
+		FlexCol(Gap4, Class("v-media-detail-body"))(
 			html.Range(results, func(t MovieSearchResult) html.Node {
 				frameID := "tmdb-" + strconv.Itoa(t.TMDB.ID)
 				return Card(CardSurface, CardSize3,
-					Class("h-[200px]"),
+					Class("v-media-search-card"),
 				)(
-					FlexRow(Gap4, Class("h-full"))(
-						Inset(InsetSideLeft, Class("flex-none"))(
-							PosterImg(Class("h-full"), attr.Src(tmdb.ImageURL(t.TMDB.PosterPath))),
+					FlexRow(Gap4, attr.Style("height: 100%"))(
+						Inset(InsetSideLeft, Class("v-media-search-poster"))(
+							PosterImg(attr.Style("height: 100%"), attr.Src(tmdb.ImageURL(t.TMDB.PosterPath))),
 						),
 						FlexCol(Gap2)(
 							movieSearchTitle(t.TMDB),
@@ -223,7 +215,7 @@ func editMediaMoviesDetailEdition(
 		editMediaMoviesEditionSelector(mo),
 		AddTorrentButton("med-id", med.ID()),
 		html.Div(
-			attr.Class("border"),
+			attr.Class("v-media-download-list"),
 		)(
 			turbo.Sink("edition-torrents-"+med.ID())(
 				html.Range(dls, DownloadListItem),
@@ -238,7 +230,7 @@ func editMediaMoviesEditionSelector(mo *model.Movie) html.Node {
 		attr.Name("edition"),
 	)(
 		html.Div(
-			attr.Class("w-[180px]"),
+			attr.Class("v-media-selector-label"),
 		)(
 			html.Text("edition"),
 		),
@@ -258,13 +250,13 @@ func editMediaMoviesDetailVideos(med *model.MovieEdition) html.Node {
 	vids := med.Videos()
 	if len(vids) == 0 {
 		return html.Div(
-			attr.Class("text-gray-11/50"),
+			attr.Class("v-media-muted"),
 		)(html.Text("No videos"))
 	}
 	return FlexCol(Gap2)(
 		TextNode(FontBold)(html.Text("Videos")),
 		html.Range(vids, func(v *model.Video) html.Node {
-			return html.Div(Class("ml-4 mt-2"))(
+			return html.Div(Class("v-media-indent"))(
 				html.Div()(
 					html.Text("ID: "),
 					html.Text(v.ID()),
@@ -273,7 +265,7 @@ func editMediaMoviesDetailVideos(med *model.MovieEdition) html.Node {
 					html.Text("Path: "),
 					html.Text(v.ReleasePath()),
 				),
-				FlexRow(Gap2, Class("mt-2"))(
+				FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
 					html.Form(
 						attr.Action("/-/do/reimport-video/"+v.ID()),
 						attr.Method("POST"),
