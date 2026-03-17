@@ -1,14 +1,14 @@
 import "./web/turbo.es2017-esm.js";
 import { Application } from "./web/stimulus.js";
-import DialogController from "./view/dialog-controller.js";
-import PlayerController from "./view/player-controller.js";
+import DialogController from "./view/dialog.js";
+import PlayerController from "./view/player.js";
 import ListController from "./ui/list.js";
-import SidebarController from "./view/sidebar/sidebar-controller.js";
-import AddTorrentController from "./view/add-torrent-controller.js";
+import SidebarController from "./view/sidebar/sidebar.js";
+import AddTorrentController from "./view/add-torrent.js";
 import NotePortController from "./ui/note-port.js";
 import SelectController from "./ui/select.js";
 import ToggleController from "./ui/toggle.js";
-import TopbarController from "./view/topbar-controller.js";
+import TopbarController from "./view/topbar.js";
 
 window.Stimulus = Application.start();
 Stimulus.register("dialog", DialogController);

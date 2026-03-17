@@ -7885,15 +7885,15 @@
   Controller.outlets = [];
   Controller.values = {};
 
-  // view/dialog-controller.js
-  var dialog_controller_default = class extends Controller {
+  // view/dialog.js
+  var dialog_default = class extends Controller {
     dismiss() {
       this.element.classList.add("hidden");
     }
   };
 
-  // view/player-controller.js
-  var player_controller_default = class extends Controller {
+  // view/player.js
+  var player_default = class extends Controller {
     static targets = [
       "video",
       "volume",
@@ -8414,8 +8414,8 @@
     }
   };
 
-  // view/sidebar/sidebar-controller.js
-  var sidebar_controller_default = class extends Controller {
+  // view/sidebar/sidebar.js
+  var sidebar_default = class extends Controller {
     static targets = ["link"];
     initialize() {
       this.#showSelected(document.location);
@@ -8451,8 +8451,8 @@
     }
   };
 
-  // view/add-torrent-controller.js
-  var add_torrent_controller_default = class extends Controller {
+  // view/add-torrent.js
+  var add_torrent_default = class extends Controller {
     static targets = ["picker", "button"];
     open() {
       this.pickerTarget.click();
@@ -8851,8 +8851,8 @@
     }
   };
 
-  // view/topbar-controller.js
-  var topbar_controller_default = class extends Controller {
+  // view/topbar.js
+  var topbar_default = class extends Controller {
     #ro;
     connect() {
       this.#ro = new ResizeObserver(([e]) => {
@@ -8867,15 +8867,15 @@
 
   // main.js
   window.Stimulus = Application.start();
-  Stimulus.register("dialog", dialog_controller_default);
-  Stimulus.register("player", player_controller_default);
+  Stimulus.register("dialog", dialog_default);
+  Stimulus.register("player", player_default);
   Stimulus.register("list", list_default);
-  Stimulus.register("sidebar", sidebar_controller_default);
-  Stimulus.register("add-torrent", add_torrent_controller_default);
+  Stimulus.register("sidebar", sidebar_default);
+  Stimulus.register("add-torrent", add_torrent_default);
   Stimulus.register("note-port", note_port_default);
   Stimulus.register("select", select_default);
   Stimulus.register("toggle", toggle_default);
-  Stimulus.register("topbar", topbar_controller_default);
+  Stimulus.register("topbar", topbar_default);
 })();
 /*!
 Turbo 8.0.19
