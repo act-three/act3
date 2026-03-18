@@ -73,16 +73,6 @@
 	box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
-/* variant: outline — border only, neutral text */
-.u-button[data-variant="outline"]:focus-visible { outline-offset: -1px; }
-.u-button[data-variant="outline"] {
-	background-color: transparent;
-	box-shadow: inset 0 0 0 1px var(--border-strong);
-	color: var(--text);
-}
-@media (hover: hover) { .u-button[data-variant="outline"]:hover { background-color: var(--bg-surface); } }
-.u-button[data-variant="outline"]:active:not(:disabled) { background-color: var(--bg-hover); }
-
 /* variant: ghost — transparent, neutral text */
 .u-button[data-variant="ghost"]:focus-visible { outline-offset: -1px; }
 .u-button[data-variant="ghost"] {

@@ -23,7 +23,6 @@ func Button(attrs ...attr.Node) html.Element {
 var (
 	ButtonSolid       = attr.Attr("data-variant")("solid")
 	ButtonSurface     = attr.Attr("data-variant")("surface")
-	ButtonOutline     = attr.Attr("data-variant")("outline")
 	ButtonGhost       = attr.Attr("data-variant")("ghost")
 	ButtonDestructive = attr.Attr("data-variant")("destructive")
 )
