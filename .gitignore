@@ -3,6 +3,7 @@
 *.db-shm
 *.db-wal
 /.mcp.json
+/.playwright-mcp/
 /deploy
 /node_modules
 /src
