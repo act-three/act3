@@ -2481,7 +2481,7 @@
 /* view/sidebar/sidebar.css */
 @layer components {
   .v-sidebar {
-    color: var(--text);
+    color: var(--text-3);
   }
   @media (min-width: 768px) {
     .v-sidebar {
@@ -2594,7 +2594,7 @@
   }
   .v-sidebar-menu-button[data-selected] {
     background-color: var(--bg-active);
-    color: var(--accent-hover);
+    color: var(--accent-text);
   }
 }
 

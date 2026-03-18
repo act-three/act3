@@ -1,5 +1,5 @@
 /* sidebar */
-.v-sidebar { color: var(--text); }
+.v-sidebar { color: var(--text-3); }
 @media (min-width: 768px) { .v-sidebar { display: block; } }
 
 /* sidebar-gap */
@@ -113,5 +113,5 @@
 }
 .v-sidebar-menu-button[data-selected] {
 	background-color: var(--bg-active);
-	color: var(--accent-hover);
+	color: var(--accent-text);
 }
