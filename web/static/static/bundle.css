@@ -2325,10 +2325,10 @@
     inset: -0.5rem;
     pointer-events: none;
   }
-  .v-series-spoiler-blur-text {
+  .v-series-episode[data-spoiler] .v-series-episode-summary > .v-series-spoiler-overlay {
     backdrop-filter: blur(4px);
   }
-  .v-series-spoiler-blur-image {
+  .v-series-episode[data-spoiler] .v-series-episode-thumb > .v-series-spoiler-overlay {
     backdrop-filter: blur(12px);
   }
   .v-series-episode-thumb {

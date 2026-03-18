@@ -67,11 +67,9 @@
 	pointer-events: none;
 }
 
-/* spoiler blur for text summaries */
-.v-series-spoiler-blur-text { backdrop-filter: blur(4px); }
-
-/* spoiler blur for thumbnail images */
-.v-series-spoiler-blur-image { backdrop-filter: blur(12px); }
+/* spoiler blur (activated by data-spoiler on the episode row) */
+.v-series-episode[data-spoiler] .v-series-episode-summary > .v-series-spoiler-overlay { backdrop-filter: blur(4px); }
+.v-series-episode[data-spoiler] .v-series-episode-thumb > .v-series-spoiler-overlay { backdrop-filter: blur(12px); }
 
 /* episode thumbnail (right side) */
 .v-series-episode-thumb {

@@ -51,17 +51,15 @@ func mediaSeriesSeason(sn *model.Season) html.Node {
 
 func mediaSeriesEpisode(ep *model.Episode) html.Node {
 	const doHideSpoilers = false
-	hideSpoilersText := group()
-	hideSpoilersImage := group()
+	spoiler := group()
 	if doHideSpoilers {
-		hideSpoilersText = Class("v-series-spoiler-blur-text")
-		hideSpoilersImage = Class("v-series-spoiler-blur-image")
+		spoiler = Attr("data-spoiler")
 	}
 	vids := ep.Videos()
 	playable := slices.IndexFunc(vids, func(v *model.Video) bool {
 		return v.MVPlaylist() != ""
 	})
-	return Grid8(Class("v-series-episode"))(
+	return Grid8(Class("v-series-episode"), spoiler)(
 		FlexCol(Class("v-series-episode-info"))(
 			FlexRow(Class("v-series-episode-header"))(
 				Box()(
@@ -90,14 +88,14 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 			),
 			Box(Class("v-series-episode-summary"))(
 				TextNode(TextSize2, LineClamp4)(html.Safe(ep.Summary())),
-				Box(Class("v-series-spoiler-overlay"), hideSpoilersText),
+				Box(Class("v-series-spoiler-overlay")),
 			),
 		),
 		Box(HoverOverlay, Class("v-series-episode-thumb"))(
 			html.A(attr.Href(ep.DetailURL()))(
 				PosterImg(PosterFill, PosterAspect169, Class("v-series-episode-thumb"), attr.Src(ep.ImageURL())),
 			),
-			Box(Class("v-series-spoiler-overlay"), hideSpoilersImage),
+			Box(Class("v-series-spoiler-overlay")),
 			Box(Class("v-series-episode-progress"))(
 				Progress(0.1, ProgressSM),
 			),
