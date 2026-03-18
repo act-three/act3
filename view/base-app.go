@@ -17,13 +17,16 @@ func app(title string, child ...html.Node) html.Node {
 			attr.Style("--sidebar-width: 200px; --sidebar-width-mobile: 20rem;"),
 		)(
 			sidebar.Sidebar(),
-			turbo.Frame("main",
+			html.Div(
 				attr.Role("main"),
-				turbo.DataAction("advance"),
 				attr.Attr("data-slot")("sidebar-inset"),
 				attr.Class("v-app-main"),
 			)(
-				child...,
+				turbo.Frame("main",
+					turbo.DataAction("advance"),
+				)(
+					child...,
+				),
 			),
 		),
 		turbo.Frame("dialog"),
