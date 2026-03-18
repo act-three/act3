@@ -1,8 +1,9 @@
 //go:build ignore
 
-// Post-processes the CSS bundle with esbuild. Inlines icon SVG
-// url() references as data URIs, falling back to the missing
-// icon if the referenced file doesn't exist.
+// Bundles the CSS from main.css into web/static/static/bundle.css
+// using esbuild. Inlines icon SVG url() references as data URIs,
+// falling back to the missing icon if the referenced file doesn't
+// exist.
 //
 // Usage (called by go generate in main.go):
 //
@@ -20,7 +21,8 @@ import (
 )
 
 const (
-	cssFile    = "web/static/static/bundle.css"
+	cssEntry   = "main.css"
+	cssOut     = "web/static/static/bundle.css"
 	iconPrefix = "icon/"
 	iconDir    = "ui/icon/svg"
 )
@@ -52,13 +54,12 @@ func main() {
 
 func run() error {
 	result := api.Build(api.BuildOptions{
-		EntryPoints:    []string{cssFile},
-		Outfile:        cssFile,
-		Bundle:         true,
-		Write:          true,
-		AllowOverwrite: true,
-		LogLevel:       api.LogLevelWarning,
-		Plugins:        []api.Plugin{iconPlugin()},
+		EntryPoints: []string{cssEntry},
+		Outfile:     cssOut,
+		Bundle:      true,
+		Write:       true,
+		LogLevel:    api.LogLevelWarning,
+		Plugins:     []api.Plugin{iconPlugin()},
 	})
 	if len(result.Errors) > 0 {
 		return fmt.Errorf("esbuild: %s", result.Errors[0].Text)

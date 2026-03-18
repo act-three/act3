@@ -26,7 +26,6 @@ import (
 	"ily.dev/act3/web"
 )
 
-//go:generate tailwindcss -i main.css -o web/static/static/bundle.css
 //go:generate go run web/static/gen.go
 //go:generate go tool esbuild --bundle --outfile=web/static/static/bundle.js main.js
 

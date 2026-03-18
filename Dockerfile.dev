@@ -46,17 +46,6 @@ RUN GOBIN=/usr/local/bin go install mvdan.cc/sh/v3/cmd/shfmt@latest
 # dprint — JS/CSS/JSON/SQL/shell formatter
 RUN curl -fsSL https://dprint.dev/install.sh | DPRINT_INSTALL=/usr/local sh
 
-# tailwindcss v4 standalone CLI
-RUN ARCH=$(uname -m) && \
-	case "$ARCH" in \
-		x86_64)  TW_ARCH="x64" ;; \
-		aarch64) TW_ARCH="arm64" ;; \
-		*)       echo "unsupported arch: $ARCH" && exit 1 ;; \
-	esac && \
-	curl -fsSL -o /usr/local/bin/tailwindcss \
-		"https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-linux-${TW_ARCH}-musl" && \
-	chmod +x /usr/local/bin/tailwindcss
-
 # Login environment for SSH sessions (Docker ENV doesn't apply to sshd)
 RUN printf '%s\n' \
 	'export PATH="/home/dev/.local/bin:/usr/local/go/bin:$PATH"' \

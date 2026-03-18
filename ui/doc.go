@@ -1,7 +1,7 @@
 /*
 Package ui provides styled web components.
 It generates plain HTML markup,
-using Stimulus for in-client behavior and CSS (tailwind) for style.
+using Stimulus for in-client behavior and CSS for style.
 
 Style and function are broadly based on [Radix UI][radix].
 

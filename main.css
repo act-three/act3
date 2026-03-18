@@ -1,15 +1,16 @@
 @import "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap";
-@import "tailwindcss";
-@import "./ui/color.css";
+@import "./ui/preflight.css" layer(base);
+@import "./ui/color.css" layer(base);
 @import "./ui/ui.css" layer(components);
 @import "./view/view.css" layer(components);
 
-@theme {
-	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
-	/* TODO(april): font-serif and font-mono */
-}
-
 @layer base {
+	:root {
+		--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
+		--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		--text-xl: 1.25rem;
+	}
+
 	body {
 		background-color: var(--color-gray-0);
 		color: var(--color-gray-12);
@@ -22,11 +23,12 @@
 		--radius-6: calc(16px * var(--scale) * var(--radius-factor, 1));
 		--radius-full: 0px;
 		min-height: 100vh;
+		font-family: var(--font-sans);
 		font-optical-sizing: auto;
-		font-size: var(--body);
+		font-size: 1rem;
 		font-style: normal;
 		font-weight: 400;
-		line-height: var(--body-lh);
+		line-height: 1.5;
 		-webkit-text-size-adjust: 100%;
 		-moz-text-size-adjust: none;
 		text-size-adjust: none;
@@ -36,3 +38,5 @@
 
 	body:has(.v-app), body:has(#full-player) { overflow: hidden; }
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }

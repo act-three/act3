@@ -1,7 +1,4 @@
-@theme {
-	/* reset all Tailwind default colors */
-	--color-*: initial;
-
+:root {
 	--color-transparent: color(display-p3 0 0 0 / 0);
 	--color-gray-0: oklch(0 0 0); /* pure black */
 
@@ -141,4 +138,7 @@
 	--color-accent-a10: var(--color-crimson-a10);
 	--color-accent-a11: var(--color-crimson-a11);
 	--color-accent-a12: var(--color-crimson-a12);
+
+	/* additional named colors */
+	--color-red-9: color(display-p3 0.83 0.29 0.29);
 }
