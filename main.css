@@ -1,5 +1,5 @@
 @import "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap";
-@import "./ui/preflight.css" layer(base);
+@import "./ui/preflight.css" layer(preflight);
 @import "./ui/color.css" layer(base);
 @import "./ui/ui.css" layer(components);
 @import "./view/view.css" layer(components);
