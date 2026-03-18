@@ -40,6 +40,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption) htm
 			stimulus.Value("player", "harlow")("false"),
 			stimulus.Value("player", "hide-controls")("false"),
 			stimulus.Value("player", "current-quality")("Auto"),
+			stimulus.Value("player", "quality-menu-open")("false"),
 
 			stimulus.Action("keydown.h@window->player#toggleHarlow"),
 			stimulus.Action("keydown@window->player#handleKey"),
@@ -176,7 +177,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle)(Icon("line/settings-04")),
 		html.Div(
 			stimulus.Target("player", "qualityMenu"),
-			Class("v-player-quality-menu hidden"),
+			Class("v-player-quality-menu"),
 		)(items...),
 	)
 }

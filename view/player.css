@@ -344,8 +344,9 @@
 /* player-volume-bar (volume slider row) */
 .v-player-volume-bar { align-items: center; }
 
-/* player-quality-menu */
+/* player-quality-menu (hidden by default, shown via stimulus value) */
 .v-player-quality-menu {
+	display: none;
 	position: absolute;
 	bottom: 100%;
 	right: 0;
@@ -356,6 +357,7 @@
 	padding-block: 0.25rem;
 	min-width: 120px;
 }
+.v-player[data-player-quality-menu-open-value="true"] .v-player-quality-menu { display: block; }
 
 /* player-quality-option */
 .v-player-quality-option {

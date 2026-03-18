@@ -21,6 +21,7 @@ export default class extends Controller {
 		hideControls: Boolean,
 		loading: Boolean,
 		currentQuality: String,
+		qualityMenuOpen: Boolean,
 	};
 
 	#isTouch = false;
@@ -241,7 +242,7 @@ export default class extends Controller {
 	// --- Quality menu ---
 
 	toggleQualityMenu() {
-		this.qualityMenuTarget.classList.toggle("hidden");
+		this.qualityMenuOpenValue = !this.qualityMenuOpenValue;
 	}
 
 	setQuality(e) {
@@ -270,7 +271,7 @@ export default class extends Controller {
 		video.addEventListener("loadedmetadata", restore);
 
 		this.currentQualityValue = label;
-		this.qualityMenuTarget.classList.add("hidden");
+		this.qualityMenuOpenValue = false;
 
 		// Update active state on menu items.
 		for (const btn of this.qualityMenuTarget.querySelectorAll("button")) {

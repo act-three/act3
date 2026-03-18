@@ -2665,6 +2665,7 @@
     align-items: center;
   }
   .v-player-quality-menu {
+    display: none;
     position: absolute;
     bottom: 100%;
     right: 0;
@@ -2674,6 +2675,9 @@
     border-radius: 0.5rem;
     padding-block: 0.25rem;
     min-width: 120px;
+  }
+  .v-player[data-player-quality-menu-open-value=true] .v-player-quality-menu {
+    display: block;
   }
   .v-player-quality-option {
     width: 100%;

@@ -7913,7 +7913,8 @@
       harlow: Boolean,
       hideControls: Boolean,
       loading: Boolean,
-      currentQuality: String
+      currentQuality: String,
+      qualityMenuOpen: Boolean
     };
     #isTouch = false;
     #timerControls = null;
@@ -8070,7 +8071,7 @@
     }
     // --- Quality menu ---
     toggleQualityMenu() {
-      this.qualityMenuTarget.classList.toggle("hidden");
+      this.qualityMenuOpenValue = !this.qualityMenuOpenValue;
     }
     setQuality(e) {
       const url = e.params.url;
@@ -8092,7 +8093,7 @@
       };
       video.addEventListener("loadedmetadata", restore);
       this.currentQualityValue = label;
-      this.qualityMenuTarget.classList.add("hidden");
+      this.qualityMenuOpenValue = false;
       for (const btn of this.qualityMenuTarget.querySelectorAll("button")) {
         if (btn.dataset.playerLabelParam === label) {
           btn.setAttribute("data-active", "");
