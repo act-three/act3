@@ -6,38 +6,37 @@
 		"web/static/static/",
 		"web/stimulus.js",
 		"web/turbo.es2017-esm.js",
-		"database/schema/",
-		"database/sqlc.json",
+		"database/schema/"
 	],
 	"plugins": [
 		"https://plugins.dprint.dev/typescript-0.93.3.wasm",
 		"https://plugins.dprint.dev/json-0.21.1.wasm",
 		"https://plugins.dprint.dev/g-plane/malva-v0.15.2.wasm",
 		"https://plugins.dprint.dev/sql-0.2.0.wasm",
-		"https://plugins.dprint.dev/exec-0.6.0.json@a054130d458f124f9b5c91484833828950723a5af3f8ff2bd1523bd47b83b364",
+		"https://plugins.dprint.dev/exec-0.6.0.json@a054130d458f124f9b5c91484833828950723a5af3f8ff2bd1523bd47b83b364"
 	],
 	"typescript": {
 		"module.sortImportDeclarations": "maintain",
 		"module.sortExportDeclarations": "maintain",
-		"trailingCommas": "onlyMultiLine",
+		"trailingCommas": "onlyMultiLine"
 	},
 	"json": {
-		"trailingCommas": "always",
+		"trailingCommas": "never"
 	},
 	"malva": {
-		"singleLineBlockThreshold": 1,
+		"singleLineBlockThreshold": 1
 	},
 	"sql": {
 		"useTabs": true,
-		"indentWidth": 4,
+		"indentWidth": 4
 	},
 	"exec": {
 		"commands": [
 			{
 				"command": "shfmt -i 0 -ci -bn",
 				"exts": ["sh"],
-				"fileNames": ["mk"],
-			},
-		],
-	},
+				"fileNames": ["mk"]
+			}
+		]
+	}
 }

@@ -7,6 +7,6 @@
 		"reveal": "always",
 		"hide": "on_success",
 		"show_summary": true,
-		"show_command": true,
-	},
+		"show_command": true
+	}
 ]
