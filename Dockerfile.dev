@@ -15,6 +15,7 @@ RUN apk add --no-cache \
 	openssh-server \
 	rsync \
 	tzdata \
+	vim \
 	zsh
 
 # Video processing (dev builds; deploy.sh builds its own static ffmpeg)
