@@ -1,0 +1,10 @@
+/* schema mismatch / degraded page */
+
+.v-degraded {
+	max-width: 42rem;
+	margin-inline: auto;
+	padding: 2rem;
+}
+
+/* destructive action warning card */
+.v-degraded-alert { border: 2px solid var(--color-red-9); }

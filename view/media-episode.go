@@ -15,21 +15,21 @@ func MediaEpisode(
 	dls []*model.RenditionForDownload,
 ) html.Node {
 	return media(ep.Title(), ep.ImageURL())(
-		Grid12(Class("pt-16"))(
-			FlexCol(ColSpan7, Class("gap-4"))(
+		Grid12(Class("v-detail"))(
+			FlexCol(ColSpan7, Class("v-detail-info"))(
 				Text(ep.SeriesHead().Title()),
 				Grid7()(
-					Text("S01E01", Class("text-gray-11")),
+					Text("S01E01", Class("v-detail-muted")),
 					Box(ColSpan2)(
-						Text("2026-03-05", Class("text-gray-11")),
+						Text("2026-03-05", Class("v-detail-muted")),
 					),
 				),
 				Text(ep.Title(), TextSize7),
 				FlexRow(Gap3)(
-					FlexCol(Class("w-[168px]"))(
+					FlexCol(Class("v-detail-play"))(
 						playButton(ep),
 					),
-					FlexCol(Class("w-[168px]"))(
+					FlexCol(Class("v-detail-play"))(
 						Button(Disabled(true), ButtonSize3)(Icon("solid/play"), Text("Play from 5:18:02")),
 					),
 					FlexCol()(
@@ -40,16 +40,6 @@ func MediaEpisode(
 					),
 					FlexCol()(
 						Button(ButtonGhost, ButtonSize3)(Icon("line/download-01")),
-						//html.Range(dls, func(r *model.RenditionForDownload) html.Node {
-						//	return html.Div()(
-						//		html.A(
-						//			attr.Href(r.URL()),
-						//			attr.Download(r.Filename()),
-						//		)(
-						//			html.Text(r.Label()),
-						//		),
-						//	)
-						//}),
 					),
 					FlexCol()(
 						Button(ButtonGhost, ButtonSize3)(Icon("line/info-circle")),

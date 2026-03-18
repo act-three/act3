@@ -1,9 +1,11 @@
 /* keep sorted */
 @import "./base-app.css";
 @import "./base-media.css";
+@import "./degraded.css";
 @import "./edit-media.css";
 @import "./edit-system.css";
 @import "./home.css";
+@import "./media-detail.css";
 @import "./media-series.css";
 @import "./player.css";
 @import "./progress.css";

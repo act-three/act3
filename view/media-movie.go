@@ -14,18 +14,17 @@ func MediaMovie(
 ) html.Node {
 	med := mo.EditionByTitle(model.DefaultEdition)
 	return media(mo.Title(), mo.ImageURL())(
-		Grid12(Class("pt-16"))(
-			FlexCol(ColSpan7, Class("gap-4"))(
+		Grid12(Class("v-detail"))(
+			FlexCol(ColSpan7, Class("v-detail-info"))(
 				expr.IfElse(mo.YearDisplay() != "",
 					func() html.Node {
-						return Text(mo.YearDisplay(),
-							Class("text-gray-11"))
+						return Text(mo.YearDisplay(), Class("v-detail-muted"))
 					},
 					func() html.Node { return html.Group() },
 				),
 				Text(mo.Title(), TextSize7),
 				FlexRow(Gap3)(
-					FlexCol(Class("w-[168px]"))(
+					FlexCol(Class("v-detail-play"))(
 						moviePlayButton(mo, med),
 					),
 					FlexCol()(

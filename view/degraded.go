@@ -23,7 +23,7 @@ func Degraded(
 	hasData := totalRows > 0
 
 	return base("Schema Mismatch")()(
-		FlexCol(Class("max-w-2xl mx-auto p-8"), Gap6)(
+		FlexCol(Class("v-degraded"), Gap6)(
 			Text("Schema Mismatch", TextSize7, FontBold),
 			Text("The database schema does not match "+
 				"what this version of the server expects. "+
@@ -74,7 +74,7 @@ func Degraded(
 func degradedAction(hasData bool) html.Node {
 	if hasData {
 		return Group(
-			Card(Class("border-2 border-red-9"))(
+			Card(Class("v-degraded-alert"))(
 				CardContent()(
 					Text("Reinitializing will delete all "+
 						"existing data. This cannot be "+
