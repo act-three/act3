@@ -17,9 +17,7 @@ func base(title string, head ...html.Node) func(...attr.Node) html.Element {
 		return func(body ...html.Node) html.Node {
 			return Group(
 				html.Doctype,
-				html.Html(
-					Class("group/active-url"),
-				)(
+				html.Html()(
 					html.Head()(
 						html.Meta(attr.Charset("utf-8")),
 						html.Meta(attr.Name("viewport"), attr.Content("width=device-width,initial-scale=1")),
