@@ -1,7 +1,7 @@
 /* app shell wrapper */
 .v-app {
 	isolation: isolate;
-	background-color: var(--bg-surface);
+	background-color: var(--bg);
 	display: flex;
 	min-height: 100svh;
 	height: 100svh;
@@ -10,7 +10,7 @@
 
 /* app main content inset */
 .v-app-main {
-	background-color: var(--bg-input);
+	background-color: var(--bg-subtle);
 	position: relative;
 	width: 100%;
 	flex: 1;

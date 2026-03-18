@@ -26,7 +26,6 @@
 
 /* sidebar-inner */
 .v-sidebar-inner {
-	background-color: var(--bg-surface);
 	display: flex;
 	height: 100%;
 	width: 100%;
