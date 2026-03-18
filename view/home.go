@@ -15,7 +15,7 @@ func Home(works []*model.Work) html.Node {
 		}
 	}
 	return media("Act Three", washURLs...)(
-		FlexRow(Gap4, Class("py-4"))(
+		FlexRow(Gap4, Class("v-home-toolbar"))(
 			ButtonGroup(ButtonGroupRadiusLarge)(
 				Button(ButtonSurface)(Text("Title")),
 				Button(ButtonSurface)(Icon("line/switch-vertical-01")),
@@ -27,25 +27,19 @@ func Home(works []*model.Work) html.Node {
 			Button(ButtonSurface, ButtonRadiusLarge)(Icon("line/filter-lines")),
 			InputText()(),
 		),
-		FlexRow(Class(`
-					w-full
-					flex-wrap
-					justify-center
-					content-start
-					gap-[1px]
-				`))(
+		FlexRow(Class("v-home-grid"))(
 			html.Range(works, workPosterLink),
 		),
 	)
 }
 
 func workPosterLink(w *model.Work) html.Node {
-	return Box(HoverOverlay, Class("aspect-2/3 w-[187px]"))(
+	return Box(HoverOverlay, Class("v-home-poster"))(
 		html.A(
-			Class("block w-full h-full"),
+			Class("v-home-poster-link"),
 			attr.Href(w.PlayURL()),
 		)(
-			PosterImg(PosterFill, Class("h-full"), attr.Src(w.ImageURL())),
+			PosterImg(PosterFill, attr.Src(w.ImageURL())),
 		),
 	)
 }

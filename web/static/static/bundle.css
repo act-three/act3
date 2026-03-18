@@ -352,20 +352,8 @@
   .table {
     display: table;
   }
-  .aspect-2\/3 {
-    aspect-ratio: 2/3;
-  }
-  .h-full {
-    height: 100%;
-  }
   .w-\[168px\] {
     width: 168px;
-  }
-  .w-\[187px\] {
-    width: 187px;
-  }
-  .w-full {
-    width: 100%;
   }
   .max-w-2xl {
     max-width: var(--container-2xl);
@@ -373,17 +361,8 @@
   .transform {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
   }
-  .flex-wrap {
-    flex-wrap: wrap;
-  }
-  .content-start {
-    align-content: flex-start;
-  }
   .items-center {
     align-items: center;
-  }
-  .justify-center {
-    justify-content: center;
   }
   .gap-0 {
     gap: calc(var(--spacing) * 0);
@@ -412,9 +391,6 @@
   .gap-8 {
     gap: calc(var(--spacing) * 8);
   }
-  .gap-\[1px\] {
-    gap: 1px;
-  }
   .rounded {
     border-radius: 0.25rem;
   }
@@ -431,9 +407,6 @@
   }
   .p-8 {
     padding: calc(var(--spacing) * 8);
-  }
-  .py-4 {
-    padding-block: calc(var(--spacing) * 4);
   }
   .pt-16 {
     padding-top: calc(var(--spacing) * 16);
@@ -2301,6 +2274,25 @@
   }
   .v-system-input-wide {
     max-width: 100%;
+  }
+  .v-home-toolbar {
+    padding-block: 1rem;
+  }
+  .v-home-grid {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 1px;
+  }
+  .v-home-poster {
+    aspect-ratio: 2 / 3;
+    width: 187px;
+  }
+  .v-home-poster-link {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
   .v-series {
     padding-top: 2.5rem;
