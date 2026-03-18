@@ -1,0 +1,87 @@
+/* media-series page layout */
+.v-series { padding-top: 2.5rem; }
+
+/* left sidebar column */
+.v-series-sidebar { grid-column: span 3; }
+
+/* sticky sidebar inner wrapper */
+.v-series-sidebar-inner {
+	position: sticky;
+	top: 5rem;
+}
+
+/* sidebar section padding */
+.v-series-sidebar-section { padding: 1rem; }
+
+/* right content column */
+.v-series-content {
+	grid-column: span 8 / -1;
+	gap: 5rem;
+}
+
+/* season block: episode list spacing */
+.v-series-episodes {
+	gap: 3rem;
+	padding-block: 0.5rem;
+}
+
+/* season header */
+.v-series-season-header {
+	padding-block: 1rem 2rem;
+	color: var(--color-gray-11);
+	font-size: var(--text-xl);
+	border-top: 2px solid var(--color-gray-11);
+}
+
+/* episode row */
+.v-series-episode { color: var(--color-gray-11); }
+
+/* episode info (left side) */
+.v-series-episode-info {
+	grid-column: span 5;
+	gap: 0.5rem;
+}
+
+/* episode header row (play button + title) */
+.v-series-episode-header {
+	align-items: center;
+	gap: 1rem;
+}
+
+/* episode number label */
+.v-series-episode-number {
+	color: color-mix(in oklab, var(--color-gray-11) 60%, transparent);
+	text-decoration-color: color-mix(in oklab, var(--color-gray-11) 60%, transparent) !important;
+}
+
+/* episode title */
+.v-series-episode-title { font-weight: 600; }
+
+/* episode summary wrapper (for spoiler blur overlay) */
+.v-series-episode-summary { position: relative; }
+
+/* spoiler overlay (covers summary text) */
+.v-series-spoiler-overlay {
+	position: absolute;
+	inset: -0.5rem;
+	pointer-events: none;
+}
+
+/* episode thumbnail (right side) */
+.v-series-episode-thumb {
+	grid-column: span 3;
+	aspect-ratio: 16 / 9;
+	background-color: var(--color-gray-6);
+	border-radius: var(--radius-1);
+	overflow: hidden;
+}
+
+.v-series-episode-thumb img { height: 100%; }
+
+/* progress bar positioned at bottom of thumbnail */
+.v-series-episode-progress {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+}

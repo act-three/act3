@@ -16,26 +16,24 @@ func MediaSeries(sr *model.Series) html.Node {
 		seasons = sed.Seasons()
 	}
 	return media(sr.Title(), sr.TVmazeImageURL())(
-		Grid12(Class("pt-10"))(
-			Box(Class("col-span-3"))(
-				Box(Class("sticky top-20"))(
+		Grid12(Class("v-series"))(
+			Box(Class("v-series-sidebar"))(
+				Box(Class("v-series-sidebar-inner"))(
 					ImageFrame()(
 						PosterImg(PosterFill, attr.Src(sr.TVmazeImageURL())),
 					),
-					Box(Class("p-4"))(Text(sr.Title(), FontBold)),
-					Box(Class("p-4"))(
+					Box(Class("v-series-sidebar-section"))(Text(sr.Title(), FontBold)),
+					Box(Class("v-series-sidebar-section"))(
 						Text("Show: regular & specials"),
 					),
 					html.RangeSeq(seasons, func(sn *model.Season) html.Node {
-						return Box(
-							Class(""),
-						)(
+						return Box()(
 							Text(sn.Name()),
 						)
 					}),
 				),
 			),
-			FlexCol(Class("col-span-8 col-start-5 gap-20"))(
+			FlexCol(Class("v-series-content"))(
 				html.RangeSeq(seasons, mediaSeriesSeason),
 			),
 		),
@@ -44,15 +42,8 @@ func MediaSeries(sr *model.Series) html.Node {
 
 func mediaSeriesSeason(sn *model.Season) html.Node {
 	return Box()(
-		Box(Class(`
-			py-4
-			pb-8
-			text-gray-11
-			text-xl
-			border-t-[2px]
-			border-gray-11
-		`))(Text(sn.Name(), FontBold)),
-		FlexCol(Class("gap-12 py-2"))(
+		Box(Class("v-series-season-header"))(Text(sn.Name(), FontBold)),
+		FlexCol(Class("v-series-episodes"))(
 			html.RangeSeq(sn.Episodes(model.AnyEpisode), mediaSeriesEpisode),
 		),
 	)
@@ -70,9 +61,9 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 	playable := slices.IndexFunc(vids, func(v *model.Video) bool {
 		return v.MVPlaylist() != ""
 	})
-	return Grid8(Class("text-gray-11"))(
-		FlexCol(Class("col-span-5 gap-2"))(
-			FlexRow(Class("items-center gap-4"))(
+	return Grid8(Class("v-series-episode"))(
+		FlexCol(Class("v-series-episode-info"))(
+			FlexRow(Class("v-series-episode-header"))(
 				Box()(
 					expr.IfElse(playable >= 0,
 						func() html.Node {
@@ -88,52 +79,26 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 						},
 					),
 				),
-				Link(ep.DetailURL(), Class("text-gray-11"))(
+				Link(ep.DetailURL(), Class("v-series-episode"))(
 					FlexCol()(
-						Box(
-							Class(`
-								text-gray-11/60
-								decoration-gray-11/60!
-							`),
-						)(Text(ep.SnnEnn(), FontNormal)),
+						Box(Class("v-series-episode-number"))(Text(ep.SnnEnn(), FontNormal)),
 						FlexRow()(
-							Box()(Text(ep.Title(),
-								Class("font-semibold"),
-							)),
+							Box()(Text(ep.Title(), Class("v-series-episode-title"))),
 						),
 					),
 				),
 			),
-			Box(Class("relative"))(
+			Box(Class("v-series-episode-summary"))(
 				TextNode(Class("text-sm"), LineClamp4)(html.Safe(ep.Summary())),
-				Box(
-					Class(`
-					absolute
-					-inset-2
-					pointer-events-none
-				`),
-					hideSpoilersText,
-				),
+				Box(Class("v-series-spoiler-overlay"), hideSpoilersText),
 			),
 		),
-		Box(HoverOverlay, Class(`col-span-3
-			aspect-16/9
-			bg-gray-6
-			rounded-xs
-			overflow-hidden
-		`))(
+		Box(HoverOverlay, Class("v-series-episode-thumb"))(
 			html.A(attr.Href(ep.DetailURL()))(
-				PosterImg(PosterFill, PosterAspect169, Class("h-full"), attr.Src(ep.ImageURL())),
+				PosterImg(PosterFill, PosterAspect169, Class("v-series-episode-thumb"), attr.Src(ep.ImageURL())),
 			),
-			Box(
-				Class(`
-					absolute
-					inset-0
-					pointer-events-none
-				`),
-				hideSpoilersImage,
-			),
-			Box(Class("absolute bottom-0 left-0 right-0"))(
+			Box(Class("v-series-spoiler-overlay"), hideSpoilersImage),
+			Box(Class("v-series-episode-progress"))(
 				Progress(0.1, ProgressSM),
 			),
 		),
