@@ -1,164 +1,104 @@
 /* Design tokens — colors, fonts, sizing, radii.
  *
  * Imported into layer(theme), above preflight and below components.
- * Runtime overrides live in theme-overrides.css (components layer). */
+ * Runtime overrides live in theme-overrides.css (components layer).
+ *
+ * Naming: purpose-based tokens (--bg-*, --text-*, --border-*,
+ * --accent-*) are the public API. Raw palettes (--mauve-*,
+ * --crimson-*) are private implementation details. */
 
 :root {
-	/* fonts */
+	/* ---- fonts ---- */
 	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
 	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-	/* text sizes */
+	/* ---- text sizes ---- */
 	--text-xl: 1.25rem;
 
-	/* colors: gray-0 */
-	--color-transparent: color(display-p3 0 0 0 / 0);
-	--color-gray-0: oklch(0 0 0); /* pure black */
+	/* ---- raw palette: mauve (private) ---- */
+	--mauve-1: color(display-p3 0.07 0.067 0.074);
+	--mauve-2: color(display-p3 0.101 0.098 0.105);
+	--mauve-3: color(display-p3 0.138 0.134 0.144);
+	--mauve-4: color(display-p3 0.167 0.161 0.175);
+	--mauve-5: color(display-p3 0.196 0.189 0.206);
+	--mauve-6: color(display-p3 0.232 0.225 0.245);
+	--mauve-7: color(display-p3 0.286 0.277 0.302);
+	--mauve-8: color(display-p3 0.383 0.373 0.408);
+	--mauve-9: color(display-p3 0.434 0.428 0.467);
+	--mauve-10: color(display-p3 0.487 0.48 0.519);
+	--mauve-11: color(display-p3 0.707 0.7 0.735);
+	--mauve-12: color(display-p3 0.933 0.933 0.94);
 
-	/* colors: mauve (dark) */
-	--color-mauve-1: color(display-p3 0.07 0.067 0.074);
-	--color-mauve-2: color(display-p3 0.101 0.098 0.105);
-	--color-mauve-3: color(display-p3 0.138 0.134 0.144);
-	--color-mauve-4: color(display-p3 0.167 0.161 0.175);
-	--color-mauve-5: color(display-p3 0.196 0.189 0.206);
-	--color-mauve-6: color(display-p3 0.232 0.225 0.245);
-	--color-mauve-7: color(display-p3 0.286 0.277 0.302);
-	--color-mauve-8: color(display-p3 0.383 0.373 0.408);
-	--color-mauve-9: color(display-p3 0.434 0.428 0.467);
-	--color-mauve-10: color(display-p3 0.487 0.48 0.519);
-	--color-mauve-11: color(display-p3 0.707 0.7 0.735);
-	--color-mauve-12: color(display-p3 0.933 0.933 0.94);
+	--mauve-a2: color(display-p3 0.996 0.992 1 / 0.034);
+	--mauve-a3: color(display-p3 0.937 0.933 0.992 / 0.077);
+	--mauve-a5: color(display-p3 0.937 0.906 0.996 / 0.145);
+	--mauve-a6: color(display-p3 0.953 0.925 0.996 / 0.183);
+	--mauve-a7: color(display-p3 0.945 0.929 1 / 0.246);
+	--mauve-a8: color(display-p3 0.937 0.918 1 / 0.361);
+	--mauve-a10: color(display-p3 0.941 0.925 1 / 0.479);
 
-	--color-mauve-a1: color(display-p3 0 0 0 / 0);
-	--color-mauve-a2: color(display-p3 0.996 0.992 1 / 0.034);
-	--color-mauve-a3: color(display-p3 0.937 0.933 0.992 / 0.077);
-	--color-mauve-a4: color(display-p3 0.957 0.918 0.996 / 0.111);
-	--color-mauve-a5: color(display-p3 0.937 0.906 0.996 / 0.145);
-	--color-mauve-a6: color(display-p3 0.953 0.925 0.996 / 0.183);
-	--color-mauve-a7: color(display-p3 0.945 0.929 1 / 0.246);
-	--color-mauve-a8: color(display-p3 0.937 0.918 1 / 0.361);
-	--color-mauve-a9: color(display-p3 0.933 0.918 1 / 0.424);
-	--color-mauve-a10: color(display-p3 0.941 0.925 1 / 0.479);
-	--color-mauve-a11: color(display-p3 0.965 0.961 1 / 0.712);
-	--color-mauve-a12: color(display-p3 0.992 0.992 1 / 0.937);
+	/* ---- raw palette: crimson (private) ---- */
+	--crimson-2: color(display-p3 0.117 0.078 0.095);
+	--crimson-5: color(display-p3 0.332 0.115 0.22);
+	--crimson-8: color(display-p3 0.638 0.289 0.429);
+	--crimson-9: color(display-p3 0.843 0.298 0.507);
+	--crimson-10: color(display-p3 0.864 0.364 0.539);
+	--crimson-11: color(display-p3 1 0.56 0.66);
+	--crimson-12: color(display-p3 0.966 0.834 0.906);
 
-	/* colors: crimson (dark) */
-	--color-crimson-1: color(display-p3 0.093 0.068 0.078);
-	--color-crimson-2: color(display-p3 0.117 0.078 0.095);
-	--color-crimson-3: color(display-p3 0.203 0.091 0.143);
-	--color-crimson-4: color(display-p3 0.277 0.087 0.182);
-	--color-crimson-5: color(display-p3 0.332 0.115 0.22);
-	--color-crimson-6: color(display-p3 0.394 0.162 0.268);
-	--color-crimson-7: color(display-p3 0.489 0.222 0.336);
-	--color-crimson-8: color(display-p3 0.638 0.289 0.429);
-	--color-crimson-9: color(display-p3 0.843 0.298 0.507);
-	--color-crimson-10: color(display-p3 0.864 0.364 0.539);
-	--color-crimson-11: color(display-p3 1 0.56 0.66);
-	--color-crimson-12: color(display-p3 0.966 0.834 0.906);
+	--crimson-a2: color(display-p3 0.996 0.282 0.569 / 0.055);
+	--crimson-a3: color(display-p3 0.996 0.227 0.573 / 0.148);
+	--crimson-a4: color(display-p3 1 0.157 0.569 / 0.227);
+	--crimson-a5: color(display-p3 1 0.231 0.604 / 0.286);
+	--crimson-a7: color(display-p3 1 0.416 0.663 / 0.454);
+	--crimson-a8: color(display-p3 0.996 0.427 0.651 / 0.614);
+	--crimson-a11: color(display-p3 1 0.56 0.66);
 
-	--color-crimson-a1: color(display-p3 0.984 0.071 0.463 / 0.03);
-	--color-crimson-a2: color(display-p3 0.996 0.282 0.569 / 0.055);
-	--color-crimson-a3: color(display-p3 0.996 0.227 0.573 / 0.148);
-	--color-crimson-a4: color(display-p3 1 0.157 0.569 / 0.227);
-	--color-crimson-a5: color(display-p3 1 0.231 0.604 / 0.286);
-	--color-crimson-a6: color(display-p3 1 0.337 0.643 / 0.349);
-	--color-crimson-a7: color(display-p3 1 0.416 0.663 / 0.454);
-	--color-crimson-a8: color(display-p3 0.996 0.427 0.651 / 0.614);
-	--color-crimson-a9: color(display-p3 1 0.345 0.596 / 0.832);
-	--color-crimson-a10: color(display-p3 1 0.42 0.62 / 0.853);
-	--color-crimson-a11: color(display-p3 1 0.56 0.66);
-	--color-crimson-a12: color(display-p3 0.966 0.834 0.906);
+	/* ---- backgrounds ---- */
+	--bg: oklch(0 0 0);
+	--bg-subtle: var(--mauve-1);
+	--bg-surface: var(--mauve-2);
+	--bg-input: var(--mauve-1);
+	--bg-hover: var(--mauve-3);
+	--bg-active: var(--mauve-5);
+	--bg-solid: var(--mauve-6);
+	--bg-surface-a: var(--mauve-a2);
+	--bg-hover-a: var(--mauve-a3);
 
-	/* colors: black alpha */
-	--color-black-a1: rgba(0, 0, 0, 0.05);
-	--color-black-a2: rgba(0, 0, 0, 0.1);
-	--color-black-a3: rgba(0, 0, 0, 0.15);
-	--color-black-a4: rgba(0, 0, 0, 0.2);
-	--color-black-a5: rgba(0, 0, 0, 0.3);
-	--color-black-a6: rgba(0, 0, 0, 0.4);
-	--color-black-a7: rgba(0, 0, 0, 0.5);
-	--color-black-a8: rgba(0, 0, 0, 0.6);
-	--color-black-a9: rgba(0, 0, 0, 0.7);
-	--color-black-a10: rgba(0, 0, 0, 0.8);
-	--color-black-a11: rgba(0, 0, 0, 0.9);
-	--color-black-a12: rgba(0, 0, 0, 0.95);
-	--color-black: rgba(0, 0, 0, 1);
+	/* ---- text ---- */
+	--text: var(--mauve-12);
+	--text-2: var(--mauve-11);
+	--text-3: color-mix(in oklab, var(--mauve-11) 70%, transparent);
+	--text-4: color-mix(in oklab, var(--mauve-11) 50%, transparent);
 
-	/* colors: white alpha */
-	--color-white-a1: rgba(255, 255, 255, 0.05);
-	--color-white-a2: rgba(255, 255, 255, 0.1);
-	--color-white-a3: rgba(255, 255, 255, 0.15);
-	--color-white-a4: rgba(255, 255, 255, 0.2);
-	--color-white-a5: rgba(255, 255, 255, 0.3);
-	--color-white-a6: rgba(255, 255, 255, 0.4);
-	--color-white-a7: rgba(255, 255, 255, 0.5);
-	--color-white-a8: rgba(255, 255, 255, 0.6);
-	--color-white-a9: rgba(255, 255, 255, 0.7);
-	--color-white-a10: rgba(255, 255, 255, 0.8);
-	--color-white-a11: rgba(255, 255, 255, 0.9);
-	--color-white-a12: rgba(255, 255, 255, 0.95);
-	--color-white: rgba(255, 255, 255, 1);
+	/* ---- borders ---- */
+	--border: var(--mauve-a6);
+	--border-subtle: var(--mauve-a5);
+	--border-strong: var(--mauve-a7);
 
-	/* colors: additional named */
-	--color-red-9: color(display-p3 0.83 0.29 0.29);
+	/* ---- accent ---- */
+	--accent: var(--crimson-9);
+	--accent-hover: var(--crimson-10);
+	--accent-bold: var(--crimson-8);
+	--accent-text: var(--crimson-a11);
+	--accent-surface: var(--crimson-a2);
+	--accent-surface-hover: var(--crimson-a3);
+	--accent-surface-active: var(--crimson-a4);
+	--accent-border: var(--crimson-a7);
+	--accent-border-strong: var(--crimson-a8);
+	--accent-contrast: var(--crimson-12);
 
-	/* semantic aliases (gray = mauve, accent = crimson) */
-	--color-gray-1: var(--color-mauve-1);
-	--color-gray-2: var(--color-mauve-2);
-	--color-gray-3: var(--color-mauve-3);
-	--color-gray-4: var(--color-mauve-4);
-	--color-gray-5: var(--color-mauve-5);
-	--color-gray-6: var(--color-mauve-6);
-	--color-gray-7: var(--color-mauve-7);
-	--color-gray-8: var(--color-mauve-8);
-	--color-gray-9: var(--color-mauve-9);
-	--color-gray-10: var(--color-mauve-10);
-	--color-gray-11: var(--color-mauve-11);
-	--color-gray-12: var(--color-mauve-12);
+	/* ---- special ---- */
+	--panel: color-mix(in oklch, var(--bg-subtle) 70%, transparent);
+	--destructive: var(--crimson-9);
+	--destructive-hover: var(--crimson-10);
+	--destructive-text: var(--crimson-11);
+	--destructive-surface: var(--crimson-2);
+	--destructive-surface-border: var(--crimson-a5);
+	--destructive-contrast: var(--crimson-12);
+	--error: color(display-p3 0.83 0.29 0.29);
 
-	--color-gray-a1: var(--color-mauve-a1);
-	--color-gray-a2: var(--color-mauve-a2);
-	--color-gray-a3: var(--color-mauve-a3);
-	--color-gray-a4: var(--color-mauve-a4);
-	--color-gray-a5: var(--color-mauve-a5);
-	--color-gray-a6: var(--color-mauve-a6);
-	--color-gray-a7: var(--color-mauve-a7);
-	--color-gray-a8: var(--color-mauve-a8);
-	--color-gray-a9: var(--color-mauve-a9);
-	--color-gray-a10: var(--color-mauve-a10);
-	--color-gray-a11: var(--color-mauve-a11);
-	--color-gray-a12: var(--color-mauve-a12);
-
-	--color-accent-1: var(--color-crimson-1);
-	--color-accent-2: var(--color-crimson-2);
-	--color-accent-3: var(--color-crimson-3);
-	--color-accent-4: var(--color-crimson-4);
-	--color-accent-5: var(--color-crimson-5);
-	--color-accent-6: var(--color-crimson-6);
-	--color-accent-7: var(--color-crimson-7);
-	--color-accent-8: var(--color-crimson-8);
-	--color-accent-9: var(--color-crimson-9);
-	--color-accent-10: var(--color-crimson-10);
-	--color-accent-11: var(--color-crimson-11);
-	--color-accent-12: var(--color-crimson-12);
-
-	--color-accent-a1: var(--color-crimson-a1);
-	--color-accent-a2: var(--color-crimson-a2);
-	--color-accent-a3: var(--color-crimson-a3);
-	--color-accent-a4: var(--color-crimson-a4);
-	--color-accent-a5: var(--color-crimson-a5);
-	--color-accent-a6: var(--color-crimson-a6);
-	--color-accent-a7: var(--color-crimson-a7);
-	--color-accent-a8: var(--color-crimson-a8);
-	--color-accent-a9: var(--color-crimson-a9);
-	--color-accent-a10: var(--color-crimson-a10);
-	--color-accent-a11: var(--color-crimson-a11);
-	--color-accent-a12: var(--color-crimson-a12);
-
-	/* panel background */
-	--color-panel: color-mix(in oklch, var(--color-gray-0) 70%, transparent);
-
-	/* radius scale */
+	/* ---- radius scale ---- */
 	--scale: 1;
 	--radius-1: calc(3px * var(--scale) * var(--radius-factor, 1));
 	--radius-2: calc(4px * var(--scale) * var(--radius-factor, 1));

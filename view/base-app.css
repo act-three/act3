@@ -1,7 +1,7 @@
 /* app shell wrapper */
 .v-app {
 	isolation: isolate;
-	background-color: var(--color-gray-2);
+	background-color: var(--bg-surface);
 	display: flex;
 	min-height: 100svh;
 	height: 100svh;
@@ -10,7 +10,7 @@
 
 /* app main content inset */
 .v-app-main {
-	background-color: var(--color-gray-1);
+	background-color: var(--bg-input);
 	position: relative;
 	width: 100%;
 	flex: 1;
@@ -57,7 +57,7 @@
 	display: flex;
 	box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 	border-radius: 0.125rem;
-	background-color: var(--color-gray-1);
+	background-color: var(--bg-input);
 	padding: 1.5rem;
 	pointer-events: auto;
 }
@@ -71,6 +71,6 @@
 	height: 1.5rem;
 	padding: 0.25rem;
 	border-radius: 9999px;
-	background-color: var(--color-gray-2);
+	background-color: var(--bg-surface);
 	display: flex;
 }

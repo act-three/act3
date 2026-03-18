@@ -1,10 +1,10 @@
 .u-link {
-	color: var(--color-accent-a11);
+	color: var(--accent-text);
 	cursor: pointer;
 	text-decoration: none;
 }
 .u-link:focus-visible {
-	outline: 2px solid var(--color-accent-8);
+	outline: 2px solid var(--accent-bold);
 	outline-offset: 2px;
 	border-radius: calc(0.07em * 1);
 }
@@ -12,7 +12,7 @@
 /* underline: always */
 .u-link[data-underline="always"] {
 	text-decoration: underline;
-	text-decoration-color: var(--color-accent-a5);
+	text-decoration-color: var(--accent-border);
 	text-decoration-thickness: min(2px, max(1px, 0.05em));
 	text-underline-offset: calc(0.025em + 2px);
 }
@@ -24,7 +24,7 @@
 	/* underline: auto (default) — underline on hover */
 	.u-link:not([data-underline="always"], [data-underline="hover"]):hover {
 		text-decoration: underline;
-		text-decoration-color: var(--color-accent-a5);
+		text-decoration-color: var(--accent-border);
 		text-decoration-thickness: min(2px, max(1px, 0.05em));
 		text-underline-offset: calc(0.025em + 2px);
 	}

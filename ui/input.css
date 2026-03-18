@@ -2,22 +2,22 @@
 	display: flex;
 	width: 100%;
 	min-width: 0;
-	border: 1px solid var(--color-gray-a7);
-	background-color: var(--color-gray-1);
-	color: var(--color-gray-12);
+	border: 1px solid var(--border-strong);
+	background-color: var(--bg-input);
+	color: var(--text);
 	font-size: inherit;
 	outline: none;
 	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
 	transition-property: color, box-shadow, outline;
 	transition-duration: 150ms;
 }
-.u-input::placeholder { color: var(--color-gray-a10); }
+.u-input::placeholder { color: var(--text-4); }
 .u-input::selection {
-	background-color: var(--color-accent-9);
+	background-color: var(--accent);
 	color: white;
 }
 .u-input:focus-visible {
-	outline: 2px solid var(--color-accent-8);
+	outline: 2px solid var(--accent-bold);
 	outline-offset: -1px;
 	border-color: transparent;
 }
@@ -26,8 +26,8 @@
 	opacity: 0.5;
 }
 .u-input[aria-invalid="true"] {
-	border-color: var(--color-crimson-8);
-	box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-crimson-8) 20%, transparent);
+	border-color: var(--accent-bold);
+	box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent-bold) 20%, transparent);
 }
 
 /* size: 2 (default) */

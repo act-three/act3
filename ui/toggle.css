@@ -6,13 +6,13 @@
 	padding: 0.125rem;
 	border: none;
 	border-radius: 9999px;
-	background-color: var(--color-gray-6);
+	background-color: var(--bg-solid);
 	cursor: pointer;
 	transition: background-color 150ms ease;
 	flex-shrink: 0;
 }
 
-.u-toggle-track[aria-checked="true"] { background-color: var(--color-accent-9); }
+.u-toggle-track[aria-checked="true"] { background-color: var(--accent); }
 
 .u-toggle-track:disabled:not([data-animating]) {
 	opacity: 0.4;
@@ -20,7 +20,7 @@
 }
 
 .u-toggle-track:focus-visible {
-	outline: 2px solid var(--color-accent-9);
+	outline: 2px solid var(--accent);
 	outline-offset: 2px;
 }
 

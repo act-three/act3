@@ -28,13 +28,13 @@
 /* season header */
 .v-series-season-header {
 	padding-block: 1rem 2rem;
-	color: var(--color-gray-11);
+	color: var(--text-2);
 	font-size: var(--text-xl);
-	border-top: 2px solid var(--color-gray-11);
+	border-top: 2px solid var(--text-2);
 }
 
 /* episode row */
-.v-series-episode { color: var(--color-gray-11); }
+.v-series-episode { color: var(--text-2); }
 
 /* episode info (left side) */
 .v-series-episode-info {
@@ -50,8 +50,8 @@
 
 /* episode number label */
 .v-series-episode-number {
-	color: color-mix(in oklab, var(--color-gray-11) 60%, transparent);
-	text-decoration-color: color-mix(in oklab, var(--color-gray-11) 60%, transparent) !important;
+	color: var(--text-3);
+	text-decoration-color: var(--text-3) !important;
 }
 
 /* episode title */
@@ -75,7 +75,7 @@
 .v-series-episode-thumb {
 	grid-column: span 3;
 	aspect-ratio: 16 / 9;
-	background-color: var(--color-gray-6);
+	background-color: var(--bg-solid);
 	border-radius: var(--radius-1);
 	overflow: hidden;
 }

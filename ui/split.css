@@ -8,7 +8,7 @@
 	width: 22.5rem;
 	height: 100cvh;
 	flex: none;
-	border-inline-end: 1px solid var(--color-gray-a6);
+	border-inline-end: 1px solid var(--border);
 	place-items: center;
 	display: grid;
 }

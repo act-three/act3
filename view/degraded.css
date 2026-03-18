@@ -7,4 +7,4 @@
 }
 
 /* destructive action warning card */
-.v-degraded-alert { border: 2px solid var(--color-red-9); }
+.v-degraded-alert { border: 2px solid var(--error); }

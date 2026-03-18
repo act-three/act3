@@ -146,132 +146,73 @@
       Consolas,
       monospace;
     --text-xl: 1.25rem;
-    --color-transparent: color(display-p3 0 0 0 / 0);
-    --color-gray-0: oklch(0 0 0);
-    --color-mauve-1: color(display-p3 0.07 0.067 0.074);
-    --color-mauve-2: color(display-p3 0.101 0.098 0.105);
-    --color-mauve-3: color(display-p3 0.138 0.134 0.144);
-    --color-mauve-4: color(display-p3 0.167 0.161 0.175);
-    --color-mauve-5: color(display-p3 0.196 0.189 0.206);
-    --color-mauve-6: color(display-p3 0.232 0.225 0.245);
-    --color-mauve-7: color(display-p3 0.286 0.277 0.302);
-    --color-mauve-8: color(display-p3 0.383 0.373 0.408);
-    --color-mauve-9: color(display-p3 0.434 0.428 0.467);
-    --color-mauve-10: color(display-p3 0.487 0.48 0.519);
-    --color-mauve-11: color(display-p3 0.707 0.7 0.735);
-    --color-mauve-12: color(display-p3 0.933 0.933 0.94);
-    --color-mauve-a1: color(display-p3 0 0 0 / 0);
-    --color-mauve-a2: color(display-p3 0.996 0.992 1 / 0.034);
-    --color-mauve-a3: color(display-p3 0.937 0.933 0.992 / 0.077);
-    --color-mauve-a4: color(display-p3 0.957 0.918 0.996 / 0.111);
-    --color-mauve-a5: color(display-p3 0.937 0.906 0.996 / 0.145);
-    --color-mauve-a6: color(display-p3 0.953 0.925 0.996 / 0.183);
-    --color-mauve-a7: color(display-p3 0.945 0.929 1 / 0.246);
-    --color-mauve-a8: color(display-p3 0.937 0.918 1 / 0.361);
-    --color-mauve-a9: color(display-p3 0.933 0.918 1 / 0.424);
-    --color-mauve-a10: color(display-p3 0.941 0.925 1 / 0.479);
-    --color-mauve-a11: color(display-p3 0.965 0.961 1 / 0.712);
-    --color-mauve-a12: color(display-p3 0.992 0.992 1 / 0.937);
-    --color-crimson-1: color(display-p3 0.093 0.068 0.078);
-    --color-crimson-2: color(display-p3 0.117 0.078 0.095);
-    --color-crimson-3: color(display-p3 0.203 0.091 0.143);
-    --color-crimson-4: color(display-p3 0.277 0.087 0.182);
-    --color-crimson-5: color(display-p3 0.332 0.115 0.22);
-    --color-crimson-6: color(display-p3 0.394 0.162 0.268);
-    --color-crimson-7: color(display-p3 0.489 0.222 0.336);
-    --color-crimson-8: color(display-p3 0.638 0.289 0.429);
-    --color-crimson-9: color(display-p3 0.843 0.298 0.507);
-    --color-crimson-10: color(display-p3 0.864 0.364 0.539);
-    --color-crimson-11: color(display-p3 1 0.56 0.66);
-    --color-crimson-12: color(display-p3 0.966 0.834 0.906);
-    --color-crimson-a1: color(display-p3 0.984 0.071 0.463 / 0.03);
-    --color-crimson-a2: color(display-p3 0.996 0.282 0.569 / 0.055);
-    --color-crimson-a3: color(display-p3 0.996 0.227 0.573 / 0.148);
-    --color-crimson-a4: color(display-p3 1 0.157 0.569 / 0.227);
-    --color-crimson-a5: color(display-p3 1 0.231 0.604 / 0.286);
-    --color-crimson-a6: color(display-p3 1 0.337 0.643 / 0.349);
-    --color-crimson-a7: color(display-p3 1 0.416 0.663 / 0.454);
-    --color-crimson-a8: color(display-p3 0.996 0.427 0.651 / 0.614);
-    --color-crimson-a9: color(display-p3 1 0.345 0.596 / 0.832);
-    --color-crimson-a10: color(display-p3 1 0.42 0.62 / 0.853);
-    --color-crimson-a11: color(display-p3 1 0.56 0.66);
-    --color-crimson-a12: color(display-p3 0.966 0.834 0.906);
-    --color-black-a1: rgba(0, 0, 0, 0.05);
-    --color-black-a2: rgba(0, 0, 0, 0.1);
-    --color-black-a3: rgba(0, 0, 0, 0.15);
-    --color-black-a4: rgba(0, 0, 0, 0.2);
-    --color-black-a5: rgba(0, 0, 0, 0.3);
-    --color-black-a6: rgba(0, 0, 0, 0.4);
-    --color-black-a7: rgba(0, 0, 0, 0.5);
-    --color-black-a8: rgba(0, 0, 0, 0.6);
-    --color-black-a9: rgba(0, 0, 0, 0.7);
-    --color-black-a10: rgba(0, 0, 0, 0.8);
-    --color-black-a11: rgba(0, 0, 0, 0.9);
-    --color-black-a12: rgba(0, 0, 0, 0.95);
-    --color-black: rgba(0, 0, 0, 1);
-    --color-white-a1: rgba(255, 255, 255, 0.05);
-    --color-white-a2: rgba(255, 255, 255, 0.1);
-    --color-white-a3: rgba(255, 255, 255, 0.15);
-    --color-white-a4: rgba(255, 255, 255, 0.2);
-    --color-white-a5: rgba(255, 255, 255, 0.3);
-    --color-white-a6: rgba(255, 255, 255, 0.4);
-    --color-white-a7: rgba(255, 255, 255, 0.5);
-    --color-white-a8: rgba(255, 255, 255, 0.6);
-    --color-white-a9: rgba(255, 255, 255, 0.7);
-    --color-white-a10: rgba(255, 255, 255, 0.8);
-    --color-white-a11: rgba(255, 255, 255, 0.9);
-    --color-white-a12: rgba(255, 255, 255, 0.95);
-    --color-white: rgba(255, 255, 255, 1);
-    --color-red-9: color(display-p3 0.83 0.29 0.29);
-    --color-gray-1: var(--color-mauve-1);
-    --color-gray-2: var(--color-mauve-2);
-    --color-gray-3: var(--color-mauve-3);
-    --color-gray-4: var(--color-mauve-4);
-    --color-gray-5: var(--color-mauve-5);
-    --color-gray-6: var(--color-mauve-6);
-    --color-gray-7: var(--color-mauve-7);
-    --color-gray-8: var(--color-mauve-8);
-    --color-gray-9: var(--color-mauve-9);
-    --color-gray-10: var(--color-mauve-10);
-    --color-gray-11: var(--color-mauve-11);
-    --color-gray-12: var(--color-mauve-12);
-    --color-gray-a1: var(--color-mauve-a1);
-    --color-gray-a2: var(--color-mauve-a2);
-    --color-gray-a3: var(--color-mauve-a3);
-    --color-gray-a4: var(--color-mauve-a4);
-    --color-gray-a5: var(--color-mauve-a5);
-    --color-gray-a6: var(--color-mauve-a6);
-    --color-gray-a7: var(--color-mauve-a7);
-    --color-gray-a8: var(--color-mauve-a8);
-    --color-gray-a9: var(--color-mauve-a9);
-    --color-gray-a10: var(--color-mauve-a10);
-    --color-gray-a11: var(--color-mauve-a11);
-    --color-gray-a12: var(--color-mauve-a12);
-    --color-accent-1: var(--color-crimson-1);
-    --color-accent-2: var(--color-crimson-2);
-    --color-accent-3: var(--color-crimson-3);
-    --color-accent-4: var(--color-crimson-4);
-    --color-accent-5: var(--color-crimson-5);
-    --color-accent-6: var(--color-crimson-6);
-    --color-accent-7: var(--color-crimson-7);
-    --color-accent-8: var(--color-crimson-8);
-    --color-accent-9: var(--color-crimson-9);
-    --color-accent-10: var(--color-crimson-10);
-    --color-accent-11: var(--color-crimson-11);
-    --color-accent-12: var(--color-crimson-12);
-    --color-accent-a1: var(--color-crimson-a1);
-    --color-accent-a2: var(--color-crimson-a2);
-    --color-accent-a3: var(--color-crimson-a3);
-    --color-accent-a4: var(--color-crimson-a4);
-    --color-accent-a5: var(--color-crimson-a5);
-    --color-accent-a6: var(--color-crimson-a6);
-    --color-accent-a7: var(--color-crimson-a7);
-    --color-accent-a8: var(--color-crimson-a8);
-    --color-accent-a9: var(--color-crimson-a9);
-    --color-accent-a10: var(--color-crimson-a10);
-    --color-accent-a11: var(--color-crimson-a11);
-    --color-accent-a12: var(--color-crimson-a12);
-    --color-panel: color-mix(in oklch, var(--color-gray-0) 70%, transparent);
+    --mauve-1: color(display-p3 0.07 0.067 0.074);
+    --mauve-2: color(display-p3 0.101 0.098 0.105);
+    --mauve-3: color(display-p3 0.138 0.134 0.144);
+    --mauve-4: color(display-p3 0.167 0.161 0.175);
+    --mauve-5: color(display-p3 0.196 0.189 0.206);
+    --mauve-6: color(display-p3 0.232 0.225 0.245);
+    --mauve-7: color(display-p3 0.286 0.277 0.302);
+    --mauve-8: color(display-p3 0.383 0.373 0.408);
+    --mauve-9: color(display-p3 0.434 0.428 0.467);
+    --mauve-10: color(display-p3 0.487 0.48 0.519);
+    --mauve-11: color(display-p3 0.707 0.7 0.735);
+    --mauve-12: color(display-p3 0.933 0.933 0.94);
+    --mauve-a2: color(display-p3 0.996 0.992 1 / 0.034);
+    --mauve-a3: color(display-p3 0.937 0.933 0.992 / 0.077);
+    --mauve-a5: color(display-p3 0.937 0.906 0.996 / 0.145);
+    --mauve-a6: color(display-p3 0.953 0.925 0.996 / 0.183);
+    --mauve-a7: color(display-p3 0.945 0.929 1 / 0.246);
+    --mauve-a8: color(display-p3 0.937 0.918 1 / 0.361);
+    --mauve-a10: color(display-p3 0.941 0.925 1 / 0.479);
+    --crimson-2: color(display-p3 0.117 0.078 0.095);
+    --crimson-5: color(display-p3 0.332 0.115 0.22);
+    --crimson-8: color(display-p3 0.638 0.289 0.429);
+    --crimson-9: color(display-p3 0.843 0.298 0.507);
+    --crimson-10: color(display-p3 0.864 0.364 0.539);
+    --crimson-11: color(display-p3 1 0.56 0.66);
+    --crimson-12: color(display-p3 0.966 0.834 0.906);
+    --crimson-a2: color(display-p3 0.996 0.282 0.569 / 0.055);
+    --crimson-a3: color(display-p3 0.996 0.227 0.573 / 0.148);
+    --crimson-a4: color(display-p3 1 0.157 0.569 / 0.227);
+    --crimson-a5: color(display-p3 1 0.231 0.604 / 0.286);
+    --crimson-a7: color(display-p3 1 0.416 0.663 / 0.454);
+    --crimson-a8: color(display-p3 0.996 0.427 0.651 / 0.614);
+    --crimson-a11: color(display-p3 1 0.56 0.66);
+    --bg: oklch(0 0 0);
+    --bg-subtle: var(--mauve-1);
+    --bg-surface: var(--mauve-2);
+    --bg-input: var(--mauve-1);
+    --bg-hover: var(--mauve-3);
+    --bg-active: var(--mauve-5);
+    --bg-solid: var(--mauve-6);
+    --bg-surface-a: var(--mauve-a2);
+    --bg-hover-a: var(--mauve-a3);
+    --text: var(--mauve-12);
+    --text-2: var(--mauve-11);
+    --text-3: color-mix(in oklab, var(--mauve-11) 70%, transparent);
+    --text-4: color-mix(in oklab, var(--mauve-11) 50%, transparent);
+    --border: var(--mauve-a6);
+    --border-subtle: var(--mauve-a5);
+    --border-strong: var(--mauve-a7);
+    --accent: var(--crimson-9);
+    --accent-hover: var(--crimson-10);
+    --accent-bold: var(--crimson-8);
+    --accent-text: var(--crimson-a11);
+    --accent-surface: var(--crimson-a2);
+    --accent-surface-hover: var(--crimson-a3);
+    --accent-surface-active: var(--crimson-a4);
+    --accent-border: var(--crimson-a7);
+    --accent-border-strong: var(--crimson-a8);
+    --accent-contrast: var(--crimson-12);
+    --panel: color-mix(in oklch, var(--bg-subtle) 70%, transparent);
+    --destructive: var(--crimson-9);
+    --destructive-hover: var(--crimson-10);
+    --destructive-text: var(--crimson-11);
+    --destructive-surface: var(--crimson-2);
+    --destructive-surface-border: var(--crimson-a5);
+    --destructive-contrast: var(--crimson-12);
+    --error: color(display-p3 0.83 0.29 0.29);
     --scale: 1;
     --radius-1: calc(3px * var(--scale) * var(--radius-factor, 1));
     --radius-2: calc(4px * var(--scale) * var(--radius-factor, 1));
@@ -369,7 +310,7 @@
     opacity: 0.9;
   }
   .u-button:focus-visible {
-    outline: 2px solid var(--color-accent-8);
+    outline: 2px solid var(--accent-bold);
     outline-offset: 2px;
   }
   .u-button:disabled,
@@ -407,92 +348,92 @@
     }
   }
   .u-button {
-    background-color: var(--color-accent-9);
+    background-color: var(--accent);
     color: white;
   }
   @media (hover: hover) {
     .u-button:hover {
-      background-color: var(--color-accent-10);
+      background-color: var(--accent-hover);
     }
   }
   .u-button:active:not(:disabled) {
-    background-color: var(--color-accent-10);
+    background-color: var(--accent-hover);
     filter: brightness(0.92) saturate(1.1);
   }
   .u-button[data-variant=soft]:focus-visible {
     outline-offset: -1px;
   }
   .u-button[data-variant=soft] {
-    background-color: var(--color-accent-a3);
-    color: var(--color-accent-a11);
+    background-color: var(--accent-surface-hover);
+    color: var(--accent-text);
   }
   @media (hover: hover) {
     .u-button[data-variant=soft]:hover {
-      background-color: var(--color-accent-a4);
+      background-color: var(--accent-surface-active);
     }
   }
   .u-button[data-variant=soft]:active:not(:disabled) {
-    background-color: var(--color-accent-a5);
+    background-color: var(--accent-border);
   }
   .u-button[data-variant=surface]:focus-visible {
     outline-offset: -1px;
   }
   .u-button[data-variant=surface] {
-    background-color: var(--color-accent-a2);
-    color: var(--color-accent-a11);
-    box-shadow: inset 0 0 0 1px var(--color-accent-a7);
+    background-color: var(--accent-surface);
+    color: var(--accent-text);
+    box-shadow: inset 0 0 0 1px var(--accent-border);
   }
   @media (hover: hover) {
     .u-button[data-variant=surface]:hover {
-      box-shadow: inset 0 0 0 1px var(--color-accent-a8);
+      box-shadow: inset 0 0 0 1px var(--accent-border-strong);
     }
   }
   .u-button[data-variant=surface]:active:not(:disabled) {
-    background-color: var(--color-accent-a3);
-    box-shadow: inset 0 0 0 1px var(--color-accent-a8);
+    background-color: var(--accent-surface-hover);
+    box-shadow: inset 0 0 0 1px var(--accent-border-strong);
   }
   .u-button[data-variant=outline]:focus-visible {
     outline-offset: -1px;
   }
   .u-button[data-variant=outline] {
     background-color: transparent;
-    box-shadow: inset 0 0 0 1px var(--color-accent-a8);
-    color: var(--color-accent-a11);
+    box-shadow: inset 0 0 0 1px var(--accent-border-strong);
+    color: var(--accent-text);
   }
   @media (hover: hover) {
     .u-button[data-variant=outline]:hover {
-      background-color: var(--color-accent-a2);
+      background-color: var(--accent-surface);
     }
   }
   .u-button[data-variant=outline]:active:not(:disabled) {
-    background-color: var(--color-accent-a3);
+    background-color: var(--accent-surface-hover);
   }
   .u-button[data-variant=ghost]:focus-visible {
     outline-offset: -1px;
   }
   .u-button[data-variant=ghost] {
     background-color: transparent;
-    color: var(--color-accent-a11);
+    color: var(--accent-text);
   }
   @media (hover: hover) {
     .u-button[data-variant=ghost]:hover {
-      background-color: var(--color-accent-a3);
+      background-color: var(--accent-surface-hover);
     }
   }
   .u-button[data-variant=ghost]:active:not(:disabled) {
-    background-color: var(--color-accent-a4);
+    background-color: var(--accent-surface-active);
   }
   .u-button[data-variant=destructive] {
-    background-color: var(--color-crimson-9);
+    background-color: var(--destructive);
     color: white;
   }
   @media (hover: hover) {
     .u-button[data-variant=destructive]:hover {
-      background-color: var(--color-crimson-10);
+      background-color: var(--destructive-hover);
     }
   }
   .u-button[data-variant=destructive]:active:not(:disabled) {
-    background-color: var(--color-crimson-10);
+    background-color: var(--destructive-hover);
     filter: brightness(0.92) saturate(1.1);
   }
   .u-button {
@@ -570,15 +511,15 @@
     outline: none;
   }
   .u-card:focus-visible {
-    outline: 2px solid var(--color-accent-8);
+    outline: 2px solid var(--accent-bold);
     outline-offset: -1px;
   }
   .u-card[data-variant=surface] {
-    background-color: color-mix(in oklch, var(--color-gray-1) 70%, transparent);
-    box-shadow: inset 0 0 0 1px var(--color-gray-a5);
+    background-color: color-mix(in oklch, var(--bg-input) 70%, transparent);
+    box-shadow: inset 0 0 0 1px var(--border-subtle);
   }
   .u-card[data-variant=classic] {
-    background-color: var(--color-panel);
+    background-color: var(--panel);
     backdrop-filter: blur(64px);
     box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
     transition-property: box-shadow;
@@ -597,12 +538,12 @@
     padding: 0.5rem;
   }
   .u-card[data-variant=ghost]:focus-visible {
-    border-color: var(--color-gray-a6);
-    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-gray-a6) 50%, transparent);
+    border-color: var(--border);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--border) 50%, transparent);
   }
   .u-card[data-variant=ghost][data-selected] {
-    background-color: var(--color-accent-9);
-    color: var(--color-accent-12);
+    background-color: var(--accent);
+    color: var(--accent-contrast);
   }
   .u-card[data-size="1"] {
     padding: calc(0.75rem * var(--scale));
@@ -672,7 +613,7 @@
     line-height: calc(1em + 0.25rem);
   }
   .u-card-description {
-    color: var(--color-gray-11);
+    color: var(--text-2);
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -692,7 +633,7 @@
   }
   @media (hover: hover) {
     a.u-card[data-variant=ghost]:hover {
-      background-color: var(--color-gray-a3);
+      background-color: var(--bg-hover-a);
     }
     a.u-card[data-variant=classic]:hover {
       box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
@@ -701,7 +642,7 @@
       box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     }
     .u-card-description > a:hover {
-      color: var(--color-gray-12);
+      color: var(--text);
     }
   }
 }
@@ -724,9 +665,9 @@
     padding: 1em;
     overflow-x: auto;
     font-weight: 400;
-    background-color: var(--color-gray-3);
-    box-shadow: inset 0 0 0 1px var(--color-gray-a8);
-    color: var(--color-gray-11);
+    background-color: var(--bg-hover);
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+    color: var(--text-2);
     user-select: text;
     white-space-collapse: preserve;
     word-break: break-all;
@@ -896,9 +837,9 @@
     display: flex;
     width: 100%;
     min-width: 0;
-    border: 1px solid var(--color-gray-a7);
-    background-color: var(--color-gray-1);
-    color: var(--color-gray-12);
+    border: 1px solid var(--border-strong);
+    background-color: var(--bg-input);
+    color: var(--text);
     font-size: inherit;
     outline: none;
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -909,14 +850,14 @@
     transition-duration: 150ms;
   }
   .u-input::placeholder {
-    color: var(--color-gray-a10);
+    color: var(--text-4);
   }
   .u-input::selection {
-    background-color: var(--color-accent-9);
+    background-color: var(--accent);
     color: white;
   }
   .u-input:focus-visible {
-    outline: 2px solid var(--color-accent-8);
+    outline: 2px solid var(--accent-bold);
     outline-offset: -1px;
     border-color: transparent;
   }
@@ -925,8 +866,8 @@
     opacity: 0.5;
   }
   .u-input[aria-invalid=true] {
-    border-color: var(--color-crimson-8);
-    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-crimson-8) 20%, transparent);
+    border-color: var(--accent-bold);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent-bold) 20%, transparent);
   }
   .u-input {
     height: calc(32px * var(--scale));
@@ -991,18 +932,18 @@
 /* ui/link.css */
 @layer components {
   .u-link {
-    color: var(--color-accent-a11);
+    color: var(--accent-text);
     cursor: pointer;
     text-decoration: none;
   }
   .u-link:focus-visible {
-    outline: 2px solid var(--color-accent-8);
+    outline: 2px solid var(--accent-bold);
     outline-offset: 2px;
     border-radius: calc(0.07em * 1);
   }
   .u-link[data-underline=always] {
     text-decoration: underline;
-    text-decoration-color: var(--color-accent-a5);
+    text-decoration-color: var(--accent-border);
     text-decoration-thickness: min(2px, max(1px, 0.05em));
     text-underline-offset: calc(0.025em + 2px);
   }
@@ -1012,7 +953,7 @@
   @media (hover: hover) {
     .u-link:not([data-underline=always], [data-underline=hover]):hover {
       text-decoration: underline;
-      text-decoration-color: var(--color-accent-a5);
+      text-decoration-color: var(--accent-border);
       text-decoration-thickness: min(2px, max(1px, 0.05em));
       text-underline-offset: calc(0.025em + 2px);
     }
@@ -1128,12 +1069,12 @@
     pointer-events: none;
   }
   .u-note {
-    background-color: var(--color-gray-1);
-    border: 1px solid var(--color-gray-a5);
-    color: var(--color-gray-12);
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-subtle);
+    color: var(--text);
   }
   .u-note .u-note-description {
-    color: var(--color-gray-11);
+    color: var(--text-2);
   }
   .u-note[data-variant=success] {
     background-color: oklch(0.982 0.018 155);
@@ -1144,12 +1085,12 @@
     color: oklch(0.407 0.086 153);
   }
   .u-note[data-variant=error] {
-    background-color: var(--color-crimson-2);
-    border: 1px solid var(--color-crimson-a5);
-    color: var(--color-crimson-12);
+    background-color: var(--destructive-surface);
+    border: 1px solid var(--destructive-surface-border);
+    color: var(--destructive-contrast);
   }
   .u-note[data-variant=error] .u-note-description {
-    color: var(--color-crimson-11);
+    color: var(--destructive-text);
   }
   .u-note[data-variant=warning] {
     background-color: oklch(0.984 0.019 84);
@@ -1241,12 +1182,12 @@
     position: relative;
     width: 100%;
     border-radius: 9999px;
-    background-color: var(--color-gray-a3);
+    background-color: var(--bg-hover-a);
   }
   .u-progress-fill {
     height: 100%;
     border-radius: 9999px;
-    background-color: var(--color-accent-9);
+    background-color: var(--accent);
     transition-property: width;
     transition-duration: 100ms;
     transition-timing-function: linear;
@@ -1308,7 +1249,7 @@
     color: inherit;
   }
   .u-select-trigger:focus-visible {
-    outline: 2px solid var(--color-accent-8);
+    outline: 2px solid var(--accent-bold);
     outline-offset: -1px;
   }
   .u-select-trigger svg {
@@ -1327,15 +1268,15 @@
     text-overflow: ellipsis;
   }
   .u-select[data-variant=surface] {
-    color: var(--color-accent-a11);
+    color: var(--accent-text);
   }
   .u-select[data-variant=surface] > .u-select-trigger {
-    background-color: var(--color-accent-a2);
-    box-shadow: inset 0 0 0 1px var(--color-accent-a7);
+    background-color: var(--accent-surface);
+    box-shadow: inset 0 0 0 1px var(--accent-border);
   }
   @media (hover: hover) {
     .u-select[data-variant=surface] > .u-select-trigger:hover {
-      box-shadow: inset 0 0 0 1px var(--color-accent-a8);
+      box-shadow: inset 0 0 0 1px var(--accent-border-strong);
     }
   }
   .u-select {
@@ -1382,8 +1323,8 @@
     z-index: 50;
     min-width: 100%;
     padding: var(--select-content-padding);
-    background-color: var(--color-gray-2);
-    border: 1px solid var(--color-gray-6);
+    background-color: var(--bg-surface);
+    border: 1px solid var(--bg-solid);
     border-radius: var(--select-radius);
     box-shadow: 0 12px 60px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
   }
@@ -1401,7 +1342,7 @@
     cursor: pointer;
     font-size: inherit;
     line-height: inherit;
-    color: var(--color-gray-12);
+    color: var(--text);
     white-space: nowrap;
     outline: none;
     position: relative;
@@ -1419,14 +1360,14 @@
   }
   @media (hover: hover) {
     .u-select-item:hover {
-      background-color: var(--color-accent-a3);
+      background-color: var(--accent-surface-hover);
     }
   }
   .u-select-item:focus-visible {
-    background-color: var(--color-accent-a3);
+    background-color: var(--accent-surface-hover);
   }
   .u-select-item[data-selected] {
-    background-color: var(--color-accent-a4);
+    background-color: var(--accent-surface-active);
   }
 }
 
@@ -1533,7 +1474,7 @@
     width: 22.5rem;
     height: 100cvh;
     flex: none;
-    border-inline-end: 1px solid var(--color-gray-a6);
+    border-inline-end: 1px solid var(--border);
     place-items: center;
     display: grid;
   }
@@ -1546,14 +1487,14 @@
     background-color: transparent;
   }
   .u-table[data-variant=surface] {
-    border: 1px solid var(--color-gray-a5);
+    border: 1px solid var(--border-subtle);
     border-radius: calc(0.5rem * var(--radius-factor, 1));
-    background-color: var(--color-panel);
+    background-color: var(--panel);
     backdrop-filter: blur(64px);
     overflow: hidden;
   }
   .u-table[data-variant=surface] .u-table-header .u-table-row {
-    background-color: var(--color-gray-a2);
+    background-color: var(--bg-surface-a);
   }
   .u-table {
     font-size: calc(0.875rem * var(--scale));
@@ -1592,7 +1533,7 @@
     min-height: calc(48px * var(--scale));
   }
   .u-table-row {
-    box-shadow: inset 0 -1px var(--color-gray-a5);
+    box-shadow: inset 0 -1px var(--border-subtle);
     transition-property: color, background-color;
     transition-duration: 150ms;
   }
@@ -1600,10 +1541,10 @@
     box-shadow: none;
   }
   .u-table-row[data-state=selected] {
-    background-color: var(--color-gray-a2);
+    background-color: var(--bg-surface-a);
   }
   .u-table-head {
-    color: var(--color-gray-12);
+    color: var(--text);
     background-clip: padding-box;
     text-align: start;
     vertical-align: middle;
@@ -1625,7 +1566,7 @@
   @media (hover: hover) {
     .u-table-row:hover td,
     .u-table-row:hover th {
-      background-color: color-mix(in oklch, var(--color-gray-2) 50%, transparent);
+      background-color: color-mix(in oklch, var(--bg-surface) 50%, transparent);
     }
   }
 }
@@ -1801,30 +1742,16 @@
     --radius-full: 9999px;
   }
   .u-theme[data-accent=crimson] {
-    --color-accent-1: var(--color-crimson-1);
-    --color-accent-2: var(--color-crimson-2);
-    --color-accent-3: var(--color-crimson-3);
-    --color-accent-4: var(--color-crimson-4);
-    --color-accent-5: var(--color-crimson-5);
-    --color-accent-6: var(--color-crimson-6);
-    --color-accent-7: var(--color-crimson-7);
-    --color-accent-8: var(--color-crimson-8);
-    --color-accent-9: var(--color-crimson-9);
-    --color-accent-10: var(--color-crimson-10);
-    --color-accent-11: var(--color-crimson-11);
-    --color-accent-12: var(--color-crimson-12);
-    --color-accent-a1: var(--color-crimson-a1);
-    --color-accent-a2: var(--color-crimson-a2);
-    --color-accent-a3: var(--color-crimson-a3);
-    --color-accent-a4: var(--color-crimson-a4);
-    --color-accent-a5: var(--color-crimson-a5);
-    --color-accent-a6: var(--color-crimson-a6);
-    --color-accent-a7: var(--color-crimson-a7);
-    --color-accent-a8: var(--color-crimson-a8);
-    --color-accent-a9: var(--color-crimson-a9);
-    --color-accent-a10: var(--color-crimson-a10);
-    --color-accent-a11: var(--color-crimson-a11);
-    --color-accent-a12: var(--color-crimson-a12);
+    --accent: var(--crimson-9);
+    --accent-hover: var(--crimson-10);
+    --accent-bold: var(--crimson-8);
+    --accent-text: var(--crimson-a11);
+    --accent-surface: var(--crimson-a2);
+    --accent-surface-hover: var(--crimson-a3);
+    --accent-surface-active: var(--crimson-a4);
+    --accent-border: var(--crimson-a7);
+    --accent-border-strong: var(--crimson-a8);
+    --accent-contrast: var(--crimson-12);
   }
 }
 
@@ -1838,20 +1765,20 @@
     padding: 0.125rem;
     border: none;
     border-radius: 9999px;
-    background-color: var(--color-gray-6);
+    background-color: var(--bg-solid);
     cursor: pointer;
     transition: background-color 150ms ease;
     flex-shrink: 0;
   }
   .u-toggle-track[aria-checked=true] {
-    background-color: var(--color-accent-9);
+    background-color: var(--accent);
   }
   .u-toggle-track:disabled:not([data-animating]) {
     opacity: 0.4;
     cursor: default;
   }
   .u-toggle-track:focus-visible {
-    outline: 2px solid var(--color-accent-9);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
   .u-toggle-thumb {
@@ -1877,7 +1804,7 @@
     align-content: center;
     justify-content: space-between;
     gap: 1rem;
-    border-bottom: 1px solid var(--color-gray-a6);
+    border-bottom: 1px solid var(--border);
     padding-inline: 1rem;
   }
   .u-toolbar-secondary {
@@ -1900,14 +1827,14 @@
 @layer components {
   .v-app {
     isolation: isolate;
-    background-color: var(--color-gray-2);
+    background-color: var(--bg-surface);
     display: flex;
     min-height: 100svh;
     height: 100svh;
     width: 100%;
   }
   .v-app-main {
-    background-color: var(--color-gray-1);
+    background-color: var(--bg-input);
     position: relative;
     width: 100%;
     flex: 1;
@@ -1946,7 +1873,7 @@
     display: flex;
     box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
     border-radius: 0.125rem;
-    background-color: var(--color-gray-1);
+    background-color: var(--bg-input);
     padding: 1.5rem;
     pointer-events: auto;
   }
@@ -1958,7 +1885,7 @@
     height: 1.5rem;
     padding: 0.25rem;
     border-radius: 9999px;
-    background-color: var(--color-gray-2);
+    background-color: var(--bg-surface);
     display: flex;
   }
 }
@@ -2008,7 +1935,7 @@
     padding: 2rem;
   }
   .v-degraded-alert {
-    border: 2px solid var(--color-red-9);
+    border: 2px solid var(--error);
   }
 }
 
@@ -2030,7 +1957,7 @@
     width: 28rem;
   }
   .v-media-muted {
-    color: color-mix(in oklab, var(--color-gray-11) 50%, transparent);
+    color: var(--text-4);
   }
   .v-media-dialog {
     width: 42rem;
@@ -2045,7 +1972,7 @@
     overscroll-behavior: contain;
     height: 100dvh;
     max-height: 100%;
-    border: 1px solid var(--color-gray-a6);
+    border: 1px solid var(--border);
     border-radius: 0.125rem;
   }
   .v-media-search-card {
@@ -2055,11 +1982,11 @@
     flex: none;
   }
   .v-media-file-group {
-    border: 1px solid var(--color-gray-a6);
+    border: 1px solid var(--border);
     border-radius: 0.125rem;
   }
   .v-media-file-group-header {
-    background-color: var(--color-accent-9);
+    background-color: var(--accent);
     padding: 0.5rem;
     position: sticky;
     top: 0;
@@ -2087,7 +2014,7 @@
     padding: 0.25rem;
   }
   .v-media-download-list {
-    border: 1px solid var(--color-gray-a6);
+    border: 1px solid var(--border);
   }
   .v-media-indent {
     margin-left: 1rem;
@@ -2145,7 +2072,7 @@
     gap: 1rem;
   }
   .v-detail-muted {
-    color: var(--color-gray-11);
+    color: var(--text-2);
   }
   .v-detail-play {
     width: 168px;
@@ -2177,12 +2104,12 @@
   }
   .v-series-season-header {
     padding-block: 1rem 2rem;
-    color: var(--color-gray-11);
+    color: var(--text-2);
     font-size: var(--text-xl);
-    border-top: 2px solid var(--color-gray-11);
+    border-top: 2px solid var(--text-2);
   }
   .v-series-episode {
-    color: var(--color-gray-11);
+    color: var(--text-2);
   }
   .v-series-episode-info {
     grid-column: span 5;
@@ -2193,8 +2120,8 @@
     gap: 1rem;
   }
   .v-series-episode-number {
-    color: color-mix(in oklab, var(--color-gray-11) 60%, transparent);
-    text-decoration-color: color-mix(in oklab, var(--color-gray-11) 60%, transparent) !important;
+    color: var(--text-3);
+    text-decoration-color: var(--text-3) !important;
   }
   .v-series-episode-title {
     font-weight: 600;
@@ -2216,7 +2143,7 @@
   .v-series-episode-thumb {
     grid-column: span 3;
     aspect-ratio: 16 / 9;
-    background-color: var(--color-gray-6);
+    background-color: var(--bg-solid);
     border-radius: var(--radius-1);
     overflow: hidden;
   }
@@ -2467,7 +2394,7 @@
     margin-bottom: 0.5rem;
     padding: 0.25rem 0.5rem;
     background: white;
-    color: var(--color-gray-12);
+    color: var(--text);
     font-size: 0.75rem;
     line-height: 1rem;
     border-radius: 0.25rem;
@@ -2591,18 +2518,18 @@
   .v-progress-item {
     font-size: 0.875rem;
     line-height: 1.25rem;
-    color: color-mix(in oklab, var(--color-gray-11) 80%, transparent);
+    color: var(--text-3);
   }
   .v-progress-item-error {
     font-size: 0.875rem;
     line-height: 1.25rem;
-    color: var(--color-accent-11);
+    color: var(--accent-text);
   }
   .v-progress-item-error-detail {
-    color: color-mix(in oklab, var(--color-accent-11) 60%, transparent);
+    color: color-mix(in oklab, var(--accent-text) 60%, transparent);
   }
   .v-progress-muted {
-    color: color-mix(in oklab, var(--color-gray-11) 50%, transparent);
+    color: var(--text-4);
   }
   .v-progress-bar {
     max-width: 20rem;
@@ -2612,7 +2539,7 @@
 /* view/sidebar/sidebar.css */
 @layer components {
   .v-sidebar {
-    color: var(--color-gray-12);
+    color: var(--text);
   }
   @media (min-width: 768px) {
     .v-sidebar {
@@ -2642,7 +2569,7 @@
     }
   }
   .v-sidebar-inner {
-    background-color: var(--color-gray-2);
+    background-color: var(--bg-surface);
     display: flex;
     height: 100%;
     width: 100%;
@@ -2665,7 +2592,7 @@
     padding: 0.5rem;
   }
   .v-sidebar-group-label {
-    color: color-mix(in oklab, var(--color-gray-11) 70%, transparent);
+    color: var(--text-3);
     outline: none;
     display: flex;
     height: 2rem;
@@ -2679,7 +2606,7 @@
     transition-duration: 200ms;
   }
   .v-sidebar-group-label:focus-visible {
-    box-shadow: 0 0 0 2px var(--color-accent-6);
+    box-shadow: 0 0 0 2px var(--accent-border);
   }
   .v-sidebar-group-label > svg {
     width: 1rem;
@@ -2715,7 +2642,7 @@
     height: 2rem;
   }
   .v-sidebar-menu-button:focus-visible {
-    box-shadow: 0 0 0 2px var(--color-accent-6);
+    box-shadow: 0 0 0 2px var(--accent-border);
   }
   .v-sidebar-menu-button:disabled,
   .v-sidebar-menu-button[aria-disabled=true] {
@@ -2733,8 +2660,8 @@
     flex-shrink: 0;
   }
   .v-sidebar-menu-button[data-selected] {
-    background-color: var(--color-gray-5);
-    color: var(--color-accent-10);
+    background-color: var(--bg-active);
+    color: var(--accent-hover);
   }
 }
 
@@ -2744,8 +2671,8 @@
 /* main.css */
 @layer base {
   body {
-    background-color: var(--color-gray-0);
-    color: var(--color-gray-12);
+    background-color: var(--bg);
+    color: var(--text);
     min-height: 100vh;
     font-family: var(--font-sans);
     font-optical-sizing: auto;

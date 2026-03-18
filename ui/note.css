@@ -104,11 +104,11 @@
 
 /* variant: info (default) */
 .u-note {
-	background-color: var(--color-gray-1);
-	border: 1px solid var(--color-gray-a5);
-	color: var(--color-gray-12);
+	background-color: var(--bg-input);
+	border: 1px solid var(--border-subtle);
+	color: var(--text);
 }
-.u-note .u-note-description { color: var(--color-gray-11); }
+.u-note .u-note-description { color: var(--text-2); }
 
 /* variant: success */
 .u-note[data-variant="success"] {
@@ -120,11 +120,11 @@
 
 /* variant: error */
 .u-note[data-variant="error"] {
-	background-color: var(--color-crimson-2);
-	border: 1px solid var(--color-crimson-a5);
-	color: var(--color-crimson-12);
+	background-color: var(--destructive-surface);
+	border: 1px solid var(--destructive-surface-border);
+	color: var(--destructive-contrast);
 }
-.u-note[data-variant="error"] .u-note-description { color: var(--color-crimson-11); }
+.u-note[data-variant="error"] .u-note-description { color: var(--destructive-text); }
 
 /* variant: warning */
 .u-note[data-variant="warning"] {
