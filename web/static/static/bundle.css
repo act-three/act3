@@ -2499,6 +2499,7 @@
     height: 100svh;
     transition-duration: 200ms;
     display: none;
+    flex-direction: column;
     inset-inline-start: 0;
     padding: 0.5rem;
   }
@@ -2506,12 +2507,6 @@
     .v-sidebar-container {
       display: flex;
     }
-  }
-  .v-sidebar-inner {
-    display: flex;
-    height: 100%;
-    width: 100%;
-    flex-direction: column;
   }
   .v-sidebar-content {
     display: flex;
@@ -2551,16 +2546,13 @@
     height: 1rem;
     flex-shrink: 0;
   }
-  .v-sidebar-group-content {
-    width: 100%;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
   .v-sidebar-menu {
     display: flex;
     width: 100%;
     min-width: 0;
     flex-direction: column;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
   .v-sidebar-menu-item {
     position: relative;

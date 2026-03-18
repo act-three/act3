@@ -76,13 +76,7 @@ func Sidebar() html.Node {
 			attr.Attr("data-slot")("sidebar-container"),
 			attr.Class("v-sidebar-container"),
 		)(
-			html.Div(
-				attr.Attr("data-sidebar")("sidebar"),
-				attr.Attr("data-slot")("sidebar-inner"),
-				attr.Class("v-sidebar-inner"),
-			)(
-				sidebarContent(),
-			),
+			sidebarContent(),
 		),
 	)
 }
@@ -121,13 +115,7 @@ func sidebarGroupLabel(s string) html.Node {
 }
 
 func sidebarGroupContent(items []MenuItem) html.Node {
-	return html.Div(
-		attr.Attr("data-slot")("sidebar-group-content"),
-		attr.Attr("data-sidebar")("group-content"),
-		attr.Class("v-sidebar-group-content"),
-	)(
-		sidebarMenu(items),
-	)
+	return sidebarMenu(items)
 }
 
 func sidebarMenu(items []MenuItem) html.Node {
