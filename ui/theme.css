@@ -1,6 +1,6 @@
 /* Design tokens — colors, fonts, sizing, radii.
  *
- * Imported into layer(theme), below preflight and above base.
+ * Imported into layer(theme), above preflight and below components.
  * Runtime overrides live in theme-overrides.css (components layer). */
 
 :root {
