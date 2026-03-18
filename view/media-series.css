@@ -67,6 +67,12 @@
 	pointer-events: none;
 }
 
+/* spoiler blur for text summaries */
+.v-series-spoiler-blur-text { backdrop-filter: blur(4px); }
+
+/* spoiler blur for thumbnail images */
+.v-series-spoiler-blur-image { backdrop-filter: blur(12px); }
+
 /* episode thumbnail (right side) */
 .v-series-episode-thumb {
 	grid-column: span 3;

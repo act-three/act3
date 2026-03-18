@@ -172,7 +172,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 			)(Text(opt.Label)),
 		)
 	}
-	return html.Div(Class("relative"))(
+	return html.Div(Class("v-player-quality-wrapper"))(
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle)(Icon("line/settings-04")),
 		html.Div(
 			stimulus.Target("player", "qualityMenu"),
@@ -237,7 +237,7 @@ func playerSeekBar() html.Node {
 }
 
 func playerVolumeBar() html.Node {
-	return FlexRow(Gap2, Class("items-center"))(
+	return FlexRow(Gap2, Class("v-player-volume-bar"))(
 		Button(stimulus.Action("click->player#toggleMute"), ButtonSurface, ButtonCircle)(Icon("line/volume-max")),
 		html.Div(Class("v-player-volume"))(
 			html.Input(

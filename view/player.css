@@ -338,6 +338,12 @@
 	height: 5px;
 }
 
+/* player-quality-wrapper (positions quality menu relative to button) */
+.v-player-quality-wrapper { position: relative; }
+
+/* player-volume-bar (volume slider row) */
+.v-player-volume-bar { align-items: center; }
+
 /* player-quality-menu */
 .v-player-quality-menu {
 	position: absolute;

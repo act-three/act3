@@ -54,8 +54,8 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 	hideSpoilersText := group()
 	hideSpoilersImage := group()
 	if doHideSpoilers {
-		hideSpoilersText = Class("backdrop-blur-xs")
-		hideSpoilersImage = Class("backdrop-blur-md")
+		hideSpoilersText = Class("v-series-spoiler-blur-text")
+		hideSpoilersImage = Class("v-series-spoiler-blur-image")
 	}
 	vids := ep.Videos()
 	playable := slices.IndexFunc(vids, func(v *model.Video) bool {
@@ -89,7 +89,7 @@ func mediaSeriesEpisode(ep *model.Episode) html.Node {
 				),
 			),
 			Box(Class("v-series-episode-summary"))(
-				TextNode(Class("text-sm"), LineClamp4)(html.Safe(ep.Summary())),
+				TextNode(TextSize2, LineClamp4)(html.Safe(ep.Summary())),
 				Box(Class("v-series-spoiler-overlay"), hideSpoilersText),
 			),
 		),
