@@ -21,6 +21,9 @@ RUN apk add --no-cache \
 RUN apk add --no-cache \
 	ffmpeg
 
+# Node.js — required by Playwright MCP server (not used for project builds)
+RUN apk add --no-cache nodejs npm
+
 # Non-root user (unlock account so sshd allows pubkey auth)
 RUN addgroup -g 501 dev && adduser -u 501 -G dev -h /home/dev -s /bin/bash -D dev \
 	&& passwd -u dev

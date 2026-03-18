@@ -2,6 +2,7 @@
 *.db
 *.db-shm
 *.db-wal
+/.mcp.json
 /deploy
 /node_modules
 /src

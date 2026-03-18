@@ -37,6 +37,10 @@ and the environment carries `GOEXPERIMENT=jsonv2`.
 
 Run locally: `go run . [-v] [-listen :4444]`
 
+A Playwright MCP is configured to connect to a local Chrome instance
+via CDP. Use it to visually verify UI changes in the running app —
+navigate to pages, take snapshots, click elements, etc.
+
 Environment variables:
 - `A3DATABASE` — dir for SQLite DB (default `.`)
 - `A3STORAGE` — CAS root (default `/var/lib/act3`)

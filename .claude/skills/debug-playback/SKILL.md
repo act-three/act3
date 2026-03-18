@@ -17,8 +17,12 @@ glitchy audio, glitchy video, buffering, etc.
 
 ### Phase 2. Investigate
 
-Use curl, mediastreamvalidator, and avmediainfo at your discretion to
-figure out what is going wrong.
+Use the Playwright MCP to navigate to the episode page in Chrome and
+observe the actual playback behavior (black screen, buffering, etc.).
+Check the browser console for errors.
+
+Also use curl, mediastreamvalidator, and avmediainfo at your
+discretion to figure out what is going wrong.
 
 Do not attempt to implement a fix until Phase 5.
 

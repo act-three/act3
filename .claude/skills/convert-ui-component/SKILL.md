@@ -127,7 +127,10 @@ go build -o /dev/null -tags goexperiment.jsonv2 .
 go test -tags goexperiment.jsonv2 ./ui/...
 ```
 
-Run locally and visually check the component renders correctly.
+Run locally and use the Playwright MCP to visually verify the
+component renders correctly — navigate to a page that uses the
+component, take a snapshot, and confirm the layout and states
+(hover, focus, disabled) look right.
 
 ## Reference
 
