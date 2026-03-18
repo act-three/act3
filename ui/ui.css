@@ -23,6 +23,6 @@
 @import "./split.css";
 @import "./table.css";
 @import "./text.css";
-@import "./theme.css";
+@import "./theme-overrides.css";
 @import "./toggle.css";
 @import "./toolbar.css";
