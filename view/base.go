@@ -29,10 +29,7 @@ func base(title string, head ...html.Node) func(...attr.Node) html.Element {
 						html.Title()(html.Text(title)),
 						Group(head...),
 					),
-					html.Body(
-						Class("dark bg-gray-0 text-gray-12"),
-						group(attrs...),
-					)(body...),
+					html.Body(group(attrs...))(body...),
 				),
 			)
 		}

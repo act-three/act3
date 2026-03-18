@@ -24,55 +24,55 @@
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
-    --color-gray-0: oklch(1 0 0);
-    --color-mauve-1: color(display-p3 0.991 0.988 0.992);
-    --color-mauve-2: color(display-p3 0.98 0.976 0.984);
-    --color-mauve-3: color(display-p3 0.946 0.938 0.952);
-    --color-mauve-4: color(display-p3 0.915 0.906 0.925);
-    --color-mauve-5: color(display-p3 0.886 0.876 0.901);
-    --color-mauve-6: color(display-p3 0.856 0.846 0.875);
-    --color-mauve-7: color(display-p3 0.814 0.804 0.84);
-    --color-mauve-8: color(display-p3 0.735 0.728 0.777);
-    --color-mauve-9: color(display-p3 0.555 0.549 0.596);
-    --color-mauve-10: color(display-p3 0.514 0.508 0.552);
-    --color-mauve-11: color(display-p3 0.395 0.388 0.424);
-    --color-mauve-12: color(display-p3 0.128 0.122 0.147);
-    --color-mauve-a1: color(display-p3 0.349 0.024 0.349 / 0.012);
-    --color-mauve-a2: color(display-p3 0.184 0.024 0.349 / 0.024);
-    --color-mauve-a3: color(display-p3 0.129 0.008 0.255 / 0.063);
-    --color-mauve-a4: color(display-p3 0.094 0.012 0.216 / 0.095);
-    --color-mauve-a5: color(display-p3 0.098 0.008 0.224 / 0.126);
-    --color-mauve-a6: color(display-p3 0.055 0.004 0.18 / 0.153);
-    --color-mauve-a7: color(display-p3 0.067 0.008 0.184 / 0.197);
-    --color-mauve-a8: color(display-p3 0.02 0.004 0.176 / 0.271);
-    --color-mauve-a9: color(display-p3 0.02 0.004 0.106 / 0.451);
-    --color-mauve-a10: color(display-p3 0.012 0.004 0.09 / 0.491);
-    --color-mauve-a11: color(display-p3 0.016 0 0.059 / 0.612);
-    --color-mauve-a12: color(display-p3 0.008 0 0.027 / 0.879);
-    --color-crimson-1: color(display-p3 0.998 0.989 0.992);
-    --color-crimson-2: color(display-p3 0.991 0.969 0.976);
-    --color-crimson-3: color(display-p3 0.987 0.917 0.941);
-    --color-crimson-4: color(display-p3 0.975 0.866 0.904);
-    --color-crimson-5: color(display-p3 0.953 0.813 0.864);
-    --color-crimson-6: color(display-p3 0.921 0.755 0.817);
-    --color-crimson-7: color(display-p3 0.88 0.683 0.761);
-    --color-crimson-8: color(display-p3 0.834 0.592 0.694);
+    --color-gray-0: oklch(0 0 0);
+    --color-mauve-1: color(display-p3 0.07 0.067 0.074);
+    --color-mauve-2: color(display-p3 0.101 0.098 0.105);
+    --color-mauve-3: color(display-p3 0.138 0.134 0.144);
+    --color-mauve-4: color(display-p3 0.167 0.161 0.175);
+    --color-mauve-5: color(display-p3 0.196 0.189 0.206);
+    --color-mauve-6: color(display-p3 0.232 0.225 0.245);
+    --color-mauve-7: color(display-p3 0.286 0.277 0.302);
+    --color-mauve-8: color(display-p3 0.383 0.373 0.408);
+    --color-mauve-9: color(display-p3 0.434 0.428 0.467);
+    --color-mauve-10: color(display-p3 0.487 0.48 0.519);
+    --color-mauve-11: color(display-p3 0.707 0.7 0.735);
+    --color-mauve-12: color(display-p3 0.933 0.933 0.94);
+    --color-mauve-a1: color(display-p3 0 0 0 / 0);
+    --color-mauve-a2: color(display-p3 0.996 0.992 1 / 0.034);
+    --color-mauve-a3: color(display-p3 0.937 0.933 0.992 / 0.077);
+    --color-mauve-a4: color(display-p3 0.957 0.918 0.996 / 0.111);
+    --color-mauve-a5: color(display-p3 0.937 0.906 0.996 / 0.145);
+    --color-mauve-a6: color(display-p3 0.953 0.925 0.996 / 0.183);
+    --color-mauve-a7: color(display-p3 0.945 0.929 1 / 0.246);
+    --color-mauve-a8: color(display-p3 0.937 0.918 1 / 0.361);
+    --color-mauve-a9: color(display-p3 0.933 0.918 1 / 0.424);
+    --color-mauve-a10: color(display-p3 0.941 0.925 1 / 0.479);
+    --color-mauve-a11: color(display-p3 0.965 0.961 1 / 0.712);
+    --color-mauve-a12: color(display-p3 0.992 0.992 1 / 0.937);
+    --color-crimson-1: color(display-p3 0.093 0.068 0.078);
+    --color-crimson-2: color(display-p3 0.117 0.078 0.095);
+    --color-crimson-3: color(display-p3 0.203 0.091 0.143);
+    --color-crimson-4: color(display-p3 0.277 0.087 0.182);
+    --color-crimson-5: color(display-p3 0.332 0.115 0.22);
+    --color-crimson-6: color(display-p3 0.394 0.162 0.268);
+    --color-crimson-7: color(display-p3 0.489 0.222 0.336);
+    --color-crimson-8: color(display-p3 0.638 0.289 0.429);
     --color-crimson-9: color(display-p3 0.843 0.298 0.507);
-    --color-crimson-10: color(display-p3 0.807 0.266 0.468);
-    --color-crimson-11: color(display-p3 0.731 0.195 0.388);
-    --color-crimson-12: color(display-p3 0.352 0.111 0.221);
-    --color-crimson-a1: color(display-p3 0.675 0.024 0.349 / 0.012);
-    --color-crimson-a2: color(display-p3 0.757 0.02 0.267 / 0.032);
-    --color-crimson-a3: color(display-p3 0.859 0.008 0.294 / 0.083);
-    --color-crimson-a4: color(display-p3 0.827 0.008 0.298 / 0.134);
-    --color-crimson-a5: color(display-p3 0.753 0.008 0.275 / 0.189);
-    --color-crimson-a6: color(display-p3 0.682 0.004 0.247 / 0.244);
-    --color-crimson-a7: color(display-p3 0.62 0.004 0.251 / 0.318);
-    --color-crimson-a8: color(display-p3 0.6 0.004 0.251 / 0.408);
-    --color-crimson-a9: color(display-p3 0.776 0 0.298 / 0.702);
-    --color-crimson-a10: color(display-p3 0.737 0 0.275 / 0.734);
-    --color-crimson-a11: color(display-p3 0.731 0.195 0.388);
-    --color-crimson-a12: color(display-p3 0.352 0.111 0.221);
+    --color-crimson-10: color(display-p3 0.864 0.364 0.539);
+    --color-crimson-11: color(display-p3 1 0.56 0.66);
+    --color-crimson-12: color(display-p3 0.966 0.834 0.906);
+    --color-crimson-a1: color(display-p3 0.984 0.071 0.463 / 0.03);
+    --color-crimson-a2: color(display-p3 0.996 0.282 0.569 / 0.055);
+    --color-crimson-a3: color(display-p3 0.996 0.227 0.573 / 0.148);
+    --color-crimson-a4: color(display-p3 1 0.157 0.569 / 0.227);
+    --color-crimson-a5: color(display-p3 1 0.231 0.604 / 0.286);
+    --color-crimson-a6: color(display-p3 1 0.337 0.643 / 0.349);
+    --color-crimson-a7: color(display-p3 1 0.416 0.663 / 0.454);
+    --color-crimson-a8: color(display-p3 0.996 0.427 0.651 / 0.614);
+    --color-crimson-a9: color(display-p3 1 0.345 0.596 / 0.832);
+    --color-crimson-a10: color(display-p3 1 0.42 0.62 / 0.853);
+    --color-crimson-a11: color(display-p3 1 0.56 0.66);
+    --color-crimson-a12: color(display-p3 0.966 0.834 0.906);
     --color-gray-1: var(--color-mauve-1);
     --color-gray-2: var(--color-mauve-2);
     --color-gray-3: var(--color-mauve-3);
@@ -350,12 +350,6 @@
     border-style: var(--tw-border-style);
     border-width: 1px;
   }
-  .bg-gray-0 {
-    background-color: var(--color-gray-0);
-  }
-  .text-gray-12 {
-    color: var(--color-gray-12);
-  }
   .lowercase {
     text-transform: lowercase;
   }
@@ -408,107 +402,6 @@
       pointer-events;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
     transition-duration: var(--tw-duration, var(--default-transition-duration));
-  }
-}
-@layer theme {
-  .dark {
-    --color-gray-0: oklch(0 0 0);
-    --color-mauve-1: color(display-p3 0.07 0.067 0.074);
-    --color-mauve-2: color(display-p3 0.101 0.098 0.105);
-    --color-mauve-3: color(display-p3 0.138 0.134 0.144);
-    --color-mauve-4: color(display-p3 0.167 0.161 0.175);
-    --color-mauve-5: color(display-p3 0.196 0.189 0.206);
-    --color-mauve-6: color(display-p3 0.232 0.225 0.245);
-    --color-mauve-7: color(display-p3 0.286 0.277 0.302);
-    --color-mauve-8: color(display-p3 0.383 0.373 0.408);
-    --color-mauve-9: color(display-p3 0.434 0.428 0.467);
-    --color-mauve-10: color(display-p3 0.487 0.48 0.519);
-    --color-mauve-11: color(display-p3 0.707 0.7 0.735);
-    --color-mauve-12: color(display-p3 0.933 0.933 0.94);
-    --color-mauve-a1: color(display-p3 0 0 0 / 0);
-    --color-mauve-a2: color(display-p3 0.996 0.992 1 / 0.034);
-    --color-mauve-a3: color(display-p3 0.937 0.933 0.992 / 0.077);
-    --color-mauve-a4: color(display-p3 0.957 0.918 0.996 / 0.111);
-    --color-mauve-a5: color(display-p3 0.937 0.906 0.996 / 0.145);
-    --color-mauve-a6: color(display-p3 0.953 0.925 0.996 / 0.183);
-    --color-mauve-a7: color(display-p3 0.945 0.929 1 / 0.246);
-    --color-mauve-a8: color(display-p3 0.937 0.918 1 / 0.361);
-    --color-mauve-a9: color(display-p3 0.933 0.918 1 / 0.424);
-    --color-mauve-a10: color(display-p3 0.941 0.925 1 / 0.479);
-    --color-mauve-a11: color(display-p3 0.965 0.961 1 / 0.712);
-    --color-mauve-a12: color(display-p3 0.992 0.992 1 / 0.937);
-    --color-crimson-1: color(display-p3 0.093 0.068 0.078);
-    --color-crimson-2: color(display-p3 0.117 0.078 0.095);
-    --color-crimson-3: color(display-p3 0.203 0.091 0.143);
-    --color-crimson-4: color(display-p3 0.277 0.087 0.182);
-    --color-crimson-5: color(display-p3 0.332 0.115 0.22);
-    --color-crimson-6: color(display-p3 0.394 0.162 0.268);
-    --color-crimson-7: color(display-p3 0.489 0.222 0.336);
-    --color-crimson-8: color(display-p3 0.638 0.289 0.429);
-    --color-crimson-9: color(display-p3 0.843 0.298 0.507);
-    --color-crimson-10: color(display-p3 0.864 0.364 0.539);
-    --color-crimson-11: color(display-p3 1 0.56 0.66);
-    --color-crimson-12: color(display-p3 0.966 0.834 0.906);
-    --color-crimson-a1: color(display-p3 0.984 0.071 0.463 / 0.03);
-    --color-crimson-a2: color(display-p3 0.996 0.282 0.569 / 0.055);
-    --color-crimson-a3: color(display-p3 0.996 0.227 0.573 / 0.148);
-    --color-crimson-a4: color(display-p3 1 0.157 0.569 / 0.227);
-    --color-crimson-a5: color(display-p3 1 0.231 0.604 / 0.286);
-    --color-crimson-a6: color(display-p3 1 0.337 0.643 / 0.349);
-    --color-crimson-a7: color(display-p3 1 0.416 0.663 / 0.454);
-    --color-crimson-a8: color(display-p3 0.996 0.427 0.651 / 0.614);
-    --color-crimson-a9: color(display-p3 1 0.345 0.596 / 0.832);
-    --color-crimson-a10: color(display-p3 1 0.42 0.62 / 0.853);
-    --color-crimson-a11: color(display-p3 1 0.56 0.66);
-    --color-crimson-a12: color(display-p3 0.966 0.834 0.906);
-    --color-gray-1: var(--color-mauve-1);
-    --color-gray-2: var(--color-mauve-2);
-    --color-gray-3: var(--color-mauve-3);
-    --color-gray-4: var(--color-mauve-4);
-    --color-gray-5: var(--color-mauve-5);
-    --color-gray-6: var(--color-mauve-6);
-    --color-gray-7: var(--color-mauve-7);
-    --color-gray-8: var(--color-mauve-8);
-    --color-gray-9: var(--color-mauve-9);
-    --color-gray-10: var(--color-mauve-10);
-    --color-gray-11: var(--color-mauve-11);
-    --color-gray-12: var(--color-mauve-12);
-    --color-gray-a1: var(--color-mauve-a1);
-    --color-gray-a2: var(--color-mauve-a2);
-    --color-gray-a3: var(--color-mauve-a3);
-    --color-gray-a4: var(--color-mauve-a4);
-    --color-gray-a5: var(--color-mauve-a5);
-    --color-gray-a6: var(--color-mauve-a6);
-    --color-gray-a7: var(--color-mauve-a7);
-    --color-gray-a8: var(--color-mauve-a8);
-    --color-gray-a9: var(--color-mauve-a9);
-    --color-gray-a10: var(--color-mauve-a10);
-    --color-gray-a11: var(--color-mauve-a11);
-    --color-gray-a12: var(--color-mauve-a12);
-    --color-accent-1: var(--color-crimson-1);
-    --color-accent-2: var(--color-crimson-2);
-    --color-accent-3: var(--color-crimson-3);
-    --color-accent-4: var(--color-crimson-4);
-    --color-accent-5: var(--color-crimson-5);
-    --color-accent-6: var(--color-crimson-6);
-    --color-accent-7: var(--color-crimson-7);
-    --color-accent-8: var(--color-crimson-8);
-    --color-accent-9: var(--color-crimson-9);
-    --color-accent-10: var(--color-crimson-10);
-    --color-accent-11: var(--color-crimson-11);
-    --color-accent-12: var(--color-crimson-12);
-    --color-accent-a1: var(--color-crimson-a1);
-    --color-accent-a2: var(--color-crimson-a2);
-    --color-accent-a3: var(--color-crimson-a3);
-    --color-accent-a4: var(--color-crimson-a4);
-    --color-accent-a5: var(--color-crimson-a5);
-    --color-accent-a6: var(--color-crimson-a6);
-    --color-accent-a7: var(--color-crimson-a7);
-    --color-accent-a8: var(--color-crimson-a8);
-    --color-accent-a9: var(--color-crimson-a9);
-    --color-accent-a10: var(--color-crimson-a10);
-    --color-accent-a11: var(--color-crimson-a11);
-    --color-accent-a12: var(--color-crimson-a12);
   }
 }
 @layer components {
@@ -793,7 +686,7 @@
     outline-offset: -1px;
   }
   .u-card[data-variant=surface] {
-    background-color: color-mix(in srgb, color(display-p3 0.991 0.988 0.992) 70%, transparent);
+    background-color: color-mix(in srgb, color(display-p3 0.07 0.067 0.074) 70%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklch, var(--color-gray-1) 70%, transparent);
     }
@@ -820,7 +713,7 @@
   }
   .u-card[data-variant=ghost]:focus-visible {
     border-color: var(--color-gray-a6);
-    box-shadow: 0 0 0 3px color-mix(in srgb, color(display-p3 0.055 0.004 0.18 / 0.153) 50%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, color(display-p3 0.953 0.925 0.996 / 0.183) 50%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-gray-a6) 50%, transparent);
     }
@@ -1115,7 +1008,7 @@
   }
   .u-input[aria-invalid=true] {
     border-color: var(--color-crimson-8);
-    box-shadow: 0 0 0 3px color-mix(in srgb, color(display-p3 0.834 0.592 0.694) 20%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, color(display-p3 0.638 0.289 0.429) 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-crimson-8) 20%, transparent);
     }
@@ -1773,7 +1666,7 @@
   @media (hover: hover) {
     .u-table-row:hover td,
     .u-table-row:hover th {
-      background-color: color-mix(in srgb, color(display-p3 0.98 0.976 0.984) 50%, transparent);
+      background-color: color-mix(in srgb, color(display-p3 0.101 0.098 0.105) 50%, transparent);
       @supports (color: color-mix(in lab, red, red)) {
         background-color: color-mix(in oklch, var(--color-gray-2) 50%, transparent);
       }
@@ -1914,7 +1807,7 @@
   }
   .u-theme {
     display: contents;
-    --color-panel: color-mix( in oklch, oklch(1 0 0) 70%, transparent );
+    --color-panel: color-mix( in oklch, oklch(0 0 0) 70%, transparent );
     @supports (color: color-mix(in lab, red, red)) {
       --color-panel: color-mix( in oklch, var(--color-gray-0) 70%, transparent );
     }
@@ -2155,7 +2048,7 @@
     width: 28rem;
   }
   .v-media-muted {
-    color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 50%, transparent);
+    color: color-mix(in srgb, color(display-p3 0.707 0.7 0.735) 50%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-gray-11) 50%, transparent);
     }
@@ -2305,11 +2198,11 @@
     gap: 1rem;
   }
   .v-series-episode-number {
-    color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 60%, transparent);
+    color: color-mix(in srgb, color(display-p3 0.707 0.7 0.735) 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-gray-11) 60%, transparent);
     }
-    text-decoration-color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 60%, transparent) !important;
+    text-decoration-color: color-mix(in srgb, color(display-p3 0.707 0.7 0.735) 60%, transparent) !important;
     @supports (color: color-mix(in lab, red, red)) {
       text-decoration-color: color-mix(in oklab, var(--color-gray-11) 60%, transparent) !important;
     }
@@ -2699,7 +2592,7 @@
   .v-progress-item {
     font-size: 0.875rem;
     line-height: 1.25rem;
-    color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 80%, transparent);
+    color: color-mix(in srgb, color(display-p3 0.707 0.7 0.735) 80%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-gray-11) 80%, transparent);
     }
@@ -2710,13 +2603,13 @@
     color: var(--color-accent-11);
   }
   .v-progress-item-error-detail {
-    color: color-mix(in srgb, color(display-p3 0.731 0.195 0.388) 60%, transparent);
+    color: color-mix(in srgb, color(display-p3 1 0.56 0.66) 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-accent-11) 60%, transparent);
     }
   }
   .v-progress-muted {
-    color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 50%, transparent);
+    color: color-mix(in srgb, color(display-p3 0.707 0.7 0.735) 50%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-gray-11) 50%, transparent);
     }
@@ -2778,7 +2671,7 @@
     padding: 0.5rem;
   }
   .v-sidebar-group-label {
-    color: color-mix(in srgb, color(display-p3 0.395 0.388 0.424) 70%, transparent);
+    color: color-mix(in srgb, color(display-p3 0.707 0.7 0.735) 70%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       color: color-mix(in oklab, var(--color-gray-11) 70%, transparent);
     }
@@ -2855,6 +2748,8 @@
 }
 @layer base {
   body {
+    background-color: var(--color-gray-0);
+    color: var(--color-gray-12);
     --scale: 1;
     --radius-1: calc(3px * var(--scale) * var(--radius-factor, 1));
     --radius-2: calc(4px * var(--scale) * var(--radius-factor, 1));
