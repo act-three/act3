@@ -20,16 +20,17 @@
 	--radius-full: 9999px;
 }
 
-/* accent color: crimson */
+/* accent color: crimson (default — listed here as a template
+ * for adding additional accent color options) */
 .u-theme[data-accent="crimson"] {
-	--accent: var(--crimson-9);
-	--accent-hover: var(--crimson-10);
-	--accent-bold: var(--crimson-8);
-	--accent-text: var(--crimson-a11);
-	--accent-surface: var(--crimson-a2);
-	--accent-surface-hover: var(--crimson-a3);
-	--accent-surface-active: var(--crimson-a4);
-	--accent-border: var(--crimson-a7);
-	--accent-border-strong: var(--crimson-a8);
-	--accent-contrast: var(--crimson-12);
+	--accent: oklch(0.651 0.254 3);
+	--accent-hover: oklch(0.664 0.196 2);
+	--accent-bold: oklch(0.543 0.148 359);
+	--accent-text: oklch(0.764 0.149 4);
+	--accent-surface: oklch(0.206 0.023 355);
+	--accent-surface-hover: oklch(0.255 0.06 354);
+	--accent-surface-active: oklch(0.293 0.093 354);
+	--accent-border: oklch(0.4 0.1 356);
+	--accent-border-strong: oklch(0.45 0.12 357);
+	--accent-contrast: oklch(0.909 0.054 347);
 }
