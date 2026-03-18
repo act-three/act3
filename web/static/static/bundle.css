@@ -327,21 +327,6 @@
     background-color: var(--accent-hover);
     filter: brightness(0.92) saturate(1.1);
   }
-  .u-button[data-variant=soft]:focus-visible {
-    outline-offset: -1px;
-  }
-  .u-button[data-variant=soft] {
-    background-color: var(--bg-hover);
-    color: var(--text);
-  }
-  @media (hover: hover) {
-    .u-button[data-variant=soft]:hover {
-      background-color: var(--bg-active);
-    }
-  }
-  .u-button[data-variant=soft]:active:not(:disabled) {
-    background-color: var(--bg-solid);
-  }
   .u-button[data-variant=surface]:focus-visible {
     outline-offset: -1px;
   }
