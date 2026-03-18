@@ -66,7 +66,8 @@ func (c *Config) editSeriesDetail(w http.ResponseWriter, req *http.Request) (htm
 }
 
 func (c *Config) seriesAddDialogReq(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return view.EditSeriesAddDialog(), nil
+	frameID := req.Header.Get("Turbo-Frame")
+	return view.EditSeriesAddDialog(frameID), nil
 }
 
 func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
@@ -88,7 +89,8 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 			return nil, err
 		}
 
-		return view.EditEpisodeDialog(ep, videos, renditions), nil
+		frameID := req.Header.Get("Turbo-Frame")
+		return view.EditEpisodeDialog(frameID, ep, videos, renditions), nil
 	})
 }
 

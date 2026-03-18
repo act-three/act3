@@ -1,6 +1,6 @@
 import "./web/turbo.es2017-esm.js";
 import { Application } from "./web/stimulus.js";
-import DialogController from "./view/dialog.js";
+import DialogController from "./ui/dialog.js";
 import PlayerController from "./view/player.js";
 import ListController from "./ui/list.js";
 import SidebarController from "./view/sidebar/sidebar.js";

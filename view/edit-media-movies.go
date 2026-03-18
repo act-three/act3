@@ -100,8 +100,8 @@ func EditMediaMoviesDetail(
 	)
 }
 
-func EditMovieAddDialog() html.Node {
-	return Dialog(
+func EditMovieAddDialog(frameID string) html.Node {
+	return Dialog(frameID,
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				attr.Class("v-media-dialog-fixed"),
@@ -196,7 +196,7 @@ func MovieResultLink(mo *model.MovieHead) html.Node {
 		Button(
 			Href(mo.EditURL()),
 			Attr("data-turbo-frame")("detail"),
-			Attr("data-action")("click->dialog#dismiss"),
+			Attr("data-action")("click->dialog#close"),
 		)(
 			Text("Edit"),
 		),

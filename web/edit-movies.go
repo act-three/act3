@@ -111,7 +111,8 @@ func (c *Config) doAddMovieTMDB(_ http.ResponseWriter, req *http.Request) (html.
 }
 
 func (c *Config) movieAddDialogReq(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return view.EditMovieAddDialog(), nil
+	frameID := req.Header.Get("Turbo-Frame")
+	return view.EditMovieAddDialog(frameID), nil
 }
 
 func (c *Config) movieSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {

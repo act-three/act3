@@ -176,8 +176,8 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	)
 }
 
-func EditSeriesAddDialog() html.Node {
-	return Dialog(
+func EditSeriesAddDialog(frameID string) html.Node {
+	return Dialog(frameID,
 		FlexCol(
 			attr.Attr("data-controller")("add-series"),
 			Gap2,
@@ -211,11 +211,12 @@ func EditSeriesAddDialog() html.Node {
 // EditEpisodeDialog renders the dialog for inspecting an
 // episode's videos, renditions, and metadata.
 func EditEpisodeDialog(
+	frameID string,
 	ep *model.Episode,
 	videos []schema.Video,
 	renditions []schema.RenditionForStreaming,
 ) html.Node {
-	return Dialog(
+	return Dialog(frameID,
 		ScrollY()(
 			html.Div()(
 				html.Text(ep.SeriesHead().Title()),
@@ -433,7 +434,7 @@ func SeriesResultLink(ss *model.SeriesHead) html.Node {
 		Button(
 			Href(ss.EditURL()),
 			Attr("data-turbo-frame")("detail"),
-			Attr("data-action")("click->dialog#dismiss"),
+			Attr("data-action")("click->dialog#close"),
 		)(
 			Text("Edit"),
 		),

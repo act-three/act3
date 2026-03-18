@@ -7885,10 +7885,21 @@
   Controller.outlets = [];
   Controller.values = {};
 
-  // view/dialog.js
+  // ui/dialog.js
   var dialog_default = class extends Controller {
-    dismiss() {
-      this.element.classList.add("hidden");
+    connect() {
+      this.element.showModal();
+    }
+    disconnect() {
+      this.element.close();
+    }
+    close() {
+      this.element.close();
+    }
+    backdropClose(event) {
+      if (event.target === this.element) {
+        this.close();
+      }
     }
   };
 
