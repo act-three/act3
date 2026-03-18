@@ -24,5 +24,3 @@
 
 	body:has(.v-app), body:has(#full-player) { overflow: hidden; }
 }
-
-@keyframes spin { to { transform: rotate(360deg); } }
