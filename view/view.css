@@ -1,5 +1,6 @@
 /* keep sorted */
 @import "./base-app.css";
+@import "./base-media.css";
 @import "./edit-media.css";
 @import "./edit-system.css";
 @import "./media-series.css";

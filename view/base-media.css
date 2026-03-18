@@ -1,0 +1,41 @@
+/* media page base layout */
+
+/* page content container */
+.v-media-container {
+	width: 100%;
+	max-width: 79.5rem;
+	padding-inline: 1.5rem;
+	margin-inline: auto;
+}
+
+/* blurred background wash */
+.v-media-wash {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	filter: blur(64px) saturate(1.8);
+	opacity: 0.2;
+	scale: 1.1;
+}
+
+.v-media-wash img { height: 100%; }
+
+/* top navigation bar */
+.v-media-nav {
+	position: fixed;
+	top: 0;
+	width: 100%;
+	align-items: center;
+	backdrop-filter: blur(24px) brightness(1.5) saturate(1.8);
+	background-color: color-mix(in oklab, black 60%, transparent);
+}
+
+/* navigation bar inner row */
+.v-media-nav-row {
+	position: relative;
+	align-items: center;
+	padding-block: 1rem;
+}
+
+/* navigation bar spacer (pushes trailing items right) */
+.v-media-nav-spacer { flex-grow: 1; }

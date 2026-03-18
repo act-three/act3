@@ -16,11 +16,17 @@ func media(title string, washURL ...string) html.Element {
 	return func(child ...html.Node) html.Node {
 		return base(title)()(
 			mediaWash(washURL),
-			pageContainer(child...),
+			mediaContainer(child...),
 			mediaNavigationMenu(),
 			turbo.Frame("player"),
 		)
 	}
+}
+
+func mediaContainer(child ...html.Node) html.Node {
+	return FlexCol(Class("v-media-container"))(
+		Group(child...),
+	)
 }
 
 func mediaWash(urls []string) html.Node {
@@ -29,40 +35,26 @@ func mediaWash(urls []string) html.Node {
 	if len(urls) > 0 {
 		url = urls[rand.IntN(len(urls))]
 	}
-	return Box(Class("fixed inset-0 -z-1 blur-3xl saturate-180 opacity-20 scale-110"))(
-		PosterImg(PosterFill, Class("h-full"), attr.Src(url)),
+	return Box(Class("v-media-wash"))(
+		PosterImg(PosterFill, attr.Src(url)),
 	)
 }
 
 func mediaNavigationMenu() html.Node {
 	return FlexCol(
 		stimulus.Controller("topbar"),
-		Class(`
-			fixed
-			top-0
-			w-full
-			items-center
-
-			backdrop-blur-xl
-			backdrop-brightness-150
-			backdrop-saturate-180
-			bg-black/60
-		`),
+		Class("v-media-nav"),
 	)(
-		pageContainer(
+		mediaContainer(
 			Grid12()(
 				FlexRow(
 					ColSpan12,
 					Gap8,
-					Class(`
-						relative
-						items-center
-						py-4
-					`),
+					Class("v-media-nav-row"),
 				)(
 					Button(attr.Href("/"), ButtonGhost)(Icon("line/spotlight"), Text("Act Three")),
 					Button(attr.Href("/collections"), ButtonGhost)(Text("Collections")),
-					Box(Class("grow")),
+					Box(Class("v-media-nav-spacer")),
 					Button(attr.Href("/app/profile"), ButtonGhost)(Icon("line/settings-01")),
 				),
 			),
