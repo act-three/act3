@@ -64,22 +64,19 @@ func Sidebar() html.Node {
 		attr.Attr("data-variant")("inset"),
 		attr.Attr("data-side")("left"),
 		attr.Attr("data-slot")("sidebar"),
+		turbo.DataFrame("main"),
 		stimulus.Controller("sidebar"),
 		stimulus.Action("turbo:visit@document->sidebar#visit"),
 	)(
-		turbo.Frame("sidebar",
-			turbo.Target("main"),
+		html.Div(
+			attr.Attr("data-slot")("sidebar-gap"),
+			attr.Class("v-sidebar-gap"),
+		),
+		html.Div(
+			attr.Attr("data-slot")("sidebar-container"),
+			attr.Class("v-sidebar-container"),
 		)(
-			html.Div(
-				attr.Attr("data-slot")("sidebar-gap"),
-				attr.Class("v-sidebar-gap"),
-			),
-			html.Div(
-				attr.Attr("data-slot")("sidebar-container"),
-				attr.Class("v-sidebar-container"),
-			)(
-				sidebarContent(),
-			),
+			sidebarContent(),
 		),
 	)
 }
