@@ -4,32 +4,32 @@ export default class extends Controller {
 	static targets = ["trigger", "content", "item", "label"];
 	static values = { current: String };
 
-	#outsideClick;
+	#onToggle;
 
 	connect() {
-		this.#outsideClick = (ev) => {
-			if (!this.element.contains(ev.target)) {
-				this.close();
+		const content = this.contentTarget;
+		if (!content.id) {
+			content.id = "sel-" + Math.random().toString(36).slice(2, 10);
+		}
+		this.triggerTarget.setAttribute("popovertarget", content.id);
+
+		this.#onToggle = (ev) => {
+			if (ev.newState === "open") {
+				this.#positionContent();
+			} else {
+				this.triggerTarget.focus();
 			}
 		};
-		document.addEventListener("click", this.#outsideClick);
+		content.addEventListener("toggle", this.#onToggle);
 		this.#syncFromValue();
 	}
 
 	disconnect() {
-		document.removeEventListener("click", this.#outsideClick);
-	}
-
-	open() {
-		if (this.element.hasAttribute("data-open")) return;
-		this.element.setAttribute("data-open", "");
-		this.#positionContent();
+		this.contentTarget.removeEventListener("toggle", this.#onToggle);
 	}
 
 	close() {
-		this.element.removeAttribute("data-open");
-		this.contentTarget.style.top = "";
-		this.contentTarget.style.left = "";
+		this.contentTarget.hidePopover();
 	}
 
 	selectItem(ev) {
@@ -52,12 +52,7 @@ export default class extends Controller {
 			case "Enter":
 			case " ":
 				ev.preventDefault();
-				this.open();
-				break;
-			case "Escape":
-				ev.preventDefault();
-				this.close();
-				this.triggerTarget.focus();
+				this.contentTarget.showPopover();
 				break;
 			case "ArrowDown":
 				ev.preventDefault();
@@ -80,7 +75,13 @@ export default class extends Controller {
 			|| this.itemTargets[0];
 		if (!selected) return;
 
-		const parentRect = this.element.getBoundingClientRect();
+		// Reset so we can measure natural size.
+		content.style.position = "fixed";
+		content.style.margin = "0";
+		content.style.top = "0";
+		content.style.left = "0";
+		content.style.minWidth = trigger.offsetWidth + "px";
+
 		const triggerRect = trigger.getBoundingClientRect();
 		const contentRect = content.getBoundingClientRect();
 		const itemRect = selected.getBoundingClientRect();
@@ -88,34 +89,25 @@ export default class extends Controller {
 		// Vertical: align selected item center with trigger center.
 		const triggerMid = triggerRect.top + triggerRect.height / 2;
 		const itemMidInContent = itemRect.top - contentRect.top + itemRect.height / 2;
-		let top = triggerMid - itemMidInContent - parentRect.top;
+		let top = triggerMid - itemMidInContent;
 
 		// Horizontal: align item text with label text.
-		let left = 0;
+		let left = triggerRect.left;
 		if (this.hasLabelTarget) {
 			const labelLeft = this.labelTarget.getBoundingClientRect().left;
 			const itemPadLeft = parseFloat(
 				getComputedStyle(selected).paddingLeft,
 			);
-			const itemTextLeft = itemRect.left + itemPadLeft;
+			const itemTextLeft = itemRect.left - contentRect.left + itemPadLeft;
 			left = labelLeft - itemTextLeft;
 		}
 
 		// Clamp to viewport edges with 4px margin.
 		const vw = window.innerWidth;
 		const vh = window.innerHeight;
-		const absTop = parentRect.top + top;
-		if (absTop < 4) {
-			top += 4 - absTop;
-		} else if (absTop + contentRect.height > vh - 4) {
-			top -= absTop + contentRect.height - (vh - 4);
-		}
-		const absLeft = parentRect.left + left;
-		if (absLeft < 4) {
-			left += 4 - absLeft;
-		} else if (absLeft + contentRect.width > vw - 4) {
-			left -= absLeft + contentRect.width - (vw - 4);
-		}
+		const margin = 4;
+		top = Math.max(margin, Math.min(top, vh - contentRect.height - margin));
+		left = Math.max(margin, Math.min(left, vw - contentRect.width - margin));
 
 		content.style.top = top + "px";
 		content.style.left = left + "px";

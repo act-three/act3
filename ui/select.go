@@ -25,7 +25,6 @@ func SelectTrigger(attrs ...attr.Node) html.Element {
 		return html.Button(
 			attr.Class("u-select-trigger"),
 			stimulus.Target("select", "trigger"),
-			stimulus.Action("click->select#open"),
 			attr.Group(attrs...),
 		)(append(nodes, Icon("line/chevron-selector-vertical"))...)
 	}
@@ -36,6 +35,7 @@ func SelectContent(attrs ...attr.Node) html.Element {
 		return html.Div(
 			attr.Class("u-select-content"),
 			stimulus.Target("select", "content"),
+			attr.Popover("auto"),
 			attr.Group(attrs...),
 		)(nodes...)
 	}

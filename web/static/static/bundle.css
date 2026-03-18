@@ -1214,7 +1214,6 @@
 /* ui/select.css */
 @layer components {
   .u-select {
-    position: relative;
     display: inline-flex;
   }
   .u-select-trigger {
@@ -1306,18 +1305,14 @@
   }
   .u-select-content {
     display: none;
-    position: absolute;
-    left: 0;
-    top: 0;
-    z-index: 50;
-    min-width: 100%;
     padding: var(--select-content-padding);
     background-color: var(--bg-surface);
     border: 1px solid var(--bg-solid);
     border-radius: var(--select-radius);
     box-shadow: 0 12px 60px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
+    margin: 0;
   }
-  .u-select[data-open] > .u-select-content {
+  .u-select-content:popover-open {
     display: flex;
     flex-direction: column;
   }
