@@ -57,8 +57,7 @@ func sidebarData() []MenuSection {
 }
 
 func Sidebar() html.Node {
-	return turbo.Frame("sidebar",
-		attr.Target("main"),
+	return html.Div(
 		attr.Class("v-sidebar"),
 		attr.Attr("data-state")(""),
 		attr.Attr("data-collapsible")(""),
@@ -68,15 +67,19 @@ func Sidebar() html.Node {
 		stimulus.Controller("sidebar"),
 		stimulus.Action("turbo:visit@document->sidebar#visit"),
 	)(
-		html.Div(
-			attr.Attr("data-slot")("sidebar-gap"),
-			attr.Class("v-sidebar-gap"),
-		),
-		html.Div(
-			attr.Attr("data-slot")("sidebar-container"),
-			attr.Class("v-sidebar-container"),
+		turbo.Frame("sidebar",
+			turbo.Target("main"),
 		)(
-			sidebarContent(),
+			html.Div(
+				attr.Attr("data-slot")("sidebar-gap"),
+				attr.Class("v-sidebar-gap"),
+			),
+			html.Div(
+				attr.Attr("data-slot")("sidebar-container"),
+				attr.Class("v-sidebar-container"),
+			)(
+				sidebarContent(),
+			),
 		),
 	)
 }

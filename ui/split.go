@@ -14,13 +14,12 @@ func Split(attrs ...attr.Node) func(list, detail html.Node) html.Node {
 		)(
 			// TODO(april): refactor list stuff and frame target stuff;
 			// pull it out of ui and put it in view
-			turbo.Frame("item-list",
-				attr.Target("detail"),
-				attr.Class("u-split-list"),
-			)(
-				list,
+			html.Div(attr.Class("u-split-list"))(
+				turbo.Frame("item-list",
+					turbo.Target("detail"),
+				)(list),
 			),
-			turbo.Frame("detail", turbo.DataAction("advance"))(detail),
+			turbo.Frame("detail", turbo.Advance())(detail),
 		)
 	}
 }

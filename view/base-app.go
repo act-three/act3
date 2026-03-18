@@ -23,7 +23,7 @@ func app(title string, child ...html.Node) html.Node {
 				attr.Class("v-app-main"),
 			)(
 				turbo.Frame("main",
-					turbo.DataAction("advance"),
+					turbo.Advance(),
 				)(
 					child...,
 				),
