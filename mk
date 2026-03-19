@@ -94,6 +94,10 @@ case "${1:-}" in
 			alias claude='claude --permission-mode bypassPermissions'
 		EOF
 
+		# Copy host Claude settings (OAuth credentials, preferences)
+		docker cp "$HOME/.claude.json" $container:/home/dev/.claude.json
+		docker exec $container chown dev:dev /home/dev/.claude.json
+
 		# Playwright MCP — connects to Chromium in the Chrome container
 		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user playwright \
 			-- npx @playwright/mcp@latest --cdp-endpoint http://localhost:9222
