@@ -45,16 +45,19 @@ case "${1:-}" in
 	container)
 		container="act3-dev"
 		image="act3-dev"
+		chrome_container="act3-chrome"
+		chrome_image="act3-chrome"
 
 		if docker container inspect $container &>/dev/null; then
 			echo "Container $container exists; aborting."
 			exit 1
 		fi
 
-		echo "Building image..."
+		echo "Building images..."
+		docker build -t $chrome_image -f Dockerfile.chrome .
 		docker build -t $image -f Dockerfile.dev .
 
-		echo "Starting container..."
+		echo "Starting dev container..."
 		docker run -d \
 			--name $container \
 			--hostname $container \
@@ -65,6 +68,16 @@ case "${1:-}" in
 			-v "$HOME/.gitconfig:/home/dev/.gitconfig:ro" \
 			-v "$HOME/.config/git:/home/dev/.config/git:ro" \
 			$image
+
+		# Chrome shares the dev container's network namespace,
+		# so CDP on localhost:9222 is reachable from the dev container.
+		docker rm -f $chrome_container 2>/dev/null || true
+		echo "Starting Chrome container..."
+		docker run -d \
+			--name $chrome_container \
+			--network container:$container \
+			--restart unless-stopped \
+			$chrome_image
 
 		# Fix ownership of dirs auto-created by bind mounts
 		docker exec $container chown dev:dev /home/dev/.config
@@ -77,6 +90,10 @@ case "${1:-}" in
 			alias claude='claude --permission-mode bypassPermissions'
 		EOF
 
+		# Playwright MCP — connects to Chromium in the Chrome container
+		docker exec -u dev $container claude mcp add --scope user playwright \
+			-- npx @playwright/mcp@latest --cdp-endpoint http://localhost:9222
+
 		# Install SSH key
 		docker cp "$HOME/.ssh/id_ed25519.pub" $container:/home/dev/.ssh/authorized_keys
 		docker exec $container chown dev:dev /home/dev/.ssh/authorized_keys
@@ -84,7 +101,7 @@ case "${1:-}" in
 
 		# Use SSH here (instead of docker exec) for agent forwarding.
 		echo "Cloning repo..."
-		ssh act3-dev "git clone git@github.com:em-ily-dev/act3.git ~/act3 && mkdir -p ~/.local/act3 && cd ~/act3 && ./mk git-setup"
+		ssh act3-dev "source ~/.profile && git clone git@github.com:em-ily-dev/act3.git ~/act3 && mkdir -p ~/.local/act3 && cd ~/act3 && ./mk git-setup"
 
 		# Copy gitignored files not included in the clone
 		docker cp ui/icon/untitled-icons.zip "$container:/home/dev/act3/ui/icon/untitled-icons.zip"
