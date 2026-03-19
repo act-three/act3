@@ -3,9 +3,12 @@ module ily.dev/act3
 go 1.26.0
 
 require (
+	github.com/Eyevinn/hls-m3u8 v0.6.4
 	github.com/anacrolix/torrent v1.60.0
 	github.com/hekmon/transmissionrpc/v3 v3.0.0
+	golang.org/x/net v0.52.0
 	golang.org/x/text v0.35.0
+	golang.org/x/tools v0.43.0
 	kr.dev/errorfmt v0.1.1
 	kr.dev/walk v0.1.0
 	lukechampine.com/blake3 v1.4.1
@@ -13,7 +16,6 @@ require (
 )
 
 require (
-	github.com/Eyevinn/hls-m3u8 v0.6.4 // indirect
 	github.com/anacrolix/generics v0.1.0 // indirect
 	github.com/anacrolix/missinggo v1.3.0 // indirect
 	github.com/anacrolix/missinggo/v2 v2.10.0 // indirect
@@ -35,9 +37,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
-	golang.org/x/net v0.52.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/tools v0.43.0 // indirect
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
