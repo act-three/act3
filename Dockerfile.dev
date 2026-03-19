@@ -33,7 +33,6 @@ RUN addgroup -g 501 dev && adduser -u 501 -G dev -h /home/dev -s /bin/bash -D de
 USER dev
 RUN curl -fsSL https://claude.ai/install.sh | bash
 USER root
-ENV PATH="/home/dev/.local/bin:${PATH}"
 
 # sqlc — SQL code generator
 RUN GOBIN=/usr/local/bin go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
@@ -46,22 +45,29 @@ RUN GOBIN=/usr/local/bin go install mvdan.cc/sh/v3/cmd/shfmt@latest
 # dprint — JS/CSS/JSON/SQL/shell formatter
 RUN curl -fsSL https://dprint.dev/install.sh | DPRINT_INSTALL=/usr/local sh
 
-# Login environment for SSH sessions (Docker ENV doesn't apply to sshd)
+# System-wide environment for login shells (/etc/profile sources this)
 RUN printf '%s\n' \
-	'export PATH="/home/dev/.local/bin:/usr/local/go/bin:$PATH"' \
+	'export PATH=$HOME/.local/bin:/usr/local/go/bin:$PATH' \
 	'export GOEXPERIMENT=jsonv2' \
 	'export A3STORAGE=/home/dev/.local/act3' \
-	> /home/dev/.profile
+	> /etc/profile.d/act3.sh
 
 # SSH server setup
 RUN ssh-keygen -A
+
+# BASH_ENV makes non-interactive bash (e.g. ssh host "cmd") source
+# /etc/profile, so all sessions get the same environment as login shells.
+RUN printf '%s\n' \
+	'SetEnv BASH_ENV=/etc/profile' \
+	>> /etc/ssh/sshd_config
 RUN mkdir -p /home/dev/.ssh && chmod 700 /home/dev/.ssh \
 	&& ssh-keyscan github.com >> /home/dev/.ssh/known_hosts \
 	&& chown -R dev:dev /home/dev
 EXPOSE 22
 
-# Set Go environment
-ENV GOEXPERIMENT=jsonv2
+# BASH_ENV makes docker exec bash sessions source /etc/profile
+# (same as SSH via SetEnv above).
+ENV BASH_ENV=/etc/profile
 
 # Default working directory
 WORKDIR /home/dev

@@ -82,16 +82,20 @@ case "${1:-}" in
 		# Fix ownership of dirs auto-created by bind mounts
 		docker exec $container chown dev:dev /home/dev/.config
 
-		# Append machine-specific env vars to .profile
-		docker exec -i $container sh -c "cat >> /home/dev/.profile" <<-EOF
+		# Machine-specific env vars (single source of truth: /etc/profile.d/)
+		docker exec -i $container sh -c "cat >> /etc/profile.d/act3.sh" <<-EOF
 			export A3TMDBTOKEN=${A3TMDBTOKEN:-}
 			export A3TRANSMISSION=http://host.docker.internal:9091/transmission/rpc
 			export A3FFMPEGVIDEOPRESET=${A3FFMPEGVIDEOPRESET:-}
+		EOF
+
+		# Aliases (in .bashrc so they apply to all interactive shells, not just login)
+		docker exec -i $container sh -c "cat >> /home/dev/.bashrc" <<-EOF
 			alias claude='claude --permission-mode bypassPermissions'
 		EOF
 
 		# Playwright MCP — connects to Chromium in the Chrome container
-		docker exec -u dev $container claude mcp add --scope user playwright \
+		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user playwright \
 			-- npx @playwright/mcp@latest --cdp-endpoint http://localhost:9222
 
 		# Install SSH key
@@ -101,7 +105,7 @@ case "${1:-}" in
 
 		# Use SSH here (instead of docker exec) for agent forwarding.
 		echo "Cloning repo..."
-		ssh act3-dev "source ~/.profile && git clone git@github.com:em-ily-dev/act3.git ~/act3 && mkdir -p ~/.local/act3 && cd ~/act3 && ./mk git-setup"
+		ssh act3-dev "git clone git@github.com:em-ily-dev/act3.git ~/act3 && mkdir -p ~/.local/act3 && cd ~/act3 && ./mk git-setup"
 
 		# Copy gitignored files not included in the clone
 		docker cp ui/icon/untitled-icons.zip "$container:/home/dev/act3/ui/icon/untitled-icons.zip"
