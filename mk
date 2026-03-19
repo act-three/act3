@@ -141,7 +141,7 @@ case "${1:-}" in
 		echo $image >deploy/latest
 		;;
 	git-setup)
-		go build -o .git/hooks/act3vet ./analysis/cmd/act3vet
+		go build -o .git/hooks/act3vet ./cmd/act3vet
 		cp lib/pre-commit.sh .git/hooks/pre-commit
 		chmod +x .git/hooks/pre-commit
 		echo "Installed .git/hooks/pre-commit"
