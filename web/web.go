@@ -21,6 +21,9 @@ import (
 	"ily.dev/act3/web/static"
 )
 
+// optionally set by build flags
+var tag = "(unset)"
+
 var errNotFound = errors.New("not found")
 
 // Max request body for all requests except video uploads.
@@ -47,6 +50,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /-/player/{id}/{moID}", c.showPlayerForMovie)
 	handle(mux, "GET /-/plr/{id}", c.videoPlaylist)
 	handle(mux, "GET /-/pls/{id}", c.videoRenditionPlaylist)
+	handle(mux, "GET /-/status", c.status)
 	handle(mux, "GET /-/vid/{hash}", c.videoStream)
 	handle(mux, "GET /app/downloads", c.editDownloads)
 	handle(mux, "GET /app/downloads/{id}", c.editDownloadsDetail)
