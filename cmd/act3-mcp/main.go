@@ -28,6 +28,11 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
+const (
+	a3Database = "/tmp/act3-dev-db"
+	a3Storage  = "/tmp/act3-dev-storage"
+)
+
 var project, _ = os.Getwd()
 
 func main() {
@@ -112,7 +117,11 @@ func (s *devServer) start(_ context.Context, _ *mcp.CallToolRequest, in startInp
 		return nil, nil, err
 	}
 
-	return textResultf("server started (pid %d) on %s", s.cmd.Process.Pid, s.listenAddr), nil, nil
+	return textResultf("server started on %s (A3DATABASE=%s, A3STORAGE=%s)",
+		s.listenAddr,
+		a3Database,
+		a3Storage,
+	), nil, nil
 }
 
 func (s *devServer) reload(_ context.Context, _ *mcp.CallToolRequest, in startInput) (*mcp.CallToolResult, any, error) {
@@ -136,7 +145,7 @@ func (s *devServer) reload(_ context.Context, _ *mcp.CallToolRequest, in startIn
 		return nil, nil, err
 	}
 
-	return textResultf("server reloaded (pid %d) on %s", s.cmd.Process.Pid, s.listenAddr), nil, nil
+	return textResultf("server reloaded on %s", s.cmd.Process.Pid, s.listenAddr), nil, nil
 }
 
 func (s *devServer) stop(_ context.Context, _ *mcp.CallToolRequest, _ any) (*mcp.CallToolResult, any, error) {
@@ -174,6 +183,15 @@ func (s *devServer) status(_ context.Context, _ *mcp.CallToolRequest, _ any) (*m
 // 4. Wait for the server to be ready (poll the listen address).
 // 5. Set s.cmd, s.pgid, and s.startedAt on success.
 func (s *devServer) doStart(verbose bool) error {
+	err := os.MkdirAll(a3Database, 0700)
+	if err != nil {
+		return err
+	}
+	err = os.MkdirAll(a3Storage, 0700)
+	if err != nil {
+		return err
+	}
+
 	tag := rand.Text()
 	vflag := "-v=false"
 	if verbose {
@@ -185,6 +203,9 @@ func (s *devServer) doStart(verbose bool) error {
 		vflag,
 		"-listen", s.listenAddr,
 	)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "A3DATABASE="+a3Database)
+	cmd.Env = append(cmd.Env, "A3STORAGE="+a3Storage)
 	cmd.Dir = project
 	cmd.Stdout = nil
 	stderr, err := cmd.StderrPipe()
