@@ -1,11 +1,13 @@
 package model
 
 import (
+	"fmt"
 	"iter"
 	"slices"
 	"strings"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/xstrings"
 )
 
 const (
@@ -20,6 +22,7 @@ type MovieEditionHead struct {
 }
 
 func (med *MovieEditionHead) ID() string    { return med.med.ID }
+func (med *MovieEditionHead) Slug() string  { return med.med.Slug }
 func (med *MovieEditionHead) Title() string { return med.med.Title }
 
 type MovieEdition struct {
@@ -87,14 +90,44 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 }
 
 func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string) (*MovieEditionHead, error) {
+	slug, err := tx.generateMovieEditionSlug(ctx, title, movieID)
+	if err != nil {
+		return nil, err
+	}
 	medData, err := tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
 		Title:   title,
+		Slug:    slug,
 		MovieID: movieID,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &MovieEditionHead{medData}, nil
+}
+
+func (tx *TxRW) generateMovieEditionSlug(ctx Context, title, movieID string) (string, error) {
+	slug := xstrings.ToSlug(title)
+	if slug == "" {
+		slug = "edition"
+	}
+	n, err := tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{
+		MovieID: movieID,
+		Slug:    slug,
+	})
+	if err != nil {
+		return "", err
+	}
+	for i := 2; n > 0; i++ {
+		slug = fmt.Sprintf("%s-%d", slug, i)
+		n, err = tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{
+			MovieID: movieID,
+			Slug:    slug,
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+	return slug, nil
 }
 
 // vidMapByMovieEditionID groups videos by their movie edition ID.

@@ -994,35 +994,46 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 }
 
 const movieEditionCreate = `-- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, MovieID) VALUES (?, ?)
-RETURNING id, title, movieid
+INSERT INTO MovieEdition (Title, Slug, MovieID) VALUES (?, ?, ?)
+RETURNING id, movieid, slug, title
 `
 
 type MovieEditionCreateParams struct {
 	Title   string
+	Slug    string
 	MovieID string
 }
 
 func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreateParams) (MovieEdition, error) {
-	row := q.db.QueryRowContext(ctx, movieEditionCreate, arg.Title, arg.MovieID)
+	row := q.db.QueryRowContext(ctx, movieEditionCreate, arg.Title, arg.Slug, arg.MovieID)
 	var i MovieEdition
-	err := row.Scan(&i.ID, &i.Title, &i.MovieID)
+	err := row.Scan(
+		&i.ID,
+		&i.MovieID,
+		&i.Slug,
+		&i.Title,
+	)
 	return i, err
 }
 
 const movieEditionGet = `-- name: MovieEditionGet :one
-SELECT id, title, movieid FROM MovieEdition WHERE ID = ?
+SELECT id, movieid, slug, title FROM MovieEdition WHERE ID = ?
 `
 
 func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition, error) {
 	row := q.db.QueryRowContext(ctx, movieEditionGet, id)
 	var i MovieEdition
-	err := row.Scan(&i.ID, &i.Title, &i.MovieID)
+	err := row.Scan(
+		&i.ID,
+		&i.MovieID,
+		&i.Slug,
+		&i.Title,
+	)
 	return i, err
 }
 
 const movieEditionListByMovieID = `-- name: MovieEditionListByMovieID :many
-SELECT id, title, movieid FROM MovieEdition WHERE MovieID = ?
+SELECT id, movieid, slug, title FROM MovieEdition WHERE MovieID = ?
 `
 
 func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string) ([]MovieEdition, error) {
@@ -1034,7 +1045,12 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 	var items []MovieEdition
 	for rows.Next() {
 		var i MovieEdition
-		if err := rows.Scan(&i.ID, &i.Title, &i.MovieID); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.MovieID,
+			&i.Slug,
+			&i.Title,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1046,6 +1062,22 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 		return nil, err
 	}
 	return items, nil
+}
+
+const movieEditionSlugExists = `-- name: MovieEditionSlugExists :one
+SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?
+`
+
+type MovieEditionSlugExistsParams struct {
+	MovieID string
+	Slug    string
+}
+
+func (q *Queries) MovieEditionSlugExists(ctx context.Context, arg MovieEditionSlugExistsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, movieEditionSlugExists, arg.MovieID, arg.Slug)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const movieGet = `-- name: MovieGet :one
@@ -2103,35 +2135,46 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 }
 
 const seriesEditionCreate = `-- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Title, SeriesID) VALUES (?, ?)
-RETURNING id, title, seriesid
+INSERT INTO SeriesEdition (Title, Slug, SeriesID) VALUES (?, ?, ?)
+RETURNING id, seriesid, slug, title
 `
 
 type SeriesEditionCreateParams struct {
 	Title    string
+	Slug     string
 	SeriesID string
 }
 
 func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCreateParams) (SeriesEdition, error) {
-	row := q.db.QueryRowContext(ctx, seriesEditionCreate, arg.Title, arg.SeriesID)
+	row := q.db.QueryRowContext(ctx, seriesEditionCreate, arg.Title, arg.Slug, arg.SeriesID)
 	var i SeriesEdition
-	err := row.Scan(&i.ID, &i.Title, &i.SeriesID)
+	err := row.Scan(
+		&i.ID,
+		&i.SeriesID,
+		&i.Slug,
+		&i.Title,
+	)
 	return i, err
 }
 
 const seriesEditionGet = `-- name: SeriesEditionGet :one
-SELECT id, title, seriesid FROM SeriesEdition WHERE ID = ?
+SELECT id, seriesid, slug, title FROM SeriesEdition WHERE ID = ?
 `
 
 func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEdition, error) {
 	row := q.db.QueryRowContext(ctx, seriesEditionGet, id)
 	var i SeriesEdition
-	err := row.Scan(&i.ID, &i.Title, &i.SeriesID)
+	err := row.Scan(
+		&i.ID,
+		&i.SeriesID,
+		&i.Slug,
+		&i.Title,
+	)
 	return i, err
 }
 
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
-SELECT id, title, seriesid FROM SeriesEdition WHERE SeriesID = ?
+SELECT id, seriesid, slug, title FROM SeriesEdition WHERE SeriesID = ?
 `
 
 func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid string) ([]SeriesEdition, error) {
@@ -2143,7 +2186,12 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 	var items []SeriesEdition
 	for rows.Next() {
 		var i SeriesEdition
-		if err := rows.Scan(&i.ID, &i.Title, &i.SeriesID); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.SeriesID,
+			&i.Slug,
+			&i.Title,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2155,6 +2203,22 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 		return nil, err
 	}
 	return items, nil
+}
+
+const seriesEditionSlugExists = `-- name: SeriesEditionSlugExists :one
+SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?
+`
+
+type SeriesEditionSlugExistsParams struct {
+	SeriesID string
+	Slug     string
+}
+
+func (q *Queries) SeriesEditionSlugExists(ctx context.Context, arg SeriesEditionSlugExistsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, seriesEditionSlugExists, arg.SeriesID, arg.Slug)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const seriesGenreAdd = `-- name: SeriesGenreAdd :exec

@@ -183,7 +183,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, MovieID) VALUES (?, ?)
+INSERT INTO MovieEdition (Title, Slug, MovieID) VALUES (?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionGet :one
@@ -191,6 +191,9 @@ SELECT * FROM MovieEdition WHERE ID = ?;
 
 -- name: MovieEditionListByMovieID :many
 SELECT * FROM MovieEdition WHERE MovieID = ?;
+
+-- name: MovieEditionSlugExists :one
+SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?;
 
 -- name: MovieGet :one
 SELECT * FROM Movie WHERE ID = ?;
@@ -378,7 +381,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Title, SeriesID) VALUES (?, ?)
+INSERT INTO SeriesEdition (Title, Slug, SeriesID) VALUES (?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionGet :one
@@ -386,6 +389,9 @@ SELECT * FROM SeriesEdition WHERE ID = ?;
 
 -- name: SeriesEditionListBySeriesID :many
 SELECT * FROM SeriesEdition WHERE SeriesID = ?;
+
+-- name: SeriesEditionSlugExists :one
+SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?;
 
 -- name: SeriesGenreAdd :exec
 INSERT INTO SeriesGenre (SeriesID, GenreName) VALUES (?, ?);

@@ -68,8 +68,9 @@ type Movie struct {
 
 type MovieEdition struct {
 	ID      string
-	Title   string
 	MovieID string
+	Slug    string
+	Title   string
 }
 
 type MovieVideo struct {
@@ -146,8 +147,9 @@ type Series struct {
 
 type SeriesEdition struct {
 	ID       string
-	Title    string
 	SeriesID string
+	Slug     string
+	Title    string
 }
 
 type Seriesgenre struct {

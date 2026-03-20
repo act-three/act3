@@ -51,9 +51,10 @@ STRICT, WITHOUT ROWID;
 CREATE TABLE SeriesEdition
 (
 	ID       TEXT PRIMARY KEY DEFAULT ('sed'||newID()),
-	Title    TEXT NOT NULL,
 	SeriesID TEXT NOT NULL REFERENCES Series,
-	UNIQUE (SeriesID, Title)
+	Slug     TEXT NOT NULL,
+	Title    TEXT NOT NULL,
+	UNIQUE (SeriesID, Slug)
 )
 STRICT;
 
@@ -122,9 +123,10 @@ STRICT;
 CREATE TABLE MovieEdition
 (
 	ID      TEXT PRIMARY KEY DEFAULT ('med'||newID()),
-	Title   TEXT NOT NULL,
 	MovieID TEXT NOT NULL REFERENCES Movie,
-	UNIQUE (MovieID, Title)
+	Slug    TEXT NOT NULL,
+	Title   TEXT NOT NULL,
+	UNIQUE (MovieID, Slug)
 )
 STRICT;
 

@@ -194,10 +194,7 @@ func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieHead, 
 	if err != nil {
 		return nil, err
 	}
-	_, err = tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
-		Title:   DefaultEdition,
-		MovieID: moID,
-	})
+	_, err = tx.MovieEditionCreate(ctx, DefaultEdition, moID)
 	if err != nil {
 		return nil, err
 	}
@@ -238,10 +235,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	if err != nil {
 		return nil, err
 	}
-	_, err = tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
-		Title:   DefaultEdition,
-		MovieID: moID,
-	})
+	_, err = tx.MovieEditionCreate(ctx, DefaultEdition, moID)
 	if err != nil {
 		return nil, err
 	}

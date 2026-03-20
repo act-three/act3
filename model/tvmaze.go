@@ -33,10 +33,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			return err
 		}
 		seriesSlug := series.Slug
-		sed, err := tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
-			Title:    AirDate,
-			SeriesID: series.ID,
-		})
+		sed, err := tx.SeriesEditionCreate(ctx, AirDate, series.ID)
 		if err != nil {
 			return err
 		}

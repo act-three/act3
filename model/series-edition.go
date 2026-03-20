@@ -1,11 +1,13 @@
 package model
 
 import (
+	"fmt"
 	"iter"
 	"slices"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
+	"ily.dev/act3/xstrings"
 )
 
 const (
@@ -19,6 +21,7 @@ type SeriesEditionHead struct {
 }
 
 func (sed *SeriesEditionHead) ID() string    { return sed.sed.ID }
+func (sed *SeriesEditionHead) Slug() string  { return sed.sed.Slug }
 func (sed *SeriesEditionHead) Title() string { return sed.sed.Title }
 
 type SeriesEdition struct {
@@ -154,4 +157,41 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 	snepBySeasonID := snepMapBySeasonID(sneps)
 	sed := newSeriesEdition(sr, sedData, sns, snepBySeasonID, epByID, tx.m.prog.List, videosByEpisodeID)
 	return sed, nil
+}
+
+func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID string) (schema.SeriesEdition, error) {
+	slug, err := tx.generateSeriesEditionSlug(ctx, title, seriesID)
+	if err != nil {
+		return schema.SeriesEdition{}, err
+	}
+	return tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
+		Title:    title,
+		Slug:     slug,
+		SeriesID: seriesID,
+	})
+}
+
+func (tx *TxRW) generateSeriesEditionSlug(ctx Context, title, seriesID string) (string, error) {
+	slug := xstrings.ToSlug(title)
+	if slug == "" {
+		slug = "edition"
+	}
+	n, err := tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
+		SeriesID: seriesID,
+		Slug:     slug,
+	})
+	if err != nil {
+		return "", err
+	}
+	for i := 2; n > 0; i++ {
+		slug = fmt.Sprintf("%s-%d", slug, i)
+		n, err = tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
+			SeriesID: seriesID,
+			Slug:     slug,
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+	return slug, nil
 }
