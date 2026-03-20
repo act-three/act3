@@ -39,7 +39,7 @@ func (mo *MovieHead) PlayURL() string {
 }
 
 func (mo *MovieHead) EditURL() string {
-	return "/app/movies/" + mo.mo.Slug + "-" + mo.mo.ID
+	return "/app/movies/" + mo.mo.Slug
 }
 
 // YearDisplay returns the year as a string, or empty if

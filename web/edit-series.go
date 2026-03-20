@@ -28,9 +28,7 @@ func (c *Config) editSeries(_ http.ResponseWriter, req *http.Request) (html.Node
 func (c *Config) editSeriesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		_, selID, _ := xstrings.LastCut(req.PathValue("id"), "-")
-
-		sr, err := tx.Series(ctx, selID)
+		sr, err := tx.SeriesBySlug(ctx, req.PathValue("slug"))
 		if err == sql.ErrNoRows {
 			http.Redirect(w, req, "/app/series", http.StatusSeeOther)
 			return nil, nil

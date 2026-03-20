@@ -41,7 +41,7 @@ func (sr *SeriesHead) PlayURL() string {
 }
 
 func (sr *SeriesHead) EditURL() string {
-	return "/app/series/" + sr.sr.Slug + "-" + sr.sr.ID
+	return "/app/series/" + sr.sr.Slug
 }
 
 type Series struct {

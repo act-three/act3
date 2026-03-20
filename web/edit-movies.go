@@ -13,7 +13,6 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view"
-	"ily.dev/act3/xstrings"
 )
 
 func (c *Config) editMovies(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
@@ -30,9 +29,7 @@ func (c *Config) editMovies(_ http.ResponseWriter, req *http.Request) (html.Node
 func (c *Config) editMoviesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		_, selID, _ := xstrings.LastCut(req.PathValue("id"), "-")
-
-		mo, err := tx.Movie(ctx, selID)
+		mo, err := tx.MovieBySlug(ctx, req.PathValue("slug"))
 		if err == sql.ErrNoRows {
 			http.Redirect(w, req, "/app/movies", http.StatusSeeOther)
 			return nil, nil

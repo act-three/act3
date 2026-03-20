@@ -441,8 +441,8 @@ func TestSeriesHeadMethods(t *testing.T) {
 		if got == "" {
 			t.Error("expected non-empty EditURL")
 		}
-		if got != "/app/series/test-series-series-1" {
-			t.Errorf("expected '/app/series/test-series-series-1', got '%s'", got)
+		if got != "/app/series/test-series" {
+			t.Errorf("expected '/app/series/test-series', got '%s'", got)
 		}
 	})
 }
