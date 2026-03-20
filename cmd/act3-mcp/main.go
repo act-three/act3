@@ -32,7 +32,7 @@ var project, _ = os.Getwd()
 
 func main() {
 	s := &devServer{
-		listenAddr: ":4444",
+		listenAddr: ":4445",
 	}
 
 	server := mcp.NewServer(
@@ -82,7 +82,7 @@ type devServer struct {
 }
 
 type startInput struct {
-	Listen  string `json:"listen,omitempty" jsonschema:"address to listen on, e.g. :4444"`
+	Listen  string `json:"listen,omitempty" jsonschema:"address to listen on, e.g. :4445"`
 	Verbose bool   `json:"verbose,omitempty"`
 }
 
@@ -101,6 +101,9 @@ func (s *devServer) start(_ context.Context, _ *mcp.CallToolRequest, in startInp
 		return textResultf("server already running (pid %d) on %s", s.cmd.Process.Pid, s.listenAddr), nil, nil
 	}
 
+	if in.Listen == ":4444" {
+		return nil, nil, fmt.Errorf("port :4444 is reserved for manual testing")
+	}
 	if in.Listen != "" {
 		s.listenAddr = in.Listen
 	}
@@ -122,6 +125,9 @@ func (s *devServer) reload(_ context.Context, _ *mcp.CallToolRequest, in startIn
 		}
 	}
 
+	if in.Listen == ":4444" {
+		return nil, nil, fmt.Errorf("port :4444 is reserved for manual testing")
+	}
 	if in.Listen != "" {
 		s.listenAddr = in.Listen
 	}
