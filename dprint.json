@@ -6,13 +6,13 @@
 		"web/static/static/",
 		"web/stimulus.js",
 		"web/turbo.es2017-esm.js",
-		"database/schema/"
+		"database/schema/",
+		"**/*.sql"
 	],
 	"plugins": [
 		"https://plugins.dprint.dev/typescript-0.93.3.wasm",
 		"https://plugins.dprint.dev/json-0.21.1.wasm",
 		"https://plugins.dprint.dev/g-plane/malva-v0.15.2.wasm",
-		"https://plugins.dprint.dev/sql-0.2.0.wasm",
 		"https://plugins.dprint.dev/exec-0.6.0.json@a054130d458f124f9b5c91484833828950723a5af3f8ff2bd1523bd47b83b364"
 	],
 	"typescript": {
@@ -25,10 +25,6 @@
 	},
 	"malva": {
 		"singleLineBlockThreshold": 1
-	},
-	"sql": {
-		"useTabs": true,
-		"indentWidth": 4
 	},
 	"exec": {
 		"commands": [
