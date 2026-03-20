@@ -94,6 +94,11 @@ case "${1:-}" in
 			alias claude='claude --permission-mode bypassPermissions'
 		EOF
 
+		# Make interactive login shell source ~/.bashrc
+		docker exec -i $container sh -c "cat >> /home/dev/.profile" <<-EOF
+			[ -f ~/.bashrc ] && . ~/.bashrc
+		EOF
+
 		# Copy host Claude settings (OAuth credentials, preferences)
 		docker cp "$HOME/.claude.json" $container:/home/dev/.claude.json
 		docker exec $container chown dev:dev /home/dev/.claude.json
