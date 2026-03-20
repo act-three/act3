@@ -103,6 +103,11 @@ case "${1:-}" in
 		docker cp "$HOME/.claude.json" $container:/home/dev/.claude.json
 		docker exec $container chown dev:dev /home/dev/.claude.json
 
+		# act3-mcp — starts and stops dev server reliably
+		docker exec -u dev $container /home/dev/.local/bin/claude\
+			mcp add --scope user act3-mcp\
+			-- ./cmd/act3-mcp/run.sh
+
 		# Playwright MCP — connects to Chromium in the Chrome container
 		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user playwright \
 			-- npx @playwright/mcp@latest --cdp-endpoint http://localhost:9222
