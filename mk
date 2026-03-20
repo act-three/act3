@@ -64,6 +64,7 @@ case "${1:-}" in
 			--add-host=host.docker.internal:host-gateway \
 			-p 2222:22 \
 			-p 4444:4444 \
+			-p 4445:4445 \
 			-v "$HOME/Downloads:/Downloads" \
 			-v "$HOME/.gitconfig:/home/dev/.gitconfig:ro" \
 			-v "$HOME/.config/git:/home/dev/.config/git:ro" \
