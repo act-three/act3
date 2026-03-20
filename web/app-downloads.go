@@ -10,18 +10,18 @@ import (
 	"ily.dev/act3/xstrings"
 )
 
-func (c *Config) editDownloads(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) appDownloads(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		dls, err := tx.DownloadHeadList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return view.EditMediaDownloads("Downloads", dls, nil), nil
+		return view.AppDownloads("Downloads", dls, nil), nil
 	})
 }
 
-func (c *Config) editDownloadsDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) appDownloadsDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		_, id, _ := xstrings.LastCut(req.PathValue("id"), "-")
@@ -35,14 +35,14 @@ func (c *Config) editDownloadsDetail(w http.ResponseWriter, req *http.Request) (
 		}
 
 		if req.Header.Get("turbo-frame") == "detail" {
-			return view.EditMediaDownloadsDetailFrame(dl.Title(), dl), nil
+			return view.AppDownloadsDetailFrame(dl.Title(), dl), nil
 		}
 
 		dls, err := tx.DownloadHeadList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return view.EditMediaDownloads(dl.Title(), dls, dl), nil
+		return view.AppDownloads(dl.Title(), dls, dl), nil
 	})
 }
 
@@ -100,6 +100,6 @@ func (c *Config) doAddTorrent(w http.ResponseWriter, req *http.Request) (html.No
 		}
 		dls := []*model.DownloadHead{&dl.DownloadHead}
 
-		return view.EditMediaDownloadsStream(dls, edID), nil
+		return view.AppDownloadsStream(dls, edID), nil
 	})
 }

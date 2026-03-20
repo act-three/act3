@@ -1,0 +1,49 @@
+package web
+
+import (
+	"net/http"
+
+	"ily.dev/act3/html"
+	"ily.dev/act3/model"
+	"ily.dev/act3/view"
+)
+
+func (c *Config) appTasks(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	running := c.Model.RunningTasks()
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		queued, err := tx.TaskList(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return view.AppTasks(running, queued), nil
+	})
+}
+
+func (c *Config) doRunTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	err := c.Model.RunTaskNow(ctx, req.PathValue("id"))
+	if err != nil {
+		return nil, err
+	}
+	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
+	return nil, nil
+}
+
+func (c *Config) doKillTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	c.Model.KillTask(req.PathValue("id"))
+	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
+	return nil, nil
+}
+
+func (c *Config) doDeleteTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		err := tx.TaskDelete(ctx, req.PathValue("id"))
+		if err != nil {
+			return nil, err
+		}
+		http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
+		return nil, nil
+	})
+}

@@ -17,7 +17,7 @@ type Filesystem struct {
 	Free int64
 }
 
-func EditSystemStorage(
+func AppStorage(
 	storage []*model.Storage,
 	fs []*Filesystem,
 ) html.Node {

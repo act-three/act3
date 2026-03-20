@@ -15,9 +15,9 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
-const EditMediaSeriesListItems = "series-list-items"
+const AppSeriesListItems = "series-list-items"
 
-func EditMediaSeries(
+func AppSeries(
 	title string,
 	s []*model.SeriesHead,
 	detail ...html.Node,
@@ -29,14 +29,14 @@ func EditMediaSeries(
 				html.Text("Add Series"),
 			),
 			html.Div(attr.Class("v-media-searchbar"))(
-				editMediaSeriesSearchbar(),
+				appSeriesSearchbar(),
 			),
 			html.Div(),
 		),
 		Split()(
 			List("/app/series/", "detail")(
-				turbo.Sink(EditMediaSeriesListItems)(
-					ListItems(s, EditMediaSeriesListItem),
+				turbo.Sink(AppSeriesListItems)(
+					ListItems(s, AppSeriesListItem),
 				),
 			),
 			expr.IfElse(detail != nil,
@@ -53,7 +53,7 @@ func EditMediaSeries(
 	))
 }
 
-func EditMediaSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
+func AppSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(ss.ID()),
@@ -72,7 +72,7 @@ func EditMediaSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node
 	)
 }
 
-func EditMediaSeriesDetail(
+func AppSeriesDetail(
 	sr *model.Series,
 	sed *model.SeriesEdition,
 	dls []*model.DownloadHead,
@@ -112,7 +112,7 @@ func EditMediaSeriesDetail(
 						return html.Div()(html.Text("Unknown Edition"))
 					},
 					func() html.Node {
-						return editMediaSeriesDetailEdition(sed, dls)
+						return appSeriesDetailEdition(sed, dls)
 					},
 				),
 			),
@@ -120,11 +120,11 @@ func EditMediaSeriesDetail(
 	)
 }
 
-func editMediaSeriesSearchbar() html.Node {
-	return html.Text("editMediaSeriesSearchbar")
+func appSeriesSearchbar() html.Node {
+	return html.Text("appSeriesSearchbar")
 }
 
-func editMediaSeriesDetailEdition(
+func appSeriesDetailEdition(
 	sed *model.SeriesEdition,
 	dls []*model.DownloadHead,
 ) html.Node {
@@ -137,11 +137,11 @@ func editMediaSeriesDetailEdition(
 				html.Range(dls, DownloadListItem),
 			),
 		),
-		editMediaSeriesDetailEpisodeList(sed),
+		appSeriesDetailEpisodeList(sed),
 	)
 }
 
-func editMediaSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
+func appSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
 	return FlexCol(Gap2)(
 		expr.IfElse(sed == nil,
 			func() html.Node {
@@ -153,7 +153,7 @@ func editMediaSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
 						html.Div()(html.Text(sn.Name())),
 						html.Div()(html.Textf("%d", sn.NumEpisodes(model.Significant))),
 						html.Div()(
-							html.RangeSeq(sn.Episodes(model.Significant), editMediaSeriesDetailEpisodeListItem),
+							html.RangeSeq(sn.Episodes(model.Significant), appSeriesDetailEpisodeListItem),
 						),
 					)
 				})
@@ -162,7 +162,7 @@ func editMediaSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
 	)
 }
 
-func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
+func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	return FlexCol(Gap1)(
 		FlexRow()(
 			html.Div()(
@@ -176,7 +176,7 @@ func editMediaSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	)
 }
 
-func EditSeriesAddDialog(frameID string) html.Node {
+func AppSeriesAddDialog(frameID string) html.Node {
 	return Dialog(frameID,
 		FlexCol(
 			attr.Attr("data-controller")("add-series"),
@@ -208,9 +208,9 @@ func EditSeriesAddDialog(frameID string) html.Node {
 	)
 }
 
-// EditEpisodeDialog renders the dialog for inspecting an
+// AppEpisodeDialog renders the dialog for inspecting an
 // episode's videos, renditions, and metadata.
-func EditEpisodeDialog(
+func AppEpisodeDialog(
 	frameID string,
 	ep *model.Episode,
 	videos []schema.Video,
@@ -238,7 +238,7 @@ func EditEpisodeDialog(
 				func() html.Node { return html.Group() },
 			),
 			html.Range(videos, func(v schema.Video) html.Node {
-				return editEpisodeDialogVideo(v)
+				return appEpisodeDialogVideo(v)
 			}),
 
 			TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
@@ -251,7 +251,7 @@ func EditEpisodeDialog(
 				func() html.Node { return html.Group() },
 			),
 			html.Range(renditions, func(r schema.RenditionForStreaming) html.Node {
-				return editEpisodeDialogRendition(r)
+				return appEpisodeDialogRendition(r)
 			}),
 
 			TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Metadata")),
@@ -271,7 +271,7 @@ func EditEpisodeDialog(
 	)
 }
 
-func editEpisodeDialogVideo(v schema.Video) html.Node {
+func appEpisodeDialogVideo(v schema.Video) html.Node {
 	return html.Div(
 		attr.Class("v-media-indent"),
 	)(
@@ -324,7 +324,7 @@ func editEpisodeDialogVideo(v schema.Video) html.Node {
 	)
 }
 
-func editEpisodeDialogRendition(r schema.RenditionForStreaming) html.Node {
+func appEpisodeDialogRendition(r schema.RenditionForStreaming) html.Node {
 	return html.Div(
 		attr.Class("v-media-indent"),
 	)(
@@ -384,9 +384,9 @@ type SeriesSearchResult struct {
 	Local  *model.SeriesHead
 }
 
-// EditSeriesSearchResults renders the search results for
+// AppSeriesSearchResults renders the search results for
 // adding a series.
-func EditSeriesSearchResults(results []SeriesSearchResult) html.Node {
+func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 	return turbo.Frame("results")(
 		FlexCol(Gap4, Class("v-media-detail-body"))(
 			html.Range(results, func(t SeriesSearchResult) html.Node {

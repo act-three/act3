@@ -8,12 +8,12 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func MediaMovie(
+func BrowseMovie(
 	mo *model.Movie,
 	dls []*model.RenditionForDownload,
 ) html.Node {
 	med := mo.EditionByTitle(model.DefaultEdition)
-	return media(mo.Title(), mo.ImageURL())(
+	return browse(mo.Title(), mo.ImageURL())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
 				expr.IfElse(mo.YearDisplay() != "",
@@ -25,7 +25,7 @@ func MediaMovie(
 				Text(mo.Title(), TextSize7),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
-						moviePlayButton(mo, med),
+						browseMoviePlayButton(mo, med),
 					),
 					FlexCol()(
 						Button(ButtonGhost, ButtonSize3)(
@@ -40,7 +40,7 @@ func MediaMovie(
 							Icon("line/info-circle")),
 					),
 				),
-				movieAudioTrackSelect(med),
+				browseMovieAudioTrackSelect(med),
 				TextNode()(html.Safe(mo.Summary())),
 			),
 			Box(),
@@ -53,7 +53,7 @@ func MediaMovie(
 	)
 }
 
-func moviePlayButton(mo *model.Movie, med *model.MovieEdition) html.Node {
+func browseMoviePlayButton(mo *model.Movie, med *model.MovieEdition) html.Node {
 	if med == nil {
 		return Button(Disabled(true), ButtonSize3)(
 			Icon("line/x-close"), Text("Play"))
@@ -74,7 +74,7 @@ func moviePlayButton(mo *model.Movie, med *model.MovieEdition) html.Node {
 	)
 }
 
-func movieAudioTrackSelect(med *model.MovieEdition) html.Node {
+func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
 	if med == nil {
 		return html.Group()
 	}

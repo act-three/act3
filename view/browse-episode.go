@@ -10,11 +10,11 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func MediaEpisode(
+func BrowseEpisode(
 	ep *model.Episode,
 	dls []*model.RenditionForDownload,
 ) html.Node {
-	return media(ep.Title(), ep.ImageURL())(
+	return browse(ep.Title(), ep.ImageURL())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
 				Text(ep.SeriesHead().Title()),
@@ -27,7 +27,7 @@ func MediaEpisode(
 				Text(ep.Title(), TextSize7),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
-						playButton(ep),
+						browsePlayButton(ep),
 					),
 					FlexCol(Class("v-detail-play"))(
 						Button(Disabled(true), ButtonSize3)(Icon("solid/play"), Text("Play from 5:18:02")),
@@ -45,7 +45,7 @@ func MediaEpisode(
 						Button(ButtonGhost, ButtonSize3)(Icon("line/info-circle")),
 					),
 				),
-				audioTrackSelect(ep),
+				browseAudioTrackSelect(ep),
 				Button(ButtonSurface)(Text("Subtitles")),
 				TextNode()(html.Safe(ep.Summary())),
 			),
@@ -59,7 +59,7 @@ func MediaEpisode(
 	)
 }
 
-func audioTrackSelect(ep *model.Episode) html.Node {
+func browseAudioTrackSelect(ep *model.Episode) html.Node {
 	v := ep.Videos()
 	playable := slices.IndexFunc(v, func(v *model.Video) bool {
 		return v.MVPlaylist() != ""
@@ -84,7 +84,7 @@ func audioTrackSelect(ep *model.Episode) html.Node {
 	)
 }
 
-func playButton(ep *model.Episode) html.Node {
+func browsePlayButton(ep *model.Episode) html.Node {
 	v := ep.Videos()
 	// TODO(april): provide user-select if there are multiple videos.
 	playable := slices.IndexFunc(v, func(v *model.Video) bool {

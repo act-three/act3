@@ -15,18 +15,18 @@ import (
 	"ily.dev/act3/view"
 )
 
-func (c *Config) editMovies(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) appMovies(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		all, err := tx.MovieHeadList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return view.EditMediaMovies("All Movies", all), nil
+		return view.AppMovies("All Movies", all), nil
 	})
 }
 
-func (c *Config) editMoviesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		mo, err := tx.MovieBySlug(ctx, req.PathValue("slug"))
@@ -51,7 +51,7 @@ func (c *Config) editMoviesDetail(w http.ResponseWriter, req *http.Request) (htm
 			return nil, err
 		}
 
-		detail := view.EditMediaMoviesDetail(mo, med, dls)
+		detail := view.AppMoviesDetail(mo, med, dls)
 		if req.Header.Get("turbo-frame") == "detail" {
 			return view.PageFrame(mo.Title(), "detail", detail), nil
 		}
@@ -60,7 +60,7 @@ func (c *Config) editMoviesDetail(w http.ResponseWriter, req *http.Request) (htm
 		if err != nil {
 			return nil, err
 		}
-		return view.EditMediaMovies(mo.Title(), all, detail), nil
+		return view.AppMovies(mo.Title(), all, detail), nil
 	})
 }
 
@@ -100,8 +100,8 @@ func (c *Config) doAddMovieTMDB(_ http.ResponseWriter, req *http.Request) (html.
 		}
 		return turbo.Frame("tmdb-"+strconv.FormatInt(*mo.TMDBID(), 10))(
 			view.MovieResultLink(mo),
-			turbo.Prepend(view.EditMediaMoviesListItems,
-				ListItems([]*model.MovieHead{mo}, view.EditMediaMoviesListItem),
+			turbo.Prepend(view.AppMoviesListItems,
+				ListItems([]*model.MovieHead{mo}, view.AppMoviesListItem),
 			),
 		), nil
 	})
@@ -109,7 +109,7 @@ func (c *Config) doAddMovieTMDB(_ http.ResponseWriter, req *http.Request) (html.
 
 func (c *Config) movieAddDialogReq(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	frameID := req.Header.Get("Turbo-Frame")
-	return view.EditMovieAddDialog(frameID), nil
+	return view.AppMovieAddDialog(frameID), nil
 }
 
 func (c *Config) movieSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
@@ -147,6 +147,6 @@ func (c *Config) movieSearch(_ http.ResponseWriter, req *http.Request) (html.Nod
 				Local: m[int64(res.ID)],
 			}
 		}
-		return view.EditMovieSearchResults(results), nil
+		return view.AppMovieSearchResults(results), nil
 	})
 }

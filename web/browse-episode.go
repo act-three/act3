@@ -8,7 +8,7 @@ import (
 	"ily.dev/act3/view"
 )
 
-func (c *Config) showEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) browseEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		slug := req.PathValue("slug") + "/" + req.PathValue("epSlug")
@@ -22,6 +22,6 @@ func (c *Config) showEpisode(_ http.ResponseWriter, req *http.Request) (html.Nod
 			return nil, err
 		}
 
-		return view.MediaEpisode(ep, dls), nil
+		return view.BrowseEpisode(ep, dls), nil
 	})
 }

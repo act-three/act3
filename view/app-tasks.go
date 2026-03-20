@@ -8,7 +8,7 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func EditSystemTasks(running []*model.RunningTask, queued []*model.Task) html.Node {
+func AppTasks(running []*model.RunningTask, queued []*model.Task) html.Node {
 	return app("Tasks",
 		ScrollY(attr.Class("v-system"))(
 			html.Div()(html.Text("Scheduled Tasks")),

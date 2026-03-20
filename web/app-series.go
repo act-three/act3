@@ -5,27 +5,29 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
+	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view"
 	"ily.dev/act3/xstrings"
 )
 
-func (c *Config) editSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) appSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		all, err := tx.SeriesHeadList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return view.EditMediaSeries("Edit Series", all), nil
+		return view.AppSeries("Edit Series", all), nil
 	})
 }
 
-func (c *Config) editSeriesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		sr, err := tx.SeriesBySlug(ctx, req.PathValue("slug"))
@@ -50,7 +52,7 @@ func (c *Config) editSeriesDetail(w http.ResponseWriter, req *http.Request) (htm
 			return nil, err
 		}
 
-		detail := view.EditMediaSeriesDetail(sr, sed, dls)
+		detail := view.AppSeriesDetail(sr, sed, dls)
 		if req.Header.Get("turbo-frame") == "detail" {
 			return view.PageFrame(sr.Title(), "detail", detail), nil
 		}
@@ -59,13 +61,13 @@ func (c *Config) editSeriesDetail(w http.ResponseWriter, req *http.Request) (htm
 		if err != nil {
 			return nil, err
 		}
-		return view.EditMediaSeries(sr.Title(), all, detail), nil
+		return view.AppSeries(sr.Title(), all, detail), nil
 	})
 }
 
 func (c *Config) seriesAddDialogReq(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	frameID := req.Header.Get("Turbo-Frame")
-	return view.EditSeriesAddDialog(frameID), nil
+	return view.AppSeriesAddDialog(frameID), nil
 }
 
 func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
@@ -88,7 +90,7 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 		}
 
 		frameID := req.Header.Get("Turbo-Frame")
-		return view.EditEpisodeDialog(frameID, ep, videos, renditions), nil
+		return view.AppEpisodeDialog(frameID, ep, videos, renditions), nil
 	})
 }
 
@@ -148,6 +150,30 @@ func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.No
 				Local:  m[int64(res.Show.ID)],
 			}
 		}
-		return view.EditSeriesSearchResults(results), nil
+		return view.AppSeriesSearchResults(results), nil
+	})
+}
+
+func (c *Config) doAddSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	id, err := strconv.Atoi(req.FormValue("id"))
+	if err != nil {
+		return nil, &model.ValidationError{Op: "TVmaze ID", Err: err}
+	}
+	show, err := c.TVmaze.GetShow(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ss, err := tx.SeriesCreateByTVmazeID(ctx, show)
+		if err != nil {
+			return nil, err
+		}
+		return turbo.Frame("tvmaze-"+strconv.FormatInt(*ss.TVmazeID(), 10))(
+			view.SeriesResultLink(ss),
+			turbo.Prepend(view.AppSeriesListItems,
+				ListItems([]*model.SeriesHead{ss}, view.AppSeriesListItem),
+			),
+		), nil
 	})
 }

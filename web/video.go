@@ -10,7 +10,7 @@ import (
 	"ily.dev/act3/view"
 )
 
-func (c *Config) showPlayerForEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) playerForEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		v, err := tr.Video(ctx, req.PathValue("id"))
@@ -32,7 +32,7 @@ func (c *Config) showPlayerForEpisode(_ http.ResponseWriter, req *http.Request) 
 	})
 }
 
-func (c *Config) showPlayerForMovie(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		v, err := tr.Video(ctx, req.PathValue("id"))

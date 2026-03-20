@@ -7,7 +7,7 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func EditSystemTMDB(settings model.Settings) html.Node {
+func AppTMDB(settings model.Settings) html.Node {
 	return app("TMDB",
 		html.Div(attr.Class("v-system"))(
 			html.Div()(html.Text("TMDB")),

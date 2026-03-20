@@ -14,7 +14,7 @@ func Home(works []*model.Work) html.Node {
 			washURLs = append(washURLs, w.ImageURL())
 		}
 	}
-	return media("Act Three", washURLs...)(
+	return browse("Act Three", washURLs...)(
 		FlexRow(Gap4, Class("v-home-toolbar"))(
 			ButtonGroup(ButtonGroupRadiusLarge)(
 				Button(ButtonSurface)(Text("Title")),

@@ -9,14 +9,14 @@ import (
 	"ily.dev/act3/view"
 )
 
-func (c *Config) showSeriesOrMovie(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) browseWork(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
 		ctx := req.Context()
 		slug := req.PathValue("slug")
 
 		sr, err := tr.SeriesBySlug(ctx, slug)
 		if err == nil {
-			return view.MediaSeries(sr), nil
+			return view.BrowseSeries(sr), nil
 		}
 		if err != sql.ErrNoRows {
 			return nil, err
@@ -33,6 +33,6 @@ func (c *Config) showSeriesOrMovie(_ http.ResponseWriter, req *http.Request) (ht
 		if dlErr != nil {
 			return nil, dlErr
 		}
-		return view.MediaMovie(mo, dls), nil
+		return view.BrowseMovie(mo, dls), nil
 	})
 }

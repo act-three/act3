@@ -15,7 +15,7 @@ import (
 	"ily.dev/act3/xstrings"
 )
 
-func EditMediaDownloads(
+func AppDownloads(
 	title string,
 	items []*model.DownloadHead,
 	selected *model.Download,
@@ -26,7 +26,7 @@ func EditMediaDownloads(
 			ToolbarPrimary()(
 				Box(),
 				Box(Class("v-media-searchbar"))(
-					editMediaDownloadsSearchBar(),
+					appDownloadsSearchBar(),
 				),
 				Box(),
 			),
@@ -35,11 +35,11 @@ func EditMediaDownloads(
 					attr.ID(torrentListID),
 					attr.Style("flex: 1"),
 				)(
-					ListItems(items, editMediaDownloadsListItem),
+					ListItems(items, appDownloadsListItem),
 				),
 				expr.IfElse(selected != nil,
 					func() html.Node {
-						return editMediaDownloadsDetail(selected)
+						return appDownloadsDetail(selected)
 					},
 					func() html.Node {
 						return Center(Class("v-media-muted"))(
@@ -52,21 +52,21 @@ func EditMediaDownloads(
 	)
 }
 
-func EditMediaDownloadsDetailFrame(title string, dl *model.Download) html.Node {
-	return PageFrame(title, "detail", editMediaDownloadsDetail(dl))
+func AppDownloadsDetailFrame(title string, dl *model.Download) html.Node {
+	return PageFrame(title, "detail", appDownloadsDetail(dl))
 }
 
-func EditMediaDownloadsStream(dls []*model.DownloadHead, edID string) html.Node {
+func AppDownloadsStream(dls []*model.DownloadHead, edID string) html.Node {
 	return turbo.Prepend("edition-torrents-"+edID,
-		html.Range(dls, editMediaDownloadsStreamItem),
+		html.Range(dls, appDownloadsStreamItem),
 	)
 }
 
-func editMediaDownloadsSearchBar() html.Node {
+func appDownloadsSearchBar() html.Node {
 	return Text("Download Searchbar")
 }
 
-func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node {
+func appDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(dl.ID()),
@@ -98,7 +98,7 @@ func editMediaDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html
 	)
 }
 
-func editMediaDownloadsStreamItem(dl *model.DownloadHead) html.Node {
+func appDownloadsStreamItem(dl *model.DownloadHead) html.Node {
 	return DownloadListItem(dl)
 }
 
@@ -150,7 +150,7 @@ func AddTorrentButton(inputName, inputValue string) html.Node {
 	)
 }
 
-func editMediaDownloadsDetail(dl *model.Download) html.Node {
+func appDownloadsDetail(dl *model.Download) html.Node {
 	if dl.State() == "error" {
 		return Box()(
 			Text(dl.Title()),
@@ -163,30 +163,30 @@ func editMediaDownloadsDetail(dl *model.Download) html.Node {
 		)(
 			html.H1(attr.Style("margin-bottom: 0.5rem"))(Text(dl.Title())),
 			html.Div()(
-				editMediaDownloadsImportControl(dl),
+				appDownloadsImportControl(dl),
 			),
 			FlexCol(Gap2)(
 				html.RangeSeq2(
 					xslices.GroupBy(dl.Files(), (*model.DownloadFile).Season),
-					editMediaDownloadsFileGroup,
+					appDownloadsFileGroup,
 				),
 			),
 		),
 	)
 }
 
-func editMediaDownloadsImportControl(dl *model.Download) html.Node {
+func appDownloadsImportControl(dl *model.Download) html.Node {
 	switch dl.State() {
 	case "downloaded":
-		return editMediaDownloadsImportButton(dl.ID())
+		return appDownloadsImportButton(dl.ID())
 	case "queued", "downloading":
-		return editMediaDownloadsAutoImportToggle(dl)
+		return appDownloadsAutoImportToggle(dl)
 	default: // "imported", "error"
 		return html.Group()
 	}
 }
 
-func editMediaDownloadsImportButton(id string) html.Node {
+func appDownloadsImportButton(id string) html.Node {
 	return html.Form(
 		attr.Method("POST"),
 		attr.Action("/-/do/import-download"),
@@ -196,7 +196,7 @@ func editMediaDownloadsImportButton(id string) html.Node {
 	)
 }
 
-func editMediaDownloadsAutoImportToggle(dl *model.Download) html.Node {
+func appDownloadsAutoImportToggle(dl *model.Download) html.Node {
 	return html.Label(attr.Class("v-media-auto-import"))(
 		Toggle("/-/do/auto-import-download", "auto-import", dl.AutoImport())(
 			html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(dl.ID())),
@@ -205,7 +205,7 @@ func editMediaDownloadsAutoImportToggle(dl *model.Download) html.Node {
 	)
 }
 
-func editMediaDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) html.Node {
+func appDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) html.Node {
 	displayDir, prefix := downloadsDirPrefix(dfs)
 	return html.Div(
 		attr.Class("v-media-file-group"),

@@ -7,7 +7,7 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func EditSystemTransmission(settings model.Settings) html.Node {
+func AppTransmission(settings model.Settings) html.Node {
 	return app("Transmission",
 		html.Div(attr.Class("v-system"))(
 			html.Div()(html.Text("Transmission")),

@@ -12,9 +12,9 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
-const EditMediaMoviesListItems = "movie-list-items"
+const AppMoviesListItems = "movie-list-items"
 
-func EditMediaMovies(
+func AppMovies(
 	title string,
 	s []*model.MovieHead,
 	detail ...html.Node,
@@ -29,8 +29,8 @@ func EditMediaMovies(
 		),
 		Split()(
 			List("/app/movies/", "detail")(
-				turbo.Sink(EditMediaMoviesListItems)(
-					ListItems(s, EditMediaMoviesListItem),
+				turbo.Sink(AppMoviesListItems)(
+					ListItems(s, AppMoviesListItem),
 				),
 			),
 			expr.IfElse(detail != nil,
@@ -47,7 +47,7 @@ func EditMediaMovies(
 	))
 }
 
-func EditMediaMoviesListItem(
+func AppMoviesListItem(
 	mo *model.MovieHead, attrs ...attr.Node,
 ) html.Node {
 	return Card(CardGhost,
@@ -65,7 +65,7 @@ func EditMediaMoviesListItem(
 	)
 }
 
-func EditMediaMoviesDetail(
+func AppMoviesDetail(
 	mo *model.Movie,
 	med *model.MovieEdition,
 	dls []*model.DownloadHead,
@@ -94,13 +94,13 @@ func EditMediaMoviesDetail(
 						html.P()(html.Safe(mo.Summary())),
 					),
 				),
-				editMediaMoviesDetailEdition(mo, med, dls),
+				appMoviesDetailEdition(mo, med, dls),
 			),
 		),
 	)
 }
 
-func EditMovieAddDialog(frameID string) html.Node {
+func AppMovieAddDialog(frameID string) html.Node {
 	return Dialog(frameID,
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
@@ -134,9 +134,9 @@ type MovieSearchResult struct {
 	Local *model.MovieHead
 }
 
-// EditMovieSearchResults renders the search results for
+// AppMovieSearchResults renders the search results for
 // adding a movie.
-func EditMovieSearchResults(results []MovieSearchResult) html.Node {
+func AppMovieSearchResults(results []MovieSearchResult) html.Node {
 	return turbo.Frame("results")(
 		FlexCol(Gap4, Class("v-media-detail-body"))(
 			html.Range(results, func(t MovieSearchResult) html.Node {
@@ -203,7 +203,7 @@ func MovieResultLink(mo *model.MovieHead) html.Node {
 	)
 }
 
-func editMediaMoviesDetailEdition(
+func appMoviesDetailEdition(
 	mo *model.Movie,
 	med *model.MovieEdition,
 	dls []*model.DownloadHead,
@@ -212,7 +212,7 @@ func editMediaMoviesDetailEdition(
 		return html.Div()(html.Text("Unknown Edition"))
 	}
 	return html.Div()(
-		editMediaMoviesEditionSelector(mo),
+		appMoviesEditionSelector(mo),
 		AddTorrentButton("med-id", med.ID()),
 		html.Div(
 			attr.Class("v-media-download-list"),
@@ -221,11 +221,11 @@ func editMediaMoviesDetailEdition(
 				html.Range(dls, DownloadListItem),
 			),
 		),
-		editMediaMoviesDetailVideos(med),
+		appMoviesDetailVideos(med),
 	)
 }
 
-func editMediaMoviesEditionSelector(mo *model.Movie) html.Node {
+func appMoviesEditionSelector(mo *model.Movie) html.Node {
 	return html.Div(
 		attr.Name("edition"),
 	)(
@@ -246,7 +246,7 @@ func editMediaMoviesEditionSelector(mo *model.Movie) html.Node {
 	)
 }
 
-func editMediaMoviesDetailVideos(med *model.MovieEdition) html.Node {
+func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 	vids := med.Videos()
 	if len(vids) == 0 {
 		return html.Div(

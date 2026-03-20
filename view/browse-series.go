@@ -10,12 +10,12 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func MediaSeries(sr *model.Series) html.Node {
+func BrowseSeries(sr *model.Series) html.Node {
 	seasons := slices.Values(([]*model.Season)(nil)) // empty
 	if sed := sr.EditionByTitle(model.AirDate); sed != nil {
 		seasons = sed.Seasons()
 	}
-	return media(sr.Title(), sr.TVmazeImageURL())(
+	return browse(sr.Title(), sr.TVmazeImageURL())(
 		Grid12(Class("v-series"))(
 			Box(Class("v-series-sidebar"))(
 				Box(Class("v-series-sidebar-inner"))(
@@ -34,22 +34,22 @@ func MediaSeries(sr *model.Series) html.Node {
 				),
 			),
 			FlexCol(Class("v-series-content"))(
-				html.RangeSeq(seasons, mediaSeriesSeason),
+				html.RangeSeq(seasons, browseSeriesSeason),
 			),
 		),
 	)
 }
 
-func mediaSeriesSeason(sn *model.Season) html.Node {
+func browseSeriesSeason(sn *model.Season) html.Node {
 	return Box()(
 		Box(Class("v-series-season-header"))(Text(sn.Name(), FontBold)),
 		FlexCol(Class("v-series-episodes"))(
-			html.RangeSeq(sn.Episodes(model.AnyEpisode), mediaSeriesEpisode),
+			html.RangeSeq(sn.Episodes(model.AnyEpisode), browseSeriesEpisode),
 		),
 	)
 }
 
-func mediaSeriesEpisode(ep *model.Episode) html.Node {
+func browseSeriesEpisode(ep *model.Episode) html.Node {
 	const doHideSpoilers = false
 	spoiler := group()
 	if doHideSpoilers {

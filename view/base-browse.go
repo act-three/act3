@@ -12,24 +12,24 @@ import (
 	"ily.dev/act3/web/static"
 )
 
-func media(title string, washURL ...string) html.Element {
+func browse(title string, washURL ...string) html.Element {
 	return func(child ...html.Node) html.Node {
 		return base(title)()(
-			mediaWash(washURL),
-			mediaContainer(child...),
-			mediaNavigationMenu(),
+			browseWash(washURL),
+			browseContainer(child...),
+			browseNavigationMenu(),
 			turbo.Frame("player"),
 		)
 	}
 }
 
-func mediaContainer(child ...html.Node) html.Node {
+func browseContainer(child ...html.Node) html.Node {
 	return FlexCol(Class("v-media-container"))(
 		Group(child...),
 	)
 }
 
-func mediaWash(urls []string) html.Node {
+func browseWash(urls []string) html.Node {
 	urls = slices.DeleteFunc(urls, func(s string) bool { return s == "" })
 	url := static.Path("/static/cb.jpeg")
 	if len(urls) > 0 {
@@ -40,12 +40,12 @@ func mediaWash(urls []string) html.Node {
 	)
 }
 
-func mediaNavigationMenu() html.Node {
+func browseNavigationMenu() html.Node {
 	return FlexCol(
 		stimulus.Controller("topbar"),
 		Class("v-media-nav"),
 	)(
-		mediaContainer(
+		browseContainer(
 			Grid12()(
 				FlexRow(
 					ColSpan12,
