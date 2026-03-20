@@ -104,9 +104,7 @@ case "${1:-}" in
 		docker exec $container chown dev:dev /home/dev/.claude.json
 
 		# act3-mcp — starts and stops dev server reliably
-		docker exec -u dev $container /home/dev/.local/bin/claude\
-			mcp add --scope user act3-mcp\
-			-- ./cmd/act3-mcp/run.sh
+		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user act3-mcp -- ./cmd/act3-mcp/run.sh
 
 		# Playwright MCP — connects to Chromium in the Chrome container
 		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user playwright \
@@ -177,9 +175,10 @@ case "${1:-}" in
 		;;
 	git-setup)
 		go build -o .git/hooks/act3vet ./cmd/act3vet
+		go build -o .git/hooks/commit-msg ./cmd/commit-msg
 		cp lib/pre-commit.sh .git/hooks/pre-commit
 		chmod +x .git/hooks/pre-commit
-		echo "Installed .git/hooks/pre-commit"
+		echo "Installed git hooks"
 		;;
 	"")
 		echo "Usage: $0 [command]"
