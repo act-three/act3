@@ -107,6 +107,9 @@ case "${1:-}" in
 		# act3-mcp — starts and stops dev server reliably
 		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user act3-mcp -- ./cmd/act3-mcp/run.sh
 
+		# gopls MCP — Go language server for rename, references, diagnostics
+		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user gopls -- /home/dev/go/bin/gopls mcp
+
 		# Playwright MCP — connects to Chromium in the Chrome container
 		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user playwright \
 			-- npx @playwright/mcp@latest --cdp-endpoint http://localhost:9222
