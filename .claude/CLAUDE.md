@@ -108,7 +108,8 @@ main.go
 - Standard library style — no frameworks, concrete types, explicit error
   handling
 - Prefer table-driven tests where it makes sense
-- Use gopls MCP server where possible: renaming symbols etc
+- Use gopls MCP server where possible:
+  renaming symbols, find all references, etc
 - Error handling uses `kr.dev/errorfmt` with `defer
   errorfmt.Handlef("context: %w", &err)`
 - Structured logging via `log/slog` with context-aware `logcontext`
