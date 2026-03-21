@@ -8327,17 +8327,18 @@
       this.#initSelected();
     }
     #initSelected() {
-      const url = document.location;
-      if (url.pathname.indexOf(this.prefixValue) != 0) {
+      const path = document.location.pathname;
+      if (!path.startsWith(this.prefixValue)) {
         this.selectedValue = [];
         return;
       }
-      let id = url.pathname.substring(this.prefixValue.length);
-      const n = id.lastIndexOf("-");
-      if (n >= 0) {
-        id = id.substring(n + 1);
+      for (const t of this.itemTargets) {
+        if (t.getAttribute("data-list-url-param") === path) {
+          this.selectedValue = [t.getAttribute("data-list-id-param")];
+          return;
+        }
       }
-      this.selectedValue = [id];
+      this.selectedValue = [];
     }
     #navigate() {
       if (this.selectedValue.length == 1) {
