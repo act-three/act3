@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"iter"
+	"path"
 	"slices"
 
 	"ily.dev/act3/database/schema"
@@ -21,7 +22,6 @@ type SeriesEditionHead struct {
 }
 
 func (sed *SeriesEditionHead) ID() string    { return sed.sed.ID }
-func (sed *SeriesEditionHead) Slug() string  { return sed.sed.Slug }
 func (sed *SeriesEditionHead) Title() string { return sed.sed.Title }
 
 type SeriesEdition struct {
@@ -159,39 +159,62 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 	return sed, nil
 }
 
+func (sed *SeriesEdition) EditURL() string {
+	if sed.sed.IsDefault != nil {
+		return sed.sr.EditURL()
+	}
+	return path.Join(
+		sed.sr.EditURL(),
+		*sed.sed.Slug,
+	)
+}
+
 func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID string) (schema.SeriesEdition, error) {
-	slug, err := tx.generateSeriesEditionSlug(ctx, title, seriesID)
+	slug, isDefault, err := tx.generateSeriesEditionSlug(ctx, title, seriesID)
 	if err != nil {
 		return schema.SeriesEdition{}, err
 	}
-	return tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
+	p := schema.SeriesEditionCreateParams{
 		Title:    title,
-		Slug:     slug,
 		SeriesID: seriesID,
-	})
+	}
+	if slug != "" {
+		p.Slug = &slug
+	}
+	if isDefault {
+		p.IsDefault = new(int64(1))
+	}
+	return tx.q.SeriesEditionCreate(ctx, p)
 }
 
-func (tx *TxRW) generateSeriesEditionSlug(ctx Context, title, seriesID string) (string, error) {
-	slug := xstrings.ToSlug(title)
+func (tx *TxRW) generateSeriesEditionSlug(ctx Context, title, seriesID string) (slug string, isDefault bool, err error) {
+	n, err := tx.q.SeriesEditionDefaultExists(ctx, seriesID)
+	if err != nil {
+		return "", false, err
+	}
+	if n == 0 {
+		return "", true, nil
+	}
+	slug = xstrings.ToSlug(title)
 	if slug == "" {
 		slug = "edition"
 	}
-	n, err := tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
+	n, err = tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
 		SeriesID: seriesID,
-		Slug:     slug,
+		Slug:     &slug,
 	})
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 	for i := 2; n > 0; i++ {
 		slug = fmt.Sprintf("%s-%d", slug, i)
 		n, err = tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
 			SeriesID: seriesID,
-			Slug:     slug,
+			Slug:     &slug,
 		})
 		if err != nil {
-			return "", err
+			return "", false, err
 		}
 	}
-	return slug, nil
+	return slug, false, nil
 }

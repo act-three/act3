@@ -82,6 +82,7 @@ func AppSeriesDetail(
 			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
+				appSeriesEditionList(sr),
 				FlexRow(Gap2)(
 					html.Img(),
 					FlexCol(Gap4, Class("v-media-detail-body"))(
@@ -89,32 +90,7 @@ func AppSeriesDetail(
 						html.P()(html.Safe(sr.Summary())),
 					),
 				),
-				html.Div(
-					attr.Name("order"),
-				)(
-					html.Div(
-						attr.Class("v-media-selector-label"),
-					)(
-						html.Text("order by"),
-					),
-					html.Div()(
-						html.RangeSeq(sr.SeriesEditionSeq(), func(sed *model.SeriesEdition) html.Node {
-							return html.Div(
-								attr.Value(sed.Title()),
-							)(
-								html.Label()(html.Text(sed.Title())),
-							)
-						}),
-					),
-				),
-				expr.IfElse(sed == nil,
-					func() html.Node {
-						return html.Div()(html.Text("Unknown Edition"))
-					},
-					func() html.Node {
-						return appSeriesDetailEdition(sed, dls)
-					},
-				),
+				appSeriesDetailEdition(sed, dls),
 			),
 		),
 	)
@@ -124,10 +100,31 @@ func appSeriesSearchbar() html.Node {
 	return html.Text("appSeriesSearchbar")
 }
 
+func appSeriesEditionList(sr *model.Series) html.Node {
+	return FlexCol()(
+		html.RangeSeq(sr.SeriesEditionSeq(), func(sed *model.SeriesEdition) html.Node {
+			return Card(
+				CardSurface,
+				CardSize3,
+				attr.Href(sed.EditURL()),
+			)(
+				CardContent()(
+					CardTitle()(
+						Text(sed.Title()),
+					),
+				),
+			)
+		}),
+	)
+}
+
 func appSeriesDetailEdition(
 	sed *model.SeriesEdition,
 	dls []*model.DownloadHead,
 ) html.Node {
+	if sed == nil {
+		return html.Div()(html.Text("Unknown Edition"))
+	}
 	return html.Div()(
 		addTorrentButton("sed-id", sed.ID()),
 		html.Div(

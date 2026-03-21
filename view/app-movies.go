@@ -75,6 +75,7 @@ func AppMoviesDetail(
 			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
+				appMoviesEditionList(mo),
 				FlexRow(Gap2)(
 					expr.IfElse(mo.ImageURL() != "",
 						func() html.Node {
@@ -94,7 +95,7 @@ func AppMoviesDetail(
 						html.P()(html.Safe(mo.Summary())),
 					),
 				),
-				appMoviesDetailEdition(mo, med, dls),
+				appMoviesDetailEdition(med, dls),
 			),
 		),
 	)
@@ -204,7 +205,6 @@ func MovieResultLink(mo *model.MovieHead) html.Node {
 }
 
 func appMoviesDetailEdition(
-	mo *model.Movie,
 	med *model.MovieEdition,
 	dls []*model.DownloadHead,
 ) html.Node {
@@ -212,7 +212,6 @@ func appMoviesDetailEdition(
 		return html.Div()(html.Text("Unknown Edition"))
 	}
 	return html.Div()(
-		appMoviesEditionSelector(mo),
 		addTorrentButton("med-id", med.ID()),
 		html.Div(
 			attr.Class("v-media-download-list"),
@@ -225,24 +224,21 @@ func appMoviesDetailEdition(
 	)
 }
 
-func appMoviesEditionSelector(mo *model.Movie) html.Node {
-	return html.Div(
-		attr.Name("edition"),
-	)(
-		html.Div(
-			attr.Class("v-media-selector-label"),
-		)(
-			html.Text("edition"),
-		),
-		html.Div()(
-			html.RangeSeq(mo.MovieEditionSeq(), func(med *model.MovieEdition) html.Node {
-				return html.Div(
-					attr.Value(med.Title()),
-				)(
-					html.Label()(html.Text(med.Title())),
-				)
-			}),
-		),
+func appMoviesEditionList(mo *model.Movie) html.Node {
+	return FlexCol()(
+		html.RangeSeq(mo.MovieEditionSeq(), func(med *model.MovieEdition) html.Node {
+			return Card(
+				CardSurface,
+				CardSize3,
+				attr.Href(med.EditURL()),
+			)(
+				CardContent()(
+					CardTitle()(
+						Text(med.Title()),
+					),
+				),
+			)
+		}),
 	)
 }
 

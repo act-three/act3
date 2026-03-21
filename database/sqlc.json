@@ -28,6 +28,7 @@
 						"imdbid": "IMDBID",
 						"tmdbid": "TMDBID",
 						"infohash": "InfoHash",
+						"isdefault": "IsDefault",
 						"movieedition": "MovieEdition",
 						"movieeditionid": "MovieEditionID",
 						"movieid": "MovieID",
