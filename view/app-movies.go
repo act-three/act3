@@ -213,12 +213,12 @@ func appMoviesDetailEdition(
 	}
 	return html.Div()(
 		appMoviesEditionSelector(mo),
-		AddTorrentButton("med-id", med.ID()),
+		addTorrentButton("med-id", med.ID()),
 		html.Div(
 			attr.Class("v-media-download-list"),
 		)(
 			turbo.Sink("edition-torrents-"+med.ID())(
-				html.Range(dls, DownloadListItem),
+				html.Range(dls, downloadListItem),
 			),
 		),
 		appMoviesDetailVideos(med),

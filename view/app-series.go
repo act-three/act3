@@ -129,12 +129,12 @@ func appSeriesDetailEdition(
 	dls []*model.DownloadHead,
 ) html.Node {
 	return html.Div()(
-		AddTorrentButton("sed-id", sed.ID()),
+		addTorrentButton("sed-id", sed.ID()),
 		html.Div(
 			attr.Class("v-media-download-list"),
 		)(
 			turbo.Sink("edition-torrents-"+sed.ID())(
-				html.Range(dls, DownloadListItem),
+				html.Range(dls, downloadListItem),
 			),
 		),
 		appSeriesDetailEpisodeList(sed),
@@ -172,7 +172,7 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 				DialogButton(ep.EditDialogURL(), ButtonGhost)(Icon("line/info-circle")),
 			),
 		),
-		ProgressContainer(ep.ID(), ep.Progress()),
+		progressContainer(ep.ID(), ep.Progress()),
 	)
 }
 

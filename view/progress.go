@@ -24,13 +24,13 @@ func ProgressItemAppend(pi *progress.Item) html.Node {
 		a = append(a, "."+progressContainerClass(k))
 	}
 	return turbo.AppendTargets(strings.Join(a, ","),
-		ProgressItem(pi),
+		progressItem(pi),
 	)
 }
 
 func ProgressItemUpdate(pi *progress.Item) html.Node {
 	return turbo.ReplaceTargets("."+progressItemClass(pi), turbo.Morph)(
-		ProgressItem(pi),
+		progressItem(pi),
 	)
 }
 
@@ -38,15 +38,15 @@ func ProgressItemRemove(pi *progress.Item) html.Node {
 	return turbo.RemoveTargets("." + progressItemClass(pi))
 }
 
-func ProgressContainer(key string, items []*progress.Item) html.Node {
+func progressContainer(key string, items []*progress.Item) html.Node {
 	return html.Div(Contents, Class(progressContainerClass(key)))(
-		html.Range(items, ProgressItem),
+		html.Range(items, progressItem),
 	)
 }
 
-// ProgressItem renders a single progress item with
+// progressItem renders a single progress item with
 // description, status, ETA, and a progress bar.
-func ProgressItem(pi *progress.Item) html.Node {
+func progressItem(pi *progress.Item) html.Node {
 	if err := pi.Error(); err != nil {
 		return FlexCol(
 			Class(progressItemClass(pi)),

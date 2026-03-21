@@ -99,12 +99,12 @@ func appDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node 
 }
 
 func appDownloadsStreamItem(dl *model.DownloadHead) html.Node {
-	return DownloadListItem(dl)
+	return downloadListItem(dl)
 }
 
-// DownloadListItem renders a single download as a clickable link.
+// downloadListItem renders a single download as a clickable link.
 // Shared by the series, movie, and download views.
-func DownloadListItem(dl *model.DownloadHead) html.Node {
+func downloadListItem(dl *model.DownloadHead) html.Node {
 	return html.Div(
 		attr.Class("v-media-download-item"),
 	)(
@@ -117,10 +117,10 @@ func DownloadListItem(dl *model.DownloadHead) html.Node {
 	)
 }
 
-// AddTorrentButton renders a file-upload form for adding a
+// addTorrentButton renders a file-upload form for adding a
 // torrent to an edition.
 // Shared by the series and movie edit views.
-func AddTorrentButton(inputName, inputValue string) html.Node {
+func addTorrentButton(inputName, inputValue string) html.Node {
 	return html.Form(
 		attr.Class("v-media-torrent-form"),
 		attr.Method("POST"),
