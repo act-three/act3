@@ -189,7 +189,7 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string,
 	return slug + "-" + id, nil
 }
 
-func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesHead, error) {
+func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesWork, error) {
 	id64 := int64(show.ID)
 
 	srID := "sr" + flurry.NewID()
@@ -220,21 +220,28 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesH
 	if err != nil {
 		return nil, err
 	}
-	srh := &SeriesHead{srData}
-	err = tx.addTask(ctx, taskFetchEpisodes, strconv.FormatInt(id64, 10))
+	sedData, err := tx.SeriesEditionCreate(ctx, AirDate, srID)
+	if err != nil {
+		return nil, err
+	}
+	err = tx.addTask(ctx, taskFetchEpisodes,
+		strconv.FormatInt(id64, 10), sedData.ID)
 	if err != nil {
 		return nil, err
 	}
 	for _, g := range show.Genres {
 		err := tx.q.SeriesGenreAdd(ctx, schema.SeriesGenreAddParams{
-			SeriesID:  srh.sr.ID,
+			SeriesID:  srID,
 			GenreName: g,
 		})
 		if err != nil {
 			return nil, err
 		}
 	}
-	return srh, nil
+	return &SeriesWork{
+		SeriesHead:        SeriesHead{srData},
+		SeriesEditionHead: SeriesEditionHead{sedData},
+	}, nil
 }
 
 func (tx *TxR) SeriesBySlug(ctx Context, slug string) (*Series, error) {
