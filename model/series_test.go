@@ -72,22 +72,13 @@ func TestNewSeries(t *testing.T) {
 			t.Errorf("expected summary 'A test series', got '%s'", sr.Summary())
 		}
 
-		// Verify edition mapping by ID
-		ed := sr.soByID["edition-1"]
+		// Verify edition lookup by title
+		ed := sr.EditionByTitle("Original")
 		if ed == nil {
-			t.Fatal("expected edition with ID 'edition-1' to exist")
-		}
-		if ed.Title() != "Original" {
-			t.Errorf("expected edition title 'Original', got '%s'", ed.Title())
-		}
-
-		// Verify edition mapping by title
-		edByTitle := sr.soByTitle["Original"]
-		if edByTitle == nil {
 			t.Fatal("expected edition with title 'Original' to exist")
 		}
-		if edByTitle.ID() != "edition-1" {
-			t.Errorf("expected edition ID 'edition-1', got '%s'", edByTitle.ID())
+		if ed.ID() != "edition-1" {
+			t.Errorf("expected edition ID 'edition-1', got '%s'", ed.ID())
 		}
 	})
 
@@ -126,24 +117,13 @@ func TestNewSeries(t *testing.T) {
 		sr := newSeries(srData, seds, sns, nil, nil, noProgress, nil)
 
 		// Verify both editions exist
-		if len(sr.soByID) != 2 {
-			t.Errorf("expected 2 editions, got %d", len(sr.soByID))
+		if len(sr.editions) != 2 {
+			t.Errorf("expected 2 editions, got %d", len(sr.editions))
 		}
-		if len(sr.soByTitle) != 2 {
-			t.Errorf("expected 2 editions by title, got %d", len(sr.soByTitle))
-		}
-
-		// Verify specific editions
-		if sr.soByID["edition-1"] == nil {
-			t.Error("expected edition-1 to exist")
-		}
-		if sr.soByID["edition-2"] == nil {
-			t.Error("expected edition-2 to exist")
-		}
-		if sr.soByTitle["Original"] == nil {
+		if sr.EditionByTitle("Original") == nil {
 			t.Error("expected 'Original' edition to exist")
 		}
-		if sr.soByTitle["Director's Cut"] == nil {
+		if sr.EditionByTitle("Director's Cut") == nil {
 			t.Error("expected 'Director's Cut' edition to exist")
 		}
 	})
@@ -159,11 +139,8 @@ func TestNewSeries(t *testing.T) {
 		if sr.ID() != "series-3" {
 			t.Errorf("expected series ID 'series-3', got '%s'", sr.ID())
 		}
-		if len(sr.soByID) != 0 {
-			t.Errorf("expected 0 editions, got %d", len(sr.soByID))
-		}
-		if len(sr.soByTitle) != 0 {
-			t.Errorf("expected 0 editions by title, got %d", len(sr.soByTitle))
+		if len(sr.editions) != 0 {
+			t.Errorf("expected 0 editions, got %d", len(sr.editions))
 		}
 	})
 
@@ -207,8 +184,8 @@ func TestNewSeries(t *testing.T) {
 		sr := newSeries(srData, seds, sns, nil, nil, noProgress, nil)
 
 		// Verify editions exist
-		ed1 := sr.soByID["edition-1"]
-		ed2 := sr.soByID["edition-2"]
+		ed1 := sr.EditionByTitle("Edition 1")
+		ed2 := sr.EditionByTitle("Edition 2")
 
 		if ed1 == nil {
 			t.Fatal("expected edition-1 to exist")
@@ -287,7 +264,7 @@ func TestSeriesEditionByTitle(t *testing.T) {
 }
 
 func TestSeriesEditionSeq(t *testing.T) {
-	t.Run("iterates editions in sorted order by title", func(t *testing.T) {
+	t.Run("iterates editions in insertion order", func(t *testing.T) {
 		srData := schema.Series{
 			ID:    "series-1",
 			Title: "Test Series",
@@ -318,7 +295,7 @@ func TestSeriesEditionSeq(t *testing.T) {
 			titles = append(titles, ed.Title())
 		}
 
-		expected := []string{"Alpha Edition", "Beta Edition", "Zebra Edition"}
+		expected := []string{"Zebra Edition", "Alpha Edition", "Beta Edition"}
 		if len(titles) != len(expected) {
 			t.Fatalf("expected %d editions, got %d", len(expected), len(titles))
 		}

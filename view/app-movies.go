@@ -225,7 +225,7 @@ func appMoviesDetailEdition(
 }
 
 func appMoviesEditionList(mo *model.Movie) html.Node {
-	return FlexCol()(
+	return FlexCol(Gap4)(
 		html.RangeSeq(mo.MovieEditionSeq(), func(med *model.MovieEdition) html.Node {
 			return Card(
 				CardSurface,
@@ -239,6 +239,13 @@ func appMoviesEditionList(mo *model.Movie) html.Node {
 				),
 			)
 		}),
+		html.Form(
+			attr.Method("POST"),
+			attr.Action("/-/do/add-movie-edition"),
+		)(
+			html.Input(attr.Type("hidden"), attr.Name("movie-id"), attr.Value(mo.ID())),
+			Button(ButtonSurface, ButtonSize2)(Text("Add Edition")),
+		),
 	)
 }
 

@@ -206,8 +206,9 @@ func (tx *TxRW) generateSeriesEditionSlug(ctx Context, title, seriesID string) (
 	if err != nil {
 		return "", false, err
 	}
+	base := slug
 	for i := 2; n > 0; i++ {
-		slug = fmt.Sprintf("%s-%d", slug, i)
+		slug = fmt.Sprintf("%s-%d", base, i)
 		n, err = tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
 			SeriesID: seriesID,
 			Slug:     &slug,

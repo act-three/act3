@@ -54,9 +54,7 @@ func (mo *MovieHead) YearDisplay() string {
 // Movie is the full representation with editions and their videos.
 type Movie struct {
 	MovieHead
-	editions  []*MovieEdition
-	edByID    map[string]*MovieEdition
-	edByTitle map[string]*MovieEdition
+	editions []*MovieEdition
 }
 
 func newMovie(
@@ -66,14 +64,10 @@ func newMovie(
 ) *Movie {
 	mo := &Movie{
 		MovieHead: MovieHead{moData},
-		edByID:    map[string]*MovieEdition{},
-		edByTitle: map[string]*MovieEdition{},
 	}
 	for _, medData := range meds {
 		med := newMovieEdition(&mo.MovieHead, medData, videosByEditionID)
 		mo.editions = append(mo.editions, med)
-		mo.edByID[med.ID()] = med
-		mo.edByTitle[med.Title()] = med
 	}
 	return mo
 }
@@ -82,7 +76,12 @@ func (mo *Movie) EditionByTitle(title string) *MovieEdition {
 	if mo == nil {
 		return nil
 	}
-	return mo.edByTitle[title]
+	for _, med := range mo.editions {
+		if med.Title() == title {
+			return med
+		}
+	}
+	return nil
 }
 
 func (mo *Movie) MovieEditionSeq() iter.Seq[*MovieEdition] {

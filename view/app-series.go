@@ -101,7 +101,7 @@ func appSeriesSearchbar() html.Node {
 }
 
 func appSeriesEditionList(sr *model.Series) html.Node {
-	return FlexCol()(
+	return FlexCol(Gap4)(
 		html.RangeSeq(sr.SeriesEditionSeq(), func(sed *model.SeriesEdition) html.Node {
 			return Card(
 				CardSurface,
@@ -115,6 +115,13 @@ func appSeriesEditionList(sr *model.Series) html.Node {
 				),
 			)
 		}),
+		html.Form(
+			attr.Method("POST"),
+			attr.Action("/-/do/add-series-edition"),
+		)(
+			html.Input(attr.Type("hidden"), attr.Name("series-id"), attr.Value(sr.ID())),
+			Button(ButtonSurface, ButtonSize2)(Text("Add Edition")),
+		),
 	)
 }
 

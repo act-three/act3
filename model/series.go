@@ -2,8 +2,6 @@ package model
 
 import (
 	"iter"
-	"log/slog"
-	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -46,9 +44,8 @@ func (sr *SeriesHead) EditURL() string {
 
 type Series struct {
 	SeriesHead
-	soByID    map[string]*SeriesEdition
-	soByTitle map[string]*SeriesEdition
-	epByID    map[string]*Episode
+	editions []*SeriesEdition
+	epByID   map[string]*Episode
 }
 
 func newSeries(
@@ -62,8 +59,6 @@ func newSeries(
 ) *Series {
 	sr := &Series{
 		SeriesHead: SeriesHead{srData},
-		soByID:     map[string]*SeriesEdition{},
-		soByTitle:  map[string]*SeriesEdition{},
 		epByID:     map[string]*Episode{},
 	}
 
@@ -79,9 +74,7 @@ func newSeries(
 	for _, soData := range seds {
 		sns := snByEditionID[soData.ID]
 		sed := newSeriesEdition(&sr.SeriesHead, soData, sns, snepBySeasonID, epByID, progByEpisodeID, videosByEpisodeID)
-		sr.soByID[sed.ID()] = sed
-		sr.soByTitle[sed.Title()] = sed
-		slog.Debug("loaded series edition", "id", sed.ID(), "title", sed.Title())
+		sr.editions = append(sr.editions, sed)
 	}
 	return sr
 }
@@ -90,19 +83,16 @@ func (sr *Series) EditionByTitle(title string) *SeriesEdition {
 	if sr == nil {
 		return nil
 	}
-	return sr.soByTitle[title]
+	for _, sed := range sr.editions {
+		if sed.Title() == title {
+			return sed
+		}
+	}
+	return nil
 }
 
 func (sr *Series) SeriesEditionSeq() iter.Seq[*SeriesEdition] {
-	names := slices.Collect(maps.Keys(sr.soByTitle))
-	slices.Sort(names)
-	return func(yield func(*SeriesEdition) bool) {
-		for _, name := range names {
-			if !yield(sr.soByTitle[name]) {
-				return
-			}
-		}
-	}
+	return slices.Values(sr.editions)
 }
 
 func (tx *TxR) SeriesHeadList(ctx Context) ([]*SeriesHead, error) {

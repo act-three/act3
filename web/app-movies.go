@@ -64,6 +64,22 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 	})
 }
 
+func (c *Config) doAddMovieEdition(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		movieID := req.FormValue("movie-id")
+		if movieID == "" {
+			return nil, &model.ValidationError{Op: "add movie edition", Err: errNotFound}
+		}
+		_, err := tx.MovieEditionCreate(ctx, "New Edition", movieID)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doAddMovie(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
