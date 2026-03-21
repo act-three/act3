@@ -28,14 +28,14 @@ go build ./... # avoids littering `act3` build artifact
 go test ./...
 go test ./model/...
 go generate ./... # handled by hooks; usually don't need to run explicitly
-./mk deploy
 ```
 
 The project uses `encoding/json/v2`,
 and the environment carries `GOEXPERIMENT=jsonv2`.
 (No need to explicitly specify `-tags goexperiment.jsonv2`.)
 
-Run locally: `go run . [-v] [-listen :4444]`
+Run locally: use act3-mcp server to start, reload, and stop the server.
+These tools will compile and properly run and kill the dev server.
 
 A Playwright MCP is configured to connect to a local Chrome instance
 via CDP. Use it to visually verify UI changes in the running app —
@@ -108,6 +108,7 @@ main.go
 - Standard library style — no frameworks, concrete types, explicit error
   handling
 - Prefer table-driven tests where it makes sense
+- Use gopls MCP server where possible: renaming symbols etc
 - Error handling uses `kr.dev/errorfmt` with `defer
   errorfmt.Handlef("context: %w", &err)`
 - Structured logging via `log/slog` with context-aware `logcontext`
