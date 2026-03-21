@@ -45,7 +45,8 @@ export default class extends Controller {
 			return;
 		}
 		for (const t of this.itemTargets) {
-			if (t.getAttribute("data-list-url-param") === path) {
+			const url = t.getAttribute("data-list-url-param");
+			if (path === url || path.startsWith(url + "/")) {
 				this.selectedValue = [t.getAttribute("data-list-id-param")];
 				return;
 			}

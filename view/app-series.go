@@ -82,7 +82,7 @@ func AppSeriesDetail(
 			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
-				appSeriesEditionList(sr),
+				appSeriesEditionList(sr, sed),
 				FlexRow(Gap2)(
 					html.Img(),
 					FlexCol(Gap4, Class("v-media-detail-body"))(
@@ -100,13 +100,18 @@ func appSeriesSearchbar() html.Node {
 	return html.Text("appSeriesSearchbar")
 }
 
-func appSeriesEditionList(sr *model.Series) html.Node {
+func appSeriesEditionList(sr *model.Series, current *model.SeriesEdition) html.Node {
 	return FlexCol(Gap4)(
 		html.RangeSeq(sr.SeriesEditionSeq(), func(sed *model.SeriesEdition) html.Node {
+			selected := attr.Group()
+			if current != nil && sed.ID() == current.ID() {
+				selected = CardSelected
+			}
 			return Card(
 				CardSurface,
 				CardSize3,
 				attr.Href(sed.EditURL()),
+				selected,
 			)(
 				CardContent()(
 					CardTitle()(

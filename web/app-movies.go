@@ -2,7 +2,6 @@ package web
 
 import (
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -37,13 +36,15 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		edTitle := req.FormValue("edition")
-		if edTitle == "" {
-			edTitle = model.DefaultEdition
+		var med *model.MovieEdition
+		if edSlug := req.PathValue("edslug"); edSlug != "" {
+			med = mo.EditionBySlug(edSlug)
+		} else {
+			med = mo.DefaultEdition()
 		}
-		med := mo.EditionByTitle(edTitle)
 		if med == nil {
-			return nil, fmt.Errorf("unknown edition: %s", edTitle)
+			http.Redirect(w, req, mo.EditURL(), http.StatusSeeOther)
+			return nil, nil
 		}
 
 		dls, err := tx.DownloadHeadListByMovieEditionID(ctx, med.ID())

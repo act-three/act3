@@ -75,7 +75,7 @@ func AppMoviesDetail(
 			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
-				appMoviesEditionList(mo),
+				appMoviesEditionList(mo, med),
 				FlexRow(Gap2)(
 					expr.IfElse(mo.ImageURL() != "",
 						func() html.Node {
@@ -224,13 +224,18 @@ func appMoviesDetailEdition(
 	)
 }
 
-func appMoviesEditionList(mo *model.Movie) html.Node {
+func appMoviesEditionList(mo *model.Movie, current *model.MovieEdition) html.Node {
 	return FlexCol(Gap4)(
 		html.RangeSeq(mo.MovieEditionSeq(), func(med *model.MovieEdition) html.Node {
+			selected := attr.Group()
+			if current != nil && med.ID() == current.ID() {
+				selected = CardSelected
+			}
 			return Card(
 				CardSurface,
 				CardSize3,
 				attr.Href(med.EditURL()),
+				selected,
 			)(
 				CardContent()(
 					CardTitle()(

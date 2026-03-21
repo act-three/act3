@@ -2,7 +2,6 @@ package web
 
 import (
 	"database/sql"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -38,13 +37,15 @@ func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		orderBy := req.FormValue("orderBy")
-		if orderBy == "" {
-			orderBy = model.AirDate
+		var sed *model.SeriesEdition
+		if edSlug := req.PathValue("edslug"); edSlug != "" {
+			sed = sr.EditionBySlug(edSlug)
+		} else {
+			sed = sr.DefaultEdition()
 		}
-		sed := sr.EditionByTitle(orderBy)
 		if sed == nil {
-			return nil, fmt.Errorf("unknown edition name: %s", orderBy)
+			http.Redirect(w, req, sr.EditURL(), http.StatusSeeOther)
+			return nil, nil
 		}
 
 		dls, err := tx.DownloadHeadListBySeriesEditionID(ctx, sed.ID())

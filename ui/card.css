@@ -10,6 +10,10 @@
 	background-color: color-mix(in oklch, var(--bg-input) 70%, transparent);
 	box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
+.u-card[data-variant="surface"][data-selected] {
+	background-color: var(--accent-surface);
+	box-shadow: inset 0 0 0 1px var(--accent-bold);
+}
 
 /* classic variant */
 .u-card[data-variant="classic"] {

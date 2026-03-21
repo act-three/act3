@@ -84,6 +84,30 @@ func (mo *Movie) EditionByTitle(title string) *MovieEdition {
 	return nil
 }
 
+func (mo *Movie) DefaultEdition() *MovieEdition {
+	if mo == nil {
+		return nil
+	}
+	for _, med := range mo.editions {
+		if med.med.IsDefault != nil {
+			return med
+		}
+	}
+	return nil
+}
+
+func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
+	if mo == nil {
+		return nil
+	}
+	for _, med := range mo.editions {
+		if med.med.Slug != nil && *med.med.Slug == slug {
+			return med
+		}
+	}
+	return nil
+}
+
 func (mo *Movie) MovieEditionSeq() iter.Seq[*MovieEdition] {
 	return movieEditionSeq(mo.editions)
 }

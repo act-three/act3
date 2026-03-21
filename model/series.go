@@ -91,6 +91,30 @@ func (sr *Series) EditionByTitle(title string) *SeriesEdition {
 	return nil
 }
 
+func (sr *Series) DefaultEdition() *SeriesEdition {
+	if sr == nil {
+		return nil
+	}
+	for _, sed := range sr.editions {
+		if sed.sed.IsDefault != nil {
+			return sed
+		}
+	}
+	return nil
+}
+
+func (sr *Series) EditionBySlug(slug string) *SeriesEdition {
+	if sr == nil {
+		return nil
+	}
+	for _, sed := range sr.editions {
+		if sed.sed.Slug != nil && *sed.sed.Slug == slug {
+			return sed
+		}
+	}
+	return nil
+}
+
 func (sr *Series) SeriesEditionSeq() iter.Seq[*SeriesEdition] {
 	return slices.Values(sr.editions)
 }
