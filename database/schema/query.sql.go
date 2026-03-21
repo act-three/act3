@@ -994,48 +994,30 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 }
 
 const movieEditionCreate = `-- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, Slug, IsDefault, MovieID) VALUES (?, ?, ?, ?)
-RETURNING id, movieid, slug, isdefault, title
+INSERT INTO MovieEdition (Title, Slug, MovieID) VALUES (?, ?, ?)
+RETURNING id, movieid, slug, title
 `
 
 type MovieEditionCreateParams struct {
-	Title     string
-	Slug      *string
-	IsDefault *int64
-	MovieID   string
+	Title   string
+	Slug    string
+	MovieID string
 }
 
 func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreateParams) (MovieEdition, error) {
-	row := q.db.QueryRowContext(ctx, movieEditionCreate,
-		arg.Title,
-		arg.Slug,
-		arg.IsDefault,
-		arg.MovieID,
-	)
+	row := q.db.QueryRowContext(ctx, movieEditionCreate, arg.Title, arg.Slug, arg.MovieID)
 	var i MovieEdition
 	err := row.Scan(
 		&i.ID,
 		&i.MovieID,
 		&i.Slug,
-		&i.IsDefault,
 		&i.Title,
 	)
 	return i, err
 }
 
-const movieEditionDefaultExists = `-- name: MovieEditionDefaultExists :one
-SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND IsDefault = 1
-`
-
-func (q *Queries) MovieEditionDefaultExists(ctx context.Context, movieid string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, movieEditionDefaultExists, movieid)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const movieEditionGet = `-- name: MovieEditionGet :one
-SELECT id, movieid, slug, isdefault, title FROM MovieEdition WHERE ID = ?
+SELECT id, movieid, slug, title FROM MovieEdition WHERE ID = ?
 `
 
 func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition, error) {
@@ -1045,14 +1027,13 @@ func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition,
 		&i.ID,
 		&i.MovieID,
 		&i.Slug,
-		&i.IsDefault,
 		&i.Title,
 	)
 	return i, err
 }
 
 const movieEditionListByMovieID = `-- name: MovieEditionListByMovieID :many
-SELECT id, movieid, slug, isdefault, title FROM MovieEdition WHERE MovieID = ?
+SELECT id, movieid, slug, title FROM MovieEdition WHERE MovieID = ?
 `
 
 func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string) ([]MovieEdition, error) {
@@ -1068,7 +1049,6 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 			&i.ID,
 			&i.MovieID,
 			&i.Slug,
-			&i.IsDefault,
 			&i.Title,
 		); err != nil {
 			return nil, err
@@ -1090,7 +1070,7 @@ SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?
 
 type MovieEditionSlugExistsParams struct {
 	MovieID string
-	Slug    *string
+	Slug    string
 }
 
 func (q *Queries) MovieEditionSlugExists(ctx context.Context, arg MovieEditionSlugExistsParams) (int64, error) {
@@ -2155,48 +2135,30 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 }
 
 const seriesEditionCreate = `-- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Title, Slug, IsDefault, SeriesID) VALUES (?, ?, ?, ?)
-RETURNING id, seriesid, slug, isdefault, title
+INSERT INTO SeriesEdition (Title, Slug, SeriesID) VALUES (?, ?, ?)
+RETURNING id, seriesid, slug, title
 `
 
 type SeriesEditionCreateParams struct {
-	Title     string
-	Slug      *string
-	IsDefault *int64
-	SeriesID  string
+	Title    string
+	Slug     string
+	SeriesID string
 }
 
 func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCreateParams) (SeriesEdition, error) {
-	row := q.db.QueryRowContext(ctx, seriesEditionCreate,
-		arg.Title,
-		arg.Slug,
-		arg.IsDefault,
-		arg.SeriesID,
-	)
+	row := q.db.QueryRowContext(ctx, seriesEditionCreate, arg.Title, arg.Slug, arg.SeriesID)
 	var i SeriesEdition
 	err := row.Scan(
 		&i.ID,
 		&i.SeriesID,
 		&i.Slug,
-		&i.IsDefault,
 		&i.Title,
 	)
 	return i, err
 }
 
-const seriesEditionDefaultExists = `-- name: SeriesEditionDefaultExists :one
-SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND IsDefault = 1
-`
-
-func (q *Queries) SeriesEditionDefaultExists(ctx context.Context, seriesid string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, seriesEditionDefaultExists, seriesid)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
 const seriesEditionGet = `-- name: SeriesEditionGet :one
-SELECT id, seriesid, slug, isdefault, title FROM SeriesEdition WHERE ID = ?
+SELECT id, seriesid, slug, title FROM SeriesEdition WHERE ID = ?
 `
 
 func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEdition, error) {
@@ -2206,14 +2168,13 @@ func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEditio
 		&i.ID,
 		&i.SeriesID,
 		&i.Slug,
-		&i.IsDefault,
 		&i.Title,
 	)
 	return i, err
 }
 
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
-SELECT id, seriesid, slug, isdefault, title FROM SeriesEdition WHERE SeriesID = ?
+SELECT id, seriesid, slug, title FROM SeriesEdition WHERE SeriesID = ?
 `
 
 func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid string) ([]SeriesEdition, error) {
@@ -2229,7 +2190,6 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 			&i.ID,
 			&i.SeriesID,
 			&i.Slug,
-			&i.IsDefault,
 			&i.Title,
 		); err != nil {
 			return nil, err
@@ -2251,7 +2211,7 @@ SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?
 
 type SeriesEditionSlugExistsParams struct {
 	SeriesID string
-	Slug     *string
+	Slug     string
 }
 
 func (q *Queries) SeriesEditionSlugExists(ctx context.Context, arg SeriesEditionSlugExistsParams) (int64, error) {

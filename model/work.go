@@ -1,6 +1,8 @@
 package model
 
-import "slices"
+import (
+	"slices"
+)
 
 // Work represents either a movie or a series — the common
 // fields needed to display both in a unified list.

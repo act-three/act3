@@ -1,14 +1,12 @@
 package model
 
 import (
-	"fmt"
 	"iter"
 	"path"
 	"slices"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
-	"ily.dev/act3/xstrings"
 )
 
 const (
@@ -160,62 +158,39 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 }
 
 func (sed *SeriesEdition) EditURL() string {
-	if sed.sed.IsDefault != nil {
+	if sed.sed.Slug == "" {
 		return sed.sr.EditURL()
 	}
 	return path.Join(
 		sed.sr.EditURL(),
-		*sed.sed.Slug,
+		sed.sed.Slug,
 	)
 }
 
 func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID string) (schema.SeriesEdition, error) {
-	slug, isDefault, err := tx.generateSeriesEditionSlug(ctx, title, seriesID)
+	slug, err := tx.generateSeriesEditionSlug(ctx, title, seriesID)
 	if err != nil {
 		return schema.SeriesEdition{}, err
 	}
-	p := schema.SeriesEditionCreateParams{
+	return tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
 		Title:    title,
+		Slug:     slug,
 		SeriesID: seriesID,
-	}
-	if slug != "" {
-		p.Slug = &slug
-	}
-	if isDefault {
-		p.IsDefault = new(int64(1))
-	}
-	return tx.q.SeriesEditionCreate(ctx, p)
+	})
 }
 
-func (tx *TxRW) generateSeriesEditionSlug(ctx Context, title, seriesID string) (slug string, isDefault bool, err error) {
-	n, err := tx.q.SeriesEditionDefaultExists(ctx, seriesID)
-	if err != nil {
-		return "", false, err
-	}
-	if n == 0 {
-		return "", true, nil
-	}
-	slug = xstrings.ToSlug(title)
-	if slug == "" {
-		slug = "edition"
-	}
-	n, err = tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
-		SeriesID: seriesID,
-		Slug:     &slug,
-	})
-	if err != nil {
-		return "", false, err
-	}
-	base := slug
-	for i := 2; n > 0; i++ {
-		slug = fmt.Sprintf("%s-%d", base, i)
-		n, err = tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
+func (tx *TxRW) generateSeriesEditionSlug(ctx Context, title, seriesID string) (string, error) {
+	for slug := range editionSlugCandidates(title) {
+		n, err := tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
 			SeriesID: seriesID,
-			Slug:     &slug,
+			Slug:     slug,
 		})
 		if err != nil {
-			return "", false, err
+			return "", err
+		}
+		if n == 0 {
+			return slug, nil
 		}
 	}
-	return slug, false, nil
+	panic("unreachable")
 }

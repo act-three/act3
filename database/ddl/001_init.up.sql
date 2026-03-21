@@ -52,13 +52,9 @@ CREATE TABLE SeriesEdition
 (
 	ID        TEXT PRIMARY KEY DEFAULT ('sed'||newID()),
 	SeriesID  TEXT NOT NULL REFERENCES Series,
-	Slug      TEXT,
-	IsDefault INTEGER,
+	Slug      TEXT NOT NULL DEFAULT (''),
 	Title     TEXT NOT NULL,
-	UNIQUE (SeriesID, Slug),
-	UNIQUE (SeriesID, IsDefault),
-	CHECK (IsDefault IS NULL OR IsDefault = 1),
-	CHECK (Slug NOT NULL OR IsDefault NOT NULL)
+	UNIQUE (SeriesID, Slug)
 )
 STRICT;
 
@@ -128,13 +124,9 @@ CREATE TABLE MovieEdition
 (
 	ID      TEXT PRIMARY KEY DEFAULT ('med'||newID()),
 	MovieID TEXT NOT NULL REFERENCES Movie,
-	Slug    TEXT,
-	IsDefault INTEGER,
+	Slug    TEXT NOT NULL DEFAULT (''),
 	Title   TEXT NOT NULL,
-	UNIQUE (MovieID, Slug),
-	UNIQUE (MovieID, IsDefault),
-	CHECK (IsDefault IS NULL OR IsDefault = 1),
-	CHECK (Slug NOT NULL OR IsDefault NOT NULL)
+	UNIQUE (MovieID, Slug)
 )
 STRICT;
 

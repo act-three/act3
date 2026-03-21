@@ -1,14 +1,12 @@
 package model
 
 import (
-	"fmt"
 	"iter"
 	"path"
 	"slices"
 	"strings"
 
 	"ily.dev/act3/database/schema"
-	"ily.dev/act3/xstrings"
 )
 
 const (
@@ -48,12 +46,12 @@ func (med *MovieEdition) Videos() []*Video      { return med.videos }
 func (med *MovieEdition) MovieHead() *MovieHead { return med.mo }
 
 func (med *MovieEdition) EditURL() string {
-	if med.med.IsDefault != nil {
+	if med.med.Slug == "" {
 		return med.mo.EditURL()
 	}
 	return path.Join(
 		med.mo.EditURL(),
-		*med.med.Slug,
+		med.med.Slug,
 	)
 }
 
@@ -100,58 +98,35 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 }
 
 func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string) (*MovieEditionHead, error) {
-	slug, isDefault, err := tx.generateMovieEditionSlug(ctx, title, movieID)
+	slug, err := tx.generateMovieEditionSlug(ctx, title, movieID)
 	if err != nil {
 		return nil, err
 	}
-	p := schema.MovieEditionCreateParams{
+	medData, err := tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
 		Title:   title,
+		Slug:    slug,
 		MovieID: movieID,
-	}
-	if slug != "" {
-		p.Slug = &slug
-	}
-	if isDefault {
-		p.IsDefault = new(int64(1))
-	}
-	medData, err := tx.q.MovieEditionCreate(ctx, p)
+	})
 	if err != nil {
 		return nil, err
 	}
 	return &MovieEditionHead{medData}, nil
 }
 
-func (tx *TxRW) generateMovieEditionSlug(ctx Context, title, movieID string) (slug string, isDefault bool, err error) {
-	n, err := tx.q.MovieEditionDefaultExists(ctx, movieID)
-	if err != nil {
-		return "", false, err
-	}
-	if n == 0 {
-		return "", true, nil
-	}
-	slug = xstrings.ToSlug(title)
-	if slug == "" {
-		slug = "edition"
-	}
-	n, err = tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{
-		MovieID: movieID,
-		Slug:    &slug,
-	})
-	if err != nil {
-		return "", false, err
-	}
-	base := slug
-	for i := 2; n > 0; i++ {
-		slug = fmt.Sprintf("%s-%d", base, i)
-		n, err = tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{
+func (tx *TxRW) generateMovieEditionSlug(ctx Context, title, movieID string) (string, error) {
+	for slug := range editionSlugCandidates(title) {
+		n, err := tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{
 			MovieID: movieID,
-			Slug:    &slug,
+			Slug:    slug,
 		})
 		if err != nil {
-			return "", false, err
+			return "", err
+		}
+		if n == 0 {
+			return slug, nil
 		}
 	}
-	return slug, false, nil
+	panic("unreachable")
 }
 
 // vidMapByMovieEditionID groups videos by their movie edition ID.
@@ -171,8 +146,8 @@ func movieEditionSeq(meds []*MovieEdition) iter.Seq[*MovieEdition] {
 	sorted := slices.Clone(meds)
 	slices.SortFunc(sorted, func(a, b *MovieEdition) int {
 		// Pin the default edition first.
-		aDefault := a.Title() == DefaultEdition
-		bDefault := b.Title() == DefaultEdition
+		aDefault := a.med.Slug == ""
+		bDefault := b.med.Slug == ""
 		if aDefault != bDefault {
 			if aDefault {
 				return -1

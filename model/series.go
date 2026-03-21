@@ -96,7 +96,7 @@ func (sr *Series) DefaultEdition() *SeriesEdition {
 		return nil
 	}
 	for _, sed := range sr.editions {
-		if sed.sed.IsDefault != nil {
+		if sed.sed.Slug == "" {
 			return sed
 		}
 	}
@@ -108,7 +108,7 @@ func (sr *Series) EditionBySlug(slug string) *SeriesEdition {
 		return nil
 	}
 	for _, sed := range sr.editions {
-		if sed.sed.Slug != nil && *sed.sed.Slug == slug {
+		if sed.sed.Slug == slug {
 			return sed
 		}
 	}

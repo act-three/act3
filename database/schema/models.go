@@ -67,11 +67,10 @@ type Movie struct {
 }
 
 type MovieEdition struct {
-	ID        string
-	MovieID   string
-	Slug      *string
-	IsDefault *int64
-	Title     string
+	ID      string
+	MovieID string
+	Slug    string
+	Title   string
 }
 
 type MovieVideo struct {
@@ -147,11 +146,10 @@ type Series struct {
 }
 
 type SeriesEdition struct {
-	ID        string
-	SeriesID  string
-	Slug      *string
-	IsDefault *int64
-	Title     string
+	ID       string
+	SeriesID string
+	Slug     string
+	Title    string
 }
 
 type Seriesgenre struct {

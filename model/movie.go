@@ -89,7 +89,7 @@ func (mo *Movie) DefaultEdition() *MovieEdition {
 		return nil
 	}
 	for _, med := range mo.editions {
-		if med.med.IsDefault != nil {
+		if med.med.Slug == "" {
 			return med
 		}
 	}
@@ -101,7 +101,7 @@ func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
 		return nil
 	}
 	for _, med := range mo.editions {
-		if med.med.Slug != nil && *med.med.Slug == slug {
+		if med.med.Slug == slug {
 			return med
 		}
 	}
