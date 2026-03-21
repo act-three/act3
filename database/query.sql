@@ -192,6 +192,9 @@ SELECT * FROM MovieEdition WHERE ID = ?;
 -- name: MovieEditionListByMovieID :many
 SELECT * FROM MovieEdition WHERE MovieID = ?;
 
+-- name: MovieEditionListDefault :many
+SELECT * FROM MovieEdition WHERE Slug = '';
+
 -- name: MovieEditionSlugExists :one
 SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?;
 
@@ -389,6 +392,9 @@ SELECT * FROM SeriesEdition WHERE ID = ?;
 
 -- name: SeriesEditionListBySeriesID :many
 SELECT * FROM SeriesEdition WHERE SeriesID = ?;
+
+-- name: SeriesEditionListDefault :many
+SELECT * FROM SeriesEdition WHERE Slug = '';
 
 -- name: SeriesEditionSlugExists :one
 SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?;

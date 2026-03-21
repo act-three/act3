@@ -7,7 +7,7 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func Home(works []*model.Work) html.Node {
+func Home(works []model.Work) html.Node {
 	var washURLs []string
 	for _, w := range works {
 		if w.ImageURL() != "" {
@@ -33,7 +33,7 @@ func Home(works []*model.Work) html.Node {
 	)
 }
 
-func workPosterLink(w *model.Work) html.Node {
+func workPosterLink(w model.Work) html.Node {
 	return Box(HoverOverlay, Class("v-home-poster"))(
 		html.A(
 			Class("v-home-poster-link"),

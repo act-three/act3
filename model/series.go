@@ -42,6 +42,17 @@ func (sr *SeriesHead) EditURL() string {
 	return "/app/series/" + sr.sr.Slug
 }
 
+// SeriesWork contains information needed to display
+// a concise representation of a series in UI.
+// It contains metadata about the series itself plus its default edition.
+type SeriesWork struct {
+	SeriesHead
+	SeriesEditionHead // the default edition
+}
+
+func (sw *SeriesWork) Title() string    { return sw.SeriesHead.Title() }
+func (sw *SeriesWork) ImageURL() string { return sw.TVmazeImageURL() }
+
 type Series struct {
 	SeriesHead
 	editions []*SeriesEdition
@@ -274,4 +285,31 @@ func (tx *TxR) seriesFromData(ctx Context, srData schema.Series) (*Series, error
 
 	sr := newSeries(srData, seds, sns, sneps, eps, tx.m.prog.List, videosByEpisodeID)
 	return sr, nil
+}
+
+func (tx *TxR) seriesWorkList(ctx Context) ([]*SeriesWork, error) {
+	editions, err := tx.q.SeriesEditionListDefault(ctx)
+	if err != nil {
+		return nil, err
+	}
+	series, err := tx.q.SeriesList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	edBySeriesID := make(map[string]schema.SeriesEdition, len(editions))
+	for _, ed := range editions {
+		edBySeriesID[ed.SeriesID] = ed
+	}
+	var works []*SeriesWork
+	for _, sr := range series {
+		ed, ok := edBySeriesID[sr.ID]
+		if !ok {
+			continue // no default edition; skip
+		}
+		works = append(works, &SeriesWork{
+			SeriesHead:        SeriesHead{sr},
+			SeriesEditionHead: SeriesEditionHead{ed},
+		})
+	}
+	return works, nil
 }

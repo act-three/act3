@@ -1064,6 +1064,38 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 	return items, nil
 }
 
+const movieEditionListDefault = `-- name: MovieEditionListDefault :many
+SELECT id, movieid, slug, title FROM MovieEdition WHERE Slug = ''
+`
+
+func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, error) {
+	rows, err := q.db.QueryContext(ctx, movieEditionListDefault)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MovieEdition
+	for rows.Next() {
+		var i MovieEdition
+		if err := rows.Scan(
+			&i.ID,
+			&i.MovieID,
+			&i.Slug,
+			&i.Title,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const movieEditionSlugExists = `-- name: MovieEditionSlugExists :one
 SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?
 `
@@ -2179,6 +2211,38 @@ SELECT id, seriesid, slug, title FROM SeriesEdition WHERE SeriesID = ?
 
 func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid string) ([]SeriesEdition, error) {
 	rows, err := q.db.QueryContext(ctx, seriesEditionListBySeriesID, seriesid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SeriesEdition
+	for rows.Next() {
+		var i SeriesEdition
+		if err := rows.Scan(
+			&i.ID,
+			&i.SeriesID,
+			&i.Slug,
+			&i.Title,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const seriesEditionListDefault = `-- name: SeriesEditionListDefault :many
+SELECT id, seriesid, slug, title FROM SeriesEdition WHERE Slug = ''
+`
+
+func (q *Queries) SeriesEditionListDefault(ctx context.Context) ([]SeriesEdition, error) {
+	rows, err := q.db.QueryContext(ctx, seriesEditionListDefault)
 	if err != nil {
 		return nil, err
 	}

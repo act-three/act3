@@ -51,6 +51,18 @@ func (mo *MovieHead) YearDisplay() string {
 	return ""
 }
 
+// MovieWork contains information needed to display
+// a concise representation of a movie in UI.
+// It contains metadata about the movie itself plus its default edition.
+type MovieWork struct {
+	MovieHead
+	MovieEditionHead // the default edition
+}
+
+func (mw *MovieWork) Title() string {
+	return mw.MovieHead.Title()
+}
+
 // Movie is the full representation with editions and their videos.
 type Movie struct {
 	MovieHead
@@ -312,4 +324,31 @@ func (tx *TxRW) generateMovieSlug(ctx Context, title string, year int64, id stri
 
 	// Last resort: slug-id.
 	return slug + "-" + id, nil
+}
+
+func (tx *TxR) movieWorkList(ctx Context) ([]*MovieWork, error) {
+	editions, err := tx.q.MovieEditionListDefault(ctx)
+	if err != nil {
+		return nil, err
+	}
+	movies, err := tx.q.MovieList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	edByMovieID := make(map[string]schema.MovieEdition, len(editions))
+	for _, ed := range editions {
+		edByMovieID[ed.MovieID] = ed
+	}
+	var works []*MovieWork
+	for _, mo := range movies {
+		ed, ok := edByMovieID[mo.ID]
+		if !ok {
+			continue // no default edition; skip
+		}
+		works = append(works, &MovieWork{
+			MovieHead:        MovieHead{mo},
+			MovieEditionHead: MovieEditionHead{ed},
+		})
+	}
+	return works, nil
 }

@@ -1,63 +1,39 @@
 package model
 
 import (
+	"cmp"
 	"slices"
 )
 
 // Work represents either a movie or a series — the common
 // fields needed to display both in a unified list.
-type Work struct {
-	title    string
-	imageURL string
-	playURL  string
-}
-
-func (w *Work) Title() string    { return w.title }
-func (w *Work) ImageURL() string { return w.imageURL }
-func (w *Work) PlayURL() string  { return w.playURL }
-
-func workFromSeries(sr *SeriesHead) *Work {
-	return &Work{
-		title:    sr.Title(),
-		imageURL: sr.TVmazeImageURL(),
-		playURL:  sr.PlayURL(),
-	}
-}
-
-func workFromMovie(mo *MovieHead) *Work {
-	return &Work{
-		title:    mo.Title(),
-		imageURL: mo.ImageURL(),
-		playURL:  mo.PlayURL(),
-	}
+type Work interface {
+	Title() string
+	ImageURL() string
+	PlayURL() string
 }
 
 // WorkList returns all movies and series as a unified list,
 // sorted by title.
-func (tx *TxR) WorkList(ctx Context) ([]*Work, error) {
-	series, err := tx.q.SeriesList(ctx)
+func (tx *TxR) WorkList(ctx Context) ([]Work, error) {
+	mws, err := tx.movieWorkList(ctx)
 	if err != nil {
 		return nil, err
 	}
-	movies, err := tx.q.MovieList(ctx)
+	sws, err := tx.seriesWorkList(ctx)
 	if err != nil {
 		return nil, err
 	}
-	works := make([]*Work, 0, len(series)+len(movies))
-	for i := range series {
-		works = append(works, workFromSeries(&SeriesHead{series[i]}))
+
+	works := make([]Work, 0, len(mws)+len(sws))
+	for _, mw := range mws {
+		works = append(works, mw)
 	}
-	for i := range movies {
-		works = append(works, workFromMovie(&MovieHead{movies[i]}))
+	for _, sw := range sws {
+		works = append(works, sw)
 	}
-	slices.SortFunc(works, func(a, b *Work) int {
-		if a.title < b.title {
-			return -1
-		}
-		if a.title > b.title {
-			return 1
-		}
-		return 0
+	slices.SortFunc(works, func(a, b Work) int {
+		return cmp.Compare(a.Title(), b.Title())
 	})
 	return works, nil
 }
