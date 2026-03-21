@@ -20,7 +20,7 @@ func (tx *TxR) WorkList(ctx Context) ([]Work, error) {
 	if err != nil {
 		return nil, err
 	}
-	sws, err := tx.seriesWorkList(ctx)
+	sws, err := tx.SeriesWorkList(ctx)
 	if err != nil {
 		return nil, err
 	}

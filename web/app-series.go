@@ -18,7 +18,7 @@ import (
 func (c *Config) appSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		all, err := tx.SeriesHeadList(ctx)
+		all, err := tx.SeriesWorkList(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -58,7 +58,7 @@ func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html
 			return view.PageFrame(sr.Title(), "detail", detail), nil
 		}
 
-		all, err := tx.SeriesHeadList(ctx)
+		all, err := tx.SeriesWorkList(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -189,7 +189,7 @@ func (c *Config) doAddSeries(_ http.ResponseWriter, req *http.Request) (html.Nod
 		return turbo.Frame("tvmaze-"+strconv.FormatInt(*ss.TVmazeID(), 10))(
 			view.SeriesResultLink(&ss.SeriesHead),
 			turbo.Prepend(view.AppSeriesListItems,
-				ListItems([]*model.SeriesHead{&ss.SeriesHead}, view.AppSeriesListItem),
+				ListItems([]*model.SeriesWork{ss}, view.AppSeriesListItem),
 			),
 		), nil
 	})

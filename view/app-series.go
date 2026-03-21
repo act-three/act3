@@ -19,7 +19,7 @@ const AppSeriesListItems = "series-list-items"
 
 func AppSeries(
 	title string,
-	s []*model.SeriesHead,
+	s []*model.SeriesWork,
 	detail ...html.Node,
 ) html.Node {
 	return app(title, FlexCol(attr.Class("v-media-page"))(
@@ -53,10 +53,10 @@ func AppSeries(
 	))
 }
 
-func AppSeriesListItem(ss *model.SeriesHead, attrs ...attr.Node) html.Node {
+func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
-		ListID(ss.ID()),
+		ListID(ss.SeriesHead.ID()),
 		ListURL(ss.EditURL()),
 	)(
 		CardMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),

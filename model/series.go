@@ -294,7 +294,7 @@ func (tx *TxR) seriesFromData(ctx Context, srData schema.Series) (*Series, error
 	return sr, nil
 }
 
-func (tx *TxR) seriesWorkList(ctx Context) ([]*SeriesWork, error) {
+func (tx *TxR) SeriesWorkList(ctx Context) ([]*SeriesWork, error) {
 	editions, err := tx.q.SeriesEditionListDefault(ctx)
 	if err != nil {
 		return nil, err
