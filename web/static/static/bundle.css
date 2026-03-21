@@ -1807,85 +1807,7 @@
 /* ui/ui.css */
 @layer components;
 
-/* view/base-app.css */
-@layer components {
-  .v-app {
-    isolation: isolate;
-    background-color: var(--bg);
-    display: flex;
-    min-height: 100svh;
-    height: 100svh;
-    width: 100%;
-  }
-  .v-app-main {
-    background-color: var(--bg-subtle);
-    position: relative;
-    flex: 1;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
-    margin: 0.5rem;
-    margin-inline-start: 0;
-    border-radius: 0.75rem;
-    border: 0.5px solid oklch(from var(--border) 0.21 c h);
-    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    overflow: hidden;
-  }
-  .v-app-main > * {
-    place-self: center;
-  }
-}
-
-/* view/base-browse.css */
-@layer components {
-  .v-media-container {
-    width: 100%;
-    max-width: 79.5rem;
-    padding-inline: 1.5rem;
-    margin-inline: auto;
-  }
-  .v-media-wash {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    filter: blur(64px) saturate(1.8);
-    opacity: 0.2;
-    scale: 1.1;
-  }
-  .v-media-wash img {
-    height: 100%;
-  }
-  .v-media-nav {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    align-items: center;
-    backdrop-filter: blur(24px) brightness(1.5) saturate(1.8);
-    background-color: color-mix(in oklab, black 60%, transparent);
-  }
-  .v-media-nav-row {
-    position: relative;
-    align-items: center;
-    padding-block: 1rem;
-  }
-  .v-media-nav-spacer {
-    flex-grow: 1;
-  }
-}
-
-/* view/degraded.css */
-@layer components {
-  .v-degraded {
-    max-width: 42rem;
-    margin-inline: auto;
-    padding: 2rem;
-  }
-  .v-degraded-alert {
-    border: 2px solid var(--error);
-  }
-}
-
-/* view/edit-media.css */
+/* view/app-media.css */
 @layer components {
   .v-media-page {
     place-self: stretch;
@@ -1968,7 +1890,7 @@
   }
 }
 
-/* view/edit-system.css */
+/* view/app-system.css */
 @layer components {
   .v-system {
     height: 100%;
@@ -1983,6 +1905,84 @@
   }
   .v-system-input-wide {
     max-width: 100%;
+  }
+}
+
+/* view/base-app.css */
+@layer components {
+  .v-app {
+    isolation: isolate;
+    background-color: var(--bg);
+    display: flex;
+    min-height: 100svh;
+    height: 100svh;
+    width: 100%;
+  }
+  .v-app-main {
+    background-color: var(--bg-subtle);
+    position: relative;
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    margin: 0.5rem;
+    margin-inline-start: 0;
+    border-radius: 0.75rem;
+    border: 0.5px solid oklch(from var(--border) 0.21 c h);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    overflow: hidden;
+  }
+  .v-app-main > * {
+    place-self: center;
+  }
+}
+
+/* view/base-browse.css */
+@layer components {
+  .v-media-container {
+    width: 100%;
+    max-width: 79.5rem;
+    padding-inline: 1.5rem;
+    margin-inline: auto;
+  }
+  .v-media-wash {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    filter: blur(64px) saturate(1.8);
+    opacity: 0.2;
+    scale: 1.1;
+  }
+  .v-media-wash img {
+    height: 100%;
+  }
+  .v-media-nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    align-items: center;
+    backdrop-filter: blur(24px) brightness(1.5) saturate(1.8);
+    background-color: color-mix(in oklab, black 60%, transparent);
+  }
+  .v-media-nav-row {
+    position: relative;
+    align-items: center;
+    padding-block: 1rem;
+  }
+  .v-media-nav-spacer {
+    flex-grow: 1;
+  }
+}
+
+/* view/degraded.css */
+@layer components {
+  .v-degraded {
+    max-width: 42rem;
+    margin-inline: auto;
+    padding: 2rem;
+  }
+  .v-degraded-alert {
+    border: 2px solid var(--error);
   }
 }
 
