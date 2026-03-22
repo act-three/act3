@@ -24,15 +24,11 @@ func newMovieHeadList(list []schema.Movie) []*MovieHead {
 	return mos
 }
 
-func (mo *MovieHead) ID() string       { return mo.mo.ID }
-func (mo *MovieHead) Slug() string     { return mo.mo.Slug }
-func (mo *MovieHead) Title() string    { return mo.mo.Title }
-func (mo *MovieHead) Summary() string  { return mo.mo.Summary }
-func (mo *MovieHead) Year() int64      { return mo.mo.Year }
-func (mo *MovieHead) Runtime() int64   { return mo.mo.Runtime }
-func (mo *MovieHead) ImageURL() string { return mo.mo.ImageURL }
-func (mo *MovieHead) TMDBID() *int64   { return mo.mo.TMDBID }
-func (mo *MovieHead) IMDBID() *string  { return mo.mo.IMDBID }
+func (mo *MovieHead) ID() string      { return mo.mo.ID }
+func (mo *MovieHead) Slug() string    { return mo.mo.Slug }
+func (mo *MovieHead) Title() string   { return mo.mo.Title }
+func (mo *MovieHead) TMDBID() *int64  { return mo.mo.TMDBID }
+func (mo *MovieHead) IMDBID() *string { return mo.mo.IMDBID }
 
 func (mo *MovieHead) PlayURL() string {
 	return "/" + mo.mo.Slug
@@ -40,15 +36,6 @@ func (mo *MovieHead) PlayURL() string {
 
 func (mo *MovieHead) EditURL() string {
 	return "/app/movies/" + mo.mo.Slug
-}
-
-// YearDisplay returns the year as a string, or empty if
-// unknown (0).
-func (mo *MovieHead) YearDisplay() string {
-	if mo.mo.Year != 0 {
-		return strconv.FormatInt(mo.mo.Year, 10)
-	}
-	return ""
 }
 
 // MovieWork contains information needed to display
@@ -220,16 +207,16 @@ func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieWork, 
 		return nil, err
 	}
 	moData, err := tx.q.MovieCreate(ctx, schema.MovieCreateParams{
-		ID:      moID,
-		Slug:    slug,
-		Title:   title,
-		Summary: "",
-		Year:    year,
+		ID:    moID,
+		Slug:  slug,
+		Title: title,
 	})
 	if err != nil {
 		return nil, err
 	}
-	medHead, err := tx.MovieEditionCreate(ctx, DefaultEdition, moID)
+	medHead, err := tx.MovieEditionCreate(ctx, DefaultEdition, moID, MovieEditionParams{
+		Year: year,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -260,20 +247,21 @@ func (tx *TxRW) MovieCreateByTMDBID(
 
 	moData, err := tx.q.MovieCreate(ctx,
 		schema.MovieCreateParams{
-			ID:       moID,
-			Slug:     slug,
-			Title:    movie.Title,
-			Summary:  movie.Overview,
-			Year:     year,
-			Runtime:  int64(movie.Runtime),
-			ImageURL: tmdb.ImageURL(movie.PosterPath),
-			TMDBID:   &id64,
-			IMDBID:   movie.IMDBID,
+			ID:     moID,
+			Slug:   slug,
+			Title:  movie.Title,
+			TMDBID: &id64,
+			IMDBID: movie.IMDBID,
 		})
 	if err != nil {
 		return nil, err
 	}
-	medHead, err := tx.MovieEditionCreate(ctx, DefaultEdition, moID)
+	medHead, err := tx.MovieEditionCreate(ctx, DefaultEdition, moID, MovieEditionParams{
+		Summary:  movie.Overview,
+		Year:     year,
+		Runtime:  int64(movie.Runtime),
+		ImageURL: tmdb.ImageURL(movie.PosterPath),
+	})
 	if err != nil {
 		return nil, err
 	}

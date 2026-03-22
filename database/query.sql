@@ -178,12 +178,13 @@ SELECT * FROM EpisodeVideo
 WHERE VideoID = ?;
 
 -- name: MovieCreate :one
-INSERT INTO Movie (ID, Slug, Title, Summary, Year, Runtime, ImageURL, TMDBID, IMDBID)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO Movie (ID, Slug, Title, TMDBID, IMDBID)
+VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, Slug, MovieID) VALUES (?, ?, ?)
+INSERT INTO MovieEdition (Title, Slug, MovieID, Summary, Year, Runtime, ImageURL)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionGet :one

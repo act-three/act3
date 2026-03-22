@@ -72,7 +72,7 @@ func (c *Config) doAddMovieEdition(w http.ResponseWriter, req *http.Request) (ht
 		if movieID == "" {
 			return nil, &model.ValidationError{Op: "add movie edition", Err: errNotFound}
 		}
-		_, err := tx.MovieEditionCreate(ctx, "New Edition", movieID)
+		_, err := tx.MovieEditionCreate(ctx, "New Edition", movieID, model.MovieEditionParams{})
 		if err != nil {
 			return nil, err
 		}

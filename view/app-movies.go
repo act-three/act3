@@ -70,6 +70,7 @@ func AppMoviesDetail(
 	med *model.MovieEdition,
 	dls []*model.DownloadHead,
 ) html.Node {
+	defEd := mo.DefaultEdition()
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(
 			Class("v-media-detail-body"),
@@ -77,10 +78,10 @@ func AppMoviesDetail(
 			FlexCol(Gap4)(
 				appMoviesEditionList(mo, med),
 				FlexRow(Gap2)(
-					expr.IfElse(mo.ImageURL() != "",
+					expr.IfElse(defEd.ImageURL() != "",
 						func() html.Node {
 							return ImageFrame()(
-								PosterImg(PosterFill, attr.Src(mo.ImageURL())),
+								PosterImg(PosterFill, attr.Src(defEd.ImageURL())),
 							)
 						},
 						func() html.Node {
@@ -89,10 +90,10 @@ func AppMoviesDetail(
 					),
 					FlexCol(Gap4, Class("v-media-detail-body"))(
 						html.H1()(html.Text(mo.Title())),
-						html.If(mo.YearDisplay() != "", func() html.Node {
-							return html.P()(html.Text(mo.YearDisplay()))
+						html.If(defEd.YearDisplay() != "", func() html.Node {
+							return html.P()(html.Text(defEd.YearDisplay()))
 						}),
-						html.P()(html.Safe(mo.Summary())),
+						html.P()(html.Safe(defEd.Summary())),
 					),
 				),
 				appMoviesDetailEdition(med, dls),

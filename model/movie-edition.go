@@ -4,6 +4,7 @@ import (
 	"iter"
 	"path"
 	"slices"
+	"strconv"
 	"strings"
 
 	"ily.dev/act3/database/schema"
@@ -20,8 +21,20 @@ type MovieEditionHead struct {
 	med schema.MovieEdition
 }
 
-func (med *MovieEditionHead) ID() string    { return med.med.ID }
-func (med *MovieEditionHead) Title() string { return med.med.Title }
+func (med *MovieEditionHead) ID() string       { return med.med.ID }
+func (med *MovieEditionHead) Title() string    { return med.med.Title }
+func (med *MovieEditionHead) Summary() string  { return med.med.Summary }
+func (med *MovieEditionHead) Year() int64      { return med.med.Year }
+func (med *MovieEditionHead) Runtime() int64   { return med.med.Runtime }
+func (med *MovieEditionHead) ImageURL() string { return med.med.ImageURL }
+
+// YearDisplay returns the year as a string, or empty if unknown (0).
+func (med *MovieEditionHead) YearDisplay() string {
+	if med.med.Year != 0 {
+		return strconv.FormatInt(med.med.Year, 10)
+	}
+	return ""
+}
 
 type MovieEdition struct {
 	MovieEditionHead
@@ -97,15 +110,27 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 	return newMovieEdition(mo, medData, map[string][]*Video{id: videos}), nil
 }
 
-func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string) (*MovieEditionHead, error) {
+// MovieEditionParams holds optional metadata for a new movie edition.
+type MovieEditionParams struct {
+	Summary  string
+	Year     int64
+	Runtime  int64
+	ImageURL string
+}
+
+func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string, p MovieEditionParams) (*MovieEditionHead, error) {
 	slug, err := tx.generateMovieEditionSlug(ctx, title, movieID)
 	if err != nil {
 		return nil, err
 	}
 	medData, err := tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
-		Title:   title,
-		Slug:    slug,
-		MovieID: movieID,
+		Title:    title,
+		Slug:     slug,
+		MovieID:  movieID,
+		Summary:  p.Summary,
+		Year:     p.Year,
+		Runtime:  p.Runtime,
+		ImageURL: p.ImageURL,
 	})
 	if err != nil {
 		return nil, err

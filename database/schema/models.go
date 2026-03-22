@@ -55,22 +55,22 @@ type EpisodeVideo struct {
 }
 
 type Movie struct {
+	ID     string
+	Slug   string
+	Title  string
+	TMDBID *int64
+	IMDBID *string
+}
+
+type MovieEdition struct {
 	ID       string
+	MovieID  string
 	Slug     string
 	Title    string
 	Summary  string
 	Year     int64
 	Runtime  int64
 	ImageURL string
-	TMDBID   *int64
-	IMDBID   *string
-}
-
-type MovieEdition struct {
-	ID      string
-	MovieID string
-	Slug    string
-	Title   string
 }
 
 type MovieVideo struct {

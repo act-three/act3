@@ -13,12 +13,13 @@ func BrowseMovie(
 	dls []*model.RenditionForDownload,
 ) html.Node {
 	med := mo.EditionByTitle(model.DefaultEdition)
-	return browse(mo.Title(), mo.ImageURL())(
+	defEd := mo.DefaultEdition()
+	return browse(mo.Title(), defEd.ImageURL())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
-				expr.IfElse(mo.YearDisplay() != "",
+				expr.IfElse(defEd.YearDisplay() != "",
 					func() html.Node {
-						return Text(mo.YearDisplay(), Class("v-detail-muted"))
+						return Text(defEd.YearDisplay(), Class("v-detail-muted"))
 					},
 					func() html.Node { return html.Group() },
 				),
@@ -41,12 +42,12 @@ func BrowseMovie(
 					),
 				),
 				browseMovieAudioTrackSelect(med),
-				TextNode()(html.Safe(mo.Summary())),
+				TextNode()(html.Safe(defEd.Summary())),
 			),
 			Box(),
 			Box(ColSpan4)(
 				ImageFrame()(
-					PosterImg(PosterFill, attr.Src(mo.ImageURL())),
+					PosterImg(PosterFill, attr.Src(defEd.ImageURL())),
 				),
 			),
 		),
