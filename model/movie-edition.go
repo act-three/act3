@@ -108,8 +108,8 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 	return newMovieEdition(mo, medData, map[string][]*Video{id: videos}), nil
 }
 
-// MovieEditionParams holds optional metadata for a new movie edition.
-type MovieEditionParams struct {
+// movieEditionParams holds optional metadata for a new movie edition.
+type movieEditionParams struct {
 	Summary  string
 	Year     int64
 	Runtime  int64
@@ -131,7 +131,7 @@ func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error
 	return works, nil
 }
 
-func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string, p MovieEditionParams) (*MovieEditionHead, error) {
+func (tx *TxRW) movieEditionCreate(ctx Context, title, movieID string, p movieEditionParams) (*MovieEditionHead, error) {
 	slug, err := tx.generateMovieEditionSlug(ctx, title, movieID)
 	if err != nil {
 		return nil, err
@@ -149,6 +149,22 @@ func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string, p MovieEd
 		return nil, err
 	}
 	return &MovieEditionHead{medData}, nil
+}
+
+// MovieEditionClone creates a new edition by copying metadata
+// from the edition with the given srcID.
+// The new edition is titled "Copy of {original title}".
+func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieEditionHead, error) {
+	src, err := tx.MovieEditionHead(ctx, srcID)
+	if err != nil {
+		return nil, err
+	}
+	return tx.movieEditionCreate(ctx, "Copy of "+src.Title(), src.med.MovieID, movieEditionParams{
+		Summary:  src.med.Summary,
+		Year:     src.med.Year,
+		Runtime:  src.med.Runtime,
+		ImageURL: src.med.ImageURL,
+	})
 }
 
 func (tx *TxRW) generateMovieEditionSlug(ctx Context, title, movieID string) (string, error) {

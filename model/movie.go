@@ -175,7 +175,7 @@ func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieWork, 
 	if err != nil {
 		return nil, err
 	}
-	medHead, err := tx.MovieEditionCreate(ctx, DefaultEdition, moID, MovieEditionParams{
+	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
 		Year: year,
 	})
 	if err != nil {
@@ -217,7 +217,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	if err != nil {
 		return nil, err
 	}
-	medHead, err := tx.MovieEditionCreate(ctx, DefaultEdition, moID, MovieEditionParams{
+	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
 		Summary:  movie.Overview,
 		Year:     year,
 		Runtime:  int64(movie.Runtime),

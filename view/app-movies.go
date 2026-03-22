@@ -76,7 +76,7 @@ func AppMoviesDetail(
 			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
-				appMoviesEditionList(mo, editions, med),
+				appMoviesEditionList(editions, med),
 				FlexRow(Gap2)(
 					expr.IfElse(med.ImageURL() != "",
 						func() html.Node {
@@ -225,11 +225,11 @@ func appMoviesDetailEdition(
 	)
 }
 
-func appMoviesEditionList(mo *model.MovieHead, editions []*model.MovieWork, current *model.MovieEdition) html.Node {
+func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEdition) html.Node {
 	return FlexCol(Gap4)(
 		html.Range(editions, func(ed *model.MovieWork) html.Node {
 			selected := attr.Group()
-			if current != nil && ed.MovieEditionHead.ID() == current.ID() {
+			if ed.MovieEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			}
 			return Card(
@@ -249,8 +249,8 @@ func appMoviesEditionList(mo *model.MovieHead, editions []*model.MovieWork, curr
 			attr.Method("POST"),
 			attr.Action("/-/do/add-movie-edition"),
 		)(
-			html.Input(attr.Type("hidden"), attr.Name("movie-id"), attr.Value(mo.ID())),
-			Button(ButtonSurface, ButtonSize2)(Text("Add Edition")),
+			html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(current.ID())),
+			Button(ButtonSurface, ButtonSize2)(Text("Duplicate Edition")),
 		),
 	)
 }

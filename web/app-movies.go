@@ -63,11 +63,11 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 func (c *Config) doAddMovieEdition(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
-		movieID := req.FormValue("movie-id")
-		if movieID == "" {
+		editionID := req.FormValue("edition-id")
+		if editionID == "" {
 			return nil, &model.ValidationError{Op: "add movie edition", Err: errNotFound}
 		}
-		_, err := tx.MovieEditionCreate(ctx, "New Edition", movieID, model.MovieEditionParams{})
+		_, err := tx.MovieEditionClone(ctx, editionID)
 		if err != nil {
 			return nil, err
 		}
