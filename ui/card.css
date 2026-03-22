@@ -116,7 +116,7 @@
 }
 
 .u-card-description {
-	color: var(--text-2);
+	color: var(--text-3);
 	overflow: hidden;
 	display: -webkit-box;
 	-webkit-box-orient: vertical;

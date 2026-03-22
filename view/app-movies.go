@@ -75,24 +75,128 @@ func AppMoviesDetail(
 		ScrollY(
 			Class("v-media-detail-body"),
 		)(
-			FlexCol(Gap4)(
+			SettingsPage(mo.Title())(
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Movie Title"),
+							SettingsItemLabelDescription("Shown on the home page"),
+						),
+						SettingsControl()(
+							// placeholder control
+							InputText(
+								attr.Value(mo.Title()),
+								attr.Disabled,
+							),
+						),
+					),
+				),
+
 				appMoviesEditionList(editions, med),
-				FlexRow(Gap2)(
-					expr.IfElse(med.ImageURL() != "",
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Default"),
+							SettingsItemLabelDescription("Shown first when opening a movie"),
+						),
+						SettingsControl()(
+							// placeholder control
+							Toggle("/-", "name", med.Slug() == "")(),
+						),
+					),
+
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Poster"),
+						),
+						SettingsControl()(
+							// placeholder control
+							Icon("edit"),
+						),
+					),
+
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Title"),
+							SettingsItemLabelDescription("Shown on movie detail page"),
+						),
+						SettingsControl()(
+							// placeholder control
+							InputText(
+								attr.Value(med.Title()),
+								attr.Disabled,
+							),
+						),
+					),
+
+					html.If(med.Slug() != "",
 						func() html.Node {
-							return ImageFrame()(
-								PosterImg(PosterFill, attr.Src(med.ImageURL())),
+							return SettingsItem()(
+								SettingsItemLabel()(
+									SettingsItemLabelTitle("URL"),
+								),
+								SettingsControl()(
+									// placeholder control
+									InputText(
+										attr.Value(med.Slug()),
+										attr.Disabled,
+									),
+								),
 							)
-						},
-						func() html.Node {
-							return html.Group()
-						},
+						}),
+				),
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Year Released"),
+						),
+						SettingsControl()(
+							// placeholder control
+							InputText(
+								attr.Value(med.YearDisplay()),
+								attr.Disabled,
+							),
+						),
+					),
+
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Runtime"),
+						),
+						SettingsControl()(
+							// placeholder value & control
+							InputText(
+								attr.Value("46 min"),
+								attr.Disabled,
+							),
+						),
+					),
+				),
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Duplicate Edition"),
+						),
+						SettingsControl()(
+							html.Form(
+								attr.Method("POST"),
+								attr.Action("/-/do/add-movie-edition"),
+							)(
+								html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
+								Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
+							),
+						),
+					),
+				),
+
+				FlexRow(Gap2)(
+					ImageFrame()(
+						PosterImg(PosterFill, attr.Src(med.ImageURL())),
 					),
 					FlexCol(Gap4, Class("v-media-detail-body"))(
-						html.H1()(html.Text(mo.Title())),
-						html.If(med.YearDisplay() != "", func() html.Node {
-							return html.P()(html.Text(med.YearDisplay()))
-						}),
 						html.P()(html.Safe(med.Summary())),
 					),
 				),
@@ -226,7 +330,7 @@ func appMoviesDetailEdition(
 }
 
 func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEdition) html.Node {
-	return FlexCol(Gap4)(
+	return FlexCol(Gap2)(
 		html.Range(editions, func(ed *model.MovieWork) html.Node {
 			selected := attr.Group()
 			if ed.MovieEditionHead.ID() == current.ID() {
@@ -234,7 +338,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 			}
 			return Card(
 				CardSurface,
-				CardSize3,
+				CardSize1,
 				attr.Href(ed.EditorURL()),
 				selected,
 			)(
@@ -242,16 +346,12 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 					CardTitle()(
 						Text(ed.MovieEditionHead.Title()),
 					),
+					CardDescription()(
+						Text(ed.TheaterURL()),
+					),
 				),
 			)
 		}),
-		html.Form(
-			attr.Method("POST"),
-			attr.Action("/-/do/add-movie-edition"),
-		)(
-			html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(current.ID())),
-			Button(ButtonSurface, ButtonSize2)(Text("Duplicate Edition")),
-		),
 	)
 }
 

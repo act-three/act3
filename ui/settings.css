@@ -1,0 +1,56 @@
+.u-settings-page {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding-top: 32px;
+}
+
+.u-settings-page > * {
+	display: flex;
+	flex-direction: column;
+	max-width: 640px;
+	width: 100%;
+	gap: 2rem;
+}
+
+.u-settings-content {
+	display: flex;
+	flex-direction: column;
+	padding: 0 16px;
+}
+
+.u-settings-section {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 0 16px;
+}
+
+.u-settings-group {
+	border-radius: var(--radius-4);
+	border: 0.5px solid var(--border-strong);
+	background: var(--bg-surface);
+	overflow: hidden;
+}
+
+.u-settings-item {
+	position: relative;
+	display: flex;
+	min-height: 60px;
+	padding: 16px;
+	gap: 16px;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.u-settings-item:not(:last-child)::after {
+	content: "";
+	border-bottom: 0.5px solid var(--border-strong);
+	position: absolute;
+	left: 16px;
+	right: 16px;
+	bottom: 0;
+	z-index: 1;
+}
+
+.u-settings-label-description { color: var(--text-3); }
