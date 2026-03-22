@@ -121,10 +121,6 @@ func (df *DownloadFile) SeriesEdition() *SeriesEdition {
 	return df.d.PlanSeriesEdition()
 }
 
-func (df *DownloadFile) MovieEdition() *MovieEdition {
-	return df.d.PlanMovieEdition()
-}
-
 type Download struct {
 	DownloadHead
 	metaInfo     *metainfo.MetaInfo
@@ -198,13 +194,6 @@ func (d *Download) PlanFor(path string) string {
 		return *p.MovieEditionID
 	}
 	return ""
-}
-
-func (d *Download) PlanEpisode(path string) *Episode {
-	if d.planEd == nil {
-		return nil
-	}
-	return d.planEd.episodeByID(d.PlanFor(path))
 }
 
 func (d *Download) Paths() iter.Seq[string] {

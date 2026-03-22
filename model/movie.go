@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"iter"
 	"strconv"
 	"strings"
 
@@ -25,11 +24,10 @@ func newMovieHeadList(list []schema.Movie) []*MovieHead {
 	return mos
 }
 
-func (mo *MovieHead) ID() string      { return mo.mo.ID }
-func (mo *MovieHead) Slug() string    { return mo.mo.Slug }
-func (mo *MovieHead) Title() string   { return mo.mo.Title }
-func (mo *MovieHead) TMDBID() *int64  { return mo.mo.TMDBID }
-func (mo *MovieHead) IMDBID() *string { return mo.mo.IMDBID }
+func (mo *MovieHead) ID() string     { return mo.mo.ID }
+func (mo *MovieHead) Slug() string   { return mo.mo.Slug }
+func (mo *MovieHead) Title() string  { return mo.mo.Title }
+func (mo *MovieHead) TMDBID() *int64 { return mo.mo.TMDBID }
 
 func (mo *MovieHead) PlayURL() string {
 	return "/" + mo.mo.Slug
@@ -77,30 +75,6 @@ func newMovie(
 	return mo
 }
 
-func (mo *Movie) EditionByTitle(title string) *MovieEdition {
-	if mo == nil {
-		return nil
-	}
-	for _, med := range mo.editions {
-		if med.Title() == title {
-			return med
-		}
-	}
-	return nil
-}
-
-func (mo *Movie) DefaultEdition() *MovieEdition {
-	if mo == nil {
-		return nil
-	}
-	for _, med := range mo.editions {
-		if med.med.Slug == "" {
-			return med
-		}
-	}
-	return nil
-}
-
 func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
 	if mo == nil {
 		return nil
@@ -111,10 +85,6 @@ func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
 		}
 	}
 	return nil
-}
-
-func (mo *Movie) MovieEditionSeq() iter.Seq[*MovieEdition] {
-	return movieEditionSeq(mo.editions)
 }
 
 // Transaction methods
@@ -167,45 +137,6 @@ func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEditi
 		return nil, sql.ErrNoRows
 	}
 	return med, nil
-}
-
-func (tx *TxR) Movie(ctx Context, id string) (*Movie, error) {
-	moData, err := tx.q.MovieGet(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	meds, err := tx.q.MovieEditionListByMovieID(ctx, moData.ID)
-	if err != nil {
-		return nil, err
-	}
-	mvs, err := tx.q.MovieVideoListByMovieID(ctx, moData.ID)
-	if err != nil {
-		return nil, err
-	}
-	vids, err := tx.q.VideoListByMovieID(ctx, moData.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	vidByID := vidMapByID(vids)
-	for _, v := range vidByID {
-		ats, err := tx.q.AudioTrackListByVideoID(ctx, v.v.ID)
-		if err != nil {
-			return nil, err
-		}
-		for j := range ats {
-			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
-		}
-	}
-	videosByEditionID := vidMapByMovieEditionID(mvs, vidByID)
-
-	return newMovie(moData, meds, videosByEditionID), nil
-}
-
-func (tx *TxR) RenditionForStreamingListByMovieID(
-	ctx Context, moID string,
-) ([]schema.RenditionForStreaming, error) {
-	return tx.q.RenditionForStreamingListByMovieID(ctx, moID)
 }
 
 // RenditionForDownloadListForMovie is like

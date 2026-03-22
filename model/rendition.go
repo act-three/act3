@@ -8,26 +8,6 @@ import (
 	"ily.dev/act3/database/schema"
 )
 
-type RenditionForStreaming struct {
-	url string
-}
-
-func (r *RenditionForStreaming) URL() string { return r.url }
-
-func (tx *TxR) RenditionForStreamingList(ctx Context, epID string) ([]*RenditionForStreaming, error) {
-	a, err := tx.q.RenditionForStreamingListByVideoID(ctx, epID)
-	if err != nil {
-		return nil, err
-	}
-	var rends []*RenditionForStreaming
-	for _, r := range a {
-		rends = append(rends, &RenditionForStreaming{
-			url: path.Join("/-/vid", r.Hash),
-		})
-	}
-	return rends, nil
-}
-
 // QualityOption describes one entry in the player quality menu.
 type QualityOption struct {
 	Label string // e.g. "Auto", "1080p", "720p", "540p"

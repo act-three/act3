@@ -2,7 +2,6 @@ package model
 
 import (
 	"iter"
-	"path"
 	"slices"
 
 	"ily.dev/act3/database/schema"
@@ -61,10 +60,6 @@ func (sed *SeriesEdition) Seasons() iter.Seq[*Season] {
 }
 
 func (sed *SeriesEdition) SeriesHead() *SeriesHead { return sed.sr }
-
-func (sed *SeriesEdition) SeasonByID(id string) *Season {
-	return sed.snByID[id]
-}
 
 // seasonByNumber returns season n in the order defined by sed.
 func (sed *SeriesEdition) seasonByNumber(n int) *Season {
@@ -160,16 +155,6 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 	snepBySeasonID := snepMapBySeasonID(sneps)
 	sed := newSeriesEdition(sr, sedData, sns, snepBySeasonID, epByID, tx.m.prog.List, videosByEpisodeID)
 	return sed, nil
-}
-
-func (sed *SeriesEdition) EditURL() string {
-	if sed.sed.Slug == "" {
-		return sed.sr.EditURL()
-	}
-	return path.Join(
-		sed.sr.EditURL(),
-		sed.sed.Slug,
-	)
 }
 
 func (tx *TxR) SeriesEditionList(ctx Context, sr *SeriesHead) ([]*SeriesWork, error) {

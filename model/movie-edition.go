@@ -1,11 +1,7 @@
 package model
 
 import (
-	"iter"
-	"path"
-	"slices"
 	"strconv"
-	"strings"
 
 	"ily.dev/act3/database/schema"
 )
@@ -26,7 +22,6 @@ func (med *MovieEditionHead) Slug() string     { return med.med.Slug }
 func (med *MovieEditionHead) Title() string    { return med.med.Title }
 func (med *MovieEditionHead) Summary() string  { return med.med.Summary }
 func (med *MovieEditionHead) Year() int64      { return med.med.Year }
-func (med *MovieEditionHead) Runtime() int64   { return med.med.Runtime }
 func (med *MovieEditionHead) ImageURL() string { return med.med.ImageURL }
 
 // YearDisplay returns the year as a string, or empty if unknown (0).
@@ -58,16 +53,6 @@ func newMovieEdition(
 
 func (med *MovieEdition) Videos() []*Video      { return med.videos }
 func (med *MovieEdition) MovieHead() *MovieHead { return med.mo }
-
-func (med *MovieEdition) EditURL() string {
-	if med.med.Slug == "" {
-		return med.mo.EditURL()
-	}
-	return path.Join(
-		med.mo.EditURL(),
-		med.med.Slug,
-	)
-}
 
 func (med *MovieEdition) PlayerURL(v *Video) string {
 	return "/-/player/" + v.ID() + "/" + med.med.ID
@@ -191,23 +176,4 @@ func vidMapByMovieEditionID(mvs []schema.MovieVideo, vidByID map[string]*Video) 
 		}
 	}
 	return m
-}
-
-// MovieEditionSeq returns an iterator over editions
-// sorted by title, for use in UI selectors.
-func movieEditionSeq(meds []*MovieEdition) iter.Seq[*MovieEdition] {
-	sorted := slices.Clone(meds)
-	slices.SortFunc(sorted, func(a, b *MovieEdition) int {
-		// Pin the default edition first.
-		aDefault := a.med.Slug == ""
-		bDefault := b.med.Slug == ""
-		if aDefault != bDefault {
-			if aDefault {
-				return -1
-			}
-			return 1
-		}
-		return strings.Compare(a.Title(), b.Title())
-	})
-	return slices.Values(sorted)
 }
