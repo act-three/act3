@@ -40,6 +40,13 @@
 	border-radius: 0.125rem;
 }
 
+/* edit-media dialog loading spinner (visible only while turbo frame loads) */
+.v-media-dialog-spinner {
+	display: none;
+	margin: 1rem auto;
+}
+turbo-frame[aria-busy="true"] > .v-media-dialog-spinner { display: block; }
+
 /* edit-media search result card */
 .v-media-search-card { height: 200px; }
 

@@ -235,7 +235,7 @@ func AppMovieAddDialog(frameID string) html.Node {
 			html.Div(
 				attr.Class("v-media-dialog-results"),
 			)(
-				turbo.Frame("results"),
+				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
 			),
 		),
 	)

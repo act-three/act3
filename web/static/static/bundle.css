@@ -1902,6 +1902,13 @@
     border: 1px solid var(--border);
     border-radius: 0.125rem;
   }
+  .v-media-dialog-spinner {
+    display: none;
+    margin: 1rem auto;
+  }
+  turbo-frame[aria-busy=true] > .v-media-dialog-spinner {
+    display: block;
+  }
   .v-media-search-card {
     height: 200px;
   }
