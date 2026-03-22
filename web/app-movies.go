@@ -17,7 +17,7 @@ import (
 func (c *Config) appMovies(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		all, err := tx.MovieHeadList(ctx)
+		all, err := tx.MovieWorkList(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +57,7 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 			return view.PageFrame(mo.Title(), "detail", detail), nil
 		}
 
-		all, err := tx.MovieHeadList(ctx)
+		all, err := tx.MovieWorkList(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -116,9 +116,9 @@ func (c *Config) doAddMovieTMDB(_ http.ResponseWriter, req *http.Request) (html.
 			return nil, err
 		}
 		return turbo.Frame("tmdb-"+strconv.FormatInt(*mo.TMDBID(), 10))(
-			view.MovieResultLink(mo),
+			view.MovieResultLink(&mo.MovieHead),
 			turbo.Prepend(view.AppMoviesListItems,
-				ListItems([]*model.MovieHead{mo}, view.AppMoviesListItem),
+				ListItems([]*model.MovieWork{mo}, view.AppMoviesListItem),
 			),
 		), nil
 	})

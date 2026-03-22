@@ -213,7 +213,7 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 	return rends, nil
 }
 
-func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieHead, error) {
+func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieWork, error) {
 	moID := "mo" + flurry.NewID()
 	slug, err := tx.generateMovieSlug(ctx, title, year, moID)
 	if err != nil {
@@ -229,16 +229,19 @@ func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieHead, 
 	if err != nil {
 		return nil, err
 	}
-	_, err = tx.MovieEditionCreate(ctx, DefaultEdition, moID)
+	medHead, err := tx.MovieEditionCreate(ctx, DefaultEdition, moID)
 	if err != nil {
 		return nil, err
 	}
-	return &MovieHead{moData}, nil
+	return &MovieWork{
+		MovieHead:        MovieHead{moData},
+		MovieEditionHead: *medHead,
+	}, nil
 }
 
 func (tx *TxRW) MovieCreateByTMDBID(
 	ctx Context, movie *tmdb.Movie,
-) (*MovieHead, error) {
+) (*MovieWork, error) {
 	id64 := int64(movie.ID)
 
 	var year int64
@@ -270,11 +273,14 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	if err != nil {
 		return nil, err
 	}
-	_, err = tx.MovieEditionCreate(ctx, DefaultEdition, moID)
+	medHead, err := tx.MovieEditionCreate(ctx, DefaultEdition, moID)
 	if err != nil {
 		return nil, err
 	}
-	return &MovieHead{moData}, nil
+	return &MovieWork{
+		MovieHead:        MovieHead{moData},
+		MovieEditionHead: *medHead,
+	}, nil
 }
 
 func (tx *TxR) MovieHeadListByTMDBID(
@@ -326,7 +332,7 @@ func (tx *TxRW) generateMovieSlug(ctx Context, title string, year int64, id stri
 	return slug + "-" + id, nil
 }
 
-func (tx *TxR) movieWorkList(ctx Context) ([]*MovieWork, error) {
+func (tx *TxR) MovieWorkList(ctx Context) ([]*MovieWork, error) {
 	editions, err := tx.q.MovieEditionListDefault(ctx)
 	if err != nil {
 		return nil, err

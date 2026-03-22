@@ -16,7 +16,7 @@ const AppMoviesListItems = "movie-list-items"
 
 func AppMovies(
 	title string,
-	s []*model.MovieHead,
+	s []*model.MovieWork,
 	detail ...html.Node,
 ) html.Node {
 	return app(title, FlexCol(attr.Class("v-media-page"))(
@@ -48,11 +48,11 @@ func AppMovies(
 }
 
 func AppMoviesListItem(
-	mo *model.MovieHead, attrs ...attr.Node,
+	mo *model.MovieWork, attrs ...attr.Node,
 ) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
-		ListID(mo.ID()),
+		ListID(mo.MovieHead.ID()),
 		ListURL(mo.EditURL()),
 	)(
 		CardMedia()(html.Img(attr.Src(mo.ImageURL()))),

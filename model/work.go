@@ -16,7 +16,7 @@ type Work interface {
 // WorkList returns all movies and series as a unified list,
 // sorted by title.
 func (tx *TxR) WorkList(ctx Context) ([]Work, error) {
-	mws, err := tx.movieWorkList(ctx)
+	mws, err := tx.MovieWorkList(ctx)
 	if err != nil {
 		return nil, err
 	}
