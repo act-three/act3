@@ -54,17 +54,11 @@ func (sw *SeriesWork) Title() string    { return sw.SeriesHead.Title() }
 func (sw *SeriesWork) ImageURL() string { return sw.TVmazeImageURL() }
 
 func (sw *SeriesWork) TheaterURL() string {
-	if sw.SeriesEditionHead.Slug() == "" {
-		return sw.SeriesHead.TheaterURL()
-	}
 	return path.Join(sw.SeriesHead.TheaterURL(), sw.SeriesEditionHead.Slug())
 }
 
 func (sw *SeriesWork) EditorURL() string {
-	if sw.SeriesEditionHead.Slug() == "" {
-		return sw.SeriesHead.EditorURL()
-	}
-	return sw.SeriesHead.EditorURL() + "/" + sw.SeriesEditionHead.Slug()
+	return path.Join(sw.SeriesHead.EditorURL(), sw.SeriesEditionHead.Slug())
 }
 
 type Series struct {

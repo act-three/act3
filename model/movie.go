@@ -49,17 +49,11 @@ type MovieWork struct {
 func (mw *MovieWork) Title() string { return mw.MovieHead.Title() }
 
 func (mw *MovieWork) TheaterURL() string {
-	if mw.MovieEditionHead.Slug() == "" {
-		return mw.MovieHead.TheaterURL()
-	}
 	return path.Join(mw.MovieHead.TheaterURL(), mw.MovieEditionHead.Slug())
 }
 
 func (mw *MovieWork) EditorURL() string {
-	if mw.MovieEditionHead.Slug() == "" {
-		return mw.MovieHead.EditorURL()
-	}
-	return mw.MovieHead.EditorURL() + "/" + mw.MovieEditionHead.Slug()
+	return path.Join(mw.MovieHead.EditorURL(), mw.MovieEditionHead.Slug())
 }
 
 // Movie is the full representation with editions and their videos.
