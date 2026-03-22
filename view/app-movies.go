@@ -66,22 +66,22 @@ func AppMoviesListItem(
 }
 
 func AppMoviesDetail(
-	mo *model.Movie,
 	med *model.MovieEdition,
+	editions []*model.MovieEditionHead,
 	dls []*model.DownloadHead,
 ) html.Node {
-	defEd := mo.DefaultEdition()
+	mo := med.MovieHead()
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(
 			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
-				appMoviesEditionList(mo, med),
+				appMoviesEditionList(mo, editions, med),
 				FlexRow(Gap2)(
-					expr.IfElse(defEd.ImageURL() != "",
+					expr.IfElse(med.ImageURL() != "",
 						func() html.Node {
 							return ImageFrame()(
-								PosterImg(PosterFill, attr.Src(defEd.ImageURL())),
+								PosterImg(PosterFill, attr.Src(med.ImageURL())),
 							)
 						},
 						func() html.Node {
@@ -90,10 +90,10 @@ func AppMoviesDetail(
 					),
 					FlexCol(Gap4, Class("v-media-detail-body"))(
 						html.H1()(html.Text(mo.Title())),
-						html.If(defEd.YearDisplay() != "", func() html.Node {
-							return html.P()(html.Text(defEd.YearDisplay()))
+						html.If(med.YearDisplay() != "", func() html.Node {
+							return html.P()(html.Text(med.YearDisplay()))
 						}),
-						html.P()(html.Safe(defEd.Summary())),
+						html.P()(html.Safe(med.Summary())),
 					),
 				),
 				appMoviesDetailEdition(med, dls),
@@ -225,22 +225,26 @@ func appMoviesDetailEdition(
 	)
 }
 
-func appMoviesEditionList(mo *model.Movie, current *model.MovieEdition) html.Node {
+func appMoviesEditionList(mo *model.MovieHead, editions []*model.MovieEditionHead, current *model.MovieEdition) html.Node {
 	return FlexCol(Gap4)(
-		html.RangeSeq(mo.MovieEditionSeq(), func(med *model.MovieEdition) html.Node {
+		html.Range(editions, func(ed *model.MovieEditionHead) html.Node {
 			selected := attr.Group()
-			if current != nil && med.ID() == current.ID() {
+			if current != nil && ed.ID() == current.ID() {
 				selected = CardSelected
+			}
+			editURL := mo.EditURL()
+			if ed.Slug() != "" {
+				editURL += "/" + ed.Slug()
 			}
 			return Card(
 				CardSurface,
 				CardSize3,
-				attr.Href(med.EditURL()),
+				attr.Href(editURL),
 				selected,
 			)(
 				CardContent()(
 					CardTitle()(
-						Text(med.Title()),
+						Text(ed.Title()),
 					),
 				),
 			)

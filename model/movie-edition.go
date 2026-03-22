@@ -22,6 +22,7 @@ type MovieEditionHead struct {
 }
 
 func (med *MovieEditionHead) ID() string       { return med.med.ID }
+func (med *MovieEditionHead) Slug() string     { return med.med.Slug }
 func (med *MovieEditionHead) Title() string    { return med.med.Title }
 func (med *MovieEditionHead) Summary() string  { return med.med.Summary }
 func (med *MovieEditionHead) Year() int64      { return med.med.Year }
@@ -120,6 +121,18 @@ type MovieEditionParams struct {
 	Year     int64
 	Runtime  int64
 	ImageURL string
+}
+
+func (tx *TxR) MovieEditionHeadList(ctx Context, movieID string) ([]*MovieEditionHead, error) {
+	meds, err := tx.q.MovieEditionListByMovieID(ctx, movieID)
+	if err != nil {
+		return nil, err
+	}
+	heads := make([]*MovieEditionHead, len(meds))
+	for i := range meds {
+		heads[i] = &MovieEditionHead{meds[i]}
+	}
+	return heads, nil
 }
 
 func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string, p MovieEditionParams) (*MovieEditionHead, error) {

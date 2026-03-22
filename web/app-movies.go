@@ -28,7 +28,7 @@ func (c *Config) appMovies(_ http.ResponseWriter, req *http.Request) (html.Node,
 func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		mo, err := tx.MovieBySlug(ctx, req.PathValue("slug"))
+		med, err := tx.MovieEditionBySlug(ctx, req.PathValue("slug"), req.PathValue("edslug"))
 		if err == sql.ErrNoRows {
 			http.Redirect(w, req, "/app/movies", http.StatusSeeOther)
 			return nil, nil
@@ -36,15 +36,9 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		var med *model.MovieEdition
-		if edSlug := req.PathValue("edslug"); edSlug != "" {
-			med = mo.EditionBySlug(edSlug)
-		} else {
-			med = mo.DefaultEdition()
-		}
-		if med == nil {
-			http.Redirect(w, req, mo.EditURL(), http.StatusSeeOther)
-			return nil, nil
+		editions, err := tx.MovieEditionHeadList(ctx, med.MovieHead().ID())
+		if err != nil {
+			return nil, err
 		}
 
 		dls, err := tx.DownloadHeadListByMovieEditionID(ctx, med.ID())
@@ -52,7 +46,8 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		detail := view.AppMoviesDetail(mo, med, dls)
+		mo := med.MovieHead()
+		detail := view.AppMoviesDetail(med, editions, dls)
 		if req.Header.Get("turbo-frame") == "detail" {
 			return view.PageFrame(mo.Title(), "detail", detail), nil
 		}

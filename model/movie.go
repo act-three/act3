@@ -131,41 +131,11 @@ func (tx *TxR) MovieHeadList(ctx Context) ([]*MovieHead, error) {
 // and returns the edition matching edSlug
 // (empty string for the default edition).
 func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEdition, error) {
-	// TODO: make this the primary way to load a movie edition,
-	// doing what MovieBySlug does, but directly, and without loading
-	// the other editions.
-	mo, err := tx.MovieBySlug(ctx, slug)
-	if err != nil {
-		return nil, err
-	}
-	med := mo.EditionBySlug(edSlug)
-	if med == nil {
-		return nil, sql.ErrNoRows
-	}
-	return med, nil
-}
-
-func (tx *TxR) MovieBySlug(ctx Context, slug string) (*Movie, error) {
-	// TODO: delete this when unused
+	// TODO(april): avoid loading other editions here.
 	moData, err := tx.q.MovieGetBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
-	return tx.movieFromData(ctx, moData)
-}
-
-func (tx *TxR) Movie(ctx Context, id string) (*Movie, error) {
-	// TODO: delete this when unused
-	moData, err := tx.q.MovieGet(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return tx.movieFromData(ctx, moData)
-}
-
-func (tx *TxR) movieFromData(ctx Context, moData schema.Movie) (*Movie, error) {
-	// TODO: adapt this to serve the purposes of MovieEditionBySlug,
-	// once MovieBySlug and Movie are deleted.
 	meds, err := tx.q.MovieEditionListByMovieID(ctx, moData.ID)
 	if err != nil {
 		return nil, err
@@ -180,7 +150,44 @@ func (tx *TxR) movieFromData(ctx Context, moData schema.Movie) (*Movie, error) {
 	}
 
 	vidByID := vidMapByID(vids)
-	// Load audio tracks for each video.
+	for _, v := range vidByID {
+		ats, err := tx.q.AudioTrackListByVideoID(ctx, v.v.ID)
+		if err != nil {
+			return nil, err
+		}
+		for j := range ats {
+			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
+		}
+	}
+	videosByEditionID := vidMapByMovieEditionID(mvs, vidByID)
+
+	mo := newMovie(moData, meds, videosByEditionID)
+	med := mo.EditionBySlug(edSlug)
+	if med == nil {
+		return nil, sql.ErrNoRows
+	}
+	return med, nil
+}
+
+func (tx *TxR) Movie(ctx Context, id string) (*Movie, error) {
+	moData, err := tx.q.MovieGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	meds, err := tx.q.MovieEditionListByMovieID(ctx, moData.ID)
+	if err != nil {
+		return nil, err
+	}
+	mvs, err := tx.q.MovieVideoListByMovieID(ctx, moData.ID)
+	if err != nil {
+		return nil, err
+	}
+	vids, err := tx.q.VideoListByMovieID(ctx, moData.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	vidByID := vidMapByID(vids)
 	for _, v := range vidByID {
 		ats, err := tx.q.AudioTrackListByVideoID(ctx, v.v.ID)
 		if err != nil {
