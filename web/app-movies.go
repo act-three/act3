@@ -111,7 +111,7 @@ func (c *Config) doAddMovieTMDB(_ http.ResponseWriter, req *http.Request) (html.
 			return nil, err
 		}
 		return turbo.Frame("tmdb-"+strconv.FormatInt(*mo.TMDBID(), 10))(
-			view.MovieResultLink(&mo.MovieHead),
+			view.MovieResultLink(mo.EditorURL()),
 			turbo.Prepend(view.AppMoviesListItems,
 				ListItems([]*model.MovieWork{mo}, view.AppMoviesListItem),
 			),

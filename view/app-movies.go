@@ -174,7 +174,7 @@ func movieSearchTitle(m tmdb.SearchResult) html.Node {
 
 func movieSearchAction(frameID string, t MovieSearchResult) html.Node {
 	if t.Local != nil {
-		return MovieResultLink(t.Local)
+		return MovieResultLink(t.Local.EditorURL())
 	}
 	return turbo.Frame(frameID)(
 		html.Form(
@@ -192,11 +192,11 @@ func movieSearchAction(frameID string, t MovieSearchResult) html.Node {
 	)
 }
 
-func MovieResultLink(mo *model.MovieHead) html.Node {
+func MovieResultLink(editorURL string) html.Node {
 	return FlexRow(Gap2)(
 		Label("line/check-circle", "In Library"),
 		Button(
-			Href(mo.EditorURL()),
+			Href(editorURL),
 			Attr("data-turbo-frame")("detail"),
 			Attr("data-action")("click->dialog#close"),
 		)(

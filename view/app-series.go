@@ -426,7 +426,7 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 									)
 								},
 								func() html.Node {
-									return SeriesResultLink(t.Local)
+									return SeriesResultLink(t.Local.EditorURL())
 								},
 							),
 							TextNode(LineClamp3)(html.Safe(t.TVmaze.Summary)),
@@ -438,11 +438,11 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 	)
 }
 
-func SeriesResultLink(ss *model.SeriesHead) html.Node {
+func SeriesResultLink(editorURL string) html.Node {
 	return FlexRow(Gap2)(
 		Label("line/check-circle", "In Library"),
 		Button(
-			Href(ss.EditorURL()),
+			Href(editorURL),
 			Attr("data-turbo-frame")("detail"),
 			Attr("data-action")("click->dialog#close"),
 		)(
