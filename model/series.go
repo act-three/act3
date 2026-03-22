@@ -42,11 +42,11 @@ func (sr *SeriesHead) EditURL() string {
 }
 
 // SeriesWork contains information needed to display
-// a concise representation of a series in UI.
-// It contains metadata about the series itself plus its default edition.
+// a concise representation of a series edition in UI.
+// It contains metadata about the series itself plus an edition.
 type SeriesWork struct {
 	SeriesHead
-	SeriesEditionHead // the default edition
+	SeriesEditionHead
 }
 
 func (sw *SeriesWork) Title() string    { return sw.SeriesHead.Title() }
@@ -288,6 +288,7 @@ func (tx *TxR) SeriesEditionBySlug(ctx Context, slug, edSlug string) (*SeriesEdi
 	return sed, nil
 }
 
+// SeriesWorkList returns the default edition of each series.
 func (tx *TxR) SeriesWorkList(ctx Context) ([]*SeriesWork, error) {
 	editions, err := tx.q.SeriesEditionListDefault(ctx)
 	if err != nil {

@@ -172,16 +172,19 @@ func (sed *SeriesEdition) EditURL() string {
 	)
 }
 
-func (tx *TxR) SeriesEditionHeadList(ctx Context, seriesID string) ([]*SeriesEditionHead, error) {
-	seds, err := tx.q.SeriesEditionListBySeriesID(ctx, seriesID)
+func (tx *TxR) SeriesEditionList(ctx Context, sr *SeriesHead) ([]*SeriesWork, error) {
+	seds, err := tx.q.SeriesEditionListBySeriesID(ctx, sr.ID())
 	if err != nil {
 		return nil, err
 	}
-	heads := make([]*SeriesEditionHead, len(seds))
+	works := make([]*SeriesWork, len(seds))
 	for i := range seds {
-		heads[i] = &SeriesEditionHead{seds[i]}
+		works[i] = &SeriesWork{
+			SeriesHead:        *sr,
+			SeriesEditionHead: SeriesEditionHead{seds[i]},
+		}
 	}
-	return heads, nil
+	return works, nil
 }
 
 func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID, summary, tvmazeImageURL string) (schema.SeriesEdition, error) {

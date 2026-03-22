@@ -74,7 +74,7 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 
 func AppSeriesDetail(
 	sed *model.SeriesEdition,
-	editions []*model.SeriesEditionHead,
+	editions []*model.SeriesWork,
 	dls []*model.DownloadHead,
 ) html.Node {
 	sr := sed.SeriesHead()
@@ -101,16 +101,16 @@ func appSeriesSearchbar() html.Node {
 	return html.Text("appSeriesSearchbar")
 }
 
-func appSeriesEditionList(sr *model.SeriesHead, editions []*model.SeriesEditionHead, current *model.SeriesEdition) html.Node {
+func appSeriesEditionList(sr *model.SeriesHead, editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
 	return FlexCol(Gap4)(
-		html.Range(editions, func(ed *model.SeriesEditionHead) html.Node {
+		html.Range(editions, func(ed *model.SeriesWork) html.Node {
 			selected := attr.Group()
-			if current != nil && ed.ID() == current.ID() {
+			if current != nil && ed.SeriesEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			}
 			editURL := sr.EditURL()
-			if ed.Slug() != "" {
-				editURL += "/" + ed.Slug()
+			if ed.SeriesEditionHead.Slug() != "" {
+				editURL += "/" + ed.SeriesEditionHead.Slug()
 			}
 			return Card(
 				CardSurface,
@@ -120,7 +120,7 @@ func appSeriesEditionList(sr *model.SeriesHead, editions []*model.SeriesEditionH
 			)(
 				CardContent()(
 					CardTitle()(
-						Text(ed.Title()),
+						Text(ed.SeriesEditionHead.Title()),
 					),
 				),
 			)

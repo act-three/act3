@@ -37,7 +37,7 @@ func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		editions, err := tx.SeriesEditionHeadList(ctx, sed.SeriesHead().ID())
+		editions, err := tx.SeriesEditionList(ctx, sed.SeriesHead())
 		if err != nil {
 			return nil, err
 		}
