@@ -188,11 +188,7 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 
 func AppSeriesAddDialog(frameID string) html.Node {
 	return Dialog(frameID,
-		FlexCol(
-			attr.Attr("data-controller")("add-series"),
-			Gap2,
-			Class("v-media-dialog"),
-		)(
+		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				attr.Class("v-media-dialog-fixed"),
 			)(
@@ -204,7 +200,6 @@ func AppSeriesAddDialog(frameID string) html.Node {
 			)(
 				InputText(
 					attr.Attr("autofocus"),
-					attr.Attr("data-action")("add-series#search"),
 					attr.Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 				),
