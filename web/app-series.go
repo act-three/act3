@@ -162,7 +162,7 @@ func (c *Config) doAddSeriesEdition(w http.ResponseWriter, req *http.Request) (h
 		if seriesID == "" {
 			return nil, &model.ValidationError{Op: "add series edition", Err: errNotFound}
 		}
-		_, err := tx.SeriesEditionCreate(ctx, "New Edition", seriesID)
+		_, err := tx.SeriesEditionCreate(ctx, "New Edition", seriesID, "", "")
 		if err != nil {
 			return nil, err
 		}

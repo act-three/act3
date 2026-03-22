@@ -19,8 +19,10 @@ type SeriesEditionHead struct {
 	sed schema.SeriesEdition
 }
 
-func (sed *SeriesEditionHead) ID() string    { return sed.sed.ID }
-func (sed *SeriesEditionHead) Title() string { return sed.sed.Title }
+func (sed *SeriesEditionHead) ID() string             { return sed.sed.ID }
+func (sed *SeriesEditionHead) Title() string          { return sed.sed.Title }
+func (sed *SeriesEditionHead) Summary() string        { return sed.sed.Summary }
+func (sed *SeriesEditionHead) TVmazeImageURL() string { return sed.sed.TVmazeImageURL }
 
 type SeriesEdition struct {
 	SeriesEditionHead
@@ -167,15 +169,17 @@ func (sed *SeriesEdition) EditURL() string {
 	)
 }
 
-func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID string) (schema.SeriesEdition, error) {
+func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID, summary, tvmazeImageURL string) (schema.SeriesEdition, error) {
 	slug, err := tx.generateSeriesEditionSlug(ctx, title, seriesID)
 	if err != nil {
 		return schema.SeriesEdition{}, err
 	}
 	return tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
-		Title:    title,
-		Slug:     slug,
-		SeriesID: seriesID,
+		Title:          title,
+		Slug:           slug,
+		SeriesID:       seriesID,
+		Summary:        summary,
+		TVmazeImageURL: tvmazeImageURL,
 	})
 }
 

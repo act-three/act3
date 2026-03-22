@@ -19,7 +19,6 @@ CREATE TABLE Series
 	ID      TEXT PRIMARY KEY,
 	Slug    TEXT NOT NULL UNIQUE,
 	Title   TEXT NOT NULL,
-	Summary TEXT NOT NULL,
 	Status  TEXT NOT NULL CHECK (Status IN (
 		'In Development',
 		'Running',
@@ -32,7 +31,6 @@ CREATE TABLE Series
 
 	TVmazeID        INTEGER UNIQUE,
 	TVmazeURL       TEXT,
-	TVmazeImageURL  TEXT NOT NULL,
 	TVmazeUpdatedAt INTEGER NOT NULL DEFAULT (0),
 	IMDBID          TEXT UNIQUE,
 	TVDBID          INTEGER UNIQUE,
@@ -50,10 +48,12 @@ STRICT, WITHOUT ROWID;
 
 CREATE TABLE SeriesEdition
 (
-	ID        TEXT PRIMARY KEY DEFAULT ('sed'||newID()),
-	SeriesID  TEXT NOT NULL REFERENCES Series,
-	Slug      TEXT NOT NULL DEFAULT (''),
-	Title     TEXT NOT NULL,
+	ID             TEXT PRIMARY KEY DEFAULT ('sed'||newID()),
+	SeriesID       TEXT NOT NULL REFERENCES Series,
+	Slug           TEXT NOT NULL DEFAULT (''),
+	Title          TEXT NOT NULL,
+	Summary        TEXT NOT NULL DEFAULT (''),
+	TVmazeImageURL TEXT NOT NULL DEFAULT (''),
 	UNIQUE (SeriesID, Slug)
 )
 STRICT;

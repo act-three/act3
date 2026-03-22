@@ -131,14 +131,12 @@ type Series struct {
 	ID              string
 	Slug            string
 	Title           string
-	Summary         string
 	Status          string
 	Language        string
 	PremieredOn     *string
 	EndedOn         *string
 	TVmazeID        *int64
 	TVmazeURL       *string
-	TVmazeImageURL  string
 	TVmazeUpdatedAt int64
 	IMDBID          *string
 	TVDBID          *int64
@@ -146,10 +144,12 @@ type Series struct {
 }
 
 type SeriesEdition struct {
-	ID       string
-	SeriesID string
-	Slug     string
-	Title    string
+	ID             string
+	SeriesID       string
+	Slug           string
+	Title          string
+	Summary        string
+	TVmazeImageURL string
 }
 
 type Seriesgenre struct {

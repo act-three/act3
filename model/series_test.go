@@ -13,19 +13,19 @@ func TestNewSeries(t *testing.T) {
 	t.Run("creates series with single edition and episodes", func(t *testing.T) {
 		// Setup test data
 		srData := schema.Series{
-			ID:             "series-1",
-			Title:          "Test Series",
-			Summary:        "A test series",
-			Status:         "Running",
-			Language:       "English",
-			TVmazeImageURL: "https://example.com/image.jpg",
+			ID:       "series-1",
+			Title:    "Test Series",
+			Status:   "Running",
+			Language: "English",
 		}
 
 		seds := []schema.SeriesEdition{
 			{
-				ID:       "edition-1",
-				Title:    "Original",
-				SeriesID: "series-1",
+				ID:             "edition-1",
+				Title:          "Original",
+				SeriesID:       "series-1",
+				Summary:        "A test series",
+				TVmazeImageURL: "https://example.com/image.jpg",
 			},
 		}
 
@@ -68,10 +68,6 @@ func TestNewSeries(t *testing.T) {
 		if sr.Title() != "Test Series" {
 			t.Errorf("expected series title 'Test Series', got '%s'", sr.Title())
 		}
-		if sr.Summary() != "A test series" {
-			t.Errorf("expected summary 'A test series', got '%s'", sr.Summary())
-		}
-
 		// Verify edition lookup by title
 		ed := sr.EditionByTitle("Original")
 		if ed == nil {
@@ -340,17 +336,26 @@ func TestSeriesHeadMethods(t *testing.T) {
 	tvmazeID := int64(12345)
 
 	srData := schema.Series{
-		ID:             "series-1",
-		Slug:           "test-series",
-		Title:          "Test Series",
-		Summary:        "A test summary",
-		Status:         "Running",
-		PremieredOn:    &premiered,
-		TVmazeID:       &tvmazeID,
-		TVmazeImageURL: "https://example.com/image.jpg",
+		ID:          "series-1",
+		Slug:        "test-series",
+		Title:       "Test Series",
+		Status:      "Running",
+		PremieredOn: &premiered,
+		TVmazeID:    &tvmazeID,
 	}
 
-	sr := newSeries(srData, nil, nil, nil, nil, noProgress, nil)
+	seds := []schema.SeriesEdition{
+		{
+			ID:             "edition-1",
+			Slug:           "",
+			Title:          "Air Date",
+			SeriesID:       "series-1",
+			Summary:        "A test summary",
+			TVmazeImageURL: "https://example.com/image.jpg",
+		},
+	}
+
+	sr := newSeries(srData, seds, nil, nil, nil, noProgress, nil)
 
 	t.Run("ID returns correct value", func(t *testing.T) {
 		if sr.ID() != "series-1" {
@@ -371,8 +376,9 @@ func TestSeriesHeadMethods(t *testing.T) {
 	})
 
 	t.Run("Summary returns correct value", func(t *testing.T) {
-		if sr.Summary() != "A test summary" {
-			t.Errorf("expected 'A test summary', got '%s'", sr.Summary())
+		ed := sr.DefaultEdition()
+		if ed.Summary() != "A test summary" {
+			t.Errorf("expected 'A test summary', got '%s'", ed.Summary())
 		}
 	})
 
@@ -401,8 +407,9 @@ func TestSeriesHeadMethods(t *testing.T) {
 	})
 
 	t.Run("TVmazeImageURL returns correct value", func(t *testing.T) {
-		if sr.TVmazeImageURL() != "https://example.com/image.jpg" {
-			t.Errorf("expected 'https://example.com/image.jpg', got '%s'", sr.TVmazeImageURL())
+		ed := sr.DefaultEdition()
+		if ed.TVmazeImageURL() != "https://example.com/image.jpg" {
+			t.Errorf("expected 'https://example.com/image.jpg', got '%s'", ed.TVmazeImageURL())
 		}
 	})
 

@@ -25,14 +25,12 @@ func newSeriesHeadList(list []schema.Series) []*SeriesHead {
 	return sss
 }
 
-func (sr *SeriesHead) ID() string             { return sr.sr.ID }
-func (sr *SeriesHead) Slug() string           { return sr.sr.Slug }
-func (sr *SeriesHead) PremieredOn() *string   { return sr.sr.PremieredOn }
-func (sr *SeriesHead) Status() string         { return sr.sr.Status }
-func (sr *SeriesHead) Summary() string        { return sr.sr.Summary }
-func (sr *SeriesHead) Title() string          { return sr.sr.Title }
-func (sr *SeriesHead) TVmazeID() *int64       { return sr.sr.TVmazeID }
-func (sr *SeriesHead) TVmazeImageURL() string { return sr.sr.TVmazeImageURL }
+func (sr *SeriesHead) ID() string           { return sr.sr.ID }
+func (sr *SeriesHead) Slug() string         { return sr.sr.Slug }
+func (sr *SeriesHead) PremieredOn() *string { return sr.sr.PremieredOn }
+func (sr *SeriesHead) Status() string       { return sr.sr.Status }
+func (sr *SeriesHead) Title() string        { return sr.sr.Title }
+func (sr *SeriesHead) TVmazeID() *int64     { return sr.sr.TVmazeID }
 
 func (sr *SeriesHead) PlayURL() string {
 	return "/" + sr.sr.Slug
@@ -207,11 +205,9 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		Language:    show.Language,
 		PremieredOn: show.Premiered,
 		EndedOn:     show.Ended,
-		Summary:     show.Summary,
 
 		TVmazeID:        &id64,
 		TVmazeURL:       &show.URL,
-		TVmazeImageURL:  show.Image.Medium(),
 		TVmazeUpdatedAt: int64(show.Updated),
 		IMDBID:          show.Externals.IMDB,
 		TVDBID:          show.Externals.TheTVDB,
@@ -220,7 +216,8 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 	if err != nil {
 		return nil, err
 	}
-	sedData, err := tx.SeriesEditionCreate(ctx, AirDate, srID)
+	sedData, err := tx.SeriesEditionCreate(ctx,
+		AirDate, srID, show.Summary, show.Image.Medium())
 	if err != nil {
 		return nil, err
 	}

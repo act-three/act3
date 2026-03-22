@@ -367,24 +367,23 @@ INSERT INTO Series
 	ID,
 	Slug,
 	Title,
-	Summary,
 	Status,
 	Language,
 	PremieredOn,
 	EndedOn,
 	TVmazeID,
 	TVmazeURL,
-	TVmazeImageURL,
 	TVmazeUpdatedAt,
 	IMDBID,
 	TVDBID,
 	TVRageID
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Title, Slug, SeriesID) VALUES (?, ?, ?)
+INSERT INTO SeriesEdition (Title, Slug, SeriesID, Summary, TVmazeImageURL)
+VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionGet :one

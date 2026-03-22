@@ -87,7 +87,7 @@ func AppSeriesDetail(
 					html.Img(),
 					FlexCol(Gap4, Class("v-media-detail-body"))(
 						html.H1()(html.Text(sr.Title())),
-						html.P()(html.Safe(sr.Summary())),
+						html.P()(html.Safe(sr.DefaultEdition().Summary())),
 					),
 				),
 				appSeriesDetailEdition(sed, dls),

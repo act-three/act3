@@ -15,12 +15,13 @@ func BrowseSeries(sr *model.Series) html.Node {
 	if sed := sr.EditionByTitle(model.AirDate); sed != nil {
 		seasons = sed.Seasons()
 	}
-	return browse(sr.Title(), sr.TVmazeImageURL())(
+	defEd := sr.DefaultEdition()
+	return browse(sr.Title(), defEd.TVmazeImageURL())(
 		Grid12(Class("v-series"))(
 			Box(Class("v-series-sidebar"))(
 				Box(Class("v-series-sidebar-inner"))(
 					ImageFrame()(
-						PosterImg(PosterFill, attr.Src(sr.TVmazeImageURL())),
+						PosterImg(PosterFill, attr.Src(defEd.TVmazeImageURL())),
 					),
 					Box(Class("v-series-sidebar-section"))(Text(sr.Title(), FontBold)),
 					Box(Class("v-series-sidebar-section"))(
