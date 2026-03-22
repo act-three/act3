@@ -20,6 +20,7 @@ type SeriesEditionHead struct {
 }
 
 func (sed *SeriesEditionHead) ID() string             { return sed.sed.ID }
+func (sed *SeriesEditionHead) Slug() string           { return sed.sed.Slug }
 func (sed *SeriesEditionHead) Title() string          { return sed.sed.Title }
 func (sed *SeriesEditionHead) Summary() string        { return sed.sed.Summary }
 func (sed *SeriesEditionHead) TVmazeImageURL() string { return sed.sed.TVmazeImageURL }
@@ -169,6 +170,18 @@ func (sed *SeriesEdition) EditURL() string {
 		sed.sr.EditURL(),
 		sed.sed.Slug,
 	)
+}
+
+func (tx *TxR) SeriesEditionHeadList(ctx Context, seriesID string) ([]*SeriesEditionHead, error) {
+	seds, err := tx.q.SeriesEditionListBySeriesID(ctx, seriesID)
+	if err != nil {
+		return nil, err
+	}
+	heads := make([]*SeriesEditionHead, len(seds))
+	for i := range seds {
+		heads[i] = &SeriesEditionHead{seds[i]}
+	}
+	return heads, nil
 }
 
 func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID, summary, tvmazeImageURL string) (schema.SeriesEdition, error) {

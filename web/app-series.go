@@ -29,7 +29,7 @@ func (c *Config) appSeries(_ http.ResponseWriter, req *http.Request) (html.Node,
 func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		sr, err := tx.SeriesBySlug(ctx, req.PathValue("slug"))
+		sed, err := tx.SeriesEditionBySlug(ctx, req.PathValue("slug"), req.PathValue("edslug"))
 		if err == sql.ErrNoRows {
 			http.Redirect(w, req, "/app/series", http.StatusSeeOther)
 			return nil, nil
@@ -37,15 +37,9 @@ func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		var sed *model.SeriesEdition
-		if edSlug := req.PathValue("edslug"); edSlug != "" {
-			sed = sr.EditionBySlug(edSlug)
-		} else {
-			sed = sr.DefaultEdition()
-		}
-		if sed == nil {
-			http.Redirect(w, req, sr.EditURL(), http.StatusSeeOther)
-			return nil, nil
+		editions, err := tx.SeriesEditionHeadList(ctx, sed.SeriesHead().ID())
+		if err != nil {
+			return nil, err
 		}
 
 		dls, err := tx.DownloadHeadListBySeriesEditionID(ctx, sed.ID())
@@ -53,7 +47,8 @@ func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		detail := view.AppSeriesDetail(sr, sed, dls)
+		sr := sed.SeriesHead()
+		detail := view.AppSeriesDetail(sed, editions, dls)
 		if req.Header.Get("turbo-frame") == "detail" {
 			return view.PageFrame(sr.Title(), "detail", detail), nil
 		}

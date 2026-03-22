@@ -73,21 +73,22 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 }
 
 func AppSeriesDetail(
-	sr *model.Series,
 	sed *model.SeriesEdition,
+	editions []*model.SeriesEditionHead,
 	dls []*model.DownloadHead,
 ) html.Node {
+	sr := sed.SeriesHead()
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(
 			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
-				appSeriesEditionList(sr, sed),
+				appSeriesEditionList(sr, editions, sed),
 				FlexRow(Gap2)(
 					html.Img(),
 					FlexCol(Gap4, Class("v-media-detail-body"))(
 						html.H1()(html.Text(sr.Title())),
-						html.P()(html.Safe(sr.DefaultEdition().Summary())),
+						html.P()(html.Safe(sed.Summary())),
 					),
 				),
 				appSeriesDetailEdition(sed, dls),
@@ -100,22 +101,26 @@ func appSeriesSearchbar() html.Node {
 	return html.Text("appSeriesSearchbar")
 }
 
-func appSeriesEditionList(sr *model.Series, current *model.SeriesEdition) html.Node {
+func appSeriesEditionList(sr *model.SeriesHead, editions []*model.SeriesEditionHead, current *model.SeriesEdition) html.Node {
 	return FlexCol(Gap4)(
-		html.RangeSeq(sr.SeriesEditionSeq(), func(sed *model.SeriesEdition) html.Node {
+		html.Range(editions, func(ed *model.SeriesEditionHead) html.Node {
 			selected := attr.Group()
-			if current != nil && sed.ID() == current.ID() {
+			if current != nil && ed.ID() == current.ID() {
 				selected = CardSelected
+			}
+			editURL := sr.EditURL()
+			if ed.Slug() != "" {
+				editURL += "/" + ed.Slug()
 			}
 			return Card(
 				CardSurface,
 				CardSize3,
-				attr.Href(sed.EditURL()),
+				attr.Href(editURL),
 				selected,
 			)(
 				CardContent()(
 					CardTitle()(
-						Text(sed.Title()),
+						Text(ed.Title()),
 					),
 				),
 			)

@@ -246,41 +246,11 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 // and returns the edition matching edSlug
 // (empty string for the default edition).
 func (tx *TxR) SeriesEditionBySlug(ctx Context, slug, edSlug string) (*SeriesEdition, error) {
-	// TODO: make this the primary way to load a series edition,
-	// doing what SeriesBySlug does, but directly, and without loading
-	// the other editions.
-	sr, err := tx.SeriesBySlug(ctx, slug)
-	if err != nil {
-		return nil, err
-	}
-	sed := sr.EditionBySlug(edSlug)
-	if sed == nil {
-		return nil, sql.ErrNoRows
-	}
-	return sed, nil
-}
-
-func (tx *TxR) SeriesBySlug(ctx Context, slug string) (*Series, error) {
-	// TODO: delete this when unused
+	// TODO(april): avoid loading other editions here.
 	srData, err := tx.q.SeriesGetBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
-	return tx.seriesFromData(ctx, srData)
-}
-
-func (tx *TxR) Series(ctx Context, id string) (*Series, error) {
-	// TODO: delete this -- it is unused
-	srData, err := tx.q.SeriesGet(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	return tx.seriesFromData(ctx, srData)
-}
-
-func (tx *TxR) seriesFromData(ctx Context, srData schema.Series) (*Series, error) {
-	// TODO: adapt this to serve the purposes of SeriesEditionBySlug,
-	// once SeriesBySlug and Series are deleted.
 	id := srData.ID
 	seds, err := tx.q.SeriesEditionListBySeriesID(ctx, id)
 	if err != nil {
@@ -311,7 +281,11 @@ func (tx *TxR) seriesFromData(ctx Context, srData schema.Series) (*Series, error
 	videosByEpisodeID := vidMapByEpisodeID(evs, vidByID)
 
 	sr := newSeries(srData, seds, sns, sneps, eps, tx.m.prog.List, videosByEpisodeID)
-	return sr, nil
+	sed := sr.EditionBySlug(edSlug)
+	if sed == nil {
+		return nil, sql.ErrNoRows
+	}
+	return sed, nil
 }
 
 func (tx *TxR) SeriesWorkList(ctx Context) ([]*SeriesWork, error) {
