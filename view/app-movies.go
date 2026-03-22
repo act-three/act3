@@ -232,14 +232,10 @@ func appMoviesEditionList(mo *model.MovieHead, editions []*model.MovieWork, curr
 			if current != nil && ed.MovieEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			}
-			editURL := mo.EditURL()
-			if ed.MovieEditionHead.Slug() != "" {
-				editURL += "/" + ed.MovieEditionHead.Slug()
-			}
 			return Card(
 				CardSurface,
 				CardSize3,
-				attr.Href(editURL),
+				attr.Href(ed.EditURL()),
 				selected,
 			)(
 				CardContent()(

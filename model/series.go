@@ -52,6 +52,13 @@ type SeriesWork struct {
 func (sw *SeriesWork) Title() string    { return sw.SeriesHead.Title() }
 func (sw *SeriesWork) ImageURL() string { return sw.TVmazeImageURL() }
 
+func (sw *SeriesWork) EditURL() string {
+	if sw.SeriesEditionHead.Slug() == "" {
+		return sw.SeriesHead.EditURL()
+	}
+	return sw.SeriesHead.EditURL() + "/" + sw.SeriesEditionHead.Slug()
+}
+
 type Series struct {
 	SeriesHead
 	editions []*SeriesEdition

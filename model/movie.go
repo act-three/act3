@@ -47,8 +47,13 @@ type MovieWork struct {
 	MovieEditionHead
 }
 
-func (mw *MovieWork) Title() string {
-	return mw.MovieHead.Title()
+func (mw *MovieWork) Title() string { return mw.MovieHead.Title() }
+
+func (mw *MovieWork) EditURL() string {
+	if mw.MovieEditionHead.Slug() == "" {
+		return mw.MovieHead.EditURL()
+	}
+	return mw.MovieHead.EditURL() + "/" + mw.MovieEditionHead.Slug()
 }
 
 // Movie is the full representation with editions and their videos.

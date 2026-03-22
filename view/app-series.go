@@ -108,14 +108,10 @@ func appSeriesEditionList(sr *model.SeriesHead, editions []*model.SeriesWork, cu
 			if current != nil && ed.SeriesEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			}
-			editURL := sr.EditURL()
-			if ed.SeriesEditionHead.Slug() != "" {
-				editURL += "/" + ed.SeriesEditionHead.Slug()
-			}
 			return Card(
 				CardSurface,
 				CardSize3,
-				attr.Href(editURL),
+				attr.Href(ed.EditURL()),
 				selected,
 			)(
 				CardContent()(
