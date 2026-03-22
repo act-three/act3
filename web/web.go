@@ -47,7 +47,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /-/part/movie-search", c.movieSearch)
 	handle(mux, "GET /-/part/series-search", c.seriesSearch)
 	handle(mux, "GET /-/player/{id}/{epID}/{sedID}", c.playerForEpisode)
-	handle(mux, "GET /-/player/{id}/{moID}", c.playerForMovie)
+	handle(mux, "GET /-/player/{id}/{medID}", c.playerForMovie)
 	handle(mux, "GET /-/plr/{id}", c.videoPlaylist)
 	handle(mux, "GET /-/pls/{id}", c.videoRenditionPlaylist)
 	handle(mux, "GET /-/status", c.status)

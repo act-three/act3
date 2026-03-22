@@ -70,7 +70,7 @@ func (med *MovieEdition) EditURL() string {
 }
 
 func (med *MovieEdition) PlayerURL(v *Video) string {
-	return "/-/player/" + v.ID() + "/" + med.mo.ID()
+	return "/-/player/" + v.ID() + "/" + med.med.ID
 }
 
 // Playable returns the first video with a playlist, or nil.
@@ -84,6 +84,14 @@ func (med *MovieEdition) Playable() *Video {
 }
 
 // Transaction methods
+
+func (tx *TxR) MovieEditionHead(ctx Context, id string) (*MovieEditionHead, error) {
+	medData, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &MovieEditionHead{medData}, nil
+}
 
 func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 	medData, err := tx.q.MovieEditionGet(ctx, id)

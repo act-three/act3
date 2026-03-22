@@ -39,7 +39,7 @@ func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.
 		if err != nil {
 			return nil, err
 		}
-		mo, err := tr.Movie(ctx, req.PathValue("moID"))
+		med, err := tr.MovieEditionHead(ctx, req.PathValue("medID"))
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +47,7 @@ func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.
 		if err != nil {
 			return nil, err
 		}
-		return view.PlayerForMovie(v, mo, qualityOpts), nil
+		return view.PlayerForMovie(v, med, qualityOpts), nil
 	})
 }
 

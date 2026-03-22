@@ -117,11 +117,6 @@ func (mo *Movie) MovieEditionSeq() iter.Seq[*MovieEdition] {
 	return movieEditionSeq(mo.editions)
 }
 
-// PlayerURL returns the player URL for a video within this movie.
-func (mo *Movie) PlayerURL(v *Video) string {
-	return "/-/player/" + v.ID() + "/" + mo.ID()
-}
-
 // Transaction methods
 
 func (tx *TxR) MovieHeadList(ctx Context) ([]*MovieHead, error) {

@@ -16,17 +16,16 @@ func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.Qua
 	return player(v, playerTitleForEpisode(ep), qualityOpts)
 }
 
-func PlayerForMovie(v *model.Video, mo *model.Movie, qualityOpts []model.QualityOption) html.Node {
-	return player(v, playerTitleForMovie(mo), qualityOpts)
+func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption) html.Node {
+	return player(v, playerTitleForMovie(med), qualityOpts)
 }
 
-func playerTitleForMovie(mo *model.Movie) string {
-	if defEd := mo.DefaultEdition(); defEd != nil {
-		if y := defEd.Year(); y != 0 {
-			return fmt.Sprintf("%s (%d)", mo.Title(), y)
-		}
+func playerTitleForMovie(med *model.MovieEditionHead) string {
+	title := med.Title()
+	if y := med.Year(); y != 0 {
+		return fmt.Sprintf("%s (%d)", title, y)
 	}
-	return mo.Title()
+	return title
 }
 
 func player(v *model.Video, title string, qualityOpts []model.QualityOption) html.Node {
