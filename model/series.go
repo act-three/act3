@@ -33,11 +33,11 @@ func (sr *SeriesHead) Status() string       { return sr.sr.Status }
 func (sr *SeriesHead) Title() string        { return sr.sr.Title }
 func (sr *SeriesHead) TVmazeID() *int64     { return sr.sr.TVmazeID }
 
-func (sr *SeriesHead) PlayURL() string {
+func (sr *SeriesHead) TheaterURL() string {
 	return "/" + sr.sr.Slug
 }
 
-func (sr *SeriesHead) EditURL() string {
+func (sr *SeriesHead) EditorURL() string {
 	return "/app/series/" + sr.sr.Slug
 }
 
@@ -52,11 +52,11 @@ type SeriesWork struct {
 func (sw *SeriesWork) Title() string    { return sw.SeriesHead.Title() }
 func (sw *SeriesWork) ImageURL() string { return sw.TVmazeImageURL() }
 
-func (sw *SeriesWork) EditURL() string {
+func (sw *SeriesWork) EditorURL() string {
 	if sw.SeriesEditionHead.Slug() == "" {
-		return sw.SeriesHead.EditURL()
+		return sw.SeriesHead.EditorURL()
 	}
-	return sw.SeriesHead.EditURL() + "/" + sw.SeriesEditionHead.Slug()
+	return sw.SeriesHead.EditorURL() + "/" + sw.SeriesEditionHead.Slug()
 }
 
 type Series struct {

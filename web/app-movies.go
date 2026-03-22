@@ -90,7 +90,7 @@ func (c *Config) doAddMovie(w http.ResponseWriter, req *http.Request) (html.Node
 		if err != nil {
 			return nil, err
 		}
-		http.Redirect(w, req, mo.EditURL(), http.StatusSeeOther)
+		http.Redirect(w, req, mo.EditorURL(), http.StatusSeeOther)
 		return nil, nil
 	})
 }

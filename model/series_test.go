@@ -415,13 +415,13 @@ func TestSeriesHeadMethods(t *testing.T) {
 
 	t.Run("PlayURL returns correct format", func(t *testing.T) {
 		expected := "/test-series"
-		if sr.PlayURL() != expected {
-			t.Errorf("expected '%s', got '%s'", expected, sr.PlayURL())
+		if sr.TheaterURL() != expected {
+			t.Errorf("expected '%s', got '%s'", expected, sr.TheaterURL())
 		}
 	})
 
 	t.Run("EditURL returns correct format", func(t *testing.T) {
-		got := sr.EditURL()
+		got := sr.EditorURL()
 		if got == "" {
 			t.Error("expected non-empty EditURL")
 		}

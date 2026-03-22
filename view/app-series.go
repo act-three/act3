@@ -57,7 +57,7 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(ss.SeriesHead.ID()),
-		ListURL(ss.EditURL()),
+		ListURL(ss.EditorURL()),
 	)(
 		CardMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
 		CardContent()(
@@ -111,7 +111,7 @@ func appSeriesEditionList(sr *model.SeriesHead, editions []*model.SeriesWork, cu
 			return Card(
 				CardSurface,
 				CardSize3,
-				attr.Href(ed.EditURL()),
+				attr.Href(ed.EditorURL()),
 				selected,
 			)(
 				CardContent()(
@@ -442,7 +442,7 @@ func SeriesResultLink(ss *model.SeriesHead) html.Node {
 	return FlexRow(Gap2)(
 		Label("line/check-circle", "In Library"),
 		Button(
-			Href(ss.EditURL()),
+			Href(ss.EditorURL()),
 			Attr("data-turbo-frame")("detail"),
 			Attr("data-action")("click->dialog#close"),
 		)(

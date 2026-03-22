@@ -53,7 +53,7 @@ func AppMoviesListItem(
 	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(mo.MovieHead.ID()),
-		ListURL(mo.EditURL()),
+		ListURL(mo.EditorURL()),
 	)(
 		CardMedia()(html.Img(attr.Src(mo.ImageURL()))),
 		CardContent()(
@@ -196,7 +196,7 @@ func MovieResultLink(mo *model.MovieHead) html.Node {
 	return FlexRow(Gap2)(
 		Label("line/check-circle", "In Library"),
 		Button(
-			Href(mo.EditURL()),
+			Href(mo.EditorURL()),
 			Attr("data-turbo-frame")("detail"),
 			Attr("data-action")("click->dialog#close"),
 		)(
@@ -235,7 +235,7 @@ func appMoviesEditionList(mo *model.MovieHead, editions []*model.MovieWork, curr
 			return Card(
 				CardSurface,
 				CardSize3,
-				attr.Href(ed.EditURL()),
+				attr.Href(ed.EditorURL()),
 				selected,
 			)(
 				CardContent()(

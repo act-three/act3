@@ -29,11 +29,11 @@ func (mo *MovieHead) Slug() string   { return mo.mo.Slug }
 func (mo *MovieHead) Title() string  { return mo.mo.Title }
 func (mo *MovieHead) TMDBID() *int64 { return mo.mo.TMDBID }
 
-func (mo *MovieHead) PlayURL() string {
+func (mo *MovieHead) TheaterURL() string {
 	return "/" + mo.mo.Slug
 }
 
-func (mo *MovieHead) EditURL() string {
+func (mo *MovieHead) EditorURL() string {
 	return "/app/movies/" + mo.mo.Slug
 }
 
@@ -47,11 +47,11 @@ type MovieWork struct {
 
 func (mw *MovieWork) Title() string { return mw.MovieHead.Title() }
 
-func (mw *MovieWork) EditURL() string {
+func (mw *MovieWork) EditorURL() string {
 	if mw.MovieEditionHead.Slug() == "" {
-		return mw.MovieHead.EditURL()
+		return mw.MovieHead.EditorURL()
 	}
-	return mw.MovieHead.EditURL() + "/" + mw.MovieEditionHead.Slug()
+	return mw.MovieHead.EditorURL() + "/" + mw.MovieEditionHead.Slug()
 }
 
 // Movie is the full representation with editions and their videos.

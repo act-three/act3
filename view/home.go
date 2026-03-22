@@ -37,7 +37,7 @@ func workPosterLink(w model.Work) html.Node {
 	return Box(HoverOverlay, Class("v-home-poster"))(
 		html.A(
 			Class("v-home-poster-link"),
-			attr.Href(w.PlayURL()),
+			attr.Href(w.TheaterURL()),
 		)(
 			PosterImg(PosterFill, attr.Src(w.ImageURL())),
 		),

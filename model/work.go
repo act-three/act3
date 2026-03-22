@@ -10,7 +10,7 @@ import (
 type Work interface {
 	Title() string
 	ImageURL() string
-	PlayURL() string
+	TheaterURL() string
 }
 
 // WorkList returns all movies and series as a unified list,
