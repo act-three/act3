@@ -8,25 +8,24 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func BrowseMovie(
-	mo *model.Movie,
+func BrowseMovieEdition(
+	med *model.MovieEdition,
 	dls []*model.RenditionForDownload,
 ) html.Node {
-	med := mo.EditionByTitle(model.DefaultEdition)
-	defEd := mo.DefaultEdition()
-	return browse(mo.Title(), defEd.ImageURL())(
+	mo := med.MovieHead()
+	return browse(mo.Title(), med.ImageURL())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
-				expr.IfElse(defEd.YearDisplay() != "",
+				expr.IfElse(med.YearDisplay() != "",
 					func() html.Node {
-						return Text(defEd.YearDisplay(), Class("v-detail-muted"))
+						return Text(med.YearDisplay(), Class("v-detail-muted"))
 					},
 					func() html.Node { return html.Group() },
 				),
 				Text(mo.Title(), TextSize7),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
-						browseMoviePlayButton(mo, med),
+						browseMoviePlayButton(med),
 					),
 					FlexCol()(
 						Button(ButtonGhost, ButtonSize3)(
@@ -42,28 +41,24 @@ func BrowseMovie(
 					),
 				),
 				browseMovieAudioTrackSelect(med),
-				TextNode()(html.Safe(defEd.Summary())),
+				TextNode()(html.Safe(med.Summary())),
 			),
 			Box(),
 			Box(ColSpan4)(
 				ImageFrame()(
-					PosterImg(PosterFill, attr.Src(defEd.ImageURL())),
+					PosterImg(PosterFill, attr.Src(med.ImageURL())),
 				),
 			),
 		),
 	)
 }
 
-func browseMoviePlayButton(mo *model.Movie, med *model.MovieEdition) html.Node {
-	if med == nil {
-		return Button(Disabled(true), ButtonSize3)(
-			Icon("line/x-close"), Text("Play"))
-	}
+func browseMoviePlayButton(med *model.MovieEdition) html.Node {
 	v := med.Playable()
 	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
-				attr.Href(mo.PlayerURL(v)),
+				attr.Href(med.PlayerURL(v)),
 				attr.Attr("data-turbo-frame")("player"),
 				ButtonSize3,
 			)(Icon("solid/play"), Text("Play"))
@@ -76,9 +71,6 @@ func browseMoviePlayButton(mo *model.Movie, med *model.MovieEdition) html.Node {
 }
 
 func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
-	if med == nil {
-		return html.Group()
-	}
 	v := med.Playable()
 	if v == nil {
 		return html.Group()

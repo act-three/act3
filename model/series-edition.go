@@ -59,6 +59,8 @@ func (sed *SeriesEdition) Seasons() iter.Seq[*Season] {
 	return slices.Values(sed.sns)
 }
 
+func (sed *SeriesEdition) SeriesHead() *SeriesHead { return sed.sr }
+
 func (sed *SeriesEdition) SeasonByID(id string) *Season {
 	return sed.snByID[id]
 }

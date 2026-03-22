@@ -10,18 +10,18 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func BrowseSeries(sr *model.Series) html.Node {
+func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 	seasons := slices.Values(([]*model.Season)(nil)) // empty
-	if sed := sr.EditionByTitle(model.AirDate); sed != nil {
+	if sed != nil {
 		seasons = sed.Seasons()
 	}
-	defEd := sr.DefaultEdition()
-	return browse(sr.Title(), defEd.TVmazeImageURL())(
+	sr := sed.SeriesHead()
+	return browse(sr.Title(), sed.TVmazeImageURL())(
 		Grid12(Class("v-series"))(
 			Box(Class("v-series-sidebar"))(
 				Box(Class("v-series-sidebar-inner"))(
 					ImageFrame()(
-						PosterImg(PosterFill, attr.Src(defEd.TVmazeImageURL())),
+						PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
 					),
 					Box(Class("v-series-sidebar-section"))(Text(sr.Title(), FontBold)),
 					Box(Class("v-series-sidebar-section"))(

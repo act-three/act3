@@ -67,8 +67,9 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /app/tmdb", c.appTMDB)
 	handle(mux, "GET /app/transmission", c.appTransmission)
 	handle(mux, "GET /{$}", c.home)
-	handle(mux, "GET /{slug}", c.browseWork)
-	handle(mux, "GET /{slug}/{epSlug}", c.browseEpisode)
+	handle(mux, "GET /{slug0}", c.browseWork)
+	handle(mux, "GET /{slug0}/{slug1}", c.browseWork)
+	handle(mux, "GET /{slug0}/{slug1}/{slug2}", c.browseWork)
 	handle(mux, "POST /-/do/add-movie", c.doAddMovie)
 	handle(mux, "POST /-/do/add-movie-edition", c.doAddMovieEdition)
 	handle(mux, "POST /-/do/add-movie-tmdb", c.doAddMovieTMDB)
@@ -84,8 +85,8 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/run-task/{id}", c.doRunTask)
 	handle(mux, "POST /-/do/update-tmdb-settings", c.doUpdateTMDBSettings)
 	handle(mux, "POST /-/do/update-transmission-settings", c.doUpdateTransmissionSettings)
-	mux.Handle("GET /-/icon/", http.StripPrefix("/-/icon", icon.Handler()))
-	mux.Handle("GET /-/static/", static.Handler())
+	mux.Handle("GET /-/icon/{type}/{name}", http.StripPrefix("/-/icon", icon.Handler()))
+	mux.Handle("GET /-/static/{name}", static.Handler())
 	mux.HandleFunc("GET /-/events", c.events)
 }
 

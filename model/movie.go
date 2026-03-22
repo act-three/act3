@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"iter"
 	"strconv"
 	"strings"
@@ -126,7 +127,26 @@ func (tx *TxR) MovieHeadList(ctx Context) ([]*MovieHead, error) {
 	return newMovieHeadList(a), nil
 }
 
+// MovieEditionBySlug looks up a movie by its slug
+// and returns the edition matching edSlug
+// (empty string for the default edition).
+func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEdition, error) {
+	// TODO: make this the primary way to load a movie edition,
+	// doing what MovieBySlug does, but directly, and without loading
+	// the other editions.
+	mo, err := tx.MovieBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	med := mo.EditionBySlug(edSlug)
+	if med == nil {
+		return nil, sql.ErrNoRows
+	}
+	return med, nil
+}
+
 func (tx *TxR) MovieBySlug(ctx Context, slug string) (*Movie, error) {
+	// TODO: delete this when unused
 	moData, err := tx.q.MovieGetBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
@@ -135,6 +155,7 @@ func (tx *TxR) MovieBySlug(ctx Context, slug string) (*Movie, error) {
 }
 
 func (tx *TxR) Movie(ctx Context, id string) (*Movie, error) {
+	// TODO: delete this when unused
 	moData, err := tx.q.MovieGet(ctx, id)
 	if err != nil {
 		return nil, err
@@ -143,6 +164,8 @@ func (tx *TxR) Movie(ctx Context, id string) (*Movie, error) {
 }
 
 func (tx *TxR) movieFromData(ctx Context, moData schema.Movie) (*Movie, error) {
+	// TODO: adapt this to serve the purposes of MovieEditionBySlug,
+	// once MovieBySlug and Movie are deleted.
 	meds, err := tx.q.MovieEditionListByMovieID(ctx, moData.ID)
 	if err != nil {
 		return nil, err

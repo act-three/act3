@@ -68,6 +68,10 @@ func (med *MovieEdition) EditURL() string {
 	)
 }
 
+func (med *MovieEdition) PlayerURL(v *Video) string {
+	return "/-/player/" + v.ID() + "/" + med.mo.ID()
+}
+
 // Playable returns the first video with a playlist, or nil.
 func (med *MovieEdition) Playable() *Video {
 	for _, v := range med.videos {

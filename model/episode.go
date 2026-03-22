@@ -110,26 +110,27 @@ func (ep *Episode) DetailURL() string {
 	return "/" + ep.ep.Slug
 }
 
-// EpisodeBySlug looks up an episode by its full slug
-// (e.g. "breaking-bad/s01e01-pilot").
-func (tx *TxR) EpisodeBySlug(ctx Context, slug string) (*Episode, error) {
-	epRec, err := tx.q.EpisodeGetBySlug(ctx, slug)
+// EpisodeBySlug looks up an episode by its slug components.
+// The episode slug in the database is seriesSlug + "/" + epSlug.
+// edSlug selects the edition; empty string selects the default.
+func (tx *TxR) EpisodeBySlug(ctx Context, seriesSlug, edSlug, epSlug string) (*Episode, error) {
+	epRec, err := tx.q.EpisodeGetBySlug(ctx, seriesSlug+"/"+epSlug)
 	if err != nil {
 		return nil, err
 	}
-	return tx.episodeInContext(ctx, epRec.ID, "", AirDate)
+	return tx.episodeInContext(ctx, epRec.ID, "", "", edSlug)
 }
 
 // Episode is like EpisodeInEdition, but it assumes the Air Date edition.
 func (tx *TxR) Episode(ctx Context, id string) (*Episode, error) {
-	return tx.episodeInContext(ctx, id, "", AirDate)
+	return tx.episodeInContext(ctx, id, "", AirDate, "")
 }
 
 func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) {
-	return tx.episodeInContext(ctx, id, edID, "")
+	return tx.episodeInContext(ctx, id, edID, "", "")
 }
 
-func (tx *TxR) episodeInContext(ctx Context, id, edID, edName string) (*Episode, error) {
+func (tx *TxR) episodeInContext(ctx Context, id, edID, edName, edSlug string) (*Episode, error) {
 	epRec, err := tx.q.EpisodeGet(ctx, id)
 	if err != nil {
 		return nil, err
@@ -167,7 +168,7 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName string) (*Episode,
 		if err != nil {
 			return nil, err
 		}
-		if seq.ID != edID && seq.Title != edName && i < len(sneps)-1 {
+		if seq.ID != edID && seq.Title != edName && seq.Slug != edSlug && i < len(sneps)-1 {
 			continue
 		}
 		sr, err := tx.q.SeriesGet(ctx, seq.SeriesID)
