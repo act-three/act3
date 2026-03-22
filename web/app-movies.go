@@ -67,11 +67,11 @@ func (c *Config) doAddMovieEdition(w http.ResponseWriter, req *http.Request) (ht
 		if editionID == "" {
 			return nil, &model.ValidationError{Op: "add movie edition", Err: errNotFound}
 		}
-		_, err := tx.MovieEditionClone(ctx, editionID)
+		mw, err := tx.MovieEditionClone(ctx, editionID)
 		if err != nil {
 			return nil, err
 		}
-		w.WriteHeader(http.StatusNoContent)
+		http.Redirect(w, req, mw.EditorURL(), http.StatusSeeOther)
 		return nil, nil
 	})
 }
