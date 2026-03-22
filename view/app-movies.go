@@ -92,20 +92,13 @@ func AppMoviesDetail(
 					),
 				),
 
-				appMoviesEditionList(editions, med),
+				html.If(len(editions) > 1,
+					func() html.Node {
+						return appMoviesEditionList(editions, med)
+					},
+				),
 
 				SettingsGroup()(
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Default"),
-							SettingsItemLabelDescription("Shown first when opening a movie"),
-						),
-						SettingsControl()(
-							// placeholder control
-							Toggle("/-", "name", med.Slug() == "")(),
-						),
-					),
-
 					SettingsItem()(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Poster"),
@@ -132,19 +125,33 @@ func AppMoviesDetail(
 
 					html.If(med.Slug() != "",
 						func() html.Node {
-							return SettingsItem()(
-								SettingsItemLabel()(
-									SettingsItemLabelTitle("URL"),
+							return Group(
+								SettingsItem()(
+									SettingsItemLabel()(
+										SettingsItemLabelTitle("URL"),
+									),
+									SettingsControl()(
+										// placeholder control
+										InputText(
+											attr.Value(med.Slug()),
+											attr.Disabled,
+										),
+									),
 								),
-								SettingsControl()(
-									// placeholder control
-									InputText(
-										attr.Value(med.Slug()),
-										attr.Disabled,
+
+								SettingsItem()(
+									SettingsItemLabel()(
+										SettingsItemLabelTitle("Default"),
+										SettingsItemLabelDescription("Shown first when opening a movie"),
+									),
+									SettingsControl()(
+										// placeholder control
+										Button(ButtonGhost, ButtonSize2)(Text("Set Default")),
 									),
 								),
 							)
-						}),
+						},
+					),
 				),
 
 				SettingsGroup()(
@@ -178,7 +185,8 @@ func AppMoviesDetail(
 				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
-							SettingsItemLabelTitle("Duplicate Edition"),
+							SettingsItemLabelTitle("Edition"),
+							SettingsItemLabelDescription("Create a duplicate of this edition"),
 						),
 						SettingsControl()(
 							html.Form(
