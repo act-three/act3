@@ -83,7 +83,7 @@ func AppSeriesDetail(
 			Class("v-media-detail-body"),
 		)(
 			FlexCol(Gap4)(
-				appSeriesEditionList(sr, editions, sed),
+				appSeriesEditionList(editions, sed),
 				FlexRow(Gap2)(
 					html.Img(),
 					FlexCol(Gap4, Class("v-media-detail-body"))(
@@ -101,11 +101,11 @@ func appSeriesSearchbar() html.Node {
 	return html.Text("appSeriesSearchbar")
 }
 
-func appSeriesEditionList(sr *model.SeriesHead, editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
+func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
 	return FlexCol(Gap4)(
 		html.Range(editions, func(ed *model.SeriesWork) html.Node {
 			selected := attr.Group()
-			if current != nil && ed.SeriesEditionHead.ID() == current.ID() {
+			if ed.SeriesEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			}
 			return Card(
@@ -125,8 +125,8 @@ func appSeriesEditionList(sr *model.SeriesHead, editions []*model.SeriesWork, cu
 			attr.Method("POST"),
 			attr.Action("/-/do/add-series-edition"),
 		)(
-			html.Input(attr.Type("hidden"), attr.Name("series-id"), attr.Value(sr.ID())),
-			Button(ButtonSurface, ButtonSize2)(Text("Add Edition")),
+			html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(current.ID())),
+			Button(ButtonSurface, ButtonSize2)(Text("Duplicate Edition")),
 		),
 	)
 }

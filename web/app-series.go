@@ -153,11 +153,11 @@ func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.No
 func (c *Config) doAddSeriesEdition(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
-		seriesID := req.FormValue("series-id")
-		if seriesID == "" {
+		editionID := req.FormValue("edition-id")
+		if editionID == "" {
 			return nil, &model.ValidationError{Op: "add series edition", Err: errNotFound}
 		}
-		_, err := tx.SeriesEditionCreate(ctx, "New Edition", seriesID, "", "")
+		_, err := tx.SeriesEditionClone(ctx, editionID)
 		if err != nil {
 			return nil, err
 		}

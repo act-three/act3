@@ -172,7 +172,7 @@ func (tx *TxR) SeriesEditionList(ctx Context, sr *SeriesHead) ([]*SeriesWork, er
 	return works, nil
 }
 
-func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID, summary, tvmazeImageURL string) (schema.SeriesEdition, error) {
+func (tx *TxRW) seriesEditionCreate(ctx Context, title, seriesID, summary, tvmazeImageURL string) (schema.SeriesEdition, error) {
 	slug, err := tx.generateSeriesEditionSlug(ctx, title, seriesID)
 	if err != nil {
 		return schema.SeriesEdition{}, err
@@ -184,6 +184,60 @@ func (tx *TxRW) SeriesEditionCreate(ctx Context, title, seriesID, summary, tvmaz
 		Summary:        summary,
 		TVmazeImageURL: tvmazeImageURL,
 	})
+}
+
+// SeriesEditionClone creates a new edition by copying metadata,
+// seasons, and season-episode mappings from the edition with the given srcID.
+// Episodes themselves are shared, not copied.
+func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHead, error) {
+	src, err := tx.q.SeriesEditionGet(ctx, srcID)
+	if err != nil {
+		return nil, err
+	}
+	newSed, err := tx.seriesEditionCreate(ctx,
+		"Copy of "+src.Title, src.SeriesID, src.Summary, src.TVmazeImageURL)
+	if err != nil {
+		return nil, err
+	}
+	sns, err := tx.q.SeasonListByEditionID(ctx, srcID)
+	if err != nil {
+		return nil, err
+	}
+	sneps, err := tx.q.SeasonEpisodeListByEditionID(ctx, srcID)
+	if err != nil {
+		return nil, err
+	}
+	snepsBySeason := snepMapBySeasonID(sneps)
+	for _, sn := range sns {
+		newSn, err := tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
+			EditionID:      newSed.ID,
+			SortKey:        sn.SortKey,
+			Name:           sn.Name,
+			Number:         sn.Number,
+			TVmazeURL:      sn.TVmazeURL,
+			Summary:        sn.Summary,
+			EpisodeOrder:   sn.EpisodeOrder,
+			PremieredOn:    sn.PremieredOn,
+			EndedOn:        sn.EndedOn,
+			TVmazeImageURL: sn.TVmazeImageURL,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, snep := range snepsBySeason[sn.ID] {
+			err := tx.q.SeasonEpisodeCreate(ctx, schema.SeasonEpisodeCreateParams{
+				SeasonID:  newSn.ID,
+				EpisodeID: snep.EpisodeID,
+				SortKey:   snep.SortKey,
+				Label:     snep.Label,
+				Number:    snep.Number,
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	return &SeriesEditionHead{newSed}, nil
 }
 
 func (tx *TxRW) generateSeriesEditionSlug(ctx Context, title, seriesID string) (string, error) {

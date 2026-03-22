@@ -224,7 +224,7 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 	if err != nil {
 		return nil, err
 	}
-	sedData, err := tx.SeriesEditionCreate(ctx,
+	sedData, err := tx.seriesEditionCreate(ctx,
 		AirDate, srID, show.Summary, show.Image.Medium())
 	if err != nil {
 		return nil, err
