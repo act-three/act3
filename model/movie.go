@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"path"
 	"strconv"
 	"strings"
 
@@ -46,6 +47,13 @@ type MovieWork struct {
 }
 
 func (mw *MovieWork) Title() string { return mw.MovieHead.Title() }
+
+func (mw *MovieWork) TheaterURL() string {
+	if mw.MovieEditionHead.Slug() == "" {
+		return mw.MovieHead.TheaterURL()
+	}
+	return path.Join(mw.MovieHead.TheaterURL(), mw.MovieEditionHead.Slug())
+}
 
 func (mw *MovieWork) EditorURL() string {
 	if mw.MovieEditionHead.Slug() == "" {
