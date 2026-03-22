@@ -67,7 +67,7 @@ func AppMoviesListItem(
 
 func AppMoviesDetail(
 	med *model.MovieEdition,
-	editions []*model.MovieEditionHead,
+	editions []*model.MovieWork,
 	dls []*model.DownloadHead,
 ) html.Node {
 	mo := med.MovieHead()
@@ -225,16 +225,16 @@ func appMoviesDetailEdition(
 	)
 }
 
-func appMoviesEditionList(mo *model.MovieHead, editions []*model.MovieEditionHead, current *model.MovieEdition) html.Node {
+func appMoviesEditionList(mo *model.MovieHead, editions []*model.MovieWork, current *model.MovieEdition) html.Node {
 	return FlexCol(Gap4)(
-		html.Range(editions, func(ed *model.MovieEditionHead) html.Node {
+		html.Range(editions, func(ed *model.MovieWork) html.Node {
 			selected := attr.Group()
-			if current != nil && ed.ID() == current.ID() {
+			if current != nil && ed.MovieEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			}
 			editURL := mo.EditURL()
-			if ed.Slug() != "" {
-				editURL += "/" + ed.Slug()
+			if ed.MovieEditionHead.Slug() != "" {
+				editURL += "/" + ed.MovieEditionHead.Slug()
 			}
 			return Card(
 				CardSurface,
@@ -244,7 +244,7 @@ func appMoviesEditionList(mo *model.MovieHead, editions []*model.MovieEditionHea
 			)(
 				CardContent()(
 					CardTitle()(
-						Text(ed.Title()),
+						Text(ed.MovieEditionHead.Title()),
 					),
 				),
 			)

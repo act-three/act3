@@ -40,11 +40,11 @@ func (mo *MovieHead) EditURL() string {
 }
 
 // MovieWork contains information needed to display
-// a concise representation of a movie in UI.
-// It contains metadata about the movie itself plus its default edition.
+// a concise representation of a movie edition in UI.
+// It contains metadata about the movie itself plus an edition.
 type MovieWork struct {
 	MovieHead
-	MovieEditionHead // the default edition
+	MovieEditionHead
 }
 
 func (mw *MovieWork) Title() string {
@@ -350,6 +350,7 @@ func (tx *TxRW) generateMovieSlug(ctx Context, title string, year int64, id stri
 	return slug + "-" + id, nil
 }
 
+// MovieWorkList returns the default edition of each movie.
 func (tx *TxR) MovieWorkList(ctx Context) ([]*MovieWork, error) {
 	editions, err := tx.q.MovieEditionListDefault(ctx)
 	if err != nil {

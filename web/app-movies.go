@@ -36,7 +36,7 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		editions, err := tx.MovieEditionHeadList(ctx, med.MovieHead().ID())
+		editions, err := tx.MovieEditionList(ctx, med.MovieHead())
 		if err != nil {
 			return nil, err
 		}

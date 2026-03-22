@@ -123,16 +123,19 @@ type MovieEditionParams struct {
 	ImageURL string
 }
 
-func (tx *TxR) MovieEditionHeadList(ctx Context, movieID string) ([]*MovieEditionHead, error) {
-	meds, err := tx.q.MovieEditionListByMovieID(ctx, movieID)
+func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error) {
+	meds, err := tx.q.MovieEditionListByMovieID(ctx, mo.ID())
 	if err != nil {
 		return nil, err
 	}
-	heads := make([]*MovieEditionHead, len(meds))
+	works := make([]*MovieWork, len(meds))
 	for i := range meds {
-		heads[i] = &MovieEditionHead{meds[i]}
+		works[i] = &MovieWork{
+			MovieHead:        *mo,
+			MovieEditionHead: MovieEditionHead{meds[i]},
+		}
 	}
-	return heads, nil
+	return works, nil
 }
 
 func (tx *TxRW) MovieEditionCreate(ctx Context, title, movieID string, p MovieEditionParams) (*MovieEditionHead, error) {
