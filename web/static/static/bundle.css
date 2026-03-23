@@ -314,6 +314,16 @@
       transform: rotate(360deg);
     }
   }
+  .u-button[data-role=destructive] {
+    --accent: var(--destructive);
+    --accent-hover: var(--destructive-hover);
+    --bg-surface: var(--destructive-surface);
+    --bg-hover: var(--destructive-surface);
+    --bg-active: var(--destructive-surface);
+    --border: var(--destructive-surface-border);
+    --border-strong: var(--destructive);
+    --text: var(--destructive-text);
+  }
   .u-button {
     background-color: var(--accent);
     color: white;
@@ -358,19 +368,6 @@
   }
   .u-button[data-variant=ghost]:active:not(:disabled) {
     background-color: var(--bg-active);
-  }
-  .u-button[data-variant=destructive] {
-    background-color: var(--destructive);
-    color: white;
-  }
-  @media (hover: hover) {
-    .u-button[data-variant=destructive]:hover {
-      background-color: var(--destructive-hover);
-    }
-  }
-  .u-button[data-variant=destructive]:active:not(:disabled) {
-    background-color: var(--destructive-hover);
-    filter: brightness(0.92) saturate(1.1);
   }
   .u-button {
     height: calc(2rem * var(--scale));
