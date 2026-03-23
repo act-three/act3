@@ -81,10 +81,8 @@ func AppMoviesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Title"),
 						),
-						SettingsControl()(
-							SettingsTextField("/-/do/set-movie-title", "title", mo.Title())(
-								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(mo.ID())),
-							),
+						SettingsTextField("/-/do/set-movie-title", "title", mo.Title())(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(mo.ID())),
 						),
 					),
 				),
@@ -102,10 +100,9 @@ func AppMoviesDetail(
 								SettingsItemLabel()(
 									SettingsItemLabelTitle("Edition Title"),
 								),
-								SettingsControl()(
-									SettingsTextField("/-/do/set-movie-edition-title", "title", med.Title())(
-										html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
-									),
+
+								SettingsTextField("/-/do/set-movie-edition-title", "title", med.Title())(
+									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 								),
 							),
 
@@ -116,12 +113,10 @@ func AppMoviesDetail(
 											SettingsItemLabel()(
 												SettingsItemLabelTitle("URL"),
 											),
-											SettingsControl()(
-												// placeholder control
-												InputText(
-													attr.Value(mo.TheaterURL()+"/"+med.Slug()),
-													attr.Disabled,
-												),
+
+											InputText(
+												attr.Value(mo.TheaterURL()+"/"+med.Slug()),
+												attr.Disabled,
 											),
 										),
 
@@ -130,10 +125,8 @@ func AppMoviesDetail(
 												SettingsItemLabelTitle("Default"),
 												SettingsItemLabelDescription("Shown first when opening a movie"),
 											),
-											SettingsControl()(
-												// placeholder control
-												Button(ButtonGhost, ButtonSize2)(Text("Set Default")),
-											),
+
+											Button(ButtonGhost, ButtonSize2)(Text("Set Default")),
 										),
 									)
 								},
@@ -147,12 +140,10 @@ func AppMoviesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Year Released"),
 						),
-						SettingsControl()(
-							// placeholder control
-							InputText(
-								attr.Value(med.YearDisplay()),
-								attr.Disabled,
-							),
+
+						InputText(
+							attr.Value(med.YearDisplay()),
+							attr.Disabled,
 						),
 					),
 
@@ -160,11 +151,9 @@ func AppMoviesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Poster"),
 						),
-						SettingsControl()(
-							// placeholder control
-							ImageFrame(attr.Style("width:30px"))(
-								PosterImg(PosterFill, attr.Src(med.ImageURL())),
-							),
+
+						ImageFrame(attr.Style("width:30px"))(
+							PosterImg(PosterFill, attr.Src(med.ImageURL())),
 						),
 					),
 
@@ -172,12 +161,10 @@ func AppMoviesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Runtime"),
 						),
-						SettingsControl()(
-							// placeholder value & control
-							InputText(
-								attr.Value("46 min"),
-								attr.Disabled,
-							),
+
+						InputText(
+							attr.Value("46 min"),
+							attr.Disabled,
 						),
 					),
 				),
@@ -214,28 +201,26 @@ func AppMoviesDetail(
 							SettingsItemLabelTitle("Edition"),
 							SettingsItemLabelDescription("Create a new edition by duplicating this one"),
 						),
-						SettingsControl()(
-							html.Form(
-								attr.Method("POST"),
-								attr.Action("/-/do/add-movie-edition"),
-							)(
-								html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
-								Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
-							),
+
+						html.Form(
+							attr.Method("POST"),
+							attr.Action("/-/do/add-movie-edition"),
+						)(
+							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
+							Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
 						),
 					),
 					SettingsItem()(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Delete"),
 						),
-						SettingsControl()(
-							html.Form(
-								attr.Method("POST"),
-								attr.Action("/-/do/movie-edition-delete"),
-							)(
-								html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
-								Button(ButtonDestructive, ButtonSize2)(Text("Delete")),
-							),
+
+						html.Form(
+							attr.Method("POST"),
+							attr.Action("/-/do/movie-edition-delete"),
+						)(
+							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
+							Button(ButtonDestructive, ButtonSize2)(Text("Delete")),
 						),
 					),
 				),

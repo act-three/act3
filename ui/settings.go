@@ -43,7 +43,3 @@ func SettingsItemLabelTitle(s string) html.Node {
 func SettingsItemLabelDescription(s string) html.Node {
 	return Text(s, TextSize1, Class("u-settings-label-description"))
 }
-
-func SettingsControl() html.Element {
-	return FlexRow()
-}
