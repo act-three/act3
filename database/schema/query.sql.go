@@ -982,13 +982,13 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 }
 
 const movieEditionCreate = `-- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, Slug, MovieID, Summary, Year, Runtime, ImageURL)
+INSERT INTO MovieEdition (Label, Slug, MovieID, Summary, Year, Runtime, ImageURL)
 VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, movieid, slug, title, summary, year, runtime, imageurl
+RETURNING id, movieid, slug, label, summary, year, runtime, imageurl
 `
 
 type MovieEditionCreateParams struct {
-	Title    string
+	Label    string
 	Slug     string
 	MovieID  string
 	Summary  string
@@ -999,7 +999,7 @@ type MovieEditionCreateParams struct {
 
 func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreateParams) (MovieEdition, error) {
 	row := q.db.QueryRowContext(ctx, movieEditionCreate,
-		arg.Title,
+		arg.Label,
 		arg.Slug,
 		arg.MovieID,
 		arg.Summary,
@@ -1012,7 +1012,7 @@ func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreate
 		&i.ID,
 		&i.MovieID,
 		&i.Slug,
-		&i.Title,
+		&i.Label,
 		&i.Summary,
 		&i.Year,
 		&i.Runtime,
@@ -1022,7 +1022,7 @@ func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreate
 }
 
 const movieEditionGet = `-- name: MovieEditionGet :one
-SELECT id, movieid, slug, title, summary, year, runtime, imageurl FROM MovieEdition WHERE ID = ?
+SELECT id, movieid, slug, label, summary, year, runtime, imageurl FROM MovieEdition WHERE ID = ?
 `
 
 func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition, error) {
@@ -1032,7 +1032,7 @@ func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition,
 		&i.ID,
 		&i.MovieID,
 		&i.Slug,
-		&i.Title,
+		&i.Label,
 		&i.Summary,
 		&i.Year,
 		&i.Runtime,
@@ -1041,8 +1041,22 @@ func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition,
 	return i, err
 }
 
+const movieEditionLabelSet = `-- name: MovieEditionLabelSet :exec
+UPDATE MovieEdition SET Label = ? WHERE ID = ?
+`
+
+type MovieEditionLabelSetParams struct {
+	Label string
+	ID    string
+}
+
+func (q *Queries) MovieEditionLabelSet(ctx context.Context, arg MovieEditionLabelSetParams) error {
+	_, err := q.db.ExecContext(ctx, movieEditionLabelSet, arg.Label, arg.ID)
+	return err
+}
+
 const movieEditionListByMovieID = `-- name: MovieEditionListByMovieID :many
-SELECT id, movieid, slug, title, summary, year, runtime, imageurl FROM MovieEdition WHERE MovieID = ?
+SELECT id, movieid, slug, label, summary, year, runtime, imageurl FROM MovieEdition WHERE MovieID = ?
 `
 
 func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string) ([]MovieEdition, error) {
@@ -1058,7 +1072,7 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 			&i.ID,
 			&i.MovieID,
 			&i.Slug,
-			&i.Title,
+			&i.Label,
 			&i.Summary,
 			&i.Year,
 			&i.Runtime,
@@ -1078,7 +1092,7 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 }
 
 const movieEditionListDefault = `-- name: MovieEditionListDefault :many
-SELECT id, movieid, slug, title, summary, year, runtime, imageurl FROM MovieEdition WHERE Slug = ''
+SELECT id, movieid, slug, label, summary, year, runtime, imageurl FROM MovieEdition WHERE Slug = ''
 `
 
 func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, error) {
@@ -1094,7 +1108,7 @@ func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, 
 			&i.ID,
 			&i.MovieID,
 			&i.Slug,
-			&i.Title,
+			&i.Label,
 			&i.Summary,
 			&i.Year,
 			&i.Runtime,
@@ -1154,20 +1168,6 @@ type MovieEditionSlugSetParams struct {
 
 func (q *Queries) MovieEditionSlugSet(ctx context.Context, arg MovieEditionSlugSetParams) error {
 	_, err := q.db.ExecContext(ctx, movieEditionSlugSet, arg.Slug, arg.ID)
-	return err
-}
-
-const movieEditionTitleSet = `-- name: MovieEditionTitleSet :exec
-UPDATE MovieEdition SET Title = ? WHERE ID = ?
-`
-
-type MovieEditionTitleSetParams struct {
-	Title string
-	ID    string
-}
-
-func (q *Queries) MovieEditionTitleSet(ctx context.Context, arg MovieEditionTitleSetParams) error {
-	_, err := q.db.ExecContext(ctx, movieEditionTitleSet, arg.Title, arg.ID)
 	return err
 }
 

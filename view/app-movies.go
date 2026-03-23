@@ -98,10 +98,10 @@ func AppMoviesDetail(
 						return SettingsGroup()(
 							SettingsItem()(
 								SettingsItemLabel()(
-									SettingsItemLabelTitle("Edition Title"),
+									SettingsItemLabelTitle("Edition Label"),
 								),
 
-								SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title())(
+								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label())(
 									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 								),
 							),
@@ -358,7 +358,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 			)(
 				CardContent()(
 					CardTitle()(
-						Text(ed.MovieEditionHead.Title()),
+						Text(ed.MovieEditionHead.Label()),
 					),
 					CardDescription()(
 						Text(ed.TheaterURL()),

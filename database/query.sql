@@ -183,12 +183,15 @@ VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, Slug, MovieID, Summary, Year, Runtime, ImageURL)
+INSERT INTO MovieEdition (Label, Slug, MovieID, Summary, Year, Runtime, ImageURL)
 VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionGet :one
 SELECT * FROM MovieEdition WHERE ID = ?;
+
+-- name: MovieEditionLabelSet :exec
+UPDATE MovieEdition SET Label = ? WHERE ID = ?;
 
 -- name: MovieEditionListByMovieID :many
 SELECT * FROM MovieEdition WHERE MovieID = ?;
@@ -204,9 +207,6 @@ SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?;
 
 -- name: MovieEditionSlugSet :exec
 UPDATE MovieEdition SET Slug = ? WHERE ID = ?;
-
--- name: MovieEditionTitleSet :exec
-UPDATE MovieEdition SET Title = ? WHERE ID = ?;
 
 -- name: MovieEditionYearSet :exec
 UPDATE MovieEdition SET Year = ? WHERE ID = ?;

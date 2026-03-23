@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	// DefaultEdition is the title used when automatically creating
+	// DefaultEdition is the label used when automatically creating
 	// the initial edition, present in every movie.
 	// Other editions (e.g. "Director's Cut") are optional.
 	DefaultEdition = "Default Edition"
@@ -19,7 +19,7 @@ type MovieEditionHead struct {
 
 func (med *MovieEditionHead) ID() string       { return med.med.ID }
 func (med *MovieEditionHead) Slug() string     { return med.med.Slug }
-func (med *MovieEditionHead) Title() string    { return med.med.Title }
+func (med *MovieEditionHead) Label() string    { return med.med.Label }
 func (med *MovieEditionHead) Summary() string  { return med.med.Summary }
 func (med *MovieEditionHead) Year() string     { return med.med.Year }
 func (med *MovieEditionHead) Runtime() int64   { return med.med.Runtime }
@@ -132,13 +132,13 @@ func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error
 	return works, nil
 }
 
-func (tx *TxRW) movieEditionCreate(ctx Context, title, movieID string, p movieEditionParams) (*MovieEditionHead, error) {
-	slug, err := tx.generateMovieEditionSlug(ctx, title, movieID)
+func (tx *TxRW) movieEditionCreate(ctx Context, label, movieID string, p movieEditionParams) (*MovieEditionHead, error) {
+	slug, err := tx.generateMovieEditionSlug(ctx, label, movieID)
 	if err != nil {
 		return nil, err
 	}
 	medData, err := tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
-		Title:    title,
+		Label:    label,
 		Slug:     slug,
 		MovieID:  movieID,
 		Summary:  p.Summary,
@@ -154,13 +154,13 @@ func (tx *TxRW) movieEditionCreate(ctx Context, title, movieID string, p movieEd
 
 // MovieEditionClone creates a new edition by copying metadata
 // from the edition with the given srcID.
-// The new edition is titled "Copy of {original title}".
+// The new edition is labeled "Copy of {original label}".
 func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error) {
 	src, err := tx.MovieEditionHead(ctx, srcID)
 	if err != nil {
 		return nil, err
 	}
-	med, err := tx.movieEditionCreate(ctx, "Copy of "+src.Title(), src.med.MovieID, movieEditionParams{
+	med, err := tx.movieEditionCreate(ctx, "Copy of "+src.Label(), src.med.MovieID, movieEditionParams{
 		Summary:  src.med.Summary,
 		Year:     src.med.Year,
 		Runtime:  src.med.Runtime,
@@ -186,9 +186,9 @@ func (tx *TxRW) MovieEditionSlugSet(ctx Context, id, slug string) error {
 	})
 }
 
-func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
-	return tx.q.MovieEditionTitleSet(ctx, schema.MovieEditionTitleSetParams{
-		Title: title,
+func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
+	return tx.q.MovieEditionLabelSet(ctx, schema.MovieEditionLabelSetParams{
+		Label: label,
 		ID:    id,
 	})
 }
@@ -207,8 +207,8 @@ func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) er
 	})
 }
 
-func (tx *TxRW) generateMovieEditionSlug(ctx Context, title, movieID string) (string, error) {
-	for slug := range editionSlugCandidates(title) {
+func (tx *TxRW) generateMovieEditionSlug(ctx Context, label, movieID string) (string, error) {
+	for slug := range editionSlugCandidates(label) {
 		n, err := tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{
 			MovieID: movieID,
 			Slug:    slug,

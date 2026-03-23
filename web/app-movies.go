@@ -77,15 +77,15 @@ func (c *Config) doMovieSetTitle(w http.ResponseWriter, req *http.Request) (html
 	})
 }
 
-func (c *Config) doMovieEditionSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doMovieEditionSetLabel(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
-		title := req.FormValue("title")
-		if id == "" || title == "" {
-			return nil, &model.ValidationError{Op: "set movie edition title", Err: errNotFound}
+		label := req.FormValue("label")
+		if id == "" || label == "" {
+			return nil, &model.ValidationError{Op: "set movie edition label", Err: errNotFound}
 		}
-		err := tx.MovieEditionTitleSet(ctx, id, title)
+		err := tx.MovieEditionLabelSet(ctx, id, label)
 		if err != nil {
 			return nil, err
 		}
