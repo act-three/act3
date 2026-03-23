@@ -1800,6 +1800,13 @@
   }
 }
 
+/* ui/settings-text-field.css */
+@layer components {
+  .u-settings-text-field {
+    width: 256px;
+  }
+}
+
 /* ui/settings-toggle.css */
 @layer components {
   .u-settings-toggle-track {
