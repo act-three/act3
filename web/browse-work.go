@@ -36,11 +36,15 @@ func (c *Config) browseWork(w http.ResponseWriter, req *http.Request) (html.Node
 		} else if err != nil {
 			return nil, err
 		}
+		editions, err := tr.MovieEditionList(ctx, med.MovieHead())
+		if err != nil {
+			return nil, err
+		}
 		dls, err := tr.RenditionForDownloadListForMovie(ctx, med.MovieHead().ID())
 		if err != nil {
 			return nil, err
 		}
-		return view.BrowseMovieEdition(med, dls), nil
+		return view.BrowseMovieEdition(med, editions, dls), nil
 	})
 }
 

@@ -10,18 +10,17 @@ import (
 
 func BrowseMovieEdition(
 	med *model.MovieEdition,
+	editions []*model.MovieWork,
 	dls []*model.RenditionForDownload,
 ) html.Node {
 	return browse(med.Title(), med.ImageURL())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
-				expr.IfElse(med.Year() != "",
-					func() html.Node {
-						return Text(med.Year(), Class("v-detail-muted"))
-					},
-					func() html.Node { return html.Group() },
-				),
+				html.If(len(editions) > 1, func() html.Node {
+					return browseMovieEditionSelect(editions, med)
+				}),
 				Text(med.Title(), TextSize7),
+				Text(med.Year(), Class("v-detail-muted")),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
 						browseMoviePlayButton(med),
@@ -90,5 +89,21 @@ func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
 				return SelectItem(t.ID())(html.Text(t.Label()))
 			}),
 		),
+	)
+}
+
+func browseMovieEditionSelect(editions []*model.MovieWork, current *model.MovieEdition) html.Node {
+	return FlexRow(Gap2, attr.Style("flex-wrap:wrap"))(
+		html.Range(editions, func(ed *model.MovieWork) html.Node {
+			selected := attr.Group()
+			if ed.MovieEditionHead.ID() == current.ID() {
+				selected = attr.Attr("data-selected")
+			}
+			return Button(
+				ButtonSurface, ButtonSize3,
+				attr.Href(ed.TheaterURL()),
+				selected,
+			)(Text(ed.Label()))
+		}),
 	)
 }
