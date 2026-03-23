@@ -20,7 +20,7 @@ func (c *Config) appTasks(_ http.ResponseWriter, req *http.Request) (html.Node, 
 	})
 }
 
-func (c *Config) doRunTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doTaskRun(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	err := c.Model.RunTaskNow(ctx, req.PathValue("id"))
 	if err != nil {
@@ -30,13 +30,13 @@ func (c *Config) doRunTask(w http.ResponseWriter, req *http.Request) (html.Node,
 	return nil, nil
 }
 
-func (c *Config) doKillTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doTaskKill(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	c.Model.KillTask(req.PathValue("id"))
 	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
 	return nil, nil
 }
 
-func (c *Config) doDeleteTask(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doTaskDelete(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		err := tx.TaskDelete(ctx, req.PathValue("id"))

@@ -83,7 +83,7 @@ func degradedAction(hasData bool) html.Node {
 			),
 			html.Form(
 				attr.Method("POST"),
-				attr.Action("/-/do/reset-database"),
+				attr.Action("/-/do/database-reset"),
 				attr.Attr("data-turbo")("false"),
 			)(
 				Button(
@@ -101,7 +101,7 @@ func degradedAction(hasData bool) html.Node {
 	}
 	return html.Form(
 		attr.Method("POST"),
-		attr.Action("/-/do/reset-database"),
+		attr.Action("/-/do/database-reset"),
 		attr.Attr("data-turbo")("false"),
 	)(
 		Button(

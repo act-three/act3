@@ -13,7 +13,7 @@ func AppTMDB(settings model.Settings) html.Node {
 			html.Div()(html.Text("TMDB")),
 			html.Form(
 				attr.Method("post"),
-				attr.Action("/-/do/update-tmdb-settings"),
+				attr.Action("/-/do/tmdb-settings-update"),
 			)(
 				html.Div(attr.Class("v-system-field"))(
 					html.Div()(

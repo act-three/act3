@@ -19,7 +19,7 @@ func (c *Config) appTMDB(_ http.ResponseWriter, req *http.Request) (html.Node, e
 	})
 }
 
-func (c *Config) doUpdateTMDBSettings(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doTMDBSettingsUpdate(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		err := tx.SettingSetString(ctx, model.SettingKeyTMDBAccessToken, req.FormValue("token"))

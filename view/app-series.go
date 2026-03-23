@@ -123,7 +123,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 		}),
 		html.Form(
 			attr.Method("POST"),
-			attr.Action("/-/do/add-series-edition"),
+			attr.Action("/-/do/series-edition-add"),
 		)(
 			html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(current.ID())),
 			Button(ButtonSurface, ButtonSize2)(Text("Duplicate Edition")),
@@ -305,7 +305,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 		),
 		FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
 			html.Form(
-				attr.Action("/-/do/reimport-video/"+v.ID),
+				attr.Action("/-/do/video-reimport/"+v.ID),
 				attr.Method("POST"),
 			)(
 				Button(ButtonDestructive)(
@@ -315,7 +315,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 			expr.IfElse(v.OriginalHash != "",
 				func() html.Node {
 					return html.Form(
-						attr.Action("/-/do/reencode-video/"+v.ID),
+						attr.Action("/-/do/video-reencode/"+v.ID),
 						attr.Method("POST"),
 					)(
 						Button(ButtonDestructive)(
@@ -408,7 +408,7 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 									return turbo.Frame(frameID)(
 										html.Form(
 											attr.Method("post"),
-											attr.Action("/-/do/add-series"),
+											attr.Action("/-/do/series-add"),
 											turbo.DataFrame(frameID),
 										)(
 											html.Input(

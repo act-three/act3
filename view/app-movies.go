@@ -81,7 +81,7 @@ func AppMoviesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Title"),
 						),
-						SettingsTextField("/-/do/set-movie-title", "title", mo.Title())(
+						SettingsTextField("/-/do/movie-set-title", "title", mo.Title())(
 							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(mo.ID())),
 						),
 					),
@@ -101,7 +101,7 @@ func AppMoviesDetail(
 									SettingsItemLabelTitle("Edition Title"),
 								),
 
-								SettingsTextField("/-/do/set-movie-edition-title", "title", med.Title())(
+								SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title())(
 									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 								),
 							),
@@ -204,7 +204,7 @@ func AppMoviesDetail(
 
 						html.Form(
 							attr.Method("POST"),
-							attr.Action("/-/do/add-movie-edition"),
+							attr.Action("/-/do/movie-edition-add"),
 						)(
 							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
 							Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
@@ -320,7 +320,7 @@ func movieSearchAction(frameID string, t MovieSearchResult) html.Node {
 	return turbo.Frame(frameID)(
 		html.Form(
 			attr.Method("post"),
-			attr.Action("/-/do/add-movie-tmdb"),
+			attr.Action("/-/do/movie-add-by-tmdb"),
 			turbo.DataFrame(frameID),
 		)(
 			html.Input(
@@ -393,7 +393,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 				),
 				FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
 					html.Form(
-						attr.Action("/-/do/reimport-video/"+v.ID()),
+						attr.Action("/-/do/video-reimport/"+v.ID()),
 						attr.Method("POST"),
 					)(
 						Button(ButtonDestructive)(
@@ -404,7 +404,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 						func() html.Node {
 							return html.Form(
 								attr.Action(
-									"/-/do/reencode-video/"+v.ID(),
+									"/-/do/video-reencode/"+v.ID(),
 								),
 								attr.Method("POST"),
 							)(

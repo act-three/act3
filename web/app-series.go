@@ -90,7 +90,7 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 	})
 }
 
-func (c *Config) doReimportVideo(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doVideoReimport(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	_, err := c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		return nil, tx.ReImportVideo(ctx, req.PathValue("id"))
@@ -102,7 +102,7 @@ func (c *Config) doReimportVideo(w http.ResponseWriter, req *http.Request) (html
 	return nil, nil
 }
 
-func (c *Config) doReencodeVideo(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doVideoReencode(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	err := c.Model.ReencodeVideo(ctx, req.PathValue("id"))
 	if err != nil {
@@ -150,7 +150,7 @@ func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.No
 	})
 }
 
-func (c *Config) doAddSeriesEdition(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doSeriesEditionAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		editionID := req.FormValue("edition-id")
@@ -166,7 +166,7 @@ func (c *Config) doAddSeriesEdition(w http.ResponseWriter, req *http.Request) (h
 	})
 }
 
-func (c *Config) doAddSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doSeriesAdd(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	id, err := strconv.Atoi(req.FormValue("id"))
 	if err != nil {

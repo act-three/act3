@@ -46,7 +46,7 @@ func (c *Config) appDownloadsDetail(w http.ResponseWriter, req *http.Request) (h
 	})
 }
 
-func (c *Config) doAutoImportDownload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doDownloadAutoImport(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
@@ -60,7 +60,7 @@ func (c *Config) doAutoImportDownload(w http.ResponseWriter, req *http.Request) 
 	})
 }
 
-func (c *Config) doImportDownload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doDownloadImport(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
@@ -73,7 +73,7 @@ func (c *Config) doImportDownload(w http.ResponseWriter, req *http.Request) (htm
 	})
 }
 
-func (c *Config) doAddTorrent(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doTorrentAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		file, _, err := req.FormFile("torrent")

@@ -42,7 +42,7 @@ func HandleDegraded(
 		rawHandler(200, node).ServeHTTP(w, req)
 	})
 
-	mux.HandleFunc("POST /-/do/reset-database",
+	mux.HandleFunc("POST /-/do/database-reset",
 		func(w http.ResponseWriter, req *http.Request) {
 			db.Close()
 			for _, suffix := range []string{"", "-wal", "-shm"} {

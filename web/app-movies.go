@@ -60,7 +60,7 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 	})
 }
 
-func (c *Config) doSetMovieTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doMovieSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
@@ -77,7 +77,7 @@ func (c *Config) doSetMovieTitle(w http.ResponseWriter, req *http.Request) (html
 	})
 }
 
-func (c *Config) doSetMovieEditionTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doMovieEditionSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
@@ -94,7 +94,7 @@ func (c *Config) doSetMovieEditionTitle(w http.ResponseWriter, req *http.Request
 	})
 }
 
-func (c *Config) doAddMovieEdition(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doMovieEditionAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		editionID := req.FormValue("edition-id")
@@ -110,7 +110,7 @@ func (c *Config) doAddMovieEdition(w http.ResponseWriter, req *http.Request) (ht
 	})
 }
 
-func (c *Config) doAddMovie(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doMovieAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		title := req.FormValue("title")
@@ -129,7 +129,7 @@ func (c *Config) doAddMovie(w http.ResponseWriter, req *http.Request) (html.Node
 	})
 }
 
-func (c *Config) doAddMovieTMDB(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doMovieAddByTMDB(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	id, err := strconv.Atoi(req.FormValue("id"))
 	if err != nil {

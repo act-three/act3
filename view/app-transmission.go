@@ -13,7 +13,7 @@ func AppTransmission(settings model.Settings) html.Node {
 			html.Div()(html.Text("Transmission")),
 			html.Form(
 				attr.Method("post"),
-				attr.Action("/-/do/update-transmission-settings"),
+				attr.Action("/-/do/transmission-settings-update"),
 			)(
 				html.Div(attr.Class("v-system-field"))(
 					html.Div()(html.Text("RPC URL")),

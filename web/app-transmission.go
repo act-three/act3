@@ -19,7 +19,7 @@ func (c *Config) appTransmission(_ http.ResponseWriter, req *http.Request) (html
 	})
 }
 
-func (c *Config) doUpdateTransmissionSettings(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doTransmissionSettingsUpdate(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		err := tx.SettingSetString(ctx, model.SettingKeyTransmissionBaseURL, req.FormValue("url"))
