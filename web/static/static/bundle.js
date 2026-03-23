@@ -8814,8 +8814,8 @@
     }
   };
 
-  // ui/text-field.js
-  var text_field_default = class extends Controller {
+  // ui/settings-text-field.js
+  var settings_text_field_default = class extends Controller {
     static targets = ["input"];
     static values = { url: String };
     #original;
@@ -8863,8 +8863,8 @@
     }
   };
 
-  // ui/toggle.js
-  var toggle_default = class extends Controller {
+  // ui/settings-toggle.js
+  var settings_toggle_default = class extends Controller {
     static targets = ["track", "input"];
     static values = { url: String };
     toggle() {
@@ -8923,8 +8923,8 @@
   Stimulus.register("add-torrent", add_torrent_default);
   Stimulus.register("note-port", note_port_default);
   Stimulus.register("select", select_default);
-  Stimulus.register("text-field", text_field_default);
-  Stimulus.register("toggle", toggle_default);
+  Stimulus.register("settings-text-field", settings_text_field_default);
+  Stimulus.register("settings-toggle", settings_toggle_default);
   Stimulus.register("topbar", topbar_default);
 })();
 /*!

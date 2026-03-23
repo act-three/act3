@@ -199,7 +199,7 @@ func appDownloadsImportButton(id string) html.Node {
 
 func appDownloadsAutoImportToggle(dl *model.Download) html.Node {
 	return html.Label(attr.Class("v-media-auto-import"))(
-		Toggle("/-/do/auto-import-download", "auto-import", dl.AutoImport())(
+		SettingsToggle("/-/do/auto-import-download", "auto-import", dl.AutoImport())(
 			html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(dl.ID())),
 		),
 		html.Text("Automatically import when download completes"),

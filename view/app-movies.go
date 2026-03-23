@@ -82,7 +82,7 @@ func AppMoviesDetail(
 							SettingsItemLabelTitle("Title"),
 						),
 						SettingsControl()(
-							TextField("/-/do/set-movie-title", "title", mo.Title())(
+							SettingsTextField("/-/do/set-movie-title", "title", mo.Title())(
 								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(mo.ID())),
 							),
 						),
@@ -103,7 +103,7 @@ func AppMoviesDetail(
 									SettingsItemLabelTitle("Edition Title"),
 								),
 								SettingsControl()(
-									TextField("/-/do/set-movie-edition-title", "title", med.Title())(
+									SettingsTextField("/-/do/set-movie-edition-title", "title", med.Title())(
 										html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 									),
 								),

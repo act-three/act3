@@ -6,11 +6,11 @@ import (
 	"ily.dev/act3/ui/stimulus"
 )
 
-// Toggle renders an inline-updating switch control.
+// SettingsToggle renders an inline-updating switch control.
 // It POSTs to action with a form field named name
 // carrying the boolean value "true" or "false".
 // Children become hidden inputs inside the form (for context like IDs).
-func Toggle(action, name string, checked bool, attrs ...attr.Node) html.Element {
+func SettingsToggle(action, name string, checked bool, attrs ...attr.Node) html.Element {
 	val := "false"
 	aria := "false"
 	if checked {
@@ -19,26 +19,26 @@ func Toggle(action, name string, checked bool, attrs ...attr.Node) html.Element 
 	}
 	return func(nodes ...html.Node) html.Node {
 		return html.Form(
-			attr.Class("u-toggle"),
-			stimulus.Controller("toggle"),
-			stimulus.Value("toggle", "url")(action),
+			attr.Class("u-settings-toggle"),
+			stimulus.Controller("settings-toggle"),
+			stimulus.Value("settings-toggle", "url")(action),
 			attr.Group(attrs...),
 		)(append(nodes,
 			html.Input(
 				attr.Type("hidden"),
 				attr.Name(name),
 				attr.Value(val),
-				stimulus.Target("toggle", "input"),
+				stimulus.Target("settings-toggle", "input"),
 			),
 			html.Button(
-				attr.Class("u-toggle-track"),
+				attr.Class("u-settings-toggle-track"),
 				attr.Type("button"),
 				attr.Role("switch"),
 				attr.Attr("aria-checked")(aria),
-				stimulus.Target("toggle", "track"),
-				stimulus.Action("click->toggle#toggle"),
+				stimulus.Target("settings-toggle", "track"),
+				stimulus.Action("click->settings-toggle#toggle"),
 			)(
-				html.Span(attr.Class("u-toggle-thumb")),
+				html.Span(attr.Class("u-settings-toggle-thumb")),
 			),
 		)...)
 	}
