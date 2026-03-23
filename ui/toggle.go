@@ -21,9 +21,7 @@ func Toggle(action, name string, checked bool, attrs ...attr.Node) html.Element 
 		return html.Form(
 			attr.Class("u-toggle"),
 			stimulus.Controller("toggle"),
-			attr.Attr("data-turbo")("false"),
-			attr.Method("POST"),
-			attr.Action(action),
+			stimulus.Value("toggle", "url")(action),
 			attr.Group(attrs...),
 		)(append(nodes,
 			html.Input(

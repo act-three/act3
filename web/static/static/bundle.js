@@ -8866,6 +8866,7 @@
   // ui/toggle.js
   var toggle_default = class extends Controller {
     static targets = ["track", "input"];
+    static values = { url: String };
     toggle() {
       const track = this.trackTarget;
       if (track.disabled) return;
@@ -8880,7 +8881,7 @@
         delete track.dataset.animating;
       }, { once: true });
       const data = new FormData(this.element);
-      fetch(this.element.action, { method: "POST", body: data }).then(
+      fetch(this.urlValue, { method: "POST", body: data }).then(
         (resp) => {
           if (!resp.ok) {
             track.setAttribute("aria-checked", String(was));
