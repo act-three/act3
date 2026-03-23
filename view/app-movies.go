@@ -76,6 +76,12 @@ func AppMoviesDetail(
 			Class("v-media-detail-body"),
 		)(
 			SettingsPage(med.Title())(
+				html.If(len(editions) > 1,
+					func() html.Node {
+						return appMoviesEditionList(editions, med)
+					},
+				),
+
 				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
@@ -85,12 +91,36 @@ func AppMoviesDetail(
 							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 						),
 					),
-				),
 
-				html.If(len(editions) > 1,
-					func() html.Node {
-						return appMoviesEditionList(editions, med)
-					},
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Year Released"),
+						),
+
+						SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+						),
+					),
+
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Poster"),
+						),
+
+						ImageFrame(attr.Style("width:30px"))(
+							PosterImg(PosterFill, attr.Src(med.ImageURL())),
+						),
+					),
+
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Runtime"),
+						),
+
+						SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeDisplay(), SettingsTextFieldSuffix(" min"))(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+						),
+					),
 				),
 
 				html.If(len(editions) > 1,
@@ -98,7 +128,7 @@ func AppMoviesDetail(
 						return SettingsGroup()(
 							SettingsItem()(
 								SettingsItemLabel()(
-									SettingsItemLabelTitle("Edition Label"),
+									SettingsItemLabelTitle("Edition"),
 								),
 
 								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label())(
@@ -132,38 +162,6 @@ func AppMoviesDetail(
 							),
 						)
 					},
-				),
-
-				SettingsGroup()(
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Year Released"),
-						),
-
-						SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
-						),
-					),
-
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Poster"),
-						),
-
-						ImageFrame(attr.Style("width:30px"))(
-							PosterImg(PosterFill, attr.Src(med.ImageURL())),
-						),
-					),
-
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Runtime"),
-						),
-
-						SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeDisplay(), SettingsTextFieldSuffix(" min"))(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
-						),
-					),
 				),
 
 				SettingsContent()(Text("Summary", TextSize2)),
