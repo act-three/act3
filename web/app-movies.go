@@ -60,6 +60,23 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 	})
 }
 
+func (c *Config) doSetMovieTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		title := req.FormValue("title")
+		if id == "" || title == "" {
+			return nil, &model.ValidationError{Op: "set movie title", Err: errNotFound}
+		}
+		err := tx.MovieTitleSet(ctx, id, title)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doAddMovieEdition(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

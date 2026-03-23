@@ -219,6 +219,9 @@ SELECT * FROM Movie WHERE TMDBID IN (sqlc.slice(ids));
 -- name: MovieSlugExists :one
 SELECT COUNT(*) FROM Movie WHERE Slug = ?;
 
+-- name: MovieTitleSet :exec
+UPDATE Movie SET Title = ? WHERE ID = ?;
+
 -- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)

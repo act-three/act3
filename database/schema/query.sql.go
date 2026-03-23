@@ -1269,6 +1269,20 @@ func (q *Queries) MovieSlugExists(ctx context.Context, slug string) (int64, erro
 	return count, err
 }
 
+const movieTitleSet = `-- name: MovieTitleSet :exec
+UPDATE Movie SET Title = ? WHERE ID = ?
+`
+
+type MovieTitleSetParams struct {
+	Title string
+	ID    string
+}
+
+func (q *Queries) MovieTitleSet(ctx context.Context, arg MovieTitleSetParams) error {
+	_, err := q.db.ExecContext(ctx, movieTitleSet, arg.Title, arg.ID)
+	return err
+}
+
 const movieVideoCreate = `-- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)

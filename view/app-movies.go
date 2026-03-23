@@ -82,10 +82,8 @@ func AppMoviesDetail(
 							SettingsItemLabelTitle("Title"),
 						),
 						SettingsControl()(
-							// placeholder control
-							InputText(
-								attr.Value(mo.Title()),
-								attr.Disabled,
+							TextField("/-/do/set-movie-title", "title", mo.Title())(
+								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(mo.ID())),
 							),
 						),
 					),

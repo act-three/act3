@@ -7,6 +7,7 @@ import SidebarController from "./view/sidebar/sidebar.js";
 import AddTorrentController from "./view/add-torrent.js";
 import NotePortController from "./ui/note-port.js";
 import SelectController from "./ui/select.js";
+import TextFieldController from "./ui/text-field.js";
 import ToggleController from "./ui/toggle.js";
 import TopbarController from "./view/topbar.js";
 
@@ -18,5 +19,6 @@ Stimulus.register("sidebar", SidebarController);
 Stimulus.register("add-torrent", AddTorrentController);
 Stimulus.register("note-port", NotePortController);
 Stimulus.register("select", SelectController);
+Stimulus.register("text-field", TextFieldController);
 Stimulus.register("toggle", ToggleController);
 Stimulus.register("topbar", TopbarController);

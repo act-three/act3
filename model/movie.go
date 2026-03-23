@@ -163,6 +163,13 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 	return rends, nil
 }
 
+func (tx *TxRW) MovieTitleSet(ctx Context, id, title string) error {
+	return tx.q.MovieTitleSet(ctx, schema.MovieTitleSetParams{
+		Title: title,
+		ID:    id,
+	})
+}
+
 func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieWork, error) {
 	moID := "mo" + flurry.NewID()
 	slug, err := tx.generateMovieSlug(ctx, title, year, moID)
