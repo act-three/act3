@@ -196,6 +196,9 @@ SELECT * FROM MovieEdition WHERE MovieID = ?;
 -- name: MovieEditionListDefault :many
 SELECT * FROM MovieEdition WHERE Slug = '';
 
+-- name: MovieEditionRuntimeSet :exec
+UPDATE MovieEdition SET Runtime = ? WHERE ID = ?;
+
 -- name: MovieEditionSlugExists :one
 SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?;
 

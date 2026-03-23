@@ -1113,6 +1113,20 @@ func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, 
 	return items, nil
 }
 
+const movieEditionRuntimeSet = `-- name: MovieEditionRuntimeSet :exec
+UPDATE MovieEdition SET Runtime = ? WHERE ID = ?
+`
+
+type MovieEditionRuntimeSetParams struct {
+	Runtime int64
+	ID      string
+}
+
+func (q *Queries) MovieEditionRuntimeSet(ctx context.Context, arg MovieEditionRuntimeSetParams) error {
+	_, err := q.db.ExecContext(ctx, movieEditionRuntimeSet, arg.Runtime, arg.ID)
+	return err
+}
+
 const movieEditionSlugExists = `-- name: MovieEditionSlugExists :one
 SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?
 `

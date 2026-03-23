@@ -1802,6 +1802,23 @@
   .u-settings-text-field {
     width: 256px;
   }
+  .u-settings-text-field-inner {
+    position: relative;
+  }
+  .u-settings-text-field-inner .u-input {
+    background: transparent;
+  }
+  .u-settings-text-field-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    color: var(--text-3);
+  }
+  .u-settings-text-field-overlay .u-input {
+    color: inherit;
+    border-color: transparent;
+    box-shadow: none;
+  }
 }
 
 /* ui/settings-toggle.css */

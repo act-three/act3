@@ -161,9 +161,8 @@ func AppMoviesDetail(
 							SettingsItemLabelTitle("Runtime"),
 						),
 
-						InputText(
-							attr.Value("46 min"),
-							attr.Disabled,
+						SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeDisplay(), SettingsTextFieldSuffix(" min"))(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 						),
 					),
 				),

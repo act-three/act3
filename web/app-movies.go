@@ -111,6 +111,30 @@ func (c *Config) doMovieEditionSetYear(w http.ResponseWriter, req *http.Request)
 	})
 }
 
+func (c *Config) doMovieEditionSetRuntime(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		if id == "" {
+			return nil, &model.ValidationError{Op: "set movie edition runtime", Err: errNotFound}
+		}
+		var runtime int64
+		if s := strings.TrimSpace(req.FormValue("runtime")); s != "" {
+			var err error
+			runtime, err = strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				return nil, &model.ValidationError{Op: "set movie edition runtime", Err: err}
+			}
+		}
+		err := tx.MovieEditionRuntimeSet(ctx, id, runtime)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doMovieEditionAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

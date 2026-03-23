@@ -1,6 +1,8 @@
 package model
 
 import (
+	"strconv"
+
 	"ily.dev/act3/database/schema"
 )
 
@@ -20,7 +22,16 @@ func (med *MovieEditionHead) Slug() string     { return med.med.Slug }
 func (med *MovieEditionHead) Title() string    { return med.med.Title }
 func (med *MovieEditionHead) Summary() string  { return med.med.Summary }
 func (med *MovieEditionHead) Year() string     { return med.med.Year }
+func (med *MovieEditionHead) Runtime() int64   { return med.med.Runtime }
 func (med *MovieEditionHead) ImageURL() string { return med.med.ImageURL }
+
+// RuntimeDisplay returns the runtime as a string, or empty if unknown (0).
+func (med *MovieEditionHead) RuntimeDisplay() string {
+	if med.med.Runtime != 0 {
+		return strconv.FormatInt(med.med.Runtime, 10)
+	}
+	return ""
+}
 
 type MovieEdition struct {
 	MovieEditionHead
@@ -179,6 +190,13 @@ func (tx *TxRW) MovieEditionYearSet(ctx Context, id, year string) error {
 	return tx.q.MovieEditionYearSet(ctx, schema.MovieEditionYearSetParams{
 		Year: year,
 		ID:   id,
+	})
+}
+
+func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) error {
+	return tx.q.MovieEditionRuntimeSet(ctx, schema.MovieEditionRuntimeSetParams{
+		Runtime: runtime,
+		ID:      id,
 	})
 }
 

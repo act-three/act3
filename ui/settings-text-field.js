@@ -2,13 +2,15 @@ import { Controller } from "../web/stimulus.js";
 import { notify } from "./note-port.js";
 
 export default class extends Controller {
-	static targets = ["input"];
-	static values = { url: String };
+	static targets = ["input", "mirror"];
+	static values = { url: String, suffix: String };
 
 	#original;
+	#canvas;
 
 	connect() {
 		this.#original = this.inputTarget.value;
+		this.sync();
 	}
 
 	save() {
@@ -17,6 +19,7 @@ export default class extends Controller {
 		if (value === this.#original) return;
 		if (value === "") {
 			input.value = this.#original;
+			this.sync();
 			return;
 		}
 
@@ -24,6 +27,7 @@ export default class extends Controller {
 		const was = this.#original;
 		this.#original = value;
 		input.value = value;
+		this.sync();
 
 		const data = new FormData(this.element);
 		input.disabled = true;
@@ -32,6 +36,7 @@ export default class extends Controller {
 				if (!resp.ok) {
 					this.#original = was;
 					input.value = was;
+					this.sync();
 					notify("Something went wrong");
 				}
 				input.disabled = false;
@@ -39,10 +44,30 @@ export default class extends Controller {
 			() => {
 				this.#original = was;
 				input.value = was;
+				this.sync();
 				input.disabled = false;
 				notify("Could not reach the server");
 			},
 		);
+	}
+
+	sync() {
+		if (!this.hasMirrorTarget) return;
+		const suffix = this.suffixValue;
+		const v = this.inputTarget.value;
+		this.mirrorTarget.value = v ? suffix : "";
+		this.mirrorTarget.style.textIndent = v
+			? this.#measureText(v) + "px"
+			: "0";
+	}
+
+	#measureText(text) {
+		if (!this.#canvas) {
+			this.#canvas = document.createElement("canvas");
+		}
+		const ctx = this.#canvas.getContext("2d");
+		ctx.font = getComputedStyle(this.inputTarget).font;
+		return ctx.measureText(text).width;
 	}
 
 	keydown(ev) {

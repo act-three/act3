@@ -8816,11 +8816,13 @@
 
   // ui/settings-text-field.js
   var settings_text_field_default = class extends Controller {
-    static targets = ["input"];
-    static values = { url: String };
+    static targets = ["input", "mirror"];
+    static values = { url: String, suffix: String };
     #original;
+    #canvas;
     connect() {
       this.#original = this.inputTarget.value;
+      this.sync();
     }
     save() {
       const input = this.inputTarget;
@@ -8828,11 +8830,13 @@
       if (value === this.#original) return;
       if (value === "") {
         input.value = this.#original;
+        this.sync();
         return;
       }
       const was = this.#original;
       this.#original = value;
       input.value = value;
+      this.sync();
       const data = new FormData(this.element);
       input.disabled = true;
       fetch(this.urlValue, { method: "POST", body: data }).then(
@@ -8840,6 +8844,7 @@
           if (!resp.ok) {
             this.#original = was;
             input.value = was;
+            this.sync();
             notify("Something went wrong");
           }
           input.disabled = false;
@@ -8847,10 +8852,26 @@
         () => {
           this.#original = was;
           input.value = was;
+          this.sync();
           input.disabled = false;
           notify("Could not reach the server");
         }
       );
+    }
+    sync() {
+      if (!this.hasMirrorTarget) return;
+      const suffix = this.suffixValue;
+      const v = this.inputTarget.value;
+      this.mirrorTarget.value = v ? suffix : "";
+      this.mirrorTarget.style.textIndent = v ? this.#measureText(v) + "px" : "0";
+    }
+    #measureText(text) {
+      if (!this.#canvas) {
+        this.#canvas = document.createElement("canvas");
+      }
+      const ctx = this.#canvas.getContext("2d");
+      ctx.font = getComputedStyle(this.inputTarget).font;
+      return ctx.measureText(text).width;
     }
     keydown(ev) {
       if (ev.key === "Enter") {
