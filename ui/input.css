@@ -8,8 +8,6 @@
 	font-size: inherit;
 	outline: none;
 	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-	transition-property: color, box-shadow, outline;
-	transition-duration: 150ms;
 }
 .u-input::placeholder { color: var(--text-4); }
 .u-input::selection {
@@ -19,7 +17,6 @@
 .u-input:focus-visible {
 	outline: 2px solid var(--accent-bold);
 	outline-offset: -1px;
-	border-color: transparent;
 }
 .u-input:disabled {
 	cursor: not-allowed;
