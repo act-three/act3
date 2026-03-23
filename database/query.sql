@@ -202,6 +202,9 @@ UPDATE MovieEdition SET Runtime = ? WHERE ID = ?;
 -- name: MovieEditionSlugExists :one
 SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?;
 
+-- name: MovieEditionSlugSet :exec
+UPDATE MovieEdition SET Slug = ? WHERE ID = ?;
+
 -- name: MovieEditionTitleSet :exec
 UPDATE MovieEdition SET Title = ? WHERE ID = ?;
 

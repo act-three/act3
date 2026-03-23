@@ -3,7 +3,7 @@ import { notify } from "./note-port.js";
 
 export default class extends Controller {
 	static targets = ["input", "mirror"];
-	static values = { url: String, suffix: String };
+	static values = { url: String, prefix: String, suffix: String };
 
 	#original;
 	#canvas;
@@ -53,12 +53,20 @@ export default class extends Controller {
 
 	sync() {
 		if (!this.hasMirrorTarget) return;
+		const prefix = this.prefixValue;
 		const suffix = this.suffixValue;
 		const v = this.inputTarget.value;
-		this.mirrorTarget.value = v ? suffix : "";
-		this.mirrorTarget.style.textIndent = v
-			? this.#measureText(v) + "px"
-			: "0";
+
+		if (prefix) {
+			const pw = this.#measureText(prefix);
+			this.inputTarget.style.textIndent = pw + "px";
+			this.mirrorTarget.value = prefix;
+		} else if (suffix) {
+			this.mirrorTarget.value = v ? suffix : "";
+			this.mirrorTarget.style.textIndent = v
+				? this.#measureText(v) + "px"
+				: "0";
+		}
 	}
 
 	#measureText(text) {

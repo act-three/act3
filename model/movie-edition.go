@@ -179,6 +179,13 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 	}, nil
 }
 
+func (tx *TxRW) MovieEditionSlugSet(ctx Context, id, slug string) error {
+	return tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
+		Slug: slug,
+		ID:   id,
+	})
+}
+
 func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	return tx.q.MovieEditionTitleSet(ctx, schema.MovieEditionTitleSetParams{
 		Title: title,

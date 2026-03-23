@@ -6,8 +6,12 @@ import (
 	"ily.dev/act3/ui/stimulus"
 )
 
+// SettingsTextFieldPrefix sets a non-editable prefix
+// (e.g. "/the-matrix/") displayed before the input text.
+var SettingsTextFieldPrefix = stimulus.Value("settings-text-field", "prefix")
+
 // SettingsTextFieldSuffix sets a non-editable suffix
-// (e.g. "min") that tracks the end of the input text.
+// (e.g. " min") displayed after the input text.
 var SettingsTextFieldSuffix = stimulus.Value("settings-text-field", "suffix")
 
 // SettingsTextField renders an inline-updating text field.

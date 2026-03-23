@@ -94,6 +94,23 @@ func (c *Config) doMovieEditionSetTitle(w http.ResponseWriter, req *http.Request
 	})
 }
 
+func (c *Config) doMovieEditionSetSlug(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		if id == "" {
+			return nil, &model.ValidationError{Op: "set movie edition slug", Err: errNotFound}
+		}
+		slug := strings.TrimSpace(req.FormValue("slug"))
+		err := tx.MovieEditionSlugSet(ctx, id, slug)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doMovieEditionSetYear(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

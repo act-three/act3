@@ -114,9 +114,8 @@ func AppMoviesDetail(
 												SettingsItemLabelTitle("URL"),
 											),
 
-											InputText(
-												attr.Value(mo.TheaterURL()+"/"+med.Slug()),
-												attr.Disabled,
+											SettingsTextField("/-/do/movie-edition-set-slug", "slug", med.Slug(), SettingsTextFieldPrefix(mo.TheaterURL()+"/"))(
+												html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 											),
 										),
 

@@ -1143,6 +1143,20 @@ func (q *Queries) MovieEditionSlugExists(ctx context.Context, arg MovieEditionSl
 	return count, err
 }
 
+const movieEditionSlugSet = `-- name: MovieEditionSlugSet :exec
+UPDATE MovieEdition SET Slug = ? WHERE ID = ?
+`
+
+type MovieEditionSlugSetParams struct {
+	Slug string
+	ID   string
+}
+
+func (q *Queries) MovieEditionSlugSet(ctx context.Context, arg MovieEditionSlugSetParams) error {
+	_, err := q.db.ExecContext(ctx, movieEditionSlugSet, arg.Slug, arg.ID)
+	return err
+}
+
 const movieEditionTitleSet = `-- name: MovieEditionTitleSet :exec
 UPDATE MovieEdition SET Title = ? WHERE ID = ?
 `
