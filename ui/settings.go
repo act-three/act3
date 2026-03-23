@@ -20,21 +20,12 @@ func SettingsContent() html.Element {
 	return FlexCol(Class("u-settings-content"))
 }
 
-func SettingsSection(title string) html.Node {
-	return html.Div(attr.Class("u-settings-section"))(
-		Text(title, TextSize3, FontBold),
-	)
-}
-
-func SettingsSectionDescription(title, description string) html.Node {
-	return html.Div(attr.Class("u-settings-section"))(
-		Text(title, TextSize3, FontBold),
-		Text(description, TextSize2, Class("u-settings-label-description")),
-	)
-}
-
 func SettingsGroup() html.Element {
 	return FlexCol(Class("u-settings-group"))
+}
+
+func SettingsGroupHead() html.Element {
+	return FlexRow(Class("u-settings-group-head"))
 }
 
 func SettingsItem() html.Element {

@@ -79,8 +79,7 @@ func AppMoviesDetail(
 				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
-							SettingsItemLabelTitle("Movie Title"),
-							SettingsItemLabelDescription("Shown on the home page"),
+							SettingsItemLabelTitle("Title"),
 						),
 						SettingsControl()(
 							// placeholder control
@@ -98,60 +97,53 @@ func AppMoviesDetail(
 					},
 				),
 
-				SettingsGroup()(
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Poster"),
-						),
-						SettingsControl()(
-							// placeholder control
-							Icon("edit"),
-						),
-					),
-
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Title"),
-							SettingsItemLabelDescription("Shown on movie detail page"),
-						),
-						SettingsControl()(
-							// placeholder control
-							InputText(
-								attr.Value(med.Title()),
-								attr.Disabled,
+				html.If(len(editions) > 1,
+					func() html.Node {
+						return SettingsGroup()(
+							SettingsItem()(
+								SettingsItemLabel()(
+									SettingsItemLabelTitle("Edition Title"),
+								),
+								SettingsControl()(
+									// placeholder control
+									InputText(
+										attr.Value(med.Title()),
+										attr.Disabled,
+									),
+								),
 							),
-						),
-					),
 
-					html.If(med.Slug() != "",
-						func() html.Node {
-							return Group(
-								SettingsItem()(
-									SettingsItemLabel()(
-										SettingsItemLabelTitle("URL"),
-									),
-									SettingsControl()(
-										// placeholder control
-										InputText(
-											attr.Value(med.Slug()),
-											attr.Disabled,
+							html.If(med.Slug() != "",
+								func() html.Node {
+									return Group(
+										SettingsItem()(
+											SettingsItemLabel()(
+												SettingsItemLabelTitle("URL"),
+											),
+											SettingsControl()(
+												// placeholder control
+												InputText(
+													attr.Value(mo.TheaterURL()+"/"+med.Slug()),
+													attr.Disabled,
+												),
+											),
 										),
-									),
-								),
 
-								SettingsItem()(
-									SettingsItemLabel()(
-										SettingsItemLabelTitle("Default"),
-										SettingsItemLabelDescription("Shown first when opening a movie"),
-									),
-									SettingsControl()(
-										// placeholder control
-										Button(ButtonGhost, ButtonSize2)(Text("Set Default")),
-									),
-								),
-							)
-						},
-					),
+										SettingsItem()(
+											SettingsItemLabel()(
+												SettingsItemLabelTitle("Default"),
+												SettingsItemLabelDescription("Shown first when opening a movie"),
+											),
+											SettingsControl()(
+												// placeholder control
+												Button(ButtonGhost, ButtonSize2)(Text("Set Default")),
+											),
+										),
+									)
+								},
+							),
+						)
+					},
 				),
 
 				SettingsGroup()(
@@ -170,6 +162,18 @@ func AppMoviesDetail(
 
 					SettingsItem()(
 						SettingsItemLabel()(
+							SettingsItemLabelTitle("Poster"),
+						),
+						SettingsControl()(
+							// placeholder control
+							ImageFrame(attr.Style("width:30px"))(
+								PosterImg(PosterFill, attr.Src(med.ImageURL())),
+							),
+						),
+					),
+
+					SettingsItem()(
+						SettingsItemLabel()(
 							SettingsItemLabelTitle("Runtime"),
 						),
 						SettingsControl()(
@@ -182,11 +186,37 @@ func AppMoviesDetail(
 					),
 				),
 
+				SettingsContent()(Text("Summary", TextSize2)),
+				// TODO(april): create a text area component that looks good
+				html.Textarea(
+					attr.Style("border: 1px solid var(--border-strong)"),
+					attr.Style("padding: 16px"),
+					attr.Style("border-radius: 8px"),
+					attr.Style("height: 10rem"),
+					attr.Disabled,
+				)(html.Text(med.Summary())),
+
+				SettingsGroup()(
+					SettingsGroupHead()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Downloads"),
+						),
+						addTorrentButton("med-id", med.ID()),
+					),
+					turbo.Sink("edition-torrents-"+med.ID())(
+						html.Range(dls, downloadListItem),
+					),
+				),
+
+				SettingsGroup()(
+					appMoviesDetailVideos(med),
+				),
+
 				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Edition"),
-							SettingsItemLabelDescription("Create a duplicate of this edition"),
+							SettingsItemLabelDescription("Create a new edition by duplicating this one"),
 						),
 						SettingsControl()(
 							html.Form(
@@ -198,17 +228,21 @@ func AppMoviesDetail(
 							),
 						),
 					),
-				),
-
-				FlexRow(Gap2)(
-					ImageFrame()(
-						PosterImg(PosterFill, attr.Src(med.ImageURL())),
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Delete"),
+						),
+						SettingsControl()(
+							html.Form(
+								attr.Method("POST"),
+								attr.Action("/-/do/movie-edition-delete"),
+							)(
+								html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
+								Button(ButtonDestructive, ButtonSize2)(Text("Delete")),
+							),
+						),
 					),
-					FlexCol(Gap4, Class("v-media-detail-body"))(
-						html.P()(html.Safe(med.Summary())),
-					),
 				),
-				appMoviesDetailEdition(med, dls),
 			),
 		),
 	)
@@ -314,26 +348,6 @@ func MovieResultLink(editorURL string) html.Node {
 		)(
 			Text("Edit"),
 		),
-	)
-}
-
-func appMoviesDetailEdition(
-	med *model.MovieEdition,
-	dls []*model.DownloadHead,
-) html.Node {
-	if med == nil {
-		return html.Div()(html.Text("Unknown Edition"))
-	}
-	return html.Div()(
-		addTorrentButton("med-id", med.ID()),
-		html.Div(
-			attr.Class("v-media-download-list"),
-		)(
-			turbo.Sink("edition-torrents-"+med.ID())(
-				html.Range(dls, downloadListItem),
-			),
-		),
-		appMoviesDetailVideos(med),
 	)
 }
 

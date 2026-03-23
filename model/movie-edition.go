@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	// DefaultEdition is the primary edition,
-	// present in every movie.
+	// DefaultEdition is the title used when automatically creating
+	// the initial edition, present in every movie.
 	// Other editions (e.g. "Director's Cut") are optional.
-	DefaultEdition = "Default"
+	DefaultEdition = "Default Edition"
 )
 
 type MovieEditionHead struct {

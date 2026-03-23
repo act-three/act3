@@ -142,10 +142,11 @@ func addTorrentButton(inputName, inputValue string) html.Node {
 			stimulus.Action("change->add-torrent#upload"),
 		),
 		Button(
+			ButtonGhost,
 			stimulus.Target("add-torrent", "button"),
 			stimulus.Action("click->add-torrent#open:prevent"),
 		)(
-			html.Text("Add Torrent…"),
+			html.Text("Add Torrent"),
 		),
 	)
 }
