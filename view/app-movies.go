@@ -75,11 +75,20 @@ func AppMoviesDetail(
 		ScrollY(
 			Class("v-media-detail-body"),
 		)(
-			SettingsPage(med.Title())(
+			SettingsPage()(
 				html.If(len(editions) > 1,
 					func() html.Node {
 						return appMoviesEditionList(editions, med)
 					},
+				),
+
+				SettingsContent()(
+					Text(med.Title(), TextSize6),
+					// TODO(april): use med.TheaterURL to link to this edition
+					Link(
+						med.MovieHead().TheaterURL(),
+						turbo.DataFrame("_top"),
+					)(Text("View in Theater", TextSize3)),
 				),
 
 				SettingsGroup()(

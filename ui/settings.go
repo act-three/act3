@@ -5,11 +5,10 @@ import (
 	"ily.dev/act3/html/attr"
 )
 
-func SettingsPage(title string) html.Element {
+func SettingsPage() html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(attr.Class("u-settings-page"))(
 			FlexCol(Gap8)(
-				SettingsContent()(Text(title, TextSize6)),
 				Group(nodes...),
 			),
 		)
