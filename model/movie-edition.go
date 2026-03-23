@@ -178,6 +178,13 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 	}, nil
 }
 
+func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
+	return tx.q.MovieEditionTitleSet(ctx, schema.MovieEditionTitleSetParams{
+		Title: title,
+		ID:    id,
+	})
+}
+
 func (tx *TxRW) generateMovieEditionSlug(ctx Context, title, movieID string) (string, error) {
 	for slug := range editionSlugCandidates(title) {
 		n, err := tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{
