@@ -84,9 +84,8 @@ func AppMoviesDetail(
 
 				SettingsContent()(
 					Text(med.Title(), TextSize6),
-					// TODO(april): use med.TheaterURL to link to this edition
 					Link(
-						med.MovieHead().TheaterURL(),
+						med.TheaterURL(),
 						turbo.DataFrame("_top"),
 					)(Text("View in Theater", TextSize3)),
 				),

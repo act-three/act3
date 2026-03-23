@@ -1,6 +1,7 @@
 package model
 
 import (
+	"path"
 	"strconv"
 
 	"ily.dev/act3/database/schema"
@@ -55,6 +56,10 @@ func newMovieEdition(
 
 func (med *MovieEdition) Videos() []*Video      { return med.videos }
 func (med *MovieEdition) MovieHead() *MovieHead { return med.mo }
+
+func (med *MovieEdition) TheaterURL() string {
+	return path.Join(med.mo.TheaterURL(), med.Slug())
+}
 
 func (med *MovieEdition) PlayerURL(v *Video) string {
 	return "/-/player/" + v.ID() + "/" + med.med.ID
