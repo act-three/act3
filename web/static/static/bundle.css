@@ -173,12 +173,12 @@
     --accent-border-strong: oklch(0.45 0.12 357);
     --accent-contrast: oklch(0.909 0.054 347);
     --panel: oklch(0.125 0.035 319 / 0.7);
-    --destructive: oklch(0.634 0.213 1);
-    --destructive-hover: oklch(0.664 0.196 2);
-    --destructive-surface: oklch(0.206 0.023 355);
-    --destructive-surface-border: oklch(0.35 0.08 356);
-    --destructive-text: oklch(0.764 0.149 4);
-    --destructive-contrast: oklch(0.909 0.054 347);
+    --destructive: oklch(0.634 0.213 28);
+    --destructive-hover: oklch(0.664 0.196 30);
+    --destructive-surface: oklch(0.206 0.023 25);
+    --destructive-surface-border: oklch(0.35 0.08 27);
+    --destructive-text: oklch(0.764 0.149 30);
+    --destructive-contrast: oklch(0.909 0.054 25);
     --error: oklch(0.613 0.207 24);
     --scale: 1;
     --radius-1: calc(3px * var(--scale) * var(--radius-factor, 1));
