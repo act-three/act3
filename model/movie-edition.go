@@ -1,8 +1,6 @@
 package model
 
 import (
-	"strconv"
-
 	"ily.dev/act3/database/schema"
 )
 
@@ -21,16 +19,8 @@ func (med *MovieEditionHead) ID() string       { return med.med.ID }
 func (med *MovieEditionHead) Slug() string     { return med.med.Slug }
 func (med *MovieEditionHead) Title() string    { return med.med.Title }
 func (med *MovieEditionHead) Summary() string  { return med.med.Summary }
-func (med *MovieEditionHead) Year() int64      { return med.med.Year }
+func (med *MovieEditionHead) Year() string     { return med.med.Year }
 func (med *MovieEditionHead) ImageURL() string { return med.med.ImageURL }
-
-// YearDisplay returns the year as a string, or empty if unknown (0).
-func (med *MovieEditionHead) YearDisplay() string {
-	if med.med.Year != 0 {
-		return strconv.FormatInt(med.med.Year, 10)
-	}
-	return ""
-}
 
 type MovieEdition struct {
 	MovieEditionHead
@@ -111,7 +101,7 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 // movieEditionParams holds optional metadata for a new movie edition.
 type movieEditionParams struct {
 	Summary  string
-	Year     int64
+	Year     string
 	Runtime  int64
 	ImageURL string
 }
@@ -185,7 +175,7 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	})
 }
 
-func (tx *TxRW) MovieEditionYearSet(ctx Context, id string, year int64) error {
+func (tx *TxRW) MovieEditionYearSet(ctx Context, id, year string) error {
 	return tx.q.MovieEditionYearSet(ctx, schema.MovieEditionYearSetParams{
 		Year: year,
 		ID:   id,

@@ -16,9 +16,9 @@ func BrowseMovieEdition(
 	return browse(mo.Title(), med.ImageURL())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
-				expr.IfElse(med.YearDisplay() != "",
+				expr.IfElse(med.Year() != "",
 					func() html.Node {
-						return Text(med.YearDisplay(), Class("v-detail-muted"))
+						return Text(med.Year(), Class("v-detail-muted"))
 					},
 					func() html.Node { return html.Group() },
 				),

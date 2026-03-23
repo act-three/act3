@@ -68,7 +68,7 @@ type MovieEdition struct {
 	Slug     string
 	Title    string
 	Summary  string
-	Year     int64
+	Year     string
 	Runtime  int64
 	ImageURL string
 }

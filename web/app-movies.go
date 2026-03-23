@@ -98,18 +98,10 @@ func (c *Config) doMovieEditionSetYear(w http.ResponseWriter, req *http.Request)
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
-		yearStr := strings.TrimSpace(req.FormValue("year"))
 		if id == "" {
 			return nil, &model.ValidationError{Op: "set movie edition year", Err: errNotFound}
 		}
-		var year int64
-		if yearStr != "" {
-			var err error
-			year, err = strconv.ParseInt(yearStr, 10, 64)
-			if err != nil {
-				return nil, &model.ValidationError{Op: "set movie edition year", Err: err}
-			}
-		}
+		year := strings.TrimSpace(req.FormValue("year"))
 		err := tx.MovieEditionYearSet(ctx, id, year)
 		if err != nil {
 			return nil, err
@@ -145,7 +137,7 @@ func (c *Config) doMovieAdd(w http.ResponseWriter, req *http.Request) (html.Node
 				Err: errNotFound,
 			}
 		}
-		mo, err := tx.MovieCreate(ctx, title, 0)
+		mo, err := tx.MovieCreate(ctx, title, "")
 		if err != nil {
 			return nil, err
 		}

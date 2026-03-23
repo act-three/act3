@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 	"path"
-	"strconv"
 	"strings"
 
 	"ily.dev/act3/database/flurry"
@@ -170,7 +169,7 @@ func (tx *TxRW) MovieTitleSet(ctx Context, id, title string) error {
 	})
 }
 
-func (tx *TxRW) MovieCreate(ctx Context, title string, year int64) (*MovieWork, error) {
+func (tx *TxRW) MovieCreate(ctx Context, title, year string) (*MovieWork, error) {
 	moID := "mo" + flurry.NewID()
 	slug, err := tx.generateMovieSlug(ctx, title, year, moID)
 	if err != nil {
@@ -201,12 +200,9 @@ func (tx *TxRW) MovieCreateByTMDBID(
 ) (*MovieWork, error) {
 	id64 := int64(movie.ID)
 
-	var year int64
+	var year string
 	if len(movie.ReleaseDate) >= 4 {
-		y, err := strconv.ParseInt(movie.ReleaseDate[:4], 10, 64)
-		if err == nil {
-			year = y
-		}
+		year = movie.ReleaseDate[:4]
 	}
 
 	moID := "mo" + flurry.NewID()
@@ -251,7 +247,7 @@ func (tx *TxR) MovieHeadListByTMDBID(
 	return newMovieHeadList(a), nil
 }
 
-func (tx *TxRW) generateMovieSlug(ctx Context, title string, year int64, id string) (string, error) {
+func (tx *TxRW) generateMovieSlug(ctx Context, title, year, id string) (string, error) {
 	slug := xstrings.ToSlug(title)
 	if slug == "" {
 		slug = id
@@ -271,8 +267,8 @@ func (tx *TxRW) generateMovieSlug(ctx Context, title string, year int64, id stri
 	}
 
 	// Try slug-year.
-	if year != 0 {
-		candidate := slug + "-" + strconv.FormatInt(year, 10)
+	if year != "" {
+		candidate := slug + "-" + xstrings.ToSlug(year)
 		n, err := tx.q.MovieSlugExists(ctx, candidate)
 		if err != nil {
 			return "", err

@@ -59,7 +59,7 @@ func AppMoviesListItem(
 		CardContent()(
 			CardTitle()(html.Text(mo.Title())),
 			CardDescription(LineClamp2)(
-				html.Text(mo.YearDisplay()),
+				html.Text(mo.Year()),
 			),
 		),
 	)
@@ -141,7 +141,7 @@ func AppMoviesDetail(
 							SettingsItemLabelTitle("Year Released"),
 						),
 
-						SettingsTextField("/-/do/movie-edition-set-year", "year", med.YearDisplay())(
+						SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
 							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 						),
 					),

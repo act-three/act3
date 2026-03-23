@@ -22,8 +22,8 @@ func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []m
 
 func playerTitleForMovie(med *model.MovieEditionHead) string {
 	title := med.Title()
-	if y := med.Year(); y != 0 {
-		return fmt.Sprintf("%s (%d)", title, y)
+	if y := med.Year(); y != "" {
+		return fmt.Sprintf("%s (%s)", title, y)
 	}
 	return title
 }

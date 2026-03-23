@@ -992,7 +992,7 @@ type MovieEditionCreateParams struct {
 	Slug     string
 	MovieID  string
 	Summary  string
-	Year     int64
+	Year     string
 	Runtime  int64
 	ImageURL string
 }
@@ -1148,7 +1148,7 @@ UPDATE MovieEdition SET Year = ? WHERE ID = ?
 `
 
 type MovieEditionYearSetParams struct {
-	Year int64
+	Year string
 	ID   string
 }
 

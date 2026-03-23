@@ -123,7 +123,7 @@ CREATE TABLE MovieEdition
 	Slug     TEXT NOT NULL DEFAULT (''),
 	Title    TEXT NOT NULL,
 	Summary  TEXT NOT NULL DEFAULT (''),
-	Year     INTEGER NOT NULL DEFAULT (0),    -- 0 = unknown
+	Year     TEXT NOT NULL DEFAULT (''),
 	Runtime  INTEGER NOT NULL DEFAULT (0),    -- minutes
 	ImageURL TEXT NOT NULL DEFAULT (''),
 	UNIQUE (MovieID, Slug)
