@@ -105,14 +105,14 @@ func appDownloadsStreamItem(dl *model.DownloadHead) html.Node {
 // downloadListItem renders a single download as a clickable link.
 // Shared by the series, movie, and download views.
 func downloadListItem(dl *model.DownloadHead) html.Node {
-	return html.Div(
-		attr.Class("v-media-download-item"),
-	)(
-		html.A(
-			attr.Href(dl.URL()),
-			turbo.DataFrame("main"),
-		)(
-			html.Text(dl.Title()),
+	return SettingsItem()(
+		SettingsItemLabel()(
+			html.A(
+				attr.Href(dl.URL()),
+				turbo.DataFrame("main"),
+			)(
+				Text(dl.Title(), TextSize2),
+			),
 		),
 	)
 }

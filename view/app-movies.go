@@ -181,7 +181,7 @@ func AppMoviesDetail(
 						),
 						addTorrentButton("med-id", med.ID()),
 					),
-					turbo.Sink("edition-torrents-"+med.ID())(
+					turbo.Sink("edition-torrents-"+med.ID(), SettingsGroupItems)(
 						html.Range(dls, downloadListItem),
 					),
 				),

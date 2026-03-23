@@ -49,10 +49,11 @@ func Frame(id string, opts ...FrameOption) html.Element {
 	return frame(attrs...)
 }
 
-func Sink(id string) html.Element {
+func Sink(id string, attrs ...attr.Node) html.Element {
 	return html.Div(
 		attr.ID(id),
 		attr.Class("u-contents"),
+		attr.Group(attrs...),
 	)
 }
 

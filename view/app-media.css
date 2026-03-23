@@ -90,9 +90,6 @@ turbo-frame[aria-busy="true"] > .v-media-dialog-spinner { display: block; }
 /* edit-media edition/order selector label */
 .v-media-selector-label { width: 180px; }
 
-/* edit-media download list item */
-.v-media-download-item { padding: 0.25rem; }
-
 /* edit-media download list container */
 .v-media-download-list { border: 1px solid var(--border); }
 

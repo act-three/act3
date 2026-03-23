@@ -1387,7 +1387,8 @@
     justify-content: space-between;
     align-items: center;
   }
-  .u-settings-group-head:not(:last-child) {
+  .u-settings-group-head:has(+ .u-settings-item),
+  .u-settings-group-head:has(+ .u-contents > .u-settings-item) {
     border-bottom: 0.5px solid var(--border-strong);
   }
   .u-settings-item {
@@ -1966,9 +1967,6 @@
   }
   .v-media-selector-label {
     width: 180px;
-  }
-  .v-media-download-item {
-    padding: 0.25rem;
   }
   .v-media-download-list {
     border: 1px solid var(--border);

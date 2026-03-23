@@ -43,3 +43,5 @@ func SettingsItemLabelTitle(s string) html.Node {
 func SettingsItemLabelDescription(s string) html.Node {
 	return Text(s, TextSize1, Class("u-settings-label-description"))
 }
+
+var SettingsGroupItems = Class("u-settings-group-items")

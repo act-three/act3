@@ -38,7 +38,8 @@
 	align-items: center;
 }
 
-.u-settings-group-head:not(:last-child) { border-bottom: 0.5px solid var(--border-strong); }
+.u-settings-group-head:has(+ .u-settings-item),
+.u-settings-group-head:has(+ .u-contents > .u-settings-item) { border-bottom: 0.5px solid var(--border-strong); }
 
 .u-settings-item {
 	position: relative;
