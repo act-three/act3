@@ -34,9 +34,6 @@ var (
 // FrameOption is an option for [Frame].
 type FrameOption attr.Node
 
-// Target sets the default target frame for links within this frame.
-func Target(id string) FrameOption { return FrameOption(attr.Target(id)) }
-
 // Advance makes navigation within this frame push a history entry.
 func Advance() FrameOption { return FrameOption(DataAction("advance")) }
 
@@ -49,7 +46,7 @@ func Frame(id string, opts ...FrameOption) html.Element {
 	return frame(attrs...)
 }
 
-func Sink(id string, attrs ...attr.Node) html.Element {
+func StreamTarget(id string, attrs ...attr.Node) html.Element {
 	return html.Div(
 		attr.ID(id),
 		attr.Class("u-contents"),

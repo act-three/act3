@@ -27,19 +27,21 @@ func AppMovies(
 		),
 		Split()(
 			List("/app/movies/", "detail")(
-				turbo.Sink(AppMoviesListItems)(
+				turbo.StreamTarget(AppMoviesListItems)(
 					ListItems(s, AppMoviesListItem),
 				),
 			),
-			expr.IfElse(detail != nil,
-				func() html.Node {
-					return Group(detail...)
-				},
-				func() html.Node {
-					return Center(Class("v-media-muted"))(
-						html.Text("No Movie Selected"),
-					)
-				},
+			turbo.Frame("detail", turbo.Advance())(
+				expr.IfElse(detail != nil,
+					func() html.Node {
+						return Group(detail...)
+					},
+					func() html.Node {
+						return Center(Class("v-media-muted"))(
+							html.Text("No Movie Selected"),
+						)
+					},
+				),
 			),
 		),
 	))
@@ -187,7 +189,7 @@ func AppMoviesDetail(
 						),
 						addTorrentButton("med-id", med.ID()),
 					),
-					turbo.Sink("edition-torrents-"+med.ID(), SettingsGroupItems)(
+					turbo.StreamTarget("edition-torrents-"+med.ID(), SettingsGroupItems)(
 						html.Range(dls, downloadListItem),
 					),
 				),

@@ -37,15 +37,17 @@ func AppDownloads(
 				)(
 					ListItems(items, appDownloadsListItem),
 				),
-				expr.IfElse(selected != nil,
-					func() html.Node {
-						return appDownloadsDetail(selected)
-					},
-					func() html.Node {
-						return Center(Class("v-media-muted"))(
-							html.Text("No Download Selected"),
-						)
-					},
+				turbo.Frame("detail", turbo.Advance())(
+					expr.IfElse(selected != nil,
+						func() html.Node {
+							return appDownloadsDetail(selected)
+						},
+						func() html.Node {
+							return Center(Class("v-media-muted"))(
+								html.Text("No Download Selected"),
+							)
+						},
+					),
 				),
 			),
 		),

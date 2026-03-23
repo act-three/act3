@@ -30,19 +30,21 @@ func AppSeries(
 		),
 		Split()(
 			List("/app/series/", "detail")(
-				turbo.Sink(AppSeriesListItems)(
+				turbo.StreamTarget(AppSeriesListItems)(
 					ListItems(s, AppSeriesListItem),
 				),
 			),
-			expr.IfElse(detail != nil,
-				func() html.Node {
-					return Group(detail...)
-				},
-				func() html.Node {
-					return Center(Class("v-media-muted"))(
-						html.Text("No Series Selected"),
-					)
-				},
+			turbo.Frame("detail", turbo.Advance())(
+				expr.IfElse(detail != nil,
+					func() html.Node {
+						return Group(detail...)
+					},
+					func() html.Node {
+						return Center(Class("v-media-muted"))(
+							html.Text("No Series Selected"),
+						)
+					},
+				),
 			),
 		),
 	))
@@ -134,7 +136,7 @@ func appSeriesDetailEdition(
 		html.Div(
 			attr.Class("v-media-download-list"),
 		)(
-			turbo.Sink("edition-torrents-"+sed.ID())(
+			turbo.StreamTarget("edition-torrents-"+sed.ID())(
 				html.Range(dls, downloadListItem),
 			),
 		),
