@@ -210,9 +210,23 @@ func AppMoviesDetail(
 							Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
 						),
 					),
+				),
+
+				html.If(med.Slug() == "" && len(editions) > 1,
+					func() html.Node {
+						return SettingsContent()(
+							Label(
+								"line/x-circle",
+								"The default edition can't be deleted. To delete this edition, first make another edition the default.",
+							),
+						)
+					},
+				),
+				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Delete"),
+							SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
 						),
 
 						html.Form(
@@ -220,7 +234,7 @@ func AppMoviesDetail(
 							attr.Action("/-/do/movie-edition-delete"),
 						)(
 							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
-							Button(ButtonDestructive, ButtonSize2)(Text("Delete")),
+							Button(ButtonDestructive, ButtonGhost, ButtonSize2)(Text("Delete")),
 						),
 					),
 				),
