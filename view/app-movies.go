@@ -21,11 +21,9 @@ func AppMovies(
 ) html.Node {
 	return app(title, FlexCol(attr.Class("v-media-page"))(
 		ToolbarPrimary()(
-			DialogButton("/-/dialog/movie-add")(
-				Icon("line/plus"),
-				html.Text("Add Movie"),
+			DialogButton("/-/dialog/movie-add", ButtonSurface)(
+				Text("Add Movie"),
 			),
-			html.Div(),
 		),
 		Split()(
 			List("/app/movies/", "detail")(

@@ -24,14 +24,9 @@ func AppSeries(
 ) html.Node {
 	return app(title, FlexCol(attr.Class("v-media-page"))(
 		ToolbarPrimary()(
-			DialogButton("/-/dialog/series-add", ButtonRadiusMedium, ButtonSurface)(
-				Icon("line/plus"),
-				html.Text("Add Series"),
+			DialogButton("/-/dialog/series-add", ButtonSurface)(
+				Text("Add Series"),
 			),
-			html.Div(attr.Class("v-media-searchbar"))(
-				appSeriesSearchbar(),
-			),
-			html.Div(),
 		),
 		Split()(
 			List("/app/series/", "detail")(
@@ -95,10 +90,6 @@ func AppSeriesDetail(
 			),
 		),
 	)
-}
-
-func appSeriesSearchbar() html.Node {
-	return html.Text("appSeriesSearchbar")
 }
 
 func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
