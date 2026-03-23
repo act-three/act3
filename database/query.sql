@@ -202,6 +202,9 @@ SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?;
 -- name: MovieEditionTitleSet :exec
 UPDATE MovieEdition SET Title = ? WHERE ID = ?;
 
+-- name: MovieEditionYearSet :exec
+UPDATE MovieEdition SET Year = ? WHERE ID = ?;
+
 -- name: MovieGet :one
 SELECT * FROM Movie WHERE ID = ?;
 

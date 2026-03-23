@@ -1143,6 +1143,20 @@ func (q *Queries) MovieEditionTitleSet(ctx context.Context, arg MovieEditionTitl
 	return err
 }
 
+const movieEditionYearSet = `-- name: MovieEditionYearSet :exec
+UPDATE MovieEdition SET Year = ? WHERE ID = ?
+`
+
+type MovieEditionYearSetParams struct {
+	Year int64
+	ID   string
+}
+
+func (q *Queries) MovieEditionYearSet(ctx context.Context, arg MovieEditionYearSetParams) error {
+	_, err := q.db.ExecContext(ctx, movieEditionYearSet, arg.Year, arg.ID)
+	return err
+}
+
 const movieGet = `-- name: MovieGet :one
 SELECT id, slug, title, tmdbid, imdbid FROM Movie WHERE ID = ?
 `

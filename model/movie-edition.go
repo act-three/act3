@@ -185,6 +185,13 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	})
 }
 
+func (tx *TxRW) MovieEditionYearSet(ctx Context, id string, year int64) error {
+	return tx.q.MovieEditionYearSet(ctx, schema.MovieEditionYearSetParams{
+		Year: year,
+		ID:   id,
+	})
+}
+
 func (tx *TxRW) generateMovieEditionSlug(ctx Context, title, movieID string) (string, error) {
 	for slug := range editionSlugCandidates(title) {
 		n, err := tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{

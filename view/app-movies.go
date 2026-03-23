@@ -141,9 +141,8 @@ func AppMoviesDetail(
 							SettingsItemLabelTitle("Year Released"),
 						),
 
-						InputText(
-							attr.Value(med.YearDisplay()),
-							attr.Disabled,
+						SettingsTextField("/-/do/movie-edition-set-year", "year", med.YearDisplay())(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 						),
 					),
 
