@@ -19,6 +19,7 @@ type MovieEditionHead struct {
 
 func (med *MovieEditionHead) ID() string       { return med.med.ID }
 func (med *MovieEditionHead) Slug() string     { return med.med.Slug }
+func (med *MovieEditionHead) Title() string    { return med.med.Title }
 func (med *MovieEditionHead) Label() string    { return med.med.Label }
 func (med *MovieEditionHead) Summary() string  { return med.med.Summary }
 func (med *MovieEditionHead) Year() string     { return med.med.Year }
@@ -109,8 +110,9 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 	return newMovieEdition(mo, medData, map[string][]*Video{id: videos}), nil
 }
 
-// movieEditionParams holds optional metadata for a new movie edition.
+// movieEditionParams holds metadata for a new movie edition.
 type movieEditionParams struct {
+	Title    string
 	Summary  string
 	Year     string
 	Runtime  int64
@@ -138,6 +140,7 @@ func (tx *TxRW) movieEditionCreate(ctx Context, label, movieID string, p movieEd
 		return nil, err
 	}
 	medData, err := tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
+		Title:    p.Title,
 		Label:    label,
 		Slug:     slug,
 		MovieID:  movieID,
@@ -161,6 +164,7 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 		return nil, err
 	}
 	med, err := tx.movieEditionCreate(ctx, "Copy of "+src.Label(), src.med.MovieID, movieEditionParams{
+		Title:    src.med.Title,
 		Summary:  src.med.Summary,
 		Year:     src.med.Year,
 		Runtime:  src.med.Runtime,
@@ -189,6 +193,13 @@ func (tx *TxRW) MovieEditionSlugSet(ctx Context, id, slug string) error {
 func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	return tx.q.MovieEditionLabelSet(ctx, schema.MovieEditionLabelSetParams{
 		Label: label,
+		ID:    id,
+	})
+}
+
+func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
+	return tx.q.MovieEditionTitleSet(ctx, schema.MovieEditionTitleSetParams{
+		Title: title,
 		ID:    id,
 	})
 }

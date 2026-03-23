@@ -46,29 +46,28 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 
-		mo := med.MovieHead()
 		detail := view.AppMoviesDetail(med, editions, dls)
 		if req.Header.Get("turbo-frame") == "detail" {
-			return view.PageFrame(mo.Title(), "detail", detail), nil
+			return view.PageFrame(med.Title(), "detail", detail), nil
 		}
 
 		all, err := tx.MovieWorkList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		return view.AppMovies(mo.Title(), all, detail), nil
+		return view.AppMovies(med.Title(), all, detail), nil
 	})
 }
 
-func (c *Config) doMovieSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doMovieEditionSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
 		title := req.FormValue("title")
 		if id == "" || title == "" {
-			return nil, &model.ValidationError{Op: "set movie title", Err: errNotFound}
+			return nil, &model.ValidationError{Op: "set movie edition title", Err: errNotFound}
 		}
-		err := tx.MovieTitleSet(ctx, id, title)
+		err := tx.MovieEditionTitleSet(ctx, id, title)
 		if err != nil {
 			return nil, err
 		}

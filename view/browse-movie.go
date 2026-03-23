@@ -12,8 +12,7 @@ func BrowseMovieEdition(
 	med *model.MovieEdition,
 	dls []*model.RenditionForDownload,
 ) html.Node {
-	mo := med.MovieHead()
-	return browse(mo.Title(), med.ImageURL())(
+	return browse(med.Title(), med.ImageURL())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
 				expr.IfElse(med.Year() != "",
@@ -22,7 +21,7 @@ func BrowseMovieEdition(
 					},
 					func() html.Node { return html.Group() },
 				),
-				Text(mo.Title(), TextSize7),
+				Text(med.Title(), TextSize7),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
 						browseMoviePlayButton(med),

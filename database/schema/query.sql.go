@@ -949,15 +949,14 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 }
 
 const movieCreate = `-- name: MovieCreate :one
-INSERT INTO Movie (ID, Slug, Title, TMDBID, IMDBID)
-VALUES (?, ?, ?, ?, ?)
-RETURNING id, slug, title, tmdbid, imdbid
+INSERT INTO Movie (ID, Slug, TMDBID, IMDBID)
+VALUES (?, ?, ?, ?)
+RETURNING id, slug, tmdbid, imdbid
 `
 
 type MovieCreateParams struct {
 	ID     string
 	Slug   string
-	Title  string
 	TMDBID *int64
 	IMDBID *string
 }
@@ -966,7 +965,6 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 	row := q.db.QueryRowContext(ctx, movieCreate,
 		arg.ID,
 		arg.Slug,
-		arg.Title,
 		arg.TMDBID,
 		arg.IMDBID,
 	)
@@ -974,7 +972,6 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 	err := row.Scan(
 		&i.ID,
 		&i.Slug,
-		&i.Title,
 		&i.TMDBID,
 		&i.IMDBID,
 	)
@@ -982,12 +979,13 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 }
 
 const movieEditionCreate = `-- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Label, Slug, MovieID, Summary, Year, Runtime, ImageURL)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, movieid, slug, label, summary, year, runtime, imageurl
+INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, Year, Runtime, ImageURL)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, movieid, slug, title, label, summary, year, runtime, imageurl
 `
 
 type MovieEditionCreateParams struct {
+	Title    string
 	Label    string
 	Slug     string
 	MovieID  string
@@ -999,6 +997,7 @@ type MovieEditionCreateParams struct {
 
 func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreateParams) (MovieEdition, error) {
 	row := q.db.QueryRowContext(ctx, movieEditionCreate,
+		arg.Title,
 		arg.Label,
 		arg.Slug,
 		arg.MovieID,
@@ -1012,6 +1011,7 @@ func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreate
 		&i.ID,
 		&i.MovieID,
 		&i.Slug,
+		&i.Title,
 		&i.Label,
 		&i.Summary,
 		&i.Year,
@@ -1022,7 +1022,7 @@ func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreate
 }
 
 const movieEditionGet = `-- name: MovieEditionGet :one
-SELECT id, movieid, slug, label, summary, year, runtime, imageurl FROM MovieEdition WHERE ID = ?
+SELECT id, movieid, slug, title, label, summary, year, runtime, imageurl FROM MovieEdition WHERE ID = ?
 `
 
 func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition, error) {
@@ -1032,6 +1032,7 @@ func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition,
 		&i.ID,
 		&i.MovieID,
 		&i.Slug,
+		&i.Title,
 		&i.Label,
 		&i.Summary,
 		&i.Year,
@@ -1056,7 +1057,7 @@ func (q *Queries) MovieEditionLabelSet(ctx context.Context, arg MovieEditionLabe
 }
 
 const movieEditionListByMovieID = `-- name: MovieEditionListByMovieID :many
-SELECT id, movieid, slug, label, summary, year, runtime, imageurl FROM MovieEdition WHERE MovieID = ?
+SELECT id, movieid, slug, title, label, summary, year, runtime, imageurl FROM MovieEdition WHERE MovieID = ?
 `
 
 func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string) ([]MovieEdition, error) {
@@ -1072,6 +1073,7 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 			&i.ID,
 			&i.MovieID,
 			&i.Slug,
+			&i.Title,
 			&i.Label,
 			&i.Summary,
 			&i.Year,
@@ -1092,7 +1094,7 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 }
 
 const movieEditionListDefault = `-- name: MovieEditionListDefault :many
-SELECT id, movieid, slug, label, summary, year, runtime, imageurl FROM MovieEdition WHERE Slug = ''
+SELECT id, movieid, slug, title, label, summary, year, runtime, imageurl FROM MovieEdition WHERE Slug = ''
 `
 
 func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, error) {
@@ -1108,6 +1110,7 @@ func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, 
 			&i.ID,
 			&i.MovieID,
 			&i.Slug,
+			&i.Title,
 			&i.Label,
 			&i.Summary,
 			&i.Year,
@@ -1171,6 +1174,20 @@ func (q *Queries) MovieEditionSlugSet(ctx context.Context, arg MovieEditionSlugS
 	return err
 }
 
+const movieEditionTitleSet = `-- name: MovieEditionTitleSet :exec
+UPDATE MovieEdition SET Title = ? WHERE ID = ?
+`
+
+type MovieEditionTitleSetParams struct {
+	Title string
+	ID    string
+}
+
+func (q *Queries) MovieEditionTitleSet(ctx context.Context, arg MovieEditionTitleSetParams) error {
+	_, err := q.db.ExecContext(ctx, movieEditionTitleSet, arg.Title, arg.ID)
+	return err
+}
+
 const movieEditionYearSet = `-- name: MovieEditionYearSet :exec
 UPDATE MovieEdition SET Year = ? WHERE ID = ?
 `
@@ -1186,7 +1203,7 @@ func (q *Queries) MovieEditionYearSet(ctx context.Context, arg MovieEditionYearS
 }
 
 const movieGet = `-- name: MovieGet :one
-SELECT id, slug, title, tmdbid, imdbid FROM Movie WHERE ID = ?
+SELECT id, slug, tmdbid, imdbid FROM Movie WHERE ID = ?
 `
 
 func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
@@ -1195,7 +1212,6 @@ func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Slug,
-		&i.Title,
 		&i.TMDBID,
 		&i.IMDBID,
 	)
@@ -1203,7 +1219,7 @@ func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
 }
 
 const movieGetByEditionID = `-- name: MovieGetByEditionID :one
-SELECT id, slug, title, tmdbid, imdbid FROM Movie
+SELECT id, slug, tmdbid, imdbid FROM Movie
 WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID = ?)
 `
 
@@ -1213,7 +1229,6 @@ func (q *Queries) MovieGetByEditionID(ctx context.Context, id string) (Movie, er
 	err := row.Scan(
 		&i.ID,
 		&i.Slug,
-		&i.Title,
 		&i.TMDBID,
 		&i.IMDBID,
 	)
@@ -1221,7 +1236,7 @@ func (q *Queries) MovieGetByEditionID(ctx context.Context, id string) (Movie, er
 }
 
 const movieGetBySlug = `-- name: MovieGetBySlug :one
-SELECT id, slug, title, tmdbid, imdbid FROM Movie WHERE Slug = ?
+SELECT id, slug, tmdbid, imdbid FROM Movie WHERE Slug = ?
 `
 
 func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error) {
@@ -1230,7 +1245,6 @@ func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error
 	err := row.Scan(
 		&i.ID,
 		&i.Slug,
-		&i.Title,
 		&i.TMDBID,
 		&i.IMDBID,
 	)
@@ -1238,8 +1252,8 @@ func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error
 }
 
 const movieList = `-- name: MovieList :many
-SELECT id, slug, title, tmdbid, imdbid FROM Movie
-ORDER BY Title
+SELECT id, slug, tmdbid, imdbid FROM Movie
+ORDER BY Slug
 `
 
 func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
@@ -1254,7 +1268,6 @@ func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Slug,
-			&i.Title,
 			&i.TMDBID,
 			&i.IMDBID,
 		); err != nil {
@@ -1272,7 +1285,7 @@ func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
 }
 
 const movieListByTMDBID = `-- name: MovieListByTMDBID :many
-SELECT id, slug, title, tmdbid, imdbid FROM Movie WHERE TMDBID IN (/*SLICE:ids*/?)
+SELECT id, slug, tmdbid, imdbid FROM Movie WHERE TMDBID IN (/*SLICE:ids*/?)
 `
 
 func (q *Queries) MovieListByTMDBID(ctx context.Context, ids []*int64) ([]Movie, error) {
@@ -1297,7 +1310,6 @@ func (q *Queries) MovieListByTMDBID(ctx context.Context, ids []*int64) ([]Movie,
 		if err := rows.Scan(
 			&i.ID,
 			&i.Slug,
-			&i.Title,
 			&i.TMDBID,
 			&i.IMDBID,
 		); err != nil {
@@ -1323,20 +1335,6 @@ func (q *Queries) MovieSlugExists(ctx context.Context, slug string) (int64, erro
 	var count int64
 	err := row.Scan(&count)
 	return count, err
-}
-
-const movieTitleSet = `-- name: MovieTitleSet :exec
-UPDATE Movie SET Title = ? WHERE ID = ?
-`
-
-type MovieTitleSetParams struct {
-	Title string
-	ID    string
-}
-
-func (q *Queries) MovieTitleSet(ctx context.Context, arg MovieTitleSetParams) error {
-	_, err := q.db.ExecContext(ctx, movieTitleSet, arg.Title, arg.ID)
-	return err
 }
 
 const movieVideoCreate = `-- name: MovieVideoCreate :one

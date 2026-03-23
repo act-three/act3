@@ -75,14 +75,14 @@ func AppMoviesDetail(
 		ScrollY(
 			Class("v-media-detail-body"),
 		)(
-			SettingsPage(mo.Title())(
+			SettingsPage(med.Title())(
 				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Title"),
 						),
-						SettingsTextField("/-/do/movie-set-title", "title", mo.Title())(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(mo.ID())),
+						SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title())(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 						),
 					),
 				),

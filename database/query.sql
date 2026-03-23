@@ -178,13 +178,13 @@ SELECT * FROM EpisodeVideo
 WHERE VideoID = ?;
 
 -- name: MovieCreate :one
-INSERT INTO Movie (ID, Slug, Title, TMDBID, IMDBID)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO Movie (ID, Slug, TMDBID, IMDBID)
+VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Label, Slug, MovieID, Summary, Year, Runtime, ImageURL)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, Year, Runtime, ImageURL)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionGet :one
@@ -208,6 +208,9 @@ SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?;
 -- name: MovieEditionSlugSet :exec
 UPDATE MovieEdition SET Slug = ? WHERE ID = ?;
 
+-- name: MovieEditionTitleSet :exec
+UPDATE MovieEdition SET Title = ? WHERE ID = ?;
+
 -- name: MovieEditionYearSet :exec
 UPDATE MovieEdition SET Year = ? WHERE ID = ?;
 
@@ -223,16 +226,13 @@ SELECT * FROM Movie WHERE Slug = ?;
 
 -- name: MovieList :many
 SELECT * FROM Movie
-ORDER BY Title;
+ORDER BY Slug;
 
 -- name: MovieListByTMDBID :many
 SELECT * FROM Movie WHERE TMDBID IN (sqlc.slice(ids));
 
 -- name: MovieSlugExists :one
 SELECT COUNT(*) FROM Movie WHERE Slug = ?;
-
--- name: MovieTitleSet :exec
-UPDATE Movie SET Title = ? WHERE ID = ?;
 
 -- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)

@@ -57,7 +57,6 @@ type EpisodeVideo struct {
 type Movie struct {
 	ID     string
 	Slug   string
-	Title  string
 	TMDBID *int64
 	IMDBID *string
 }
@@ -66,6 +65,7 @@ type MovieEdition struct {
 	ID       string
 	MovieID  string
 	Slug     string
+	Title    string
 	Label    string
 	Summary  string
 	Year     string

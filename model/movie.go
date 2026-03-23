@@ -26,7 +26,6 @@ func newMovieHeadList(list []schema.Movie) []*MovieHead {
 
 func (mo *MovieHead) ID() string     { return mo.mo.ID }
 func (mo *MovieHead) Slug() string   { return mo.mo.Slug }
-func (mo *MovieHead) Title() string  { return mo.mo.Title }
 func (mo *MovieHead) TMDBID() *int64 { return mo.mo.TMDBID }
 
 func (mo *MovieHead) TheaterURL() string {
@@ -45,7 +44,7 @@ type MovieWork struct {
 	MovieEditionHead
 }
 
-func (mw *MovieWork) Title() string { return mw.MovieHead.Title() }
+func (mw *MovieWork) Title() string { return mw.MovieEditionHead.Title() }
 
 func (mw *MovieWork) TheaterURL() string {
 	return path.Join(mw.MovieHead.TheaterURL(), mw.MovieEditionHead.Slug())
@@ -162,13 +161,6 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 	return rends, nil
 }
 
-func (tx *TxRW) MovieTitleSet(ctx Context, id, title string) error {
-	return tx.q.MovieTitleSet(ctx, schema.MovieTitleSetParams{
-		Title: title,
-		ID:    id,
-	})
-}
-
 func (tx *TxRW) MovieCreate(ctx Context, title, year string) (*MovieWork, error) {
 	moID := "mo" + flurry.NewID()
 	slug, err := tx.generateMovieSlug(ctx, title, year, moID)
@@ -176,15 +168,15 @@ func (tx *TxRW) MovieCreate(ctx Context, title, year string) (*MovieWork, error)
 		return nil, err
 	}
 	moData, err := tx.q.MovieCreate(ctx, schema.MovieCreateParams{
-		ID:    moID,
-		Slug:  slug,
-		Title: title,
+		ID:   moID,
+		Slug: slug,
 	})
 	if err != nil {
 		return nil, err
 	}
 	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
-		Year: year,
+		Title: title,
+		Year:  year,
 	})
 	if err != nil {
 		return nil, err
@@ -215,7 +207,6 @@ func (tx *TxRW) MovieCreateByTMDBID(
 		schema.MovieCreateParams{
 			ID:     moID,
 			Slug:   slug,
-			Title:  movie.Title,
 			TMDBID: &id64,
 			IMDBID: movie.IMDBID,
 		})
@@ -223,6 +214,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 		return nil, err
 	}
 	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
+		Title:    movie.Title,
 		Summary:  movie.Overview,
 		Year:     year,
 		Runtime:  int64(movie.Runtime),
