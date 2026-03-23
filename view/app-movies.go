@@ -123,6 +123,16 @@ func AppMoviesDetail(
 					),
 				),
 
+				SettingsContent()(Text("Summary", TextSize2)),
+				// TODO(april): create a text area component that looks good
+				html.Textarea(
+					attr.Style("border: 1px solid var(--border-strong)"),
+					attr.Style("padding: 16px"),
+					attr.Style("border-radius: 8px"),
+					attr.Style("height: 10rem"),
+					attr.Disabled,
+				)(html.Text(med.Summary())),
+
 				html.If(len(editions) > 1,
 					func() html.Node {
 						return SettingsGroup()(
@@ -163,16 +173,6 @@ func AppMoviesDetail(
 						)
 					},
 				),
-
-				SettingsContent()(Text("Summary", TextSize2)),
-				// TODO(april): create a text area component that looks good
-				html.Textarea(
-					attr.Style("border: 1px solid var(--border-strong)"),
-					attr.Style("padding: 16px"),
-					attr.Style("border-radius: 8px"),
-					attr.Style("height: 10rem"),
-					attr.Disabled,
-				)(html.Text(med.Summary())),
 
 				SettingsGroup()(
 					SettingsGroupHead()(
