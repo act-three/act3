@@ -10,7 +10,6 @@ import (
 var (
 	styleBundleURL  = static.Path("/static/bundle.css")
 	scriptBundleURL = static.Path("/static/bundle.js")
-	logoURL         = static.Path("/static/logo.svg")
 )
 
 func base(title string, head ...html.Node) func(...attr.Node) html.Element {
