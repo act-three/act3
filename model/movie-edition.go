@@ -1,8 +1,8 @@
 package model
 
 import (
+	"fmt"
 	"path"
-	"strconv"
 
 	"ily.dev/act3/database/schema"
 )
@@ -27,12 +27,8 @@ func (med *MovieEditionHead) Year() string     { return med.med.Year }
 func (med *MovieEditionHead) Runtime() int64   { return med.med.Runtime }
 func (med *MovieEditionHead) ImageURL() string { return med.med.ImageURL }
 
-// RuntimeDisplay returns the runtime as a string, or empty if unknown (0).
-func (med *MovieEditionHead) RuntimeDisplay() string {
-	if med.med.Runtime != 0 {
-		return strconv.FormatInt(med.med.Runtime, 10)
-	}
-	return ""
+func (med *MovieEditionHead) RuntimeString() string {
+	return fmt.Sprintf("%d", med.med.Runtime)
 }
 
 type MovieEdition struct {

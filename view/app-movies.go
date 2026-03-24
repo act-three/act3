@@ -130,7 +130,7 @@ func AppMoviesDetail(
 							SettingsItemLabelTitle("Runtime"),
 						),
 
-						SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeDisplay(), SettingsTextFieldSuffix(" min"))(
+						SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), SettingsTextFieldSuffix(" min"))(
 							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 						),
 					),
