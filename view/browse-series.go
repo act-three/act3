@@ -88,7 +88,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 				),
 			),
 			Box(Class("v-series-episode-summary"))(
-				TextNode(TextSize2, LineClamp4)(html.Safe(ep.Summary())),
+				TextNode(Size2, LineClamp4)(html.Safe(ep.Summary())),
 				Box(Class("v-series-spoiler-overlay")),
 			),
 		),

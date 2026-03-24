@@ -6,8 +6,8 @@ import (
 )
 
 func Label(icon, text string, attrs ...attr.Node) html.Node {
-	return FlexRow(
-		Gap1,
+	return html.Div(
+		attr.Class("u-label"),
 		group(attrs...),
 	)(
 		Icon(icon),

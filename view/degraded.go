@@ -24,11 +24,11 @@ func Degraded(
 
 	return base("Schema Mismatch")()(
 		FlexCol(Class("v-degraded"), Gap6)(
-			Text("Schema Mismatch", TextSize7, FontBold),
+			Text("Schema Mismatch", Size7, FontBold),
 			Text("The database schema does not match "+
 				"what this version of the server expects. "+
 				"The database must be reinitialized before "+
-				"the server can start.", TextSize3),
+				"the server can start.", Size3),
 			Code(CodeSize2, CodeWrap)(
 				html.Pre()(html.Text(fmt.Sprintf(
 					"Version:  %s\nStored:   %s\n"+
@@ -39,7 +39,7 @@ func Degraded(
 					sme.DBPath,
 				))),
 			),
-			Text("Database Contents", TextSize5, FontBold),
+			Text("Database Contents", Size5, FontBold),
 			TableRoot(TableSurface, TableSize2)(
 				TableHeader()(
 					TableRow()(
@@ -65,7 +65,7 @@ func Degraded(
 					),
 				),
 			),
-			Text("Database file size: "+dbFileSize, TextSize2),
+			Text("Database file size: "+dbFileSize, Size2),
 			degradedAction(hasData),
 		),
 	)
@@ -78,7 +78,7 @@ func degradedAction(hasData bool) html.Node {
 				CardContent()(
 					Text("Reinitializing will delete all "+
 						"existing data. This cannot be "+
-						"undone.", TextSize3),
+						"undone.", Size3),
 				),
 			),
 			html.Form(

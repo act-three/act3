@@ -24,7 +24,7 @@ func BrowseEpisode(
 						Text("2026-03-05", Class("v-detail-muted")),
 					),
 				),
-				Text(ep.Title(), TextSize7),
+				Text(ep.Title(), Size7),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
 						browsePlayButton(ep),

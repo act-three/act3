@@ -83,12 +83,12 @@ func AppMoviesDetail(
 				),
 
 				SettingsContent()(
-					Text(med.Title(), TextSize6),
+					Text(med.Title(), Size6),
 					Box()(
 						Link(
 							med.TheaterURL(),
 							turbo.DataFrame("_top"),
-						)(Text("View in Theater", TextSize3,
+						)(Text("View in Theater", Size3,
 							// TODO(april): maybe make this the default for Text
 							attr.Style("display: inline-block"),
 						)),
@@ -136,7 +136,7 @@ func AppMoviesDetail(
 					),
 				),
 
-				SettingsContent()(Text("Summary", TextSize2)),
+				SettingsContent()(Text("Summary", Size2)),
 				SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary())(
 					html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 				),
@@ -226,7 +226,8 @@ func AppMoviesDetail(
 						return SettingsContent()(
 							Label(
 								"line/x-circle",
-								"The default edition can't be deleted. To delete this edition, first make another edition the default.",
+								"The default edition can't be deleted. To delete this edition, first choose another default.",
+								Size2,
 							),
 						)
 					},

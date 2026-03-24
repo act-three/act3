@@ -113,7 +113,7 @@ func downloadListItem(dl *model.DownloadHead) html.Node {
 				attr.Href(dl.URL()),
 				turbo.DataFrame("main"),
 			)(
-				Text(dl.Title(), TextSize2),
+				Text(dl.Title(), Size2),
 			),
 		),
 	)

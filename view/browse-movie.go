@@ -19,7 +19,7 @@ func BrowseMovieEdition(
 				html.If(len(editions) > 1, func() html.Node {
 					return browseMovieEditionSelect(editions, med)
 				}),
-				Text(med.Title(), TextSize7),
+				Text(med.Title(), Size7),
 				Text(med.Year(), Class("v-detail-muted")),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(

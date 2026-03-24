@@ -60,15 +60,15 @@ var (
 )
 
 var (
-	TextSize1 = attr.Attr("data-size")("1")
-	TextSize2 = attr.Attr("data-size")("2")
-	TextSize3 = attr.Attr("data-size")("3")
-	TextSize4 = attr.Attr("data-size")("4")
-	TextSize5 = attr.Attr("data-size")("5")
-	TextSize6 = attr.Attr("data-size")("6")
-	TextSize7 = attr.Attr("data-size")("7")
-	TextSize8 = attr.Attr("data-size")("8")
-	TextSize9 = attr.Attr("data-size")("9")
+	Size1 = attr.Attr("data-size")("1")
+	Size2 = attr.Attr("data-size")("2")
+	Size3 = attr.Attr("data-size")("3")
+	Size4 = attr.Attr("data-size")("4")
+	Size5 = attr.Attr("data-size")("5")
+	Size6 = attr.Attr("data-size")("6")
+	Size7 = attr.Attr("data-size")("7")
+	Size8 = attr.Attr("data-size")("8")
+	Size9 = attr.Attr("data-size")("9")
 )
 
 var (
