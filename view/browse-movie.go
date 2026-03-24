@@ -20,7 +20,10 @@ func BrowseMovieEdition(
 					return browseMovieEditionSelect(editions, med)
 				}),
 				Text(med.Title(), Size7),
-				Text(med.Year(), Class("v-detail-muted")),
+				FlexRow(Gap8)(
+					Text(med.Year(), Class("v-detail-muted")),
+					Text(med.RuntimeString()+" min", Class("v-detail-muted")),
+				),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
 						browseMoviePlayButton(med),
