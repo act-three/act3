@@ -6,6 +6,7 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/turbo"
 )
 
 func BrowseMovieEdition(
@@ -20,6 +21,16 @@ func BrowseMovieEdition(
 					return browseMovieEditionSelect(editions, med)
 				}),
 				Text(med.Title(), Size7),
+				html.If(isUserAdmin(), func() html.Node {
+					return FlexRow()(
+						Link(
+							med.EditorURL(),
+							turbo.DataFrame("_top"),
+						)(Text("View in Editor", Size3,
+							attr.Style("display: inline-block"),
+						)),
+					)
+				}),
 				FlexRow(Gap8)(
 					Text(med.Year(), Class("v-detail-muted")),
 					Text(med.RuntimeString()+" min", Class("v-detail-muted")),

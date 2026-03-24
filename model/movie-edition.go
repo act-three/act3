@@ -57,6 +57,10 @@ func (med *MovieEdition) TheaterURL() string {
 	return path.Join(med.mo.TheaterURL(), med.Slug())
 }
 
+func (med *MovieEdition) EditorURL() string {
+	return path.Join(med.mo.EditorURL(), med.Slug())
+}
+
 func (med *MovieEdition) PlayerURL(v *Video) string {
 	return "/-/player/" + v.ID() + "/" + med.med.ID
 }
