@@ -8,6 +8,7 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/turbo"
 )
 
 func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
@@ -24,6 +25,16 @@ func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 						PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
 					),
 					Box(Class("v-series-sidebar-section"))(Text(sr.Title(), FontBold)),
+					html.If(isUserAdmin(), func() html.Node {
+						return FlexRow()(
+							Link(
+								sr.EditorURL(),
+								turbo.DataFrame("_top"),
+							)(Text("View in Editor", Size3,
+								attr.Style("display: inline-block"),
+							)),
+						)
+					}),
 					Box(Class("v-series-sidebar-section"))(
 						Text("Show: regular & specials"),
 					),
