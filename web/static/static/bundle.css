@@ -1479,6 +1479,45 @@
   }
 }
 
+/* ui/spacer.css */
+@layer components {
+  .u-spacer[data-size="1"] {
+    flex-basis: 0.25rem;
+    flex-shrink: 0;
+  }
+  .u-spacer[data-size="2"] {
+    flex-basis: 0.5rem;
+    flex-shrink: 0;
+  }
+  .u-spacer[data-size="3"] {
+    flex-basis: 0.75rem;
+    flex-shrink: 0;
+  }
+  .u-spacer[data-size="4"] {
+    flex-basis: 1rem;
+    flex-shrink: 0;
+  }
+  .u-spacer[data-size="5"] {
+    flex-basis: 1.25rem;
+    flex-shrink: 0;
+  }
+  .u-spacer[data-size="6"] {
+    flex-basis: 1.5rem;
+    flex-shrink: 0;
+  }
+  .u-spacer[data-size="7"] {
+    flex-basis: 1.75rem;
+    flex-shrink: 0;
+  }
+  .u-spacer[data-size="8"] {
+    flex-basis: 2rem;
+    flex-shrink: 0;
+  }
+  .u-spacer[data-size=grow] {
+    flex-grow: 1;
+  }
+}
+
 /* ui/spinner.css */
 @layer components {
   @keyframes spinner-leaf-fade {
