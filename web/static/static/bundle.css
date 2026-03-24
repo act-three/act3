@@ -648,6 +648,7 @@
     border: none;
     padding: 0;
     background: transparent;
+    color: var(--text);
     position: fixed;
     inset: 0;
     width: 100%;
