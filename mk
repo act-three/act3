@@ -34,7 +34,7 @@ fixup_version() {
 
 build_version() {
 	v=$(fixup_version)
-	if [ -e "images/pepper-$v/deployed" ]; then
+	if [ "act3.$v.app" = "$(cat deploy/latest)" ]; then
 		next_version
 	else
 		echo $v
