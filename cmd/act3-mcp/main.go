@@ -145,7 +145,7 @@ func (s *devServer) reload(_ context.Context, _ *mcp.CallToolRequest, in startIn
 		return nil, nil, err
 	}
 
-	return textResultf("server reloaded on %s", s.cmd.Process.Pid, s.listenAddr), nil, nil
+	return textResultf("server reloaded on %s", s.listenAddr), nil, nil
 }
 
 func (s *devServer) stop(_ context.Context, _ *mcp.CallToolRequest, _ any) (*mcp.CallToolResult, any, error) {
