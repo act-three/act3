@@ -11,6 +11,7 @@ import SettingsTextAreaController from "./ui/settings-text-area.js";
 import SettingsTextFieldController from "./ui/settings-text-field.js";
 import SettingsToggleController from "./ui/settings-toggle.js";
 import TopbarController from "./view/topbar.js";
+import "./view/wash.js";
 
 window.Stimulus = Application.start();
 Stimulus.register("dialog", DialogController);

@@ -8917,6 +8917,16 @@
     }
   };
 
+  // view/wash.js
+  document.addEventListener("turbo:before-render", (event) => {
+    if (!document.documentElement.hasAttribute("data-turbo-preview")) return;
+    const oldWash = document.querySelector(".v-media-wash");
+    if (!oldWash) return;
+    const newWash = event.detail.newBody.querySelector(".v-media-wash");
+    if (!newWash) return;
+    newWash.replaceWith(oldWash.cloneNode(true));
+  });
+
   // main.js
   window.Stimulus = Application.start();
   Stimulus.register("dialog", dialog_default);
