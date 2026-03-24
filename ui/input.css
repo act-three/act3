@@ -2,6 +2,7 @@
 	display: flex;
 	width: 100%;
 	min-width: 0;
+	text-overflow: ellipsis;
 	border: 1px solid var(--border-strong);
 	background-color: var(--bg-input);
 	color: var(--text);
