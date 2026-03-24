@@ -223,6 +223,13 @@ func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) er
 	})
 }
 
+func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
+	return tx.q.MovieEditionSummarySet(ctx, schema.MovieEditionSummarySetParams{
+		Summary: summary,
+		ID:      id,
+	})
+}
+
 func (tx *TxRW) generateMovieEditionSlug(ctx Context, label, movieID string) (string, error) {
 	for slug := range editionSlugCandidates(label) {
 		n, err := tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{

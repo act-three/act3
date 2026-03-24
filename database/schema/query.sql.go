@@ -1174,6 +1174,20 @@ func (q *Queries) MovieEditionSlugSet(ctx context.Context, arg MovieEditionSlugS
 	return err
 }
 
+const movieEditionSummarySet = `-- name: MovieEditionSummarySet :exec
+UPDATE MovieEdition SET Summary = ? WHERE ID = ?
+`
+
+type MovieEditionSummarySetParams struct {
+	Summary string
+	ID      string
+}
+
+func (q *Queries) MovieEditionSummarySet(ctx context.Context, arg MovieEditionSummarySetParams) error {
+	_, err := q.db.ExecContext(ctx, movieEditionSummarySet, arg.Summary, arg.ID)
+	return err
+}
+
 const movieEditionTitleSet = `-- name: MovieEditionTitleSet :exec
 UPDATE MovieEdition SET Title = ? WHERE ID = ?
 `

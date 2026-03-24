@@ -132,14 +132,9 @@ func AppMoviesDetail(
 				),
 
 				SettingsContent()(Text("Summary", TextSize2)),
-				// TODO(april): create a text area component that looks good
-				html.Textarea(
-					attr.Style("border: 1px solid var(--border-strong)"),
-					attr.Style("padding: 16px"),
-					attr.Style("border-radius: 8px"),
-					attr.Style("height: 10rem"),
-					attr.Disabled,
-				)(html.Text(med.Summary())),
+				SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary())(
+					html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+				),
 
 				html.If(len(editions) > 1,
 					func() html.Node {

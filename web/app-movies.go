@@ -93,6 +93,23 @@ func (c *Config) doMovieEditionSetLabel(w http.ResponseWriter, req *http.Request
 	})
 }
 
+func (c *Config) doMovieEditionSetSummary(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		if id == "" {
+			return nil, &model.ValidationError{Op: "set movie edition summary", Err: errNotFound}
+		}
+		summary := strings.TrimSpace(req.FormValue("summary"))
+		err := tx.MovieEditionSummarySet(ctx, id, summary)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doMovieEditionSetSlug(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

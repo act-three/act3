@@ -26,6 +26,7 @@
 @import "./table.css";
 @import "./text.css";
 @import "./theme-overrides.css";
+@import "./settings-text-area.css";
 @import "./settings-text-field.css";
 @import "./settings-toggle.css";
 @import "./toolbar.css";
