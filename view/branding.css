@@ -1,0 +1,10 @@
+:root { --wordmark: url("static/wordmark.svg"); }
+
+.v-wordmark {
+	height: 1.8em;
+	aspect-ratio: 1730.24 / 444.6;
+	background-color: currentColor;
+	mask-image: var(--wordmark);
+	mask-size: contain;
+	mask-repeat: no-repeat;
+}

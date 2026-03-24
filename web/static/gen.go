@@ -21,10 +21,12 @@ import (
 )
 
 const (
-	cssEntry   = "main.css"
-	cssOut     = "web/static/static/bundle.css"
-	iconPrefix = "icon/"
-	iconDir    = "ui/icon/svg"
+	cssEntry     = "main.css"
+	cssOut       = "web/static/static/bundle.css"
+	iconPrefix   = "icon/"
+	iconDir      = "ui/icon/svg"
+	staticPrefix = "static/"
+	staticDir    = "web/static"
 )
 
 // missingSVG is the fallback icon (Lucide square-dashed, MIT),
@@ -59,7 +61,7 @@ func run() error {
 		Bundle:      true,
 		Write:       true,
 		LogLevel:    api.LogLevelWarning,
-		Plugins:     []api.Plugin{iconPlugin()},
+		Plugins:     []api.Plugin{iconPlugin(), staticPlugin()},
 	})
 	if len(result.Errors) > 0 {
 		return fmt.Errorf("esbuild: %s", result.Errors[0].Text)
@@ -114,6 +116,52 @@ func iconPlugin() api.Plugin {
 						}, nil
 					}
 					s := standaloneSVG(string(data))
+					return api.OnLoadResult{
+						Contents: &s,
+						Loader:   api.LoaderDataURL,
+					}, nil
+				},
+			)
+		},
+	}
+}
+
+// staticPlugin inlines url("static/...") references as data URIs,
+// resolving them against web/static/static/.
+func staticPlugin() api.Plugin {
+	return api.Plugin{
+		Name: "static-dataurl",
+		Setup: func(build api.PluginBuild) {
+			build.OnResolve(
+				api.OnResolveOptions{Filter: `.`},
+				func(args api.OnResolveArgs) (api.OnResolveResult, error) {
+					if args.Kind != api.ResolveCSSURLToken {
+						return api.OnResolveResult{}, nil
+					}
+					if !strings.HasPrefix(args.Path, staticPrefix) {
+						return api.OnResolveResult{}, nil
+					}
+					abs, err := filepath.Abs(filepath.Join(staticDir, args.Path))
+					if err != nil {
+						return api.OnResolveResult{}, err
+					}
+					return api.OnResolveResult{
+						Path:      abs,
+						Namespace: "static",
+					}, nil
+				},
+			)
+			build.OnLoad(
+				api.OnLoadOptions{
+					Filter:    `.`,
+					Namespace: "static",
+				},
+				func(args api.OnLoadArgs) (api.OnLoadResult, error) {
+					data, err := os.ReadFile(args.Path)
+					if err != nil {
+						return api.OnLoadResult{}, err
+					}
+					s := string(data)
 					return api.OnLoadResult{
 						Contents: &s,
 						Loader:   api.LoaderDataURL,

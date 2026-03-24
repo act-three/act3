@@ -52,7 +52,7 @@ func browseNavigationMenu() html.Node {
 					Gap8,
 					Class("v-media-nav-row"),
 				)(
-					Button(attr.Href("/"), ButtonGhost)(Icon("line/spotlight"), Text("Act Three")),
+					Link("/")(wordmark()),
 					Button(attr.Href("/collections"), ButtonGhost)(Text("Collections")),
 					Box(Class("v-media-nav-spacer")),
 					Button(attr.Href("/app/profile"), ButtonGhost)(Icon("line/settings-01")),
