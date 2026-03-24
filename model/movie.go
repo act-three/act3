@@ -97,6 +97,14 @@ func (tx *TxR) MovieHeadList(ctx Context) ([]*MovieHead, error) {
 	return newMovieHeadList(a), nil
 }
 
+func (tx *TxR) MovieHeadByEditionID(ctx Context, editionID string) (*MovieHead, error) {
+	moData, err := tx.q.MovieGetByEditionID(ctx, editionID)
+	if err != nil {
+		return nil, err
+	}
+	return &MovieHead{moData}, nil
+}
+
 // MovieEditionBySlug looks up a movie by its slug
 // and returns the edition matching edSlug
 // (empty string for the default edition).

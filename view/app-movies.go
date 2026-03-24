@@ -168,7 +168,13 @@ func AppMoviesDetail(
 												SettingsItemLabelDescription("Shown first when opening a movie"),
 											),
 
-											Button(ButtonGhost, ButtonSize2)(Text("Set Default")),
+											html.Form(
+												attr.Method("POST"),
+												attr.Action("/-/do/movie-edition-set-default"),
+											)(
+												html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
+												Button(ButtonGhost, ButtonSize2)(Text("Set Default")),
+											),
 										),
 									)
 								},

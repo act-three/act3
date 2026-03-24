@@ -1042,6 +1042,27 @@ func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition,
 	return i, err
 }
 
+const movieEditionGetDefault = `-- name: MovieEditionGetDefault :one
+SELECT id, movieid, slug, title, label, summary, year, runtime, imageurl FROM MovieEdition WHERE MovieID = ? AND Slug = ''
+`
+
+func (q *Queries) MovieEditionGetDefault(ctx context.Context, movieid string) (MovieEdition, error) {
+	row := q.db.QueryRowContext(ctx, movieEditionGetDefault, movieid)
+	var i MovieEdition
+	err := row.Scan(
+		&i.ID,
+		&i.MovieID,
+		&i.Slug,
+		&i.Title,
+		&i.Label,
+		&i.Summary,
+		&i.Year,
+		&i.Runtime,
+		&i.ImageURL,
+	)
+	return i, err
+}
+
 const movieEditionLabelSet = `-- name: MovieEditionLabelSet :exec
 UPDATE MovieEdition SET Label = ? WHERE ID = ?
 `

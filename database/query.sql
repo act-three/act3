@@ -190,6 +190,9 @@ RETURNING *;
 -- name: MovieEditionGet :one
 SELECT * FROM MovieEdition WHERE ID = ?;
 
+-- name: MovieEditionGetDefault :one
+SELECT * FROM MovieEdition WHERE MovieID = ? AND Slug = '';
+
 -- name: MovieEditionLabelSet :exec
 UPDATE MovieEdition SET Label = ? WHERE ID = ?;
 

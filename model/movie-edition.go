@@ -230,6 +230,41 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 	})
 }
 
+// MovieEditionSetDefault promotes the given edition to be
+// the default (Slug="") for its movie.
+// The previous default gets a slug generated from its label.
+func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
+	med, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	if med.Slug == "" {
+		return nil // already default
+	}
+	old, err := tx.q.MovieEditionGetDefault(ctx, med.MovieID)
+	if err != nil {
+		return err
+	}
+	// Generate a slug for the old default based on its label.
+	oldSlug, err := tx.generateMovieEditionSlug(ctx, old.Label, med.MovieID)
+	if err != nil {
+		return err
+	}
+	// Assign the old default a real slug, freeing up "".
+	err = tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
+		Slug: oldSlug,
+		ID:   old.ID,
+	})
+	if err != nil {
+		return err
+	}
+	// Promote the new edition to default.
+	return tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
+		Slug: "",
+		ID:   med.ID,
+	})
+}
+
 func (tx *TxRW) generateMovieEditionSlug(ctx Context, label, movieID string) (string, error) {
 	for slug := range editionSlugCandidates(label) {
 		n, err := tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{

@@ -168,6 +168,26 @@ func (c *Config) doMovieEditionSetRuntime(w http.ResponseWriter, req *http.Reque
 	})
 }
 
+func (c *Config) doMovieEditionSetDefault(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		editionID := req.FormValue("edition-id")
+		if editionID == "" {
+			return nil, &model.ValidationError{Op: "set default movie edition", Err: errNotFound}
+		}
+		err := tx.MovieEditionSetDefault(ctx, editionID)
+		if err != nil {
+			return nil, err
+		}
+		mo, err := tx.MovieHeadByEditionID(ctx, editionID)
+		if err != nil {
+			return nil, err
+		}
+		http.Redirect(w, req, mo.EditorURL(), http.StatusSeeOther)
+		return nil, nil
+	})
+}
+
 func (c *Config) doMovieEditionAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
