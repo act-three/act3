@@ -28,6 +28,7 @@ import (
 
 //go:generate go run web/static/gen.go
 //go:generate go tool esbuild --bundle --outfile=web/static/static/bundle.js main.js
+//go:generate sh -c "cp -r assets/* -t web/static/static"
 
 var (
 	databaseDir = getenv("A3DATABASE", ".")
