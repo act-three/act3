@@ -14,6 +14,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -34,6 +35,8 @@ const (
 )
 
 var project, _ = os.Getwd()
+
+var errDegraded = fmt.Errorf("degraded mode")
 
 func main() {
 	s := &devServer{
@@ -117,7 +120,7 @@ func (s *devServer) start(_ context.Context, _ *mcp.CallToolRequest, in startInp
 		return nil, nil, err
 	}
 
-	return textResultf("server started on %s (A3DATABASE=%s, A3STORAGE=%s)",
+	return textResultf("server started on %s\nA3DATABASE=%s\nA3STORAGE=%s",
 		s.listenAddr,
 		a3Database,
 		a3Storage,
@@ -145,7 +148,11 @@ func (s *devServer) reload(_ context.Context, _ *mcp.CallToolRequest, in startIn
 		return nil, nil, err
 	}
 
-	return textResultf("server reloaded on %s", s.listenAddr), nil, nil
+	return textResultf("server reloaded on %s\nA3DATABASE=%s\nA3STORAGE=%s",
+		s.listenAddr,
+		a3Database,
+		a3Storage,
+	), nil, nil
 }
 
 func (s *devServer) stop(_ context.Context, _ *mcp.CallToolRequest, _ any) (*mcp.CallToolResult, any, error) {
@@ -225,15 +232,18 @@ func (s *devServer) doStart(verbose bool) error {
 
 	buferr := &bytes.Buffer{}
 	err = scanForListen(io.TeeReader(stderr, buferr))
-	if err != nil {
+	if errors.Is(err, errDegraded) {
 		_ = killGroup(pgid, cmd)
-		return fmt.Errorf("server did not become ready: %w\nstderr:\n%s", err, buferr.Bytes())
+		return startError(fmt.Errorf("schema change"), buferr.Bytes())
+	} else if err != nil {
+		_ = killGroup(pgid, cmd)
+		return startError(err, buferr.Bytes())
 	}
 
 	err = waitReady(s.listenAddr, tag, 250*time.Millisecond)
 	if err != nil {
 		_ = killGroup(pgid, cmd)
-		return fmt.Errorf("server did not become ready: %w\nstderr:\n%s", err, buferr.Bytes())
+		return startError(err, buferr.Bytes())
 	}
 
 	s.cmd = cmd
@@ -305,6 +315,9 @@ func scanForListen(r io.Reader) error {
 		if strings.Contains(sc.Text(), " msg=listen ") {
 			return nil
 		}
+		if strings.Contains(sc.Text(), ` msg="degraded mode" `) {
+			return errDegraded
+		}
 	}
 	return fmt.Errorf("msg=listen not found")
 }
@@ -333,6 +346,15 @@ func waitReady(addr, tag string, timeout time.Duration) error {
 		time.Sleep(50 * time.Millisecond)
 	}
 	return fmt.Errorf("timeout waiting for %s", addr)
+}
+
+func startError(err error, out []byte) error {
+	return fmt.Errorf("server did not become ready: %w\nA3DATABASE=%s\nA3STORAGE=%s\n\nstderr:\n%s",
+		err,
+		a3Database,
+		a3Storage,
+		out,
+	)
 }
 
 func textResultf(format string, args ...any) *mcp.CallToolResult {
