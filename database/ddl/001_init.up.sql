@@ -31,7 +31,7 @@ CREATE TABLE Series
 
 	TVmazeID        INTEGER UNIQUE,
 	TVmazeURL       TEXT,
-	TVmazeUpdatedAt INTEGER NOT NULL DEFAULT (0),
+	TVmazeUpdatedAt INTEGER NOT NULL,
 	IMDBID          TEXT UNIQUE,
 	TVDBID          INTEGER UNIQUE,
 	TVRageID        INTEGER UNIQUE
@@ -50,10 +50,10 @@ CREATE TABLE SeriesEdition
 (
 	ID             TEXT PRIMARY KEY DEFAULT ('sed'||newID()),
 	SeriesID       TEXT NOT NULL REFERENCES Series,
-	Slug           TEXT NOT NULL DEFAULT (''),
+	Slug           TEXT NOT NULL,
 	Title          TEXT NOT NULL,
-	Summary        TEXT NOT NULL DEFAULT (''),
-	TVmazeImageURL TEXT NOT NULL DEFAULT (''),
+	Summary        TEXT NOT NULL,
+	TVmazeImageURL TEXT NOT NULL,
 	UNIQUE (SeriesID, Slug)
 )
 STRICT;
@@ -78,7 +78,7 @@ STRICT;
 CREATE TABLE Episode
 (
 	ID      TEXT PRIMARY KEY DEFAULT ('ep'||newID()),
-	Slug    TEXT NOT NULL UNIQUE DEFAULT '',
+	Slug    TEXT NOT NULL UNIQUE,
 	Title   TEXT NOT NULL,
 	Summary TEXT NOT NULL,
 	Type    TEXT NOT NULL CHECK (Type IN (
@@ -108,7 +108,7 @@ CREATE INDEX Index_SeasonEpisode_EpisodeID ON SeasonEpisode (EpisodeID);
 
 CREATE TABLE Movie
 (
-	ID     TEXT PRIMARY KEY DEFAULT ('mo'||newID()),
+	ID     TEXT PRIMARY KEY,
 	Slug   TEXT NOT NULL UNIQUE,
 	TMDBID INTEGER UNIQUE,
 	IMDBID TEXT UNIQUE
@@ -119,13 +119,13 @@ CREATE TABLE MovieEdition
 (
 	ID       TEXT PRIMARY KEY DEFAULT ('med'||newID()),
 	MovieID  TEXT NOT NULL REFERENCES Movie,
-	Slug     TEXT NOT NULL DEFAULT (''),
+	Slug     TEXT NOT NULL,
 	Title    TEXT NOT NULL,
 	Label    TEXT NOT NULL,
-	Summary  TEXT NOT NULL DEFAULT (''),
-	Year     TEXT NOT NULL DEFAULT (''),
+	Summary  TEXT NOT NULL,
+	Year     TEXT NOT NULL,
 	Runtime  INTEGER NOT NULL,    -- minutes
-	ImageURL TEXT NOT NULL DEFAULT (''),
+	ImageURL TEXT NOT NULL,
 	UNIQUE (MovieID, Slug)
 )
 STRICT;
@@ -212,13 +212,13 @@ CREATE TABLE RenditionForStreaming
 	Remux         INTEGER NOT NULL, -- 1: copy video stream; 0: reencode
 	Codec         TEXT NOT NULL, -- "h264" or "hevc"
 	TargetBitrate INTEGER NOT NULL, -- kbit/s
-	MaxHeight     INTEGER NOT NULL DEFAULT (0), -- 0 = source
-	MaxFPS        INTEGER NOT NULL DEFAULT (0), -- 0 = source
+	MaxHeight     INTEGER NOT NULL, -- 0 = source
+	MaxFPS        INTEGER NOT NULL, -- 0 = source
 	CopyAudio     INTEGER NOT NULL, -- 1: copy audio; 0: reencode to AAC
-	SurroundAudio INTEGER NOT NULL DEFAULT (0), -- 1: encode as 5.1(back); 0: stereo downmix
+	SurroundAudio INTEGER NOT NULL, -- 1: encode as 5.1(back); 0: stereo downmix
 	Hash          TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	Playlist      TEXT NOT NULL DEFAULT (''), -- empty during ingest
-	Priority      INTEGER NOT NULL DEFAULT (0) -- 0 = highest priority (best rendition)
+	Priority      INTEGER NOT NULL -- 0 = highest priority (best rendition)
 )
 STRICT;
 
@@ -228,9 +228,9 @@ CREATE TABLE Task
 	Type        TEXT NOT NULL,
 	Args        TEXT NOT NULL,
 	Failures    INTEGER NOT NULL DEFAULT (0),
-	NextRun     INTEGER NOT NULL DEFAULT (0),
+	NextRun     INTEGER NOT NULL,
 	FailureDesc TEXT,
-	Priority    INTEGER NOT NULL DEFAULT (0),
+	Priority    INTEGER NOT NULL,
 	Queue       TEXT NOT NULL,
 	Running     INTEGER NOT NULL DEFAULT (0)
 )
