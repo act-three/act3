@@ -79,23 +79,92 @@ func AppSeriesDetail(
 		ScrollY(
 			Class("v-media-detail-body"),
 		)(
-			FlexCol(Gap4)(
-				appSeriesEditionList(editions, sed),
-				FlexRow(Gap2)(
-					html.Img(),
-					FlexCol(Gap4, Class("v-media-detail-body"))(
-						html.H1()(html.Text(sr.Title())),
-						html.P()(html.Safe(sed.Summary())),
+			SettingsPage()(
+				SettingsContent()(
+					Text(sr.Title(), Size6),
+					Box()(
+						Link(
+							sr.TheaterURL(),
+							turbo.DataFrame("_top"),
+						)(Text("View in Theater", Size3,
+							attr.Style("display: inline-block"),
+						)),
 					),
 				),
-				appSeriesDetailEdition(sed, dls),
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Title"),
+						),
+						Text(sr.Title()),
+					),
+				),
+
+				html.If(len(editions) > 1,
+					func() html.Node {
+						return appSeriesEditionList(editions, sed)
+					},
+				),
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Poster"),
+						),
+						ImageFrame(attr.Style("width:30px"))(
+							PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
+						),
+					),
+				),
+
+				SettingsContent()(Text("Summary", Size2)),
+				html.Div(attr.Class("u-settings-text-area"))(
+					html.Textarea(
+						attr.Class("u-settings-text-area-input"),
+						attr.Disabled,
+					)(html.Text(sed.Summary())),
+				),
+
+				SettingsGroup()(
+					SettingsGroupHead()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Downloads"),
+						),
+						addTorrentButton("sed-id", sed.ID()),
+					),
+					turbo.StreamTarget("edition-torrents-"+sed.ID(), SettingsGroupItems)(
+						html.Range(dls, downloadListItem),
+					),
+				),
+
+				SettingsGroup()(
+					appSeriesDetailEpisodeList(sed),
+				),
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Edition"),
+							SettingsItemLabelDescription("Create a new edition by duplicating this one"),
+						),
+
+						html.Form(
+							attr.Method("POST"),
+							attr.Action("/-/do/series-edition-add"),
+						)(
+							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(sed.ID())),
+							Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
+						),
+					),
+				),
 			),
 		),
 	)
 }
 
 func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
-	return FlexCol(Gap4)(
+	return FlexCol(Gap2)(
 		html.Range(editions, func(ed *model.SeriesWork) html.Node {
 			selected := attr.Group()
 			if ed.SeriesEditionHead.ID() == current.ID() {
@@ -103,7 +172,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 			}
 			return Card(
 				CardSurface,
-				CardSize3,
+				CardSize1,
 				attr.Href(ed.EditorURL()),
 				selected,
 			)(
@@ -114,33 +183,6 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 				),
 			)
 		}),
-		html.Form(
-			attr.Method("POST"),
-			attr.Action("/-/do/series-edition-add"),
-		)(
-			html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(current.ID())),
-			Button(ButtonSurface, ButtonSize2)(Text("Duplicate Edition")),
-		),
-	)
-}
-
-func appSeriesDetailEdition(
-	sed *model.SeriesEdition,
-	dls []*model.DownloadHead,
-) html.Node {
-	if sed == nil {
-		return html.Div()(html.Text("Unknown Edition"))
-	}
-	return html.Div()(
-		addTorrentButton("sed-id", sed.ID()),
-		html.Div(
-			attr.Class("v-media-download-list"),
-		)(
-			turbo.StreamTarget("edition-torrents-"+sed.ID())(
-				html.Range(dls, downloadListItem),
-			),
-		),
-		appSeriesDetailEpisodeList(sed),
 	)
 }
 
