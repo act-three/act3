@@ -84,10 +84,15 @@ func AppMoviesDetail(
 
 				SettingsContent()(
 					Text(med.Title(), TextSize6),
-					Link(
-						med.TheaterURL(),
-						turbo.DataFrame("_top"),
-					)(Text("View in Theater", TextSize3)),
+					Box()(
+						Link(
+							med.TheaterURL(),
+							turbo.DataFrame("_top"),
+						)(Text("View in Theater", TextSize3,
+							// TODO(april): maybe make this the default for Text
+							attr.Style("display: inline-block"),
+						)),
+					),
 				),
 
 				SettingsGroup()(
