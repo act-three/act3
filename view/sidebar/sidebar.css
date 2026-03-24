@@ -35,6 +35,13 @@
 	overflow: auto;
 }
 
+.v-sidebar-heading {
+	display: flex;
+	flex-direction: column;
+	padding: 0.5rem;
+	align-items: center;
+}
+
 /* sidebar-group */
 .v-sidebar-group {
 	position: relative;

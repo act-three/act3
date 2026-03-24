@@ -23,11 +23,6 @@ type MenuItem struct {
 func sidebarData() []MenuSection {
 	return []MenuSection{
 		{
-			Items: []MenuItem{
-				{"line/spotlight", "/", "Act Three", attr.Attr("data-turbo-frame")("_top")},
-			},
-		},
-		{
 			Label: "Account",
 			Items: []MenuItem{
 				{"line/user-circle", "/app/profile", "Profile", nil},
@@ -87,6 +82,9 @@ func sidebarContent() html.Node {
 		attr.Attr("data-sidebar")("content"),
 		attr.Class("v-sidebar-content"),
 	)(
+		html.Div(attr.Class("v-sidebar-heading"))(
+			Link("/")(Box(Class("v-wordmark"))),
+		),
 		html.Range(sidebarData(), sidebarGroup),
 	)
 }

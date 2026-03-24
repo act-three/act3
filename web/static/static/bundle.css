@@ -2732,6 +2732,12 @@
     gap: 0.5rem;
     overflow: auto;
   }
+  .v-sidebar-heading {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+    align-items: center;
+  }
   .v-sidebar-group {
     position: relative;
     display: flex;
