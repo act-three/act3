@@ -1,4 +1,8 @@
 .u-settings-text-field { width: 256px; }
+.u-settings-text-field .u-input:disabled[data-optimistic] {
+	opacity: 1;
+	cursor: default;
+}
 
 .u-settings-text-field-inner { position: relative; }
 .u-settings-text-field-inner .u-input { background: transparent; }

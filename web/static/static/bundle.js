@@ -8760,6 +8760,8 @@
       input.value = value;
       const data = new FormData(this.element);
       input.disabled = true;
+      input.dataset.optimistic = "";
+      setTimeout(() => delete input.dataset.optimistic, 150);
       fetch(this.urlValue, { method: "POST", body: data }).then(
         (resp) => {
           if (!resp.ok) {
@@ -8810,6 +8812,8 @@
       this.sync();
       const data = new FormData(this.element);
       input.disabled = true;
+      input.dataset.optimistic = "";
+      setTimeout(() => delete input.dataset.optimistic, 150);
       fetch(this.urlValue, { method: "POST", body: data }).then(
         (resp) => {
           if (!resp.ok) {
