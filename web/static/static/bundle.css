@@ -2181,6 +2181,7 @@
     mask-image: var(--wordmark);
     mask-size: contain;
     mask-repeat: no-repeat;
+    transform: translateY(-1px);
   }
 }
 
