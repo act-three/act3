@@ -1,4 +1,3 @@
-/* button-group */
 .u-button-group {
 	display: inline-flex;
 	border-radius: max(var(--radius-2), var(--radius-full));
@@ -22,7 +21,6 @@
 /* collapse box-shadow borders between adjacent buttons */
 .u-button-group:not([data-vertical]) > :where(.u-button:not(:first-child)) { margin-left: -1px; }
 
-/* vertical */
 .u-button-group[data-vertical] { flex-direction: column; }
 .u-button-group[data-vertical] > :where(.u-button:first-child) {
 	border-top-left-radius: inherit;
@@ -34,7 +32,6 @@
 }
 .u-button-group[data-vertical] > :where(.u-button:not(:first-child)) { margin-top: -1px; }
 
-/* radius variants */
 .u-button-group[data-radius="none"] {
 	--radius-factor: 0;
 	--radius-full: 0px;

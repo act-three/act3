@@ -1,4 +1,3 @@
-/* button — base */
 .u-button {
 	position: relative;
 	display: inline-flex;
@@ -98,7 +97,6 @@
 @media (hover: hover) { .u-button[data-variant="ghost"]:hover { background-color: var(--bg-hover); } }
 .u-button[data-variant="ghost"]:active:not(:disabled) { background-color: var(--bg-active); }
 
-/* size-2 (default) */
 .u-button {
 	height: calc(2rem * var(--scale));
 	padding-inline: calc(0.75rem * var(--scale));
@@ -130,7 +128,6 @@
 	letter-spacing: -0.0025em;
 }
 
-/* radius */
 .u-button { border-radius: max(var(--radius-2), var(--radius-full)); }
 .u-button[data-size="1"] { border-radius: max(var(--radius-1), var(--radius-full)); }
 .u-button[data-size="3"] { border-radius: max(var(--radius-3), var(--radius-full)); }

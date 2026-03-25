@@ -88,8 +88,6 @@ func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
 	return nil
 }
 
-// Transaction methods
-
 func (tx *TxR) MovieHeadList(ctx Context) ([]*MovieHead, error) {
 	a, err := tx.q.MovieList(ctx)
 	if err != nil {

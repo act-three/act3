@@ -76,8 +76,6 @@ func (med *MovieEdition) Playable() *Video {
 	return nil
 }
 
-// Transaction methods
-
 func (tx *TxR) MovieEditionHead(ctx Context, id string) (*MovieEditionHead, error) {
 	medData, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {

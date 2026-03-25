@@ -1,7 +1,5 @@
-/* select — base */
 .u-select { display: inline-flex; }
 
-/* trigger */
 .u-select-trigger {
 	display: inline-flex;
 	flex-shrink: 0;
@@ -32,7 +30,6 @@
 	height: 1em;
 }
 
-/* label inside trigger */
 .u-select-label {
 	flex: 1;
 	text-align: left;
@@ -40,7 +37,6 @@
 	text-overflow: ellipsis;
 }
 
-/* variant: surface */
 .u-select[data-variant="surface"] { color: var(--text); }
 .u-select[data-variant="surface"] > .u-select-trigger {
 	background-color: var(--bg-surface);
@@ -50,7 +46,6 @@
 	.u-select[data-variant="surface"] > .u-select-trigger:hover { box-shadow: inset 0 0 0 1px var(--border-strong); }
 }
 
-/* size-2 (default) */
 .u-select {
 	font-size: calc(0.875rem * var(--scale));
 	line-height: calc(1.25rem * var(--scale));
@@ -104,7 +99,6 @@
 	flex-direction: column;
 }
 
-/* item */
 .u-select-item {
 	display: flex;
 	align-items: center;

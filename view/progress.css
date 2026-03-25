@@ -1,22 +1,17 @@
-/* progress item */
 .v-progress-item {
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 	color: var(--text-3);
 }
 
-/* progress item error state */
 .v-progress-item-error {
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 	color: var(--accent-text);
 }
 
-/* progress item error detail */
 .v-progress-item-error-detail { color: color-mix(in oklab, var(--accent-text) 60%, transparent); }
 
-/* progress item muted text (status, ETA) */
 .v-progress-muted { color: var(--text-4); }
 
-/* progress bar width constraint */
 .v-progress-bar { max-width: 20rem; }

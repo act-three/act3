@@ -3,7 +3,6 @@
 	background-color: transparent;
 }
 
-/* surface variant */
 .u-table[data-variant="surface"] {
 	border: 1px solid var(--border-subtle);
 	border-radius: calc(0.5rem * var(--radius-factor, 1));
@@ -13,7 +12,6 @@
 }
 .u-table[data-variant="surface"] .u-table-header .u-table-row { background-color: var(--bg-surface-a); }
 
-/* size-2 (default) */
 .u-table {
 	font-size: calc(0.875rem * var(--scale));
 	line-height: calc(1.25rem * var(--scale));
@@ -27,7 +25,6 @@
 	min-height: calc(44px * var(--scale));
 }
 
-/* size-1 */
 .u-table[data-size="1"] {
 	font-size: calc(0.875rem * var(--scale));
 	line-height: calc(1.25rem * var(--scale));
@@ -41,7 +38,6 @@
 	min-height: calc(36px * var(--scale));
 }
 
-/* size-3 */
 .u-table[data-size="3"] {
 	font-size: calc(1rem * var(--scale));
 	line-height: calc(1.5rem * var(--scale));
@@ -64,7 +60,6 @@
 .u-table-body .u-table-row:last-child { box-shadow: none; }
 .u-table-row[data-state="selected"] { background-color: var(--bg-surface-a); }
 
-/* column headers */
 .u-table-head {
 	color: var(--text);
 	background-clip: padding-box;
@@ -76,7 +71,6 @@
 }
 .u-table-head:has([role="checkbox"]) { padding-inline-end: 0; }
 
-/* cells */
 .u-table-cell {
 	background-clip: padding-box;
 	vertical-align: middle;

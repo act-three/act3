@@ -1,11 +1,9 @@
-/* card — base */
 .u-card { outline: none; }
 .u-card:focus-visible {
 	outline: 2px solid var(--accent-bold);
 	outline-offset: -1px;
 }
 
-/* surface variant */
 .u-card[data-variant="surface"] {
 	background-color: color-mix(in oklch, var(--bg-input) 70%, transparent);
 	box-shadow: inset 0 0 0 1px var(--border-subtle);
@@ -15,7 +13,6 @@
 	box-shadow: inset 0 0 0 1px var(--accent-bold);
 }
 
-/* classic variant */
 .u-card[data-variant="classic"] {
 	background-color: var(--panel);
 	backdrop-filter: blur(64px);
@@ -24,7 +21,6 @@
 	transition-duration: 150ms;
 }
 
-/* ghost variant */
 .u-card[data-variant="ghost"] {
 	display: flex;
 	flex-wrap: wrap;
@@ -46,7 +42,6 @@
 	color: var(--accent-contrast);
 }
 
-/* sizes */
 .u-card[data-size="1"] {
 	padding: calc(0.75rem * var(--scale));
 	border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
@@ -78,7 +73,6 @@
 	--inset-rounded: calc(16px * var(--scale));
 }
 
-/* sub-parts */
 .u-card-media {
 	display: flex;
 	flex-shrink: 0;

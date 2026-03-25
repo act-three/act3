@@ -1,9 +1,5 @@
-/* home page */
-
-/* filter/sort toolbar */
 .v-home-toolbar { padding-block: 1rem; }
 
-/* poster grid */
 .v-home-grid {
 	width: 100%;
 	flex-wrap: wrap;
@@ -12,13 +8,11 @@
 	gap: 1px;
 }
 
-/* individual poster card */
 .v-home-poster {
 	aspect-ratio: 2 / 3;
 	width: 187px;
 }
 
-/* poster link (fills card) */
 .v-home-poster-link {
 	display: block;
 	width: 100%;

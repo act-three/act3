@@ -19,7 +19,6 @@
 	pointer-events: inherit;
 }
 
-/* note — base */
 .u-note {
 	position: absolute;
 	inset: auto 1.5rem 1.5rem;
@@ -102,7 +101,6 @@
 	pointer-events: none;
 }
 
-/* variant: info (default) */
 .u-note {
 	background-color: var(--bg-input);
 	border: 1px solid var(--border-subtle);
@@ -110,7 +108,6 @@
 }
 .u-note .u-note-description { color: var(--text-2); }
 
-/* variant: success */
 .u-note[data-variant="success"] {
 	background-color: oklch(0.982 0.018 155);
 	border: 1px solid oklch(0.871 0.108 155 / 0.4);
@@ -118,7 +115,6 @@
 }
 .u-note[data-variant="success"] .u-note-description { color: oklch(0.407 0.086 153); }
 
-/* variant: error */
 .u-note[data-variant="error"] {
 	background-color: var(--destructive-surface);
 	border: 1px solid var(--destructive-surface-border);
@@ -126,7 +122,6 @@
 }
 .u-note[data-variant="error"] .u-note-description { color: var(--destructive-text); }
 
-/* variant: warning */
 .u-note[data-variant="warning"] {
 	background-color: oklch(0.984 0.019 84);
 	border: 1px solid oklch(0.82 0.12 84 / 0.4);
@@ -134,7 +129,6 @@
 }
 .u-note[data-variant="warning"] .u-note-description { color: oklch(0.432 0.079 65); }
 
-/* sub-parts */
 .u-note-icon {
 	grid-column: 1;
 	display: flex;

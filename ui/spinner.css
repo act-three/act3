@@ -4,7 +4,6 @@
 	to { opacity: 0.25; }
 }
 
-/* spinner — base */
 .u-spinner {
 	position: relative;
 	opacity: 0.65;
@@ -47,7 +46,6 @@
 .u-spinner > span:nth-child(7)::before { animation-delay: -200ms; }
 .u-spinner > span:nth-child(8)::before { animation-delay: -100ms; }
 
-/* size: md (default) */
 .u-spinner {
 	width: calc(1rem * var(--scale));
 	height: calc(1rem * var(--scale));

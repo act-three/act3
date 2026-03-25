@@ -28,7 +28,6 @@
 	box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent-bold) 20%, transparent);
 }
 
-/* size: 2 (default) */
 .u-input {
 	height: calc(32px * var(--scale));
 	font-size: calc(14px * var(--scale));

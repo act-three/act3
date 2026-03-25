@@ -3,11 +3,8 @@
 /* detail page top padding (clears nav bar) */
 .v-detail { padding-top: 4rem; }
 
-/* main info column */
 .v-detail-info { gap: 1rem; }
 
-/* muted metadata text */
 .v-detail-muted { color: var(--text-2); }
 
-/* play button column */
 .v-detail-play { width: 168px; }

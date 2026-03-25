@@ -11,12 +11,9 @@
 	white-space-collapse: preserve;
 	word-break: break-all;
 
-	/* size=3 (default) */
 	font-size: calc(14px * var(--scale));
 	line-height: calc(22px * var(--scale));
 	letter-spacing: -0.005em;
-
-	/* wrap=wrap (default) */
 	text-wrap: wrap;
 }
 

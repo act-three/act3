@@ -1,11 +1,8 @@
-/* poster — base */
 .u-poster {
 	object-fit: cover;
 	aspect-ratio: 2 / 3;
 }
 
-/* fill: expand to container width */
 .u-poster[data-fill] { width: 100%; }
 
-/* aspect: 16/9 */
 .u-poster[data-aspect="16-9"] { aspect-ratio: 16 / 9; }

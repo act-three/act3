@@ -118,6 +118,8 @@ main.go
 - `x`-prefixed packages (`xbufio`, `xiter`, `xslices`,
   `xstrings`) are small stdlib extensions
 - Static assets use digest-based cache busting via `http/digest/`
+- Comments that merely restate the code are useless noise; delete them.
+  Useful comments say something non-obvious: motivation, subtle behavior, etc.
 - Go code can go beyond 80 columns (just not by a lot).
   Don't insert needless line breaks.
 - Use [semantic linebreaks] in Godoc comments and Markdown.

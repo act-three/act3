@@ -9,7 +9,6 @@
 	border-radius: calc(0.07em * 1);
 }
 
-/* underline: always */
 .u-link[data-underline="always"] {
 	text-decoration: underline;
 	text-decoration-color: var(--border-strong);
@@ -17,13 +16,11 @@
 	text-underline-offset: calc(0.025em + 2px);
 }
 
-/* underline: hover — underline only on hover */
 .u-link[data-underline="hover"] { text-decoration: none; }
 
 @media (hover: hover) {
 	.u-link:hover { color: var(--text); }
 
-	/* underline: auto (default) — underline on hover */
 	.u-link:not([data-underline="always"], [data-underline="hover"]):hover {
 		text-decoration: underline;
 		text-decoration-color: var(--border-strong);
