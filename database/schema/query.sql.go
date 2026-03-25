@@ -2324,6 +2324,31 @@ func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEditio
 	return i, err
 }
 
+const seriesEditionGetBySlug = `-- name: SeriesEditionGetBySlug :one
+SELECT seriesedition.id, seriesedition.seriesid, seriesedition.slug, seriesedition.title, seriesedition.summary, seriesedition.tvmazeimageurl FROM SeriesEdition
+JOIN Series ON Series.ID = SeriesEdition.SeriesID
+WHERE Series.Slug = ?1 AND SeriesEdition.Slug = ?2
+`
+
+type SeriesEditionGetBySlugParams struct {
+	SeriesSlug  string
+	EditionSlug string
+}
+
+func (q *Queries) SeriesEditionGetBySlug(ctx context.Context, arg SeriesEditionGetBySlugParams) (SeriesEdition, error) {
+	row := q.db.QueryRowContext(ctx, seriesEditionGetBySlug, arg.SeriesSlug, arg.EditionSlug)
+	var i SeriesEdition
+	err := row.Scan(
+		&i.ID,
+		&i.SeriesID,
+		&i.Slug,
+		&i.Title,
+		&i.Summary,
+		&i.TVmazeImageURL,
+	)
+	return i, err
+}
+
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
 SELECT id, seriesid, slug, title, summary, tvmazeimageurl FROM SeriesEdition WHERE SeriesID = ?
 `

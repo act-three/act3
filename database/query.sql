@@ -414,6 +414,11 @@ RETURNING *;
 -- name: SeriesEditionGet :one
 SELECT * FROM SeriesEdition WHERE ID = ?;
 
+-- name: SeriesEditionGetBySlug :one
+SELECT SeriesEdition.* FROM SeriesEdition
+JOIN Series ON Series.ID = SeriesEdition.SeriesID
+WHERE Series.Slug = sqlc.arg(SeriesSlug) AND SeriesEdition.Slug = sqlc.arg(EditionSlug);
+
 -- name: SeriesEditionListBySeriesID :many
 SELECT * FROM SeriesEdition WHERE SeriesID = ?;
 

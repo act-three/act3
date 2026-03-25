@@ -157,6 +157,20 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 	return sed, nil
 }
 
+// SeriesEditionBySlug looks up a series by its slug
+// and returns the edition matching edSlug
+// (empty string for the default edition).
+func (tx *TxR) SeriesEditionBySlug(ctx Context, slug, edSlug string) (*SeriesEdition, error) {
+	sedData, err := tx.q.SeriesEditionGetBySlug(ctx, schema.SeriesEditionGetBySlugParams{
+		SeriesSlug:  slug,
+		EditionSlug: edSlug,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tx.SeriesEdition(ctx, sedData.ID)
+}
+
 func (tx *TxR) SeriesEditionList(ctx Context, sr *SeriesHead) ([]*SeriesWork, error) {
 	seds, err := tx.q.SeriesEditionListBySeriesID(ctx, sr.ID())
 	if err != nil {

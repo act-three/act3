@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"iter"
 	"path"
 	"slices"
@@ -256,52 +255,6 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		SeriesHead:        SeriesHead{srData},
 		SeriesEditionHead: SeriesEditionHead{sedData},
 	}, nil
-}
-
-// SeriesEditionBySlug looks up a series by its slug
-// and returns the edition matching edSlug
-// (empty string for the default edition).
-func (tx *TxR) SeriesEditionBySlug(ctx Context, slug, edSlug string) (*SeriesEdition, error) {
-	// TODO(april): avoid loading other editions here.
-	srData, err := tx.q.SeriesGetBySlug(ctx, slug)
-	if err != nil {
-		return nil, err
-	}
-	id := srData.ID
-	seds, err := tx.q.SeriesEditionListBySeriesID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	sns, err := tx.q.SeasonListBySeriesID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	sneps, err := tx.q.SeasonEpisodeListBySeriesID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	eps, err := tx.q.EpisodeListBySeriesID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	evs, err := tx.q.EpisodeVideoListBySeriesID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	vids, err := tx.q.VideoListBySeriesID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	vidByID := vidMapByID(vids)
-	videosByEpisodeID := vidMapByEpisodeID(evs, vidByID)
-
-	sr := newSeries(srData, seds, sns, sneps, eps, tx.m.prog.List, videosByEpisodeID)
-	sed := sr.EditionBySlug(edSlug)
-	if sed == nil {
-		return nil, sql.ErrNoRows
-	}
-	return sed, nil
 }
 
 // SeriesWorkList returns the default edition of each series.
