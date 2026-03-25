@@ -1190,14 +1190,24 @@
     transition-duration: 100ms;
     transition-timing-function: linear;
   }
-  .u-progress {
-    height: 0.5rem;
+  .u-progress,
+  [data-progress-size=md] {
+    &.u-progress,
+    & .u-progress:not([data-progress-size]) {
+      height: 0.5rem;
+    }
   }
-  .u-progress[data-size=sm] {
-    height: 0.25rem;
+  [data-progress-size=sm] {
+    &.u-progress,
+    & .u-progress:not([data-progress-size]) {
+      height: 0.25rem;
+    }
   }
-  .u-progress[data-size=lg] {
-    height: 0.75rem;
+  [data-progress-size=lg] {
+    &.u-progress,
+    & .u-progress:not([data-progress-size]) {
+      height: 0.75rem;
+    }
   }
 }
 
