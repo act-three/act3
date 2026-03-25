@@ -160,9 +160,7 @@ func AppSeriesDetail(
 					),
 				),
 
-				SettingsGroup()(
-					appSeriesDetailEpisodeList(sed),
-				),
+				appSeriesDetailSeasonList(sed),
 
 				SettingsGroup()(
 					SettingsItem()(
@@ -247,38 +245,32 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 	)
 }
 
-func appSeriesDetailEpisodeList(sed *model.SeriesEdition) html.Node {
-	return FlexCol(Gap2)(
-		expr.IfElse(sed == nil,
-			func() html.Node {
-				return html.Div()(html.Text("Unknown Order"))
-			},
-			func() html.Node {
-				return html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
-					return FlexRow(Gap2)(
-						html.Div()(html.Text(sn.Name())),
-						html.Div()(html.Textf("%d", sn.NumEpisodes(model.Significant))),
-						html.Div()(
-							html.RangeSeq(sn.Episodes(model.Significant), appSeriesDetailEpisodeListItem),
-						),
-					)
-				})
-			},
-		),
+func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
+	return FlexCol(Gap4)(
+		html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
+			return SettingsGroup()(
+				SettingsGroupHead()(
+					SettingsItemLabel()(
+						SettingsItemLabelTitle(sn.Name()),
+						SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
+					),
+				),
+				// TODO(april): choose a better name when this is hooked up
+				turbo.StreamTarget("series-edition-season-"+sed.ID())(
+					html.RangeSeq(sn.Episodes(model.Significant), appSeriesDetailEpisodeListItem),
+				),
+			)
+		}),
 	)
 }
 
 func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
-	return FlexCol(Gap1)(
-		FlexRow()(
-			html.Div()(
-				html.Text(ep.Label()),
-			),
-			html.Div()(
-				DialogButton(ep.EditDialogURL(), ButtonGhost)(Icon("line/info-circle")),
-			),
+	return SettingsItem()(
+		SettingsItemLabel()(
+			SettingsItemLabelTitle(ep.Label()),
+			progressContainer(ep.ID(), ep.Progress()),
 		),
-		progressContainer(ep.ID(), ep.Progress()),
+		DialogButton(ep.EditDialogURL(), ButtonGhost)(Icon("line/info-circle")),
 	)
 }
 
