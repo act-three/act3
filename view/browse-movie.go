@@ -91,7 +91,7 @@ func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
 	if len(tracks) == 0 {
 		return html.Group()
 	}
-	return Select(SelectSurface, SelectSize3,
+	return Select(SelectSize3,
 		SelectValue(tracks[0].ID()),
 	)(
 		SelectTrigger()(

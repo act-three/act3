@@ -71,7 +71,7 @@ func browseAudioTrackSelect(ep *model.Episode) html.Node {
 	if len(tracks) == 0 {
 		return html.Group()
 	}
-	return Select(SelectSurface, SelectSize3, SelectValue(tracks[0].ID()))(
+	return Select(SelectSize3, SelectValue(tracks[0].ID()))(
 		SelectTrigger()(
 			Icon("line/recording-01"),
 			SelectLabel(tracks[0].Label()),
