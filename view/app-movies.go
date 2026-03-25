@@ -158,22 +158,6 @@ func AppMoviesDetail(
 					),
 				),
 
-				html.If(len(editions) > 1 && med.Slug() != "", func() html.Node {
-					return SettingsGroup()(
-						Group(
-							SettingsItem()(
-								SettingsItemLabel()(
-									SettingsItemLabelTitle("URL"),
-								),
-
-								SettingsTextField("/-/do/movie-edition-set-slug", "slug", med.Slug(), SettingsTextFieldPrefix(mo.TheaterURL()+"/"))(
-									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
-								),
-							),
-						),
-					)
-				}),
-
 				SettingsGroup()(
 					SettingsGroupHead()(
 						SettingsItemLabel()(
