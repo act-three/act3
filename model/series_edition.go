@@ -21,7 +21,7 @@ type SeriesEditionHead struct {
 
 func (sed *SeriesEditionHead) ID() string             { return sed.sed.ID }
 func (sed *SeriesEditionHead) Slug() string           { return sed.sed.Slug }
-func (sed *SeriesEditionHead) Title() string          { return sed.sed.Title }
+func (sed *SeriesEditionHead) Label() string          { return sed.sed.Label }
 func (sed *SeriesEditionHead) Summary() string        { return sed.sed.Summary }
 func (sed *SeriesEditionHead) TVmazeImageURL() string { return sed.sed.TVmazeImageURL }
 
@@ -195,13 +195,13 @@ func (tx *TxR) SeriesEditionList(ctx Context, sr *SeriesHead) ([]*SeriesWork, er
 	return works, nil
 }
 
-func (tx *TxRW) seriesEditionCreate(ctx Context, title, seriesID, summary, tvmazeImageURL string) (schema.SeriesEdition, error) {
-	slug, err := tx.generateSeriesEditionSlug(ctx, title, seriesID)
+func (tx *TxRW) seriesEditionCreate(ctx Context, label, seriesID, summary, tvmazeImageURL string) (schema.SeriesEdition, error) {
+	slug, err := tx.generateSeriesEditionSlug(ctx, label, seriesID)
 	if err != nil {
 		return schema.SeriesEdition{}, err
 	}
 	return tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
-		Title:          title,
+		Label:          label,
 		Slug:           slug,
 		SeriesID:       seriesID,
 		Summary:        summary,
@@ -218,7 +218,7 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHea
 		return nil, err
 	}
 	newSed, err := tx.seriesEditionCreate(ctx,
-		"Copy of "+src.Title, src.SeriesID, src.Summary, src.TVmazeImageURL)
+		"Copy of "+src.Label, src.SeriesID, src.Summary, src.TVmazeImageURL)
 	if err != nil {
 		return nil, err
 	}
@@ -263,8 +263,8 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHea
 	return &SeriesEditionHead{newSed}, nil
 }
 
-func (tx *TxRW) generateSeriesEditionSlug(ctx Context, title, seriesID string) (string, error) {
-	for slug := range editionSlugCandidates(title) {
+func (tx *TxRW) generateSeriesEditionSlug(ctx Context, label, seriesID string) (string, error) {
+	for slug := range editionSlugCandidates(label) {
 		n, err := tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
 			SeriesID: seriesID,
 			Slug:     slug,

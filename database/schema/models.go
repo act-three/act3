@@ -147,7 +147,7 @@ type SeriesEdition struct {
 	ID             string
 	SeriesID       string
 	Slug           string
-	Title          string
+	Label          string
 	Summary        string
 	TVmazeImageURL string
 }

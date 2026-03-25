@@ -407,7 +407,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Title, Slug, SeriesID, Summary, TVmazeImageURL)
+INSERT INTO SeriesEdition (Label, Slug, SeriesID, Summary, TVmazeImageURL)
 VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 

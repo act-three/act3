@@ -51,7 +51,7 @@ CREATE TABLE SeriesEdition
 	ID             TEXT PRIMARY KEY DEFAULT ('sed'||newID()),
 	SeriesID       TEXT NOT NULL REFERENCES Series,
 	Slug           TEXT NOT NULL,
-	Title          TEXT NOT NULL,
+	Label          TEXT NOT NULL,
 	Summary        TEXT NOT NULL,
 	TVmazeImageURL TEXT NOT NULL,
 	UNIQUE (SeriesID, Slug)

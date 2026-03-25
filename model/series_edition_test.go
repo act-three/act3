@@ -17,7 +17,7 @@ func TestNewSeriesEdition(t *testing.T) {
 	t.Run("creates edition with season and episodes", func(t *testing.T) {
 		sedData := schema.SeriesEdition{
 			ID:             "edition-1",
-			Title:          "Original",
+			Label:          "Original",
 			SeriesID:       "series-1",
 			Summary:        "A test series",
 			TVmazeImageURL: "https://example.com/image.jpg",
@@ -76,7 +76,7 @@ func TestNewSeriesEdition(t *testing.T) {
 	t.Run("creates edition with no seasons", func(t *testing.T) {
 		sedData := schema.SeriesEdition{
 			ID:       "edition-1",
-			Title:    "Empty",
+			Label:    "Empty",
 			SeriesID: "series-1",
 		}
 
@@ -98,7 +98,7 @@ func TestNewSeriesEdition(t *testing.T) {
 	t.Run("associates multiple seasons correctly", func(t *testing.T) {
 		sedData := schema.SeriesEdition{
 			ID:       "edition-1",
-			Title:    "Edition 1",
+			Label:    "Edition 1",
 			SeriesID: "series-1",
 		}
 		sns := []schema.Season{
@@ -130,7 +130,7 @@ func TestNewSeriesEdition(t *testing.T) {
 	t.Run("sets SeriesHead back-reference", func(t *testing.T) {
 		sedData := schema.SeriesEdition{
 			ID:       "edition-1",
-			Title:    "Original",
+			Label:    "Original",
 			SeriesID: "series-1",
 		}
 

@@ -168,7 +168,7 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName, edSlug string) (*
 		if err != nil {
 			return nil, err
 		}
-		if seq.ID != edID && seq.Title != edName && seq.Slug != edSlug && i < len(sneps)-1 {
+		if seq.ID != edID && seq.Label != edName && seq.Slug != edSlug && i < len(sneps)-1 {
 			continue
 		}
 		sr, err := tx.q.SeriesGet(ctx, seq.SeriesID)

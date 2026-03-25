@@ -2273,13 +2273,13 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 }
 
 const seriesEditionCreate = `-- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Title, Slug, SeriesID, Summary, TVmazeImageURL)
+INSERT INTO SeriesEdition (Label, Slug, SeriesID, Summary, TVmazeImageURL)
 VALUES (?, ?, ?, ?, ?)
-RETURNING id, seriesid, slug, title, summary, tvmazeimageurl
+RETURNING id, seriesid, slug, label, summary, tvmazeimageurl
 `
 
 type SeriesEditionCreateParams struct {
-	Title          string
+	Label          string
 	Slug           string
 	SeriesID       string
 	Summary        string
@@ -2288,7 +2288,7 @@ type SeriesEditionCreateParams struct {
 
 func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCreateParams) (SeriesEdition, error) {
 	row := q.db.QueryRowContext(ctx, seriesEditionCreate,
-		arg.Title,
+		arg.Label,
 		arg.Slug,
 		arg.SeriesID,
 		arg.Summary,
@@ -2299,7 +2299,7 @@ func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCrea
 		&i.ID,
 		&i.SeriesID,
 		&i.Slug,
-		&i.Title,
+		&i.Label,
 		&i.Summary,
 		&i.TVmazeImageURL,
 	)
@@ -2307,7 +2307,7 @@ func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCrea
 }
 
 const seriesEditionGet = `-- name: SeriesEditionGet :one
-SELECT id, seriesid, slug, title, summary, tvmazeimageurl FROM SeriesEdition WHERE ID = ?
+SELECT id, seriesid, slug, label, summary, tvmazeimageurl FROM SeriesEdition WHERE ID = ?
 `
 
 func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEdition, error) {
@@ -2317,7 +2317,7 @@ func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEditio
 		&i.ID,
 		&i.SeriesID,
 		&i.Slug,
-		&i.Title,
+		&i.Label,
 		&i.Summary,
 		&i.TVmazeImageURL,
 	)
@@ -2325,7 +2325,7 @@ func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEditio
 }
 
 const seriesEditionGetBySlug = `-- name: SeriesEditionGetBySlug :one
-SELECT seriesedition.id, seriesedition.seriesid, seriesedition.slug, seriesedition.title, seriesedition.summary, seriesedition.tvmazeimageurl FROM SeriesEdition
+SELECT seriesedition.id, seriesedition.seriesid, seriesedition.slug, seriesedition.label, seriesedition.summary, seriesedition.tvmazeimageurl FROM SeriesEdition
 JOIN Series ON Series.ID = SeriesEdition.SeriesID
 WHERE Series.Slug = ?1 AND SeriesEdition.Slug = ?2
 `
@@ -2342,7 +2342,7 @@ func (q *Queries) SeriesEditionGetBySlug(ctx context.Context, arg SeriesEditionG
 		&i.ID,
 		&i.SeriesID,
 		&i.Slug,
-		&i.Title,
+		&i.Label,
 		&i.Summary,
 		&i.TVmazeImageURL,
 	)
@@ -2350,7 +2350,7 @@ func (q *Queries) SeriesEditionGetBySlug(ctx context.Context, arg SeriesEditionG
 }
 
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
-SELECT id, seriesid, slug, title, summary, tvmazeimageurl FROM SeriesEdition WHERE SeriesID = ?
+SELECT id, seriesid, slug, label, summary, tvmazeimageurl FROM SeriesEdition WHERE SeriesID = ?
 `
 
 func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid string) ([]SeriesEdition, error) {
@@ -2366,7 +2366,7 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 			&i.ID,
 			&i.SeriesID,
 			&i.Slug,
-			&i.Title,
+			&i.Label,
 			&i.Summary,
 			&i.TVmazeImageURL,
 		); err != nil {
@@ -2384,7 +2384,7 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 }
 
 const seriesEditionListDefault = `-- name: SeriesEditionListDefault :many
-SELECT id, seriesid, slug, title, summary, tvmazeimageurl FROM SeriesEdition WHERE Slug = ''
+SELECT id, seriesid, slug, label, summary, tvmazeimageurl FROM SeriesEdition WHERE Slug = ''
 `
 
 func (q *Queries) SeriesEditionListDefault(ctx context.Context) ([]SeriesEdition, error) {
@@ -2400,7 +2400,7 @@ func (q *Queries) SeriesEditionListDefault(ctx context.Context) ([]SeriesEdition
 			&i.ID,
 			&i.SeriesID,
 			&i.Slug,
-			&i.Title,
+			&i.Label,
 			&i.Summary,
 			&i.TVmazeImageURL,
 		); err != nil {

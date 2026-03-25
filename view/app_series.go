@@ -114,7 +114,7 @@ func AppSeriesDetail(
 				FlexCol(Gap6)(
 					html.If(len(editions) > 1, func() html.Node {
 						return SettingsContent()(
-							Text(sed.Title(), Size4),
+							Text(sed.Label(), Size4),
 							Box()(
 								Link(
 									sed.TheaterURL(),
@@ -205,7 +205,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 				FlexRow()(
 					CardContent()(
 						CardTitle()(
-							Text(ed.SeriesEditionHead.Title()),
+							Text(ed.SeriesEditionHead.Label()),
 						),
 						CardDescription()(
 							Text(ed.TheaterURL()),
