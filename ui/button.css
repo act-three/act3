@@ -11,13 +11,8 @@
 	transition-duration: 150ms;
 	outline: none;
 	cursor: pointer;
-	font-weight: 500;
 }
-.u-button svg { opacity: 0.9; }
-.u-button:focus-visible {
-	outline: 2px solid var(--accent-bold);
-	outline-offset: 2px;
-}
+.u-button:focus-visible { outline: 2px solid var(--accent-bold); }
 .u-button:disabled,
 .u-button[aria-disabled="true"] {
 	pointer-events: none;
@@ -32,27 +27,40 @@
 	height: 1rem;
 }
 
-/* variant: solid (default) — accent bg, the primary CTA */
-.u-button {
-	background-color: var(--accent);
-	color: white;
-}
-@media (hover: hover) { .u-button:hover { background-color: var(--accent-hover); } }
-.u-button:active:not(:disabled) {
-	background-color: var(--accent-hover);
-	filter: brightness(0.92) saturate(1.1);
+/* solid (default) */
+.u-button, [data-button="solid"] {
+	&.u-button, & .u-button:not([data-button]) {
+		background-color: var(--accent);
+		color: white;
+		font-weight: 500;
+		box-shadow: none;
+		& svg { opacity: 0.9; }
+		&:focus-visible { outline-offset: 2px; }
+		@media (hover: hover) { &:hover { background-color: var(--accent-hover); } }
+		&:active:not(:disabled) {
+			background-color: var(--accent-hover);
+			filter: brightness(0.92) saturate(1.1);
+		}
+	}
 }
 
+/* surface */
 [data-button="surface"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: var(--bg-surface);
 		color: var(--text);
 		box-shadow: inset 0 0 0 1px var(--border);
 		&:focus-visible { outline-offset: -1px; }
-		@media (hover: hover) { &:hover { box-shadow: inset 0 0 0 1px var(--border-strong); } }
+		@media (hover: hover) {
+			&:hover {
+				background-color: var(--bg-surface);
+				box-shadow: inset 0 0 0 1px var(--border-strong);
+			}
+		}
 		&:active:not(:disabled) {
 			background-color: var(--bg-hover);
 			box-shadow: inset 0 0 0 1px var(--border-strong);
+			filter: none;
 		}
 		&[data-selected] {
 			background-color: var(--accent-surface);
@@ -61,15 +69,20 @@
 	}
 }
 
+/* ghost */
 [data-button="ghost"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: transparent;
 		color: var(--text);
 		font-weight: inherit;
-		&:focus-visible { outline-offset: -1px; }
+		box-shadow: none;
 		& svg { opacity: 1; }
+		&:focus-visible { outline-offset: -1px; }
 		@media (hover: hover) { &:hover { background-color: var(--bg-hover); } }
-		&:active:not(:disabled) { background-color: var(--bg-active); }
+		&:active:not(:disabled) {
+			background-color: var(--bg-active);
+			filter: none;
+		}
 	}
 }
 
