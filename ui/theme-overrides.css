@@ -3,12 +3,6 @@
  * These class-based overrides live in the components layer
  * so they can override the :root defaults in the theme layer. */
 
-.u-theme[data-scale="1"] { --scale: 0.9; }
-.u-theme[data-scale="2"] { --scale: 0.95; }
-.u-theme[data-scale="3"] { --scale: 1; }
-.u-theme[data-scale="4"] { --scale: 1.05; }
-.u-theme[data-scale="5"] { --scale: 1.1; }
-
 .u-theme[data-radius="none"] { --radius-factor: 0; }
 .u-theme[data-radius="small"] { --radius-factor: 0.75; }
 .u-theme[data-radius="medium"] { --radius-factor: 1; }

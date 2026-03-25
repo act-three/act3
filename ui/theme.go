@@ -18,15 +18,6 @@ func Theme(attrs ...attr.Node) html.Element {
 // Accent colors
 var AccentCrimson = attr.Attr("data-accent")("crimson")
 
-// Scale presets
-var (
-	Scale1 = attr.Attr("data-scale")("1")
-	Scale2 = attr.Attr("data-scale")("2")
-	Scale3 = attr.Attr("data-scale")("3")
-	Scale4 = attr.Attr("data-scale")("4")
-	Scale5 = attr.Attr("data-scale")("5")
-)
-
 // Radius presets
 var (
 	RadiusNone   = attr.Attr("data-radius")("none")

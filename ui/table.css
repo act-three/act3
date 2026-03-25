@@ -13,42 +13,42 @@
 .u-table[data-variant="surface"] .u-table-header .u-table-row { background-color: var(--bg-surface-a); }
 
 .u-table {
-	font-size: calc(0.875rem * var(--scale));
-	line-height: calc(1.25rem * var(--scale));
+	font-size: 0.875rem;
+	line-height: 1.25rem;
 }
 .u-table .u-table-head {
-	height: calc(2.5rem * var(--scale));
-	padding: calc(0.75rem * var(--scale));
+	height: 2.5rem;
+	padding: 0.75rem;
 }
 .u-table .u-table-cell {
-	padding: calc(0.75rem * var(--scale));
-	min-height: calc(44px * var(--scale));
+	padding: 0.75rem;
+	min-height: 44px;
 }
 
 .u-table[data-size="1"] {
-	font-size: calc(0.875rem * var(--scale));
-	line-height: calc(1.25rem * var(--scale));
+	font-size: 0.875rem;
+	line-height: 1.25rem;
 }
 .u-table[data-size="1"] .u-table-head {
-	height: calc(2rem * var(--scale));
-	padding: calc(0.5rem * var(--scale));
+	height: 2rem;
+	padding: 0.5rem;
 }
 .u-table[data-size="1"] .u-table-cell {
-	padding: calc(0.5rem * var(--scale));
-	min-height: calc(36px * var(--scale));
+	padding: 0.5rem;
+	min-height: 36px;
 }
 
 .u-table[data-size="3"] {
-	font-size: calc(1rem * var(--scale));
-	line-height: calc(1.5rem * var(--scale));
+	font-size: 1rem;
+	line-height: 1.5rem;
 }
 .u-table[data-size="3"] .u-table-head {
-	height: calc(2.75rem * var(--scale));
-	padding: calc(0.75rem * var(--scale)) calc(1rem * var(--scale));
+	height: 2.75rem;
+	padding: 0.75rem 1rem;
 }
 .u-table[data-size="3"] .u-table-cell {
-	padding: calc(0.75rem * var(--scale)) calc(1rem * var(--scale));
-	min-height: calc(48px * var(--scale));
+	padding: 0.75rem 1rem;
+	min-height: 48px;
 }
 
 /* row separators */

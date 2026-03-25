@@ -22,7 +22,7 @@
 	display: block;
 	width: 100%;
 	height: 30%;
-	border-radius: calc(3px * var(--scale) * var(--radius-factor, 1));
+	border-radius: calc(3px * var(--radius-factor, 1));
 	background-color: currentColor;
 	animation: spinner-leaf-fade 800ms linear infinite;
 }
@@ -47,14 +47,14 @@
 .u-spinner > span:nth-child(8)::before { animation-delay: -100ms; }
 
 .u-spinner {
-	width: calc(1rem * var(--scale));
-	height: calc(1rem * var(--scale));
+	width: 1rem;
+	height: 1rem;
 }
 .u-spinner[data-size="sm"] {
-	width: calc(0.75rem * var(--scale));
-	height: calc(0.75rem * var(--scale));
+	width: 0.75rem;
+	height: 0.75rem;
 }
 .u-spinner[data-size="lg"] {
-	width: calc(1.25rem * var(--scale));
-	height: calc(1.25rem * var(--scale));
+	width: 1.25rem;
+	height: 1.25rem;
 }

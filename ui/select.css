@@ -47,34 +47,34 @@
 }
 
 .u-select {
-	font-size: calc(0.875rem * var(--scale));
-	line-height: calc(1.25rem * var(--scale));
-	--select-height: calc(2rem * var(--scale));
-	--select-padding-x: calc(0.75rem * var(--scale));
-	--select-gap: calc(0.5rem * var(--scale));
+	font-size: 0.875rem;
+	line-height: 1.25rem;
+	--select-height: 2rem;
+	--select-padding-x: 0.75rem;
+	--select-gap: 0.5rem;
 	--select-radius: max(var(--radius-2), var(--radius-full));
 	--select-content-padding: 6px;
-	--select-indicator-width: calc(1.5rem * var(--scale));
+	--select-indicator-width: 1.5rem;
 }
 .u-select[data-size="1"] {
-	font-size: calc(0.75rem * var(--scale));
-	line-height: calc(1rem * var(--scale));
-	--select-height: calc(1.5rem * var(--scale));
-	--select-padding-x: calc(0.5rem * var(--scale));
-	--select-gap: calc(0.25rem * var(--scale));
+	font-size: 0.75rem;
+	line-height: 1rem;
+	--select-height: 1.5rem;
+	--select-padding-x: 0.5rem;
+	--select-gap: 0.25rem;
 	--select-radius: max(var(--radius-1), var(--radius-full));
 	--select-content-padding: 4px;
-	--select-indicator-width: calc(1.25rem * var(--scale));
+	--select-indicator-width: 1.25rem;
 }
 .u-select[data-size="3"] {
-	font-size: calc(1rem * var(--scale));
-	line-height: calc(1.5rem * var(--scale));
-	--select-height: calc(2.5rem * var(--scale));
-	--select-padding-x: calc(1rem * var(--scale));
-	--select-gap: calc(0.75rem * var(--scale));
+	font-size: 1rem;
+	line-height: 1.5rem;
+	--select-height: 2.5rem;
+	--select-padding-x: 1rem;
+	--select-gap: 0.75rem;
 	--select-radius: max(var(--radius-3), var(--radius-full));
 	--select-content-padding: 6px;
-	--select-indicator-width: calc(1.5rem * var(--scale));
+	--select-indicator-width: 1.5rem;
 }
 
 .u-select-trigger {

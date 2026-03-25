@@ -43,34 +43,34 @@
 }
 
 .u-card[data-size="1"] {
-	padding: calc(0.75rem * var(--scale));
-	border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
-	--inset-padding: calc(-12px * var(--scale));
-	--inset-rounded: calc(8px * var(--scale));
+	padding: 0.75rem;
+	border-radius: calc(0.5rem * var(--radius-factor, 1));
+	--inset-padding: -12px;
+	--inset-rounded: 8px;
 }
 .u-card[data-size="2"] {
-	padding: calc(1rem * var(--scale));
-	border-radius: calc(0.5rem * var(--scale) * var(--radius-factor, 1));
-	--inset-padding: calc(-16px * var(--scale));
-	--inset-rounded: calc(8px * var(--scale));
+	padding: 1rem;
+	border-radius: calc(0.5rem * var(--radius-factor, 1));
+	--inset-padding: -16px;
+	--inset-rounded: 8px;
 }
 .u-card[data-size="3"] {
-	padding: calc(1.5rem * var(--scale));
-	border-radius: calc(0.75rem * var(--scale) * var(--radius-factor, 1));
-	--inset-padding: calc(-24px * var(--scale));
-	--inset-rounded: calc(12px * var(--scale));
+	padding: 1.5rem;
+	border-radius: calc(0.75rem * var(--radius-factor, 1));
+	--inset-padding: -24px;
+	--inset-rounded: 12px;
 }
 .u-card[data-size="4"] {
-	padding: calc(2rem * var(--scale));
-	border-radius: calc(0.75rem * var(--scale) * var(--radius-factor, 1));
-	--inset-padding: calc(-32px * var(--scale));
-	--inset-rounded: calc(12px * var(--scale));
+	padding: 2rem;
+	border-radius: calc(0.75rem * var(--radius-factor, 1));
+	--inset-padding: -32px;
+	--inset-rounded: 12px;
 }
 .u-card[data-size="5"] {
-	padding: calc(3rem * var(--scale));
-	border-radius: calc(1rem * var(--scale) * var(--radius-factor, 1));
-	--inset-padding: calc(-48px * var(--scale));
-	--inset-rounded: calc(16px * var(--scale));
+	padding: 3rem;
+	border-radius: calc(1rem * var(--radius-factor, 1));
+	--inset-padding: -48px;
+	--inset-rounded: 16px;
 }
 
 .u-card-media {

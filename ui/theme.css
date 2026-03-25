@@ -58,13 +58,12 @@
 	--destructive-contrast: oklch(0.909 0.054 25);
 	--error: oklch(0.613 0.207 24);
 
-	/* ---- radius scale ---- */
-	--scale: 1;
-	--radius-1: calc(3px * var(--scale) * var(--radius-factor, 1));
-	--radius-2: calc(4px * var(--scale) * var(--radius-factor, 1));
-	--radius-3: calc(6px * var(--scale) * var(--radius-factor, 1));
-	--radius-4: calc(8px * var(--scale) * var(--radius-factor, 1));
-	--radius-5: calc(12px * var(--scale) * var(--radius-factor, 1));
-	--radius-6: calc(16px * var(--scale) * var(--radius-factor, 1));
+	/* ---- radius ---- */
+	--radius-1: calc(3px * var(--radius-factor, 1));
+	--radius-2: calc(4px * var(--radius-factor, 1));
+	--radius-3: calc(6px * var(--radius-factor, 1));
+	--radius-4: calc(8px * var(--radius-factor, 1));
+	--radius-5: calc(12px * var(--radius-factor, 1));
+	--radius-6: calc(16px * var(--radius-factor, 1));
 	--radius-full: 0px;
 }

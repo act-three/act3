@@ -11,8 +11,8 @@
 	white-space-collapse: preserve;
 	word-break: break-all;
 
-	font-size: calc(14px * var(--scale));
-	line-height: calc(22px * var(--scale));
+	font-size: 14px;
+	line-height: 22px;
 	letter-spacing: -0.005em;
 	text-wrap: wrap;
 }
@@ -21,25 +21,25 @@
 
 /* size scale (slightly smaller than text sizes for mono) */
 .u-code[data-size="1"] {
-	font-size: calc(11px * var(--scale));
-	line-height: calc(16px * var(--scale));
+	font-size: 11px;
+	line-height: 16px;
 	letter-spacing: -0.005em;
 }
 
 .u-code[data-size="2"] {
-	font-size: calc(13px * var(--scale));
-	line-height: calc(20px * var(--scale));
+	font-size: 13px;
+	line-height: 20px;
 	letter-spacing: -0.005em;
 }
 
 .u-code[data-size="3"] {
-	font-size: calc(14px * var(--scale));
-	line-height: calc(22px * var(--scale));
+	font-size: 14px;
+	line-height: 22px;
 	letter-spacing: -0.005em;
 }
 
 .u-code[data-size="4"] {
-	font-size: calc(16px * var(--scale));
-	line-height: calc(24px * var(--scale));
+	font-size: 16px;
+	line-height: 24px;
 	letter-spacing: -0.0075em;
 }

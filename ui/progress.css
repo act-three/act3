@@ -15,6 +15,6 @@
 	transition-timing-function: linear;
 }
 
-.u-progress { height: calc(0.5rem * var(--scale)); }
-.u-progress[data-size="sm"] { height: calc(0.25rem * var(--scale)); }
-.u-progress[data-size="lg"] { height: calc(0.75rem * var(--scale)); }
+.u-progress { height: 0.5rem; }
+.u-progress[data-size="sm"] { height: 0.25rem; }
+.u-progress[data-size="lg"] { height: 0.75rem; }
