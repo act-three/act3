@@ -26,12 +26,12 @@ var (
 	ButtonGhost   = attr.Attr("data-button")("ghost")
 )
 
-// Sizes
+// Sizes — set data-button-size on the button or any ancestor to inherit.
 var (
-	ButtonSize1 = attr.Attr("data-size")("1")
-	ButtonSize2 = attr.Attr("data-size")("2")
-	ButtonSize3 = attr.Attr("data-size")("3")
-	ButtonSize4 = attr.Attr("data-size")("4")
+	ButtonSize1 = attr.Attr("data-button-size")("1")
+	ButtonSize2 = attr.Attr("data-button-size")("2")
+	ButtonSize3 = attr.Attr("data-button-size")("3")
+	ButtonSize4 = attr.Attr("data-button-size")("4")
 )
 
 // Shapes

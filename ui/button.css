@@ -43,7 +43,6 @@
 	filter: brightness(0.92) saturate(1.1);
 }
 
-/* variant: surface — gray bg + border, neutral text */
 [data-button="surface"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: var(--bg-surface);
@@ -62,7 +61,6 @@
 	}
 }
 
-/* variant: ghost — transparent, neutral text */
 [data-button="ghost"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: transparent;
@@ -82,28 +80,37 @@
 	font-size: 0.875rem;
 	line-height: 1.25rem;
 }
-.u-button[data-size="1"] {
-	height: 1.5rem;
-	padding-inline: 0.5rem;
-	gap: 0.25rem;
-	font-size: 0.75rem;
-	line-height: 1rem;
-	letter-spacing: 0.0025em;
+
+[data-button-size="1"] {
+	&.u-button, & .u-button:not([data-button-size]) {
+		height: 1.5rem;
+		padding-inline: 0.5rem;
+		gap: 0.25rem;
+		font-size: 0.75rem;
+		line-height: 1rem;
+		letter-spacing: 0.0025em;
+	}
 }
-.u-button[data-size="3"] {
-	height: 2.5rem;
-	padding-inline: 1rem;
-	gap: 0.75rem;
-	font-size: 1rem;
-	line-height: 1.5rem;
+
+[data-button-size="3"] {
+	&.u-button, & .u-button:not([data-button-size]) {
+		height: 2.5rem;
+		padding-inline: 1rem;
+		gap: 0.75rem;
+		font-size: 1rem;
+		line-height: 1.5rem;
+	}
 }
-.u-button[data-size="4"] {
-	height: 3rem;
-	padding-inline: 1.5rem;
-	gap: 0.75rem;
-	font-size: 1.125rem;
-	line-height: 1.75rem;
-	letter-spacing: -0.0025em;
+
+[data-button-size="4"] {
+	&.u-button, & .u-button:not([data-button-size]) {
+		height: 3rem;
+		padding-inline: 1.5rem;
+		gap: 0.75rem;
+		font-size: 1.125rem;
+		line-height: 1.75rem;
+		letter-spacing: -0.0025em;
+	}
 }
 
 .u-button { border-radius: 9999px; }
