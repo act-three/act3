@@ -286,10 +286,12 @@
       @media (hover: hover) {
         &:hover {
           background-color: var(--accent-hover);
+          box-shadow: none;
         }
       }
       &:active:not(:disabled) {
         background-color: var(--accent-hover);
+        box-shadow: none;
         filter: brightness(0.92) saturate(1.1);
       }
     }
@@ -299,7 +301,11 @@
     & .u-button:not([data-button]) {
       background-color: var(--bg-surface);
       color: var(--text);
+      font-weight: 500;
       box-shadow: inset 0 0 0 1px var(--border);
+      & svg {
+        opacity: 0.9;
+      }
       &:focus-visible {
         outline-offset: -1px;
       }
@@ -326,6 +332,7 @@
       background-color: transparent;
       color: var(--text);
       font-weight: inherit;
+      box-shadow: none;
       & svg {
         opacity: 1;
       }
@@ -335,10 +342,12 @@
       @media (hover: hover) {
         &:hover {
           background-color: var(--bg-hover);
+          box-shadow: none;
         }
       }
       &:active:not(:disabled) {
         background-color: var(--bg-active);
+        box-shadow: none;
         filter: none;
       }
     }
