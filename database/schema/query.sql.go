@@ -2461,6 +2461,20 @@ func (q *Queries) SeriesEditionSlugSet(ctx context.Context, arg SeriesEditionSlu
 	return err
 }
 
+const seriesEditionSummarySet = `-- name: SeriesEditionSummarySet :exec
+UPDATE SeriesEdition SET Summary = ? WHERE ID = ?
+`
+
+type SeriesEditionSummarySetParams struct {
+	Summary string
+	ID      string
+}
+
+func (q *Queries) SeriesEditionSummarySet(ctx context.Context, arg SeriesEditionSummarySetParams) error {
+	_, err := q.db.ExecContext(ctx, seriesEditionSummarySet, arg.Summary, arg.ID)
+	return err
+}
+
 const seriesGenreAdd = `-- name: SeriesGenreAdd :exec
 INSERT INTO SeriesGenre (SeriesID, GenreName) VALUES (?, ?)
 `

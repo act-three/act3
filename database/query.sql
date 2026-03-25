@@ -434,6 +434,9 @@ SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?;
 -- name: SeriesEditionSlugSet :exec
 UPDATE SeriesEdition SET Slug = ? WHERE ID = ?;
 
+-- name: SeriesEditionSummarySet :exec
+UPDATE SeriesEdition SET Summary = ? WHERE ID = ?;
+
 
 -- name: SeriesGenreAdd :exec
 INSERT INTO SeriesGenre (SeriesID, GenreName) VALUES (?, ?);

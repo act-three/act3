@@ -150,11 +150,8 @@ func AppSeriesDetail(
 
 					FlexCol(Gap2)(
 						SettingsContent()(Text("Summary", Size2)),
-						html.Div(attr.Class("u-settings-text-area"))(
-							html.Textarea(
-								attr.Class("u-settings-text-area-input"),
-								attr.Disabled,
-							)(html.Text(sed.Summary())),
+						SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary())(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sed.ID())),
 						),
 					),
 				),

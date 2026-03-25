@@ -95,6 +95,23 @@ func (c *Config) doSeriesEditionSetLabel(w http.ResponseWriter, req *http.Reques
 	})
 }
 
+func (c *Config) doSeriesEditionSetSummary(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		if id == "" {
+			return nil, &model.ValidationError{Op: "set series edition summary", Err: errNotFound}
+		}
+		summary := strings.TrimSpace(req.FormValue("summary"))
+		err := tx.SeriesEditionSummarySet(ctx, id, summary)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) seriesAddDialogReq(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	frameID := req.Header.Get("Turbo-Frame")
 	return view.AppSeriesAddDialog(frameID), nil
