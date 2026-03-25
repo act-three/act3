@@ -11,6 +11,12 @@
 	--accent: var(--warmred);
 }
 
+[disabled] {
+	opacity: 0.5;
+	filter: saturate(0.5);
+	pointer-events: none;
+}
+
 /* accent color: hot pink (default & template for additional accents;
  * to add a new accent, set --accent to a new oklch color) */
 [data-accent="hotpink"] { --accent: var(--hotpink); }
