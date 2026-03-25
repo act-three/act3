@@ -71,6 +71,7 @@ func AppMoviesDetail(
 	dls []*model.DownloadHead,
 ) html.Node {
 	mo := med.MovieHead()
+	_ = mo
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(
 			Class("v-media-detail-body"),
@@ -82,69 +83,32 @@ func AppMoviesDetail(
 					},
 				),
 
-				SettingsContent()(
-					Text(med.Title(), Size6),
-					Box()(
-						Link(
-							med.TheaterURL(),
-							turbo.DataFrame("_top"),
-						)(Text("View in Theater", Size3,
-							// TODO(april): maybe make this the default for Text
-							attr.Style("display: inline-block"),
-						)),
-					),
-				),
-
-				SettingsGroup()(
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Title"),
-						),
-						SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title())(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+				FlexCol(Gap4)(
+					SettingsContent()(
+						Text(med.Title(), Size6),
+						Box()(
+							Link(
+								med.TheaterURL(),
+								turbo.DataFrame("_top"),
+							)(Text("View in Theater", Size3,
+								// TODO(april): maybe make this the default for Text
+								attr.Style("display: inline-block"),
+							)),
 						),
 					),
 
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Year Released"),
+					SettingsGroup()(
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Title"),
+							),
+							SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title())(
+								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+							),
 						),
 
-						SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
-						),
-					),
-
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Poster"),
-						),
-
-						ImageFrame(attr.Style("width:30px"))(
-							PosterImg(PosterFill, attr.Src(med.ImageURL())),
-						),
-					),
-
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Runtime"),
-						),
-
-						SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), SettingsTextFieldSuffix(" min"))(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
-						),
-					),
-				),
-
-				SettingsContent()(Text("Summary", Size2)),
-				SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary())(
-					html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
-				),
-
-				html.If(len(editions) > 1,
-					func() html.Node {
-						return SettingsGroup()(
-							SettingsItem()(
+						html.If(len(editions) > 1, func() html.Node {
+							return SettingsItem()(
 								SettingsItemLabel()(
 									SettingsItemLabelTitle("Edition"),
 								),
@@ -152,41 +116,63 @@ func AppMoviesDetail(
 								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label())(
 									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 								),
+							)
+						}),
+
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Year Released"),
 							),
 
-							html.If(med.Slug() != "",
-								func() html.Node {
-									return Group(
-										SettingsItem()(
-											SettingsItemLabel()(
-												SettingsItemLabelTitle("URL"),
-											),
-
-											SettingsTextField("/-/do/movie-edition-set-slug", "slug", med.Slug(), SettingsTextFieldPrefix(mo.TheaterURL()+"/"))(
-												html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
-											),
-										),
-
-										SettingsItem()(
-											SettingsItemLabel()(
-												SettingsItemLabelTitle("Default"),
-												SettingsItemLabelDescription("Shown first when opening a movie"),
-											),
-
-											html.Form(
-												attr.Method("POST"),
-												attr.Action("/-/do/movie-edition-set-default"),
-											)(
-												html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
-												Button(ButtonGhost, ButtonSize2)(Text("Set Default")),
-											),
-										),
-									)
-								},
+							SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
+								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
 							),
-						)
-					},
+						),
+
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Poster"),
+							),
+
+							ImageFrame(attr.Style("width:30px"))(
+								PosterImg(PosterFill, attr.Src(med.ImageURL())),
+							),
+						),
+
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Runtime"),
+							),
+
+							SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), SettingsTextFieldSuffix(" min"))(
+								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+							),
+						),
+					),
+
+					FlexCol(Gap2)(
+						SettingsContent()(Text("Summary", Size2)),
+						SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary())(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+						),
+					),
 				),
+
+				html.If(len(editions) > 1 && med.Slug() != "", func() html.Node {
+					return SettingsGroup()(
+						Group(
+							SettingsItem()(
+								SettingsItemLabel()(
+									SettingsItemLabelTitle("URL"),
+								),
+
+								SettingsTextField("/-/do/movie-edition-set-slug", "slug", med.Slug(), SettingsTextFieldPrefix(mo.TheaterURL()+"/"))(
+									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+								),
+							),
+						),
+					)
+				}),
 
 				SettingsGroup()(
 					SettingsGroupHead()(
@@ -207,7 +193,7 @@ func AppMoviesDetail(
 				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
-							SettingsItemLabelTitle("Edition"),
+							SettingsItemLabelTitle("Create Edition"),
 							SettingsItemLabelDescription("Create a new edition by duplicating this one"),
 						),
 
@@ -221,30 +207,39 @@ func AppMoviesDetail(
 					),
 				),
 
-				html.If(med.Slug() == "" && len(editions) > 1,
-					func() html.Node {
-						return SettingsContent()(
-							Label(
-								"line/x-circle",
-								"The default edition can't be deleted. To delete this edition, first choose another default.",
-								Size2,
+				FlexCol(Gap2)(
+					html.If(med.Slug() == "" && len(editions) > 1,
+						func() html.Node {
+							return SettingsContent()(
+								Label(
+									"line/x-circle",
+									"The default edition can't be deleted. To delete this edition, first choose another default.",
+									Size2,
+								),
+							)
+						},
+					),
+					SettingsGroup()(
+						SettingsItem()(
+							SettingsItemLabel()(
+								expr.IfElse(len(editions) > 1,
+									func() html.Node {
+										return SettingsItemLabelTitle("Delete Edition")
+									},
+									func() html.Node {
+										return SettingsItemLabelTitle("Delete Movie")
+									},
+								),
+								SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
 							),
-						)
-					},
-				),
-				SettingsGroup()(
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Delete"),
-							SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
-						),
 
-						html.Form(
-							attr.Method("POST"),
-							attr.Action("/-/do/movie-edition-delete"),
-						)(
-							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
-							Button(ButtonDestructive, ButtonGhost, ButtonSize2)(Text("Delete")),
+							html.Form(
+								attr.Method("POST"),
+								attr.Action("/-/do/movie-edition-delete"),
+							)(
+								html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
+								Button(ButtonDestructive, ButtonGhost, ButtonSize2)(Text("Delete")),
+							),
 						),
 					),
 				),
@@ -360,22 +355,37 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 	return FlexCol(Gap2)(
 		html.Range(editions, func(ed *model.MovieWork) html.Node {
 			selected := attr.Group()
+			href := attr.Group()
 			if ed.MovieEditionHead.ID() == current.ID() {
 				selected = CardSelected
+			} else {
+				href = attr.Href(ed.EditorURL())
 			}
 			return Card(
 				CardSurface,
 				CardSize1,
-				attr.Href(ed.EditorURL()),
+				href,
 				selected,
 			)(
-				CardContent()(
-					CardTitle()(
-						Text(ed.MovieEditionHead.Label()),
+				FlexRow()(
+					CardContent()(
+						CardTitle()(
+							Text(ed.MovieEditionHead.Label()),
+						),
+						CardDescription()(
+							Text(ed.TheaterURL()),
+						),
 					),
-					CardDescription()(
-						Text(ed.TheaterURL()),
-					),
+
+					html.If(ed.MovieEditionHead.ID() == current.ID() && ed.MovieEditionHead.Slug() != "", func() html.Node {
+						return html.Form(
+							attr.Method("POST"),
+							attr.Action("/-/do/movie-edition-set-default"),
+						)(
+							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(ed.MovieEditionHead.ID())),
+							Button(ButtonGhost, ButtonSize2)(Text("Make Default")),
+						)
+					}),
 				),
 			)
 		}),

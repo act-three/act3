@@ -8,7 +8,7 @@ import (
 func SettingsPage() html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(attr.Class("u-settings-page"))(
-			FlexCol(Gap8)(
+			FlexCol()(
 				Group(nodes...),
 			),
 		)
