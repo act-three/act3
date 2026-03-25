@@ -452,6 +452,12 @@ SELECT * FROM Series WHERE TVmazeID IN (sqlc.slice(ids));
 -- name: SeriesSlugExists :one
 SELECT COUNT(*) FROM Series WHERE Slug = ?;
 
+-- name: SeriesSlugSet :exec
+UPDATE Series SET Slug = ? WHERE ID = ?;
+
+-- name: SeriesTitleSet :exec
+UPDATE Series SET Title = ? WHERE ID = ?;
+
 -- name: SettingListByGroup :many
 SELECT * FROM Setting WHERE "Group" = ?;
 

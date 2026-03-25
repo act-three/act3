@@ -163,12 +163,15 @@ func isReservedSlug(s string) bool {
 	return reservedSlugs[s]
 }
 
-func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string, id string) (string, error) {
+func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string, id string, allow ...string) (string, error) {
 	slug := xstrings.ToSlug(title)
 	if slug == "" {
 		slug = id
 	}
 	if !isReservedSlug(slug) {
+		if slices.Contains(allow, slug) {
+			return slug, nil
+		}
 		n, err := tx.q.SeriesSlugExists(ctx, slug)
 		if err != nil {
 			return "", err
@@ -183,6 +186,9 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string,
 		year, _, _ := strings.Cut(*premiered, "-")
 		if year != "" {
 			candidate := slug + "-" + year
+			if slices.Contains(allow, candidate) {
+				return candidate, nil
+			}
 			n, err := tx.q.SeriesSlugExists(ctx, candidate)
 			if err != nil {
 				return "", err
@@ -195,6 +201,31 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string,
 
 	// Last resort: slug-id.
 	return slug + "-" + id, nil
+}
+
+func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
+	err := tx.q.SeriesTitleSet(ctx, schema.SeriesTitleSetParams{
+		Title: title,
+		ID:    id,
+	})
+	if err != nil {
+		return err
+	}
+	sr, err := tx.q.SeriesGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	slug, err := tx.generateSeriesSlug(ctx, title, sr.PremieredOn, id, sr.Slug)
+	if err != nil {
+		return err
+	}
+	if slug == sr.Slug {
+		return nil
+	}
+	return tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{
+		Slug: slug,
+		ID:   id,
+	})
 }
 
 func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesWork, error) {

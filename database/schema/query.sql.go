@@ -2653,6 +2653,34 @@ func (q *Queries) SeriesSlugExists(ctx context.Context, slug string) (int64, err
 	return count, err
 }
 
+const seriesSlugSet = `-- name: SeriesSlugSet :exec
+UPDATE Series SET Slug = ? WHERE ID = ?
+`
+
+type SeriesSlugSetParams struct {
+	Slug string
+	ID   string
+}
+
+func (q *Queries) SeriesSlugSet(ctx context.Context, arg SeriesSlugSetParams) error {
+	_, err := q.db.ExecContext(ctx, seriesSlugSet, arg.Slug, arg.ID)
+	return err
+}
+
+const seriesTitleSet = `-- name: SeriesTitleSet :exec
+UPDATE Series SET Title = ? WHERE ID = ?
+`
+
+type SeriesTitleSetParams struct {
+	Title string
+	ID    string
+}
+
+func (q *Queries) SeriesTitleSet(ctx context.Context, arg SeriesTitleSetParams) error {
+	_, err := q.db.ExecContext(ctx, seriesTitleSet, arg.Title, arg.ID)
+	return err
+}
+
 const settingListByGroup = `-- name: SettingListByGroup :many
 SELECT "key", "Group", value FROM Setting WHERE "Group" = ?
 `

@@ -97,7 +97,9 @@ func AppSeriesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Title"),
 						),
-						Text(sr.Title()),
+						SettingsTextField("/-/do/series-set-title", "title", sr.Title())(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sr.ID())),
+						),
 					),
 				),
 
