@@ -68,10 +68,10 @@ func TestNewSeries(t *testing.T) {
 		if sr.Title() != "Test Series" {
 			t.Errorf("expected series title 'Test Series', got '%s'", sr.Title())
 		}
-		// Verify edition lookup by title
-		ed := sr.EditionByTitle("Original")
+		// Verify edition lookup by slug
+		ed := sr.EditionBySlug("")
 		if ed == nil {
-			t.Fatal("expected edition with title 'Original' to exist")
+			t.Fatal("expected default edition to exist")
 		}
 		if ed.ID() != "edition-1" {
 			t.Errorf("expected edition ID 'edition-1', got '%s'", ed.ID())
@@ -87,11 +87,13 @@ func TestNewSeries(t *testing.T) {
 		seds := []schema.SeriesEdition{
 			{
 				ID:       "edition-1",
+				Slug:     "",
 				Title:    "Original",
 				SeriesID: "series-2",
 			},
 			{
 				ID:       "edition-2",
+				Slug:     "directors-cut",
 				Title:    "Director's Cut",
 				SeriesID: "series-2",
 			},
@@ -116,11 +118,11 @@ func TestNewSeries(t *testing.T) {
 		if len(sr.editions) != 2 {
 			t.Errorf("expected 2 editions, got %d", len(sr.editions))
 		}
-		if sr.EditionByTitle("Original") == nil {
-			t.Error("expected 'Original' edition to exist")
+		if sr.EditionBySlug("") == nil {
+			t.Error("expected default edition to exist")
 		}
-		if sr.EditionByTitle("Director's Cut") == nil {
-			t.Error("expected 'Director's Cut' edition to exist")
+		if sr.EditionBySlug("directors-cut") == nil {
+			t.Error("expected 'directors-cut' edition to exist")
 		}
 	})
 
@@ -149,11 +151,13 @@ func TestNewSeries(t *testing.T) {
 		seds := []schema.SeriesEdition{
 			{
 				ID:       "edition-1",
+				Slug:     "",
 				Title:    "Edition 1",
 				SeriesID: "series-4",
 			},
 			{
 				ID:       "edition-2",
+				Slug:     "edition-2",
 				Title:    "Edition 2",
 				SeriesID: "series-4",
 			},
@@ -180,8 +184,8 @@ func TestNewSeries(t *testing.T) {
 		sr := newSeries(srData, seds, sns, nil, nil, noProgress, nil)
 
 		// Verify editions exist
-		ed1 := sr.EditionByTitle("Edition 1")
-		ed2 := sr.EditionByTitle("Edition 2")
+		ed1 := sr.EditionBySlug("")
+		ed2 := sr.EditionBySlug("edition-2")
 
 		if ed1 == nil {
 			t.Fatal("expected edition-1 to exist")
@@ -206,55 +210,6 @@ func TestNewSeries(t *testing.T) {
 		}
 		if ed2Seasons != 1 {
 			t.Errorf("expected 1 season for edition-2, got %d", ed2Seasons)
-		}
-	})
-}
-
-func TestSeriesEditionByTitle(t *testing.T) {
-	t.Run("returns edition when it exists", func(t *testing.T) {
-		srData := schema.Series{
-			ID:    "series-1",
-			Title: "Test Series",
-		}
-
-		seds := []schema.SeriesEdition{
-			{
-				ID:       "edition-1",
-				Title:    "Original",
-				SeriesID: "series-1",
-			},
-		}
-
-		sr := newSeries(srData, seds, nil, nil, nil, noProgress, nil)
-
-		ed := sr.EditionByTitle("Original")
-		if ed == nil {
-			t.Fatal("expected edition to exist")
-		}
-		if ed.ID() != "edition-1" {
-			t.Errorf("expected edition ID 'edition-1', got '%s'", ed.ID())
-		}
-	})
-
-	t.Run("returns nil when edition does not exist", func(t *testing.T) {
-		srData := schema.Series{
-			ID:    "series-1",
-			Title: "Test Series",
-		}
-
-		sr := newSeries(srData, nil, nil, nil, nil, noProgress, nil)
-
-		ed := sr.EditionByTitle("Nonexistent")
-		if ed != nil {
-			t.Error("expected nil for nonexistent edition")
-		}
-	})
-
-	t.Run("returns nil when series is nil", func(t *testing.T) {
-		var sr *Series
-		ed := sr.EditionByTitle("Original")
-		if ed != nil {
-			t.Error("expected nil for nil series")
 		}
 	})
 }
@@ -376,7 +331,7 @@ func TestSeriesHeadMethods(t *testing.T) {
 	})
 
 	t.Run("Summary returns correct value", func(t *testing.T) {
-		ed := sr.DefaultEdition()
+		ed := sr.EditionBySlug("")
 		if ed.Summary() != "A test summary" {
 			t.Errorf("expected 'A test summary', got '%s'", ed.Summary())
 		}
@@ -407,7 +362,7 @@ func TestSeriesHeadMethods(t *testing.T) {
 	})
 
 	t.Run("TVmazeImageURL returns correct value", func(t *testing.T) {
-		ed := sr.DefaultEdition()
+		ed := sr.EditionBySlug("")
 		if ed.TVmazeImageURL() != "https://example.com/image.jpg" {
 			t.Errorf("expected 'https://example.com/image.jpg', got '%s'", ed.TVmazeImageURL())
 		}

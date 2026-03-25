@@ -98,30 +98,6 @@ func newSeries(
 	return sr
 }
 
-func (sr *Series) EditionByTitle(title string) *SeriesEdition {
-	if sr == nil {
-		return nil
-	}
-	for _, sed := range sr.editions {
-		if sed.Title() == title {
-			return sed
-		}
-	}
-	return nil
-}
-
-func (sr *Series) DefaultEdition() *SeriesEdition {
-	if sr == nil {
-		return nil
-	}
-	for _, sed := range sr.editions {
-		if sed.sed.Slug == "" {
-			return sed
-		}
-	}
-	return nil
-}
-
 func (sr *Series) EditionBySlug(slug string) *SeriesEdition {
 	if sr == nil {
 		return nil
