@@ -80,80 +80,72 @@ func AppSeriesDetail(
 			Class("v-media-detail-body"),
 		)(
 			SettingsPage()(
-				FlexCol(Gap4)(
-					SettingsContent()(
-						Text(sr.Title(), Size6),
-						html.If(len(editions) < 2, func() html.Node {
-							return Box()(
-								Link(
-									sr.TheaterURL(),
-									turbo.DataFrame("_top"),
-								)(Text("View in Theater", Size3,
-									attr.Style("display: inline-block"),
-								)),
-							)
-						}),
-					),
-
-					SettingsGroup()(
-						SettingsItem()(
-							SettingsItemLabel()(
-								SettingsItemLabelTitle("Title"),
-							),
-							SettingsTextField("/-/do/series-set-title", "title", sr.Title())(
-								Hidden("id", sr.ID()),
-							),
-						),
-					),
-				),
-
-				html.If(len(editions) > 1, func() html.Node {
-					return appSeriesEditionList(editions, sed)
-				}),
-
-				FlexCol(Gap6)(
-					html.If(len(editions) > 1, func() html.Node {
-						return SettingsContent()(
-							Text(sed.Label(), Size4),
-							Box()(
-								Link(
-									sed.TheaterURL(),
-									turbo.DataFrame("_top"),
-								)(Text("View in Theater", Size2,
-									// TODO(april): maybe make this the default for Text
-									attr.Style("display: inline-block"),
-								)),
+				expr.IfElse(len(editions) < 2,
+					func() html.Node {
+						return Group(
+							FlexCol(Gap6)(
+								SettingsContent()(
+									Text(sr.Title(), Size6),
+									Box()(
+										Link(
+											sr.TheaterURL(),
+											turbo.DataFrame("_top"),
+										)(Text("View in Theater", Size3,
+											attr.Style("display: inline-block"),
+										)),
+									),
+								),
+								SettingsGroup()(
+									seriesTitleItem(sr),
+									seriesPosterItem(sed),
+								),
+								seriesSummarySection(sed),
 							),
 						)
-					}),
 
-					SettingsGroup()(
-						html.If(len(editions) > 1, func() html.Node {
-							return SettingsItem()(
-								SettingsItemLabel()(
-									SettingsItemLabelTitle("Edition"),
+					},
+					func() html.Node {
+						return Group(
+							FlexCol(Gap4)(
+								SettingsContent()(
+									Text(sr.Title(), Size6),
 								),
-								SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label())(
-									Hidden("id", sed.ID()),
+								SettingsGroup()(
+									seriesTitleItem(sr),
 								),
-							)
-						}),
-						SettingsItem()(
-							SettingsItemLabel()(
-								SettingsItemLabelTitle("Poster"),
 							),
-							ImageFrame(attr.Style("width:30px"))(
-								PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
-							),
-						),
-					),
 
-					FlexCol(Gap2)(
-						SettingsContent()(Text("Summary", Size2)),
-						SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary())(
-							Hidden("id", sed.ID()),
-						),
-					),
+							appSeriesEditionList(editions, sed),
+
+							FlexCol(Gap6)(
+								SettingsContent()(
+									Text(sed.Label(), Size4),
+									Box()(
+										Link(
+											sed.TheaterURL(),
+											turbo.DataFrame("_top"),
+										)(Text("View in Theater", Size2,
+											// TODO(april): maybe make this the default for Text
+											attr.Style("display: inline-block"),
+										)),
+									),
+								),
+
+								SettingsGroup()(
+									SettingsItem()(
+										SettingsItemLabel()(
+											SettingsItemLabelTitle("Edition"),
+										),
+										SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label())(
+											Hidden("id", sed.ID()),
+										),
+									),
+									seriesPosterItem(sed),
+								),
+								seriesSummarySection(sed),
+							),
+						)
+					},
 				),
 
 				SettingsGroup()(
@@ -189,6 +181,37 @@ func AppSeriesDetail(
 					),
 				),
 			),
+		),
+	)
+}
+
+func seriesTitleItem(sr *model.SeriesHead) html.Node {
+	return SettingsItem()(
+		SettingsItemLabel()(
+			SettingsItemLabelTitle("Title"),
+		),
+		SettingsTextField("/-/do/series-set-title", "title", sr.Title())(
+			Hidden("id", sr.ID()),
+		),
+	)
+}
+
+func seriesPosterItem(sed *model.SeriesEdition) html.Node {
+	return SettingsItem()(
+		SettingsItemLabel()(
+			SettingsItemLabelTitle("Poster"),
+		),
+		ImageFrame(attr.Style("width:30px"))(
+			PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
+		),
+	)
+}
+
+func seriesSummarySection(sed *model.SeriesEdition) html.Node {
+	return FlexCol(Gap2)(
+		SettingsContent()(Text("Summary", Size2)),
+		SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary())(
+			Hidden("id", sed.ID()),
 		),
 	)
 }
