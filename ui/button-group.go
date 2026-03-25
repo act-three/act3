@@ -15,4 +15,7 @@ func ButtonGroup(attrs ...attr.Node) html.Element {
 	)
 }
 
-var ButtonGroupVertical = attr.Attr("data-vertical")
+var (
+	ButtonGroupHorizontal = attr.Attr("data-button-group")("horizontal")
+	ButtonGroupVertical   = attr.Attr("data-button-group")("vertical")
+)
