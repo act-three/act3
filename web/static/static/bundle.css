@@ -813,26 +813,36 @@
     border-color: var(--accent-bold);
     box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent-bold) 20%, transparent);
   }
-  .u-input {
-    height: 32px;
-    font-size: 14px;
-    padding-inline: 0.75rem;
-    padding-block: 0.25rem;
-    border-radius: 0.375rem;
+  .u-input,
+  [data-input-size="2"] {
+    &.u-input,
+    & .u-input:not([data-input-size]) {
+      height: 32px;
+      font-size: 14px;
+      padding-inline: 0.75rem;
+      padding-block: 0.25rem;
+      border-radius: 0.375rem;
+    }
   }
-  .u-input[data-size="1"] {
-    height: 24px;
-    font-size: 12px;
-    padding-inline: 0.5rem;
-    padding-block: 0.125rem;
-    border-radius: 0.375rem;
+  [data-input-size="1"] {
+    &.u-input,
+    & .u-input:not([data-input-size]) {
+      height: 24px;
+      font-size: 12px;
+      padding-inline: 0.5rem;
+      padding-block: 0.125rem;
+      border-radius: 0.375rem;
+    }
   }
-  .u-input[data-size="3"] {
-    height: 40px;
-    font-size: 16px;
-    padding-inline: 0.75rem;
-    padding-block: 0.375rem;
-    border-radius: 0.5625rem;
+  [data-input-size="3"] {
+    &.u-input,
+    & .u-input:not([data-input-size]) {
+      height: 40px;
+      font-size: 16px;
+      padding-inline: 0.75rem;
+      padding-block: 0.375rem;
+      border-radius: 0.5625rem;
+    }
   }
 }
 

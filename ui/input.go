@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	InputSize1 = attr.Attr("data-size")("1")
-	InputSize2 = attr.Attr("data-size")("2")
-	InputSize3 = attr.Attr("data-size")("3")
+	InputSize1 = attr.Attr("data-input-size")("1")
+	InputSize2 = attr.Attr("data-input-size")("2")
+	InputSize3 = attr.Attr("data-input-size")("3")
 )
 
 func InputText(attrs ...attr.Node) html.Element {
