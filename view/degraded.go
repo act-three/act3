@@ -74,7 +74,7 @@ func Degraded(
 func degradedAction(hasData bool) html.Node {
 	if hasData {
 		return Group(
-			Card(Class("v-degraded-alert"))(
+			Card(Destructive, Class("v-degraded-alert"))(
 				CardContent()(
 					Text("Reinitializing will delete all "+
 						"existing data. This cannot be "+

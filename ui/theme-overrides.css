@@ -1,38 +1,16 @@
-/* Theme overrides — .u-theme component.
+/* Theme overrides — these override the :root defaults when
+ * applied via data attributes on any element.
  *
- * These class-based overrides live in the components layer
- * so they can override the :root defaults in the theme layer. */
+ * Derivatives recompute on [data-role] and [data-accent] elements
+ * (see theme.css), so overrides only need to set the base. */
 
-/* destructive — remap accent palette to destructive colors */
+/* destructive — swap base colors to warm red */
 [data-role="destructive"] {
-	--accent: var(--destructive);
-	--accent-hover: var(--destructive-hover);
-	--accent-surface: var(--destructive-surface);
-	--accent-surface-hover: var(--destructive-surface);
-	--accent-surface-active: var(--destructive-surface);
-	--accent-border: var(--destructive-surface-border);
-	--accent-border-strong: var(--destructive);
-	--accent-text: var(--destructive-text);
-	--accent-contrast: var(--destructive-contrast);
-	--bg-surface: var(--destructive-surface);
-	--bg-hover: var(--destructive-surface);
-	--bg-active: var(--destructive-surface);
-	--border: var(--destructive-surface-border);
-	--border-strong: var(--destructive);
-	--text: var(--destructive-text);
+	--bg: var(--warmred);
+	--text: oklch(from var(--warmred) 0.764 0.149 h);
+	--accent: var(--warmred);
 }
 
-/* accent color: crimson (default — listed here as a template
- * for adding additional accent color options) */
-.u-theme[data-accent="crimson"] {
-	--accent: oklch(0.651 0.254 3);
-	--accent-hover: oklch(0.664 0.196 2);
-	--accent-bold: oklch(0.543 0.148 359);
-	--accent-text: oklch(0.764 0.149 4);
-	--accent-surface: oklch(0.206 0.023 355);
-	--accent-surface-hover: oklch(0.255 0.06 354);
-	--accent-surface-active: oklch(0.293 0.093 354);
-	--accent-border: oklch(0.4 0.1 356);
-	--accent-border-strong: oklch(0.45 0.12 357);
-	--accent-contrast: oklch(0.909 0.054 347);
-}
+/* accent color: hot pink (default & template for additional accents;
+ * to add a new accent, set --accent to a new oklch color) */
+[data-accent="hotpink"] { --accent: var(--hotpink); }

@@ -13,7 +13,6 @@ const notePortController = "note-port"
 var (
 	NoteInfo    = attr.Attr("data-variant")("info") // default
 	NoteSuccess = attr.Attr("data-variant")("success")
-	NoteError   = attr.Attr("data-variant")("error")
 	NoteWarning = attr.Attr("data-variant")("warning")
 )
 

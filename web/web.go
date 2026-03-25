@@ -179,7 +179,7 @@ func stringHandler(contentType, body string) http.HandlerFunc {
 
 func handleBadRequest(w http.ResponseWriter, req *http.Request, title, desc string) {
 	h := rawHandler(400,
-		Note(NoteError)(
+		Note(Destructive)(
 			NoteTitle()(html.Text(title)),
 			NoteDescription()(html.Text(desc)),
 		),
@@ -189,7 +189,7 @@ func handleBadRequest(w http.ResponseWriter, req *http.Request, title, desc stri
 
 func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
 	h := rawHandler(404,
-		Note(NoteError)(
+		Note(Destructive)(
 			NoteTitle()(html.Text("Not Found")),
 			NoteDescription()(html.Text(path)),
 		),
@@ -199,7 +199,7 @@ func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
 
 func handleInternal(w http.ResponseWriter, req *http.Request) {
 	h := rawHandler(500,
-		Note(NoteError)(
+		Note(Destructive)(
 			NoteTitle()(html.Text("Internal Error")),
 		),
 	)

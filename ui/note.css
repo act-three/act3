@@ -115,13 +115,6 @@
 }
 .u-note[data-variant="success"] .u-note-description { color: oklch(0.407 0.086 153); }
 
-.u-note[data-variant="error"] {
-	background-color: var(--destructive-surface);
-	border: 1px solid var(--destructive-surface-border);
-	color: var(--destructive-contrast);
-}
-.u-note[data-variant="error"] .u-note-description { color: var(--destructive-text); }
-
 .u-note[data-variant="warning"] {
 	background-color: oklch(0.984 0.019 84);
 	border: 1px solid oklch(0.82 0.12 84 / 0.4);
