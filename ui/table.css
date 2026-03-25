@@ -1,17 +1,11 @@
 .u-table {
 	caption-side: bottom;
-	background-color: transparent;
-}
-
-[data-table="surface"] {
-	&.u-table, & .u-table:not([data-table]) {
-		border: 1px solid var(--border-subtle);
-		border-radius: 0.75rem;
-		background-color: var(--panel);
-		backdrop-filter: blur(64px);
-		overflow: hidden;
-		& .u-table-header .u-table-row { background-color: var(--bg-surface-a); }
-	}
+	border: 1px solid var(--border-subtle);
+	border-radius: 0.75rem;
+	background-color: var(--panel);
+	backdrop-filter: blur(64px);
+	overflow: hidden;
+	& .u-table-header .u-table-row { background-color: var(--bg-surface-a); }
 }
 
 [data-table="ghost"] {

@@ -40,7 +40,7 @@ func Degraded(
 				))),
 			),
 			Text("Database Contents", Size5, FontBold),
-			TableRoot(TableSurface, TableSize2)(
+			TableRoot(TableSize2)(
 				TableHeader()(
 					TableRow()(
 						TableHead()(html.Text("Table")),

@@ -5,10 +5,7 @@ import (
 	"ily.dev/act3/html/attr"
 )
 
-var (
-	TableGhost   = attr.Attr("data-table")("ghost")
-	TableSurface = attr.Attr("data-table")("surface")
-)
+var TableGhost = attr.Attr("data-table")("ghost")
 
 var (
 	TableSize1 = attr.Attr("data-table-size")("1")
