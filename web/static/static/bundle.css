@@ -180,13 +180,12 @@
     --destructive-text: oklch(0.764 0.149 30);
     --destructive-contrast: oklch(0.909 0.054 25);
     --error: oklch(0.613 0.207 24);
-    --radius-1: calc(3px * var(--radius-factor, 1));
-    --radius-2: calc(4px * var(--radius-factor, 1));
-    --radius-3: calc(6px * var(--radius-factor, 1));
-    --radius-4: calc(8px * var(--radius-factor, 1));
-    --radius-5: calc(12px * var(--radius-factor, 1));
-    --radius-6: calc(16px * var(--radius-factor, 1));
-    --radius-full: 0px;
+    --radius-1: 4.5px;
+    --radius-2: 6px;
+    --radius-3: 9px;
+    --radius-4: 12px;
+    --radius-5: 18px;
+    --radius-6: 24px;
   }
 }
 
@@ -194,7 +193,7 @@
 @layer components {
   .u-button-group {
     display: inline-flex;
-    border-radius: max(var(--radius-2), var(--radius-full));
+    border-radius: 9999px;
   }
   .u-button-group > :where(.u-button) {
     border-radius: 0;
@@ -226,25 +225,6 @@
   }
   .u-button-group[data-vertical] > :where(.u-button:not(:first-child)) {
     margin-top: -1px;
-  }
-  .u-button-group[data-radius=none] {
-    --radius-factor: 0;
-    --radius-full: 0px;
-  }
-  .u-button-group[data-radius=small] {
-    --radius-factor: 0.75;
-    --radius-full: 0px;
-  }
-  .u-button-group[data-radius=medium] {
-    --radius-factor: 1;
-    --radius-full: 0px;
-  }
-  .u-button-group[data-radius=large] {
-    --radius-factor: 1.5;
-    --radius-full: 0px;
-  }
-  .u-button-group[data-radius=full] {
-    --radius-full: 9999px;
   }
 }
 
@@ -403,38 +383,9 @@
     letter-spacing: -0.0025em;
   }
   .u-button {
-    border-radius: max(var(--radius-2), var(--radius-full));
-  }
-  .u-button[data-size="1"] {
-    border-radius: max(var(--radius-1), var(--radius-full));
-  }
-  .u-button[data-size="3"] {
-    border-radius: max(var(--radius-3), var(--radius-full));
-  }
-  .u-button[data-size="4"] {
-    border-radius: max(var(--radius-4), var(--radius-full));
-  }
-  .u-button[data-radius=none] {
-    --radius-factor: 0;
-    --radius-full: 0px;
-  }
-  .u-button[data-radius=small] {
-    --radius-factor: 0.75;
-    --radius-full: 0px;
-  }
-  .u-button[data-radius=medium] {
-    --radius-factor: 1;
-    --radius-full: 0px;
-  }
-  .u-button[data-radius=large] {
-    --radius-factor: 1.5;
-    --radius-full: 0px;
-  }
-  .u-button[data-radius=full] {
-    --radius-full: 9999px;
+    border-radius: 9999px;
   }
   .u-button[data-radius=circle] {
-    --radius-full: 9999px;
     aspect-ratio: 1;
     padding-inline: 0;
     gap: 0;
@@ -469,7 +420,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    border-radius: calc(0.125rem * var(--radius-factor, 1));
+    border-radius: 0.1875rem;
     border: 1px solid transparent;
     font-size: 0.875rem;
     line-height: 1.25rem;
@@ -487,31 +438,31 @@
   }
   .u-card[data-size="1"] {
     padding: 0.75rem;
-    border-radius: calc(0.5rem * var(--radius-factor, 1));
+    border-radius: 0.75rem;
     --inset-padding: -12px;
     --inset-rounded: 8px;
   }
   .u-card[data-size="2"] {
     padding: 1rem;
-    border-radius: calc(0.5rem * var(--radius-factor, 1));
+    border-radius: 0.75rem;
     --inset-padding: -16px;
     --inset-rounded: 8px;
   }
   .u-card[data-size="3"] {
     padding: 1.5rem;
-    border-radius: calc(0.75rem * var(--radius-factor, 1));
+    border-radius: 1.125rem;
     --inset-padding: -24px;
     --inset-rounded: 12px;
   }
   .u-card[data-size="4"] {
     padding: 2rem;
-    border-radius: calc(0.75rem * var(--radius-factor, 1));
+    border-radius: 1.125rem;
     --inset-padding: -32px;
     --inset-rounded: 12px;
   }
   .u-card[data-size="5"] {
     padding: 3rem;
-    border-radius: calc(1rem * var(--radius-factor, 1));
+    border-radius: 1.5rem;
     --inset-padding: -48px;
     --inset-rounded: 16px;
   }
@@ -601,7 +552,7 @@
 @layer components {
   .u-code {
     font-family: var(--font-mono);
-    border-radius: calc((0.5px + 0.2em) * var(--radius-factor, 1));
+    border-radius: calc(0.75px + 0.3em);
     padding: 1em;
     overflow-x: auto;
     font-weight: 400;
@@ -807,7 +758,7 @@
 /* ui/image-frame.css */
 @layer components {
   .u-image-frame {
-    border-radius: calc(0.125rem * var(--radius-factor, 1));
+    border-radius: 0.1875rem;
     overflow: hidden;
   }
   .u-hover-overlay {
@@ -860,21 +811,21 @@
     font-size: 14px;
     padding-inline: 0.75rem;
     padding-block: 0.25rem;
-    border-radius: calc(0.25rem * var(--radius-factor, 1));
+    border-radius: 0.375rem;
   }
   .u-input[data-size="1"] {
     height: 24px;
     font-size: 12px;
     padding-inline: 0.5rem;
     padding-block: 0.125rem;
-    border-radius: calc(0.25rem * var(--radius-factor, 1));
+    border-radius: 0.375rem;
   }
   .u-input[data-size="3"] {
     height: 40px;
     font-size: 16px;
     padding-inline: 0.75rem;
     padding-block: 0.375rem;
-    border-radius: calc(0.375rem * var(--radius-factor, 1));
+    border-radius: 0.5625rem;
   }
 }
 
@@ -1051,7 +1002,7 @@
     column-gap: 0.75rem;
     row-gap: 0.125rem;
     padding: 1rem;
-    border-radius: calc(0.5rem * var(--radius-factor, 1));
+    border-radius: 0.75rem;
     font-family:
       ui-sans-serif,
       system-ui,
@@ -1186,7 +1137,7 @@
     height: 1.5rem;
     margin-top: 0.375rem;
     padding-inline: 0.5rem;
-    border-radius: calc(0.25rem * var(--radius-factor, 1));
+    border-radius: 0.375rem;
     font-size: 0.75rem;
     font-weight: 500;
     line-height: 1rem;
@@ -1332,7 +1283,7 @@
     --select-height: 2rem;
     --select-padding-x: 0.75rem;
     --select-gap: 0.5rem;
-    --select-radius: max(var(--radius-2), var(--radius-full));
+    --select-radius: var(--radius-2);
     --select-content-padding: 6px;
     --select-indicator-width: 1.5rem;
   }
@@ -1342,7 +1293,7 @@
     --select-height: 1.5rem;
     --select-padding-x: 0.5rem;
     --select-gap: 0.25rem;
-    --select-radius: max(var(--radius-1), var(--radius-full));
+    --select-radius: var(--radius-1);
     --select-content-padding: 4px;
     --select-indicator-width: 1.25rem;
   }
@@ -1352,7 +1303,7 @@
     --select-height: 2.5rem;
     --select-padding-x: 1rem;
     --select-gap: 0.75rem;
-    --select-radius: max(var(--radius-3), var(--radius-full));
+    --select-radius: var(--radius-3);
     --select-content-padding: 6px;
     --select-indicator-width: 1.5rem;
   }
@@ -1504,7 +1455,7 @@
     display: block;
     width: 100%;
     height: 30%;
-    border-radius: calc(3px * var(--radius-factor, 1));
+    border-radius: 4.5px;
     background-color: currentColor;
     animation: spinner-leaf-fade 800ms linear infinite;
   }
@@ -1595,7 +1546,7 @@
   }
   .u-table[data-variant=surface] {
     border: 1px solid var(--border-subtle);
-    border-radius: calc(0.5rem * var(--radius-factor, 1));
+    border-radius: 0.75rem;
     background-color: var(--panel);
     backdrop-filter: blur(64px);
     overflow: hidden;
@@ -1817,22 +1768,6 @@
 
 /* ui/theme-overrides.css */
 @layer components {
-  .u-theme[data-radius=none] {
-    --radius-factor: 0;
-  }
-  .u-theme[data-radius=small] {
-    --radius-factor: 0.75;
-  }
-  .u-theme[data-radius=medium] {
-    --radius-factor: 1;
-  }
-  .u-theme[data-radius=large] {
-    --radius-factor: 1.5;
-  }
-  .u-theme[data-radius=full] {
-    --radius-factor: 1.5;
-    --radius-full: 9999px;
-  }
   .u-theme[data-accent=crimson] {
     --accent: oklch(0.651 0.254 3);
     --accent-hover: oklch(0.664 0.196 2);
@@ -1859,7 +1794,7 @@
     height: 10rem;
     resize: vertical;
     border: 1px solid var(--border-strong);
-    border-radius: calc(0.375rem * var(--radius-factor, 1));
+    border-radius: 0.5625rem;
     background-color: var(--bg-input);
     color: var(--text);
     font-family: inherit;

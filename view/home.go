@@ -16,15 +16,15 @@ func Home(works []model.Work) html.Node {
 	}
 	return browse("Act Three", washURLs...)(
 		FlexRow(Gap4, Class("v-home-toolbar"))(
-			ButtonGroup(ButtonGroupRadiusLarge)(
+			ButtonGroup()(
 				Button(ButtonSurface)(Text("Title")),
 				Button(ButtonSurface)(Icon("line/switch-vertical-01")),
 			),
-			ButtonGroup(ButtonGroupRadiusLarge)(
+			ButtonGroup()(
 				Button(ButtonSurface)(Text("Movies")),
 				Button(ButtonSurface)(Text("Series")),
 			),
-			Button(ButtonSurface, ButtonRadiusLarge)(Icon("line/filter-lines")),
+			Button(ButtonSurface)(Icon("line/filter-lines")),
 			InputText()(),
 		),
 		FlexRow(Class("v-home-grid"))(

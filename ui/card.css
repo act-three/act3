@@ -25,7 +25,7 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
-	border-radius: calc(0.125rem * var(--radius-factor, 1));
+	border-radius: 0.1875rem;
 	border: 1px solid transparent;
 	font-size: 0.875rem;
 	line-height: 1.25rem;
@@ -44,31 +44,31 @@
 
 .u-card[data-size="1"] {
 	padding: 0.75rem;
-	border-radius: calc(0.5rem * var(--radius-factor, 1));
+	border-radius: 0.75rem;
 	--inset-padding: -12px;
 	--inset-rounded: 8px;
 }
 .u-card[data-size="2"] {
 	padding: 1rem;
-	border-radius: calc(0.5rem * var(--radius-factor, 1));
+	border-radius: 0.75rem;
 	--inset-padding: -16px;
 	--inset-rounded: 8px;
 }
 .u-card[data-size="3"] {
 	padding: 1.5rem;
-	border-radius: calc(0.75rem * var(--radius-factor, 1));
+	border-radius: 1.125rem;
 	--inset-padding: -24px;
 	--inset-rounded: 12px;
 }
 .u-card[data-size="4"] {
 	padding: 2rem;
-	border-radius: calc(0.75rem * var(--radius-factor, 1));
+	border-radius: 1.125rem;
 	--inset-padding: -32px;
 	--inset-rounded: 12px;
 }
 .u-card[data-size="5"] {
 	padding: 3rem;
-	border-radius: calc(1rem * var(--radius-factor, 1));
+	border-radius: 1.5rem;
 	--inset-padding: -48px;
 	--inset-rounded: 16px;
 }

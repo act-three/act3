@@ -1,5 +1,5 @@
 .u-image-frame {
-	border-radius: calc(0.125rem * var(--radius-factor, 1));
+	border-radius: 0.1875rem;
 	overflow: hidden;
 }
 

@@ -7,7 +7,7 @@
 	height: 10rem;
 	resize: vertical;
 	border: 1px solid var(--border-strong);
-	border-radius: calc(0.375rem * var(--radius-factor, 1));
+	border-radius: 0.5625rem;
 	background-color: var(--bg-input);
 	color: var(--text);
 	font-family: inherit;

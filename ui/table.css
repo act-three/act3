@@ -5,7 +5,7 @@
 
 .u-table[data-variant="surface"] {
 	border: 1px solid var(--border-subtle);
-	border-radius: calc(0.5rem * var(--radius-factor, 1));
+	border-radius: 0.75rem;
 	background-color: var(--panel);
 	backdrop-filter: blur(64px);
 	overflow: hidden;

@@ -16,11 +16,3 @@ func ButtonGroup(attrs ...attr.Node) html.Element {
 }
 
 var ButtonGroupVertical = attr.Attr("data-vertical")
-
-var (
-	ButtonGroupRadiusNone   = attr.Attr("data-radius")("none")
-	ButtonGroupRadiusSmall  = attr.Attr("data-radius")("small")
-	ButtonGroupRadiusMedium = attr.Attr("data-radius")("medium")
-	ButtonGroupRadiusLarge  = attr.Attr("data-radius")("large")
-	ButtonGroupRadiusFull   = attr.Attr("data-radius")("full")
-)

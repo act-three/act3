@@ -59,11 +59,10 @@
 	--error: oklch(0.613 0.207 24);
 
 	/* ---- radius ---- */
-	--radius-1: calc(3px * var(--radius-factor, 1));
-	--radius-2: calc(4px * var(--radius-factor, 1));
-	--radius-3: calc(6px * var(--radius-factor, 1));
-	--radius-4: calc(8px * var(--radius-factor, 1));
-	--radius-5: calc(12px * var(--radius-factor, 1));
-	--radius-6: calc(16px * var(--radius-factor, 1));
-	--radius-full: 0px;
+	--radius-1: 4.5px;
+	--radius-2: 6px;
+	--radius-3: 9px;
+	--radius-4: 12px;
+	--radius-5: 18px;
+	--radius-6: 24px;
 }

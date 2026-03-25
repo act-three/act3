@@ -37,12 +37,5 @@ var (
 	ButtonSize4 = attr.Attr("data-size")("4")
 )
 
-// Shapes / radius
-var (
-	ButtonRadiusNone   = attr.Attr("data-radius")("none")
-	ButtonRadiusSmall  = attr.Attr("data-radius")("small")
-	ButtonRadiusMedium = attr.Attr("data-radius")("medium")
-	ButtonRadiusLarge  = attr.Attr("data-radius")("large")
-	ButtonRadiusFull   = attr.Attr("data-radius")("full")
-	ButtonCircle       = attr.Attr("data-radius")("circle")
-)
+// Shapes
+var ButtonCircle = attr.Attr("data-radius")("circle")

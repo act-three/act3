@@ -1,6 +1,6 @@
 .u-code {
 	font-family: var(--font-mono);
-	border-radius: calc((0.5px + 0.2em) * var(--radius-factor, 1));
+	border-radius: calc(0.75px + 0.3em);
 	padding: 1em;
 	overflow-x: auto;
 	font-weight: 400;
