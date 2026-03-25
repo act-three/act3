@@ -131,11 +131,7 @@ func addTorrentButton(inputName, inputValue string) html.Node {
 		stimulus.Controller("add-torrent"),
 		stimulus.Action("turbo:submit-end->add-torrent#reset"),
 	)(
-		html.Input(
-			attr.Type("hidden"),
-			attr.Name(inputName),
-			attr.Value(inputValue),
-		),
+		Hidden(inputName, inputValue),
 		html.Input(
 			attr.Class("v-media-torrent-picker"),
 			attr.Type("file"),
@@ -194,7 +190,7 @@ func appDownloadsImportButton(id string) html.Node {
 		attr.Method("POST"),
 		attr.Action("/-/do/download-import"),
 	)(
-		html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(id)),
+		Hidden("id", id),
 		Button()(html.Text("Import")),
 	)
 }
@@ -202,7 +198,7 @@ func appDownloadsImportButton(id string) html.Node {
 func appDownloadsAutoImportToggle(dl *model.Download) html.Node {
 	return html.Label(attr.Class("v-media-auto-import"))(
 		SettingsToggle("/-/do/download-auto-import", "auto-import", dl.AutoImport())(
-			html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(dl.ID())),
+			Hidden("id", dl.ID()),
 		),
 		html.Text("Automatically import when download completes"),
 	)

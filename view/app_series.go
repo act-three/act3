@@ -101,7 +101,7 @@ func AppSeriesDetail(
 								SettingsItemLabelTitle("Title"),
 							),
 							SettingsTextField("/-/do/series-set-title", "title", sr.Title())(
-								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sr.ID())),
+								Hidden("id", sr.ID()),
 							),
 						),
 					),
@@ -134,7 +134,7 @@ func AppSeriesDetail(
 									SettingsItemLabelTitle("Edition"),
 								),
 								SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label())(
-									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sed.ID())),
+									Hidden("id", sed.ID()),
 								),
 							)
 						}),
@@ -151,7 +151,7 @@ func AppSeriesDetail(
 					FlexCol(Gap2)(
 						SettingsContent()(Text("Summary", Size2)),
 						SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary())(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sed.ID())),
+							Hidden("id", sed.ID()),
 						),
 					),
 				),
@@ -183,7 +183,7 @@ func AppSeriesDetail(
 							attr.Method("POST"),
 							attr.Action("/-/do/series-edition-add"),
 						)(
-							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(sed.ID())),
+							Hidden("edition-id", sed.ID()),
 							Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
 						),
 					),
@@ -484,11 +484,7 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 											attr.Action("/-/do/series-add"),
 											turbo.DataFrame(frameID),
 										)(
-											html.Input(
-												attr.Type("hidden"),
-												attr.Name("id"),
-												attr.Value(strconv.Itoa(t.TVmaze.ID)),
-											),
+											Hidden("id", strconv.Itoa(t.TVmaze.ID)),
 											Button(ButtonSurface)(html.Text("Add")),
 										),
 									)

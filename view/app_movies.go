@@ -103,7 +103,7 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Title"),
 							),
 							SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title())(
-								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+								Hidden("id", med.ID()),
 							),
 						),
 
@@ -114,7 +114,7 @@ func AppMoviesDetail(
 								),
 
 								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label())(
-									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+									Hidden("id", med.ID()),
 								),
 							)
 						}),
@@ -125,7 +125,7 @@ func AppMoviesDetail(
 							),
 
 							SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
-								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+								Hidden("id", med.ID()),
 							),
 						),
 
@@ -145,7 +145,7 @@ func AppMoviesDetail(
 							),
 
 							SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), SettingsTextFieldSuffix(" min"))(
-								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+								Hidden("id", med.ID()),
 							),
 						),
 					),
@@ -153,7 +153,7 @@ func AppMoviesDetail(
 					FlexCol(Gap2)(
 						SettingsContent()(Text("Summary", Size2)),
 						SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary())(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(med.ID())),
+							Hidden("id", med.ID()),
 						),
 					),
 				),
@@ -185,7 +185,7 @@ func AppMoviesDetail(
 							attr.Method("POST"),
 							attr.Action("/-/do/movie-edition-add"),
 						)(
-							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
+							Hidden("edition-id", med.ID()),
 							Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
 						),
 					),
@@ -221,7 +221,7 @@ func AppMoviesDetail(
 								attr.Method("POST"),
 								attr.Action("/-/do/movie-edition-delete"),
 							)(
-								html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
+								Hidden("edition-id", med.ID()),
 								Button(Destructive, ButtonGhost, ButtonSize2)(Text("Delete")),
 							),
 						),
@@ -312,11 +312,7 @@ func movieSearchAction(frameID string, t MovieSearchResult) html.Node {
 			attr.Action("/-/do/movie-add-by-tmdb"),
 			turbo.DataFrame(frameID),
 		)(
-			html.Input(
-				attr.Type("hidden"),
-				attr.Name("id"),
-				attr.Value(strconv.Itoa(t.TMDB.ID)),
-			),
+			Hidden("id", strconv.Itoa(t.TMDB.ID)),
 			Button(ButtonSurface)(html.Text("Add")),
 		),
 	)
@@ -366,7 +362,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 							attr.Method("POST"),
 							attr.Action("/-/do/movie-edition-set-default"),
 						)(
-							html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(ed.MovieEditionHead.ID())),
+							Hidden("edition-id", ed.MovieEditionHead.ID()),
 							Button(ButtonGhost, ButtonSize2)(Text("Make Default")),
 						)
 					}),
