@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"path"
+	"slices"
 
 	"ily.dev/act3/database/schema"
 )
@@ -140,7 +141,7 @@ func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error
 }
 
 func (tx *TxRW) movieEditionCreate(ctx Context, label, movieID string, p movieEditionParams) (*MovieEditionHead, error) {
-	slug, err := tx.generateMovieEditionSlug(ctx, label, movieID)
+	slug, err := tx.movieEditionFindSlug(ctx, label, movieID)
 	if err != nil {
 		return nil, err
 	}
@@ -188,18 +189,30 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 	}, nil
 }
 
-func (tx *TxRW) MovieEditionSlugSet(ctx Context, id, slug string) error {
-	return tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
-		Slug: slug,
-		ID:   id,
-	})
-}
-
 func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
-	return tx.q.MovieEditionLabelSet(ctx, schema.MovieEditionLabelSetParams{
+	err := tx.q.MovieEditionLabelSet(ctx, schema.MovieEditionLabelSetParams{
 		Label: label,
 		ID:    id,
 	})
+	if err != nil {
+		return err
+	}
+	med, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	slug, err := tx.movieEditionFindSlug(ctx, label, med.MovieID, med.Slug)
+	if err != nil {
+		return err
+	}
+	if slug == med.Slug {
+		return nil
+	}
+	err = tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
+		Slug: slug,
+		ID:   id,
+	})
+	return err
 }
 
 func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
@@ -246,7 +259,7 @@ func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
 		return err
 	}
 	// Generate a slug for the old default based on its label.
-	oldSlug, err := tx.generateMovieEditionSlug(ctx, old.Label, med.MovieID)
+	oldSlug, err := tx.movieEditionFindSlug(ctx, old.Label, med.MovieID)
 	if err != nil {
 		return err
 	}
@@ -265,8 +278,11 @@ func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
 	})
 }
 
-func (tx *TxRW) generateMovieEditionSlug(ctx Context, label, movieID string) (string, error) {
+func (tx *TxRW) movieEditionFindSlug(ctx Context, label, movieID string, allow ...string) (string, error) {
 	for slug := range editionSlugCandidates(label) {
+		if slices.Contains(allow, slug) {
+			return slug, nil
+		}
 		n, err := tx.q.MovieEditionSlugExists(ctx, schema.MovieEditionSlugExistsParams{
 			MovieID: movieID,
 			Slug:    slug,

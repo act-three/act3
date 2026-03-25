@@ -76,7 +76,6 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/movie-add-by-tmdb", c.doMovieAddByTMDB)
 	handle(mux, "POST /-/do/movie-edition-add", c.doMovieEditionAdd)
 	handle(mux, "POST /-/do/movie-edition-set-runtime", c.doMovieEditionSetRuntime)
-	handle(mux, "POST /-/do/movie-edition-set-slug", c.doMovieEditionSetSlug)
 	handle(mux, "POST /-/do/movie-edition-set-default", c.doMovieEditionSetDefault)
 	handle(mux, "POST /-/do/movie-edition-set-summary", c.doMovieEditionSetSummary)
 	handle(mux, "POST /-/do/movie-edition-set-label", c.doMovieEditionSetLabel)
