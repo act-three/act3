@@ -1286,26 +1286,25 @@
     transition-property:
       color,
       background-color,
-      border-color,
       box-shadow;
     transition-duration: 150ms;
     outline: none;
     cursor: pointer;
     font-size: inherit;
     color: inherit;
-  }
-  .u-select-trigger:focus-visible {
-    outline: 2px solid var(--accent-bold);
-    outline-offset: -1px;
-  }
-  .u-select-trigger svg {
-    pointer-events: none;
-    flex-shrink: 0;
-    opacity: 0.9;
-  }
-  .u-select-trigger svg:not([class*=size-]) {
-    width: 1em;
-    height: 1em;
+    &:focus-visible {
+      outline: 2px solid var(--accent-bold);
+      outline-offset: -1px;
+    }
+    & svg {
+      pointer-events: none;
+      flex-shrink: 0;
+      opacity: 0.9;
+    }
+    & svg:not([class*=size-]) {
+      width: 1em;
+      height: 1em;
+    }
   }
   .u-select-label {
     flex: 1;
@@ -1313,47 +1312,60 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .u-select[data-variant=surface] {
-    color: var(--text);
-  }
-  .u-select[data-variant=surface] > .u-select-trigger {
-    background-color: var(--bg-surface);
-    box-shadow: inset 0 0 0 1px var(--border);
-  }
-  @media (hover: hover) {
-    .u-select[data-variant=surface] > .u-select-trigger:hover {
-      box-shadow: inset 0 0 0 1px var(--border-strong);
+  [data-select=surface] {
+    &.u-select,
+    & .u-select:not([data-select]) {
+      color: var(--text);
+      & > .u-select-trigger {
+        background-color: var(--bg-surface);
+        box-shadow: inset 0 0 0 1px var(--border);
+      }
+      @media (hover: hover) {
+        & > .u-select-trigger:hover {
+          box-shadow: inset 0 0 0 1px var(--border-strong);
+        }
+      }
     }
   }
-  .u-select {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    --select-height: 2rem;
-    --select-padding-x: 0.75rem;
-    --select-gap: 0.5rem;
-    --select-radius: var(--radius-2);
-    --select-content-padding: 6px;
-    --select-indicator-width: 1.5rem;
+  .u-select,
+  [data-select-size="2"] {
+    &.u-select,
+    & .u-select:not([data-select-size]) {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      --select-height: 2rem;
+      --select-padding-x: 0.75rem;
+      --select-gap: 0.5rem;
+      --select-radius: var(--radius-2);
+      --select-content-padding: 6px;
+      --select-indicator-width: 1.5rem;
+    }
   }
-  .u-select[data-size="1"] {
-    font-size: 0.75rem;
-    line-height: 1rem;
-    --select-height: 1.5rem;
-    --select-padding-x: 0.5rem;
-    --select-gap: 0.25rem;
-    --select-radius: var(--radius-1);
-    --select-content-padding: 4px;
-    --select-indicator-width: 1.25rem;
+  [data-select-size="1"] {
+    &.u-select,
+    & .u-select:not([data-select-size]) {
+      font-size: 0.75rem;
+      line-height: 1rem;
+      --select-height: 1.5rem;
+      --select-padding-x: 0.5rem;
+      --select-gap: 0.25rem;
+      --select-radius: var(--radius-1);
+      --select-content-padding: 4px;
+      --select-indicator-width: 1.25rem;
+    }
   }
-  .u-select[data-size="3"] {
-    font-size: 1rem;
-    line-height: 1.5rem;
-    --select-height: 2.5rem;
-    --select-padding-x: 1rem;
-    --select-gap: 0.75rem;
-    --select-radius: var(--radius-3);
-    --select-content-padding: 6px;
-    --select-indicator-width: 1.5rem;
+  [data-select-size="3"] {
+    &.u-select,
+    & .u-select:not([data-select-size]) {
+      font-size: 1rem;
+      line-height: 1.5rem;
+      --select-height: 2.5rem;
+      --select-padding-x: 1rem;
+      --select-gap: 0.75rem;
+      --select-radius: var(--radius-3);
+      --select-content-padding: 6px;
+      --select-indicator-width: 1.5rem;
+    }
   }
   .u-select-trigger {
     height: var(--select-height);
@@ -1369,10 +1381,10 @@
     border-radius: var(--select-radius);
     box-shadow: 0 12px 60px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
     margin: 0;
-  }
-  .u-select-content:popover-open {
-    display: flex;
-    flex-direction: column;
+    &:popover-open {
+      display: flex;
+      flex-direction: column;
+    }
   }
   .u-select-item {
     display: flex;
@@ -1388,28 +1400,28 @@
     white-space: nowrap;
     outline: none;
     position: relative;
-  }
-  .u-select-item[data-selected]::before {
-    content: "";
-    position: absolute;
-    left: calc((var(--select-indicator-width) - 15px) / 2);
-    width: 15px;
-    height: 15px;
-    background-color: currentColor;
-    mask-image: url('data:image/svg+xml,<svg  xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">%0A<path d="M20 6L9 17L4 12"/>%0A</svg>%0A');
-    mask-size: contain;
-    mask-repeat: no-repeat;
-  }
-  @media (hover: hover) {
-    .u-select-item:hover {
+    &[data-selected]::before {
+      content: "";
+      position: absolute;
+      left: calc((var(--select-indicator-width) - 15px) / 2);
+      width: 15px;
+      height: 15px;
+      background-color: currentColor;
+      mask-image: url('data:image/svg+xml,<svg  xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">%0A<path d="M20 6L9 17L4 12"/>%0A</svg>%0A');
+      mask-size: contain;
+      mask-repeat: no-repeat;
+    }
+    @media (hover: hover) {
+      &:hover {
+        background-color: var(--bg-hover);
+      }
+    }
+    &:focus-visible {
       background-color: var(--bg-hover);
     }
-  }
-  .u-select-item:focus-visible {
-    background-color: var(--bg-hover);
-  }
-  .u-select-item[data-selected] {
-    background-color: var(--bg-active);
+    &[data-selected] {
+      background-color: var(--bg-active);
+    }
   }
 }
 

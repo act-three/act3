@@ -67,14 +67,10 @@ func SelectLabel(label string) html.Node {
 // SelectItemSelected marks an item as initially selected.
 var SelectItemSelected = attr.Attr("data-selected")
 
-// Variants
-var (
-	SelectSurface = attr.Attr("data-variant")("surface")
-)
+var SelectSurface = attr.Attr("data-select")("surface")
 
-// Sizes
 var (
-	SelectSize1 = attr.Attr("data-size")("1")
-	SelectSize2 = attr.Attr("data-size")("2")
-	SelectSize3 = attr.Attr("data-size")("3")
+	SelectSize1 = attr.Attr("data-select-size")("1")
+	SelectSize2 = attr.Attr("data-select-size")("2")
+	SelectSize3 = attr.Attr("data-select-size")("3")
 )
