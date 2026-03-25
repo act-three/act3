@@ -46,15 +46,23 @@
 .u-spinner > span:nth-child(7)::before { animation-delay: -200ms; }
 .u-spinner > span:nth-child(8)::before { animation-delay: -100ms; }
 
-.u-spinner {
-	width: 1rem;
-	height: 1rem;
+.u-spinner, [data-spinner-size="md"] {
+	&.u-spinner, & .u-spinner:not([data-spinner-size]) {
+		width: 1rem;
+		height: 1rem;
+	}
 }
-.u-spinner[data-size="sm"] {
-	width: 0.75rem;
-	height: 0.75rem;
+
+[data-spinner-size="sm"] {
+	&.u-spinner, & .u-spinner:not([data-spinner-size]) {
+		width: 0.75rem;
+		height: 0.75rem;
+	}
 }
-.u-spinner[data-size="lg"] {
-	width: 1.25rem;
-	height: 1.25rem;
+
+[data-spinner-size="lg"] {
+	&.u-spinner, & .u-spinner:not([data-spinner-size]) {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
 }
