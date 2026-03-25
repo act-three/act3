@@ -242,7 +242,6 @@
     transition-property:
       color,
       background-color,
-      border-color,
       box-shadow;
     transition-duration: 150ms;
     outline: none;
@@ -321,7 +320,6 @@
       background-color: transparent;
       color: var(--text);
       font-weight: inherit;
-      box-shadow: none;
       & svg {
         opacity: 1;
       }
