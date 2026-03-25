@@ -13,13 +13,13 @@ func Code(attrs ...attr.Node) html.Element {
 }
 
 var (
-	CodeSize1 = attr.Attr("data-size")("1")
-	CodeSize2 = attr.Attr("data-size")("2")
-	CodeSize3 = attr.Attr("data-size")("3")
-	CodeSize4 = attr.Attr("data-size")("4")
+	CodeSize1 = attr.Attr("data-code-size")("1")
+	CodeSize2 = attr.Attr("data-code-size")("2")
+	CodeSize3 = attr.Attr("data-code-size")("3")
+	CodeSize4 = attr.Attr("data-code-size")("4")
 )
 
 var (
-	CodeWrap   = attr.Attr("data-wrap")("wrap")
-	CodeNowrap = attr.Attr("data-wrap")("nowrap")
+	CodeWrap   = attr.Attr("data-code-wrap")("wrap")
+	CodeNowrap = attr.Attr("data-code-wrap")("nowrap")
 )
