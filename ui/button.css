@@ -33,21 +33,6 @@
 	height: 1rem;
 }
 
-/* busy spinner */
-.u-button[aria-busy="true"] { pointer-events: none; }
-.u-button[aria-busy="true"] > * { visibility: hidden; }
-.u-button[aria-busy="true"]::after {
-	content: "";
-	position: absolute;
-	width: 1em;
-	height: 1em;
-	border: 2px solid currentColor;
-	border-right-color: transparent;
-	border-radius: 9999px;
-	animation: spin 600ms linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
 /* variant: solid (default) — accent bg, the primary CTA */
 .u-button {
 	background-color: var(--accent);
