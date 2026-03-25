@@ -6,14 +6,14 @@ import (
 )
 
 var (
-	TableGhost   = attr.Attr("data-variant")("ghost")
-	TableSurface = attr.Attr("data-variant")("surface")
+	TableGhost   = attr.Attr("data-table")("ghost")
+	TableSurface = attr.Attr("data-table")("surface")
 )
 
 var (
-	TableSize1 = attr.Attr("data-size")("1")
-	TableSize2 = attr.Attr("data-size")("2")
-	TableSize3 = attr.Attr("data-size")("3")
+	TableSize1 = attr.Attr("data-table-size")("1")
+	TableSize2 = attr.Attr("data-table-size")("2")
+	TableSize3 = attr.Attr("data-table-size")("3")
 )
 
 func TableRoot(attrs ...attr.Node) html.Element {
