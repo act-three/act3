@@ -203,7 +203,7 @@ func AppMoviesDetail(
 							)
 						},
 					),
-					SettingsGroup()(
+					SettingsGroup(Disabled(true /* TODO(april): med.Slug() == "" && len(editions) > 1 */))(
 						SettingsItem()(
 							SettingsItemLabel()(
 								expr.IfElse(len(editions) > 1,

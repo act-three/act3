@@ -19,8 +19,8 @@ func SettingsContent() html.Element {
 	return FlexCol(Class("u-settings-content"))
 }
 
-func SettingsGroup() html.Element {
-	return FlexCol(Class("u-settings-group"))
+func SettingsGroup(attrs ...attr.Node) html.Element {
+	return FlexCol(Class("u-settings-group"), group(attrs...))
 }
 
 func SettingsGroupHead() html.Element {
