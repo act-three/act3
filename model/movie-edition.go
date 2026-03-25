@@ -216,9 +216,34 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 }
 
 func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
-	return tx.q.MovieEditionTitleSet(ctx, schema.MovieEditionTitleSetParams{
+	err := tx.q.MovieEditionTitleSet(ctx, schema.MovieEditionTitleSetParams{
 		Title: title,
 		ID:    id,
+	})
+	if err != nil {
+		return err
+	}
+	med, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	if med.Slug != "" {
+		return nil // not the default edition
+	}
+	mo, err := tx.q.MovieGetByEditionID(ctx, id)
+	if err != nil {
+		return err
+	}
+	slug, err := tx.movieFindSlug(ctx, title, med.Year, mo.ID, mo.Slug)
+	if err != nil {
+		return err
+	}
+	if slug == mo.Slug {
+		return nil
+	}
+	return tx.q.MovieSlugSet(ctx, schema.MovieSlugSetParams{
+		Slug: slug,
+		ID:   mo.ID,
 	})
 }
 

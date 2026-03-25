@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"path"
+	"slices"
 	"strings"
 
 	"ily.dev/act3/database/flurry"
@@ -171,7 +172,7 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 
 func (tx *TxRW) MovieCreate(ctx Context, title, year string) (*MovieWork, error) {
 	moID := "mo" + flurry.NewID()
-	slug, err := tx.generateMovieSlug(ctx, title, year, moID)
+	slug, err := tx.movieFindSlug(ctx, title, year, moID)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +207,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	}
 
 	moID := "mo" + flurry.NewID()
-	slug, err := tx.generateMovieSlug(ctx, movie.Title, year, moID)
+	slug, err := tx.movieFindSlug(ctx, movie.Title, year, moID)
 	if err != nil {
 		return nil, err
 	}
@@ -247,12 +248,15 @@ func (tx *TxR) MovieHeadListByTMDBID(
 	return newMovieHeadList(a), nil
 }
 
-func (tx *TxRW) generateMovieSlug(ctx Context, title, year, id string) (string, error) {
+func (tx *TxRW) movieFindSlug(ctx Context, title, year, id string, allow ...string) (string, error) {
 	slug := xstrings.ToSlug(title)
 	if slug == "" {
 		slug = id
 	}
 	if !isReservedSlug(slug) {
+		if slices.Contains(allow, slug) {
+			return slug, nil
+		}
 		n, err := tx.q.MovieSlugExists(ctx, slug)
 		if err != nil {
 			return "", err
@@ -269,6 +273,9 @@ func (tx *TxRW) generateMovieSlug(ctx Context, title, year, id string) (string, 
 	// Try slug-year.
 	if year != "" {
 		candidate := slug + "-" + xstrings.ToSlug(year)
+		if slices.Contains(allow, candidate) {
+			return candidate, nil
+		}
 		n, err := tx.q.MovieSlugExists(ctx, candidate)
 		if err != nil {
 			return "", err
