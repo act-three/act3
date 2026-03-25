@@ -17,7 +17,7 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) html.Node {
 				html.Div()(html.Text("Running")),
 				expr.IfElse(len(running) > 0,
 					func() html.Node {
-						return TableRoot(TableGhost, attr.Class("v-system-input-wide"))(
+						return TableRoot(attr.Class("v-system-input-wide"))(
 							TableHeader()(
 								TableRow()(
 									TableHead()(html.Text("Task")),
@@ -55,7 +55,7 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) html.Node {
 
 			html.Div(attr.Class("v-system-field"))(
 				html.Div()(html.Text("Queued")),
-				TableRoot(TableGhost, attr.Class("v-system-input-wide"))(
+				TableRoot(attr.Class("v-system-input-wide"))(
 					TableHeader()(
 						TableRow()(
 							TableHead()(html.Text("Task")),

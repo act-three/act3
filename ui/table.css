@@ -8,17 +8,6 @@
 	& .u-table-header .u-table-row { background-color: var(--bg-surface-a); }
 }
 
-[data-table="ghost"] {
-	&.u-table, & .u-table:not([data-table]) {
-		border: none;
-		border-radius: 0;
-		background-color: transparent;
-		backdrop-filter: none;
-		overflow: visible;
-		& .u-table-header .u-table-row { background-color: transparent; }
-	}
-}
-
 .u-table, [data-table-size="2"] {
 	&.u-table, & .u-table:not([data-table-size]) {
 		font-size: 0.875rem;
