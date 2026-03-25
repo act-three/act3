@@ -26,9 +26,6 @@ var (
 	ButtonGhost   = attr.Attr("data-variant")("ghost")
 )
 
-// Roles
-var ButtonDestructive = attr.Attr("data-role")("destructive")
-
 // Sizes
 var (
 	ButtonSize1 = attr.Attr("data-size")("1")

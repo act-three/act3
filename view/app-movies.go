@@ -222,7 +222,7 @@ func AppMoviesDetail(
 								attr.Action("/-/do/movie-edition-delete"),
 							)(
 								html.Input(attr.Type("hidden"), attr.Name("edition-id"), attr.Value(med.ID())),
-								Button(ButtonDestructive, ButtonGhost, ButtonSize2)(Text("Delete")),
+								Button(Destructive, ButtonGhost, ButtonSize2)(Text("Delete")),
 							),
 						),
 					),
@@ -400,7 +400,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 						attr.Action("/-/do/video-reimport/"+v.ID()),
 						attr.Method("POST"),
 					)(
-						Button(ButtonDestructive)(
+						Button(Destructive)(
 							html.Text("Re-import"),
 						),
 					),
@@ -412,7 +412,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 								),
 								attr.Method("POST"),
 							)(
-								Button(ButtonDestructive)(
+								Button(Destructive)(
 									html.Text("Re-encode"),
 								),
 							)

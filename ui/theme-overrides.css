@@ -3,6 +3,25 @@
  * These class-based overrides live in the components layer
  * so they can override the :root defaults in the theme layer. */
 
+/* destructive — remap accent palette to destructive colors */
+[data-role="destructive"] {
+	--accent: var(--destructive);
+	--accent-hover: var(--destructive-hover);
+	--accent-surface: var(--destructive-surface);
+	--accent-surface-hover: var(--destructive-surface);
+	--accent-surface-active: var(--destructive-surface);
+	--accent-border: var(--destructive-surface-border);
+	--accent-border-strong: var(--destructive);
+	--accent-text: var(--destructive-text);
+	--accent-contrast: var(--destructive-contrast);
+	--bg-surface: var(--destructive-surface);
+	--bg-hover: var(--destructive-surface);
+	--bg-active: var(--destructive-surface);
+	--border: var(--destructive-surface-border);
+	--border-strong: var(--destructive);
+	--text: var(--destructive-text);
+}
+
 /* accent color: crimson (default — listed here as a template
  * for adding additional accent color options) */
 .u-theme[data-accent="crimson"] {

@@ -343,7 +343,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 				attr.Action("/-/do/video-reimport/"+v.ID),
 				attr.Method("POST"),
 			)(
-				Button(ButtonDestructive)(
+				Button(Destructive)(
 					html.Text("Re-import"),
 				),
 			),
@@ -353,7 +353,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 						attr.Action("/-/do/video-reencode/"+v.ID),
 						attr.Method("POST"),
 					)(
-						Button(ButtonDestructive)(
+						Button(Destructive)(
 							html.Text("Re-encode"),
 						),
 					)

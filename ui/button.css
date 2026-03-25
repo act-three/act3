@@ -48,18 +48,6 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* role: destructive — remap palette so variants pick up destructive colors */
-.u-button[data-role="destructive"] {
-	--accent: var(--destructive);
-	--accent-hover: var(--destructive-hover);
-	--bg-surface: var(--destructive-surface);
-	--bg-hover: var(--destructive-surface);
-	--bg-active: var(--destructive-surface);
-	--border: var(--destructive-surface-border);
-	--border-strong: var(--destructive);
-	--text: var(--destructive-text);
-}
-
 /* variant: solid (default) — accent bg, the primary CTA */
 .u-button {
 	background-color: var(--accent);

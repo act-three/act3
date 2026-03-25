@@ -37,7 +37,7 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) html.Node {
 												attr.Action("/-/do/task-kill/"+t.ID()),
 												attr.Method("POST"),
 											)(
-												Button(ButtonDestructive)(
+												Button(Destructive)(
 													html.Text("Kill"),
 												),
 											),

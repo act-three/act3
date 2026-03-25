@@ -17,3 +17,6 @@ func Theme(attrs ...attr.Node) html.Element {
 
 // Accent colors
 var AccentCrimson = attr.Attr("data-accent")("crimson")
+
+// Roles
+var Destructive = attr.Attr("data-role")("destructive")

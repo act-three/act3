@@ -87,7 +87,7 @@ func degradedAction(hasData bool) html.Node {
 				attr.Attr("data-turbo")("false"),
 			)(
 				Button(
-					ButtonDestructive,
+					Destructive,
 					ButtonSize3,
 					attr.Attr("type")("submit"),
 					attr.Attr("onclick")(

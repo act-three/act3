@@ -293,16 +293,6 @@
       transform: rotate(360deg);
     }
   }
-  .u-button[data-role=destructive] {
-    --accent: var(--destructive);
-    --accent-hover: var(--destructive-hover);
-    --bg-surface: var(--destructive-surface);
-    --bg-hover: var(--destructive-surface);
-    --bg-active: var(--destructive-surface);
-    --border: var(--destructive-surface-border);
-    --border-strong: var(--destructive);
-    --text: var(--destructive-text);
-  }
   .u-button {
     background-color: var(--accent);
     color: white;
@@ -1768,6 +1758,23 @@
 
 /* ui/theme-overrides.css */
 @layer components {
+  [data-role=destructive] {
+    --accent: var(--destructive);
+    --accent-hover: var(--destructive-hover);
+    --accent-surface: var(--destructive-surface);
+    --accent-surface-hover: var(--destructive-surface);
+    --accent-surface-active: var(--destructive-surface);
+    --accent-border: var(--destructive-surface-border);
+    --accent-border-strong: var(--destructive);
+    --accent-text: var(--destructive-text);
+    --accent-contrast: var(--destructive-contrast);
+    --bg-surface: var(--destructive-surface);
+    --bg-hover: var(--destructive-surface);
+    --bg-active: var(--destructive-surface);
+    --border: var(--destructive-surface-border);
+    --border-strong: var(--destructive);
+    --text: var(--destructive-text);
+  }
   .u-theme[data-accent=crimson] {
     --accent: oklch(0.651 0.254 3);
     --accent-hover: oklch(0.664 0.196 2);
