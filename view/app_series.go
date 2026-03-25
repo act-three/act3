@@ -128,6 +128,16 @@ func AppSeriesDetail(
 					}),
 
 					SettingsGroup()(
+						html.If(len(editions) > 1, func() html.Node {
+							return SettingsItem()(
+								SettingsItemLabel()(
+									SettingsItemLabelTitle("Edition"),
+								),
+								SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label())(
+									html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sed.ID())),
+								),
+							)
+						}),
 						SettingsItem()(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Poster"),

@@ -263,8 +263,36 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHea
 	return &SeriesEditionHead{newSed}, nil
 }
 
-func (tx *TxRW) generateSeriesEditionSlug(ctx Context, label, seriesID string) (string, error) {
+func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
+	err := tx.q.SeriesEditionLabelSet(ctx, schema.SeriesEditionLabelSetParams{
+		Label: label,
+		ID:    id,
+	})
+	if err != nil {
+		return err
+	}
+	sed, err := tx.q.SeriesEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	slug, err := tx.generateSeriesEditionSlug(ctx, label, sed.SeriesID, sed.Slug)
+	if err != nil {
+		return err
+	}
+	if slug == sed.Slug {
+		return nil
+	}
+	return tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
+		Slug: slug,
+		ID:   id,
+	})
+}
+
+func (tx *TxRW) generateSeriesEditionSlug(ctx Context, label, seriesID string, allow ...string) (string, error) {
 	for slug := range editionSlugCandidates(label) {
+		if slices.Contains(allow, slug) {
+			return slug, nil
+		}
 		n, err := tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
 			SeriesID: seriesID,
 			Slug:     slug,

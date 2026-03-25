@@ -419,6 +419,9 @@ SELECT SeriesEdition.* FROM SeriesEdition
 JOIN Series ON Series.ID = SeriesEdition.SeriesID
 WHERE Series.Slug = sqlc.arg(SeriesSlug) AND SeriesEdition.Slug = sqlc.arg(EditionSlug);
 
+-- name: SeriesEditionLabelSet :exec
+UPDATE SeriesEdition SET Label = ? WHERE ID = ?;
+
 -- name: SeriesEditionListBySeriesID :many
 SELECT * FROM SeriesEdition WHERE SeriesID = ?;
 
@@ -427,6 +430,9 @@ SELECT * FROM SeriesEdition WHERE Slug = '';
 
 -- name: SeriesEditionSlugExists :one
 SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?;
+
+-- name: SeriesEditionSlugSet :exec
+UPDATE SeriesEdition SET Slug = ? WHERE ID = ?;
 
 
 -- name: SeriesGenreAdd :exec

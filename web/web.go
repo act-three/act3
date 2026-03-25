@@ -84,6 +84,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/series-add", c.doSeriesAdd)
 	handle(mux, "POST /-/do/series-set-title", c.doSeriesSetTitle)
 	handle(mux, "POST /-/do/series-edition-add", c.doSeriesEditionAdd)
+	handle(mux, "POST /-/do/series-edition-set-label", c.doSeriesEditionSetLabel)
 	handle(mux, "POST /-/do/task-delete/{id}", c.doTaskDelete)
 	handle(mux, "POST /-/do/task-kill/{id}", c.doTaskKill)
 	handle(mux, "POST /-/do/task-run/{id}", c.doTaskRun)

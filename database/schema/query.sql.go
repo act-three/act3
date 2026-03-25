@@ -2349,6 +2349,20 @@ func (q *Queries) SeriesEditionGetBySlug(ctx context.Context, arg SeriesEditionG
 	return i, err
 }
 
+const seriesEditionLabelSet = `-- name: SeriesEditionLabelSet :exec
+UPDATE SeriesEdition SET Label = ? WHERE ID = ?
+`
+
+type SeriesEditionLabelSetParams struct {
+	Label string
+	ID    string
+}
+
+func (q *Queries) SeriesEditionLabelSet(ctx context.Context, arg SeriesEditionLabelSetParams) error {
+	_, err := q.db.ExecContext(ctx, seriesEditionLabelSet, arg.Label, arg.ID)
+	return err
+}
+
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
 SELECT id, seriesid, slug, label, summary, tvmazeimageurl FROM SeriesEdition WHERE SeriesID = ?
 `
@@ -2431,6 +2445,20 @@ func (q *Queries) SeriesEditionSlugExists(ctx context.Context, arg SeriesEdition
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const seriesEditionSlugSet = `-- name: SeriesEditionSlugSet :exec
+UPDATE SeriesEdition SET Slug = ? WHERE ID = ?
+`
+
+type SeriesEditionSlugSetParams struct {
+	Slug string
+	ID   string
+}
+
+func (q *Queries) SeriesEditionSlugSet(ctx context.Context, arg SeriesEditionSlugSetParams) error {
+	_, err := q.db.ExecContext(ctx, seriesEditionSlugSet, arg.Slug, arg.ID)
+	return err
 }
 
 const seriesGenreAdd = `-- name: SeriesGenreAdd :exec

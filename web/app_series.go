@@ -78,6 +78,23 @@ func (c *Config) doSeriesSetTitle(w http.ResponseWriter, req *http.Request) (htm
 	})
 }
 
+func (c *Config) doSeriesEditionSetLabel(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		label := req.FormValue("label")
+		if id == "" || label == "" {
+			return nil, &model.ValidationError{Op: "set series edition label", Err: errNotFound}
+		}
+		err := tx.SeriesEditionLabelSet(ctx, id, label)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) seriesAddDialogReq(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	frameID := req.Header.Get("Turbo-Frame")
 	return view.AppSeriesAddDialog(frameID), nil
