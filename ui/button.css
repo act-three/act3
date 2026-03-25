@@ -32,7 +32,7 @@
 	}
 }
 
-.u-button, [data-button="solid"] {
+[data-button="solid"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: var(--accent);
 		color: white;
@@ -54,7 +54,7 @@
 	}
 }
 
-[data-button="surface"] {
+.u-button, [data-button="surface"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: var(--bg-surface);
 		color: var(--text);
@@ -102,17 +102,6 @@
 	}
 }
 
-.u-button, [data-button-size="2"] {
-	&.u-button, & .u-button:not([data-button-size]) {
-		height: 2rem;
-		padding-inline: 0.75rem;
-		gap: 0.5rem;
-		font-size: 0.875rem;
-		line-height: 1.25rem;
-		letter-spacing: normal;
-	}
-}
-
 [data-button-size="1"] {
 	&.u-button, & .u-button:not([data-button-size]) {
 		height: 1.5rem;
@@ -121,6 +110,17 @@
 		font-size: 0.75rem;
 		line-height: 1rem;
 		letter-spacing: 0.0025em;
+	}
+}
+
+.u-button, [data-button-size="2"] {
+	&.u-button, & .u-button:not([data-button-size]) {
+		height: 2rem;
+		padding-inline: 0.75rem;
+		gap: 0.5rem;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+		letter-spacing: normal;
 	}
 }
 
