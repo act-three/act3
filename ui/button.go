@@ -19,11 +19,11 @@ func Button(attrs ...attr.Node) html.Element {
 	}
 }
 
-// Variants
+// Variants — set data-button on the button or any ancestor to inherit.
 var (
-	ButtonSolid   = attr.Attr("data-variant")("solid")
-	ButtonSurface = attr.Attr("data-variant")("surface")
-	ButtonGhost   = attr.Attr("data-variant")("ghost")
+	ButtonSolid   = attr.Attr("data-button")("solid")
+	ButtonSurface = attr.Attr("data-button")("surface")
+	ButtonGhost   = attr.Attr("data-button")("ghost")
 )
 
 // Sizes
