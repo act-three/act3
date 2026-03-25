@@ -1,7 +1,6 @@
 package model
 
 import (
-	"iter"
 	"path"
 	"slices"
 	"strconv"
@@ -9,7 +8,6 @@ import (
 
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
-	"ily.dev/act3/model/progress"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/xstrings"
 )
@@ -58,67 +56,6 @@ func (sw *SeriesWork) TheaterURL() string {
 
 func (sw *SeriesWork) EditorURL() string {
 	return path.Join(sw.SeriesHead.EditorURL(), sw.SeriesEditionHead.Slug())
-}
-
-type Series struct {
-	SeriesHead
-	editions []*SeriesEdition
-	epByID   map[string]*Episode
-}
-
-func newSeries(
-	srData schema.Series,
-	seds []schema.SeriesEdition,
-	sns []schema.Season,
-	sneps []schema.SeasonEpisode,
-	eps []schema.Episode,
-	progByEpisodeID func(string) []*progress.Item,
-	videosByEpisodeID map[string][]*Video,
-) *Series {
-	sr := &Series{
-		SeriesHead: SeriesHead{srData},
-		epByID:     map[string]*Episode{},
-	}
-
-	epByID := epMapByID(eps)
-	snepBySeasonID := snepMapBySeasonID(sneps)
-
-	snByEditionID := map[string][]schema.Season{}
-	for i := range sns {
-		soID := sns[i].EditionID
-		snByEditionID[soID] = append(snByEditionID[soID], sns[i])
-	}
-
-	for _, soData := range seds {
-		sns := snByEditionID[soData.ID]
-		sed := newSeriesEdition(&sr.SeriesHead, soData, sns, snepBySeasonID, epByID, progByEpisodeID, videosByEpisodeID)
-		sr.editions = append(sr.editions, sed)
-	}
-	return sr
-}
-
-func (sr *Series) EditionBySlug(slug string) *SeriesEdition {
-	if sr == nil {
-		return nil
-	}
-	for _, sed := range sr.editions {
-		if sed.sed.Slug == slug {
-			return sed
-		}
-	}
-	return nil
-}
-
-func (sr *Series) SeriesEditionSeq() iter.Seq[*SeriesEdition] {
-	return slices.Values(sr.editions)
-}
-
-func (tx *TxR) SeriesHeadList(ctx Context) ([]*SeriesHead, error) {
-	a, err := tx.q.SeriesList(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return newSeriesHeadList(a), nil
 }
 
 func (tx *TxR) SeriesHeadListByTVmazeID(ctx Context, id []*int64) ([]*SeriesHead, error) {
