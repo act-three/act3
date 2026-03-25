@@ -169,18 +169,26 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 	return FlexCol(Gap2)(
 		html.Range(editions, func(ed *model.SeriesWork) html.Node {
 			selected := attr.Group()
+			href := attr.Group()
 			if ed.SeriesEditionHead.ID() == current.ID() {
 				selected = CardSelected
+			} else {
+				href = attr.Href(ed.EditorURL())
 			}
 			return Card(
 				CardSurface,
 				CardSize1,
-				attr.Href(ed.EditorURL()),
+				href,
 				selected,
 			)(
-				CardContent()(
-					CardTitle()(
-						Text(ed.SeriesEditionHead.Title()),
+				FlexRow()(
+					CardContent()(
+						CardTitle()(
+							Text(ed.SeriesEditionHead.Title()),
+						),
+						CardDescription()(
+							Text(ed.TheaterURL()),
+						),
 					),
 				),
 			)
