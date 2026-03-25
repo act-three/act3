@@ -32,7 +32,6 @@
 	}
 }
 
-/* solid (default) */
 .u-button, [data-button="solid"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: var(--accent);
@@ -49,7 +48,6 @@
 	}
 }
 
-/* surface */
 [data-button="surface"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: var(--bg-surface);
@@ -74,7 +72,6 @@
 	}
 }
 
-/* ghost */
 [data-button="ghost"] {
 	&.u-button, & .u-button:not([data-button]) {
 		background-color: transparent;
@@ -90,7 +87,6 @@
 	}
 }
 
-/* size 2 (default) */
 .u-button, [data-button-size="2"] {
 	&.u-button, & .u-button:not([data-button-size]) {
 		height: 2rem;
