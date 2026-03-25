@@ -2,6 +2,7 @@ package model
 
 import (
 	"iter"
+	"path"
 	"slices"
 
 	"ily.dev/act3/database/schema"
@@ -60,6 +61,14 @@ func (sed *SeriesEdition) Seasons() iter.Seq[*Season] {
 }
 
 func (sed *SeriesEdition) SeriesHead() *SeriesHead { return sed.sr }
+
+func (sed *SeriesEdition) TheaterURL() string {
+	return path.Join(sed.sr.TheaterURL(), sed.Slug())
+}
+
+func (sed *SeriesEdition) EditorURL() string {
+	return path.Join(sed.sr.EditorURL(), sed.Slug())
+}
 
 // seasonByNumber returns season n in the order defined by sed.
 func (sed *SeriesEdition) seasonByNumber(n int) *Season {

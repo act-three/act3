@@ -80,52 +80,73 @@ func AppSeriesDetail(
 			Class("v-media-detail-body"),
 		)(
 			SettingsPage()(
-				SettingsContent()(
-					Text(sr.Title(), Size6),
-					Box()(
-						Link(
-							sr.TheaterURL(),
-							turbo.DataFrame("_top"),
-						)(Text("View in Theater", Size3,
-							attr.Style("display: inline-block"),
-						)),
+				FlexCol(Gap4)(
+					SettingsContent()(
+						Text(sr.Title(), Size6),
+						html.If(len(editions) < 2, func() html.Node {
+							return Box()(
+								Link(
+									sr.TheaterURL(),
+									turbo.DataFrame("_top"),
+								)(Text("View in Theater", Size3,
+									attr.Style("display: inline-block"),
+								)),
+							)
+						}),
 					),
-				),
 
-				SettingsGroup()(
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Title"),
-						),
-						SettingsTextField("/-/do/series-set-title", "title", sr.Title())(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sr.ID())),
-						),
-					),
-				),
-
-				html.If(len(editions) > 1,
-					func() html.Node {
-						return appSeriesEditionList(editions, sed)
-					},
-				),
-
-				SettingsGroup()(
-					SettingsItem()(
-						SettingsItemLabel()(
-							SettingsItemLabelTitle("Poster"),
-						),
-						ImageFrame(attr.Style("width:30px"))(
-							PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
+					SettingsGroup()(
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Title"),
+							),
+							SettingsTextField("/-/do/series-set-title", "title", sr.Title())(
+								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sr.ID())),
+							),
 						),
 					),
 				),
 
-				SettingsContent()(Text("Summary", Size2)),
-				html.Div(attr.Class("u-settings-text-area"))(
-					html.Textarea(
-						attr.Class("u-settings-text-area-input"),
-						attr.Disabled,
-					)(html.Text(sed.Summary())),
+				html.If(len(editions) > 1, func() html.Node {
+					return appSeriesEditionList(editions, sed)
+				}),
+
+				FlexCol(Gap6)(
+					html.If(len(editions) > 1, func() html.Node {
+						return SettingsContent()(
+							Text(sed.Title(), Size4),
+							Box()(
+								Link(
+									sed.TheaterURL(),
+									turbo.DataFrame("_top"),
+								)(Text("View in Theater", Size2,
+									// TODO(april): maybe make this the default for Text
+									attr.Style("display: inline-block"),
+								)),
+							),
+						)
+					}),
+
+					SettingsGroup()(
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Poster"),
+							),
+							ImageFrame(attr.Style("width:30px"))(
+								PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
+							),
+						),
+					),
+
+					FlexCol(Gap2)(
+						SettingsContent()(Text("Summary", Size2)),
+						html.Div(attr.Class("u-settings-text-area"))(
+							html.Textarea(
+								attr.Class("u-settings-text-area-input"),
+								attr.Disabled,
+							)(html.Text(sed.Summary())),
+						),
+					),
 				),
 
 				SettingsGroup()(

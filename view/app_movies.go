@@ -83,7 +83,7 @@ func AppMoviesDetail(
 					},
 				),
 
-				FlexCol(Gap4)(
+				FlexCol(Gap6)(
 					SettingsContent()(
 						Text(med.Title(), Size6),
 						Box()(
