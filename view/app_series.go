@@ -119,7 +119,7 @@ func AppSeriesDetail(
 
 							FlexCol(Gap6)(
 								SettingsContent()(
-									Text(sed.Label(), Size4),
+									TextNode(Size4)(seriesEditionLabel(sed.ID(), sed.Label())),
 									Box()(
 										Link(
 											sed.TheaterURL(),
@@ -233,7 +233,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 				FlexRow()(
 					CardContent()(
 						CardTitle()(
-							Text(ed.SeriesEditionHead.Label()),
+							seriesEditionLabel(ed.SeriesEditionHead.ID(), ed.SeriesEditionHead.Label()),
 						),
 						CardDescription()(
 							Text(ed.TheaterURL()),
@@ -528,6 +528,20 @@ func SeriesResultLink(editorURL string) html.Node {
 			Text("Edit"),
 		),
 	)
+}
+
+func seriesEditionLabelTargetClass(id string) string {
+	return "series-edition-" + id + "-label"
+}
+
+func SeriesEditionSetLabel(id, label string) html.Node {
+	return turbo.ReplaceTargets("."+seriesEditionLabelTargetClass(id), turbo.Morph)(
+		seriesEditionLabel(id, label),
+	)
+}
+
+func seriesEditionLabel(id, label string) html.Node {
+	return html.Span(Class(seriesEditionLabelTargetClass(id)))(html.Text(label))
 }
 
 func seriesTitleTargetClass(id string) string {

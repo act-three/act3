@@ -271,6 +271,13 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	if err != nil {
 		return err
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventSeriesEditionSetLabel,
+			ID:   id,
+			Text: label,
+		})
+	})
 	sed, err := tx.q.SeriesEditionGet(ctx, id)
 	if err != nil {
 		return err

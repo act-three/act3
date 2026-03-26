@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	EventSeriesSetTitle       = "series-set-title"
-	EventMovieEditionSetTitle = "movie-edition-set-title"
-	EventMovieEditionSetLabel = "movie-edition-set-label"
+	EventSeriesSetTitle        = "series-set-title"
+	EventMovieEditionSetTitle  = "movie-edition-set-title"
+	EventMovieEditionSetLabel  = "movie-edition-set-label"
+	EventSeriesEditionSetLabel = "series-edition-set-label"
 )
 
 type Event struct {
