@@ -99,7 +99,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption) htm
 					stimulus.Action("contextmenu->player#handleContextMenu"),
 				)(
 					html.Source(
-						attr.Src(v.PlaylistURL()),
+						attr.Src(v.PlaylistPath()),
 						attr.Type("application/vnd.apple.mpegurl"),
 					),
 				),
@@ -168,7 +168,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 			html.Button(
 				attr.Type("button"),
 				stimulus.Action("click->player#setQuality"),
-				attr.Attr("data-player-url-param")(opt.URL),
+				attr.Attr("data-player-url-param")(opt.Path),
 				attr.Attr("data-player-label-param")(opt.Label),
 				Class("v-player-quality-option"),
 			)(Text(opt.Label)),

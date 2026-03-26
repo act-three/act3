@@ -39,13 +39,16 @@ type DownloadHead struct {
 	filesLen     int
 }
 
-func (d *DownloadHead) URL() string       { return "/app/downloads/" + d.d.ID }
 func (d *DownloadHead) ID() string        { return d.d.ID }
 func (d *DownloadHead) State() string     { return d.d.State }
 func (d *DownloadHead) Title() string     { return d.d.Title }
 func (d *DownloadHead) Error() string     { return d.d.Error }
 func (d *DownloadHead) Progress() float64 { return d.d.Progress }
 func (d *DownloadHead) AutoImport() bool  { return d.d.Autoimport != 0 }
+
+func (d *DownloadHead) EditorPath() string {
+	return "/app/downloads/" + d.d.ID
+}
 
 func (d *DownloadHead) PlanLen() int { return d.planLen }
 

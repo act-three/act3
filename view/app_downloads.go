@@ -72,7 +72,7 @@ func appDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node 
 	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(dl.ID()),
-		ListURL(dl.URL()),
+		ListURL(dl.EditorPath()),
 	)(
 		CardContent()(
 			expr.IfElse(dl.State() == "error",
@@ -110,7 +110,7 @@ func downloadListItem(dl *model.DownloadHead) html.Node {
 	return SettingsItem()(
 		SettingsItemLabel()(
 			html.A(
-				attr.Href(dl.URL()),
+				attr.Href(dl.EditorPath()),
 				turbo.DataFrame("main"),
 			)(
 				Text(dl.Title(), Size2),

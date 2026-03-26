@@ -13,7 +13,7 @@ func (v *Video) ID() string                 { return v.v.ID }
 func (v *Video) ReleasePath() string        { return v.v.ReleasePath }
 func (v *Video) OriginalHash() string       { return v.v.OriginalHash }
 func (v *Video) MVPlaylist() string         { return v.v.MVPlaylist }
-func (v *Video) PlaylistURL() string        { return "/-/plr/" + v.ID() + ".m3u8" }
+func (v *Video) PlaylistPath() string       { return "/-/plr/" + v.ID() + ".m3u8" }
 func (v *Video) AudioTracks() []*AudioTrack { return v.audioTracks }
 
 func (tx *TxR) Video(ctx Context, id string) (*Video, error) {

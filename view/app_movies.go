@@ -53,7 +53,7 @@ func AppMoviesListItem(
 	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(mo.MovieHead.ID()),
-		ListURL(mo.EditorURL()),
+		ListURL(mo.EditorPath()),
 	)(
 		CardMedia()(html.Img(attr.Src(mo.ImageURL()))),
 		CardContent()(
@@ -88,7 +88,7 @@ func AppMoviesDetail(
 						TextNode(Size6)(movieEditionTitle(med.ID(), med.Title())),
 						Box()(
 							Link(
-								med.TheaterURL(),
+								med.TheaterPath(),
 								turbo.DataFrame("_top"),
 							)(Text("View in Theater", Size3,
 								// TODO(april): maybe make this the default for Text
@@ -304,7 +304,7 @@ func movieSearchTitle(m tmdb.SearchResult) html.Node {
 
 func movieSearchAction(frameID string, t MovieSearchResult) html.Node {
 	if t.Local != nil {
-		return MovieResultLink(t.Local.EditorURL())
+		return MovieResultLink(t.Local.EditorPath())
 	}
 	return turbo.Frame(frameID)(
 		html.Form(
@@ -339,7 +339,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 			if ed.MovieEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			} else {
-				href = attr.Href(ed.EditorURL())
+				href = attr.Href(ed.EditorPath())
 			}
 			return Card(
 				CardSurface,
@@ -353,7 +353,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 							movieEditionLabel(ed.MovieEditionHead.ID(), ed.MovieEditionHead.Label()),
 						),
 						CardDescription()(
-							Text(ed.TheaterURL()),
+							Text(ed.TheaterPath()),
 						),
 					),
 

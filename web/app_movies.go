@@ -166,7 +166,7 @@ func (c *Config) doMovieEditionSetDefault(w http.ResponseWriter, req *http.Reque
 		if err != nil {
 			return nil, err
 		}
-		http.Redirect(w, req, mo.EditorURL(), http.StatusSeeOther)
+		http.Redirect(w, req, mo.EditorPath(), http.StatusSeeOther)
 		return nil, nil
 	})
 }
@@ -182,7 +182,7 @@ func (c *Config) doMovieEditionAdd(w http.ResponseWriter, req *http.Request) (ht
 		if err != nil {
 			return nil, err
 		}
-		http.Redirect(w, req, mw.EditorURL(), http.StatusSeeOther)
+		http.Redirect(w, req, mw.EditorPath(), http.StatusSeeOther)
 		return nil, nil
 	})
 }
@@ -201,7 +201,7 @@ func (c *Config) doMovieAdd(w http.ResponseWriter, req *http.Request) (html.Node
 		if err != nil {
 			return nil, err
 		}
-		http.Redirect(w, req, mo.EditorURL(), http.StatusSeeOther)
+		http.Redirect(w, req, mo.EditorPath(), http.StatusSeeOther)
 		return nil, nil
 	})
 }
@@ -222,7 +222,7 @@ func (c *Config) doMovieAddByTMDB(_ http.ResponseWriter, req *http.Request) (htm
 			return nil, err
 		}
 		return turbo.Frame("tmdb-"+strconv.FormatInt(*mo.TMDBID(), 10))(
-			view.MovieResultLink(mo.EditorURL()),
+			view.MovieResultLink(mo.EditorPath()),
 			turbo.Prepend(view.AppMoviesListItems,
 				ListItems([]*model.MovieWork{mo}, view.AppMoviesListItem),
 			),

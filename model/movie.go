@@ -29,11 +29,11 @@ func (mo *MovieHead) ID() string     { return mo.mo.ID }
 func (mo *MovieHead) Slug() string   { return mo.mo.Slug }
 func (mo *MovieHead) TMDBID() *int64 { return mo.mo.TMDBID }
 
-func (mo *MovieHead) TheaterURL() string {
+func (mo *MovieHead) TheaterPath() string {
 	return "/" + mo.mo.Slug
 }
 
-func (mo *MovieHead) EditorURL() string {
+func (mo *MovieHead) EditorPath() string {
 	return "/app/movies/" + mo.mo.Slug
 }
 
@@ -47,12 +47,12 @@ type MovieWork struct {
 
 func (mw *MovieWork) Title() string { return mw.MovieEditionHead.Title() }
 
-func (mw *MovieWork) TheaterURL() string {
-	return path.Join(mw.MovieHead.TheaterURL(), mw.MovieEditionHead.Slug())
+func (mw *MovieWork) TheaterPath() string {
+	return path.Join(mw.MovieHead.TheaterPath(), mw.MovieEditionHead.Slug())
 }
 
-func (mw *MovieWork) EditorURL() string {
-	return path.Join(mw.MovieHead.EditorURL(), mw.MovieEditionHead.Slug())
+func (mw *MovieWork) EditorPath() string {
+	return path.Join(mw.MovieHead.EditorPath(), mw.MovieEditionHead.Slug())
 }
 
 // Movie is the full representation with editions and their videos.
@@ -159,7 +159,7 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 	for _, vid := range vids {
 		filename := "movie.mkv"
 		rends = append(rends, &RenditionForDownload{
-			url:      "/-/dl/" + vid.OriginalHash + "/" + filename,
+			path:     "/-/dl/" + vid.OriginalHash + "/" + filename,
 			filename: filename,
 			label: "Original (" +
 				strings.ReplaceAll(vid.ReleasePath, "/", " / ") + ")",

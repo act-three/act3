@@ -11,7 +11,7 @@ import (
 // QualityOption describes one entry in the player quality menu.
 type QualityOption struct {
 	Label string // e.g. "Auto", "1080p", "720p", "540p"
-	URL   string // playlist URL
+	Path  string // playlist URL path
 }
 
 // QualityOptions returns the quality menu entries for a video.
@@ -30,7 +30,7 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 	})
 
 	opts := []QualityOption{
-		{Label: "Auto", URL: v.PlaylistURL()},
+		{Label: "Auto", Path: v.PlaylistPath()},
 	}
 	for _, r := range rends {
 		if r.Playlist == "" {
@@ -38,7 +38,7 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 		}
 		opts = append(opts, QualityOption{
 			Label: qualityLabel(r),
-			URL:   "/-/pls/" + r.ID + ".m3u8",
+			Path:  "/-/pls/" + r.ID + ".m3u8",
 		})
 	}
 	return opts, nil
@@ -61,12 +61,12 @@ func qualityLabel(r schema.RenditionForStreaming) string {
 }
 
 type RenditionForDownload struct {
-	url      string
+	path     string
 	filename string
 	label    string
 }
 
-func (r *RenditionForDownload) URL() string      { return r.url }
+func (r *RenditionForDownload) Path() string     { return r.path }
 func (r *RenditionForDownload) Filename() string { return r.filename }
 func (r *RenditionForDownload) Label() string    { return r.label }
 
@@ -83,7 +83,7 @@ func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionF
 		filename := "episode.mkv"
 
 		rends = append(rends, &RenditionForDownload{
-			url:      path.Join("/-/dl", vid.OriginalHash, filename),
+			path:     path.Join("/-/dl", vid.OriginalHash, filename),
 			filename: filename,
 			label:    fmt.Sprintf("Original (%s)", vid.ReleasePath),
 		})

@@ -78,7 +78,7 @@ func (ep *Episode) SnnEnn() string {
 	return fmt.Sprintf("S%02d Special", ep.sn.sn.Number)
 }
 
-func (ep *Episode) PlayerURL(v *Video) string {
+func (ep *Episode) PlayerPath(v *Video) string {
 	return fmt.Sprintf("/-/player/%s/%s/%s", v.ID(), ep.ID(), ep.so.ID())
 }
 
@@ -94,7 +94,7 @@ func (ep *Episode) Label() string {
 	return ep.snep.Label + ". " + ep.ep.Title
 }
 
-func (ep *Episode) EditDialogURL() string {
+func (ep *Episode) EditDialogPath() string {
 	return "/-/dialog/episode-edit/" + ep.ep.ID
 }
 
@@ -106,7 +106,7 @@ func (ep *Episode) SeasonHead() *SeasonHead {
 	return ep.sn
 }
 
-func (ep *Episode) DetailURL() string {
+func (ep *Episode) TheaterPath() string {
 	return "/" + ep.ep.Slug
 }
 

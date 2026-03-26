@@ -31,11 +31,11 @@ func (sr *SeriesHead) Status() string       { return sr.sr.Status }
 func (sr *SeriesHead) Title() string        { return sr.sr.Title }
 func (sr *SeriesHead) TVmazeID() *int64     { return sr.sr.TVmazeID }
 
-func (sr *SeriesHead) TheaterURL() string {
+func (sr *SeriesHead) TheaterPath() string {
 	return "/" + sr.sr.Slug
 }
 
-func (sr *SeriesHead) EditorURL() string {
+func (sr *SeriesHead) EditorPath() string {
 	return "/app/series/" + sr.sr.Slug
 }
 
@@ -50,12 +50,12 @@ type SeriesWork struct {
 func (sw *SeriesWork) Title() string    { return sw.SeriesHead.Title() }
 func (sw *SeriesWork) ImageURL() string { return sw.TVmazeImageURL() }
 
-func (sw *SeriesWork) TheaterURL() string {
-	return path.Join(sw.SeriesHead.TheaterURL(), sw.SeriesEditionHead.Slug())
+func (sw *SeriesWork) TheaterPath() string {
+	return path.Join(sw.SeriesHead.TheaterPath(), sw.SeriesEditionHead.Slug())
 }
 
-func (sw *SeriesWork) EditorURL() string {
-	return path.Join(sw.SeriesHead.EditorURL(), sw.SeriesEditionHead.Slug())
+func (sw *SeriesWork) EditorPath() string {
+	return path.Join(sw.SeriesHead.EditorPath(), sw.SeriesEditionHead.Slug())
 }
 
 func (tx *TxR) SeriesHeadListByTVmazeID(ctx Context, id []*int64) ([]*SeriesHead, error) {

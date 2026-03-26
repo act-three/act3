@@ -54,7 +54,7 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(ss.SeriesHead.ID()),
-		ListURL(ss.EditorURL()),
+		ListURL(ss.EditorPath()),
 	)(
 		CardMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
 		CardContent()(
@@ -88,7 +88,7 @@ func AppSeriesDetail(
 									TextNode(Size6)(seriesTitle(sr.ID(), sr.Title())),
 									Box()(
 										Link(
-											sr.TheaterURL(),
+											sr.TheaterPath(),
 											turbo.DataFrame("_top"),
 										)(Text("View in Theater", Size3,
 											attr.Style("display: inline-block"),
@@ -122,7 +122,7 @@ func AppSeriesDetail(
 									TextNode(Size4)(seriesEditionLabel(sed.ID(), sed.Label())),
 									Box()(
 										Link(
-											sed.TheaterURL(),
+											sed.TheaterPath(),
 											turbo.DataFrame("_top"),
 										)(Text("View in Theater", Size2,
 											// TODO(april): maybe make this the default for Text
@@ -222,7 +222,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 			if ed.SeriesEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			} else {
-				href = attr.Href(ed.EditorURL())
+				href = attr.Href(ed.EditorPath())
 			}
 			return Card(
 				CardSurface,
@@ -236,7 +236,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 							seriesEditionLabel(ed.SeriesEditionHead.ID(), ed.SeriesEditionHead.Label()),
 						),
 						CardDescription()(
-							Text(ed.TheaterURL()),
+							Text(ed.TheaterPath()),
 						),
 					),
 				),
@@ -270,7 +270,7 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 			SettingsItemLabelTitle(ep.Label()),
 			progressContainer(ep.ID(), ep.Progress()),
 		),
-		DialogButton(ep.EditDialogURL(), ButtonGhost)(Icon("line/info-circle")),
+		DialogButton(ep.EditDialogPath(), ButtonGhost)(Icon("line/info-circle")),
 	)
 }
 
@@ -505,7 +505,7 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 									)
 								},
 								func() html.Node {
-									return SeriesResultLink(t.Local.EditorURL())
+									return SeriesResultLink(t.Local.EditorPath())
 								},
 							),
 							TextNode(LineClamp3)(html.Safe(t.TVmaze.Summary)),

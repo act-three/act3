@@ -28,7 +28,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 					html.If(isUserAdmin(), func() html.Node {
 						return FlexRow()(
 							Link(
-								sr.EditorURL(),
+								sr.EditorPath(),
 								turbo.DataFrame("_top"),
 							)(Text("View in Editor", Size3,
 								attr.Style("display: inline-block"),
@@ -78,7 +78,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 					expr.IfElse(playable >= 0,
 						func() html.Node {
 							return Button(
-								attr.Href(ep.PlayerURL(vids[playable])),
+								attr.Href(ep.PlayerPath(vids[playable])),
 								attr.Attr("data-turbo-frame")("player"),
 								ButtonSurface,
 								ButtonCircle,
@@ -89,7 +89,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 						},
 					),
 				),
-				Link(ep.DetailURL(), Class("v-series-episode"))(
+				Link(ep.TheaterPath(), Class("v-series-episode"))(
 					FlexCol()(
 						Box(Class("v-series-episode-number"))(Text(ep.SnnEnn(), FontNormal)),
 						FlexRow()(
@@ -104,7 +104,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 			),
 		),
 		Box(HoverOverlay, Class("v-series-episode-thumb"))(
-			html.A(attr.Href(ep.DetailURL()))(
+			html.A(attr.Href(ep.TheaterPath()))(
 				PosterImg(PosterFill, PosterAspect169, Class("v-series-episode-thumb"), attr.Src(ep.ImageURL())),
 			),
 			Box(Class("v-series-spoiler-overlay")),

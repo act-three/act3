@@ -64,16 +64,16 @@ func TestSeriesHeadMethods(t *testing.T) {
 		}
 	})
 
-	t.Run("TheaterURL returns correct format", func(t *testing.T) {
+	t.Run("TheaterPath returns correct format", func(t *testing.T) {
 		expected := "/test-series"
-		if sr.TheaterURL() != expected {
-			t.Errorf("expected '%s', got '%s'", expected, sr.TheaterURL())
+		if sr.TheaterPath() != expected {
+			t.Errorf("expected '%s', got '%s'", expected, sr.TheaterPath())
 		}
 	})
 
-	t.Run("EditorURL returns correct format", func(t *testing.T) {
-		if sr.EditorURL() != "/app/series/test-series" {
-			t.Errorf("expected '/app/series/test-series', got '%s'", sr.EditorURL())
+	t.Run("EditorPath returns correct format", func(t *testing.T) {
+		if sr.EditorPath() != "/app/series/test-series" {
+			t.Errorf("expected '/app/series/test-series', got '%s'", sr.EditorPath())
 		}
 	})
 }

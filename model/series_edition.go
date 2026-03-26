@@ -62,12 +62,12 @@ func (sed *SeriesEdition) Seasons() iter.Seq[*Season] {
 
 func (sed *SeriesEdition) SeriesHead() *SeriesHead { return sed.sr }
 
-func (sed *SeriesEdition) TheaterURL() string {
-	return path.Join(sed.sr.TheaterURL(), sed.Slug())
+func (sed *SeriesEdition) TheaterPath() string {
+	return path.Join(sed.sr.TheaterPath(), sed.Slug())
 }
 
-func (sed *SeriesEdition) EditorURL() string {
-	return path.Join(sed.sr.EditorURL(), sed.Slug())
+func (sed *SeriesEdition) EditorPath() string {
+	return path.Join(sed.sr.EditorPath(), sed.Slug())
 }
 
 // seasonByNumber returns season n in the order defined by sed.

@@ -24,7 +24,7 @@ func BrowseMovieEdition(
 				html.If(isUserAdmin(), func() html.Node {
 					return FlexRow()(
 						Link(
-							med.EditorURL(),
+							med.EditorPath(),
 							turbo.DataFrame("_top"),
 						)(Text("View in Editor", Size3,
 							attr.Style("display: inline-block"),
@@ -70,7 +70,7 @@ func browseMoviePlayButton(med *model.MovieEdition) html.Node {
 	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
-				attr.Href(med.PlayerURL(v)),
+				attr.Href(med.PlayerPath(v)),
 				attr.Attr("data-turbo-frame")("player"),
 				ButtonSize3,
 			)(Icon("solid/play"), Text("Play"))
@@ -115,7 +115,7 @@ func browseMovieEditionSelect(editions []*model.MovieWork, current *model.MovieE
 			}
 			return Button(
 				ButtonSurface, ButtonSize3,
-				attr.Href(ed.TheaterURL()),
+				attr.Href(ed.TheaterPath()),
 				selected,
 			)(Text(ed.Label()))
 		}),
