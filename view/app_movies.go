@@ -350,7 +350,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 				FlexRow()(
 					CardContent()(
 						CardTitle()(
-							Text(ed.MovieEditionHead.Label()),
+							movieEditionLabel(ed.MovieEditionHead.ID(), ed.MovieEditionHead.Label()),
 						),
 						CardDescription()(
 							Text(ed.TheaterURL()),
@@ -384,6 +384,20 @@ func MovieEditionSetTitle(id, title string) html.Node {
 
 func movieEditionTitle(id, title string) html.Node {
 	return html.Span(Class(movieEditionTitleTargetClass(id)))(html.Text(title))
+}
+
+func movieEditionLabelTargetClass(id string) string {
+	return "movie-edition-" + id + "-label"
+}
+
+func MovieEditionSetLabel(id, label string) html.Node {
+	return turbo.ReplaceTargets("."+movieEditionLabelTargetClass(id), turbo.Morph)(
+		movieEditionLabel(id, label),
+	)
+}
+
+func movieEditionLabel(id, label string) html.Node {
+	return html.Span(Class(movieEditionLabelTargetClass(id)))(html.Text(label))
 }
 
 func appMoviesDetailVideos(med *model.MovieEdition) html.Node {

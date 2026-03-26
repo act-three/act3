@@ -36,6 +36,8 @@ func (c *Config) eventView(ev *model.Event) html.Node {
 		return view.SeriesSetTitle(ev.ID, ev.Text)
 	case model.EventMovieEditionSetTitle:
 		return view.MovieEditionSetTitle(ev.ID, ev.Text)
+	case model.EventMovieEditionSetLabel:
+		return view.MovieEditionSetLabel(ev.ID, ev.Text)
 	}
 	return nil
 }

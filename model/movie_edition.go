@@ -195,6 +195,13 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	if err != nil {
 		return err
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventMovieEditionSetLabel,
+			ID:   id,
+			Text: label,
+		})
+	})
 	med, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {
 		return err
