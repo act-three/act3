@@ -102,7 +102,7 @@ func AppMoviesDetail(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Title"),
 							),
-							SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title())(
+							SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title(), movieEditionTitleAttrClass(med.ID()))(
 								Hidden("id", med.ID()),
 							),
 						),
@@ -113,7 +113,7 @@ func AppMoviesDetail(
 									SettingsItemLabelTitle("Edition"),
 								),
 
-								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label())(
+								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label(), movieEditionLabelAttrClass(med.ID()))(
 									Hidden("id", med.ID()),
 								),
 							)
@@ -124,7 +124,7 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Year Released"),
 							),
 
-							SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
+							SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year(), "")(
 								Hidden("id", med.ID()),
 							),
 						),
@@ -144,7 +144,7 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Runtime"),
 							),
 
-							SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), SettingsTextFieldSuffix(" min"))(
+							SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), "", SettingsTextFieldSuffix(" min"))(
 								Hidden("id", med.ID()),
 							),
 						),
@@ -376,9 +376,16 @@ func movieEditionTitleTargetClass(id string) string {
 	return "movie-edition-" + id + "-title"
 }
 
+func movieEditionTitleAttrClass(id string) string {
+	return "movie-edition-" + id + "-title-attr"
+}
+
 func MovieEditionSetTitle(id, title string) html.Node {
-	return turbo.ReplaceTargets("."+movieEditionTitleTargetClass(id), turbo.Morph)(
-		movieEditionTitle(id, title),
+	return html.Group(
+		turbo.ReplaceTargets("."+movieEditionTitleTargetClass(id), turbo.Morph)(
+			movieEditionTitle(id, title),
+		),
+		SettingsTextFieldSetValue("."+movieEditionTitleAttrClass(id), title),
 	)
 }
 
@@ -390,9 +397,16 @@ func movieEditionLabelTargetClass(id string) string {
 	return "movie-edition-" + id + "-label"
 }
 
+func movieEditionLabelAttrClass(id string) string {
+	return "movie-edition-" + id + "-label-attr"
+}
+
 func MovieEditionSetLabel(id, label string) html.Node {
-	return turbo.ReplaceTargets("."+movieEditionLabelTargetClass(id), turbo.Morph)(
-		movieEditionLabel(id, label),
+	return html.Group(
+		turbo.ReplaceTargets("."+movieEditionLabelTargetClass(id), turbo.Morph)(
+			movieEditionLabel(id, label),
+		),
+		SettingsTextFieldSetValue("."+movieEditionLabelAttrClass(id), label),
 	)
 }
 

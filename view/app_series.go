@@ -136,7 +136,7 @@ func AppSeriesDetail(
 										SettingsItemLabel()(
 											SettingsItemLabelTitle("Edition"),
 										),
-										SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label())(
+										SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label(), seriesEditionLabelAttrClass(sed.ID()))(
 											Hidden("id", sed.ID()),
 										),
 									),
@@ -188,7 +188,7 @@ func seriesTitleItem(sr *model.SeriesHead) html.Node {
 		SettingsItemLabel()(
 			SettingsItemLabelTitle("Title"),
 		),
-		SettingsTextField("/-/do/series-set-title", "title", sr.Title())(
+		SettingsTextField("/-/do/series-set-title", "title", sr.Title(), seriesTitleAttrClass(sr.ID()))(
 			Hidden("id", sr.ID()),
 		),
 	)
@@ -534,9 +534,16 @@ func seriesEditionLabelTargetClass(id string) string {
 	return "series-edition-" + id + "-label"
 }
 
+func seriesEditionLabelAttrClass(id string) string {
+	return "series-edition-" + id + "-label-attr"
+}
+
 func SeriesEditionSetLabel(id, label string) html.Node {
-	return turbo.ReplaceTargets("."+seriesEditionLabelTargetClass(id), turbo.Morph)(
-		seriesEditionLabel(id, label),
+	return html.Group(
+		turbo.ReplaceTargets("."+seriesEditionLabelTargetClass(id), turbo.Morph)(
+			seriesEditionLabel(id, label),
+		),
+		SettingsTextFieldSetValue("."+seriesEditionLabelAttrClass(id), label),
 	)
 }
 
@@ -548,9 +555,16 @@ func seriesTitleTargetClass(id string) string {
 	return "series-" + id + "-title"
 }
 
+func seriesTitleAttrClass(id string) string {
+	return "series-" + id + "-title-attr"
+}
+
 func SeriesSetTitle(id, title string) html.Node {
-	return turbo.ReplaceTargets("."+seriesTitleTargetClass(id), turbo.Morph)(
-		seriesTitle(id, title),
+	return html.Group(
+		turbo.ReplaceTargets("."+seriesTitleTargetClass(id), turbo.Morph)(
+			seriesTitle(id, title),
+		),
+		SettingsTextFieldSetValue("."+seriesTitleAttrClass(id), title),
 	)
 }
 

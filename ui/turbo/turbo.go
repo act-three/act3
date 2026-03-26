@@ -103,6 +103,15 @@ func UpdateTargets(selector string, node ...html.Node) html.Node {
 	)
 }
 
+// SetTargets emits a custom "set" Turbo Stream action that assigns
+// attributes from the template element onto each matched target,
+// without removing existing attributes or touching children.
+func SetTargets(selector string, node ...html.Node) html.Node {
+	return stream(action("set"), targets(selector))(
+		html.Template()(node...),
+	)
+}
+
 func RemoveTargets(selector string) html.Node {
 	return stream(action("remove"), targets(selector))
 }

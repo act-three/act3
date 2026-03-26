@@ -5437,6 +5437,17 @@
   window.Turbo = { ...Turbo2, StreamActions };
   start();
 
+  // ui/turbo/set.js
+  window.Turbo.StreamActions.set = function() {
+    const source = this.templateContent.firstElementChild;
+    if (!source) return;
+    for (const target of this.targetElements) {
+      for (const { name, value } of source.attributes) {
+        target.setAttribute(name, value);
+      }
+    }
+  };
+
   // web/stimulus.js
   var EventListener = class {
     constructor(eventTarget, eventName, eventOptions) {
@@ -8790,11 +8801,19 @@
   // ui/settings-text-field.js
   var settings_text_field_default = class extends Controller {
     static targets = ["input", "mirror"];
-    static values = { url: String, prefix: String, suffix: String };
+    static values = { url: String, prefix: String, suffix: String, text: String };
     #original;
     #canvas;
     connect() {
       this.#original = this.inputTarget.value;
+      this.sync();
+    }
+    textValueChanged(value) {
+      if (!this.hasTextValue) return;
+      this.#original = value;
+      const input = this.inputTarget;
+      if (input === document.activeElement) return;
+      input.value = value;
       this.sync();
     }
     save() {

@@ -3,13 +3,22 @@ import { notify } from "./note-port.js";
 
 export default class extends Controller {
 	static targets = ["input", "mirror"];
-	static values = { url: String, prefix: String, suffix: String };
+	static values = { url: String, prefix: String, suffix: String, text: String };
 
 	#original;
 	#canvas;
 
 	connect() {
 		this.#original = this.inputTarget.value;
+		this.sync();
+	}
+
+	textValueChanged(value) {
+		if (!this.hasTextValue) return;
+		this.#original = value;
+		const input = this.inputTarget;
+		if (input === document.activeElement) return;
+		input.value = value;
 		this.sync();
 	}
 
