@@ -221,6 +221,13 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventMovieEditionSetTitle,
+			ID:   id,
+			Text: title,
+		})
+	})
 	med, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {
 		return err

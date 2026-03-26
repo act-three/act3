@@ -34,6 +34,8 @@ func (c *Config) eventView(ev *model.Event) html.Node {
 		return view.ProgressItemRemove(ev.Progress)
 	case model.EventSeriesSetTitle:
 		return view.SeriesSetTitle(ev.ID, ev.Text)
+	case model.EventMovieEditionSetTitle:
+		return view.MovieEditionSetTitle(ev.ID, ev.Text)
 	}
 	return nil
 }

@@ -57,7 +57,7 @@ func AppMoviesListItem(
 	)(
 		CardMedia()(html.Img(attr.Src(mo.ImageURL()))),
 		CardContent()(
-			CardTitle()(html.Text(mo.Title())),
+			CardTitle()(movieEditionTitle(mo.MovieEditionHead.ID(), mo.Title())),
 			CardDescription(LineClamp2)(
 				html.Text(mo.Year()),
 			),
@@ -85,7 +85,7 @@ func AppMoviesDetail(
 
 				FlexCol(Gap6)(
 					SettingsContent()(
-						Text(med.Title(), Size6),
+						TextNode(Size6)(movieEditionTitle(med.ID(), med.Title())),
 						Box()(
 							Link(
 								med.TheaterURL(),
@@ -370,6 +370,20 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 			)
 		}),
 	)
+}
+
+func movieEditionTitleTargetClass(id string) string {
+	return "movie-edition-" + id + "-title"
+}
+
+func MovieEditionSetTitle(id, title string) html.Node {
+	return turbo.ReplaceTargets("."+movieEditionTitleTargetClass(id), turbo.Morph)(
+		movieEditionTitle(id, title),
+	)
+}
+
+func movieEditionTitle(id, title string) html.Node {
+	return html.Span(Class(movieEditionTitleTargetClass(id)))(html.Text(title))
 }
 
 func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
