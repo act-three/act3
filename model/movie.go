@@ -96,6 +96,14 @@ func (tx *TxR) MovieHeadList(ctx Context) ([]*MovieHead, error) {
 	return newMovieHeadList(a), nil
 }
 
+func (tx *TxR) MovieHead(ctx Context, id string) (*MovieHead, error) {
+	moData, err := tx.q.MovieGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &MovieHead{moData}, nil
+}
+
 func (tx *TxR) MovieHeadByEditionID(ctx Context, editionID string) (*MovieHead, error) {
 	moData, err := tx.q.MovieGetByEditionID(ctx, editionID)
 	if err != nil {

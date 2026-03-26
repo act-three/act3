@@ -90,6 +90,7 @@ func AppMoviesDetail(
 							Link(
 								med.TheaterPath(),
 								turbo.DataFrame("_top"),
+								Class(movieEditionTheaterLinkClass(med.ID())),
 							)(Text("View in Theater", Size3,
 								// TODO(april): maybe make this the default for Text
 								attr.Style("display: inline-block"),
@@ -344,6 +345,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 			return Card(
 				CardSurface,
 				CardSize1,
+				Class(movieEditionEditorLinkClass(ed.MovieEditionHead.ID())),
 				href,
 				selected,
 			)(
@@ -442,15 +444,48 @@ func movieTheaterPathText(movieID, movieSlugVal, editionID, editionSlugVal strin
 	)
 }
 
-func MovieSetSlug(id, slug string) html.Node {
-	return turbo.ReplaceTargets("."+movieSlugTargetClass(id), turbo.Morph)(
-		movieSlug(id, slug),
-	)
+func movieEditionTheaterLinkClass(id string) string {
+	return "movie-edition-" + id + "-theater-link"
 }
 
-func MovieEditionSetSlug(id, slug string) html.Node {
-	return turbo.ReplaceTargets("."+movieEditionSlugTargetClass(id), turbo.Morph)(
-		movieEditionSlug(id, slug),
+func movieEditionEditorLinkClass(id string) string {
+	return "movie-edition-" + id + "-editor-link"
+}
+
+func MovieSetSlug(id, slug string, editions []*model.MovieWork) html.Node {
+	nodes := []html.Node{
+		turbo.ReplaceTargets("."+movieSlugTargetClass(id), turbo.Morph)(
+			movieSlug(id, slug),
+		),
+		turbo.SetTargets("[data-list-id-param=\""+id+"\"]",
+			html.Div(ListURL("/app/movies/"+slug))(),
+		),
+	}
+	for _, ed := range editions {
+		nodes = append(nodes,
+			turbo.SetTargets("."+movieEditionTheaterLinkClass(ed.MovieEditionHead.ID()),
+				html.Div(attr.Href(ed.TheaterPath()))(),
+			),
+			turbo.SetTargets("."+movieEditionEditorLinkClass(ed.MovieEditionHead.ID()),
+				html.Div(attr.Href(ed.EditorPath()))(),
+			),
+		)
+	}
+	return Group(nodes...)
+}
+
+func MovieEditionSetSlug(ed *model.MovieWork) html.Node {
+	id := ed.MovieEditionHead.ID()
+	return Group(
+		turbo.ReplaceTargets("."+movieEditionSlugTargetClass(id), turbo.Morph)(
+			movieEditionSlug(id, ed.MovieEditionHead.Slug()),
+		),
+		turbo.SetTargets("."+movieEditionTheaterLinkClass(id),
+			html.Div(attr.Href(ed.TheaterPath()))(),
+		),
+		turbo.SetTargets("."+movieEditionEditorLinkClass(id),
+			html.Div(attr.Href(ed.EditorPath()))(),
+		),
 	)
 }
 

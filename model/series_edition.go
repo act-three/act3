@@ -24,6 +24,7 @@ func (sed *SeriesEditionHead) Slug() string           { return sed.sed.Slug }
 func (sed *SeriesEditionHead) Label() string          { return sed.sed.Label }
 func (sed *SeriesEditionHead) Summary() string        { return sed.sed.Summary }
 func (sed *SeriesEditionHead) TVmazeImageURL() string { return sed.sed.TVmazeImageURL }
+func (sed *SeriesEditionHead) SeriesID() string       { return sed.sed.SeriesID }
 
 type SeriesEdition struct {
 	SeriesEditionHead
@@ -124,6 +125,14 @@ func (sed *SeriesEdition) Episodes(include EpisodeType) iter.Seq[*Episode] {
 			}
 		}
 	}
+}
+
+func (tx *TxR) SeriesEditionHead(ctx Context, id string) (*SeriesEditionHead, error) {
+	sedData, err := tx.q.SeriesEditionGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &SeriesEditionHead{sedData}, nil
 }
 
 func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {

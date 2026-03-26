@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"net/http"
 
 	"ily.dev/act3/html"
@@ -17,14 +18,14 @@ func (c *Config) events(w http.ResponseWriter, req *http.Request) {
 	h.Set("Cache-Control", "no-cache")
 	rc := http.NewResponseController(w)
 	for ev := range c.Model.Events(ctx) {
-		if node := c.eventView(ev); node != nil {
+		if node := c.eventView(ctx, ev); node != nil {
 			turbo.EncodeSSE(w, node)
 			rc.Flush()
 		}
 	}
 }
 
-func (c *Config) eventView(ev *model.Event) html.Node {
+func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 	switch ev.Type {
 	case progress.EventOpen:
 		return view.ProgressItemAppend(ev.Progress)
@@ -41,13 +42,75 @@ func (c *Config) eventView(ev *model.Event) html.Node {
 	case model.EventSeriesEditionSetLabel:
 		return view.SeriesEditionSetLabel(ev.ID, ev.Text)
 	case model.EventSeriesSetSlug:
-		return view.SeriesSetSlug(ev.ID, ev.Text)
+		return c.eventSeriesSetSlug(ctx, ev.ID, ev.Text)
 	case model.EventSeriesEditionSetSlug:
-		return view.SeriesEditionSetSlug(ev.ID, ev.Text)
+		return c.eventSeriesEditionSetSlug(ctx, ev.ID, ev.Text)
 	case model.EventMovieSetSlug:
-		return view.MovieSetSlug(ev.ID, ev.Text)
+		return c.eventMovieSetSlug(ctx, ev.ID, ev.Text)
 	case model.EventMovieEditionSetSlug:
-		return view.MovieEditionSetSlug(ev.ID, ev.Text)
+		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.Text)
 	}
 	return nil
+}
+
+func (c *Config) eventMovieSetSlug(ctx context.Context, movieID, slug string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		mo, err := tx.MovieHead(ctx, movieID)
+		if err != nil {
+			return nil, err
+		}
+		editions, err := tx.MovieEditionList(ctx, mo)
+		if err != nil {
+			return nil, err
+		}
+		return view.MovieSetSlug(movieID, slug, editions), nil
+	})
+	return n
+}
+
+func (c *Config) eventSeriesSetSlug(ctx context.Context, seriesID, slug string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		sr, err := tx.SeriesHead(ctx, seriesID)
+		if err != nil {
+			return nil, err
+		}
+		editions, err := tx.SeriesEditionList(ctx, sr)
+		if err != nil {
+			return nil, err
+		}
+		return view.SeriesSetSlug(seriesID, slug, editions), nil
+	})
+	return n
+}
+
+func (c *Config) eventMovieEditionSetSlug(ctx context.Context, editionID, slug string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		mo, err := tx.MovieHeadByEditionID(ctx, editionID)
+		if err != nil {
+			return nil, err
+		}
+		med, err := tx.MovieEditionHead(ctx, editionID)
+		if err != nil {
+			return nil, err
+		}
+		ed := &model.MovieWork{MovieHead: *mo, MovieEditionHead: *med}
+		return view.MovieEditionSetSlug(ed), nil
+	})
+	return n
+}
+
+func (c *Config) eventSeriesEditionSetSlug(ctx context.Context, editionID, slug string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		sed, err := tx.SeriesEditionHead(ctx, editionID)
+		if err != nil {
+			return nil, err
+		}
+		sr, err := tx.SeriesHead(ctx, sed.SeriesID())
+		if err != nil {
+			return nil, err
+		}
+		ed := &model.SeriesWork{SeriesHead: *sr, SeriesEditionHead: *sed}
+		return view.SeriesEditionSetSlug(ed), nil
+	})
+	return n
 }

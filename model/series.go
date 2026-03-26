@@ -58,6 +58,14 @@ func (sw *SeriesWork) EditorPath() string {
 	return path.Join(sw.SeriesHead.EditorPath(), sw.SeriesEditionHead.Slug())
 }
 
+func (tx *TxR) SeriesHead(ctx Context, id string) (*SeriesHead, error) {
+	srData, err := tx.q.SeriesGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &SeriesHead{srData}, nil
+}
+
 func (tx *TxR) SeriesHeadListByTVmazeID(ctx Context, id []*int64) ([]*SeriesHead, error) {
 	a, err := tx.q.SeriesListByTVmazeID(ctx, id)
 	if err != nil {

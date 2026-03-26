@@ -90,6 +90,7 @@ func AppSeriesDetail(
 										Link(
 											sr.TheaterPath(),
 											turbo.DataFrame("_top"),
+											Class(seriesEditionTheaterLinkClass(sed.ID())),
 										)(Text("View in Theater", Size3,
 											attr.Style("display: inline-block"),
 										)),
@@ -124,6 +125,7 @@ func AppSeriesDetail(
 										Link(
 											sed.TheaterPath(),
 											turbo.DataFrame("_top"),
+											Class(seriesEditionTheaterLinkClass(sed.ID())),
 										)(Text("View in Theater", Size2,
 											// TODO(april): maybe make this the default for Text
 											attr.Style("display: inline-block"),
@@ -227,6 +229,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 			return Card(
 				CardSurface,
 				CardSize1,
+				Class(seriesEditionEditorLinkClass(ed.SeriesEditionHead.ID())),
 				href,
 				selected,
 			)(
@@ -598,15 +601,48 @@ func seriesTheaterPathText(seriesID, seriesSlugVal, editionID, editionSlugVal st
 	)
 }
 
-func SeriesSetSlug(id, slug string) html.Node {
-	return turbo.ReplaceTargets("."+seriesSlugTargetClass(id), turbo.Morph)(
-		seriesSlug(id, slug),
-	)
+func seriesEditionTheaterLinkClass(id string) string {
+	return "series-edition-" + id + "-theater-link"
 }
 
-func SeriesEditionSetSlug(id, slug string) html.Node {
-	return turbo.ReplaceTargets("."+seriesEditionSlugTargetClass(id), turbo.Morph)(
-		seriesEditionSlug(id, slug),
+func seriesEditionEditorLinkClass(id string) string {
+	return "series-edition-" + id + "-editor-link"
+}
+
+func SeriesSetSlug(id, slug string, editions []*model.SeriesWork) html.Node {
+	nodes := []html.Node{
+		turbo.ReplaceTargets("."+seriesSlugTargetClass(id), turbo.Morph)(
+			seriesSlug(id, slug),
+		),
+		turbo.SetTargets("[data-list-id-param=\""+id+"\"]",
+			html.Div(ListURL("/app/series/"+slug))(),
+		),
+	}
+	for _, ed := range editions {
+		nodes = append(nodes,
+			turbo.SetTargets("."+seriesEditionTheaterLinkClass(ed.SeriesEditionHead.ID()),
+				html.Div(attr.Href(ed.TheaterPath()))(),
+			),
+			turbo.SetTargets("."+seriesEditionEditorLinkClass(ed.SeriesEditionHead.ID()),
+				html.Div(attr.Href(ed.EditorPath()))(),
+			),
+		)
+	}
+	return Group(nodes...)
+}
+
+func SeriesEditionSetSlug(ed *model.SeriesWork) html.Node {
+	id := ed.SeriesEditionHead.ID()
+	return Group(
+		turbo.ReplaceTargets("."+seriesEditionSlugTargetClass(id), turbo.Morph)(
+			seriesEditionSlug(id, ed.SeriesEditionHead.Slug()),
+		),
+		turbo.SetTargets("."+seriesEditionTheaterLinkClass(id),
+			html.Div(attr.Href(ed.TheaterPath()))(),
+		),
+		turbo.SetTargets("."+seriesEditionEditorLinkClass(id),
+			html.Div(attr.Href(ed.EditorPath()))(),
+		),
 	)
 }
 
