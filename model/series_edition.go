@@ -289,6 +289,13 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	if slug == sed.Slug {
 		return nil
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventSeriesEditionSetSlug,
+			ID:   id,
+			Text: slug,
+		})
+	})
 	return tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
 		Slug: slug,
 		ID:   id,

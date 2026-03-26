@@ -353,7 +353,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 							movieEditionLabel(ed.MovieEditionHead.ID(), ed.MovieEditionHead.Label()),
 						),
 						CardDescription()(
-							Text(ed.TheaterPath()),
+							movieTheaterPathText(ed.MovieHead.ID(), ed.MovieHead.Slug(), ed.MovieEditionHead.ID(), ed.MovieEditionHead.Slug()),
 						),
 					),
 
@@ -412,6 +412,46 @@ func MovieEditionSetLabel(id, label string) html.Node {
 
 func movieEditionLabel(id, label string) html.Node {
 	return html.Span(Class(movieEditionLabelTargetClass(id)))(html.Text(label))
+}
+
+func movieSlugTargetClass(id string) string {
+	return "movie-" + id + "-slug"
+}
+
+func movieSlug(id, slug string) html.Node {
+	return html.Span(Class(movieSlugTargetClass(id)))(html.Text(slug))
+}
+
+func movieEditionSlugTargetClass(id string) string {
+	return "movie-edition-" + id + "-slug"
+}
+
+func movieEditionSlug(id, slug string) html.Node {
+	return html.Span(Class(movieEditionSlugTargetClass(id)))(html.Text(slug))
+}
+
+// movieTheaterPathText renders "/slug" or "/slug/edition-slug"
+// with each slug segment in a targetable span.
+func movieTheaterPathText(movieID, movieSlugVal, editionID, editionSlugVal string) html.Node {
+	if editionSlugVal == "" {
+		return Group(html.Text("/"), movieSlug(movieID, movieSlugVal))
+	}
+	return Group(
+		html.Text("/"), movieSlug(movieID, movieSlugVal),
+		html.Text("/"), movieEditionSlug(editionID, editionSlugVal),
+	)
+}
+
+func MovieSetSlug(id, slug string) html.Node {
+	return turbo.ReplaceTargets("."+movieSlugTargetClass(id), turbo.Morph)(
+		movieSlug(id, slug),
+	)
+}
+
+func MovieEditionSetSlug(id, slug string) html.Node {
+	return turbo.ReplaceTargets("."+movieEditionSlugTargetClass(id), turbo.Morph)(
+		movieEditionSlug(id, slug),
+	)
 }
 
 func appMoviesDetailVideos(med *model.MovieEdition) html.Node {

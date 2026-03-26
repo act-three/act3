@@ -141,6 +141,13 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 	if slug == sr.Slug {
 		return nil
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventSeriesSetSlug,
+			ID:   id,
+			Text: slug,
+		})
+	})
 	return tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{
 		Slug: slug,
 		ID:   id,

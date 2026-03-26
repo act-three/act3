@@ -236,7 +236,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 							seriesEditionLabel(ed.SeriesEditionHead.ID(), ed.SeriesEditionHead.Label()),
 						),
 						CardDescription()(
-							Text(ed.TheaterPath()),
+							seriesTheaterPathText(ed.SeriesHead.ID(), ed.SeriesHead.Slug(), ed.SeriesEditionHead.ID(), ed.SeriesEditionHead.Slug()),
 						),
 					),
 				),
@@ -570,6 +570,44 @@ func SeriesSetTitle(id, title string) html.Node {
 
 func seriesTitle(id, title string) html.Node {
 	return html.Span(Class(seriesTitleTargetClass(id)))(html.Text(title))
+}
+
+func seriesSlugTargetClass(id string) string {
+	return "series-" + id + "-slug"
+}
+
+func seriesSlug(id, slug string) html.Node {
+	return html.Span(Class(seriesSlugTargetClass(id)))(html.Text(slug))
+}
+
+func seriesEditionSlugTargetClass(id string) string {
+	return "series-edition-" + id + "-slug"
+}
+
+func seriesEditionSlug(id, slug string) html.Node {
+	return html.Span(Class(seriesEditionSlugTargetClass(id)))(html.Text(slug))
+}
+
+func seriesTheaterPathText(seriesID, seriesSlugVal, editionID, editionSlugVal string) html.Node {
+	if editionSlugVal == "" {
+		return Group(html.Text("/"), seriesSlug(seriesID, seriesSlugVal))
+	}
+	return Group(
+		html.Text("/"), seriesSlug(seriesID, seriesSlugVal),
+		html.Text("/"), seriesEditionSlug(editionID, editionSlugVal),
+	)
+}
+
+func SeriesSetSlug(id, slug string) html.Node {
+	return turbo.ReplaceTargets("."+seriesSlugTargetClass(id), turbo.Morph)(
+		seriesSlug(id, slug),
+	)
+}
+
+func SeriesEditionSetSlug(id, slug string) html.Node {
+	return turbo.ReplaceTargets("."+seriesEditionSlugTargetClass(id), turbo.Morph)(
+		seriesEditionSlug(id, slug),
+	)
 }
 
 func truncate(s string, max int) string {

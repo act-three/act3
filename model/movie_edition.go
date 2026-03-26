@@ -213,11 +213,17 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	if slug == med.Slug {
 		return nil
 	}
-	err = tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventMovieEditionSetSlug,
+			ID:   id,
+			Text: slug,
+		})
+	})
+	return tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
 		Slug: slug,
 		ID:   id,
 	})
-	return err
 }
 
 func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
@@ -253,6 +259,13 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	if slug == mo.Slug {
 		return nil
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventMovieSetSlug,
+			ID:   mo.ID,
+			Text: slug,
+		})
+	})
 	return tx.q.MovieSlugSet(ctx, schema.MovieSlugSetParams{
 		Slug: slug,
 		ID:   mo.ID,
