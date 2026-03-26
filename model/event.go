@@ -6,9 +6,16 @@ import (
 	"ily.dev/act3/model/progress"
 )
 
+var (
+	EventSeriesSetTitle = "series-set-title"
+)
+
 type Event struct {
 	Type     string
 	Progress *progress.Item
+
+	ID   string
+	Text string
 }
 
 func (m *Model) addEvent(ev *Event) {

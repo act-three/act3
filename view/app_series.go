@@ -58,7 +58,7 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 	)(
 		CardMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
 		CardContent()(
-			CardTitle()(html.Text(ss.Title())),
+			CardTitle()(seriesTitle(ss.SeriesHead.ID(), ss.Title())),
 			CardDescription(LineClamp2)(
 				html.If(ss.PremieredOn() != nil,
 					func() html.Node { return html.Text(*ss.PremieredOn()) },
@@ -85,7 +85,7 @@ func AppSeriesDetail(
 						return Group(
 							FlexCol(Gap6)(
 								SettingsContent()(
-									Text(sr.Title(), Size6),
+									TextNode(Size6)(seriesTitle(sr.ID(), sr.Title())),
 									Box()(
 										Link(
 											sr.TheaterURL(),
@@ -108,7 +108,7 @@ func AppSeriesDetail(
 						return Group(
 							FlexCol(Gap4)(
 								SettingsContent()(
-									Text(sr.Title(), Size6),
+									TextNode(Size6)(seriesTitle(sr.ID(), sr.Title())),
 								),
 								SettingsGroup()(
 									seriesTitleItem(sr),
@@ -312,7 +312,7 @@ func AppEpisodeDialog(
 	return Dialog(frameID,
 		ScrollY()(
 			html.Div()(
-				html.Text(ep.SeriesHead().Title()),
+				seriesTitle(ep.SeriesHead().ID(), ep.SeriesHead().Title()),
 			),
 			html.Div()(
 				html.Text(ep.SeasonHead().Name()),
@@ -528,6 +528,20 @@ func SeriesResultLink(editorURL string) html.Node {
 			Text("Edit"),
 		),
 	)
+}
+
+func seriesTitleTargetClass(id string) string {
+	return "series-" + id + "-title"
+}
+
+func SeriesSetTitle(id, title string) html.Node {
+	return turbo.ReplaceTargets("."+seriesTitleTargetClass(id), turbo.Morph)(
+		seriesTitle(id, title),
+	)
+}
+
+func seriesTitle(id, title string) html.Node {
+	return html.Span(Class(seriesTitleTargetClass(id)))(html.Text(title))
 }
 
 func truncate(s string, max int) string {

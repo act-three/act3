@@ -123,6 +123,13 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventSeriesSetTitle,
+			ID:   id,
+			Text: title,
+		})
+	})
 	sr, err := tx.q.SeriesGet(ctx, id)
 	if err != nil {
 		return err
