@@ -49,6 +49,10 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventMovieSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventMovieEditionSetSlug:
 		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
+	case model.EventMovieEditionSetSummary:
+		return view.MovieEditionSetSummary(ev.ID, ev.NewText)
+	case model.EventSeriesEditionSetSummary:
+		return view.SeriesEditionSetSummary(ev.ID, ev.NewText)
 	}
 	return nil
 }

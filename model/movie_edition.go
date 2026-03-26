@@ -297,10 +297,21 @@ func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) er
 }
 
 func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
-	return tx.q.MovieEditionSummarySet(ctx, schema.MovieEditionSummarySetParams{
+	err := tx.q.MovieEditionSummarySet(ctx, schema.MovieEditionSummarySetParams{
 		Summary: summary,
 		ID:      id,
 	})
+	if err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventMovieEditionSetSummary,
+			ID:      id,
+			NewText: summary,
+		})
+	})
+	return nil
 }
 
 // MovieEditionSetDefault promotes the given edition to be

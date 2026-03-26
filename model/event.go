@@ -7,14 +7,16 @@ import (
 )
 
 var (
-	EventSeriesSetTitle        = "series-set-title"
-	EventMovieEditionSetTitle  = "movie-edition-set-title"
-	EventMovieEditionSetLabel  = "movie-edition-set-label"
-	EventSeriesEditionSetLabel = "series-edition-set-label"
-	EventSeriesSetSlug         = "series-set-slug"
-	EventSeriesEditionSetSlug  = "series-edition-set-slug"
-	EventMovieSetSlug          = "movie-set-slug"
-	EventMovieEditionSetSlug   = "movie-edition-set-slug"
+	EventSeriesSetTitle          = "series-set-title"
+	EventMovieEditionSetTitle    = "movie-edition-set-title"
+	EventMovieEditionSetLabel    = "movie-edition-set-label"
+	EventSeriesEditionSetLabel   = "series-edition-set-label"
+	EventSeriesSetSlug           = "series-set-slug"
+	EventSeriesEditionSetSlug    = "series-edition-set-slug"
+	EventMovieSetSlug            = "movie-set-slug"
+	EventMovieEditionSetSlug     = "movie-edition-set-slug"
+	EventMovieEditionSetSummary  = "movie-edition-set-summary"
+	EventSeriesEditionSetSummary = "series-edition-set-summary"
 )
 
 type Event struct {

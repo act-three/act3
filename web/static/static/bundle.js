@@ -8764,10 +8764,17 @@
   // ui/settings-text-area.js
   var settings_text_area_default = class extends Controller {
     static targets = ["input"];
-    static values = { url: String };
+    static values = { url: String, text: String };
     #original;
     connect() {
       this.#original = this.inputTarget.value;
+    }
+    textValueChanged(value) {
+      if (!this.hasTextValue) return;
+      this.#original = value;
+      const input = this.inputTarget;
+      if (input === document.activeElement) return;
+      input.value = value;
     }
     save() {
       const input = this.inputTarget;

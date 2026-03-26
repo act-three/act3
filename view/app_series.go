@@ -211,7 +211,7 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 func seriesSummarySection(sed *model.SeriesEdition) html.Node {
 	return FlexCol(Gap2)(
 		SettingsContent()(Text("Summary", Size2)),
-		SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary())(
+		SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary(), seriesEditionSummaryAttrClass(sed.ID()))(
 			Hidden("id", sed.ID()),
 		),
 	)
@@ -532,6 +532,14 @@ func SeriesResultLink(editorURL string) html.Node {
 			Text("Edit"),
 		),
 	)
+}
+
+func seriesEditionSummaryAttrClass(id string) string {
+	return "series-edition-" + id + "-summary-attr"
+}
+
+func SeriesEditionSetSummary(id, summary string) html.Node {
+	return SettingsTextAreaSetValue("."+seriesEditionSummaryAttrClass(id), summary)
 }
 
 func seriesEditionLabelTargetClass(id string) string {

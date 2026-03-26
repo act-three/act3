@@ -154,7 +154,7 @@ func AppMoviesDetail(
 
 					FlexCol(Gap2)(
 						SettingsContent()(Text("Summary", Size2)),
-						SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary())(
+						SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary(), movieEditionSummaryAttrClass(med.ID()))(
 							Hidden("id", med.ID()),
 						),
 					),
@@ -373,6 +373,14 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 			)
 		}),
 	)
+}
+
+func movieEditionSummaryAttrClass(id string) string {
+	return "movie-edition-" + id + "-summary-attr"
+}
+
+func MovieEditionSetSummary(id, summary string) html.Node {
+	return SettingsTextAreaSetValue("."+movieEditionSummaryAttrClass(id), summary)
 }
 
 func movieEditionTitleTargetClass(id string) string {

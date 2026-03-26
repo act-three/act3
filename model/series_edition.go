@@ -317,10 +317,21 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 }
 
 func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
-	return tx.q.SeriesEditionSummarySet(ctx, schema.SeriesEditionSummarySetParams{
+	err := tx.q.SeriesEditionSummarySet(ctx, schema.SeriesEditionSummarySetParams{
 		Summary: summary,
 		ID:      id,
 	})
+	if err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventSeriesEditionSetSummary,
+			ID:      id,
+			NewText: summary,
+		})
+	})
+	return nil
 }
 
 func (tx *TxRW) generateSeriesEditionSlug(ctx Context, label, seriesID string, allow ...string) (string, error) {
