@@ -59,7 +59,7 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 	)(
 		CardMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
 		CardContent()(
-			CardTitle()(seriesTitle(ss.SeriesHead.ID(), ss.Title())),
+			CardTitle()(LiveText(ss.Title(), "series", ss.SeriesHead.ID(), "title")),
 			CardDescription(LineClamp2)(
 				html.If(ss.PremieredOn() != nil,
 					func() html.Node { return html.Text(*ss.PremieredOn()) },
@@ -86,7 +86,7 @@ func AppSeriesDetail(
 						return Group(
 							FlexCol(Gap6)(
 								SettingsContent()(
-									TextNode(Size6)(seriesTitle(sr.ID(), sr.Title())),
+									TextNode(Size6)(LiveText(sr.Title(), "series", sr.ID(), "title")),
 									Box()(
 										Link(
 											sr.TheaterPath(),
@@ -110,7 +110,7 @@ func AppSeriesDetail(
 						return Group(
 							FlexCol(Gap4)(
 								SettingsContent()(
-									TextNode(Size6)(seriesTitle(sr.ID(), sr.Title())),
+									TextNode(Size6)(LiveText(sr.Title(), "series", sr.ID(), "title")),
 								),
 								SettingsGroup()(
 									seriesTitleItem(sr),
@@ -121,7 +121,7 @@ func AppSeriesDetail(
 
 							FlexCol(Gap6)(
 								SettingsContent()(
-									TextNode(Size4)(seriesEditionLabel(sed.ID(), sed.Label())),
+									TextNode(Size4)(LiveText(sed.Label(), "series-edition", sed.ID(), "label")),
 									Box()(
 										Link(
 											sed.TheaterPath(),
@@ -237,7 +237,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 				FlexRow()(
 					CardContent()(
 						CardTitle()(
-							seriesEditionLabel(ed.SeriesEditionHead.ID(), ed.SeriesEditionHead.Label()),
+							LiveText(ed.SeriesEditionHead.Label(), "series-edition", ed.SeriesEditionHead.ID(), "label"),
 						),
 						CardDescription()(
 							seriesTheaterPathText(ed.SeriesHead.ID(), ed.SeriesHead.Slug(), ed.SeriesEditionHead.ID(), ed.SeriesEditionHead.Slug()),
@@ -316,7 +316,7 @@ func AppEpisodeDialog(
 	return Dialog(frameID,
 		ScrollY()(
 			html.Div()(
-				seriesTitle(ep.SeriesHead().ID(), ep.SeriesHead().Title()),
+				LiveText(ep.SeriesHead().Title(), "series", ep.SeriesHead().ID(), "title"),
 			),
 			html.Div()(
 				html.Text(ep.SeasonHead().Name()),
@@ -542,29 +542,15 @@ func SeriesEditionSetSummary(id, summary string) html.Node {
 	return SettingsTextAreaSetValue("."+seriesEditionSummaryAttrClass(id), summary)
 }
 
-func seriesEditionLabelTargetClass(id string) string {
-	return "series-edition-" + id + "-label"
-}
-
 func seriesEditionLabelAttrClass(id string) string {
 	return "series-edition-" + id + "-label-attr"
 }
 
 func SeriesEditionSetLabel(id, label string) html.Node {
-	return html.Group(
-		turbo.ReplaceTargets("."+seriesEditionLabelTargetClass(id), turbo.Morph)(
-			seriesEditionLabel(id, label),
-		),
+	return Group(
+		LiveTextUpdate(label, "series-edition", id, "label"),
 		SettingsTextFieldSetValue("."+seriesEditionLabelAttrClass(id), label),
 	)
-}
-
-func seriesEditionLabel(id, label string) html.Node {
-	return html.Span(Class(seriesEditionLabelTargetClass(id)))(html.Text(label))
-}
-
-func seriesTitleTargetClass(id string) string {
-	return "series-" + id + "-title"
 }
 
 func seriesTitleAttrClass(id string) string {
@@ -572,41 +558,19 @@ func seriesTitleAttrClass(id string) string {
 }
 
 func SeriesSetTitle(id, title string) html.Node {
-	return html.Group(
-		turbo.ReplaceTargets("."+seriesTitleTargetClass(id), turbo.Morph)(
-			seriesTitle(id, title),
-		),
+	return Group(
+		LiveTextUpdate(title, "series", id, "title"),
 		SettingsTextFieldSetValue("."+seriesTitleAttrClass(id), title),
 	)
 }
 
-func seriesTitle(id, title string) html.Node {
-	return html.Span(Class(seriesTitleTargetClass(id)))(html.Text(title))
-}
-
-func seriesSlugTargetClass(id string) string {
-	return "series-" + id + "-slug"
-}
-
-func seriesSlug(id, slug string) html.Node {
-	return html.Span(Class(seriesSlugTargetClass(id)))(html.Text(slug))
-}
-
-func seriesEditionSlugTargetClass(id string) string {
-	return "series-edition-" + id + "-slug"
-}
-
-func seriesEditionSlug(id, slug string) html.Node {
-	return html.Span(Class(seriesEditionSlugTargetClass(id)))(html.Text(slug))
-}
-
 func seriesTheaterPathText(seriesID, seriesSlugVal, editionID, editionSlugVal string) html.Node {
 	if editionSlugVal == "" {
-		return Group(html.Text("/"), seriesSlug(seriesID, seriesSlugVal))
+		return Group(html.Text("/"), LiveText(seriesSlugVal, "series", seriesID, "slug"))
 	}
 	return Group(
-		html.Text("/"), seriesSlug(seriesID, seriesSlugVal),
-		html.Text("/"), seriesEditionSlug(editionID, editionSlugVal),
+		html.Text("/"), LiveText(seriesSlugVal, "series", seriesID, "slug"),
+		html.Text("/"), LiveText(editionSlugVal, "series-edition", editionID, "slug"),
 	)
 }
 
@@ -620,9 +584,7 @@ func seriesEditionEditorLinkClass(id string) string {
 
 func SeriesSetSlug(id, oldSlug, newSlug string, editions []*model.SeriesWork) html.Node {
 	nodes := []html.Node{
-		turbo.ReplaceTargets("."+seriesSlugTargetClass(id), turbo.Morph)(
-			seriesSlug(id, newSlug),
-		),
+		LiveTextUpdate(newSlug, "series", id, "slug"),
 		turbo.SetTargets("[data-list-id-param=\""+id+"\"]",
 			html.Div(ListURL("/app/series/"+newSlug))(),
 		),
@@ -647,9 +609,7 @@ func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
 	id := ed.SeriesEditionHead.ID()
 	oldEditorPath := path.Join(ed.SeriesHead.EditorPath(), oldSlug)
 	return Group(
-		turbo.ReplaceTargets("."+seriesEditionSlugTargetClass(id), turbo.Morph)(
-			seriesEditionSlug(id, ed.SeriesEditionHead.Slug()),
-		),
+		LiveTextUpdate(ed.SeriesEditionHead.Slug(), "series-edition", id, "slug"),
 		turbo.SetTargets("."+seriesEditionTheaterLinkClass(id),
 			html.Div(attr.Href(ed.TheaterPath()))(),
 		),

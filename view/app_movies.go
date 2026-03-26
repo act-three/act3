@@ -58,7 +58,7 @@ func AppMoviesListItem(
 	)(
 		CardMedia()(html.Img(attr.Src(mo.ImageURL()))),
 		CardContent()(
-			CardTitle()(movieEditionTitle(mo.MovieEditionHead.ID(), mo.Title())),
+			CardTitle()(LiveText(mo.Title(), "movie-edition", mo.MovieEditionHead.ID(), "title")),
 			CardDescription(LineClamp2)(
 				html.Text(mo.Year()),
 			),
@@ -86,7 +86,7 @@ func AppMoviesDetail(
 
 				FlexCol(Gap6)(
 					SettingsContent()(
-						TextNode(Size6)(movieEditionTitle(med.ID(), med.Title())),
+						TextNode(Size6)(LiveText(med.Title(), "movie-edition", med.ID(), "title")),
 						Box()(
 							Link(
 								med.TheaterPath(),
@@ -353,7 +353,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 				FlexRow()(
 					CardContent()(
 						CardTitle()(
-							movieEditionLabel(ed.MovieEditionHead.ID(), ed.MovieEditionHead.Label()),
+							LiveText(ed.MovieEditionHead.Label(), "movie-edition", ed.MovieEditionHead.ID(), "label"),
 						),
 						CardDescription()(
 							movieTheaterPathText(ed.MovieHead.ID(), ed.MovieHead.Slug(), ed.MovieEditionHead.ID(), ed.MovieEditionHead.Slug()),
@@ -383,29 +383,15 @@ func MovieEditionSetSummary(id, summary string) html.Node {
 	return SettingsTextAreaSetValue("."+movieEditionSummaryAttrClass(id), summary)
 }
 
-func movieEditionTitleTargetClass(id string) string {
-	return "movie-edition-" + id + "-title"
-}
-
 func movieEditionTitleAttrClass(id string) string {
 	return "movie-edition-" + id + "-title-attr"
 }
 
 func MovieEditionSetTitle(id, title string) html.Node {
-	return html.Group(
-		turbo.ReplaceTargets("."+movieEditionTitleTargetClass(id), turbo.Morph)(
-			movieEditionTitle(id, title),
-		),
+	return Group(
+		LiveTextUpdate(title, "movie-edition", id, "title"),
 		SettingsTextFieldSetValue("."+movieEditionTitleAttrClass(id), title),
 	)
-}
-
-func movieEditionTitle(id, title string) html.Node {
-	return html.Span(Class(movieEditionTitleTargetClass(id)))(html.Text(title))
-}
-
-func movieEditionLabelTargetClass(id string) string {
-	return "movie-edition-" + id + "-label"
 }
 
 func movieEditionLabelAttrClass(id string) string {
@@ -413,43 +399,21 @@ func movieEditionLabelAttrClass(id string) string {
 }
 
 func MovieEditionSetLabel(id, label string) html.Node {
-	return html.Group(
-		turbo.ReplaceTargets("."+movieEditionLabelTargetClass(id), turbo.Morph)(
-			movieEditionLabel(id, label),
-		),
+	return Group(
+		LiveTextUpdate(label, "movie-edition", id, "label"),
 		SettingsTextFieldSetValue("."+movieEditionLabelAttrClass(id), label),
 	)
-}
-
-func movieEditionLabel(id, label string) html.Node {
-	return html.Span(Class(movieEditionLabelTargetClass(id)))(html.Text(label))
-}
-
-func movieSlugTargetClass(id string) string {
-	return "movie-" + id + "-slug"
-}
-
-func movieSlug(id, slug string) html.Node {
-	return html.Span(Class(movieSlugTargetClass(id)))(html.Text(slug))
-}
-
-func movieEditionSlugTargetClass(id string) string {
-	return "movie-edition-" + id + "-slug"
-}
-
-func movieEditionSlug(id, slug string) html.Node {
-	return html.Span(Class(movieEditionSlugTargetClass(id)))(html.Text(slug))
 }
 
 // movieTheaterPathText renders "/slug" or "/slug/edition-slug"
 // with each slug segment in a targetable span.
 func movieTheaterPathText(movieID, movieSlugVal, editionID, editionSlugVal string) html.Node {
 	if editionSlugVal == "" {
-		return Group(html.Text("/"), movieSlug(movieID, movieSlugVal))
+		return Group(html.Text("/"), LiveText(movieSlugVal, "movie", movieID, "slug"))
 	}
 	return Group(
-		html.Text("/"), movieSlug(movieID, movieSlugVal),
-		html.Text("/"), movieEditionSlug(editionID, editionSlugVal),
+		html.Text("/"), LiveText(movieSlugVal, "movie", movieID, "slug"),
+		html.Text("/"), LiveText(editionSlugVal, "movie-edition", editionID, "slug"),
 	)
 }
 
@@ -463,9 +427,7 @@ func movieEditionEditorLinkClass(id string) string {
 
 func MovieSetSlug(id, oldSlug, newSlug string, editions []*model.MovieWork) html.Node {
 	nodes := []html.Node{
-		turbo.ReplaceTargets("."+movieSlugTargetClass(id), turbo.Morph)(
-			movieSlug(id, newSlug),
-		),
+		LiveTextUpdate(newSlug, "movie", id, "slug"),
 		turbo.SetTargets("[data-list-id-param=\""+id+"\"]",
 			html.Div(ListURL("/app/movies/"+newSlug))(),
 		),
@@ -490,9 +452,7 @@ func MovieEditionSetSlug(ed *model.MovieWork, oldSlug string) html.Node {
 	id := ed.MovieEditionHead.ID()
 	oldEditorPath := path.Join(ed.MovieHead.EditorPath(), oldSlug)
 	return Group(
-		turbo.ReplaceTargets("."+movieEditionSlugTargetClass(id), turbo.Morph)(
-			movieEditionSlug(id, ed.MovieEditionHead.Slug()),
-		),
+		LiveTextUpdate(ed.MovieEditionHead.Slug(), "movie-edition", id, "slug"),
 		turbo.SetTargets("."+movieEditionTheaterLinkClass(id),
 			html.Div(attr.Href(ed.TheaterPath()))(),
 		),
