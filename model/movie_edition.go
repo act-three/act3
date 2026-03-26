@@ -188,7 +188,11 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 }
 
 func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
-	err := tx.q.MovieEditionLabelSet(ctx, schema.MovieEditionLabelSetParams{
+	med, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = tx.q.MovieEditionLabelSet(ctx, schema.MovieEditionLabelSetParams{
 		Label: label,
 		ID:    id,
 	})
@@ -200,9 +204,9 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 			Type:    EventMovieEditionSetLabel,
 			ID:      id,
 			NewText: label,
+			OldText: med.Label,
 		})
 	})
-	med, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -228,7 +232,11 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 }
 
 func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
-	err := tx.q.MovieEditionTitleSet(ctx, schema.MovieEditionTitleSetParams{
+	med, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = tx.q.MovieEditionTitleSet(ctx, schema.MovieEditionTitleSetParams{
 		Title: title,
 		ID:    id,
 	})
@@ -240,9 +248,9 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 			Type:    EventMovieEditionSetTitle,
 			ID:      id,
 			NewText: title,
+			OldText: med.Title,
 		})
 	})
-	med, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {
 		return err
 	}

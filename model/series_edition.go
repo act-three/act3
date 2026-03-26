@@ -273,7 +273,11 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHea
 }
 
 func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
-	err := tx.q.SeriesEditionLabelSet(ctx, schema.SeriesEditionLabelSetParams{
+	sed, err := tx.q.SeriesEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = tx.q.SeriesEditionLabelSet(ctx, schema.SeriesEditionLabelSetParams{
 		Label: label,
 		ID:    id,
 	})
@@ -285,9 +289,9 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 			Type:    EventSeriesEditionSetLabel,
 			ID:      id,
 			NewText: label,
+			OldText: sed.Label,
 		})
 	})
-	sed, err := tx.q.SeriesEditionGet(ctx, id)
 	if err != nil {
 		return err
 	}

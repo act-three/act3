@@ -124,7 +124,11 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string,
 }
 
 func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
-	err := tx.q.SeriesTitleSet(ctx, schema.SeriesTitleSetParams{
+	sr, err := tx.q.SeriesGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = tx.q.SeriesTitleSet(ctx, schema.SeriesTitleSetParams{
 		Title: title,
 		ID:    id,
 	})
@@ -136,12 +140,9 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 			Type:    EventSeriesSetTitle,
 			ID:      id,
 			NewText: title,
+			OldText: sr.Title,
 		})
 	})
-	sr, err := tx.q.SeriesGet(ctx, id)
-	if err != nil {
-		return err
-	}
 	slug, err := tx.generateSeriesSlug(ctx, title, sr.PremieredOn, id, sr.Slug)
 	if err != nil {
 		return err
