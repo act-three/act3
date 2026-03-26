@@ -112,6 +112,12 @@ func SetTargets(selector string, node ...html.Node) html.Node {
 	)
 }
 
+// URLReplace emits a custom "url" Turbo Stream action that replaces
+// the browser URL if the current path matches from.
+func URLReplace(from, to string) html.Node {
+	return stream(action("url"), attr.Attr("from")(from), attr.Attr("to")(to))
+}
+
 func RemoveTargets(selector string) html.Node {
 	return stream(action("remove"), targets(selector))
 }

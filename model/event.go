@@ -21,8 +21,9 @@ type Event struct {
 	Type     string
 	Progress *progress.Item
 
-	ID   string
-	Text string
+	ID      string
+	NewText string
+	OldText string
 }
 
 func (m *Model) addEvent(ev *Event) {

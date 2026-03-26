@@ -197,9 +197,9 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type: EventMovieEditionSetLabel,
-			ID:   id,
-			Text: label,
+			Type:    EventMovieEditionSetLabel,
+			ID:      id,
+			NewText: label,
 		})
 	})
 	med, err := tx.q.MovieEditionGet(ctx, id)
@@ -215,9 +215,10 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type: EventMovieEditionSetSlug,
-			ID:   id,
-			Text: slug,
+			Type:    EventMovieEditionSetSlug,
+			ID:      id,
+			NewText: slug,
+			OldText: med.Slug,
 		})
 	})
 	return tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
@@ -236,9 +237,9 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type: EventMovieEditionSetTitle,
-			ID:   id,
-			Text: title,
+			Type:    EventMovieEditionSetTitle,
+			ID:      id,
+			NewText: title,
 		})
 	})
 	med, err := tx.q.MovieEditionGet(ctx, id)
@@ -261,9 +262,10 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type: EventMovieSetSlug,
-			ID:   mo.ID,
-			Text: slug,
+			Type:    EventMovieSetSlug,
+			ID:      mo.ID,
+			NewText: slug,
+			OldText: mo.Slug,
 		})
 	})
 	return tx.q.MovieSlugSet(ctx, schema.MovieSlugSetParams{

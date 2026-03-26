@@ -282,9 +282,9 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type: EventSeriesEditionSetLabel,
-			ID:   id,
-			Text: label,
+			Type:    EventSeriesEditionSetLabel,
+			ID:      id,
+			NewText: label,
 		})
 	})
 	sed, err := tx.q.SeriesEditionGet(ctx, id)
@@ -300,9 +300,10 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type: EventSeriesEditionSetSlug,
-			ID:   id,
-			Text: slug,
+			Type:    EventSeriesEditionSetSlug,
+			ID:      id,
+			NewText: slug,
+			OldText: sed.Slug,
 		})
 	})
 	return tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{

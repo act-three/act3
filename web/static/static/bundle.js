@@ -5447,6 +5447,13 @@
       }
     }
   };
+  window.Turbo.StreamActions.url = function() {
+    const from = this.getAttribute("from");
+    const to = this.getAttribute("to");
+    if (from && to && location.pathname === from) {
+      history.replaceState(history.state, "", to);
+    }
+  };
 
   // web/stimulus.js
   var EventListener = class {

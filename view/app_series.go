@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"path"
 	"strconv"
 	"time"
 
@@ -609,16 +610,18 @@ func seriesEditionEditorLinkClass(id string) string {
 	return "series-edition-" + id + "-editor-link"
 }
 
-func SeriesSetSlug(id, slug string, editions []*model.SeriesWork) html.Node {
+func SeriesSetSlug(id, oldSlug, newSlug string, editions []*model.SeriesWork) html.Node {
 	nodes := []html.Node{
 		turbo.ReplaceTargets("."+seriesSlugTargetClass(id), turbo.Morph)(
-			seriesSlug(id, slug),
+			seriesSlug(id, newSlug),
 		),
 		turbo.SetTargets("[data-list-id-param=\""+id+"\"]",
-			html.Div(ListURL("/app/series/"+slug))(),
+			html.Div(ListURL("/app/series/"+newSlug))(),
 		),
 	}
 	for _, ed := range editions {
+		edSlug := ed.SeriesEditionHead.Slug()
+		oldEditorPath := path.Join("/app/series/"+oldSlug, edSlug)
 		nodes = append(nodes,
 			turbo.SetTargets("."+seriesEditionTheaterLinkClass(ed.SeriesEditionHead.ID()),
 				html.Div(attr.Href(ed.TheaterPath()))(),
@@ -626,13 +629,15 @@ func SeriesSetSlug(id, slug string, editions []*model.SeriesWork) html.Node {
 			turbo.SetTargets("."+seriesEditionEditorLinkClass(ed.SeriesEditionHead.ID()),
 				html.Div(attr.Href(ed.EditorPath()))(),
 			),
+			turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 		)
 	}
 	return Group(nodes...)
 }
 
-func SeriesEditionSetSlug(ed *model.SeriesWork) html.Node {
+func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
 	id := ed.SeriesEditionHead.ID()
+	oldEditorPath := path.Join(ed.SeriesHead.EditorPath(), oldSlug)
 	return Group(
 		turbo.ReplaceTargets("."+seriesEditionSlugTargetClass(id), turbo.Morph)(
 			seriesEditionSlug(id, ed.SeriesEditionHead.Slug()),
@@ -643,6 +648,7 @@ func SeriesEditionSetSlug(ed *model.SeriesWork) html.Node {
 		turbo.SetTargets("."+seriesEditionEditorLinkClass(id),
 			html.Div(attr.Href(ed.EditorPath()))(),
 		),
+		turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 	)
 }
 

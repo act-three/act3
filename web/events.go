@@ -34,26 +34,26 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 	case progress.EventClose:
 		return view.ProgressItemRemove(ev.Progress)
 	case model.EventSeriesSetTitle:
-		return view.SeriesSetTitle(ev.ID, ev.Text)
+		return view.SeriesSetTitle(ev.ID, ev.NewText)
 	case model.EventMovieEditionSetTitle:
-		return view.MovieEditionSetTitle(ev.ID, ev.Text)
+		return view.MovieEditionSetTitle(ev.ID, ev.NewText)
 	case model.EventMovieEditionSetLabel:
-		return view.MovieEditionSetLabel(ev.ID, ev.Text)
+		return view.MovieEditionSetLabel(ev.ID, ev.NewText)
 	case model.EventSeriesEditionSetLabel:
-		return view.SeriesEditionSetLabel(ev.ID, ev.Text)
+		return view.SeriesEditionSetLabel(ev.ID, ev.NewText)
 	case model.EventSeriesSetSlug:
-		return c.eventSeriesSetSlug(ctx, ev.ID, ev.Text)
+		return c.eventSeriesSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventSeriesEditionSetSlug:
-		return c.eventSeriesEditionSetSlug(ctx, ev.ID, ev.Text)
+		return c.eventSeriesEditionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventMovieSetSlug:
-		return c.eventMovieSetSlug(ctx, ev.ID, ev.Text)
+		return c.eventMovieSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventMovieEditionSetSlug:
-		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.Text)
+		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	}
 	return nil
 }
 
-func (c *Config) eventMovieSetSlug(ctx context.Context, movieID, slug string) html.Node {
+func (c *Config) eventMovieSetSlug(ctx context.Context, movieID, oldSlug, newSlug string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		mo, err := tx.MovieHead(ctx, movieID)
 		if err != nil {
@@ -63,12 +63,12 @@ func (c *Config) eventMovieSetSlug(ctx context.Context, movieID, slug string) ht
 		if err != nil {
 			return nil, err
 		}
-		return view.MovieSetSlug(movieID, slug, editions), nil
+		return view.MovieSetSlug(movieID, oldSlug, newSlug, editions), nil
 	})
 	return n
 }
 
-func (c *Config) eventSeriesSetSlug(ctx context.Context, seriesID, slug string) html.Node {
+func (c *Config) eventSeriesSetSlug(ctx context.Context, seriesID, oldSlug, newSlug string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		sr, err := tx.SeriesHead(ctx, seriesID)
 		if err != nil {
@@ -78,12 +78,12 @@ func (c *Config) eventSeriesSetSlug(ctx context.Context, seriesID, slug string) 
 		if err != nil {
 			return nil, err
 		}
-		return view.SeriesSetSlug(seriesID, slug, editions), nil
+		return view.SeriesSetSlug(seriesID, oldSlug, newSlug, editions), nil
 	})
 	return n
 }
 
-func (c *Config) eventMovieEditionSetSlug(ctx context.Context, editionID, slug string) html.Node {
+func (c *Config) eventMovieEditionSetSlug(ctx context.Context, editionID, oldSlug, newSlug string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		mo, err := tx.MovieHeadByEditionID(ctx, editionID)
 		if err != nil {
@@ -94,12 +94,12 @@ func (c *Config) eventMovieEditionSetSlug(ctx context.Context, editionID, slug s
 			return nil, err
 		}
 		ed := &model.MovieWork{MovieHead: *mo, MovieEditionHead: *med}
-		return view.MovieEditionSetSlug(ed), nil
+		return view.MovieEditionSetSlug(ed, oldSlug), nil
 	})
 	return n
 }
 
-func (c *Config) eventSeriesEditionSetSlug(ctx context.Context, editionID, slug string) html.Node {
+func (c *Config) eventSeriesEditionSetSlug(ctx context.Context, editionID, oldSlug, newSlug string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		sed, err := tx.SeriesEditionHead(ctx, editionID)
 		if err != nil {
@@ -110,7 +110,7 @@ func (c *Config) eventSeriesEditionSetSlug(ctx context.Context, editionID, slug 
 			return nil, err
 		}
 		ed := &model.SeriesWork{SeriesHead: *sr, SeriesEditionHead: *sed}
-		return view.SeriesEditionSetSlug(ed), nil
+		return view.SeriesEditionSetSlug(ed, oldSlug), nil
 	})
 	return n
 }

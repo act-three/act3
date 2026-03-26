@@ -1,6 +1,7 @@
 package view
 
 import (
+	"path"
 	"strconv"
 
 	"ily.dev/act3/expr"
@@ -452,16 +453,18 @@ func movieEditionEditorLinkClass(id string) string {
 	return "movie-edition-" + id + "-editor-link"
 }
 
-func MovieSetSlug(id, slug string, editions []*model.MovieWork) html.Node {
+func MovieSetSlug(id, oldSlug, newSlug string, editions []*model.MovieWork) html.Node {
 	nodes := []html.Node{
 		turbo.ReplaceTargets("."+movieSlugTargetClass(id), turbo.Morph)(
-			movieSlug(id, slug),
+			movieSlug(id, newSlug),
 		),
 		turbo.SetTargets("[data-list-id-param=\""+id+"\"]",
-			html.Div(ListURL("/app/movies/"+slug))(),
+			html.Div(ListURL("/app/movies/"+newSlug))(),
 		),
 	}
 	for _, ed := range editions {
+		edSlug := ed.MovieEditionHead.Slug()
+		oldEditorPath := path.Join("/app/movies/"+oldSlug, edSlug)
 		nodes = append(nodes,
 			turbo.SetTargets("."+movieEditionTheaterLinkClass(ed.MovieEditionHead.ID()),
 				html.Div(attr.Href(ed.TheaterPath()))(),
@@ -469,13 +472,15 @@ func MovieSetSlug(id, slug string, editions []*model.MovieWork) html.Node {
 			turbo.SetTargets("."+movieEditionEditorLinkClass(ed.MovieEditionHead.ID()),
 				html.Div(attr.Href(ed.EditorPath()))(),
 			),
+			turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 		)
 	}
 	return Group(nodes...)
 }
 
-func MovieEditionSetSlug(ed *model.MovieWork) html.Node {
+func MovieEditionSetSlug(ed *model.MovieWork, oldSlug string) html.Node {
 	id := ed.MovieEditionHead.ID()
+	oldEditorPath := path.Join(ed.MovieHead.EditorPath(), oldSlug)
 	return Group(
 		turbo.ReplaceTargets("."+movieEditionSlugTargetClass(id), turbo.Morph)(
 			movieEditionSlug(id, ed.MovieEditionHead.Slug()),
@@ -486,6 +491,7 @@ func MovieEditionSetSlug(ed *model.MovieWork) html.Node {
 		turbo.SetTargets("."+movieEditionEditorLinkClass(id),
 			html.Div(attr.Href(ed.EditorPath()))(),
 		),
+		turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 	)
 }
 

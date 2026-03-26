@@ -10,3 +10,14 @@ window.Turbo.StreamActions.set = function() {
 		}
 	}
 };
+
+// Custom Turbo Stream action that replaces the browser URL
+// if the current path matches the "from" attribute.
+// Does not create a new history entry.
+window.Turbo.StreamActions.url = function() {
+	const from = this.getAttribute("from");
+	const to = this.getAttribute("to");
+	if (from && to && location.pathname === from) {
+		history.replaceState(history.state, "", to);
+	}
+};

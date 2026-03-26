@@ -133,9 +133,9 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type: EventSeriesSetTitle,
-			ID:   id,
-			Text: title,
+			Type:    EventSeriesSetTitle,
+			ID:      id,
+			NewText: title,
 		})
 	})
 	sr, err := tx.q.SeriesGet(ctx, id)
@@ -151,9 +151,10 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type: EventSeriesSetSlug,
-			ID:   id,
-			Text: slug,
+			Type:    EventSeriesSetSlug,
+			ID:      id,
+			NewText: slug,
+			OldText: sr.Slug,
 		})
 	})
 	return tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{
