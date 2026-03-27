@@ -201,8 +201,8 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventMovieEditionSetLabel,
-			ID:      id,
+			Type:    EventLiveUpdate,
+			Addr:    []string{"movie-edition", id, "label"},
 			NewText: label,
 			OldText: med.Label,
 		})
@@ -245,8 +245,8 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventMovieEditionSetTitle,
-			ID:      id,
+			Type:    EventLiveUpdate,
+			Addr:    []string{"movie-edition", id, "title"},
 			NewText: title,
 			OldText: med.Title,
 		})
@@ -306,8 +306,8 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventMovieEditionSetSummary,
-			ID:      id,
+			Type:    EventLiveUpdate,
+			Addr:    []string{"movie-edition", id, "summary"},
 			NewText: summary,
 		})
 	})

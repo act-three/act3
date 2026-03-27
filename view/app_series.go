@@ -534,18 +534,6 @@ func SeriesResultLink(editorURL string) html.Node {
 	)
 }
 
-func SeriesEditionSetSummary(id, summary string) html.Node {
-	return LiveTextUpdate(summary, "series-edition", id, "summary")
-}
-
-func SeriesEditionSetLabel(id, label string) html.Node {
-	return LiveTextUpdate(label, "series-edition", id, "label")
-}
-
-func SeriesSetTitle(id, title string) html.Node {
-	return LiveTextUpdate(title, "series", id, "title")
-}
-
 func seriesTheaterPathText(seriesID, seriesSlugVal, editionID, editionSlugVal string) html.Node {
 	if editionSlugVal == "" {
 		return Group(html.Text("/"), LiveText(seriesSlugVal, "series", seriesID, "slug"))

@@ -7,6 +7,7 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
 	"ily.dev/act3/model/progress"
+	"ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view"
 )
@@ -27,20 +28,14 @@ func (c *Config) events(w http.ResponseWriter, req *http.Request) {
 
 func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 	switch ev.Type {
+	case model.EventLiveUpdate:
+		return ui.LiveTextUpdate(ev.NewText, ev.Addr...)
 	case progress.EventOpen:
 		return view.ProgressItemAppend(ev.Progress)
 	case progress.EventUpdate:
 		return view.ProgressItemUpdate(ev.Progress)
 	case progress.EventClose:
 		return view.ProgressItemRemove(ev.Progress)
-	case model.EventSeriesSetTitle:
-		return view.SeriesSetTitle(ev.ID, ev.NewText)
-	case model.EventMovieEditionSetTitle:
-		return view.MovieEditionSetTitle(ev.ID, ev.NewText)
-	case model.EventMovieEditionSetLabel:
-		return view.MovieEditionSetLabel(ev.ID, ev.NewText)
-	case model.EventSeriesEditionSetLabel:
-		return view.SeriesEditionSetLabel(ev.ID, ev.NewText)
 	case model.EventSeriesSetSlug:
 		return c.eventSeriesSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventSeriesEditionSetSlug:
@@ -49,10 +44,6 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventMovieSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventMovieEditionSetSlug:
 		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
-	case model.EventMovieEditionSetSummary:
-		return view.MovieEditionSetSummary(ev.ID, ev.NewText)
-	case model.EventSeriesEditionSetSummary:
-		return view.SeriesEditionSetSummary(ev.ID, ev.NewText)
 	}
 	return nil
 }

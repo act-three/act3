@@ -286,8 +286,8 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventSeriesEditionSetLabel,
-			ID:      id,
+			Type:    EventLiveUpdate,
+			Addr:    []string{"series-edition", id, "label"},
 			NewText: label,
 			OldText: sed.Label,
 		})
@@ -326,8 +326,8 @@ func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventSeriesEditionSetSummary,
-			ID:      id,
+			Type:    EventLiveUpdate,
+			Addr:    []string{"series-edition", id, "summary"},
 			NewText: summary,
 		})
 	})

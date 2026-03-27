@@ -7,16 +7,11 @@ import (
 )
 
 var (
-	EventSeriesSetTitle          = "series-set-title"
-	EventMovieEditionSetTitle    = "movie-edition-set-title"
-	EventMovieEditionSetLabel    = "movie-edition-set-label"
-	EventSeriesEditionSetLabel   = "series-edition-set-label"
-	EventSeriesSetSlug           = "series-set-slug"
-	EventSeriesEditionSetSlug    = "series-edition-set-slug"
-	EventMovieSetSlug            = "movie-set-slug"
-	EventMovieEditionSetSlug     = "movie-edition-set-slug"
-	EventMovieEditionSetSummary  = "movie-edition-set-summary"
-	EventSeriesEditionSetSummary = "series-edition-set-summary"
+	EventLiveUpdate           = "live-update"
+	EventSeriesSetSlug        = "series-set-slug"
+	EventSeriesEditionSetSlug = "series-edition-set-slug"
+	EventMovieSetSlug         = "movie-set-slug"
+	EventMovieEditionSetSlug  = "movie-edition-set-slug"
 )
 
 type Event struct {
@@ -24,6 +19,7 @@ type Event struct {
 	Progress *progress.Item
 
 	ID      string
+	Addr    []string
 	NewText string
 	OldText string
 }

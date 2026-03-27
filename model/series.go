@@ -137,8 +137,8 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventSeriesSetTitle,
-			ID:      id,
+			Type:    EventLiveUpdate,
+			Addr:    []string{"series", id, "title"},
 			NewText: title,
 			OldText: sr.Title,
 		})

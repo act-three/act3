@@ -375,18 +375,6 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 	)
 }
 
-func MovieEditionSetSummary(id, summary string) html.Node {
-	return LiveTextUpdate(summary, "movie-edition", id, "summary")
-}
-
-func MovieEditionSetTitle(id, title string) html.Node {
-	return LiveTextUpdate(title, "movie-edition", id, "title")
-}
-
-func MovieEditionSetLabel(id, label string) html.Node {
-	return LiveTextUpdate(label, "movie-edition", id, "label")
-}
-
 // movieTheaterPathText renders "/slug" or "/slug/edition-slug"
 // with each slug segment in a targetable span.
 func movieTheaterPathText(movieID, movieSlugVal, editionID, editionSlugVal string) html.Node {
