@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha3"
 	"database/sql"
 	"database/sql/driver"
@@ -70,11 +71,19 @@ func (e *SchemaMismatchError) Error() string {
 }
 
 func Open(name string) (dbr, dbw *sql.DB, err error) {
+	wname := name + "?_txlock=immediate"
+	rname := name + "?mode=ro"
+	if name == ":memory:" {
+		s := rand.Text()[:8]
+		wname = "file:" + s + "?mode=memory&cache=shared&_txlock=immediate"
+		rname = "file:" + s + "?mode=memory&cache=shared"
+	}
+
 	defer errorfmt.Handlef("open db: %w", &err)
 
 	slog.Info("open", slog.Group("db", "name", name))
 
-	dbw, err = sql.Open("sqlite", name+"?_txlock=immediate")
+	dbw, err = sql.Open("sqlite", wname)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -90,7 +99,7 @@ func Open(name string) (dbr, dbw *sql.DB, err error) {
 		return nil, nil, err
 	}
 
-	dbr, err = sql.Open("sqlite", name+"?mode=ro")
+	dbr, err = sql.Open("sqlite", rname)
 	if err != nil {
 		return nil, nil, err
 	}
