@@ -91,7 +91,6 @@ func AppSeriesDetail(
 										Link(
 											sr.TheaterPath(),
 											turbo.DataFrame("_top"),
-											Class(seriesEditionTheaterLinkClass(sed.ID())),
 										)(Text("View in Theater", Size3,
 											attr.Style("display: inline-block"),
 										)),
@@ -126,7 +125,6 @@ func AppSeriesDetail(
 										Link(
 											sed.TheaterPath(),
 											turbo.DataFrame("_top"),
-											Class(seriesEditionTheaterLinkClass(sed.ID())),
 										)(Text("View in Theater", Size2,
 											// TODO(april): maybe make this the default for Text
 											attr.Style("display: inline-block"),
@@ -230,7 +228,6 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 			return Card(
 				CardSurface,
 				CardSize1,
-				Class(seriesEditionEditorLinkClass(ed.SeriesEditionHead.ID())),
 				href,
 				selected,
 			)(
@@ -544,14 +541,6 @@ func seriesTheaterPathText(seriesID, seriesSlugVal, editionID, editionSlugVal st
 	)
 }
 
-func seriesEditionTheaterLinkClass(id string) string {
-	return "series-edition-" + id + "-theater-link"
-}
-
-func seriesEditionEditorLinkClass(id string) string {
-	return "series-edition-" + id + "-editor-link"
-}
-
 func SeriesSetSlug(id, oldSlug, newSlug string, editions []*model.SeriesWork) html.Node {
 	nodes := []html.Node{
 		LiveTextUpdate(newSlug, "series", id, "slug"),
@@ -561,14 +550,10 @@ func SeriesSetSlug(id, oldSlug, newSlug string, editions []*model.SeriesWork) ht
 	}
 	for _, ed := range editions {
 		edSlug := ed.SeriesEditionHead.Slug()
+		oldTheaterPath := path.Join("/"+oldSlug, edSlug)
 		oldEditorPath := path.Join("/app/series/"+oldSlug, edSlug)
 		nodes = append(nodes,
-			turbo.SetTargets("."+seriesEditionTheaterLinkClass(ed.SeriesEditionHead.ID()),
-				html.Div(attr.Href(ed.TheaterPath()))(),
-			),
-			turbo.SetTargets("."+seriesEditionEditorLinkClass(ed.SeriesEditionHead.ID()),
-				html.Div(attr.Href(ed.EditorPath()))(),
-			),
+			turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
 			turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 		)
 	}
@@ -576,16 +561,11 @@ func SeriesSetSlug(id, oldSlug, newSlug string, editions []*model.SeriesWork) ht
 }
 
 func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
-	id := ed.SeriesEditionHead.ID()
+	oldTheaterPath := path.Join(ed.SeriesHead.TheaterPath(), oldSlug)
 	oldEditorPath := path.Join(ed.SeriesHead.EditorPath(), oldSlug)
 	return Group(
-		LiveTextUpdate(ed.SeriesEditionHead.Slug(), "series-edition", id, "slug"),
-		turbo.SetTargets("."+seriesEditionTheaterLinkClass(id),
-			html.Div(attr.Href(ed.TheaterPath()))(),
-		),
-		turbo.SetTargets("."+seriesEditionEditorLinkClass(id),
-			html.Div(attr.Href(ed.EditorPath()))(),
-		),
+		LiveTextUpdate(ed.SeriesEditionHead.Slug(), "series-edition", ed.SeriesEditionHead.ID(), "slug"),
+		turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
 		turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 	)
 }

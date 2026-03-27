@@ -91,7 +91,6 @@ func AppMoviesDetail(
 							Link(
 								med.TheaterPath(),
 								turbo.DataFrame("_top"),
-								Class(movieEditionTheaterLinkClass(med.ID())),
 							)(Text("View in Theater", Size3,
 								// TODO(april): maybe make this the default for Text
 								attr.Style("display: inline-block"),
@@ -346,7 +345,6 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 			return Card(
 				CardSurface,
 				CardSize1,
-				Class(movieEditionEditorLinkClass(ed.MovieEditionHead.ID())),
 				href,
 				selected,
 			)(
@@ -387,14 +385,6 @@ func movieTheaterPathText(movieID, movieSlugVal, editionID, editionSlugVal strin
 	)
 }
 
-func movieEditionTheaterLinkClass(id string) string {
-	return "movie-edition-" + id + "-theater-link"
-}
-
-func movieEditionEditorLinkClass(id string) string {
-	return "movie-edition-" + id + "-editor-link"
-}
-
 func MovieSetSlug(id, oldSlug, newSlug string, editions []*model.MovieWork) html.Node {
 	nodes := []html.Node{
 		LiveTextUpdate(newSlug, "movie", id, "slug"),
@@ -404,14 +394,10 @@ func MovieSetSlug(id, oldSlug, newSlug string, editions []*model.MovieWork) html
 	}
 	for _, ed := range editions {
 		edSlug := ed.MovieEditionHead.Slug()
+		oldTheaterPath := path.Join("/"+oldSlug, edSlug)
 		oldEditorPath := path.Join("/app/movies/"+oldSlug, edSlug)
 		nodes = append(nodes,
-			turbo.SetTargets("."+movieEditionTheaterLinkClass(ed.MovieEditionHead.ID()),
-				html.Div(attr.Href(ed.TheaterPath()))(),
-			),
-			turbo.SetTargets("."+movieEditionEditorLinkClass(ed.MovieEditionHead.ID()),
-				html.Div(attr.Href(ed.EditorPath()))(),
-			),
+			turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
 			turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 		)
 	}
@@ -419,16 +405,11 @@ func MovieSetSlug(id, oldSlug, newSlug string, editions []*model.MovieWork) html
 }
 
 func MovieEditionSetSlug(ed *model.MovieWork, oldSlug string) html.Node {
-	id := ed.MovieEditionHead.ID()
+	oldTheaterPath := path.Join(ed.MovieHead.TheaterPath(), oldSlug)
 	oldEditorPath := path.Join(ed.MovieHead.EditorPath(), oldSlug)
 	return Group(
-		LiveTextUpdate(ed.MovieEditionHead.Slug(), "movie-edition", id, "slug"),
-		turbo.SetTargets("."+movieEditionTheaterLinkClass(id),
-			html.Div(attr.Href(ed.TheaterPath()))(),
-		),
-		turbo.SetTargets("."+movieEditionEditorLinkClass(id),
-			html.Div(attr.Href(ed.EditorPath()))(),
-		),
+		LiveTextUpdate(ed.MovieEditionHead.Slug(), "movie-edition", ed.MovieEditionHead.ID(), "slug"),
+		turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
 		turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 	)
 }

@@ -5463,8 +5463,12 @@
   window.Turbo.StreamActions.url = function() {
     const from = this.getAttribute("from");
     const to = this.getAttribute("to");
-    if (from && to && location.pathname === from) {
+    if (!from || !to) return;
+    if (location.pathname === from) {
       history.replaceState(history.state, "", to);
+    }
+    for (const el of document.querySelectorAll(`[href="${CSS.escape(from)}"]`)) {
+      el.setAttribute("href", to);
     }
   };
 
