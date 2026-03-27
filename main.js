@@ -1,5 +1,5 @@
 import "./web/turbo.es2017-esm.js";
-import "./ui/turbo/set.js";
+import "./ui/turbo/action.js";
 import { Application } from "./web/stimulus.js";
 import DialogController from "./ui/dialog.js";
 import PlayerController from "./view/player.js";

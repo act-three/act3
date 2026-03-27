@@ -5437,7 +5437,7 @@
   window.Turbo = { ...Turbo2, StreamActions };
   start();
 
-  // ui/turbo/set.js
+  // ui/turbo/action.js
   window.Turbo.StreamActions.set = function() {
     const source = this.templateContent.firstElementChild;
     if (!source) return;
