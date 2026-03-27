@@ -115,7 +115,7 @@ func SetTargets(selector string, node ...html.Node) html.Node {
 // LiveUpdate emits a custom "live-update" Turbo Stream action
 // that dispatches a live:update event on document
 // with the given addr and text.
-func LiveUpdate(text string, addr ...string) html.Node {
+func LiveUpdate(text string, addr []string) html.Node {
 	attrs := []attr.Node{action("live-update"), attr.Attr("text")(text)}
 	for i, a := range addr {
 		attrs = append(attrs, attr.Attr(fmt.Sprintf("addr%d", i))(a))

@@ -29,7 +29,7 @@ func (c *Config) events(w http.ResponseWriter, req *http.Request) {
 func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 	switch ev.Type {
 	case model.EventLiveUpdate:
-		return ui.LiveTextUpdate(ev.NewText, ev.Addr...)
+		return ui.LiveTextUpdate(ev.NewText, ev.Addr)
 	case progress.EventOpen:
 		return view.ProgressItemAppend(ev.Progress)
 	case progress.EventUpdate:
@@ -58,7 +58,7 @@ func (c *Config) eventMovieSetSlug(ctx context.Context, movieID, oldSlug, newSlu
 		if err != nil {
 			return nil, err
 		}
-		return view.MovieSetSlug(movieID, oldSlug, newSlug, editions), nil
+		return view.MovieSetSlug(mo, oldSlug, editions), nil
 	})
 	return n
 }
@@ -73,7 +73,7 @@ func (c *Config) eventSeriesSetSlug(ctx context.Context, seriesID, oldSlug, newS
 		if err != nil {
 			return nil, err
 		}
-		return view.SeriesSetSlug(seriesID, oldSlug, newSlug, editions), nil
+		return view.SeriesSetSlug(sr, oldSlug, editions), nil
 	})
 	return n
 }

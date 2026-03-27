@@ -64,7 +64,7 @@ func TestLiveText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := renderNode(LiveText(tt.text, tt.addr...))
+			got := renderNode(LiveText(tt.text, tt.addr))
 			if got != tt.want {
 				t.Errorf("\ngot:  %s\nwant: %s", got, tt.want)
 			}
@@ -106,11 +106,11 @@ func TestLiveTextUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := renderNode(LiveTextUpdate(tt.text, tt.addr...))
+			got := renderNode(LiveTextUpdate(tt.text, tt.addr))
 			if !strings.Contains(got, "<turbo-stream") {
 				t.Errorf("expected turbo-stream element, got: %s", got)
 			}
-			inner := renderNode(LiveText(tt.text, tt.addr...))
+			inner := renderNode(LiveText(tt.text, tt.addr))
 			if !strings.Contains(got, inner) {
 				t.Errorf("expected inner LiveText\ngot:  %s\nwant to contain: %s", got, inner)
 			}

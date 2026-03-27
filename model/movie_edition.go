@@ -28,6 +28,22 @@ func (med *MovieEditionHead) Year() string     { return med.med.Year }
 func (med *MovieEditionHead) Runtime() int64   { return med.med.Runtime }
 func (med *MovieEditionHead) ImageURL() string { return med.med.ImageURL }
 
+func (med *MovieEditionHead) addr(field string) []string {
+	return []string{"movie-edition", med.ID(), field}
+}
+
+func (med *MovieEditionHead) TitleAddr() []string   { return med.addr("title") }
+func (med *MovieEditionHead) LabelAddr() []string   { return med.addr("label") }
+func (med *MovieEditionHead) SummaryAddr() []string { return med.addr("summary") }
+func (med *MovieEditionHead) SlugAddr() []string    { return med.addr("slug") }
+
+func (med *MovieEditionHead) TitleField() (string, []string) { return med.Title(), med.TitleAddr() }
+func (med *MovieEditionHead) LabelField() (string, []string) { return med.Label(), med.LabelAddr() }
+func (med *MovieEditionHead) SummaryField() (string, []string) {
+	return med.Summary(), med.SummaryAddr()
+}
+func (med *MovieEditionHead) SlugField() (string, []string) { return med.Slug(), med.SlugAddr() }
+
 func (med *MovieEditionHead) RuntimeString() string {
 	return fmt.Sprintf("%d", med.med.Runtime)
 }
@@ -202,7 +218,7 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    []string{"movie-edition", id, "label"},
+			Addr:    (&MovieEditionHead{med}).LabelAddr(),
 			NewText: label,
 			OldText: med.Label,
 		})
@@ -243,7 +259,7 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    []string{"movie-edition", id, "title"},
+			Addr:    (&MovieEditionHead{med}).TitleAddr(),
 			NewText: title,
 			OldText: med.Title,
 		})
@@ -301,7 +317,7 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    []string{"movie-edition", id, "summary"},
+			Addr:    (&MovieEditionHead{schema.MovieEdition{ID: id}}).SummaryAddr(),
 			NewText: summary,
 		})
 	})

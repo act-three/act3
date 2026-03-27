@@ -26,6 +26,20 @@ func (sed *SeriesEditionHead) Summary() string        { return sed.sed.Summary }
 func (sed *SeriesEditionHead) TVmazeImageURL() string { return sed.sed.TVmazeImageURL }
 func (sed *SeriesEditionHead) SeriesID() string       { return sed.sed.SeriesID }
 
+func (sed *SeriesEditionHead) addr(field string) []string {
+	return []string{"series-edition", sed.ID(), field}
+}
+
+func (sed *SeriesEditionHead) LabelAddr() []string   { return sed.addr("label") }
+func (sed *SeriesEditionHead) SummaryAddr() []string { return sed.addr("summary") }
+func (sed *SeriesEditionHead) SlugAddr() []string    { return sed.addr("slug") }
+
+func (sed *SeriesEditionHead) LabelField() (string, []string) { return sed.Label(), sed.LabelAddr() }
+func (sed *SeriesEditionHead) SummaryField() (string, []string) {
+	return sed.Summary(), sed.SummaryAddr()
+}
+func (sed *SeriesEditionHead) SlugField() (string, []string) { return sed.Slug(), sed.SlugAddr() }
+
 type SeriesEdition struct {
 	SeriesEditionHead
 	sns    []*Season
@@ -287,7 +301,7 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    []string{"series-edition", id, "label"},
+			Addr:    (&SeriesEditionHead{sed}).LabelAddr(),
 			NewText: label,
 			OldText: sed.Label,
 		})
@@ -324,7 +338,7 @@ func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    []string{"series-edition", id, "summary"},
+			Addr:    (&SeriesEditionHead{schema.SeriesEdition{ID: id}}).SummaryAddr(),
 			NewText: summary,
 		})
 	})

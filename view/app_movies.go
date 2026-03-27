@@ -58,7 +58,7 @@ func AppMoviesListItem(
 	)(
 		CardMedia()(html.Img(attr.Src(mo.ImageURL()))),
 		CardContent()(
-			CardTitle()(LiveText(mo.Title(), "movie-edition", mo.MovieEditionHead.ID(), "title")),
+			CardTitle()(LiveText(mo.TitleField())),
 			CardDescription(LineClamp2)(
 				html.Text(mo.Year()),
 			),
@@ -86,7 +86,7 @@ func AppMoviesDetail(
 
 				FlexCol(Gap6)(
 					SettingsContent()(
-						TextNode(Size6)(LiveText(med.Title(), "movie-edition", med.ID(), "title")),
+						TextNode(Size6)(LiveText(med.TitleField())),
 						Box()(
 							Link(
 								med.TheaterPath(),
@@ -103,7 +103,7 @@ func AppMoviesDetail(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Title"),
 							),
-							SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title(), LiveAddr("movie-edition", med.ID(), "title"))(
+							SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title(), LiveAddr(med.TitleAddr()))(
 								Hidden("id", med.ID()),
 							),
 						),
@@ -114,7 +114,7 @@ func AppMoviesDetail(
 									SettingsItemLabelTitle("Edition"),
 								),
 
-								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label(), LiveAddr("movie-edition", med.ID(), "label"))(
+								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label(), LiveAddr(med.LabelAddr()))(
 									Hidden("id", med.ID()),
 								),
 							)
@@ -153,7 +153,7 @@ func AppMoviesDetail(
 
 					FlexCol(Gap2)(
 						SettingsContent()(Text("Summary", Size2)),
-						SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary(), LiveAddr("movie-edition", med.ID(), "summary"))(
+						SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary(), LiveAddr(med.SummaryAddr()))(
 							Hidden("id", med.ID()),
 						),
 					),
@@ -351,10 +351,10 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 				FlexRow()(
 					CardContent()(
 						CardTitle()(
-							LiveText(ed.MovieEditionHead.Label(), "movie-edition", ed.MovieEditionHead.ID(), "label"),
+							LiveText(ed.MovieEditionHead.LabelField()),
 						),
 						CardDescription()(
-							movieTheaterPathText(ed.MovieHead.ID(), ed.MovieHead.Slug(), ed.MovieEditionHead.ID(), ed.MovieEditionHead.Slug()),
+							movieTheaterPathText(&ed.MovieHead, &ed.MovieEditionHead),
 						),
 					),
 
@@ -375,21 +375,21 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 
 // movieTheaterPathText renders "/slug" or "/slug/edition-slug"
 // with each slug segment in a targetable span.
-func movieTheaterPathText(movieID, movieSlugVal, editionID, editionSlugVal string) html.Node {
-	if editionSlugVal == "" {
-		return Group(html.Text("/"), LiveText(movieSlugVal, "movie", movieID, "slug"))
+func movieTheaterPathText(mo *model.MovieHead, med *model.MovieEditionHead) html.Node {
+	if med.Slug() == "" {
+		return Group(html.Text("/"), LiveText(mo.SlugField()))
 	}
 	return Group(
-		html.Text("/"), LiveText(movieSlugVal, "movie", movieID, "slug"),
-		html.Text("/"), LiveText(editionSlugVal, "movie-edition", editionID, "slug"),
+		html.Text("/"), LiveText(mo.SlugField()),
+		html.Text("/"), LiveText(med.SlugField()),
 	)
 }
 
-func MovieSetSlug(id, oldSlug, newSlug string, editions []*model.MovieWork) html.Node {
+func MovieSetSlug(mo *model.MovieHead, oldSlug string, editions []*model.MovieWork) html.Node {
 	nodes := []html.Node{
-		LiveTextUpdate(newSlug, "movie", id, "slug"),
-		turbo.SetTargets("[data-list-id-param=\""+id+"\"]",
-			html.Div(ListURL("/app/movies/"+newSlug))(),
+		LiveTextUpdate(mo.SlugField()),
+		turbo.SetTargets("[data-list-id-param=\""+mo.ID()+"\"]",
+			html.Div(ListURL(mo.EditorPath()))(),
 		),
 	}
 	for _, ed := range editions {
@@ -408,7 +408,7 @@ func MovieEditionSetSlug(ed *model.MovieWork, oldSlug string) html.Node {
 	oldTheaterPath := path.Join(ed.MovieHead.TheaterPath(), oldSlug)
 	oldEditorPath := path.Join(ed.MovieHead.EditorPath(), oldSlug)
 	return Group(
-		LiveTextUpdate(ed.MovieEditionHead.Slug(), "movie-edition", ed.MovieEditionHead.ID(), "slug"),
+		LiveTextUpdate(ed.MovieEditionHead.SlugField()),
 		turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
 		turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 	)

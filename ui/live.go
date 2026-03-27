@@ -14,7 +14,7 @@ import (
 // for live:update event matching.
 // Pass it as an attr to SettingsTextField or SettingsTextArea
 // to receive live updates for the given addr.
-func LiveAddr(addr ...string) attr.Node {
+func LiveAddr(addr []string) attr.Node {
 	attrs := make([]attr.Node, len(addr))
 	for i, a := range addr {
 		attrs[i] = attr.Attr(fmt.Sprintf("data-addr%d", i))(a)
@@ -37,15 +37,15 @@ func LiveAddr(addr ...string) attr.Node {
 // However, addr can be anything, and text doesn't have to be a database field.
 // The text can be derived or synthesized,
 // as long as addr is used consistently and is unambiguous.
-func LiveText(text string, addr ...string) html.Node {
-	return html.Span(attr.Attr("data-live"), LiveAddr(addr...))(html.Text(text))
+func LiveText(text string, addr []string) html.Node {
+	return html.Span(attr.Attr("data-live"), LiveAddr(addr))(html.Text(text))
 }
 
 // LiveTextUpdate renders a turbo streams item that updates
 // text previously rendered by LiveText.
 // Values in addr must match the values given to LiveText,
 // and the contents will be replaced with the new text value.
-func LiveTextUpdate(text string, addr ...string) html.Node {
+func LiveTextUpdate(text string, addr []string) html.Node {
 	sel := &strings.Builder{}
 	sel.WriteString("[data-live]")
 	for i, a := range addr {
@@ -53,9 +53,9 @@ func LiveTextUpdate(text string, addr ...string) html.Node {
 	}
 	return html.Group(
 		turbo.ReplaceTargets(sel.String(), turbo.Morph)(
-			LiveText(text, addr...),
+			LiveText(text, addr),
 		),
-		turbo.LiveUpdate(text, addr...),
+		turbo.LiveUpdate(text, addr),
 	)
 }
 

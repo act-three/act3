@@ -31,6 +31,16 @@ func (sr *SeriesHead) Status() string       { return sr.sr.Status }
 func (sr *SeriesHead) Title() string        { return sr.sr.Title }
 func (sr *SeriesHead) TVmazeID() *int64     { return sr.sr.TVmazeID }
 
+func (sr *SeriesHead) addr(field string) []string {
+	return []string{"series", sr.ID(), field}
+}
+
+func (sr *SeriesHead) TitleAddr() []string { return sr.addr("title") }
+func (sr *SeriesHead) SlugAddr() []string  { return sr.addr("slug") }
+
+func (sr *SeriesHead) TitleField() (string, []string) { return sr.Title(), sr.TitleAddr() }
+func (sr *SeriesHead) SlugField() (string, []string)  { return sr.Slug(), sr.SlugAddr() }
+
 func (sr *SeriesHead) TheaterPath() string {
 	return "/" + sr.sr.Slug
 }
@@ -138,7 +148,7 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    []string{"series", id, "title"},
+			Addr:    (&SeriesHead{sr}).TitleAddr(),
 			NewText: title,
 			OldText: sr.Title,
 		})

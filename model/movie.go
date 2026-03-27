@@ -29,6 +29,14 @@ func (mo *MovieHead) ID() string     { return mo.mo.ID }
 func (mo *MovieHead) Slug() string   { return mo.mo.Slug }
 func (mo *MovieHead) TMDBID() *int64 { return mo.mo.TMDBID }
 
+func (mo *MovieHead) addr(field string) []string {
+	return []string{"movie", mo.ID(), field}
+}
+
+func (mo *MovieHead) SlugAddr() []string { return mo.addr("slug") }
+
+func (mo *MovieHead) SlugField() (string, []string) { return mo.Slug(), mo.SlugAddr() }
+
 func (mo *MovieHead) TheaterPath() string {
 	return "/" + mo.mo.Slug
 }
@@ -44,8 +52,6 @@ type MovieWork struct {
 	MovieHead
 	MovieEditionHead
 }
-
-func (mw *MovieWork) Title() string { return mw.MovieEditionHead.Title() }
 
 func (mw *MovieWork) TheaterPath() string {
 	return path.Join(mw.MovieHead.TheaterPath(), mw.MovieEditionHead.Slug())
