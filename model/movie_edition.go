@@ -34,11 +34,17 @@ func (med *MovieEditionHead) addr(field string) []string {
 
 func (med *MovieEditionHead) TitleAddr() []string   { return med.addr("title") }
 func (med *MovieEditionHead) LabelAddr() []string   { return med.addr("label") }
+func (med *MovieEditionHead) YearAddr() []string    { return med.addr("year") }
+func (med *MovieEditionHead) RuntimeAddr() []string { return med.addr("runtime") }
 func (med *MovieEditionHead) SummaryAddr() []string { return med.addr("summary") }
 func (med *MovieEditionHead) SlugAddr() []string    { return med.addr("slug") }
 
 func (med *MovieEditionHead) TitleField() (string, []string) { return med.Title(), med.TitleAddr() }
 func (med *MovieEditionHead) LabelField() (string, []string) { return med.Label(), med.LabelAddr() }
+func (med *MovieEditionHead) YearField() (string, []string)  { return med.Year(), med.YearAddr() }
+func (med *MovieEditionHead) RuntimeField() (string, []string) {
+	return med.RuntimeString(), med.RuntimeAddr()
+}
 func (med *MovieEditionHead) SummaryField() (string, []string) {
 	return med.Summary(), med.SummaryAddr()
 }
@@ -293,6 +299,13 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 }
 
 func (tx *TxRW) MovieEditionYearSet(ctx Context, id, year string) error {
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventLiveUpdate,
+			Addr:    (&MovieEditionHead{schema.MovieEdition{ID: id}}).YearAddr(),
+			NewText: year,
+		})
+	})
 	return tx.q.MovieEditionYearSet(ctx, schema.MovieEditionYearSetParams{
 		Year: year,
 		ID:   id,
@@ -300,6 +313,13 @@ func (tx *TxRW) MovieEditionYearSet(ctx Context, id, year string) error {
 }
 
 func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) error {
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventLiveUpdate,
+			Addr:    (&MovieEditionHead{schema.MovieEdition{ID: id}}).RuntimeAddr(),
+			NewText: fmt.Sprintf("%d", runtime),
+		})
+	})
 	return tx.q.MovieEditionRuntimeSet(ctx, schema.MovieEditionRuntimeSetParams{
 		Runtime: runtime,
 		ID:      id,

@@ -60,7 +60,7 @@ func AppMoviesListItem(
 		CardContent()(
 			CardTitle()(LiveText(mo.TitleField())),
 			CardDescription(LineClamp2)(
-				html.Text(mo.Year()),
+				LiveText(mo.MovieEditionHead.YearField()),
 			),
 		),
 	)
@@ -125,7 +125,7 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Year Released"),
 							),
 
-							SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
+							SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year(), LiveAddr(med.YearAddr()))(
 								Hidden("id", med.ID()),
 							),
 						),
@@ -145,7 +145,7 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Runtime"),
 							),
 
-							SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), SettingsTextFieldSuffix(" min"))(
+							SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), LiveAddr(med.RuntimeAddr()), SettingsTextFieldSuffix(" min"))(
 								Hidden("id", med.ID()),
 							),
 						),
