@@ -394,8 +394,8 @@ func MovieSetSlug(id, oldSlug, newSlug string, editions []*model.MovieWork) html
 	}
 	for _, ed := range editions {
 		edSlug := ed.MovieEditionHead.Slug()
-		oldTheaterPath := path.Join("/"+oldSlug, edSlug)
-		oldEditorPath := path.Join("/app/movies/"+oldSlug, edSlug)
+		oldTheaterPath := path.Join("/", oldSlug, edSlug)
+		oldEditorPath := path.Join("/app/movies", oldSlug, edSlug)
 		nodes = append(nodes,
 			turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
 			turbo.URLReplace(oldEditorPath, ed.EditorPath()),

@@ -550,8 +550,8 @@ func SeriesSetSlug(id, oldSlug, newSlug string, editions []*model.SeriesWork) ht
 	}
 	for _, ed := range editions {
 		edSlug := ed.SeriesEditionHead.Slug()
-		oldTheaterPath := path.Join("/"+oldSlug, edSlug)
-		oldEditorPath := path.Join("/app/series/"+oldSlug, edSlug)
+		oldTheaterPath := path.Join("/", oldSlug, edSlug)
+		oldEditorPath := path.Join("/app/series", oldSlug, edSlug)
 		nodes = append(nodes,
 			turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
 			turbo.URLReplace(oldEditorPath, ed.EditorPath()),
