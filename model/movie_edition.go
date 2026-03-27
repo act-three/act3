@@ -207,9 +207,6 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 			OldText: med.Label,
 		})
 	})
-	if err != nil {
-		return err
-	}
 	slug, err := tx.movieEditionFindSlug(ctx, label, med.MovieID, med.Slug)
 	if err != nil {
 		return err
@@ -251,9 +248,6 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 			OldText: med.Title,
 		})
 	})
-	if err != nil {
-		return err
-	}
 	if med.Slug != "" {
 		return nil // not the default edition
 	}

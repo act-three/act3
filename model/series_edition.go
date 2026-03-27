@@ -292,9 +292,6 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 			OldText: sed.Label,
 		})
 	})
-	if err != nil {
-		return err
-	}
 	slug, err := tx.generateSeriesEditionSlug(ctx, label, sed.SeriesID, sed.Slug)
 	if err != nil {
 		return err
