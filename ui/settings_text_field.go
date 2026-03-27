@@ -4,7 +4,6 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 )
 
 // SettingsTextFieldPrefix sets a non-editable prefix
@@ -20,25 +19,17 @@ var SettingsTextFieldSuffix = stimulus.Value("settings-text-field", "suffix")
 // child hidden inputs plus the text input's value on blur.
 // Children become hidden inputs (for context like IDs).
 //
-// When target is non-empty, the form element gets that CSS class
-// and a data-settings-text-field-text-value attribute.
-// A custom "set" Turbo Stream action can update that attribute,
-// which triggers the Stimulus controller to update the input.
-// See SettingsTextFieldSetValue.
-func SettingsTextField(action, name, value, target string, attrs ...attr.Node) html.Element {
+// When addr is non-empty, the form element gets data-live
+// and data-addr0, data-addr1, etc. attributes.
+// A LiveTextUpdate with matching addr dispatches a live:update
+// event that the Stimulus controller picks up
+// to update the input and its saved original value.
+func SettingsTextField(action, name, value string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
-		targetAttrs := attr.Group()
-		if target != "" {
-			targetAttrs = attr.Group(
-				Class(target),
-				stimulus.Value("settings-text-field", "text")(value),
-			)
-		}
 		return html.Form(
 			attr.Class("u-settings-text-field"),
 			stimulus.Controller("settings-text-field"),
 			stimulus.Value("settings-text-field", "url")(action),
-			targetAttrs,
 			attr.Group(attrs...),
 		)(append(nodes,
 			html.Div(attr.Class("u-settings-text-field-inner"))(
@@ -60,12 +51,4 @@ func SettingsTextField(action, name, value, target string, attrs ...attr.Node) h
 			),
 		)...)
 	}
-}
-
-// SettingsTextFieldSetValue emits a custom "set" Turbo Stream
-// that updates the text value on matching SettingsTextField forms.
-func SettingsTextFieldSetValue(selector, value string) html.Node {
-	return turbo.SetTargets(selector,
-		html.Div(attr.Attr("data-settings-text-field-text-value")(value))(),
-	)
 }

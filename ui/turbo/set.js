@@ -11,6 +11,24 @@ window.Turbo.StreamActions.set = function() {
 	}
 };
 
+// Custom Turbo Stream action that dispatches a live:update event
+// on document with the addr and text from the stream element.
+// Used to notify Stimulus controllers (e.g. SettingsTextField)
+// that a value has changed server-side.
+window.Turbo.StreamActions["live-update"] = function() {
+	const addr = [];
+	for (let i = 0;; i++) {
+		const v = this.getAttribute("addr" + i);
+		if (v == null) break;
+		addr.push(v);
+	}
+	document.dispatchEvent(
+		new CustomEvent("live:update", {
+			detail: { addr, text: this.getAttribute("text") },
+		}),
+	);
+};
+
 // Custom Turbo Stream action that replaces the browser URL
 // if the current path matches the "from" attribute.
 // Does not create a new history entry.

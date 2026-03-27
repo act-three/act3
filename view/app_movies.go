@@ -104,7 +104,7 @@ func AppMoviesDetail(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Title"),
 							),
-							SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title(), movieEditionTitleAttrClass(med.ID()))(
+							SettingsTextField("/-/do/movie-edition-set-title", "title", med.Title(), LiveAddr("movie-edition", med.ID(), "title"))(
 								Hidden("id", med.ID()),
 							),
 						),
@@ -115,7 +115,7 @@ func AppMoviesDetail(
 									SettingsItemLabelTitle("Edition"),
 								),
 
-								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label(), movieEditionLabelAttrClass(med.ID()))(
+								SettingsTextField("/-/do/movie-edition-set-label", "label", med.Label(), LiveAddr("movie-edition", med.ID(), "label"))(
 									Hidden("id", med.ID()),
 								),
 							)
@@ -126,7 +126,7 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Year Released"),
 							),
 
-							SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year(), "")(
+							SettingsTextField("/-/do/movie-edition-set-year", "year", med.Year())(
 								Hidden("id", med.ID()),
 							),
 						),
@@ -146,7 +146,7 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Runtime"),
 							),
 
-							SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), "", SettingsTextFieldSuffix(" min"))(
+							SettingsTextField("/-/do/movie-edition-set-runtime", "runtime", med.RuntimeString(), SettingsTextFieldSuffix(" min"))(
 								Hidden("id", med.ID()),
 							),
 						),
@@ -154,7 +154,7 @@ func AppMoviesDetail(
 
 					FlexCol(Gap2)(
 						SettingsContent()(Text("Summary", Size2)),
-						SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary(), movieEditionSummaryAttrClass(med.ID()))(
+						SettingsTextArea("/-/do/movie-edition-set-summary", "summary", med.Summary(), LiveAddr("movie-edition", med.ID(), "summary"))(
 							Hidden("id", med.ID()),
 						),
 					),
@@ -375,34 +375,16 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 	)
 }
 
-func movieEditionSummaryAttrClass(id string) string {
-	return "movie-edition-" + id + "-summary-attr"
-}
-
 func MovieEditionSetSummary(id, summary string) html.Node {
-	return SettingsTextAreaSetValue("."+movieEditionSummaryAttrClass(id), summary)
-}
-
-func movieEditionTitleAttrClass(id string) string {
-	return "movie-edition-" + id + "-title-attr"
+	return LiveTextUpdate(summary, "movie-edition", id, "summary")
 }
 
 func MovieEditionSetTitle(id, title string) html.Node {
-	return Group(
-		LiveTextUpdate(title, "movie-edition", id, "title"),
-		SettingsTextFieldSetValue("."+movieEditionTitleAttrClass(id), title),
-	)
-}
-
-func movieEditionLabelAttrClass(id string) string {
-	return "movie-edition-" + id + "-label-attr"
+	return LiveTextUpdate(title, "movie-edition", id, "title")
 }
 
 func MovieEditionSetLabel(id, label string) html.Node {
-	return Group(
-		LiveTextUpdate(label, "movie-edition", id, "label"),
-		SettingsTextFieldSetValue("."+movieEditionLabelAttrClass(id), label),
-	)
+	return LiveTextUpdate(label, "movie-edition", id, "label")
 }
 
 // movieTheaterPathText renders "/slug" or "/slug/edition-slug"

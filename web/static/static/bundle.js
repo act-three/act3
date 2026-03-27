@@ -5447,6 +5447,19 @@
       }
     }
   };
+  window.Turbo.StreamActions["live-update"] = function() {
+    const addr = [];
+    for (let i = 0; ; i++) {
+      const v = this.getAttribute("addr" + i);
+      if (v == null) break;
+      addr.push(v);
+    }
+    document.dispatchEvent(
+      new CustomEvent("live:update", {
+        detail: { addr, text: this.getAttribute("text") }
+      })
+    );
+  };
   window.Turbo.StreamActions.url = function() {
     const from = this.getAttribute("from");
     const to = this.getAttribute("to");
@@ -8761,16 +8774,33 @@
     }
   };
 
+  // ui/live.js
+  function matchAddr(el, addr) {
+    for (let i = 0; i < addr.length; i++) {
+      if (el.getAttribute("data-addr" + i) !== addr[i]) return false;
+    }
+    return !el.hasAttribute("data-addr" + addr.length);
+  }
+
   // ui/settings-text-area.js
   var settings_text_area_default = class extends Controller {
     static targets = ["input"];
-    static values = { url: String, text: String };
+    static values = { url: String };
     #original;
+    #onLiveUpdate;
     connect() {
       this.#original = this.inputTarget.value;
+      this.#onLiveUpdate = (ev) => {
+        if (matchAddr(this.element, ev.detail.addr)) {
+          this.#serverUpdated(ev.detail.text);
+        }
+      };
+      document.addEventListener("live:update", this.#onLiveUpdate);
     }
-    textValueChanged(value) {
-      if (!this.hasTextValue) return;
+    disconnect() {
+      document.removeEventListener("live:update", this.#onLiveUpdate);
+    }
+    #serverUpdated(value) {
       this.#original = value;
       const input = this.inputTarget;
       if (input === document.activeElement) return;
@@ -8815,15 +8845,24 @@
   // ui/settings-text-field.js
   var settings_text_field_default = class extends Controller {
     static targets = ["input", "mirror"];
-    static values = { url: String, prefix: String, suffix: String, text: String };
+    static values = { url: String, prefix: String, suffix: String };
     #original;
     #canvas;
+    #onLiveUpdate;
     connect() {
       this.#original = this.inputTarget.value;
       this.sync();
+      this.#onLiveUpdate = (ev) => {
+        if (matchAddr(this.element, ev.detail.addr)) {
+          this.#serverUpdated(ev.detail.text);
+        }
+      };
+      document.addEventListener("live:update", this.#onLiveUpdate);
     }
-    textValueChanged(value) {
-      if (!this.hasTextValue) return;
+    disconnect() {
+      document.removeEventListener("live:update", this.#onLiveUpdate);
+    }
+    #serverUpdated(value) {
       this.#original = value;
       const input = this.inputTarget;
       if (input === document.activeElement) return;

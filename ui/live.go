@@ -10,6 +10,18 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
+// LiveAddr renders data-addr0, data-addr1, ... attributes
+// for live:update event matching.
+// Pass it as an attr to SettingsTextField or SettingsTextArea
+// to receive live updates for the given addr.
+func LiveAddr(addr ...string) attr.Node {
+	attrs := make([]attr.Node, len(addr))
+	for i, a := range addr {
+		attrs[i] = attr.Attr(fmt.Sprintf("data-addr%d", i))(a)
+	}
+	return attr.Group(attrs...)
+}
+
 // LiveText renders an inline element containing text.
 // It can be updated in place using turbo streams.
 // See LiveTextUpdate.
@@ -26,11 +38,7 @@ import (
 // The text can be derived or synthesized,
 // as long as addr is used consistently and is unambiguous.
 func LiveText(text string, addr ...string) html.Node {
-	var attrs attr.Node = attr.Attr("data-live")
-	for i, a := range addr {
-		attrs = attr.Group(attrs, attr.Attr(fmt.Sprintf("data-addr%d", i))(a))
-	}
-	return html.Span(attrs)(html.Text(text))
+	return html.Span(attr.Attr("data-live"), LiveAddr(addr...))(html.Text(text))
 }
 
 // LiveTextUpdate renders a turbo streams item that updates
@@ -43,8 +51,11 @@ func LiveTextUpdate(text string, addr ...string) html.Node {
 	for i, a := range addr {
 		fmt.Fprintf(sel, `[data-addr%d="%s"]`, i, cssEscape(a))
 	}
-	return turbo.ReplaceTargets(sel.String(), turbo.Morph)(
-		LiveText(text, addr...),
+	return html.Group(
+		turbo.ReplaceTargets(sel.String(), turbo.Morph)(
+			LiveText(text, addr...),
+		),
+		turbo.LiveUpdate(text, addr...),
 	)
 }
 

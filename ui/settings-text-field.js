@@ -1,20 +1,31 @@
 import { Controller } from "../web/stimulus.js";
 import { notify } from "./note-port.js";
+import { matchAddr } from "./live.js";
 
 export default class extends Controller {
 	static targets = ["input", "mirror"];
-	static values = { url: String, prefix: String, suffix: String, text: String };
+	static values = { url: String, prefix: String, suffix: String };
 
 	#original;
 	#canvas;
+	#onLiveUpdate;
 
 	connect() {
 		this.#original = this.inputTarget.value;
 		this.sync();
+		this.#onLiveUpdate = (ev) => {
+			if (matchAddr(this.element, ev.detail.addr)) {
+				this.#serverUpdated(ev.detail.text);
+			}
+		};
+		document.addEventListener("live:update", this.#onLiveUpdate);
 	}
 
-	textValueChanged(value) {
-		if (!this.hasTextValue) return;
+	disconnect() {
+		document.removeEventListener("live:update", this.#onLiveUpdate);
+	}
+
+	#serverUpdated(value) {
 		this.#original = value;
 		const input = this.inputTarget;
 		if (input === document.activeElement) return;

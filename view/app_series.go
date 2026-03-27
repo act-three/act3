@@ -139,7 +139,7 @@ func AppSeriesDetail(
 										SettingsItemLabel()(
 											SettingsItemLabelTitle("Edition"),
 										),
-										SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label(), seriesEditionLabelAttrClass(sed.ID()))(
+										SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label(), LiveAddr("series-edition", sed.ID(), "label"))(
 											Hidden("id", sed.ID()),
 										),
 									),
@@ -191,7 +191,7 @@ func seriesTitleItem(sr *model.SeriesHead) html.Node {
 		SettingsItemLabel()(
 			SettingsItemLabelTitle("Title"),
 		),
-		SettingsTextField("/-/do/series-set-title", "title", sr.Title(), seriesTitleAttrClass(sr.ID()))(
+		SettingsTextField("/-/do/series-set-title", "title", sr.Title(), LiveAddr("series", sr.ID(), "title"))(
 			Hidden("id", sr.ID()),
 		),
 	)
@@ -211,7 +211,7 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 func seriesSummarySection(sed *model.SeriesEdition) html.Node {
 	return FlexCol(Gap2)(
 		SettingsContent()(Text("Summary", Size2)),
-		SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary(), seriesEditionSummaryAttrClass(sed.ID()))(
+		SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary(), LiveAddr("series-edition", sed.ID(), "summary"))(
 			Hidden("id", sed.ID()),
 		),
 	)
@@ -534,34 +534,16 @@ func SeriesResultLink(editorURL string) html.Node {
 	)
 }
 
-func seriesEditionSummaryAttrClass(id string) string {
-	return "series-edition-" + id + "-summary-attr"
-}
-
 func SeriesEditionSetSummary(id, summary string) html.Node {
-	return SettingsTextAreaSetValue("."+seriesEditionSummaryAttrClass(id), summary)
-}
-
-func seriesEditionLabelAttrClass(id string) string {
-	return "series-edition-" + id + "-label-attr"
+	return LiveTextUpdate(summary, "series-edition", id, "summary")
 }
 
 func SeriesEditionSetLabel(id, label string) html.Node {
-	return Group(
-		LiveTextUpdate(label, "series-edition", id, "label"),
-		SettingsTextFieldSetValue("."+seriesEditionLabelAttrClass(id), label),
-	)
-}
-
-func seriesTitleAttrClass(id string) string {
-	return "series-" + id + "-title-attr"
+	return LiveTextUpdate(label, "series-edition", id, "label")
 }
 
 func SeriesSetTitle(id, title string) html.Node {
-	return Group(
-		LiveTextUpdate(title, "series", id, "title"),
-		SettingsTextFieldSetValue("."+seriesTitleAttrClass(id), title),
-	)
+	return LiveTextUpdate(title, "series", id, "title")
 }
 
 func seriesTheaterPathText(seriesID, seriesSlugVal, editionID, editionSlugVal string) html.Node {
