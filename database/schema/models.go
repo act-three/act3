@@ -45,7 +45,6 @@ type Episode struct {
 	Type           string
 	Airdate        string
 	Runtime        int64
-	TVmazeURL      *string
 	TVmazeImageURL string
 }
 
@@ -106,17 +105,11 @@ type Schema struct {
 }
 
 type Season struct {
-	ID             string
-	EditionID      string
-	SortKey        string
-	Name           string
-	Number         int64
-	TVmazeURL      *string
-	Summary        string
-	EpisodeOrder   int64
-	PremieredOn    *string
-	EndedOn        *string
-	TVmazeImageURL string
+	ID        string
+	EditionID string
+	SortKey   string
+	Name      string
+	Number    int64
 }
 
 type SeasonEpisode struct {
@@ -124,23 +117,20 @@ type SeasonEpisode struct {
 	EpisodeID string
 	SortKey   string
 	Label     string
-	Number    *int64
+	Number    int64
 }
 
 type Series struct {
-	ID              string
-	Slug            string
-	Title           string
-	Status          string
-	Language        string
-	PremieredOn     *string
-	EndedOn         *string
-	TVmazeID        *int64
-	TVmazeURL       *string
-	TVmazeUpdatedAt int64
-	IMDBID          *string
-	TVDBID          *int64
-	TVRageID        *int64
+	ID          string
+	Slug        string
+	Title       string
+	Status      string
+	PremieredOn *string
+	EndedOn     *string
+	TVmazeID    *int64
+	IMDBID      *string
+	TVDBID      *int64
+	TVRageID    *int64
 }
 
 type SeriesEdition struct {

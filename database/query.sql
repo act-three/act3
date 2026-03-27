@@ -120,10 +120,9 @@ INSERT INTO Episode
 	Type,
 	Airdate,
 	Runtime,
-	TVmazeURL,
 	TVmazeImageURL
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: EpisodeGet :one
@@ -343,15 +342,9 @@ INSERT INTO Season
 	EditionID,
 	SortKey,
 	Name,
-	Number,
-	TVmazeURL,
-	Summary,
-	EpisodeOrder,
-	PremieredOn,
-	EndedOn,
-	TVmazeImageURL
+	Number
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeasonEpisodeCreate :exec
@@ -393,17 +386,14 @@ INSERT INTO Series
 	Slug,
 	Title,
 	Status,
-	Language,
 	PremieredOn,
 	EndedOn,
 	TVmazeID,
-	TVmazeURL,
-	TVmazeUpdatedAt,
 	IMDBID,
 	TVDBID,
 	TVRageID
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionCreate :one

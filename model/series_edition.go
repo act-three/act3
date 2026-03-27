@@ -256,16 +256,10 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHea
 	snepsBySeason := snepMapBySeasonID(sneps)
 	for _, sn := range sns {
 		newSn, err := tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
-			EditionID:      newSed.ID,
-			SortKey:        sn.SortKey,
-			Name:           sn.Name,
-			Number:         sn.Number,
-			TVmazeURL:      sn.TVmazeURL,
-			Summary:        sn.Summary,
-			EpisodeOrder:   sn.EpisodeOrder,
-			PremieredOn:    sn.PremieredOn,
-			EndedOn:        sn.EndedOn,
-			TVmazeImageURL: sn.TVmazeImageURL,
+			EditionID: newSed.ID,
+			SortKey:   sn.SortKey,
+			Name:      sn.Name,
+			Number:    sn.Number,
 		})
 		if err != nil {
 			return nil, err

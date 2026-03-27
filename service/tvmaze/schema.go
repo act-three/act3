@@ -70,7 +70,7 @@ type Episode struct {
 	URL     string `json:"url"`
 	Name    string `json:"name"`
 	Season  int    `json:"season"`
-	Number  *int   `json:"number"`
+	Number  int    `json:"number"` // null -> 0 for specials
 	Type    string `json:"type"`
 	Airdate string `json:"airdate"`
 	Airtime string `json:"airtime"`

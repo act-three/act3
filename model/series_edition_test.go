@@ -8,10 +8,9 @@ import (
 
 func TestNewSeriesEdition(t *testing.T) {
 	sr := &SeriesHead{schema.Series{
-		ID:       "series-1",
-		Title:    "Test Series",
-		Status:   "Running",
-		Language: "English",
+		ID:     "series-1",
+		Title:  "Test Series",
+		Status: "Running",
 	}}
 
 	t.Run("creates edition with season and episodes", func(t *testing.T) {

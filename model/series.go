@@ -189,16 +189,13 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		Slug:        slug,
 		Title:       show.Name,
 		Status:      show.Status,
-		Language:    show.Language,
 		PremieredOn: show.Premiered,
 		EndedOn:     show.Ended,
 
-		TVmazeID:        &id64,
-		TVmazeURL:       &show.URL,
-		TVmazeUpdatedAt: int64(show.Updated),
-		IMDBID:          show.Externals.IMDB,
-		TVDBID:          show.Externals.TheTVDB,
-		TVRageID:        show.Externals.TVRage,
+		TVmazeID: &id64,
+		IMDBID:   show.Externals.IMDB,
+		TVDBID:   show.Externals.TheTVDB,
+		TVRageID: show.Externals.TVRage,
 	})
 	if err != nil {
 		return nil, err

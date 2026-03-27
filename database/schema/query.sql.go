@@ -664,11 +664,10 @@ INSERT INTO Episode
 	Type,
 	Airdate,
 	Runtime,
-	TVmazeURL,
 	TVmazeImageURL
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING id, slug, title, summary, type, airdate, runtime, tvmazeimageurl
 `
 
 type EpisodeCreateParams struct {
@@ -678,7 +677,6 @@ type EpisodeCreateParams struct {
 	Type           string
 	Airdate        string
 	Runtime        int64
-	TVmazeURL      *string
 	TVmazeImageURL string
 }
 
@@ -690,7 +688,6 @@ func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (E
 		arg.Type,
 		arg.Airdate,
 		arg.Runtime,
-		arg.TVmazeURL,
 		arg.TVmazeImageURL,
 	)
 	var i Episode
@@ -702,14 +699,13 @@ func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (E
 		&i.Type,
 		&i.Airdate,
 		&i.Runtime,
-		&i.TVmazeURL,
 		&i.TVmazeImageURL,
 	)
 	return i, err
 }
 
 const episodeGet = `-- name: EpisodeGet :one
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl FROM Episode WHERE ID = ?
+SELECT id, slug, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode WHERE ID = ?
 `
 
 func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
@@ -723,14 +719,13 @@ func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
 		&i.Type,
 		&i.Airdate,
 		&i.Runtime,
-		&i.TVmazeURL,
 		&i.TVmazeImageURL,
 	)
 	return i, err
 }
 
 const episodeGetBySlug = `-- name: EpisodeGetBySlug :one
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl FROM Episode WHERE Slug = ?
+SELECT id, slug, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode WHERE Slug = ?
 `
 
 func (q *Queries) EpisodeGetBySlug(ctx context.Context, slug string) (Episode, error) {
@@ -744,14 +739,13 @@ func (q *Queries) EpisodeGetBySlug(ctx context.Context, slug string) (Episode, e
 		&i.Type,
 		&i.Airdate,
 		&i.Runtime,
-		&i.TVmazeURL,
 		&i.TVmazeImageURL,
 	)
 	return i, err
 }
 
 const episodeListByEditionID = `-- name: EpisodeListByEditionID :many
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl FROM Episode
+SELECT id, slug, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode
 WHERE ID IN (
 	SELECT ID FROM SeasonEpisode
 	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
@@ -776,7 +770,6 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 			&i.Type,
 			&i.Airdate,
 			&i.Runtime,
-			&i.TVmazeURL,
 			&i.TVmazeImageURL,
 		); err != nil {
 			return nil, err
@@ -793,7 +786,7 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 }
 
 const episodeListBySeriesID = `-- name: EpisodeListBySeriesID :many
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeurl, tvmazeimageurl FROM Episode
+SELECT id, slug, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode
 WHERE ID IN (
 	SELECT ID FROM SeasonEpisode
 	WHERE SeasonID IN (
@@ -821,7 +814,6 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 			&i.Type,
 			&i.Airdate,
 			&i.Runtime,
-			&i.TVmazeURL,
 			&i.TVmazeImageURL,
 		); err != nil {
 			return nil, err
@@ -1911,29 +1903,17 @@ INSERT INTO Season
 	EditionID,
 	SortKey,
 	Name,
-	Number,
-	TVmazeURL,
-	Summary,
-	EpisodeOrder,
-	PremieredOn,
-	EndedOn,
-	TVmazeImageURL
+	Number
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl
+VALUES (?, ?, ?, ?)
+RETURNING id, editionid, sortkey, name, number
 `
 
 type SeasonCreateParams struct {
-	EditionID      string
-	SortKey        string
-	Name           string
-	Number         int64
-	TVmazeURL      *string
-	Summary        string
-	EpisodeOrder   int64
-	PremieredOn    *string
-	EndedOn        *string
-	TVmazeImageURL string
+	EditionID string
+	SortKey   string
+	Name      string
+	Number    int64
 }
 
 func (q *Queries) SeasonCreate(ctx context.Context, arg SeasonCreateParams) (Season, error) {
@@ -1942,12 +1922,6 @@ func (q *Queries) SeasonCreate(ctx context.Context, arg SeasonCreateParams) (Sea
 		arg.SortKey,
 		arg.Name,
 		arg.Number,
-		arg.TVmazeURL,
-		arg.Summary,
-		arg.EpisodeOrder,
-		arg.PremieredOn,
-		arg.EndedOn,
-		arg.TVmazeImageURL,
 	)
 	var i Season
 	err := row.Scan(
@@ -1956,12 +1930,6 @@ func (q *Queries) SeasonCreate(ctx context.Context, arg SeasonCreateParams) (Sea
 		&i.SortKey,
 		&i.Name,
 		&i.Number,
-		&i.TVmazeURL,
-		&i.Summary,
-		&i.EpisodeOrder,
-		&i.PremieredOn,
-		&i.EndedOn,
-		&i.TVmazeImageURL,
 	)
 	return i, err
 }
@@ -1976,7 +1944,7 @@ type SeasonEpisodeCreateParams struct {
 	EpisodeID string
 	SortKey   string
 	Label     string
-	Number    *int64
+	Number    int64
 }
 
 func (q *Queries) SeasonEpisodeCreate(ctx context.Context, arg SeasonEpisodeCreateParams) error {
@@ -2097,7 +2065,7 @@ func (q *Queries) SeasonEpisodeListBySeriesID(ctx context.Context, seriesid stri
 }
 
 const seasonGet = `-- name: SeasonGet :one
-SELECT id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl FROM Season WHERE ID = ?
+SELECT id, editionid, sortkey, name, number FROM Season WHERE ID = ?
 `
 
 func (q *Queries) SeasonGet(ctx context.Context, id string) (Season, error) {
@@ -2109,18 +2077,12 @@ func (q *Queries) SeasonGet(ctx context.Context, id string) (Season, error) {
 		&i.SortKey,
 		&i.Name,
 		&i.Number,
-		&i.TVmazeURL,
-		&i.Summary,
-		&i.EpisodeOrder,
-		&i.PremieredOn,
-		&i.EndedOn,
-		&i.TVmazeImageURL,
 	)
 	return i, err
 }
 
 const seasonListByEditionID = `-- name: SeasonListByEditionID :many
-SELECT id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl FROM Season WHERE EditionID = ?
+SELECT id, editionid, sortkey, name, number FROM Season WHERE EditionID = ?
 ORDER BY SortKey
 `
 
@@ -2139,12 +2101,6 @@ func (q *Queries) SeasonListByEditionID(ctx context.Context, editionid string) (
 			&i.SortKey,
 			&i.Name,
 			&i.Number,
-			&i.TVmazeURL,
-			&i.Summary,
-			&i.EpisodeOrder,
-			&i.PremieredOn,
-			&i.EndedOn,
-			&i.TVmazeImageURL,
 		); err != nil {
 			return nil, err
 		}
@@ -2160,7 +2116,7 @@ func (q *Queries) SeasonListByEditionID(ctx context.Context, editionid string) (
 }
 
 const seasonListBySeriesID = `-- name: SeasonListBySeriesID :many
-SELECT id, editionid, sortkey, name, number, tvmazeurl, summary, episodeorder, premieredon, endedon, tvmazeimageurl FROM Season
+SELECT id, editionid, sortkey, name, number FROM Season
 WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 ORDER BY SortKey
 `
@@ -2180,12 +2136,6 @@ func (q *Queries) SeasonListBySeriesID(ctx context.Context, seriesid string) ([]
 			&i.SortKey,
 			&i.Name,
 			&i.Number,
-			&i.TVmazeURL,
-			&i.Summary,
-			&i.EpisodeOrder,
-			&i.PremieredOn,
-			&i.EndedOn,
-			&i.TVmazeImageURL,
 		); err != nil {
 			return nil, err
 		}
@@ -2207,34 +2157,28 @@ INSERT INTO Series
 	Slug,
 	Title,
 	Status,
-	Language,
 	PremieredOn,
 	EndedOn,
 	TVmazeID,
-	TVmazeURL,
-	TVmazeUpdatedAt,
 	IMDBID,
 	TVDBID,
 	TVRageID
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, title, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid
 `
 
 type SeriesCreateParams struct {
-	ID              string
-	Slug            string
-	Title           string
-	Status          string
-	Language        string
-	PremieredOn     *string
-	EndedOn         *string
-	TVmazeID        *int64
-	TVmazeURL       *string
-	TVmazeUpdatedAt int64
-	IMDBID          *string
-	TVDBID          *int64
-	TVRageID        *int64
+	ID          string
+	Slug        string
+	Title       string
+	Status      string
+	PremieredOn *string
+	EndedOn     *string
+	TVmazeID    *int64
+	IMDBID      *string
+	TVDBID      *int64
+	TVRageID    *int64
 }
 
 func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Series, error) {
@@ -2243,12 +2187,9 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 		arg.Slug,
 		arg.Title,
 		arg.Status,
-		arg.Language,
 		arg.PremieredOn,
 		arg.EndedOn,
 		arg.TVmazeID,
-		arg.TVmazeURL,
-		arg.TVmazeUpdatedAt,
 		arg.IMDBID,
 		arg.TVDBID,
 		arg.TVRageID,
@@ -2259,12 +2200,9 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 		&i.Slug,
 		&i.Title,
 		&i.Status,
-		&i.Language,
 		&i.PremieredOn,
 		&i.EndedOn,
 		&i.TVmazeID,
-		&i.TVmazeURL,
-		&i.TVmazeUpdatedAt,
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
@@ -2517,7 +2455,7 @@ func (q *Queries) SeriesGenreList(ctx context.Context, seriesid string) ([]strin
 }
 
 const seriesGet = `-- name: SeriesGet :one
-SELECT id, slug, title, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series WHERE ID = ?
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE ID = ?
 `
 
 func (q *Queries) SeriesGet(ctx context.Context, id string) (Series, error) {
@@ -2528,12 +2466,9 @@ func (q *Queries) SeriesGet(ctx context.Context, id string) (Series, error) {
 		&i.Slug,
 		&i.Title,
 		&i.Status,
-		&i.Language,
 		&i.PremieredOn,
 		&i.EndedOn,
 		&i.TVmazeID,
-		&i.TVmazeURL,
-		&i.TVmazeUpdatedAt,
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
@@ -2542,7 +2477,7 @@ func (q *Queries) SeriesGet(ctx context.Context, id string) (Series, error) {
 }
 
 const seriesGetByEditionID = `-- name: SeriesGetByEditionID :one
-SELECT id, slug, title, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series
 WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID = ?)
 `
 
@@ -2554,12 +2489,9 @@ func (q *Queries) SeriesGetByEditionID(ctx context.Context, id string) (Series, 
 		&i.Slug,
 		&i.Title,
 		&i.Status,
-		&i.Language,
 		&i.PremieredOn,
 		&i.EndedOn,
 		&i.TVmazeID,
-		&i.TVmazeURL,
-		&i.TVmazeUpdatedAt,
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
@@ -2568,7 +2500,7 @@ func (q *Queries) SeriesGetByEditionID(ctx context.Context, id string) (Series, 
 }
 
 const seriesGetBySlug = `-- name: SeriesGetBySlug :one
-SELECT id, slug, title, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series WHERE Slug = ?
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE Slug = ?
 `
 
 func (q *Queries) SeriesGetBySlug(ctx context.Context, slug string) (Series, error) {
@@ -2579,12 +2511,9 @@ func (q *Queries) SeriesGetBySlug(ctx context.Context, slug string) (Series, err
 		&i.Slug,
 		&i.Title,
 		&i.Status,
-		&i.Language,
 		&i.PremieredOn,
 		&i.EndedOn,
 		&i.TVmazeID,
-		&i.TVmazeURL,
-		&i.TVmazeUpdatedAt,
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
@@ -2593,7 +2522,7 @@ func (q *Queries) SeriesGetBySlug(ctx context.Context, slug string) (Series, err
 }
 
 const seriesGetByTVmazeID = `-- name: SeriesGetByTVmazeID :one
-SELECT id, slug, title, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series WHERE TVmazeID = ?
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE TVmazeID = ?
 `
 
 func (q *Queries) SeriesGetByTVmazeID(ctx context.Context, tvmazeid *int64) (Series, error) {
@@ -2604,12 +2533,9 @@ func (q *Queries) SeriesGetByTVmazeID(ctx context.Context, tvmazeid *int64) (Ser
 		&i.Slug,
 		&i.Title,
 		&i.Status,
-		&i.Language,
 		&i.PremieredOn,
 		&i.EndedOn,
 		&i.TVmazeID,
-		&i.TVmazeURL,
-		&i.TVmazeUpdatedAt,
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
@@ -2618,7 +2544,7 @@ func (q *Queries) SeriesGetByTVmazeID(ctx context.Context, tvmazeid *int64) (Ser
 }
 
 const seriesList = `-- name: SeriesList :many
-SELECT id, slug, title, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series
 `
 
 func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
@@ -2635,12 +2561,9 @@ func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
 			&i.Slug,
 			&i.Title,
 			&i.Status,
-			&i.Language,
 			&i.PremieredOn,
 			&i.EndedOn,
 			&i.TVmazeID,
-			&i.TVmazeURL,
-			&i.TVmazeUpdatedAt,
 			&i.IMDBID,
 			&i.TVDBID,
 			&i.TVRageID,
@@ -2659,7 +2582,7 @@ func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
 }
 
 const seriesListByTVmazeID = `-- name: SeriesListByTVmazeID :many
-SELECT id, slug, title, status, language, premieredon, endedon, tvmazeid, tvmazeurl, tvmazeupdatedat, imdbid, tvdbid, tvrageid FROM Series WHERE TVmazeID IN (/*SLICE:ids*/?)
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE TVmazeID IN (/*SLICE:ids*/?)
 `
 
 func (q *Queries) SeriesListByTVmazeID(ctx context.Context, ids []*int64) ([]Series, error) {
@@ -2686,12 +2609,9 @@ func (q *Queries) SeriesListByTVmazeID(ctx context.Context, ids []*int64) ([]Ser
 			&i.Slug,
 			&i.Title,
 			&i.Status,
-			&i.Language,
 			&i.PremieredOn,
 			&i.EndedOn,
 			&i.TVmazeID,
-			&i.TVmazeURL,
-			&i.TVmazeUpdatedAt,
 			&i.IMDBID,
 			&i.TVDBID,
 			&i.TVRageID,

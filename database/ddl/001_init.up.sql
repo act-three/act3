@@ -16,25 +16,22 @@ STRICT;
 
 CREATE TABLE Series
 (
-	ID      TEXT PRIMARY KEY,
-	Slug    TEXT NOT NULL UNIQUE,
-	Title   TEXT NOT NULL,
-	Status  TEXT NOT NULL CHECK (Status IN (
+	ID     TEXT PRIMARY KEY,
+	Slug   TEXT NOT NULL UNIQUE,
+	Title  TEXT NOT NULL,
+	Status TEXT NOT NULL CHECK (Status IN (
 		'In Development',
 		'Running',
 		'Ended',
 		'To Be Determined'
 	)),
-	Language    TEXT NOT NULL,
 	PremieredOn TEXT,
 	EndedOn     TEXT,
 
-	TVmazeID        INTEGER UNIQUE,
-	TVmazeURL       TEXT,
-	TVmazeUpdatedAt INTEGER NOT NULL,
-	IMDBID          TEXT UNIQUE,
-	TVDBID          INTEGER UNIQUE,
-	TVRageID        INTEGER UNIQUE
+	TVmazeID INTEGER UNIQUE,
+	IMDBID   TEXT UNIQUE,
+	TVDBID   INTEGER UNIQUE,
+	TVRageID INTEGER UNIQUE
 )
 STRICT;
 
@@ -60,17 +57,11 @@ STRICT;
 
 CREATE TABLE Season
 (
-	ID           TEXT PRIMARY KEY DEFAULT ('sn'||newID()),
-	EditionID    TEXT NOT NULL REFERENCES SeriesEdition,
-	SortKey      TEXT NOT NULL,
-	Name         TEXT NOT NULL,
-	Number       INTEGER NOT NULL,
-	TVmazeURL    TEXT,
-	Summary      TEXT NOT NULL,
-	EpisodeOrder INTEGER NOT NULL,
-	PremieredOn  TEXT,
-	EndedOn      TEXT,
-	TVmazeImageURL TEXT NOT NULL,
+	ID        TEXT PRIMARY KEY DEFAULT ('sn'||newID()),
+	EditionID TEXT NOT NULL REFERENCES SeriesEdition,
+	SortKey   TEXT NOT NULL,
+	Name      TEXT NOT NULL, -- for display eg "Season 5"
+	Number    INTEGER NOT NULL, -- for episode codes eg "s05e02"
 	UNIQUE (EditionID, SortKey)
 )
 STRICT;
@@ -88,7 +79,6 @@ CREATE TABLE Episode
 	)),
 	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased
 	Runtime        INTEGER NOT NULL, -- minutes
-	TVmazeURL      TEXT,
 	TVmazeImageURL TEXT NOT NULL
 )
 STRICT;
@@ -99,7 +89,7 @@ CREATE TABLE SeasonEpisode
 	EpisodeID TEXT NOT NULL REFERENCES Episode,
 	SortKey   TEXT NOT NULL,
 	Label     TEXT NOT NULL, -- episode number e.g. "5", or "Special"
-	Number    INTEGER, -- NULL for specials
+	Number    INTEGER NOT NULL, -- 0 for specials
 	UNIQUE (SeasonID, SortKey),
 	PRIMARY KEY (SeasonID, EpisodeID)
 )

@@ -72,8 +72,8 @@ func (ep *Episode) ImageURL() string           { return ep.ep.TVmazeImageURL }
 func (ep *Episode) Progress() []*progress.Item { return ep.prog }
 func (ep *Episode) Videos() []*Video           { return ep.videos }
 func (ep *Episode) SnnEnn() string {
-	if eNN := ep.snep.Number; eNN != nil {
-		return fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, *eNN)
+	if eNN := ep.snep.Number; eNN != 0 {
+		return fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, eNN)
 	}
 	return fmt.Sprintf("S%02d Special", ep.sn.sn.Number)
 }
