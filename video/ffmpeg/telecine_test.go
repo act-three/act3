@@ -785,16 +785,16 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 		m := byterangeRe.FindStringSubmatch(line)
 		if m == nil {
 			// Try the quoted BYTERANGE= form.
-			start := strings.Index(line, "BYTERANGE=\"")
-			if start < 0 {
+			_, after, ok := strings.Cut(line, "BYTERANGE=\"")
+			if !ok {
 				break
 			}
-			rest := line[start+len("BYTERANGE=\""):]
-			end := strings.IndexByte(rest, '"')
-			if end < 0 {
+			rest := after
+			before, _, ok := strings.Cut(rest, "\"")
+			if !ok {
 				break
 			}
-			br := rest[:end]
+			br := before
 			szStr, offStr, ok := strings.Cut(br, "@")
 			if !ok {
 				break
