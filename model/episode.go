@@ -78,6 +78,16 @@ func (ep *Episode) SnnEnn() string {
 	return fmt.Sprintf("S%02d Special", ep.sn.sn.Number)
 }
 
+func (ep *Episode) AirdateAddr() []string { return ep.addr("airdate") }
+func (ep *Episode) SummaryAddr() []string { return ep.addr("summary") }
+func (ep *Episode) TitleAddr() []string   { return ep.addr("title") }
+
+func (ep *Episode) TitleField() (string, []string) { return ep.Title(), ep.TitleAddr() }
+
+func (ep *Episode) addr(field string) []string {
+	return []string{"episode", ep.ep.ID, field}
+}
+
 func (ep *Episode) PlayerPath(v *Video) string {
 	return fmt.Sprintf("/-/player/%s/%s/%s", v.ID(), ep.ID(), ep.so.ID())
 }
@@ -100,6 +110,10 @@ func (ep *Episode) EditDialogPath() string {
 
 func (ep *Episode) SeriesHead() *SeriesHead {
 	return ep.sr
+}
+
+func (ep *Episode) SeriesEditionHead() *SeriesEditionHead {
+	return ep.so
 }
 
 func (ep *Episode) SeasonHead() *SeasonHead {

@@ -311,56 +311,105 @@ func AppEpisodeDialog(
 	renditions []schema.RenditionForStreaming,
 ) html.Node {
 	return Dialog(frameID,
-		ScrollY(attr.Style("padding:1em"))(
-			html.Div()(
-				LiveText(ep.SeriesHead().TitleField()),
-			),
-			html.Div()(
-				html.Text(ep.SeasonHead().Name()),
-			),
-			html.Div()(
-				html.Text(ep.Label()),
-			),
+		ScrollY(attr.Style("padding:2em"))(
+			FlexCol(Gap8)(
+				FlexCol(Gap4)(
+					SettingsContent()(
+						TextNode(Size5)(LiveText(ep.SeriesHead().TitleField())),
+						TextNode(Size3)(
+							LiveText(ep.SeriesEditionHead().LabelField()),
+							html.Text(" "),
+							html.Text(ep.SnnEnn()),
+						),
+						TextNode(Size3)(LiveText((ep.TitleField()))),
+					),
 
-			TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Videos")),
-			expr.IfElse(len(videos) == 0,
-				func() html.Node {
-					return html.Div(
-						attr.Class("v-media-muted"),
-					)(html.Text("No videos found"))
-				},
-				func() html.Node { return html.Group() },
-			),
-			html.Range(videos, func(v schema.Video) html.Node {
-				return appEpisodeDialogVideo(v)
-			}),
+					SettingsGroup()(
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Title"),
+							),
+							SettingsTextField("/-/do/episode-set-title", "title", ep.Title(), LiveAddr(ep.TitleAddr()))(
+								Hidden("id", ep.ID()),
+							),
+						),
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Airdate"),
+							),
+							SettingsTextField("/-/do/episode-set-airdate", "airdate", ep.Airdate(), LiveAddr(ep.AirdateAddr()))(
+								Hidden("id", ep.ID()),
+							),
+						),
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Thumbnail"),
+							),
+							ImageFrame(attr.Style("width:30px"))(
+								PosterImg(PosterFill, PosterAspect169, attr.Src(ep.ImageURL())),
+							),
+						),
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Special"),
+							),
+							SettingsToggle("/-/do/episode-set-special", "special", true)(
+								Hidden("id", ep.ID()),
+							),
+						),
+					),
+				),
 
-			TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
-			expr.IfElse(len(renditions) == 0,
-				func() html.Node {
-					return html.Div(
-						attr.Class("v-media-muted"),
-					)(html.Text("No renditions found"))
-				},
-				func() html.Node { return html.Group() },
-			),
-			html.Range(renditions, func(r schema.RenditionForStreaming) html.Node {
-				return appEpisodeDialogRendition(r)
-			}),
+				FlexCol(Gap2)(
+					SettingsContent()(Text("Summary", Size2)),
+					SettingsTextArea("/-/do/episode-set-summary", "summary", ep.Summary(), LiveAddr(ep.SummaryAddr()))(
+						Hidden("id", ep.ID()),
+					),
+				),
 
-			TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Metadata")),
-			html.Div()(html.Text("Title")),
-			html.Div()(html.Text("Sort Title")),
-			html.Div()(html.Text("Season Number")),
-			html.Div()(html.Text("Episode Number")),
-			html.Div()(html.Text("Overview (plot summary)")),
-			html.Div()(html.Text("Release Date")),
-			html.Div()(html.Text("Special Episode Info")),
-			html.Div()(html.Text("Path")),
-			html.Div()(html.Text("Filesize")),
-			html.Div()(html.Text("Video Details (codec, framerate, etc)")),
-			html.Div()(html.Text("Audio Details (codec, etc)")),
-			html.Div()(html.Text("Subtitle Details (format, etc)")),
+				TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Videos")),
+				expr.IfElse(len(videos) == 0,
+					func() html.Node {
+						return html.Div(
+							attr.Class("v-media-muted"),
+						)(html.Text("No videos found"))
+					},
+					func() html.Node { return html.Group() },
+				),
+				html.Range(videos, func(v schema.Video) html.Node {
+					return appEpisodeDialogVideo(v)
+				}),
+
+				TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
+				expr.IfElse(len(renditions) == 0,
+					func() html.Node {
+						return html.Div(
+							attr.Class("v-media-muted"),
+						)(html.Text("No renditions found"))
+					},
+					func() html.Node { return html.Group() },
+				),
+				html.Range(renditions, func(r schema.RenditionForStreaming) html.Node {
+					return appEpisodeDialogRendition(r)
+				}),
+
+				SettingsGroup(Disabled(true /* TODO(april): med.Slug() == "" && len(editions) > 1 */))(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Delete Episode"),
+							SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
+						),
+
+						html.Form(
+							attr.Method("POST"),
+							attr.Action("/-/do/episode-delete"),
+						)(
+							Hidden("id", ep.ID()),
+							Button(Destructive, ButtonGhost, ButtonSize2)(Text("Delete")),
+						),
+					),
+				),
+			),
 		),
 	)
 }
