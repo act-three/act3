@@ -14,6 +14,7 @@ func TestTVmazeEpisodes(t *testing.T) {
 		wantSlugs    []string
 		wantSortKeys []string
 		wantLabels   []string
+		wantTypes    []string
 	}{
 		{
 			// Dark Shadows episodes around the Thanksgiving 1966
@@ -45,6 +46,7 @@ func TestTVmazeEpisodes(t *testing.T) {
 				"1966-11-29-00110-650330",
 			},
 			wantLabels: []string{"108", "Special", "Special", "109", "110"},
+			wantTypes:  []string{"regular", "insignificant_special", "insignificant_special", "regular", "regular"},
 		},
 		{
 			// Game of Thrones season 6 specials: three
@@ -69,6 +71,7 @@ func TestTVmazeEpisodes(t *testing.T) {
 				"2016-07-03-AAAAA-929474",
 			},
 			wantLabels: []string{"Special", "Special", "Special"},
+			wantTypes:  []string{"insignificant_special", "insignificant_special", "insignificant_special"},
 		},
 		{
 			// Game of Thrones season 1: regular episodes and a
@@ -92,6 +95,27 @@ func TestTVmazeEpisodes(t *testing.T) {
 				"2010-12-05-AAAAA-4993",
 			},
 			wantLabels: []string{"1", "2", "Special"},
+			wantTypes:  []string{"regular", "regular", "insignificant_special"},
+		},
+		{
+			// TVmaze "special" type is mapped to "significant_special"
+			// for the DB schema.
+			name:       "significant special type mapping",
+			seriesSlug: "test-show",
+			eps: []tvmaze.Episode{
+				{ID: 1, Name: "Pilot", Season: 1, Number: 1, Type: "regular", Airdate: "2020-01-01", Runtime: 60},
+				{ID: 2, Name: "Behind the Scenes", Season: 1, Number: 0, Type: "special", Airdate: "2020-01-08", Runtime: 30},
+			},
+			wantSlugs: []string{
+				"test-show/s01e01-pilot",
+				"test-show/s01-special-behind-the-scenes",
+			},
+			wantSortKeys: []string{
+				"2020-01-01-00001-1",
+				"2020-01-08-AAAAA-2",
+			},
+			wantLabels: []string{"1", "Special"},
+			wantTypes:  []string{"regular", "significant_special"},
 		},
 	}
 
@@ -112,6 +136,9 @@ func TestTVmazeEpisodes(t *testing.T) {
 				}
 				if ne.SeasonEpisode.Label != tt.wantLabels[i] {
 					t.Errorf("episode %d label = %q, want %q", i, ne.SeasonEpisode.Label, tt.wantLabels[i])
+				}
+				if ne.Episode.Type != tt.wantTypes[i] {
+					t.Errorf("episode %d type = %q, want %q", i, ne.Episode.Type, tt.wantTypes[i])
 				}
 			}
 		})

@@ -47,6 +47,13 @@ func TVmazeEpisodes(seriesSlug string, eps []tvmaze.Episode) []Episode {
 			}
 		}
 
+		// TVmaze uses "special" for significant specials;
+		// the DB schema uses "significant_special".
+		epType := te.Type
+		if epType == "special" {
+			epType = "significant_special"
+		}
+
 		slug := seriesSlug + "/" + epSlug
 		if titleSlug := xstrings.ToSlug(te.Name); titleSlug != "" {
 			slug += "-" + titleSlug
@@ -68,7 +75,7 @@ func TVmazeEpisodes(seriesSlug string, eps []tvmaze.Episode) []Episode {
 				Slug:           slug,
 				Title:          te.Name,
 				Summary:        te.Summary,
-				Type:           te.Type,
+				Type:           epType,
 				Airdate:        te.Airdate,
 				Runtime:        int64(te.Runtime),
 				TVmazeImageURL: te.Image.Medium(),

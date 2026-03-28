@@ -23,7 +23,7 @@ const (
 
 var episodeTypeByName = map[string]EpisodeType{
 	"regular":               Regular,
-	"special":               SignificantSpecial,
+	"significant_special":   SignificantSpecial,
 	"insignificant_special": InsignificantSpecial,
 }
 
