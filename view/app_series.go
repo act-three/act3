@@ -256,8 +256,7 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 						SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
 					),
 				),
-				// TODO(april): choose a better name when this is hooked up
-				turbo.StreamTarget("series-edition-season-"+sed.ID())(
+				turbo.StreamTarget("season-episodes-"+sn.ID())(
 					html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
 				),
 			)
@@ -590,6 +589,12 @@ func seriesTheaterPathText(sr *model.SeriesHead, sed *model.SeriesEditionHead) h
 	return Group(
 		html.Text("/"), LiveText(sr.SlugField()),
 		html.Text("/"), LiveText(sed.SlugField()),
+	)
+}
+
+func SeasonEpisodesUpdate(sn *model.Season) html.Node {
+	return turbo.Update("season-episodes-"+sn.ID(), turbo.Morph)(
+		html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
 	)
 }
 

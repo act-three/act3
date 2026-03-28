@@ -44,8 +44,21 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventMovieSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventMovieEditionSetSlug:
 		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
+	case model.EventSeasonRenumber:
+		return c.eventSeasonRenumber(ctx, ev.ID)
 	}
 	return nil
+}
+
+func (c *Config) eventSeasonRenumber(ctx context.Context, seasonID string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		sn, err := tx.SeasonInEdition(ctx, seasonID)
+		if err != nil {
+			return nil, err
+		}
+		return view.SeasonEpisodesUpdate(sn), nil
+	})
+	return n
 }
 
 func (c *Config) eventMovieSetSlug(ctx context.Context, movieID, oldSlug, newSlug string) html.Node {

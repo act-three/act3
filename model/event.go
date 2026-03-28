@@ -8,6 +8,7 @@ import (
 
 var (
 	EventLiveUpdate           = "live-update"
+	EventSeasonRenumber       = "season-renumber"
 	EventSeriesSetSlug        = "series-set-slug"
 	EventSeriesEditionSetSlug = "series-edition-set-slug"
 	EventMovieSetSlug         = "movie-set-slug"

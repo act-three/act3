@@ -308,6 +308,13 @@ func (tx *TxRW) renumberSeason(ctx Context, sn schema.Season) error {
 		eps[snep.EpisodeID] = ep
 	}
 
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventSeasonRenumber,
+			ID:   sn.ID,
+		})
+	})
+
 	var num int64
 	for _, snep := range all {
 		ep := eps[snep.EpisodeID]

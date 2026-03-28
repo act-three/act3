@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"iter"
 
 	"ily.dev/act3/database/schema"
@@ -83,6 +84,24 @@ func (sn *Season) Episodes(include EpisodeType) iter.Seq[*Episode] {
 
 func (sn *Season) episodeByID(id string) *Episode {
 	return sn.epByID[id]
+}
+
+// SeasonInEdition loads a full Season (with episodes) by season ID.
+func (tx *TxR) SeasonInEdition(ctx Context, seasonID string) (*Season, error) {
+	snData, err := tx.q.SeasonGet(ctx, seasonID)
+	if err != nil {
+		return nil, err
+	}
+	sed, err := tx.SeriesEdition(ctx, snData.EditionID)
+	if err != nil {
+		return nil, err
+	}
+	for sn := range sed.Seasons() {
+		if sn.ID() == seasonID {
+			return sn, nil
+		}
+	}
+	return nil, fmt.Errorf("season %s not found in edition %s", seasonID, snData.EditionID)
 }
 
 func (sn *Season) episodeByNumber(n int) *Episode {
