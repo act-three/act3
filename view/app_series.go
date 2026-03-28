@@ -574,7 +574,6 @@ func SeriesResultLink(editorURL string) html.Node {
 		Button(
 			Href(editorURL),
 			Attr("data-turbo-frame")("detail"),
-			Attr("data-action")("click->dialog#close"),
 		)(
 			Text("Edit"),
 		),
