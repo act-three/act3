@@ -60,6 +60,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
+			ne.SeasonEpisode.EditionID = sedID
 			ne.SeasonEpisode.SeasonID = sid[ne.Season]
 			ne.SeasonEpisode.EpisodeID = ep.ID
 			err = tx.q.SeasonEpisodeCreate(ctx, ne.SeasonEpisode)

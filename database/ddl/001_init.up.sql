@@ -69,7 +69,6 @@ STRICT;
 CREATE TABLE Episode
 (
 	ID      TEXT PRIMARY KEY DEFAULT ('ep'||newID()),
-	Slug    TEXT NOT NULL UNIQUE,
 	Title   TEXT NOT NULL,
 	Summary TEXT NOT NULL,
 	Type    TEXT NOT NULL CHECK (Type IN (
@@ -85,12 +84,15 @@ STRICT;
 
 CREATE TABLE SeasonEpisode
 (
+	EditionID TEXT NOT NULL REFERENCES SeriesEdition,
 	SeasonID  TEXT NOT NULL REFERENCES Season,
 	EpisodeID TEXT NOT NULL REFERENCES Episode,
 	SortKey   TEXT NOT NULL,
 	Label     TEXT NOT NULL, -- episode number e.g. "5", or "Special"
 	Number    INTEGER NOT NULL, -- 0 for specials
+	Slug      TEXT NOT NULL,
 	UNIQUE (SeasonID, SortKey),
+	UNIQUE (EditionID, Slug),
 	PRIMARY KEY (SeasonID, EpisodeID)
 )
 STRICT, WITHOUT ROWID;

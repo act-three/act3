@@ -672,7 +672,6 @@ func (q *Queries) EpisodeAirdateSet(ctx context.Context, arg EpisodeAirdateSetPa
 const episodeCreate = `-- name: EpisodeCreate :one
 INSERT INTO Episode
 (
-	Slug,
 	Title,
 	Summary,
 	Type,
@@ -680,12 +679,11 @@ INSERT INTO Episode
 	Runtime,
 	TVmazeImageURL
 )
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, title, summary, type, airdate, runtime, tvmazeimageurl
+VALUES (?, ?, ?, ?, ?, ?)
+RETURNING id, title, summary, type, airdate, runtime, tvmazeimageurl
 `
 
 type EpisodeCreateParams struct {
-	Slug           string
 	Title          string
 	Summary        string
 	Type           string
@@ -696,7 +694,6 @@ type EpisodeCreateParams struct {
 
 func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (Episode, error) {
 	row := q.db.QueryRowContext(ctx, episodeCreate,
-		arg.Slug,
 		arg.Title,
 		arg.Summary,
 		arg.Type,
@@ -707,7 +704,6 @@ func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (E
 	var i Episode
 	err := row.Scan(
 		&i.ID,
-		&i.Slug,
 		&i.Title,
 		&i.Summary,
 		&i.Type,
@@ -719,7 +715,7 @@ func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (E
 }
 
 const episodeGet = `-- name: EpisodeGet :one
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode WHERE ID = ?
+SELECT id, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode WHERE ID = ?
 `
 
 func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
@@ -727,27 +723,6 @@ func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
 	var i Episode
 	err := row.Scan(
 		&i.ID,
-		&i.Slug,
-		&i.Title,
-		&i.Summary,
-		&i.Type,
-		&i.Airdate,
-		&i.Runtime,
-		&i.TVmazeImageURL,
-	)
-	return i, err
-}
-
-const episodeGetBySlug = `-- name: EpisodeGetBySlug :one
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode WHERE Slug = ?
-`
-
-func (q *Queries) EpisodeGetBySlug(ctx context.Context, slug string) (Episode, error) {
-	row := q.db.QueryRowContext(ctx, episodeGetBySlug, slug)
-	var i Episode
-	err := row.Scan(
-		&i.ID,
-		&i.Slug,
 		&i.Title,
 		&i.Summary,
 		&i.Type,
@@ -759,10 +734,9 @@ func (q *Queries) EpisodeGetBySlug(ctx context.Context, slug string) (Episode, e
 }
 
 const episodeListByEditionID = `-- name: EpisodeListByEditionID :many
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode
+SELECT id, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode
 WHERE ID IN (
-	SELECT ID FROM SeasonEpisode
-	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
 )
 ORDER BY ID
 `
@@ -778,7 +752,6 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 		var i Episode
 		if err := rows.Scan(
 			&i.ID,
-			&i.Slug,
 			&i.Title,
 			&i.Summary,
 			&i.Type,
@@ -800,13 +773,10 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 }
 
 const episodeListBySeriesID = `-- name: EpisodeListBySeriesID :many
-SELECT id, slug, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode
+SELECT id, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode
 WHERE ID IN (
-	SELECT ID FROM SeasonEpisode
-	WHERE SeasonID IN (
-		SELECT ID FROM Season
-		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-	)
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 )
 ORDER BY ID
 `
@@ -822,7 +792,6 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 		var i Episode
 		if err := rows.Scan(
 			&i.ID,
-			&i.Slug,
 			&i.Title,
 			&i.Summary,
 			&i.Type,
@@ -841,31 +810,6 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 		return nil, err
 	}
 	return items, nil
-}
-
-const episodeSlugExists = `-- name: EpisodeSlugExists :one
-SELECT COUNT(*) FROM Episode WHERE Slug = ?
-`
-
-func (q *Queries) EpisodeSlugExists(ctx context.Context, slug string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, episodeSlugExists, slug)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const episodeSlugSet = `-- name: EpisodeSlugSet :exec
-UPDATE Episode SET Slug = ? WHERE ID = ?
-`
-
-type EpisodeSlugSetParams struct {
-	Slug string
-	ID   string
-}
-
-func (q *Queries) EpisodeSlugSet(ctx context.Context, arg EpisodeSlugSetParams) error {
-	_, err := q.db.ExecContext(ctx, episodeSlugSet, arg.Slug, arg.ID)
-	return err
 }
 
 const episodeTitleSet = `-- name: EpisodeTitleSet :exec
@@ -917,8 +861,7 @@ func (q *Queries) EpisodeVideoCreate(ctx context.Context, arg EpisodeVideoCreate
 const episodeVideoListByEditionID = `-- name: EpisodeVideoListByEditionID :many
 SELECT episodeid, videoid FROM EpisodeVideo
 WHERE EpisodeID IN (
-	SELECT EpisodeID FROM SeasonEpisode
-	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
 )
 `
 
@@ -949,10 +892,7 @@ const episodeVideoListBySeriesID = `-- name: EpisodeVideoListBySeriesID :many
 SELECT episodeid, videoid FROM EpisodeVideo
 WHERE EpisodeID IN (
 	SELECT EpisodeID FROM SeasonEpisode
-	WHERE SeasonID IN (
-		SELECT ID FROM Season
-		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-	)
+	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 )
 `
 
@@ -2002,32 +1942,55 @@ func (q *Queries) SeasonCreate(ctx context.Context, arg SeasonCreateParams) (Sea
 }
 
 const seasonEpisodeCreate = `-- name: SeasonEpisodeCreate :exec
-INSERT INTO SeasonEpisode (SeasonID, EpisodeID, SortKey, Label, Number)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO SeasonEpisode (EditionID, SeasonID, EpisodeID, SortKey, Label, Number, Slug)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type SeasonEpisodeCreateParams struct {
+	EditionID string
 	SeasonID  string
 	EpisodeID string
 	SortKey   string
 	Label     string
 	Number    int64
+	Slug      string
 }
 
 func (q *Queries) SeasonEpisodeCreate(ctx context.Context, arg SeasonEpisodeCreateParams) error {
 	_, err := q.db.ExecContext(ctx, seasonEpisodeCreate,
+		arg.EditionID,
 		arg.SeasonID,
 		arg.EpisodeID,
 		arg.SortKey,
 		arg.Label,
 		arg.Number,
+		arg.Slug,
 	)
 	return err
 }
 
+const seasonEpisodeGetBySlug = `-- name: SeasonEpisodeGetBySlug :one
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE Slug = ? LIMIT 1
+`
+
+func (q *Queries) SeasonEpisodeGetBySlug(ctx context.Context, slug string) (SeasonEpisode, error) {
+	row := q.db.QueryRowContext(ctx, seasonEpisodeGetBySlug, slug)
+	var i SeasonEpisode
+	err := row.Scan(
+		&i.EditionID,
+		&i.SeasonID,
+		&i.EpisodeID,
+		&i.SortKey,
+		&i.Label,
+		&i.Number,
+		&i.Slug,
+	)
+	return i, err
+}
+
 const seasonEpisodeListByEditionID = `-- name: SeasonEpisodeListByEditionID :many
-SELECT seasonid, episodeid, sortkey, label, number FROM SeasonEpisode
-WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode
+WHERE EditionID = ?
 ORDER BY SortKey
 `
 
@@ -2041,11 +2004,13 @@ func (q *Queries) SeasonEpisodeListByEditionID(ctx context.Context, editionid st
 	for rows.Next() {
 		var i SeasonEpisode
 		if err := rows.Scan(
+			&i.EditionID,
 			&i.SeasonID,
 			&i.EpisodeID,
 			&i.SortKey,
 			&i.Label,
 			&i.Number,
+			&i.Slug,
 		); err != nil {
 			return nil, err
 		}
@@ -2061,7 +2026,7 @@ func (q *Queries) SeasonEpisodeListByEditionID(ctx context.Context, editionid st
 }
 
 const seasonEpisodeListByEpisodeID = `-- name: SeasonEpisodeListByEpisodeID :many
-SELECT seasonid, episodeid, sortkey, label, number FROM SeasonEpisode WHERE EpisodeID = ?
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE EpisodeID = ?
 `
 
 func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid string) ([]SeasonEpisode, error) {
@@ -2074,11 +2039,13 @@ func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid st
 	for rows.Next() {
 		var i SeasonEpisode
 		if err := rows.Scan(
+			&i.EditionID,
 			&i.SeasonID,
 			&i.EpisodeID,
 			&i.SortKey,
 			&i.Label,
 			&i.Number,
+			&i.Slug,
 		); err != nil {
 			return nil, err
 		}
@@ -2094,11 +2061,8 @@ func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid st
 }
 
 const seasonEpisodeListBySeriesID = `-- name: SeasonEpisodeListBySeriesID :many
-SELECT seasonid, episodeid, sortkey, label, number FROM SeasonEpisode
-WHERE SeasonID IN (
-	SELECT ID FROM Season
-	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-)
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode
+WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 ORDER BY SortKey
 `
 
@@ -2112,11 +2076,13 @@ func (q *Queries) SeasonEpisodeListBySeriesID(ctx context.Context, seriesid stri
 	for rows.Next() {
 		var i SeasonEpisode
 		if err := rows.Scan(
+			&i.EditionID,
 			&i.SeasonID,
 			&i.EpisodeID,
 			&i.SortKey,
 			&i.Label,
 			&i.Number,
+			&i.Slug,
 		); err != nil {
 			return nil, err
 		}
@@ -2129,6 +2095,37 @@ func (q *Queries) SeasonEpisodeListBySeriesID(ctx context.Context, seriesid stri
 		return nil, err
 	}
 	return items, nil
+}
+
+const seasonEpisodeSlugExists = `-- name: SeasonEpisodeSlugExists :one
+SELECT COUNT(*) FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?
+`
+
+type SeasonEpisodeSlugExistsParams struct {
+	EditionID string
+	Slug      string
+}
+
+func (q *Queries) SeasonEpisodeSlugExists(ctx context.Context, arg SeasonEpisodeSlugExistsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, seasonEpisodeSlugExists, arg.EditionID, arg.Slug)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const seasonEpisodeSlugSet = `-- name: SeasonEpisodeSlugSet :exec
+UPDATE SeasonEpisode SET Slug = ? WHERE SeasonID = ? AND EpisodeID = ?
+`
+
+type SeasonEpisodeSlugSetParams struct {
+	Slug      string
+	SeasonID  string
+	EpisodeID string
+}
+
+func (q *Queries) SeasonEpisodeSlugSet(ctx context.Context, arg SeasonEpisodeSlugSetParams) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeSlugSet, arg.Slug, arg.SeasonID, arg.EpisodeID)
+	return err
 }
 
 const seasonGet = `-- name: SeasonGet :one
@@ -3135,8 +3132,7 @@ SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
-		SELECT EpisodeID FROM SeasonEpisode
-		WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+		SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
 	)
 )
 `
@@ -3281,10 +3277,7 @@ WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
 		SELECT EpisodeID FROM SeasonEpisode
-		WHERE SeasonID IN (
-			SELECT ID FROM Season
-			WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-		)
+		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 	)
 )
 `

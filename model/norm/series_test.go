@@ -108,8 +108,8 @@ func TestTVmazeEpisodes(t *testing.T) {
 			}
 
 			for i, ne := range neps {
-				if ne.Episode.Slug != tt.wantSlugs[i] {
-					t.Errorf("episode %d slug = %q, want %q", i, ne.Episode.Slug, tt.wantSlugs[i])
+				if ne.SeasonEpisode.Slug != tt.wantSlugs[i] {
+					t.Errorf("episode %d slug = %q, want %q", i, ne.SeasonEpisode.Slug, tt.wantSlugs[i])
 				}
 				if ne.SeasonEpisode.SortKey != tt.wantSortKeys[i] {
 					t.Errorf("episode %d sortKey = %q, want %q", i, ne.SeasonEpisode.SortKey, tt.wantSortKeys[i])

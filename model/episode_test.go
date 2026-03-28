@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"ily.dev/act3/database"
@@ -18,17 +17,13 @@ func TestEpisodeTypeByNameMatchesSchema(t *testing.T) {
 	q := schema.New(dbw)
 	ctx := context.Background()
 
-	var i int
 	for name := range episodeTypeByName {
-		slug := fmt.Sprintf("test/ep-%d", i)
 		_, err := q.EpisodeCreate(ctx, schema.EpisodeCreateParams{
-			Slug: slug,
 			Type: name,
 		})
 		if err != nil {
 			t.Errorf("EpisodeCreate with Type %q: %v", name, err)
 		}
-		i++
 	}
 }
 

@@ -65,7 +65,6 @@ func TVmazeEpisodes(seriesSlug string, eps []tvmaze.Episode) []Episode {
 		out[i] = Episode{
 			Season: te.Season,
 			Episode: schema.EpisodeCreateParams{
-				Slug:           slug,
 				Title:          te.Name,
 				Summary:        te.Summary,
 				Type:           te.Type,
@@ -77,6 +76,7 @@ func TVmazeEpisodes(seriesSlug string, eps []tvmaze.Episode) []Episode {
 				SortKey: sortKey + "-" + strconv.Itoa(te.ID),
 				Number:  int64(te.Number),
 				Label:   label,
+				Slug:    slug,
 			},
 		}
 	}

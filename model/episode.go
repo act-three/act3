@@ -66,7 +66,7 @@ func newEpisode(
 }
 
 func (ep *Episode) ID() string                 { return ep.ep.ID }
-func (ep *Episode) Slug() string               { return ep.ep.Slug }
+func (ep *Episode) Slug() string               { return ep.snep.Slug }
 func (ep *Episode) Title() string              { return ep.ep.Title }
 func (ep *Episode) Airdate() string            { return ep.ep.Airdate }
 func (ep *Episode) Summary() string            { return ep.ep.Summary }
@@ -126,18 +126,18 @@ func (ep *Episode) SeasonHead() *SeasonHead {
 }
 
 func (ep *Episode) TheaterPath() string {
-	return "/" + ep.ep.Slug
+	return "/" + ep.snep.Slug
 }
 
 // EpisodeBySlug looks up an episode by its slug components.
 // The episode slug in the database is seriesSlug + "/" + epSlug.
 // edSlug selects the edition; empty string selects the default.
 func (tx *TxR) EpisodeBySlug(ctx Context, seriesSlug, edSlug, epSlug string) (*Episode, error) {
-	epRec, err := tx.q.EpisodeGetBySlug(ctx, seriesSlug+"/"+epSlug)
+	snep, err := tx.q.SeasonEpisodeGetBySlug(ctx, seriesSlug+"/"+epSlug)
 	if err != nil {
 		return nil, err
 	}
-	return tx.episodeInContext(ctx, epRec.ID, "", "", edSlug)
+	return tx.episodeInContext(ctx, snep.EpisodeID, "", "", edSlug)
 }
 
 // Episode is like EpisodeInEdition, but it assumes the Air Date edition.
@@ -261,15 +261,25 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
-	slug, err := tx.generateEpisodeSlug(ctx, ep.Slug, title, id)
+	sneps, err := tx.q.SeasonEpisodeListByEpisodeID(ctx, id)
 	if err != nil {
 		return err
 	}
-	if slug != ep.Slug {
-		return tx.q.EpisodeSlugSet(ctx, schema.EpisodeSlugSetParams{
-			Slug: slug,
-			ID:   id,
-		})
+	for _, snep := range sneps {
+		slug, err := tx.generateEpisodeSlug(ctx, snep.EditionID, snep.Slug, title, id)
+		if err != nil {
+			return err
+		}
+		if slug != snep.Slug {
+			err = tx.q.SeasonEpisodeSlugSet(ctx, schema.SeasonEpisodeSlugSetParams{
+				Slug:      slug,
+				SeasonID:  snep.SeasonID,
+				EpisodeID: id,
+			})
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -277,7 +287,7 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 // generateEpisodeSlug rebuilds an episode slug after a title change.
 // It preserves the prefix (e.g. "series-name/s01e05") and replaces
 // the title portion with the slugified new title.
-func (tx *TxRW) generateEpisodeSlug(ctx Context, oldSlug, title, id string) (string, error) {
+func (tx *TxRW) generateEpisodeSlug(ctx Context, editionID, oldSlug, title, id string) (string, error) {
 	// The slug is "seriesSlug/sNNeNN-title" or "seriesSlug/sNN-special-title".
 	// Find the episode segment after the last "/".
 	lastSlash := strings.LastIndex(oldSlug, "/")
@@ -297,7 +307,10 @@ func (tx *TxRW) generateEpisodeSlug(ctx Context, oldSlug, title, id string) (str
 	if slug == oldSlug {
 		return slug, nil
 	}
-	n, err := tx.q.EpisodeSlugExists(ctx, slug)
+	n, err := tx.q.SeasonEpisodeSlugExists(ctx, schema.SeasonEpisodeSlugExistsParams{
+		EditionID: editionID,
+		Slug:      slug,
+	})
 	if err != nil {
 		return "", err
 	}

@@ -266,11 +266,13 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHea
 		}
 		for _, snep := range snepsBySeason[sn.ID] {
 			err := tx.q.SeasonEpisodeCreate(ctx, schema.SeasonEpisodeCreateParams{
+				EditionID: newSed.ID,
 				SeasonID:  newSn.ID,
 				EpisodeID: snep.EpisodeID,
 				SortKey:   snep.SortKey,
 				Label:     snep.Label,
 				Number:    snep.Number,
+				Slug:      snep.Slug,
 			})
 			if err != nil {
 				return nil, err

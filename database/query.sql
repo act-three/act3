@@ -117,7 +117,6 @@ UPDATE Episode SET Airdate = ? WHERE ID = ?;
 -- name: EpisodeCreate :one
 INSERT INTO Episode
 (
-	Slug,
 	Title,
 	Summary,
 	Type,
@@ -125,39 +124,26 @@ INSERT INTO Episode
 	Runtime,
 	TVmazeImageURL
 )
-VALUES (?, ?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: EpisodeGet :one
 SELECT * FROM Episode WHERE ID = ?;
 
--- name: EpisodeGetBySlug :one
-SELECT * FROM Episode WHERE Slug = ?;
-
 -- name: EpisodeListByEditionID :many
 SELECT * FROM Episode
 WHERE ID IN (
-	SELECT ID FROM SeasonEpisode
-	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
 )
 ORDER BY ID;
 
 -- name: EpisodeListBySeriesID :many
 SELECT * FROM Episode
 WHERE ID IN (
-	SELECT ID FROM SeasonEpisode
-	WHERE SeasonID IN (
-		SELECT ID FROM Season
-		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-	)
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 )
 ORDER BY ID;
-
--- name: EpisodeSlugExists :one
-SELECT COUNT(*) FROM Episode WHERE Slug = ?;
-
--- name: EpisodeSlugSet :exec
-UPDATE Episode SET Slug = ? WHERE ID = ?;
 
 -- name: EpisodeTitleSet :exec
 UPDATE Episode SET Title = ? WHERE ID = ?;
@@ -173,18 +159,14 @@ RETURNING *;
 -- name: EpisodeVideoListByEditionID :many
 SELECT * FROM EpisodeVideo
 WHERE EpisodeID IN (
-	SELECT EpisodeID FROM SeasonEpisode
-	WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
 );
 
 -- name: EpisodeVideoListBySeriesID :many
 SELECT * FROM EpisodeVideo
 WHERE EpisodeID IN (
 	SELECT EpisodeID FROM SeasonEpisode
-	WHERE SeasonID IN (
-		SELECT ID FROM Season
-		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-	)
+	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 );
 
 -- name: EpisodeVideoListByVideoID :many
@@ -363,12 +345,15 @@ VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeasonEpisodeCreate :exec
-INSERT INTO SeasonEpisode (SeasonID, EpisodeID, SortKey, Label, Number)
-VALUES (?, ?, ?, ?, ?);
+INSERT INTO SeasonEpisode (EditionID, SeasonID, EpisodeID, SortKey, Label, Number, Slug)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+-- name: SeasonEpisodeGetBySlug :one
+SELECT * FROM SeasonEpisode WHERE Slug = ? LIMIT 1;
 
 -- name: SeasonEpisodeListByEditionID :many
 SELECT * FROM SeasonEpisode
-WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+WHERE EditionID = ?
 ORDER BY SortKey;
 
 -- name: SeasonEpisodeListByEpisodeID :many
@@ -376,11 +361,14 @@ SELECT * FROM SeasonEpisode WHERE EpisodeID = ?;
 
 -- name: SeasonEpisodeListBySeriesID :many
 SELECT * FROM SeasonEpisode
-WHERE SeasonID IN (
-	SELECT ID FROM Season
-	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-)
+WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 ORDER BY SortKey;
+
+-- name: SeasonEpisodeSlugExists :one
+SELECT COUNT(*) FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?;
+
+-- name: SeasonEpisodeSlugSet :exec
+UPDATE SeasonEpisode SET Slug = ? WHERE SeasonID = ? AND EpisodeID = ?;
 
 -- name: SeasonGet :one
 SELECT * FROM Season WHERE ID = ?;
@@ -558,8 +546,7 @@ SELECT * FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
-		SELECT EpisodeID FROM SeasonEpisode
-		WHERE SeasonID IN (SELECT ID FROM Season WHERE EditionID = ?)
+		SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
 	)
 );
 
@@ -584,10 +571,7 @@ WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
 		SELECT EpisodeID FROM SeasonEpisode
-		WHERE SeasonID IN (
-			SELECT ID FROM Season
-			WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
-		)
+		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 	)
 );
 

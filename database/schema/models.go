@@ -39,7 +39,6 @@ type DownloadPlan struct {
 
 type Episode struct {
 	ID             string
-	Slug           string
 	Title          string
 	Summary        string
 	Type           string
@@ -113,11 +112,13 @@ type Season struct {
 }
 
 type SeasonEpisode struct {
+	EditionID string
 	SeasonID  string
 	EpisodeID string
 	SortKey   string
 	Label     string
 	Number    int64
+	Slug      string
 }
 
 type Series struct {
