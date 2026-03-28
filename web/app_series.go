@@ -146,6 +146,23 @@ func (c *Config) doEpisodeSetType(w http.ResponseWriter, req *http.Request) (htm
 	})
 }
 
+func (c *Config) doEpisodeSetSummary(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		summary := req.FormValue("summary")
+		if id == "" {
+			return nil, &model.ValidationError{Op: "set episode summary", Err: errNotFound}
+		}
+		err := tx.EpisodeSummarySet(ctx, id, summary)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doEpisodeSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

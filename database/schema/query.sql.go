@@ -812,6 +812,20 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 	return items, nil
 }
 
+const episodeSummarySet = `-- name: EpisodeSummarySet :exec
+UPDATE Episode SET Summary = ? WHERE ID = ?
+`
+
+type EpisodeSummarySetParams struct {
+	Summary string
+	ID      string
+}
+
+func (q *Queries) EpisodeSummarySet(ctx context.Context, arg EpisodeSummarySetParams) error {
+	_, err := q.db.ExecContext(ctx, episodeSummarySet, arg.Summary, arg.ID)
+	return err
+}
+
 const episodeTitleSet = `-- name: EpisodeTitleSet :exec
 UPDATE Episode SET Title = ? WHERE ID = ?
 `

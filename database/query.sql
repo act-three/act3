@@ -145,6 +145,9 @@ WHERE ID IN (
 )
 ORDER BY ID;
 
+-- name: EpisodeSummarySet :exec
+UPDATE Episode SET Summary = ? WHERE ID = ?;
+
 -- name: EpisodeTitleSet :exec
 UPDATE Episode SET Title = ? WHERE ID = ?;
 
