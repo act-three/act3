@@ -154,6 +154,12 @@ type Setting struct {
 	Value string
 }
 
+type Slug struct {
+	Slug   string
+	Kind   string
+	Target string
+}
+
 type Storage struct {
 	Path     string
 	Contents string

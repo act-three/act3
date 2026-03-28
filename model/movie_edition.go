@@ -292,6 +292,13 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 			OldText: mo.Slug,
 		})
 	})
+	err = tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{
+		Slug:   slug,
+		Target: mo.ID,
+	})
+	if err != nil {
+		return err
+	}
 	return tx.q.MovieSlugSet(ctx, schema.MovieSlugSetParams{
 		Slug: slug,
 		ID:   mo.ID,

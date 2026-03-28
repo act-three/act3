@@ -195,6 +195,14 @@ func (tx *TxRW) MovieCreate(ctx Context, title, year string) (*MovieWork, error)
 	if err != nil {
 		return nil, err
 	}
+	err = tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		Slug:   slug,
+		Kind:   "movie",
+		Target: moID,
+	})
+	if err != nil {
+		return nil, err
+	}
 	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
 		Title: title,
 		Year:  year,
@@ -234,6 +242,14 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	if err != nil {
 		return nil, err
 	}
+	err = tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		Slug:   slug,
+		Kind:   "movie",
+		Target: moID,
+	})
+	if err != nil {
+		return nil, err
+	}
 	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
 		Title:    movie.Title,
 		Summary:  movie.Overview,
@@ -269,15 +285,11 @@ func (tx *TxRW) movieFindSlug(ctx Context, title, year, id string, allow ...stri
 		if slices.Contains(allow, slug) {
 			return slug, nil
 		}
-		n, err := tx.q.MovieSlugExists(ctx, slug)
+		n, err := tx.q.SlugExists(ctx, slug)
 		if err != nil {
 			return "", err
 		}
-		sn, err := tx.q.SeriesSlugExists(ctx, slug)
-		if err != nil {
-			return "", err
-		}
-		if n == 0 && sn == 0 {
+		if n == 0 {
 			return slug, nil
 		}
 	}
@@ -288,15 +300,11 @@ func (tx *TxRW) movieFindSlug(ctx Context, title, year, id string, allow ...stri
 		if slices.Contains(allow, candidate) {
 			return candidate, nil
 		}
-		n, err := tx.q.MovieSlugExists(ctx, candidate)
+		n, err := tx.q.SlugExists(ctx, candidate)
 		if err != nil {
 			return "", err
 		}
-		sn, err := tx.q.SeriesSlugExists(ctx, candidate)
-		if err != nil {
-			return "", err
-		}
-		if n == 0 && sn == 0 {
+		if n == 0 {
 			return candidate, nil
 		}
 	}

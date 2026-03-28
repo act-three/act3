@@ -102,7 +102,7 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string,
 		if slices.Contains(allow, slug) {
 			return slug, nil
 		}
-		n, err := tx.q.SeriesSlugExists(ctx, slug)
+		n, err := tx.q.SlugExists(ctx, slug)
 		if err != nil {
 			return "", err
 		}
@@ -119,7 +119,7 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string,
 			if slices.Contains(allow, candidate) {
 				return candidate, nil
 			}
-			n, err := tx.q.SeriesSlugExists(ctx, candidate)
+			n, err := tx.q.SlugExists(ctx, candidate)
 			if err != nil {
 				return "", err
 			}
@@ -168,6 +168,13 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 			OldText: sr.Slug,
 		})
 	})
+	err = tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{
+		Slug:   slug,
+		Target: id,
+	})
+	if err != nil {
+		return err
+	}
 	return tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{
 		Slug: slug,
 		ID:   id,
@@ -196,6 +203,14 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		IMDBID:   show.Externals.IMDB,
 		TVDBID:   show.Externals.TheTVDB,
 		TVRageID: show.Externals.TVRage,
+	})
+	if err != nil {
+		return nil, err
+	}
+	err = tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		Slug:   slug,
+		Kind:   "series",
+		Target: srID,
 	})
 	if err != nil {
 		return nil, err

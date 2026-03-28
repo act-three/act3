@@ -7,6 +7,14 @@ CREATE TABLE User
 )
 STRICT;
 
+CREATE TABLE Slug
+(
+	Slug   TEXT PRIMARY KEY,
+	Kind   TEXT NOT NULL CHECK (Kind IN ('movie', 'series')),
+	Target TEXT NOT NULL UNIQUE
+)
+STRICT;
+
 CREATE TABLE Storage
 (
 	Path     TEXT PRIMARY KEY,

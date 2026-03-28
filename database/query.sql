@@ -472,6 +472,21 @@ SELECT * FROM Setting WHERE "Group" = ?;
 INSERT INTO Setting (Key, "Group", Value) VALUES (?, ?, ?)
 ON CONFLICT (Key) DO UPDATE SET Value = ?3;
 
+-- name: SlugCreate :exec
+INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?);
+
+-- name: SlugDelete :exec
+DELETE FROM Slug WHERE Target = ?;
+
+-- name: SlugExists :one
+SELECT COUNT(*) FROM Slug WHERE Slug = ?;
+
+-- name: SlugGet :one
+SELECT * FROM Slug WHERE Slug = ?;
+
+-- name: SlugUpdate :exec
+UPDATE Slug SET Slug = ? WHERE Target = ?;
+
 -- name: StorageCreate :exec
 INSERT INTO Storage (Path, Contents) VALUES (?, ?);
 

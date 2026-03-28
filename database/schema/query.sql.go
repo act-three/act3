@@ -2780,6 +2780,66 @@ func (q *Queries) SettingSet(ctx context.Context, arg SettingSetParams) error {
 	return err
 }
 
+const slugCreate = `-- name: SlugCreate :exec
+INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
+`
+
+type SlugCreateParams struct {
+	Slug   string
+	Kind   string
+	Target string
+}
+
+func (q *Queries) SlugCreate(ctx context.Context, arg SlugCreateParams) error {
+	_, err := q.db.ExecContext(ctx, slugCreate, arg.Slug, arg.Kind, arg.Target)
+	return err
+}
+
+const slugDelete = `-- name: SlugDelete :exec
+DELETE FROM Slug WHERE Target = ?
+`
+
+func (q *Queries) SlugDelete(ctx context.Context, target string) error {
+	_, err := q.db.ExecContext(ctx, slugDelete, target)
+	return err
+}
+
+const slugExists = `-- name: SlugExists :one
+SELECT COUNT(*) FROM Slug WHERE Slug = ?
+`
+
+func (q *Queries) SlugExists(ctx context.Context, slug string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, slugExists, slug)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const slugGet = `-- name: SlugGet :one
+SELECT slug, kind, target FROM Slug WHERE Slug = ?
+`
+
+func (q *Queries) SlugGet(ctx context.Context, slug string) (Slug, error) {
+	row := q.db.QueryRowContext(ctx, slugGet, slug)
+	var i Slug
+	err := row.Scan(&i.Slug, &i.Kind, &i.Target)
+	return i, err
+}
+
+const slugUpdate = `-- name: SlugUpdate :exec
+UPDATE Slug SET Slug = ? WHERE Target = ?
+`
+
+type SlugUpdateParams struct {
+	Slug   string
+	Target string
+}
+
+func (q *Queries) SlugUpdate(ctx context.Context, arg SlugUpdateParams) error {
+	_, err := q.db.ExecContext(ctx, slugUpdate, arg.Slug, arg.Target)
+	return err
+}
+
 const storageCreate = `-- name: StorageCreate :exec
 INSERT INTO Storage (Path, Contents) VALUES (?, ?)
 `
