@@ -2079,6 +2079,43 @@ func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid st
 	return items, nil
 }
 
+const seasonEpisodeListBySeasonID = `-- name: SeasonEpisodeListBySeasonID :many
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode
+WHERE SeasonID = ?
+ORDER BY SortKey
+`
+
+func (q *Queries) SeasonEpisodeListBySeasonID(ctx context.Context, seasonid string) ([]SeasonEpisode, error) {
+	rows, err := q.db.QueryContext(ctx, seasonEpisodeListBySeasonID, seasonid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SeasonEpisode
+	for rows.Next() {
+		var i SeasonEpisode
+		if err := rows.Scan(
+			&i.EditionID,
+			&i.SeasonID,
+			&i.EpisodeID,
+			&i.SortKey,
+			&i.Label,
+			&i.Number,
+			&i.Slug,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const seasonEpisodeListBySeriesID = `-- name: SeasonEpisodeListBySeriesID :many
 SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode
 WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
@@ -2114,6 +2151,29 @@ func (q *Queries) SeasonEpisodeListBySeriesID(ctx context.Context, seriesid stri
 		return nil, err
 	}
 	return items, nil
+}
+
+const seasonEpisodeNumberingSet = `-- name: SeasonEpisodeNumberingSet :exec
+UPDATE SeasonEpisode SET Number = ?, Label = ?, Slug = ? WHERE SeasonID = ? AND EpisodeID = ?
+`
+
+type SeasonEpisodeNumberingSetParams struct {
+	Number    int64
+	Label     string
+	Slug      string
+	SeasonID  string
+	EpisodeID string
+}
+
+func (q *Queries) SeasonEpisodeNumberingSet(ctx context.Context, arg SeasonEpisodeNumberingSetParams) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeNumberingSet,
+		arg.Number,
+		arg.Label,
+		arg.Slug,
+		arg.SeasonID,
+		arg.EpisodeID,
+	)
+	return err
 }
 
 const seasonEpisodeSlugExists = `-- name: SeasonEpisodeSlugExists :one

@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
 
 	"ily.dev/act3/database/schema"
@@ -267,10 +268,86 @@ func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
 			OldText: ep.Type,
 		})
 	})
-	return tx.q.EpisodeTypeSet(ctx, schema.EpisodeTypeSetParams{
+	err = tx.q.EpisodeTypeSet(ctx, schema.EpisodeTypeSetParams{
 		Type: typ,
 		ID:   id,
 	})
+	if err != nil {
+		return err
+	}
+	sneps, err := tx.q.SeasonEpisodeListByEpisodeID(ctx, id)
+	if err != nil {
+		return err
+	}
+	for _, snep := range sneps {
+		sn, err := tx.q.SeasonGet(ctx, snep.SeasonID)
+		if err != nil {
+			return err
+		}
+		if err := tx.renumberSeason(ctx, sn); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// renumberSeason reassigns Number, Label, and Slug for every episode
+// in a season.  Specials get Number 0 / Label "Special"; regular
+// episodes are numbered sequentially starting from 1 in SortKey order.
+func (tx *TxRW) renumberSeason(ctx Context, sn schema.Season) error {
+	all, err := tx.q.SeasonEpisodeListBySeasonID(ctx, sn.ID)
+	if err != nil {
+		return err
+	}
+	eps := make(map[string]schema.Episode, len(all))
+	for _, snep := range all {
+		ep, err := tx.q.EpisodeGet(ctx, snep.EpisodeID)
+		if err != nil {
+			return err
+		}
+		eps[snep.EpisodeID] = ep
+	}
+
+	var num int64
+	for _, snep := range all {
+		ep := eps[snep.EpisodeID]
+		isSpecial := ep.Type == "special" || ep.Type == "insignificant_special"
+
+		var wantNum int64
+		var wantLabel string
+		if isSpecial {
+			wantLabel = "Special"
+		} else {
+			num++
+			wantNum = num
+			wantLabel = strconv.FormatInt(num, 10)
+		}
+
+		var base string
+		if isSpecial {
+			base = fmt.Sprintf("s%02d-special", sn.Number)
+		} else {
+			base = fmt.Sprintf("s%02de%02d", sn.Number, wantNum)
+		}
+		wantSlug, err := tx.generateEpisodeSlug(ctx, snep.EditionID, snep.Slug, base, ep.Title, snep.EpisodeID)
+		if err != nil {
+			return err
+		}
+		if snep.Number == wantNum && snep.Label == wantLabel && snep.Slug == wantSlug {
+			continue
+		}
+		err = tx.q.SeasonEpisodeNumberingSet(ctx, schema.SeasonEpisodeNumberingSetParams{
+			Number:    wantNum,
+			Label:     wantLabel,
+			Slug:      wantSlug,
+			SeasonID:  sn.ID,
+			EpisodeID: snep.EpisodeID,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
@@ -298,7 +375,7 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 		return err
 	}
 	for _, snep := range sneps {
-		slug, err := tx.generateEpisodeSlug(ctx, snep.EditionID, snep.Slug, title, id)
+		slug, err := tx.generateEpisodeSlug(ctx, snep.EditionID, snep.Slug, episodeSlugBase(snep.Slug), title, id)
 		if err != nil {
 			return err
 		}
@@ -316,14 +393,12 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 	return nil
 }
 
-// generateEpisodeSlug rebuilds an episode slug after a title change.
-// It preserves the base (e.g. "s01e05") and replaces
-// the title portion with the slugified new title.
-func (tx *TxRW) generateEpisodeSlug(ctx Context, editionID, oldSlug, title, id string) (string, error) {
-	// The slug is "sNNeNN-title" or "sNN-special-title".
-	// Strip the old title portion from the slug.
-	// The base is "sNNeNN" or "sNN-special"; the title follows after a "-".
-	slug := episodeSlugBase(oldSlug)
+// generateEpisodeSlug builds an episode slug from a base (e.g. "s01e05"
+// or "s02-special") and a title.
+// If the result matches oldSlug, it is returned as-is;
+// otherwise a uniqueness check deduplicates within the edition.
+func (tx *TxRW) generateEpisodeSlug(ctx Context, editionID, oldSlug, base, title, id string) (string, error) {
+	slug := base
 	if titleSlug := xstrings.ToSlug(title); titleSlug != "" {
 		slug += "-" + titleSlug
 	}

@@ -362,10 +362,18 @@ ORDER BY SortKey;
 -- name: SeasonEpisodeListByEpisodeID :many
 SELECT * FROM SeasonEpisode WHERE EpisodeID = ?;
 
+-- name: SeasonEpisodeListBySeasonID :many
+SELECT * FROM SeasonEpisode
+WHERE SeasonID = ?
+ORDER BY SortKey;
+
 -- name: SeasonEpisodeListBySeriesID :many
 SELECT * FROM SeasonEpisode
 WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 ORDER BY SortKey;
+
+-- name: SeasonEpisodeNumberingSet :exec
+UPDATE SeasonEpisode SET Number = ?, Label = ?, Slug = ? WHERE SeasonID = ? AND EpisodeID = ?;
 
 -- name: SeasonEpisodeSlugExists :one
 SELECT COUNT(*) FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?;
