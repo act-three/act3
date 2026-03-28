@@ -233,8 +233,8 @@ func AppMoviesDetail(
 	)
 }
 
-func AppMovieAddDialog(frameID string) html.Node {
-	return Dialog(frameID,
+func AppMovieAddDialog() html.Node {
+	return DialogStream(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				attr.Class("v-media-dialog-fixed"),

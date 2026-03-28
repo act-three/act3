@@ -181,8 +181,7 @@ func (c *Config) doEpisodeSetTitle(w http.ResponseWriter, req *http.Request) (ht
 }
 
 func (c *Config) seriesAddDialogReq(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
-	frameID := req.Header.Get("Turbo-Frame")
-	return view.AppSeriesAddDialog(frameID), nil
+	return view.AppSeriesAddDialog(), nil
 }
 
 func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
@@ -204,8 +203,7 @@ func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (ht
 			return nil, err
 		}
 
-		frameID := req.Header.Get("Turbo-Frame")
-		return view.AppEpisodeDialog(frameID, ep, videos, renditions), nil
+		return view.AppEpisodeDialog(ep, videos, renditions), nil
 	})
 }
 

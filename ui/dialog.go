@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"crypto/rand"
-
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/ui/stimulus"
@@ -11,28 +9,22 @@ import (
 
 const dialogController = "dialog"
 
-// DialogButton returns an element that, when called with children,
-// produces a button paired with an inline turbo frame.
-// Clicking the button loads the URL into the frame,
-// which renders the dialog.
+// DialogButton returns a form that GETs url as a turbo stream.
+// The server responds with a turbo stream that appends
+// the dialog to the document body,
+// keeping it outside any replaceable content regions.
 func DialogButton(url string, attrs ...attr.Node) html.Element {
-	id := "dialog-" + rand.Text()[:8]
 	return func(children ...html.Node) html.Node {
-		return html.Group(
-			Button(
-				attr.Href(url),
-				attr.Attr("data-turbo-frame")(id),
-				group(attrs...),
-			)(children...),
-			turbo.Frame(id),
+		return html.Form(attr.Method("get"), attr.Action(url))(
+			Button(attrs...)(children...),
 		)
 	}
 }
 
-// Dialog wraps children in a native <dialog> element
-// with Stimulus controller for showModal/close behavior.
-func Dialog(frameID string, children ...html.Node) html.Node {
-	return turbo.Frame(frameID)(
+// DialogStream renders a dialog and wraps it in a turbo stream
+// append to body.
+func DialogStream(children ...html.Node) html.Node {
+	return turbo.AppendTargets("body",
 		html.Dialog(
 			attr.Class("u-dialog"),
 			stimulus.Controller(dialogController),

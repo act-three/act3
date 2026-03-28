@@ -7924,9 +7924,7 @@
   var dialog_default = class extends Controller {
     connect() {
       this.element.showModal();
-    }
-    disconnect() {
-      this.element.close();
+      this.element.addEventListener("close", () => this.element.remove(), { once: true });
     }
     close() {
       this.element.close();

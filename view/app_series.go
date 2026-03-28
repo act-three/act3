@@ -274,8 +274,8 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	)
 }
 
-func AppSeriesAddDialog(frameID string) html.Node {
-	return Dialog(frameID,
+func AppSeriesAddDialog() html.Node {
+	return DialogStream(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				attr.Class("v-media-dialog-fixed"),
@@ -304,12 +304,11 @@ func AppSeriesAddDialog(frameID string) html.Node {
 // AppEpisodeDialog renders the dialog for inspecting an
 // episode's videos, renditions, and metadata.
 func AppEpisodeDialog(
-	frameID string,
 	ep *model.Episode,
 	videos []schema.Video,
 	renditions []schema.RenditionForStreaming,
 ) html.Node {
-	return Dialog(frameID,
+	return DialogStream(
 		ScrollY(attr.Style("padding:2em"))(
 			FlexCol(Gap8)(
 				FlexCol(Gap4)(
