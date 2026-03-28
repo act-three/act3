@@ -258,7 +258,7 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 				),
 				// TODO(april): choose a better name when this is hooked up
 				turbo.StreamTarget("series-edition-season-"+sed.ID())(
-					html.RangeSeq(sn.Episodes(model.Significant), appSeriesDetailEpisodeListItem),
+					html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
 				),
 			)
 		}),
