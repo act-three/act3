@@ -36,3 +36,6 @@ var (
 
 // Shapes
 var ButtonCircle = attr.Attr("data-radius")("circle")
+
+// ButtonSelected highlights a surface button as selected.
+var ButtonSelected = attr.Attr("data-selected")
