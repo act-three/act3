@@ -655,6 +655,20 @@ func (q *Queries) DownloadUpdateProgress(ctx context.Context, arg DownloadUpdate
 	return i, err
 }
 
+const episodeAirdateSet = `-- name: EpisodeAirdateSet :exec
+UPDATE Episode SET Airdate = ? WHERE ID = ?
+`
+
+type EpisodeAirdateSetParams struct {
+	Airdate string
+	ID      string
+}
+
+func (q *Queries) EpisodeAirdateSet(ctx context.Context, arg EpisodeAirdateSetParams) error {
+	_, err := q.db.ExecContext(ctx, episodeAirdateSet, arg.Airdate, arg.ID)
+	return err
+}
+
 const episodeCreate = `-- name: EpisodeCreate :one
 INSERT INTO Episode
 (

@@ -112,6 +112,23 @@ func (c *Config) doSeriesEditionSetSummary(w http.ResponseWriter, req *http.Requ
 	})
 }
 
+func (c *Config) doEpisodeSetAirdate(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		airdate := req.FormValue("airdate")
+		if id == "" {
+			return nil, &model.ValidationError{Op: "set episode airdate", Err: errNotFound}
+		}
+		err := tx.EpisodeAirdateSet(ctx, id, airdate)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doEpisodeSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

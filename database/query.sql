@@ -111,6 +111,9 @@ UPDATE Download SET
 	Error = ''
 WHERE ID = ? RETURNING *;
 
+-- name: EpisodeAirdateSet :exec
+UPDATE Episode SET Airdate = ? WHERE ID = ?;
+
 -- name: EpisodeCreate :one
 INSERT INTO Episode
 (

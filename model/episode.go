@@ -200,6 +200,25 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName, edSlug string) (*
 	return nil, fmt.Errorf("cannot load ep")
 }
 
+func (tx *TxRW) EpisodeAirdateSet(ctx Context, id, airdate string) error {
+	ep, err := tx.q.EpisodeGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventLiveUpdate,
+			Addr:    (&Episode{ep: ep}).AirdateAddr(),
+			NewText: airdate,
+			OldText: ep.Airdate,
+		})
+	})
+	return tx.q.EpisodeAirdateSet(ctx, schema.EpisodeAirdateSetParams{
+		Airdate: airdate,
+		ID:      id,
+	})
+}
+
 func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 	ep, err := tx.q.EpisodeGet(ctx, id)
 	if err != nil {
