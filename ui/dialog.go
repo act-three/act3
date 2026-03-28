@@ -28,7 +28,8 @@ func DialogStream(children ...html.Node) html.Node {
 		html.Dialog(
 			attr.Class("u-dialog"),
 			stimulus.Controller(dialogController),
-			stimulus.Action("click->dialog#backdropClose"),
+			stimulus.Action("click->dialog#close:self"),
+			stimulus.Action("keydown.esc@document->dialog#close"),
 			stimulus.Action("turbo:before-visit@document->dialog#close"),
 		)(
 			html.Div(attr.Class("u-dialog-positioner"))(
