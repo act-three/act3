@@ -13,9 +13,10 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	user-select: none;
 }
 
-.u-dialog::backdrop { background: rgba(180, 180, 180, 0.6); }
+.u-dialog::backdrop { background: oklch(0 0 0 / 0.6); }
 
 .u-dialog-positioner {
 	display: flex;
@@ -28,22 +29,24 @@
 .u-dialog-panel {
 	position: relative;
 	max-height: 100%;
+	max-width: 640px;
 	display: flex;
-	box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-	border-radius: 0.125rem;
-	background-color: var(--bg-input);
-	padding: 1.5rem;
+	box-shadow: 0 20px 25px 5px rgb(0 0 0 / 0.1);
+	border: 1px solid oklch(from var(--bg) 0.301 0.02 h);
+	border-radius: 0.875rem;
+	background-color: oklch(from var(--bg) 0.17 0.02 h);
 	pointer-events: auto;
 }
 
 .u-dialog-close {
 	position: absolute;
-	top: 0.5rem;
-	right: 0.5rem;
+	top: 0.75rem;
+	right: 0.75rem;
 	width: 1.5rem;
 	height: 1.5rem;
 	padding: 0.25rem;
 	border-radius: 9999px;
-	background-color: var(--bg-surface);
 	display: flex;
 }
+
+.u-dialog-close:hover { background-color: var(--bg-hover); }

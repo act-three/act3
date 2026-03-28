@@ -311,7 +311,7 @@ func AppEpisodeDialog(
 	renditions []schema.RenditionForStreaming,
 ) html.Node {
 	return Dialog(frameID,
-		ScrollY()(
+		ScrollY(attr.Style("padding:1em"))(
 			html.Div()(
 				LiveText(ep.SeriesHead().TitleField()),
 			),
