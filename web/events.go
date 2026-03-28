@@ -15,7 +15,7 @@ import (
 func (c *Config) events(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	h := w.Header()
-	h.Set("Content-Type", "text/event-stream")
+	h.Set("Content-Type", "text/event-stream; charset=utf-8")
 	h.Set("Cache-Control", "no-cache")
 	rc := http.NewResponseController(w)
 	for ev := range c.Model.Events(ctx) {

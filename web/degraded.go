@@ -49,7 +49,7 @@ func HandleDegraded(
 				os.Remove(dbPath + suffix)
 			}
 			rc := http.NewResponseController(w)
-			w.Header().Set("Content-Type", "text/html")
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			io.WriteString(w, `<!doctype html>
 <html><head></head><body style="background:#111;color:#eee;
 font-family:system-ui;padding:2rem">

@@ -152,9 +152,9 @@ func rawHandler(code int, node ...html.Node) http.Handler {
 		panic(err)
 	}
 	body := buf.Bytes()
-	contentType := "text/html"
+	contentType := "text/html; charset=utf-8"
 	if turbo.SniffStream(body) {
-		contentType = "text/vnd.turbo-stream.html"
+		contentType = "text/vnd.turbo-stream.html; charset=utf-8"
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
