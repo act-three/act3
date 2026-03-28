@@ -25,7 +25,7 @@ const (
 
 var episodeTypeByName = map[string]EpisodeType{
 	"regular":               Regular,
-	"special":               SignificantSpecial,
+	"significant_special":   SignificantSpecial,
 	"insignificant_special": InsignificantSpecial,
 }
 
@@ -318,7 +318,7 @@ func (tx *TxRW) renumberSeason(ctx Context, sn schema.Season) error {
 	var num int64
 	for _, snep := range all {
 		ep := eps[snep.EpisodeID]
-		isSpecial := ep.Type == "special" || ep.Type == "insignificant_special"
+		isSpecial := ep.Type == "significant_special" || ep.Type == "insignificant_special"
 
 		var wantNum int64
 		var wantLabel string

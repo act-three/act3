@@ -81,7 +81,7 @@ CREATE TABLE Episode
 	Summary TEXT NOT NULL,
 	Type    TEXT NOT NULL CHECK (Type IN (
 		'regular',
-		'special',
+		'significant_special',
 		'insignificant_special'
 	)),
 	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased

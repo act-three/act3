@@ -93,6 +93,18 @@ func TestTVmazeEpisodes(t *testing.T) {
 			wantLabels: []string{"1", "2", "Special"},
 			wantTypes:  []string{"regular", "regular", "insignificant_special"},
 		},
+		{
+			name: "unknown type omitted",
+			eps: []tvmaze.Episode{
+				{ID: 1, Name: "Ep 1", Season: 1, Number: 1, Type: "regular", Airdate: "2020-01-01", Runtime: 30},
+				{ID: 2, Name: "Ep 2", Season: 1, Number: 2, Type: "brand_new_type", Airdate: "2020-01-02", Runtime: 30},
+				{ID: 3, Name: "Ep 3", Season: 1, Number: 3, Type: "regular", Airdate: "2020-01-03", Runtime: 30},
+			},
+			wantSlugs:    []string{"s01e01-ep-1", "s01e03-ep-3"},
+			wantSortKeys: []string{"2020-01-01-00001-1", "2020-01-03-00003-3"},
+			wantLabels:   []string{"1", "3"},
+			wantTypes:    []string{"regular", "regular"},
+		},
 	}
 
 	for _, tt := range tests {

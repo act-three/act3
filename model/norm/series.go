@@ -2,6 +2,7 @@ package norm
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"ily.dev/act3/database/schema"
@@ -15,17 +16,29 @@ type Episode struct {
 	SeasonEpisode schema.SeasonEpisodeCreateParams
 }
 
+var knownEpisodeTypes = map[string]bool{
+	"regular":               true,
+	"significant_special":   true,
+	"insignificant_special": true,
+}
+
 // TVmazeEpisodes normalizes TVmaze episode data into DB-ready params.
 // The returned SeasonEpisodeCreateParams have EditionID, SeasonID,
 // and EpisodeID left empty — the caller fills those after creating
 // seasons and episodes.
 //
-// The returned slices have the same length and order as eps.
+// Episodes with unrecognized types are logged and omitted.
 func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
-	out := make([]Episode, len(eps))
+	var out []Episode
 
 	seenSlug := map[string]bool{}
-	for i, te := range eps {
+	for _, te := range eps {
+		if !knownEpisodeTypes[te.Type] {
+			slog.Error("unknown TVmaze episode type; omitting",
+				"type", te.Type, "episode", te.Name, "tvmazeID", te.ID)
+			continue
+		}
+
 		sortDate := te.Airdate
 		if sortDate == "" {
 			sortDate = "AAAA-AA-AA"
@@ -40,7 +53,7 @@ func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 			epSlug = fmt.Sprintf("s%02d-special", te.Season)
 			sortKey = sortDate + "-" + "AAAAA"
 			switch te.Type {
-			case "special", "insignificant_special":
+			case "significant_special", "insignificant_special":
 				label = "Special"
 			default:
 				label = "Unknown"
@@ -62,7 +75,7 @@ func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 		}
 		seenSlug[slug] = true
 
-		out[i] = Episode{
+		out = append(out, Episode{
 			Season: te.Season,
 			Episode: schema.EpisodeCreateParams{
 				Title:          te.Name,
@@ -78,7 +91,7 @@ func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 				Label:   label,
 				Slug:    slug,
 			},
-		}
+		})
 	}
 
 	return out
