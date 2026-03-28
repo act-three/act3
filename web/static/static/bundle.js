@@ -8786,6 +8786,66 @@
     return !el.hasAttribute("data-addr" + addr.length);
   }
 
+  // ui/settings-button-row.js
+  var settings_button_row_default = class extends Controller {
+    static targets = ["button"];
+    static values = { url: String, name: String, selected: String };
+    #onLiveUpdate;
+    connect() {
+      this.#syncButtons();
+      this.#onLiveUpdate = (ev) => {
+        if (matchAddr(this.element, ev.detail.addr)) {
+          this.selectedValue = ev.detail.text;
+          this.#syncButtons();
+        }
+      };
+      document.addEventListener("live:update", this.#onLiveUpdate);
+    }
+    disconnect() {
+      document.removeEventListener("live:update", this.#onLiveUpdate);
+    }
+    select(ev) {
+      const value = ev.currentTarget.getAttribute("data-value");
+      if (value === this.selectedValue) return;
+      const was = this.selectedValue;
+      this.selectedValue = value;
+      this.#syncButtons();
+      this.element.setAttribute("disabled", "");
+      this.element.dataset.optimistic = "";
+      setTimeout(() => delete this.element.dataset.optimistic, 150);
+      const data = new FormData();
+      for (const input of this.element.querySelectorAll("input[type=hidden]")) {
+        data.set(input.name, input.value);
+      }
+      data.set(this.nameValue, value);
+      fetch(this.urlValue, { method: "POST", body: data }).then(
+        (resp) => {
+          if (!resp.ok) {
+            this.selectedValue = was;
+            this.#syncButtons();
+            notify("Something went wrong");
+          }
+          this.element.removeAttribute("disabled");
+        },
+        () => {
+          this.selectedValue = was;
+          this.#syncButtons();
+          this.element.removeAttribute("disabled");
+          notify("Could not reach the server");
+        }
+      );
+    }
+    #syncButtons() {
+      for (const b of this.buttonTargets) {
+        if (b.getAttribute("data-value") === this.selectedValue) {
+          b.setAttribute("data-selected", "");
+        } else {
+          b.removeAttribute("data-selected");
+        }
+      }
+    }
+  };
+
   // ui/settings-text-area.js
   var settings_text_area_default = class extends Controller {
     static targets = ["input"];
@@ -9012,6 +9072,7 @@
   Stimulus.register("add-torrent", add_torrent_default);
   Stimulus.register("note-port", note_port_default);
   Stimulus.register("select", select_default);
+  Stimulus.register("settings-button-row", settings_button_row_default);
   Stimulus.register("settings-text-area", settings_text_area_default);
   Stimulus.register("settings-text-field", settings_text_field_default);
   Stimulus.register("settings-toggle", settings_toggle_default);

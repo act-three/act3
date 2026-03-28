@@ -27,8 +27,8 @@ func SettingsGroupHead() html.Element {
 	return FlexRow(Class("u-settings-group-head"))
 }
 
-func SettingsItem() html.Element {
-	return FlexRow(Class("u-settings-item"))
+func SettingsItem(attrs ...attr.Node) html.Element {
+	return FlexRow(Class("u-settings-item"), group(attrs...))
 }
 
 func SettingsItemLabel() html.Element {

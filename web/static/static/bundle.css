@@ -1876,12 +1876,22 @@
     --accent: var(--warmred);
   }
   [disabled] {
+    pointer-events: none;
+  }
+  [disabled]:not([data-optimistic]) {
     opacity: 0.5;
     filter: saturate(0.5);
-    pointer-events: none;
   }
   [data-accent=hotpink] {
     --accent: var(--hotpink);
+  }
+}
+
+/* ui/settings-button-row.css */
+@layer components {
+  .u-settings-button-row {
+    display: flex;
+    gap: 0.25rem;
   }
 }
 
@@ -1928,10 +1938,6 @@
 @layer components {
   .u-settings-text-field {
     width: 256px;
-  }
-  .u-settings-text-field .u-input:disabled[data-optimistic] {
-    opacity: 1;
-    cursor: default;
   }
   .u-settings-text-field-inner {
     position: relative;

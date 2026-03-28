@@ -74,6 +74,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/download-import", c.doDownloadImport)
 	handle(mux, "POST /-/do/episode-set-airdate", c.doEpisodeSetAirdate)
 	handle(mux, "POST /-/do/episode-set-title", c.doEpisodeSetTitle)
+	handle(mux, "POST /-/do/episode-set-type", c.doEpisodeSetType)
 	handle(mux, "POST /-/do/movie-add", c.doMovieAdd)
 	handle(mux, "POST /-/do/movie-add-by-tmdb", c.doMovieAddByTMDB)
 	handle(mux, "POST /-/do/movie-edition-add", c.doMovieEditionAdd)

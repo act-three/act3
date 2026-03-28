@@ -71,6 +71,7 @@ func (ep *Episode) Title() string              { return ep.ep.Title }
 func (ep *Episode) Airdate() string            { return ep.ep.Airdate }
 func (ep *Episode) Summary() string            { return ep.ep.Summary }
 func (ep *Episode) ImageURL() string           { return ep.ep.TVmazeImageURL }
+func (ep *Episode) Type() string               { return ep.ep.Type }
 func (ep *Episode) Progress() []*progress.Item { return ep.prog }
 func (ep *Episode) Videos() []*Video           { return ep.videos }
 func (ep *Episode) SnnEnn() string {
@@ -83,8 +84,10 @@ func (ep *Episode) SnnEnn() string {
 func (ep *Episode) AirdateAddr() []string { return ep.addr("airdate") }
 func (ep *Episode) SummaryAddr() []string { return ep.addr("summary") }
 func (ep *Episode) TitleAddr() []string   { return ep.addr("title") }
+func (ep *Episode) TypeAddr() []string    { return ep.addr("type") }
 
 func (ep *Episode) TitleField() (string, []string) { return ep.Title(), ep.TitleAddr() }
+func (ep *Episode) TypeField() (string, []string)  { return ep.Type(), ep.TypeAddr() }
 
 func (ep *Episode) addr(field string) []string {
 	return []string{"episode", ep.ep.ID, field}
@@ -216,6 +219,25 @@ func (tx *TxRW) EpisodeAirdateSet(ctx Context, id, airdate string) error {
 	return tx.q.EpisodeAirdateSet(ctx, schema.EpisodeAirdateSetParams{
 		Airdate: airdate,
 		ID:      id,
+	})
+}
+
+func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
+	ep, err := tx.q.EpisodeGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventLiveUpdate,
+			Addr:    (&Episode{ep: ep}).TypeAddr(),
+			NewText: typ,
+			OldText: ep.Type,
+		})
+	})
+	return tx.q.EpisodeTypeSet(ctx, schema.EpisodeTypeSetParams{
+		Type: typ,
+		ID:   id,
 	})
 }
 

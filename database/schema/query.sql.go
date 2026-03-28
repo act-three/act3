@@ -882,6 +882,20 @@ func (q *Queries) EpisodeTitleSet(ctx context.Context, arg EpisodeTitleSetParams
 	return err
 }
 
+const episodeTypeSet = `-- name: EpisodeTypeSet :exec
+UPDATE Episode SET Type = ? WHERE ID = ?
+`
+
+type EpisodeTypeSetParams struct {
+	Type string
+	ID   string
+}
+
+func (q *Queries) EpisodeTypeSet(ctx context.Context, arg EpisodeTypeSetParams) error {
+	_, err := q.db.ExecContext(ctx, episodeTypeSet, arg.Type, arg.ID)
+	return err
+}
+
 const episodeVideoCreate = `-- name: EpisodeVideoCreate :one
 INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)

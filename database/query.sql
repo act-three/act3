@@ -162,6 +162,9 @@ UPDATE Episode SET Slug = ? WHERE ID = ?;
 -- name: EpisodeTitleSet :exec
 UPDATE Episode SET Title = ? WHERE ID = ?;
 
+-- name: EpisodeTypeSet :exec
+UPDATE Episode SET Type = ? WHERE ID = ?;
+
 -- name: EpisodeVideoCreate :one
 INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)
