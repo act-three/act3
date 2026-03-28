@@ -20,6 +20,7 @@ func base(title string, head ...html.Node) func(...attr.Node) html.Element {
 				html.Html()(
 					html.Head()(
 						html.Meta(attr.Charset("utf-8")),
+						html.Meta(attr.Name("color-scheme"), attr.Content("dark")),
 						html.Meta(attr.Name("viewport"), attr.Content("width=device-width,initial-scale=1")),
 						html.Link(attr.Rel("preconnect"), attr.Href("https://fonts.googleapis.com")),
 						html.Link(attr.Rel("preconnect"), attr.Href("https://fonts.gstatic.com"), attr.Crossorigin),
