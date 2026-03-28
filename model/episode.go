@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"ily.dev/act3/database/schema"
@@ -126,7 +127,10 @@ func (ep *Episode) SeasonHead() *SeasonHead {
 }
 
 func (ep *Episode) TheaterPath() string {
-	return "/" + ep.sr.sr.Slug + "/" + ep.snep.Slug
+	if ep.so.Slug() == "" {
+		return path.Join("/", ep.sr.Slug(), ep.Slug())
+	}
+	return path.Join("/", ep.sr.Slug(), ep.so.Slug(), ep.Slug())
 }
 
 // EpisodeBySlug looks up an episode by its slug components.
