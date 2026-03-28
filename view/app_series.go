@@ -309,7 +309,7 @@ func AppEpisodeDialog(
 	renditions []schema.RenditionForStreaming,
 ) html.Node {
 	return DialogStream(
-		ScrollY(attr.Style("padding:2em"))(
+		ScrollY(attr.Style("padding:2em; width: 100vw"))(
 			FlexCol(Gap8)(
 				FlexCol(Gap4)(
 					SettingsContent()(
