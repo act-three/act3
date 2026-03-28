@@ -247,7 +247,7 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 }
 
 func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
-	return FlexCol(Gap4)(
+	return FlexCol(Gap8)(
 		html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
 			return SettingsGroup()(
 				SettingsGroupHead()(
