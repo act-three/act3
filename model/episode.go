@@ -2,9 +2,11 @@ package model
 
 import (
 	"fmt"
+	"strings"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
+	"ily.dev/act3/xstrings"
 )
 
 type EpisodeType uint
@@ -196,6 +198,102 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName, edSlug string) (*
 		return ep, nil
 	}
 	return nil, fmt.Errorf("cannot load ep")
+}
+
+func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
+	ep, err := tx.q.EpisodeGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventLiveUpdate,
+			Addr:    (&Episode{ep: ep}).TitleAddr(),
+			NewText: title,
+			OldText: ep.Title,
+		})
+	})
+	err = tx.q.EpisodeTitleSet(ctx, schema.EpisodeTitleSetParams{
+		Title: title,
+		ID:    id,
+	})
+	if err != nil {
+		return err
+	}
+	slug, err := tx.generateEpisodeSlug(ctx, ep.Slug, title, id)
+	if err != nil {
+		return err
+	}
+	if slug != ep.Slug {
+		return tx.q.EpisodeSlugSet(ctx, schema.EpisodeSlugSetParams{
+			Slug: slug,
+			ID:   id,
+		})
+	}
+	return nil
+}
+
+// generateEpisodeSlug rebuilds an episode slug after a title change.
+// It preserves the prefix (e.g. "series-name/s01e05") and replaces
+// the title portion with the slugified new title.
+func (tx *TxRW) generateEpisodeSlug(ctx Context, oldSlug, title, id string) (string, error) {
+	// The slug is "seriesSlug/sNNeNN-title" or "seriesSlug/sNN-special-title".
+	// Find the episode segment after the last "/".
+	lastSlash := strings.LastIndex(oldSlug, "/")
+	if lastSlash < 0 {
+		return oldSlug, nil
+	}
+	epPart := oldSlug[lastSlash+1:]
+	prefix := oldSlug[:lastSlash+1]
+
+	// Strip the old title portion from the episode segment.
+	// The base is "sNNeNN" or "sNN-special"; the title follows after a "-".
+	base := episodeSlugBase(epPart)
+	slug := prefix + base
+	if titleSlug := xstrings.ToSlug(title); titleSlug != "" {
+		slug += "-" + titleSlug
+	}
+	if slug == oldSlug {
+		return slug, nil
+	}
+	n, err := tx.q.EpisodeSlugExists(ctx, slug)
+	if err != nil {
+		return "", err
+	}
+	if n == 0 {
+		return slug, nil
+	}
+	// Append the ID as a last resort.
+	return slug + "-" + id, nil
+}
+
+// episodeSlugBase extracts the "sNNeNN" or "sNN-special" prefix
+// from an episode slug segment like "s01e05-the-title".
+func episodeSlugBase(epPart string) string {
+	// Match "sNNeNN": s, digits, e, digits.
+	i := 0
+	if i >= len(epPart) || epPart[i] != 's' {
+		return epPart
+	}
+	i++
+	for i < len(epPart) && epPart[i] >= '0' && epPart[i] <= '9' {
+		i++
+	}
+	if i < len(epPart) && epPart[i] == 'e' {
+		i++
+		for i < len(epPart) && epPart[i] >= '0' && epPart[i] <= '9' {
+			i++
+		}
+		return epPart[:i]
+	}
+	// Try "sNN-special".
+	if i < len(epPart) && epPart[i] == '-' {
+		const special = "-special"
+		if strings.HasPrefix(epPart[i:], special) {
+			return epPart[:i+len(special)]
+		}
+	}
+	return epPart
 }
 
 func epMapByID(eps []schema.Episode) map[string]*schema.Episode {

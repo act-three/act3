@@ -150,6 +150,15 @@ WHERE ID IN (
 )
 ORDER BY ID;
 
+-- name: EpisodeSlugExists :one
+SELECT COUNT(*) FROM Episode WHERE Slug = ?;
+
+-- name: EpisodeSlugSet :exec
+UPDATE Episode SET Slug = ? WHERE ID = ?;
+
+-- name: EpisodeTitleSet :exec
+UPDATE Episode SET Title = ? WHERE ID = ?;
+
 -- name: EpisodeVideoCreate :one
 INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)

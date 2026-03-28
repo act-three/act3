@@ -829,6 +829,45 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 	return items, nil
 }
 
+const episodeSlugExists = `-- name: EpisodeSlugExists :one
+SELECT COUNT(*) FROM Episode WHERE Slug = ?
+`
+
+func (q *Queries) EpisodeSlugExists(ctx context.Context, slug string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, episodeSlugExists, slug)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const episodeSlugSet = `-- name: EpisodeSlugSet :exec
+UPDATE Episode SET Slug = ? WHERE ID = ?
+`
+
+type EpisodeSlugSetParams struct {
+	Slug string
+	ID   string
+}
+
+func (q *Queries) EpisodeSlugSet(ctx context.Context, arg EpisodeSlugSetParams) error {
+	_, err := q.db.ExecContext(ctx, episodeSlugSet, arg.Slug, arg.ID)
+	return err
+}
+
+const episodeTitleSet = `-- name: EpisodeTitleSet :exec
+UPDATE Episode SET Title = ? WHERE ID = ?
+`
+
+type EpisodeTitleSetParams struct {
+	Title string
+	ID    string
+}
+
+func (q *Queries) EpisodeTitleSet(ctx context.Context, arg EpisodeTitleSetParams) error {
+	_, err := q.db.ExecContext(ctx, episodeTitleSet, arg.Title, arg.ID)
+	return err
+}
+
 const episodeVideoCreate = `-- name: EpisodeVideoCreate :one
 INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)
