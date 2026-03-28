@@ -93,6 +93,22 @@ func isReservedSlug(s string) bool {
 	return reservedSlugs[s]
 }
 
+type SlugKind string
+
+const (
+	SlugMovie  SlugKind = "movie"
+	SlugSeries SlugKind = "series"
+)
+
+// SlugResolve looks up a top-level slug and returns its kind.
+func (tx *TxR) SlugResolve(ctx Context, slug string) (SlugKind, error) {
+	s, err := tx.q.SlugGet(ctx, slug)
+	if err != nil {
+		return "", err
+	}
+	return SlugKind(s.Kind), nil
+}
+
 func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string, id string, allow ...string) (string, error) {
 	slug := xstrings.ToSlug(title)
 	if slug == "" {
