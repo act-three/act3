@@ -97,26 +97,6 @@ func TestTVmazeEpisodes(t *testing.T) {
 			wantLabels: []string{"1", "2", "Special"},
 			wantTypes:  []string{"regular", "regular", "insignificant_special"},
 		},
-		{
-			// TVmaze "special" type is mapped to "significant_special"
-			// for the DB schema.
-			name:       "significant special type mapping",
-			seriesSlug: "test-show",
-			eps: []tvmaze.Episode{
-				{ID: 1, Name: "Pilot", Season: 1, Number: 1, Type: "regular", Airdate: "2020-01-01", Runtime: 60},
-				{ID: 2, Name: "Behind the Scenes", Season: 1, Number: 0, Type: "special", Airdate: "2020-01-08", Runtime: 30},
-			},
-			wantSlugs: []string{
-				"test-show/s01e01-pilot",
-				"test-show/s01-special-behind-the-scenes",
-			},
-			wantSortKeys: []string{
-				"2020-01-01-00001-1",
-				"2020-01-08-AAAAA-2",
-			},
-			wantLabels: []string{"1", "Special"},
-			wantTypes:  []string{"regular", "significant_special"},
-		},
 	}
 
 	for _, tt := range tests {

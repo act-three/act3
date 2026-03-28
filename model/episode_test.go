@@ -43,11 +43,11 @@ func TestEpisodeHasType(t *testing.T) {
 		{"regular", AnyEpisode, true},
 		{"regular", AnySpecial, false},
 
-		{"significant_special", SignificantSpecial, true},
-		{"significant_special", Significant, true},
-		{"significant_special", AnySpecial, true},
-		{"significant_special", AnyEpisode, true},
-		{"significant_special", Regular, false},
+		{"special", SignificantSpecial, true},
+		{"special", Significant, true},
+		{"special", AnySpecial, true},
+		{"special", AnyEpisode, true},
+		{"special", Regular, false},
 
 		{"insignificant_special", InsignificantSpecial, true},
 		{"insignificant_special", AnySpecial, true},

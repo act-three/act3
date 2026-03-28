@@ -356,7 +356,7 @@ func AppEpisodeDialog(
 							SettingsButtonRow("/-/do/episode-set-type", "type", ep.Type(), LiveAddr(ep.TypeAddr()))(
 								Hidden("id", ep.ID()),
 								SettingsButtonRowItem("regular", Text("Regular")),
-								SettingsButtonRowItem("significant_special", Text("Special")),
+								SettingsButtonRowItem("special", Text("Special")),
 								SettingsButtonRowItem("insignificant_special", Text("Insignificant")),
 							),
 						),
