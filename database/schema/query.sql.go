@@ -1970,11 +1970,16 @@ func (q *Queries) SeasonEpisodeCreate(ctx context.Context, arg SeasonEpisodeCrea
 }
 
 const seasonEpisodeGetBySlug = `-- name: SeasonEpisodeGetBySlug :one
-SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE Slug = ? LIMIT 1
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?
 `
 
-func (q *Queries) SeasonEpisodeGetBySlug(ctx context.Context, slug string) (SeasonEpisode, error) {
-	row := q.db.QueryRowContext(ctx, seasonEpisodeGetBySlug, slug)
+type SeasonEpisodeGetBySlugParams struct {
+	EditionID string
+	Slug      string
+}
+
+func (q *Queries) SeasonEpisodeGetBySlug(ctx context.Context, arg SeasonEpisodeGetBySlugParams) (SeasonEpisode, error) {
+	row := q.db.QueryRowContext(ctx, seasonEpisodeGetBySlug, arg.EditionID, arg.Slug)
 	var i SeasonEpisode
 	err := row.Scan(
 		&i.EditionID,

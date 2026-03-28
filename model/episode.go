@@ -126,18 +126,27 @@ func (ep *Episode) SeasonHead() *SeasonHead {
 }
 
 func (ep *Episode) TheaterPath() string {
-	return "/" + ep.snep.Slug
+	return "/" + ep.sr.sr.Slug + "/" + ep.snep.Slug
 }
 
 // EpisodeBySlug looks up an episode by its slug components.
-// The episode slug in the database is seriesSlug + "/" + epSlug.
 // edSlug selects the edition; empty string selects the default.
 func (tx *TxR) EpisodeBySlug(ctx Context, seriesSlug, edSlug, epSlug string) (*Episode, error) {
-	snep, err := tx.q.SeasonEpisodeGetBySlug(ctx, seriesSlug+"/"+epSlug)
+	sed, err := tx.q.SeriesEditionGetBySlug(ctx, schema.SeriesEditionGetBySlugParams{
+		SeriesSlug:  seriesSlug,
+		EditionSlug: edSlug,
+	})
 	if err != nil {
 		return nil, err
 	}
-	return tx.episodeInContext(ctx, snep.EpisodeID, "", "", edSlug)
+	snep, err := tx.q.SeasonEpisodeGetBySlug(ctx, schema.SeasonEpisodeGetBySlugParams{
+		EditionID: sed.ID,
+		Slug:      epSlug,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return tx.episodeInContext(ctx, snep.EpisodeID, sed.ID, "", "")
 }
 
 // Episode is like EpisodeInEdition, but it assumes the Air Date edition.
@@ -285,22 +294,13 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 }
 
 // generateEpisodeSlug rebuilds an episode slug after a title change.
-// It preserves the prefix (e.g. "series-name/s01e05") and replaces
+// It preserves the base (e.g. "s01e05") and replaces
 // the title portion with the slugified new title.
 func (tx *TxRW) generateEpisodeSlug(ctx Context, editionID, oldSlug, title, id string) (string, error) {
-	// The slug is "seriesSlug/sNNeNN-title" or "seriesSlug/sNN-special-title".
-	// Find the episode segment after the last "/".
-	lastSlash := strings.LastIndex(oldSlug, "/")
-	if lastSlash < 0 {
-		return oldSlug, nil
-	}
-	epPart := oldSlug[lastSlash+1:]
-	prefix := oldSlug[:lastSlash+1]
-
-	// Strip the old title portion from the episode segment.
+	// The slug is "sNNeNN-title" or "sNN-special-title".
+	// Strip the old title portion from the slug.
 	// The base is "sNNeNN" or "sNN-special"; the title follows after a "-".
-	base := episodeSlugBase(epPart)
-	slug := prefix + base
+	slug := episodeSlugBase(oldSlug)
 	if titleSlug := xstrings.ToSlug(title); titleSlug != "" {
 		slug += "-" + titleSlug
 	}

@@ -30,11 +30,10 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 	sedID := args[1]
 
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		series, err := tx.q.SeriesGetByTVmazeID(ctx, &id)
+		_, err := tx.q.SeriesGetByTVmazeID(ctx, &id)
 		if err != nil {
 			return err
 		}
-		seriesSlug := series.Slug
 
 		sid := map[int]string{}
 		for _, ts := range seasons {
@@ -54,7 +53,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			sid[ts.Number] = season.ID
 		}
 
-		neps := norm.TVmazeEpisodes(seriesSlug, eps)
+		neps := norm.TVmazeEpisodes(eps)
 		for _, ne := range neps {
 			ep, err := tx.q.EpisodeCreate(ctx, ne.Episode)
 			if err != nil {

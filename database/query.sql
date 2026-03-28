@@ -349,7 +349,7 @@ INSERT INTO SeasonEpisode (EditionID, SeasonID, EpisodeID, SortKey, Label, Numbe
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
 -- name: SeasonEpisodeGetBySlug :one
-SELECT * FROM SeasonEpisode WHERE Slug = ? LIMIT 1;
+SELECT * FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?;
 
 -- name: SeasonEpisodeListByEditionID :many
 SELECT * FROM SeasonEpisode

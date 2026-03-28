@@ -16,12 +16,12 @@ type Episode struct {
 }
 
 // TVmazeEpisodes normalizes TVmaze episode data into DB-ready params.
-// The returned SeasonEpisodeCreateParams have SeasonID and EpisodeID
-// left empty — the caller fills those after creating seasons and
-// episodes.
+// The returned SeasonEpisodeCreateParams have EditionID, SeasonID,
+// and EpisodeID left empty — the caller fills those after creating
+// seasons and episodes.
 //
 // The returned slices have the same length and order as eps.
-func TVmazeEpisodes(seriesSlug string, eps []tvmaze.Episode) []Episode {
+func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 	out := make([]Episode, len(eps))
 
 	seenSlug := map[string]bool{}
@@ -47,7 +47,7 @@ func TVmazeEpisodes(seriesSlug string, eps []tvmaze.Episode) []Episode {
 			}
 		}
 
-		slug := seriesSlug + "/" + epSlug
+		slug := epSlug
 		if titleSlug := xstrings.ToSlug(te.Name); titleSlug != "" {
 			slug += "-" + titleSlug
 		}
