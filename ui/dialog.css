@@ -1,7 +1,7 @@
 .u-dialog[open] {
 	border: none;
 	padding: 0;
-	background: transparent;
+	background: oklch(0 0 0 / 0.6);
 	color: var(--text);
 	position: fixed;
 	inset: 0;
@@ -15,8 +15,6 @@
 	justify-content: center;
 	user-select: none;
 }
-
-.u-dialog::backdrop { background: oklch(0 0 0 / 0.6); }
 
 .u-dialog-positioner {
 	display: flex;

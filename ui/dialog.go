@@ -11,7 +11,7 @@ const dialogController = "dialog"
 
 // DialogButton returns a form that GETs url as a turbo stream.
 // The server responds with a turbo stream that appends
-// the dialog to the document body,
+// the dialog to the [Port],
 // keeping it outside any replaceable content regions.
 func DialogButton(url string, attrs ...attr.Node) html.Element {
 	return func(children ...html.Node) html.Node {
@@ -22,9 +22,9 @@ func DialogButton(url string, attrs ...attr.Node) html.Element {
 }
 
 // DialogStream renders a dialog and wraps it in a turbo stream
-// append to body.
+// append to the [Port].
 func DialogStream(children ...html.Node) html.Node {
-	return turbo.AppendTargets("body",
+	return turbo.Append("port",
 		html.Dialog(
 			attr.Class("u-dialog"),
 			stimulus.Controller(dialogController),

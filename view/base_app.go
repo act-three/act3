@@ -29,6 +29,7 @@ func app(title string, child ...html.Node) html.Node {
 				),
 			),
 		),
+		Port(),
 		NotePort(),
 	)
 }

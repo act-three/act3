@@ -7923,17 +7923,25 @@
   // ui/dialog.js
   var dialog_default = class extends Controller {
     connect() {
-      this.element.showModal();
-      this.element.addEventListener("close", () => this.element.remove(), { once: true });
+      this.element.show();
+      this.#onKeydown = (e) => {
+        if (e.key === "Escape") this.close();
+      };
+      document.addEventListener("keydown", this.#onKeydown);
+    }
+    disconnect() {
+      document.removeEventListener("keydown", this.#onKeydown);
     }
     close() {
       this.element.close();
+      this.element.remove();
     }
     backdropClose(event) {
       if (event.target === this.element) {
         this.close();
       }
     }
+    #onKeydown;
   };
 
   // view/player.js
