@@ -16,6 +16,7 @@ export default class extends Controller {
 				this.#serverUpdated(ev.detail.text);
 			}
 		};
+		// Manual listener avoids repeating the action attr on every instance.
 		document.addEventListener("live:update", this.#onLiveUpdate);
 	}
 
