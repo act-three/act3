@@ -8657,25 +8657,20 @@
   var select_default = class extends Controller {
     static targets = ["trigger", "content", "item", "label"];
     static values = { current: String };
-    #onToggle;
     connect() {
       const content = this.contentTarget;
       if (!content.id) {
         content.id = "sel-" + Math.random().toString(36).slice(2, 10);
       }
       this.triggerTarget.setAttribute("popovertarget", content.id);
-      this.#onToggle = (ev) => {
-        if (ev.newState === "open") {
-          this.#positionContent();
-        } else {
-          this.triggerTarget.focus();
-        }
-      };
-      content.addEventListener("toggle", this.#onToggle);
       this.#syncFromValue();
     }
-    disconnect() {
-      this.contentTarget.removeEventListener("toggle", this.#onToggle);
+    toggled(ev) {
+      if (ev.newState === "open") {
+        this.#positionContent();
+      } else {
+        this.triggerTarget.focus();
+      }
     }
     close() {
       this.contentTarget.hidePopover();

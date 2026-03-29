@@ -35,6 +35,7 @@ func SelectContent(attrs ...attr.Node) html.Element {
 		return html.Div(
 			attr.Class("u-select-content"),
 			stimulus.Target("select", "content"),
+			stimulus.Action("toggle->select#toggled"),
 			attr.Popover("auto"),
 			attr.Group(attrs...),
 		)(nodes...)
