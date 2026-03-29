@@ -78,6 +78,23 @@ func (c *Config) doSeriesSetTitle(w http.ResponseWriter, req *http.Request) (htm
 	})
 }
 
+func (c *Config) doSeasonSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		id := req.FormValue("id")
+		title := req.FormValue("title")
+		if id == "" || title == "" {
+			return nil, &model.ValidationError{Op: "set season title", Err: errNotFound}
+		}
+		err := tx.SeasonTitleSet(ctx, id, title)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doSeriesEditionSetLabel(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

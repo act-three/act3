@@ -113,7 +113,7 @@
 	}
 }
 
-.u-button, [data-button-size="2"] {
+.u-button:not([data-button-size]), [data-button-size="2"] {
 	&.u-button, & .u-button:not([data-button-size]) {
 		height: 2rem;
 		padding-inline: 0.75rem;

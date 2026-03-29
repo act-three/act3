@@ -80,3 +80,21 @@ turbo-frame[aria-busy="true"] > .v-media-dialog-spinner { display: block; }
 	margin-left: 1rem;
 	margin-top: 0.5rem;
 }
+
+.v-season-label { display: grid; }
+
+.v-season-label .v-season-display,
+.v-season-label .v-season-edit { grid-area: 1 / 1; }
+
+.v-season-label .v-season-edit { visibility: hidden; }
+.v-season-label[data-season-title-mode-value="edit"] .v-season-display { visibility: hidden; }
+.v-season-label[data-season-title-mode-value="edit"] .v-season-edit { visibility: visible; }
+
+.v-season-title-row { align-items: center; }
+
+.v-season-title-edit-button {
+	visibility: hidden;
+	margin: -2px 0;
+}
+
+.v-season-group-head:hover .v-season-title-edit-button { visibility: visible; }

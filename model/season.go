@@ -16,6 +16,13 @@ type SeasonHead struct {
 func (sn *SeasonHead) ID() string    { return sn.sn.ID }
 func (sn *SeasonHead) Title() string { return sn.sn.Title }
 
+func (sn *SeasonHead) addr(field string) []string {
+	return []string{"season", sn.ID(), field}
+}
+
+func (sn *SeasonHead) TitleAddr() []string            { return sn.addr("title") }
+func (sn *SeasonHead) TitleField() (string, []string) { return sn.Title(), sn.TitleAddr() }
+
 type Season struct {
 	SeasonHead
 	eps    []*Episode
@@ -102,6 +109,20 @@ func (tx *TxR) SeasonInEdition(ctx Context, seasonID string) (*Season, error) {
 		}
 	}
 	return nil, fmt.Errorf("season %s not found in edition %s", seasonID, snData.EditionID)
+}
+
+func (tx *TxRW) SeasonTitleSet(ctx Context, id, title string) error {
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventLiveUpdate,
+			Addr:    (&SeasonHead{schema.Season{ID: id}}).TitleAddr(),
+			NewText: title,
+		})
+	})
+	return tx.q.SeasonTitleSet(ctx, schema.SeasonTitleSetParams{
+		Title: title,
+		ID:    id,
+	})
 }
 
 func (sn *Season) episodeByNumber(n int) *Episode {

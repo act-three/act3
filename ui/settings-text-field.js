@@ -37,10 +37,14 @@ export default class extends Controller {
 	save() {
 		const input = this.inputTarget;
 		const value = input.value.trim();
-		if (value === this.#original) return;
+		if (value === this.#original) {
+			this.dispatch("cancel");
+			return;
+		}
 		if (value === "") {
 			input.value = this.#original;
 			this.sync();
+			this.dispatch("cancel");
 			return;
 		}
 
@@ -61,6 +65,9 @@ export default class extends Controller {
 					input.value = was;
 					this.sync();
 					notify("Something went wrong");
+					this.dispatch("error");
+				} else {
+					this.dispatch("commit");
 				}
 				input.disabled = false;
 			},
@@ -70,6 +77,7 @@ export default class extends Controller {
 				this.sync();
 				input.disabled = false;
 				notify("Could not reach the server");
+				this.dispatch("error");
 			},
 		);
 	}

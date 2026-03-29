@@ -8911,10 +8911,14 @@
     save() {
       const input = this.inputTarget;
       const value = input.value.trim();
-      if (value === this.#original) return;
+      if (value === this.#original) {
+        this.dispatch("cancel");
+        return;
+      }
       if (value === "") {
         input.value = this.#original;
         this.sync();
+        this.dispatch("cancel");
         return;
       }
       const was = this.#original;
@@ -8932,6 +8936,9 @@
             input.value = was;
             this.sync();
             notify("Something went wrong");
+            this.dispatch("error");
+          } else {
+            this.dispatch("commit");
           }
           input.disabled = false;
         },
@@ -8941,6 +8948,7 @@
           this.sync();
           input.disabled = false;
           notify("Could not reach the server");
+          this.dispatch("error");
         }
       );
     }
@@ -9014,6 +9022,20 @@
     }
   };
 
+  // view/season-title.js
+  var season_title_default = class extends Controller {
+    static values = { mode: { type: String, default: "display" } };
+    edit() {
+      this.modeValue = "edit";
+      const input = this.element.querySelector('input[name="title"]');
+      input.focus();
+      input.select();
+    }
+    display() {
+      this.modeValue = "display";
+    }
+  };
+
   // view/topbar.js
   var topbar_default = class extends Controller {
     #ro;
@@ -9046,6 +9068,7 @@
   Stimulus.register("sidebar", sidebar_default);
   Stimulus.register("add-torrent", add_torrent_default);
   Stimulus.register("note-port", note_port_default);
+  Stimulus.register("season-title", season_title_default);
   Stimulus.register("select", select_default);
   Stimulus.register("settings-button-row", settings_button_row_default);
   Stimulus.register("settings-text-area", settings_text_area_default);

@@ -2293,6 +2293,20 @@ func (q *Queries) SeasonListBySeriesID(ctx context.Context, seriesid string) ([]
 	return items, nil
 }
 
+const seasonTitleSet = `-- name: SeasonTitleSet :exec
+UPDATE Season SET Title = ? WHERE ID = ?
+`
+
+type SeasonTitleSetParams struct {
+	Title string
+	ID    string
+}
+
+func (q *Queries) SeasonTitleSet(ctx context.Context, arg SeasonTitleSetParams) error {
+	_, err := q.db.ExecContext(ctx, seasonTitleSet, arg.Title, arg.ID)
+	return err
+}
+
 const seriesCreate = `-- name: SeriesCreate :one
 INSERT INTO Series
 (

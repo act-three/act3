@@ -23,16 +23,16 @@ func SettingsGroup(attrs ...attr.Node) html.Element {
 	return FlexCol(Class("u-settings-group"), group(attrs...))
 }
 
-func SettingsGroupHead() html.Element {
-	return FlexRow(Class("u-settings-group-head"))
+func SettingsGroupHead(attrs ...attr.Node) html.Element {
+	return FlexRow(Class("u-settings-group-head"), group(attrs...))
 }
 
 func SettingsItem(attrs ...attr.Node) html.Element {
 	return FlexRow(Class("u-settings-item"), group(attrs...))
 }
 
-func SettingsItemLabel() html.Element {
-	return FlexCol(attr.Style("gap:3px"))
+func SettingsItemLabel(attrs ...attr.Node) html.Element {
+	return FlexCol(attr.Style("gap:3px"), group(attrs...))
 }
 
 func SettingsItemLabelTitle(s string) html.Node {

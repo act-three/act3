@@ -393,6 +393,9 @@ SELECT * FROM Season
 WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 ORDER BY SortKey;
 
+-- name: SeasonTitleSet :exec
+UPDATE Season SET Title = ? WHERE ID = ?;
+
 -- name: SeriesCreate :one
 INSERT INTO Series
 (

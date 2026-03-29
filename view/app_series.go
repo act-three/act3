@@ -13,6 +13,7 @@ import (
 	"ily.dev/act3/model"
 	"ily.dev/act3/service/tvmaze"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 )
 
@@ -250,10 +251,30 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 	return FlexCol(Gap8)(
 		html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
 			return SettingsGroup()(
-				SettingsGroupHead()(
-					SettingsItemLabel()(
-						SettingsItemLabelTitle(sn.Title()),
-						SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
+				SettingsGroupHead(Class("v-season-group-head"))(
+					SettingsItemLabel(Class("v-season-label"),
+						stimulus.Controller("season-title"),
+						stimulus.Value("season-title", "mode")("display"),
+					)(
+						html.Div(Class("v-season-display"))(
+							FlexRow(Class("v-season-title-row"))(
+								TextNode(Size2)(LiveText(sn.TitleField())),
+								Button(ButtonCircle, ButtonGhost, ButtonSize1,
+									Class("v-season-title-edit-button"),
+									stimulus.Action("click->season-title#edit"),
+								)(Icon("line/edit-02")),
+							),
+							SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
+						),
+						html.Div(Class("v-season-edit"),
+							stimulus.Action("settings-text-field:commit->season-title#display"),
+							stimulus.Action("settings-text-field:error->season-title#display"),
+							stimulus.Action("settings-text-field:cancel->season-title#display"),
+						)(
+							SettingsTextField("/-/do/season-set-title", "title", sn.Title(), LiveAddr(sn.TitleAddr()))(
+								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sn.ID())),
+							),
+						),
 					),
 				),
 				turbo.StreamTarget("season-episodes-"+sn.ID())(
