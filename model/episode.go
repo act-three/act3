@@ -420,6 +420,57 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 	return nil
 }
 
+// SeasonEpisodeAdd creates a new regular episode at the end of the
+// given season with reasonable defaults.
+func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID string) error {
+	sn, err := tx.q.SeasonGet(ctx, seasonID)
+	if err != nil {
+		return err
+	}
+
+	existing, err := tx.q.SeasonEpisodeListBySeasonID(ctx, sn.ID)
+	if err != nil {
+		return err
+	}
+
+	// Count existing regular episodes to determine the next number.
+	var maxNum int64
+	var maxSortKey string
+	for _, snep := range existing {
+		maxNum = max(maxNum, snep.Number)
+		maxSortKey = max(maxSortKey, snep.SortKey)
+	}
+	num := maxNum + 1
+	sortKey := maxSortKey + "~"
+	base := fmt.Sprintf("s%02de%02d", sn.Number, num)
+	title := "New Episode"
+	label := strconv.FormatInt(num, 10)
+
+	ep, err := tx.q.EpisodeCreate(ctx, schema.EpisodeCreateParams{
+		Title:   title,
+		Summary: "The main character encounters an unexpected challenge!",
+		Type:    "regular",
+	})
+	if err != nil {
+		return err
+	}
+
+	slug, err := tx.generateEpisodeSlug(ctx, sn.EditionID, "", base, title, ep.ID)
+	if err != nil {
+		return err
+	}
+
+	return tx.q.SeasonEpisodeCreate(ctx, schema.SeasonEpisodeCreateParams{
+		EditionID: sn.EditionID,
+		SeasonID:  sn.ID,
+		EpisodeID: ep.ID,
+		SortKey:   sortKey,
+		Label:     label,
+		Number:    num,
+		Slug:      slug,
+	})
+}
+
 // generateEpisodeSlug builds an episode slug from a base (e.g. "s01e05"
 // or "s02-special") and a title.
 // If the result matches oldSlug, it is returned as-is;

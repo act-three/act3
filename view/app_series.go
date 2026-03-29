@@ -276,6 +276,13 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 							),
 						),
 					),
+					html.Form(
+						attr.Method("POST"),
+						attr.Action("/-/do/series-episode-add"),
+					)(
+						Hidden("season-id", sn.ID()),
+						Button(ButtonGhost, ButtonSize2)(Text("Add Episode")),
+					),
 				),
 				turbo.StreamTarget("season-episodes-"+sn.ID())(
 					html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
