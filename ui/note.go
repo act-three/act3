@@ -27,6 +27,7 @@ func NotePort(attrs ...attr.Node) html.Node {
 		stimulus.Controller(notePortController),
 		stimulus.Action("mouseenter->note-port#pause"),
 		stimulus.Action("mouseleave->note-port#resume"),
+		stimulus.Action("visibilitychange@document->note-port#togglePaused"),
 		group(attrs...),
 	)()
 }

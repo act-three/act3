@@ -37,25 +37,12 @@ export function notify(msg, variant = "error") {
 export default class extends Controller {
 	static targets = ["note"];
 
-	connect() {
-		this.#onVisibility = () => {
-			if (document.hidden) {
-				this.#pauseAllTimers();
-			} else {
-				this.#resumeAllTimers();
-			}
-		};
-		document.addEventListener(
-			"visibilitychange",
-			this.#onVisibility,
-		);
-	}
-
-	disconnect() {
-		document.removeEventListener(
-			"visibilitychange",
-			this.#onVisibility,
-		);
+	togglePaused() {
+		if (document.hidden) {
+			this.#pauseAllTimers();
+		} else {
+			this.#resumeAllTimers();
+		}
 	}
 
 	noteTargetConnected(el) {
@@ -171,7 +158,6 @@ export default class extends Controller {
 
 	#hovered = false;
 	#timers = new WeakMap();
-	#onVisibility;
 	#swipe = null;
 
 	#startTimer(el) {
