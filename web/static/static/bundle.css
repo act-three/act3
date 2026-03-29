@@ -1902,7 +1902,7 @@
     width: 100%;
     field-sizing: content;
     min-height: 6rem;
-    resize: vertical;
+    resize: none;
     border: 1px solid var(--border-strong);
     border-radius: 0.5625rem;
     background-color: var(--bg-input);
