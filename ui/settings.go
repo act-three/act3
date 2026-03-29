@@ -43,4 +43,8 @@ func SettingsItemLabelDescription(s string) html.Node {
 	return Text(s, Size1, Class("u-settings-label-description"))
 }
 
+func SettingsItemLabelIcon() html.Element {
+	return FlexRow(Class("u-settings-label-icon"))
+}
+
 var SettingsGroupItems = Class("u-settings-group-items")

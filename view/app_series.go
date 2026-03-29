@@ -286,10 +286,23 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 }
 
 func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
+	icon := Group()
+	switch ep.State() {
+	case model.Empty:
+		icon = Icon("line/x")
+	case model.Downloading:
+		// TODO(april): icon = LiveProgress(...)
+		icon = Spinner()
+	case model.Playable:
+		icon = Icon("solid/check-circle")
+	}
 	return SettingsItem()(
-		SettingsItemLabel()(
-			SettingsItemLabelTitle(ep.Label()),
-			progressContainer(ep.ID(), ep.Progress()),
+		FlexRow(attr.Style("align-items:center"), Gap4)(
+			SettingsItemLabelIcon()(icon),
+			SettingsItemLabel()(
+				SettingsItemLabelTitle(ep.Label()),
+				progressContainer(ep.ID(), ep.Progress()),
+			),
 		),
 		DialogButton(ep.EditDialogPath(), ButtonGhost)(Icon("line/info-circle")),
 	)

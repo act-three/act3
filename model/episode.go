@@ -23,6 +23,14 @@ const (
 	Significant = Regular | SignificantSpecial
 )
 
+type EpisodeState = int
+
+const (
+	Empty EpisodeState = iota
+	Downloading
+	Playable
+)
+
 var episodeTypeByName = map[string]EpisodeType{
 	"regular":               Regular,
 	"significant_special":   SignificantSpecial,
@@ -81,6 +89,18 @@ func (ep *Episode) SnnEnn() string {
 		return fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, eNN)
 	}
 	return fmt.Sprintf("S%02d Special", ep.sn.sn.Number)
+}
+
+func (ep *Episode) State() EpisodeState {
+	for _, v := range ep.Videos() {
+		if v.MVPlaylist() == "" {
+			return Downloading
+		}
+	}
+	if len(ep.Videos()) > 0 {
+		return Playable
+	}
+	return Empty
 }
 
 func (ep *Episode) AirdateAddr() []string { return ep.addr("airdate") }

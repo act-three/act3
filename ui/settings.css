@@ -62,3 +62,15 @@
 }
 
 .u-settings-label-description { color: var(--text-3); }
+
+.u-settings-label-icon {
+	padding: 0.5rem;
+	height: 2.25rem;
+	width: 2.25rem;
+	display: grid;
+	place-items: center;
+	background: var(--bg-active);
+	border-radius: var(--radius-2);
+	color: var(--text-3);
+	font-size: 1.25rem;
+}
