@@ -2127,14 +2127,13 @@
   .v-season-label .v-season-edit {
     grid-area: 1 / 1;
   }
-  .v-season-label .v-season-edit {
+  .v-season-label[data-season-title-mode-value=display] .v-season-edit {
     visibility: hidden;
+    opacity: 0;
   }
   .v-season-label[data-season-title-mode-value=edit] .v-season-display {
     visibility: hidden;
-  }
-  .v-season-label[data-season-title-mode-value=edit] .v-season-edit {
-    visibility: visible;
+    opacity: 0;
   }
   .v-season-title-row {
     align-items: center;

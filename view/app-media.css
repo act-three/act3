@@ -86,9 +86,17 @@ turbo-frame[aria-busy="true"] > .v-media-dialog-spinner { display: block; }
 .v-season-label .v-season-display,
 .v-season-label .v-season-edit { grid-area: 1 / 1; }
 
-.v-season-label .v-season-edit { visibility: hidden; }
-.v-season-label[data-season-title-mode-value="edit"] .v-season-display { visibility: hidden; }
-.v-season-label[data-season-title-mode-value="edit"] .v-season-edit { visibility: visible; }
+/* Use opacity here in addition to visibility,
+so the edit button below doesn't override it.
+Also need visibility to prevent interaction. */
+.v-season-label[data-season-title-mode-value="display"] .v-season-edit {
+	visibility: hidden;
+	opacity: 0;
+}
+.v-season-label[data-season-title-mode-value="edit"] .v-season-display {
+	visibility: hidden;
+	opacity: 0;
+}
 
 .v-season-title-row { align-items: center; }
 
