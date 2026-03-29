@@ -40,7 +40,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 					),
 					html.RangeSeq(seasons, func(sn *model.Season) html.Node {
 						return Box()(
-							Text(sn.Name()),
+							Text(sn.Title()),
 						)
 					}),
 				),
@@ -54,7 +54,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 
 func browseSeriesSeason(sn *model.Season) html.Node {
 	return Box()(
-		Box(Class("v-series-season-header"))(Text(sn.Name(), FontBold)),
+		Box(Class("v-series-season-header"))(Text(sn.Title(), FontBold)),
 		FlexCol(Class("v-series-episodes"))(
 			html.RangeSeq(sn.Episodes(model.AnyEpisode), browseSeriesEpisode),
 		),

@@ -26,7 +26,7 @@ func TestNewSeriesEdition(t *testing.T) {
 				ID:        "season-1",
 				EditionID: "edition-1",
 				SortKey:   "01",
-				Name:      "Season 1",
+				Title:     "Season 1",
 				Number:    1,
 			},
 		}
@@ -63,8 +63,8 @@ func TestNewSeriesEdition(t *testing.T) {
 		seasonCount := 0
 		for sn := range sed.Seasons() {
 			seasonCount++
-			if sn.Name() != "Season 1" {
-				t.Errorf("expected season name 'Season 1', got '%s'", sn.Name())
+			if sn.Title() != "Season 1" {
+				t.Errorf("expected season title 'Season 1', got '%s'", sn.Title())
 			}
 		}
 		if seasonCount != 1 {
@@ -105,13 +105,13 @@ func TestNewSeriesEdition(t *testing.T) {
 				ID:        "season-1",
 				EditionID: "edition-1",
 				SortKey:   "01",
-				Name:      "Season 1",
+				Title:     "Season 1",
 			},
 			{
 				ID:        "season-2",
 				EditionID: "edition-1",
 				SortKey:   "02",
-				Name:      "Season 2",
+				Title:     "Season 2",
 			},
 		}
 

@@ -68,7 +68,7 @@ CREATE TABLE Season
 	ID        TEXT PRIMARY KEY DEFAULT ('sn'||newID()),
 	EditionID TEXT NOT NULL REFERENCES SeriesEdition,
 	SortKey   TEXT NOT NULL,
-	Name      TEXT NOT NULL, -- for display eg "Season 5"
+	Title     TEXT NOT NULL, -- for display eg "Season 5"
 	Number    INTEGER NOT NULL, -- for episode codes eg "s05e02"
 	UNIQUE (EditionID, SortKey)
 )

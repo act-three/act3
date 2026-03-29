@@ -258,7 +258,7 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHea
 		newSn, err := tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
 			EditionID: newSed.ID,
 			SortKey:   sn.SortKey,
-			Name:      sn.Name,
+			Title:     sn.Title,
 			Number:    sn.Number,
 		})
 		if err != nil {

@@ -341,7 +341,7 @@ INSERT INTO Season
 (
 	EditionID,
 	SortKey,
-	Name,
+	Title,
 	Number
 )
 VALUES (?, ?, ?, ?)

@@ -1923,17 +1923,17 @@ INSERT INTO Season
 (
 	EditionID,
 	SortKey,
-	Name,
+	Title,
 	Number
 )
 VALUES (?, ?, ?, ?)
-RETURNING id, editionid, sortkey, name, number
+RETURNING id, editionid, sortkey, title, number
 `
 
 type SeasonCreateParams struct {
 	EditionID string
 	SortKey   string
-	Name      string
+	Title     string
 	Number    int64
 }
 
@@ -1941,7 +1941,7 @@ func (q *Queries) SeasonCreate(ctx context.Context, arg SeasonCreateParams) (Sea
 	row := q.db.QueryRowContext(ctx, seasonCreate,
 		arg.EditionID,
 		arg.SortKey,
-		arg.Name,
+		arg.Title,
 		arg.Number,
 	)
 	var i Season
@@ -1949,7 +1949,7 @@ func (q *Queries) SeasonCreate(ctx context.Context, arg SeasonCreateParams) (Sea
 		&i.ID,
 		&i.EditionID,
 		&i.SortKey,
-		&i.Name,
+		&i.Title,
 		&i.Number,
 	)
 	return i, err
@@ -2208,7 +2208,7 @@ func (q *Queries) SeasonEpisodeSlugSet(ctx context.Context, arg SeasonEpisodeSlu
 }
 
 const seasonGet = `-- name: SeasonGet :one
-SELECT id, editionid, sortkey, name, number FROM Season WHERE ID = ?
+SELECT id, editionid, sortkey, title, number FROM Season WHERE ID = ?
 `
 
 func (q *Queries) SeasonGet(ctx context.Context, id string) (Season, error) {
@@ -2218,14 +2218,14 @@ func (q *Queries) SeasonGet(ctx context.Context, id string) (Season, error) {
 		&i.ID,
 		&i.EditionID,
 		&i.SortKey,
-		&i.Name,
+		&i.Title,
 		&i.Number,
 	)
 	return i, err
 }
 
 const seasonListByEditionID = `-- name: SeasonListByEditionID :many
-SELECT id, editionid, sortkey, name, number FROM Season WHERE EditionID = ?
+SELECT id, editionid, sortkey, title, number FROM Season WHERE EditionID = ?
 ORDER BY SortKey
 `
 
@@ -2242,7 +2242,7 @@ func (q *Queries) SeasonListByEditionID(ctx context.Context, editionid string) (
 			&i.ID,
 			&i.EditionID,
 			&i.SortKey,
-			&i.Name,
+			&i.Title,
 			&i.Number,
 		); err != nil {
 			return nil, err
@@ -2259,7 +2259,7 @@ func (q *Queries) SeasonListByEditionID(ctx context.Context, editionid string) (
 }
 
 const seasonListBySeriesID = `-- name: SeasonListBySeriesID :many
-SELECT id, editionid, sortkey, name, number FROM Season
+SELECT id, editionid, sortkey, title, number FROM Season
 WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 ORDER BY SortKey
 `
@@ -2277,7 +2277,7 @@ func (q *Queries) SeasonListBySeriesID(ctx context.Context, seriesid string) ([]
 			&i.ID,
 			&i.EditionID,
 			&i.SortKey,
-			&i.Name,
+			&i.Title,
 			&i.Number,
 		); err != nil {
 			return nil, err

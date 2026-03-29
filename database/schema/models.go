@@ -107,7 +107,7 @@ type Season struct {
 	ID        string
 	EditionID string
 	SortKey   string
-	Name      string
+	Title     string
 	Number    int64
 }
 

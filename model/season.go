@@ -13,8 +13,8 @@ type SeasonHead struct {
 	sn schema.Season
 }
 
-func (sn *SeasonHead) ID() string   { return sn.sn.ID }
-func (sn *SeasonHead) Name() string { return sn.sn.Name }
+func (sn *SeasonHead) ID() string    { return sn.sn.ID }
+func (sn *SeasonHead) Title() string { return sn.sn.Title }
 
 type Season struct {
 	SeasonHead

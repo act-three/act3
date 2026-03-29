@@ -252,7 +252,7 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 			return SettingsGroup()(
 				SettingsGroupHead()(
 					SettingsItemLabel()(
-						SettingsItemLabelTitle(sn.Name()),
+						SettingsItemLabelTitle(sn.Title()),
 						SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
 					),
 				),

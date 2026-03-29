@@ -215,7 +215,7 @@ func appDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) html.Nod
 				return html.Div(
 					attr.Class("v-media-file-group-header"),
 				)(
-					html.B()(LiveText(sn.Series().TitleField()), html.Text(" — "+sn.Name())),
+					html.B()(LiveText(sn.Series().TitleField()), html.Text(" — "+sn.Title())),
 				)
 			},
 			func() html.Node {

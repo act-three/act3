@@ -37,14 +37,14 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 
 		sid := map[int]string{}
 		for _, ts := range seasons {
-			name := ts.Name
-			if name == "" {
-				name = fmt.Sprintf("Season %d", ts.Number)
+			title := ts.Name
+			if title == "" {
+				title = fmt.Sprintf("Season %d", ts.Number)
 			}
 			season, err := tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
 				EditionID: sedID,
 				SortKey:   fmt.Sprintf("%03d", ts.Number),
-				Name:      name,
+				Title:     title,
 				Number:    int64(ts.Number),
 			})
 			if err != nil {
