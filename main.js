@@ -13,6 +13,7 @@ import SettingsTextAreaController from "./ui/settings-text-area.js";
 import SettingsTextFieldController from "./ui/settings-text-field.js";
 import SettingsToggleController from "./ui/settings-toggle.js";
 import SeasonTitleController from "./view/season-title.js";
+import SortableController from "./ui/sortable.js";
 import TopbarController from "./view/topbar.js";
 import "./view/wash.js";
 
@@ -25,6 +26,7 @@ Stimulus.register("add-torrent", AddTorrentController);
 Stimulus.register("note-port", NotePortController);
 Stimulus.register("season-title", SeasonTitleController);
 Stimulus.register("select", SelectController);
+Stimulus.register("sortable", SortableController);
 Stimulus.register("settings-button-row", SettingsButtonRowController);
 Stimulus.register("settings-text-area", SettingsTextAreaController);
 Stimulus.register("settings-text-field", SettingsTextFieldController);

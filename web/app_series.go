@@ -299,6 +299,28 @@ func (c *Config) doSeriesEpisodeAdd(w http.ResponseWriter, req *http.Request) (h
 	})
 }
 
+func (c *Config) doEpisodeMove(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		episodeID := req.FormValue("episode-id")
+		fromSeasonID := req.FormValue("from-season-id")
+		seasonID := req.FormValue("season-id")
+		indexStr := req.FormValue("index")
+		if episodeID == "" || fromSeasonID == "" || seasonID == "" {
+			return nil, &model.ValidationError{Op: "move episode", Err: errNotFound}
+		}
+		index, err := strconv.Atoi(indexStr)
+		if err != nil {
+			return nil, &model.ValidationError{Op: "move episode", Err: errNotFound}
+		}
+		if err := tx.EpisodeMove(ctx, episodeID, fromSeasonID, seasonID, index); err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doSeriesEditionAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

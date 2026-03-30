@@ -284,7 +284,10 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 						Button(ButtonGhost, ButtonSize2)(Text("Add Episode")),
 					),
 				),
-				turbo.StreamTarget("season-episodes-"+sn.ID())(
+				turbo.StreamTarget("season-episodes-"+sn.ID(),
+					stimulus.Controller("sortable"),
+					attr.Attr("data-season-id")(sn.ID()),
+				)(
 					html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
 				),
 			)
@@ -303,8 +306,9 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	case model.Playable:
 		icon = Icon("solid/check-circle")
 	}
-	return SettingsItem()(
+	return SettingsItem(attr.Attr("data-episode-id")(ep.ID()))(
 		FlexRow(attr.Style("align-items:center"), Gap4)(
+			html.Div(Class("u-sortable-handle"))(Icon("line/dots-grid")),
 			SettingsItemLabelIcon()(icon),
 			SettingsItemLabel()(
 				SettingsItemLabelTitle(ep.Label()),

@@ -1497,7 +1497,7 @@
     justify-content: space-between;
     align-items: center;
   }
-  .u-settings-item:not(:last-child)::after {
+  .u-settings-item:not(:last-child):not(.u-sortable-drag)::after {
     content: "";
     border-bottom: 0.5px solid var(--border-strong);
     position: absolute;
@@ -1519,6 +1519,37 @@
     border-radius: var(--radius-2);
     color: var(--text-3);
     font-size: 1.25rem;
+  }
+}
+
+/* ui/sortable.css */
+@layer components {
+  .u-sortable-handle {
+    cursor: grab;
+    color: var(--text-3);
+    padding: 8px 4px;
+    margin: -8px -4px;
+    display: grid;
+    place-items: center;
+    font-size: 1rem;
+    touch-action: none;
+  }
+  .u-sortable-handle:hover {
+    color: var(--text);
+  }
+  .u-sortable-handle:active {
+    cursor: grabbing;
+  }
+  .u-sortable-ghost > * {
+    opacity: 0.3;
+  }
+  .u-sortable-drag {
+    background: var(--bg-surface);
+    border-radius: var(--radius-2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  .u-sortable-drag {
+    border: 0.5px solid var(--border-strong);
   }
 }
 

@@ -351,6 +351,15 @@ RETURNING *;
 INSERT INTO SeasonEpisode (EditionID, SeasonID, EpisodeID, SortKey, Label, Number, Slug)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
+-- name: SeasonEpisodeDelete :exec
+DELETE FROM SeasonEpisode WHERE SeasonID = ? AND EpisodeID = ?;
+
+-- name: SeasonEpisodeDeleteBySeasonID :exec
+DELETE FROM SeasonEpisode WHERE SeasonID = ?;
+
+-- name: SeasonEpisodeGet :one
+SELECT * FROM SeasonEpisode WHERE SeasonID = ? AND EpisodeID = ?;
+
 -- name: SeasonEpisodeGetBySlug :one
 SELECT * FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?;
 

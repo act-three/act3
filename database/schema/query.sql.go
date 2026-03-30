@@ -1983,6 +1983,53 @@ func (q *Queries) SeasonEpisodeCreate(ctx context.Context, arg SeasonEpisodeCrea
 	return err
 }
 
+const seasonEpisodeDelete = `-- name: SeasonEpisodeDelete :exec
+DELETE FROM SeasonEpisode WHERE SeasonID = ? AND EpisodeID = ?
+`
+
+type SeasonEpisodeDeleteParams struct {
+	SeasonID  string
+	EpisodeID string
+}
+
+func (q *Queries) SeasonEpisodeDelete(ctx context.Context, arg SeasonEpisodeDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeDelete, arg.SeasonID, arg.EpisodeID)
+	return err
+}
+
+const seasonEpisodeDeleteBySeasonID = `-- name: SeasonEpisodeDeleteBySeasonID :exec
+DELETE FROM SeasonEpisode WHERE SeasonID = ?
+`
+
+func (q *Queries) SeasonEpisodeDeleteBySeasonID(ctx context.Context, seasonid string) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeDeleteBySeasonID, seasonid)
+	return err
+}
+
+const seasonEpisodeGet = `-- name: SeasonEpisodeGet :one
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE SeasonID = ? AND EpisodeID = ?
+`
+
+type SeasonEpisodeGetParams struct {
+	SeasonID  string
+	EpisodeID string
+}
+
+func (q *Queries) SeasonEpisodeGet(ctx context.Context, arg SeasonEpisodeGetParams) (SeasonEpisode, error) {
+	row := q.db.QueryRowContext(ctx, seasonEpisodeGet, arg.SeasonID, arg.EpisodeID)
+	var i SeasonEpisode
+	err := row.Scan(
+		&i.EditionID,
+		&i.SeasonID,
+		&i.EpisodeID,
+		&i.SortKey,
+		&i.Label,
+		&i.Number,
+		&i.Slug,
+	)
+	return i, err
+}
+
 const seasonEpisodeGetBySlug = `-- name: SeasonEpisodeGetBySlug :one
 SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?
 `

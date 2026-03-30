@@ -9,6 +9,7 @@ import (
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
 	"ily.dev/act3/xstrings"
+	"kr.dev/errorfmt"
 )
 
 type EpisodeType uint
@@ -356,6 +357,83 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 		}
 	}
 	return nil
+}
+
+// EpisodeMove moves an episode to a given position within a
+// (possibly different) season and renumbers affected seasons.
+func (tx *TxRW) EpisodeMove(ctx Context, episodeID, fromSeasonID, targetSeasonID string, index int) (err error) {
+	defer errorfmt.Handlef("episode move: %w", &err)
+
+	src, err := tx.q.SeasonEpisodeGet(ctx, schema.SeasonEpisodeGetParams{
+		SeasonID:  fromSeasonID,
+		EpisodeID: episodeID,
+	})
+	if err != nil {
+		return err
+	}
+
+	targetSn, err := tx.q.SeasonGet(ctx, targetSeasonID)
+	if err != nil {
+		return err
+	}
+
+	if src.EditionID != targetSn.EditionID {
+		return fmt.Errorf("episode %s and season %s are in different editions", episodeID, targetSeasonID)
+	}
+
+	isSameSeason := fromSeasonID == targetSeasonID
+
+	// Build the new ordering for the target season and
+	// move the episode to its final postion in the target list.
+	targetEps, err := tx.q.SeasonEpisodeListBySeasonID(ctx, targetSeasonID)
+	if err != nil {
+		return err
+	}
+	if isSameSeason {
+		targetEps = slices.DeleteFunc(targetEps, func(s schema.SeasonEpisode) bool {
+			return s.EpisodeID == episodeID
+		})
+	}
+	index = max(0, min(index, len(targetEps)))
+	targetEps = slices.Insert(targetEps, index, src)
+
+	if !isSameSeason {
+		// Delete the moved episode from the source season to free
+		// the UNIQUE(EditionID, Slug) before inserting into the target.
+		if err := tx.q.SeasonEpisodeDelete(ctx, schema.SeasonEpisodeDeleteParams{
+			SeasonID:  src.SeasonID,
+			EpisodeID: episodeID,
+		}); err != nil {
+			return err
+		}
+		srcSn, err := tx.q.SeasonGet(ctx, src.SeasonID)
+		if err != nil {
+			return err
+		}
+		if err := tx.renumberSeason(ctx, srcSn); err != nil {
+			return err
+		}
+	}
+
+	// Delete and re-insert the target season in the new order.
+	if err := tx.q.SeasonEpisodeDeleteBySeasonID(ctx, targetSeasonID); err != nil {
+		return err
+	}
+	for i, snep := range targetEps {
+		err = tx.q.SeasonEpisodeCreate(ctx, schema.SeasonEpisodeCreateParams{
+			EditionID: targetSn.EditionID,
+			SeasonID:  targetSeasonID,
+			EpisodeID: snep.EpisodeID,
+			SortKey:   int64(i),
+			Label:     snep.Label,
+			Number:    snep.Number,
+			Slug:      snep.Slug,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return tx.renumberSeason(ctx, targetSn)
 }
 
 // SeasonEpisodeAdd creates a new regular episode at the end of the
