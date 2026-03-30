@@ -24,7 +24,7 @@ func Degraded(
 
 	return base("Schema Mismatch")()(
 		FlexCol(Class("v-degraded"), Gap6)(
-			Text("Schema Mismatch", Size7, FontBold),
+			Text("Schema Mismatch", Size7, TextBold),
 			Text("The database schema does not match "+
 				"what this version of the server expects. "+
 				"The database must be reinitialized before "+
@@ -39,7 +39,7 @@ func Degraded(
 					sme.DBPath,
 				))),
 			),
-			Text("Database Contents", Size5, FontBold),
+			Text("Database Contents", Size5, TextBold),
 			TableRoot(TableSize2)(
 				TableHeader()(
 					TableRow()(
@@ -57,10 +57,10 @@ func Degraded(
 						)
 					}),
 					TableRow()(
-						TableCell()(Text("Total", FontBold)),
+						TableCell()(Text("Total", TextBold)),
 						TableCell()(Text(
 							fmt.Sprintf("%d", totalRows),
-							FontBold,
+							TextBold,
 						)),
 					),
 				),

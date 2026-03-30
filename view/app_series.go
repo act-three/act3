@@ -429,7 +429,7 @@ func AppEpisodeDialog(
 					),
 				),
 
-				TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Videos")),
+				TextNode(TextBold, attr.Style("margin-top: 1rem"))(html.Text("Videos")),
 				expr.IfElse(len(videos) == 0,
 					func() html.Node {
 						return html.Div(
@@ -442,7 +442,7 @@ func AppEpisodeDialog(
 					return appEpisodeDialogVideo(v)
 				}),
 
-				TextNode(FontBold, attr.Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
+				TextNode(TextBold, attr.Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
 				expr.IfElse(len(renditions) == 0,
 					func() html.Node {
 						return html.Div(

@@ -24,7 +24,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 					ImageFrame()(
 						PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
 					),
-					Box(Class("v-series-sidebar-section"))(Text(sr.Title(), FontBold)),
+					Box(Class("v-series-sidebar-section"))(Text(sr.Title(), TextBold)),
 					html.If(isUserAdmin(), func() html.Node {
 						return FlexRow()(
 							Link(
@@ -54,7 +54,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 
 func browseSeriesSeason(sn *model.Season) html.Node {
 	return Box()(
-		Box(Class("v-series-season-header"))(Text(sn.Title(), FontBold)),
+		Box(Class("v-series-season-header"))(Text(sn.Title(), TextBold)),
 		FlexCol(Class("v-series-episodes"))(
 			html.RangeSeq(sn.Episodes(model.AnyEpisode), browseSeriesEpisode),
 		),
@@ -91,7 +91,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 				),
 				Link(ep.TheaterPath(), Class("v-series-episode"))(
 					FlexCol()(
-						Box(Class("v-series-episode-number"))(Text(ep.SnnEnn(), FontNormal)),
+						Box(Class("v-series-episode-number"))(Text(ep.SnnEnn(), TextNormal)),
 						FlexRow()(
 							Box()(Text(ep.Title(), Class("v-series-episode-title"))),
 						),

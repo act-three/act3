@@ -1,0 +1,85 @@
+/* Design tokens — colors, fonts, sizing, radii.
+ *
+ * Imported into layer(theme), after preflight and before components.
+ * The theme component lives in theme.css (components layer);
+ * it overrides the styles set here.
+ *
+ * Each color group derives from a single base using relative color
+ * syntax: oklch(from var(--base) l c h). Changing a base color
+ * shifts every derivative in that group.
+ *
+ * Base colors live on :root. Derivatives are set on :root and on
+ * elements that override a base (via data attributes). */
+
+:root {
+	-webkit-user-select: none;
+	user-select: none;
+
+	/* ---- fonts ---- */
+	--font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui;
+	--font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+	/* ---- text sizes ---- */
+	--text-xl: 1.25rem;
+
+	/* ---- fixed concrete color palette ---- */
+	/* Do not override. These colors can be used */
+	/* to override the base colors below. */
+	--deeppurple: oklch(0.085 0.041 317);
+	--hotpink: oklch(0.651 0.254 3);
+	--warmred: oklch(0.634 0.213 28);
+
+	/* ---- base colors ---- */
+	/* Override these to change the appearance. */
+	/* Overrides are allowed only on elements that match
+	/* the selector on the block of derived colors below. */
+	--bg: var(--deeppurple);
+	--text: oklch(from var(--bg) 0.95 0 h);
+	--accent: var(--hotpink);
+
+	/* ---- radius ---- */
+	--radius-1: 4.5px;
+	--radius-2: 6px;
+	--radius-3: 9px;
+	--radius-4: 12px;
+	--radius-5: 18px;
+	--radius-6: 24px;
+}
+
+/* Derived color tokens — on :root for defaults, and on elements
+ * that override a base color so derivatives recompute there. */
+:root,
+[data-role],
+[data-accent] {
+	/* ---- backgrounds (from --bg) ---- */
+	--bg-subtle: oklch(from var(--bg) 0.125 0.035 h);
+	--bg-surface: oklch(from var(--bg) 0.187 0.023 h);
+	--bg-input: oklch(from var(--bg) 0.125 0.035 h);
+	--bg-hover: oklch(from var(--bg) 0.209 0.022 h);
+	--bg-active: oklch(from var(--bg) 0.229 0.019 h);
+	--bg-solid: oklch(from var(--bg) 0.239 0.021 h);
+	--bg-surface-a: oklch(from var(--bg) 0.187 0.023 h / 0.5);
+	--bg-hover-a: oklch(from var(--bg) 0.3 0.02 h / 0.4);
+	--panel: oklch(from var(--bg) 0.125 0.035 h / 0.7);
+
+	/* ---- text (from --text) ---- */
+	--text-2: oklch(from var(--text) 0.915 0.01 h);
+	--text-3: oklch(from var(--text) 0.655 0.01 h);
+	--text-4: oklch(from var(--text) 0.43 0.011 h);
+
+	/* ---- borders (from --bg) ---- */
+	--border: oklch(from var(--bg) 0.239 0.021 h);
+	--border-subtle: oklch(from var(--bg) 0.187 0.023 h);
+	--border-strong: oklch(from var(--bg) 0.301 0.02 h);
+
+	/* ---- accent (from --accent) ---- */
+	--accent-hover: oklch(from var(--accent) 0.664 0.196 h);
+	--accent-bold: oklch(from var(--accent) 0.543 0.148 h);
+	--accent-text: oklch(from var(--accent) 0.764 0.149 h);
+	--accent-surface: oklch(from var(--accent) 0.206 0.023 h);
+	--accent-surface-hover: oklch(from var(--accent) 0.255 0.06 h);
+	--accent-surface-active: oklch(from var(--accent) 0.293 0.093 h);
+	--accent-border: oklch(from var(--accent) 0.4 0.1 h);
+	--accent-border-strong: oklch(from var(--accent) 0.45 0.12 h);
+	--accent-contrast: oklch(from var(--accent) 0.909 0.054 h);
+}

@@ -86,7 +86,7 @@ func appDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node 
 				},
 				func() html.Node {
 					return html.Group(
-						CardTitle(FontNormal)(Text(dl.Title())),
+						CardTitle(TextNormal)(Text(dl.Title())),
 						CardDescription(LineClamp2)(
 							Textf("%d/%d assigned",
 								dl.PlanLen(),

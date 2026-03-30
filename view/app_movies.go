@@ -421,7 +421,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 		)(html.Text("No videos"))
 	}
 	return FlexCol(Gap2)(
-		TextNode(FontBold)(html.Text("Videos")),
+		TextNode(TextBold)(html.Text("Videos")),
 		html.Range(vids, func(v *model.Video) html.Node {
 			return html.Div(Class("v-media-indent"))(
 				html.Div()(

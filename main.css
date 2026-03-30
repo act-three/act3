@@ -1,11 +1,12 @@
 @import "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap";
 @import "./ui/preflight.css" layer(preflight);
-@import "./ui/theme.css" layer(theme);
+@import "./ui/theme-layer.css" layer(theme);
 @import "./ui/ui.css" layer(components);
 @import "./view/view.css" layer(components);
 
 @layer base {
 	body {
+		/* TODO: review which of these belong in ui/theme-layer.css */
 		background-color: var(--bg);
 		color: var(--text);
 		min-height: 100vh;
@@ -18,8 +19,6 @@
 		-webkit-text-size-adjust: 100%;
 		-moz-text-size-adjust: none;
 		text-size-adjust: none;
-		-webkit-user-select: none;
-		user-select: none;
 	}
 
 	body:has(.v-app), body:has(#full-player) { overflow: hidden; }
