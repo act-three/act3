@@ -86,9 +86,9 @@ func (ep *Episode) Progress() []*progress.Item { return ep.prog }
 func (ep *Episode) Videos() []*Video           { return ep.videos }
 func (ep *Episode) SnnEnn() string {
 	if eNN := ep.snep.Number; eNN != 0 {
-		return fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, eNN)
+		return fmt.Sprintf("S%dE%d", ep.sn.sn.Number, eNN)
 	}
-	return fmt.Sprintf("S%02d Special", ep.sn.sn.Number)
+	return fmt.Sprintf("S%d Special", ep.sn.sn.Number)
 }
 
 func (ep *Episode) State() EpisodeState {
@@ -414,9 +414,9 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID string) error {
 func (tx *TxRW) episodeFindSlug(ctx Context, editionID string, seasonNum, episodeNum int64, title string, allow ...string) (string, error) {
 	var base string
 	if episodeNum == 0 {
-		base = fmt.Sprintf("s%02d-special", seasonNum)
+		base = fmt.Sprintf("s%d-special", seasonNum)
 	} else {
-		base = fmt.Sprintf("s%02de%02d", seasonNum, episodeNum)
+		base = fmt.Sprintf("s%de%d", seasonNum, episodeNum)
 	}
 	slug := base
 	if titleSlug := xstrings.ToSlug(title); titleSlug != "" {
