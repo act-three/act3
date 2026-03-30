@@ -35,7 +35,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			return err
 		}
 
-		sid := map[int]string{}
+		sns := map[int]schema.Season{}
 		for _, ts := range seasons {
 			title := ts.Name
 			if title == "" {
@@ -50,7 +50,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
-			sid[ts.Number] = season.ID
+			sns[ts.Number] = season
 		}
 
 		neps := norm.TVmazeEpisodes(eps)
@@ -60,9 +60,15 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 				return err
 			}
 			ne.SeasonEpisode.EditionID = sedID
-			ne.SeasonEpisode.SeasonID = sid[ne.Season]
+			ne.SeasonEpisode.SeasonID = sns[ne.Season].ID
 			ne.SeasonEpisode.EpisodeID = ep.ID
 			err = tx.q.SeasonEpisodeCreate(ctx, ne.SeasonEpisode)
+			if err != nil {
+				return err
+			}
+		}
+		for _, sn := range sns {
+			err = tx.renumberSeason(ctx, sn)
 			if err != nil {
 				return err
 			}

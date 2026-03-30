@@ -1,13 +1,13 @@
 package norm
 
 import (
+	"crypto/rand"
 	"fmt"
 	"log/slog"
 	"strconv"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/service/tvmaze"
-	"ily.dev/act3/xstrings"
 )
 
 type Episode struct {
@@ -23,15 +23,19 @@ var knownEpisodeTypes = map[string]bool{
 }
 
 // TVmazeEpisodes normalizes TVmaze episode data into DB-ready params.
-// The returned SeasonEpisodeCreateParams have EditionID, SeasonID,
-// and EpisodeID left empty — the caller fills those after creating
-// seasons and episodes.
+//
+// Fields EditionID, SeasonID, and EpisodeID are unset.
+// The caller must set them after creating seasons and episodes.
+//
+// Derived fields Number and Label are also unset.
+// Slug is initialized to a placeholder value.
+// The caller should call renumberSeason to set all three
+// after saving all Episode and SeasonEpisode records.
 //
 // Episodes with unrecognized types are logged and omitted.
 func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 	var out []Episode
 
-	seenSlug := map[string]bool{}
 	for _, te := range eps {
 		if !knownEpisodeTypes[te.Type] {
 			slog.Error("unknown TVmaze episode type; omitting",
@@ -44,36 +48,12 @@ func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 			sortDate = "AAAA-AA-AA"
 		}
 
-		var epSlug, sortKey, label string
+		var sortKey string
 		if te.Number != 0 {
-			epSlug = fmt.Sprintf("s%02de%02d", te.Season, te.Number)
 			sortKey = sortDate + "-" + fmt.Sprintf("%05d", te.Number)
-			label = strconv.Itoa(te.Number)
 		} else {
-			epSlug = fmt.Sprintf("s%02d-special", te.Season)
 			sortKey = sortDate + "-" + "AAAAA"
-			switch te.Type {
-			case "significant_special", "insignificant_special":
-				label = "Special"
-			default:
-				label = "Unknown"
-			}
 		}
-
-		slug := epSlug
-		if titleSlug := xstrings.ToSlug(te.Name); titleSlug != "" {
-			slug += "-" + titleSlug
-		}
-		if seenSlug[slug] {
-			for j := 2; ; j++ {
-				try := slug + "-" + strconv.Itoa(j)
-				if !seenSlug[try] {
-					slug = try
-					break
-				}
-			}
-		}
-		seenSlug[slug] = true
 
 		out = append(out, Episode{
 			Season: te.Season,
@@ -87,9 +67,7 @@ func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 			},
 			SeasonEpisode: schema.SeasonEpisodeCreateParams{
 				SortKey: sortKey + "-" + strconv.Itoa(te.ID),
-				Number:  int64(te.Number),
-				Label:   label,
-				Slug:    slug,
+				Slug:    rand.Text(),
 			},
 		})
 	}

@@ -311,7 +311,7 @@ func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
 	return nil
 }
 
-// renumberSeason reassigns Number, Label, and Slug for every episode
+// renumberSeason derives Number, Label, and Slug for every episode
 // in a season.  Specials get Number 0 / Label "Special"; regular
 // episodes are numbered sequentially starting from 1 in SortKey order.
 func (tx *TxRW) renumberSeason(ctx Context, sn schema.Season) error {
