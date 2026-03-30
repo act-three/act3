@@ -43,7 +43,7 @@ func TestNewSeriesEdition(t *testing.T) {
 			{
 				SeasonID:  "season-1",
 				EpisodeID: "episode-1",
-				SortKey:   "01",
+				SortKey:   1,
 				Label:     "E01",
 			},
 		}

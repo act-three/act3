@@ -1,10 +1,11 @@
 package norm
 
 import (
+	"cmp"
 	"crypto/rand"
-	"fmt"
 	"log/slog"
-	"strconv"
+	"math"
+	"slices"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/service/tvmaze"
@@ -14,6 +15,8 @@ type Episode struct {
 	Season        int
 	Episode       schema.EpisodeCreateParams
 	SeasonEpisode schema.SeasonEpisodeCreateParams
+	number        int
+	tvmazeID      int
 }
 
 var knownEpisodeTypes = map[string]bool{
@@ -43,20 +46,10 @@ func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 			continue
 		}
 
-		sortDate := te.Airdate
-		if sortDate == "" {
-			sortDate = "AAAA-AA-AA"
-		}
-
-		var sortKey string
-		if te.Number != 0 {
-			sortKey = sortDate + "-" + fmt.Sprintf("%05d", te.Number)
-		} else {
-			sortKey = sortDate + "-" + "AAAAA"
-		}
-
 		out = append(out, Episode{
-			Season: te.Season,
+			Season:   te.Season,
+			number:   te.Number,
+			tvmazeID: te.ID,
 			Episode: schema.EpisodeCreateParams{
 				Title:          te.Name,
 				Summary:        te.Summary,
@@ -66,11 +59,26 @@ func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 				TVmazeImageURL: te.Image.Medium(),
 			},
 			SeasonEpisode: schema.SeasonEpisodeCreateParams{
-				SortKey: sortKey + "-" + strconv.Itoa(te.ID),
-				Slug:    rand.Text(),
+				Slug: rand.Text(),
 			},
 		})
 	}
 
+	slices.SortFunc(out, func(a, b Episode) int {
+		return cmp.Or(
+			cmp.Compare(
+				cmp.Or(a.Episode.Airdate, "AAAA-AA-AA"),
+				cmp.Or(b.Episode.Airdate, "AAAA-AA-AA"),
+			),
+			cmp.Compare(
+				cmp.Or(a.number, math.MaxInt),
+				cmp.Or(b.number, math.MaxInt),
+			),
+			cmp.Compare(a.tvmazeID, b.tvmazeID),
+		)
+	})
+	for i := range out {
+		out[i].SeasonEpisode.SortKey = int64(i)
+	}
 	return out
 }

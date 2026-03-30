@@ -115,7 +115,7 @@ type SeasonEpisode struct {
 	EditionID string
 	SeasonID  string
 	EpisodeID string
-	SortKey   string
+	SortKey   int64
 	Label     string
 	Number    int64
 	Slug      string

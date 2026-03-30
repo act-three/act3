@@ -372,14 +372,13 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID string) error {
 	}
 
 	// Count existing regular episodes to determine the next number.
-	var maxNum int64
-	var maxSortKey string
+	var maxNum, maxSortKey int64
 	for _, snep := range existing {
 		maxNum = max(maxNum, snep.Number)
 		maxSortKey = max(maxSortKey, snep.SortKey)
 	}
 	num := maxNum + 1
-	sortKey := maxSortKey + "~"
+	sortKey := maxSortKey + 1
 	title := "New Episode"
 	label := strconv.FormatInt(num, 10)
 

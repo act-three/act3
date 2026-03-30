@@ -95,7 +95,7 @@ CREATE TABLE SeasonEpisode
 	EditionID TEXT NOT NULL REFERENCES SeriesEdition,
 	SeasonID  TEXT NOT NULL REFERENCES Season,
 	EpisodeID TEXT NOT NULL REFERENCES Episode,
-	SortKey   TEXT NOT NULL,
+	SortKey   INTEGER NOT NULL,
 	Label     TEXT NOT NULL, -- episode number e.g. "5", or "Special"
 	Number    INTEGER NOT NULL, -- 0 for specials
 	Slug      TEXT NOT NULL,

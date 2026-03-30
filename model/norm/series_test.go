@@ -8,10 +8,10 @@ import (
 
 func TestTVmazeEpisodes(t *testing.T) {
 	tests := []struct {
-		name         string
-		eps          []tvmaze.Episode
-		wantSortKeys []string
-		wantTypes    []string
+		name      string
+		eps       []tvmaze.Episode
+		wantNames []string
+		wantTypes []string
 	}{
 		{
 			// Dark Shadows episodes around the Thanksgiving 1966
@@ -19,6 +19,9 @@ func TestTVmazeEpisodes(t *testing.T) {
 			// (preempted, no number, no airdate), DS-111 and DS-112
 			// (regular, numbering continues at 109).
 			// Source: TVmaze show 13129, episodes 650326–650330.
+			// Sorted: DS-108, DS-111, DS-112, DS-109, DS-110
+			// (by airdate, then number, then tvmazeID;
+			// preempted episodes sort last due to empty airdate).
 			name: "dark shadows thanksgiving preemption",
 			eps: []tvmaze.Episode{
 				{ID: 650326, Name: "DS-108", Season: 1966, Number: 108, Type: "regular", Airdate: "1966-11-23", Runtime: 30},
@@ -27,14 +30,8 @@ func TestTVmazeEpisodes(t *testing.T) {
 				{ID: 650329, Name: "DS-111", Season: 1966, Number: 109, Type: "regular", Airdate: "1966-11-28", Runtime: 30},
 				{ID: 650330, Name: "DS-112", Season: 1966, Number: 110, Type: "regular", Airdate: "1966-11-29", Runtime: 30},
 			},
-			wantSortKeys: []string{
-				"1966-11-23-00108-650326",
-				"AAAA-AA-AA-AAAAA-650327",
-				"AAAA-AA-AA-AAAAA-650328",
-				"1966-11-28-00109-650329",
-				"1966-11-29-00110-650330",
-			},
-			wantTypes: []string{"regular", "insignificant_special", "insignificant_special", "regular", "regular"},
+			wantNames: []string{"DS-108", "DS-111", "DS-112", "DS-109", "DS-110"},
+			wantTypes: []string{"regular", "regular", "regular", "insignificant_special", "insignificant_special"},
 		},
 		{
 			// Game of Thrones season 6 specials: three
@@ -47,16 +44,13 @@ func TestTVmazeEpisodes(t *testing.T) {
 				{ID: 708089, Name: "Inside Game of Thrones - Prosthetics", Season: 6, Number: 0, Type: "insignificant_special", Airdate: "2016-03-29", Runtime: 4},
 				{ID: 929474, Name: "18 Hours at the Paint Hall", Season: 6, Number: 0, Type: "insignificant_special", Airdate: "2016-07-03", Runtime: 30},
 			},
-			wantSortKeys: []string{
-				"2016-02-29-AAAAA-633741",
-				"2016-03-29-AAAAA-708089",
-				"2016-07-03-AAAAA-929474",
-			},
+			wantNames: []string{"Inside Game of Thrones - The Best Seat in the House", "Inside Game of Thrones - Prosthetics", "18 Hours at the Paint Hall"},
 			wantTypes: []string{"insignificant_special", "insignificant_special", "insignificant_special"},
 		},
 		{
 			// Game of Thrones season 1: regular episodes and a
-			// special in the same season.
+			// special in the same season. The special aired before
+			// the regulars, so it sorts first.
 			// Source: TVmaze show 82, episodes 4952, 4953, 4993.
 			name: "game of thrones regular and special",
 			eps: []tvmaze.Episode{
@@ -64,12 +58,8 @@ func TestTVmazeEpisodes(t *testing.T) {
 				{ID: 4953, Name: "The Kingsroad", Season: 1, Number: 2, Type: "regular", Airdate: "2011-04-24", Runtime: 60},
 				{ID: 4993, Name: "Inside Game of Thrones", Season: 1, Number: 0, Type: "insignificant_special", Airdate: "2010-12-05", Runtime: 11},
 			},
-			wantSortKeys: []string{
-				"2011-04-17-00001-4952",
-				"2011-04-24-00002-4953",
-				"2010-12-05-AAAAA-4993",
-			},
-			wantTypes: []string{"regular", "regular", "insignificant_special"},
+			wantNames: []string{"Inside Game of Thrones", "Winter is Coming", "The Kingsroad"},
+			wantTypes: []string{"insignificant_special", "regular", "regular"},
 		},
 		{
 			name: "unknown type omitted",
@@ -78,8 +68,8 @@ func TestTVmazeEpisodes(t *testing.T) {
 				{ID: 2, Name: "Ep 2", Season: 1, Number: 2, Type: "brand_new_type", Airdate: "2020-01-02", Runtime: 30},
 				{ID: 3, Name: "Ep 3", Season: 1, Number: 3, Type: "regular", Airdate: "2020-01-03", Runtime: 30},
 			},
-			wantSortKeys: []string{"2020-01-01-00001-1", "2020-01-03-00003-3"},
-			wantTypes:    []string{"regular", "regular"},
+			wantNames: []string{"Ep 1", "Ep 3"},
+			wantTypes: []string{"regular", "regular"},
 		},
 	}
 
@@ -87,13 +77,13 @@ func TestTVmazeEpisodes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			neps := TVmazeEpisodes(tt.eps)
 
-			if len(neps) != len(tt.wantSortKeys) {
-				t.Fatalf("got %d episodes, want %d", len(neps), len(tt.wantSortKeys))
+			if len(neps) != len(tt.wantNames) {
+				t.Fatalf("got %d episodes, want %d", len(neps), len(tt.wantNames))
 			}
 
 			for i, ne := range neps {
-				if ne.SeasonEpisode.SortKey != tt.wantSortKeys[i] {
-					t.Errorf("episode %d sortKey = %q, want %q", i, ne.SeasonEpisode.SortKey, tt.wantSortKeys[i])
+				if ne.Episode.Title != tt.wantNames[i] {
+					t.Errorf("episode %d title = %q, want %q", i, ne.Episode.Title, tt.wantNames[i])
 				}
 				if ne.Episode.Type != tt.wantTypes[i] {
 					t.Errorf("episode %d type = %q, want %q", i, ne.Episode.Type, tt.wantTypes[i])
