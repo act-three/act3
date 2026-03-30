@@ -301,11 +301,7 @@ func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
 		return err
 	}
 	for _, snep := range sneps {
-		sn, err := tx.q.SeasonGet(ctx, snep.SeasonID)
-		if err != nil {
-			return err
-		}
-		if err := tx.renumberSeason(ctx, sn); err != nil {
+		if err := tx.renumberSeason(ctx, snep.SeasonID); err != nil {
 			return err
 		}
 	}
@@ -406,11 +402,7 @@ func (tx *TxRW) EpisodeMove(ctx Context, episodeID, fromSeasonID, targetSeasonID
 		}); err != nil {
 			return err
 		}
-		srcSn, err := tx.q.SeasonGet(ctx, src.SeasonID)
-		if err != nil {
-			return err
-		}
-		if err := tx.renumberSeason(ctx, srcSn); err != nil {
+		if err := tx.renumberSeason(ctx, src.SeasonID); err != nil {
 			return err
 		}
 	}
@@ -433,7 +425,7 @@ func (tx *TxRW) EpisodeMove(ctx Context, episodeID, fromSeasonID, targetSeasonID
 			return err
 		}
 	}
-	return tx.renumberSeason(ctx, targetSn)
+	return tx.renumberSeason(ctx, targetSeasonID)
 }
 
 // SeasonEpisodeAdd creates a new regular episode at the end of the

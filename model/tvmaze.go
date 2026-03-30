@@ -68,7 +68,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			}
 		}
 		for _, sn := range sns {
-			err = tx.renumberSeason(ctx, sn)
+			err = tx.renumberSeason(ctx, sn.ID)
 			if err != nil {
 				return err
 			}

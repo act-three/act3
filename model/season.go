@@ -139,7 +139,11 @@ func (sn *Season) episodeByNumber(n int) *Episode {
 // renumberSeason derives Number, Label, and Slug for every episode
 // in a season.  Specials get Number 0 / Label "Special"; regular
 // episodes are numbered sequentially starting from 1 in SortKey order.
-func (tx *TxRW) renumberSeason(ctx Context, sn schema.Season) error {
+func (tx *TxRW) renumberSeason(ctx Context, seasonID string) error {
+	sn, err := tx.q.SeasonGet(ctx, seasonID)
+	if err != nil {
+		return err
+	}
 	all, err := tx.q.SeasonEpisodeListBySeasonID(ctx, sn.ID)
 	if err != nil {
 		return err
