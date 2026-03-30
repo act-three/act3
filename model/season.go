@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"iter"
+	"strconv"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
@@ -131,6 +132,72 @@ func (sn *Season) episodeByNumber(n int) *Episode {
 	}
 	for ep := range xiter.Drop(sn.Episodes(Regular), n-1) {
 		return ep
+	}
+	return nil
+}
+
+// renumberSeason derives Number, Label, and Slug for every episode
+// in a season.  Specials get Number 0 / Label "Special"; regular
+// episodes are numbered sequentially starting from 1 in SortKey order.
+func (tx *TxRW) renumberSeason(ctx Context, sn schema.Season) error {
+	all, err := tx.q.SeasonEpisodeListBySeasonID(ctx, sn.ID)
+	if err != nil {
+		return err
+	}
+	eps := make(map[string]schema.Episode, len(all))
+	for _, snep := range all {
+		ep, err := tx.q.EpisodeGet(ctx, snep.EpisodeID)
+		if err != nil {
+			return err
+		}
+		eps[snep.EpisodeID] = ep
+	}
+
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventSeasonRenumber,
+			ID:   sn.ID,
+		})
+	})
+
+	var num int64
+	for _, snep := range all {
+		ep := eps[snep.EpisodeID]
+		isSpecial := ep.Type == "significant_special" || ep.Type == "insignificant_special"
+
+		var wantNum int64
+		var wantLabel string
+		if isSpecial {
+			wantLabel = "Special"
+		} else {
+			num++
+			wantNum = num
+			wantLabel = strconv.FormatInt(num, 10)
+		}
+
+		var base string
+		if isSpecial {
+			base = fmt.Sprintf("s%02d-special", sn.Number)
+		} else {
+			base = fmt.Sprintf("s%02de%02d", sn.Number, wantNum)
+		}
+		wantSlug, err := tx.generateEpisodeSlug(ctx, snep.EditionID, snep.Slug, base, ep.Title, snep.EpisodeID)
+		if err != nil {
+			return err
+		}
+		if snep.Number == wantNum && snep.Label == wantLabel && snep.Slug == wantSlug {
+			continue
+		}
+		err = tx.q.SeasonEpisodeNumberingSet(ctx, schema.SeasonEpisodeNumberingSetParams{
+			Number:    wantNum,
+			Label:     wantLabel,
+			Slug:      wantSlug,
+			SeasonID:  sn.ID,
+			EpisodeID: snep.EpisodeID,
+		})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
