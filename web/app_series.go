@@ -284,6 +284,21 @@ func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.No
 	})
 }
 
+func (c *Config) doSeasonAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		editionID := req.FormValue("edition-id")
+		if editionID == "" {
+			return nil, &model.ValidationError{Op: "add season", Err: errNotFound}
+		}
+		if err := tx.SeasonAdd(ctx, editionID); err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) doSeriesEpisodeAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

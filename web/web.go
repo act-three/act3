@@ -86,6 +86,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/movie-edition-set-label", c.doMovieEditionSetLabel)
 	handle(mux, "POST /-/do/movie-edition-set-year", c.doMovieEditionSetYear)
 	handle(mux, "POST /-/do/movie-edition-set-title", c.doMovieEditionSetTitle)
+	handle(mux, "POST /-/do/season-add", c.doSeasonAdd)
 	handle(mux, "POST /-/do/season-set-title", c.doSeasonSetTitle)
 	handle(mux, "POST /-/do/series-episode-add", c.doSeriesEpisodeAdd)
 	handle(mux, "POST /-/do/series-add", c.doSeriesAdd)

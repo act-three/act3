@@ -136,6 +136,27 @@ func (sn *Season) episodeByNumber(n int) *Episode {
 	return nil
 }
 
+// SeasonAdd creates a new empty season after all existing ones
+// in the given edition.
+func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
+	sns, err := tx.q.SeasonListByEditionID(ctx, editionID)
+	if err != nil {
+		return err
+	}
+	var maxNumber int64
+	for _, sn := range sns {
+		maxNumber = max(maxNumber, sn.Number)
+	}
+	next := maxNumber + 1
+	_, err = tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
+		EditionID: editionID,
+		SortKey:   fmt.Sprintf("%03d", next),
+		Title:     fmt.Sprintf("Season %d", next),
+		Number:    next,
+	})
+	return err
+}
+
 // renumberSeason derives Number, Label, and Slug for every episode
 // in a season.  Specials get Number 0 / Label "Special"; regular
 // episodes are numbered sequentially starting from 1 in SortKey order.

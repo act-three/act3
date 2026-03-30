@@ -167,6 +167,22 @@ func AppSeriesDetail(
 				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
+							SettingsItemLabelTitle("New Season"),
+						),
+
+						html.Form(
+							attr.Method("POST"),
+							attr.Action("/-/do/season-add"),
+						)(
+							Hidden("edition-id", sed.ID()),
+							Button(ButtonGhost, ButtonSize2)(Text("Add")),
+						),
+					),
+				),
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
 							SettingsItemLabelTitle("Edition"),
 							SettingsItemLabelDescription("Create a new edition by duplicating this one"),
 						),
