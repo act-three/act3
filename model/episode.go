@@ -3,8 +3,8 @@ package model
 import (
 	"fmt"
 	"path"
+	"slices"
 	"strconv"
-	"strings"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
@@ -336,7 +336,11 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 		return err
 	}
 	for _, snep := range sneps {
-		slug, err := tx.generateEpisodeSlug(ctx, snep.EditionID, snep.Slug, episodeSlugBase(snep.Slug), title, id)
+		sn, err := tx.q.SeasonGet(ctx, snep.SeasonID)
+		if err != nil {
+			return err
+		}
+		slug, err := tx.episodeFindSlug(ctx, snep.EditionID, sn.Number, snep.Number, title, snep.Slug)
 		if err != nil {
 			return err
 		}
@@ -376,7 +380,6 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID string) error {
 	}
 	num := maxNum + 1
 	sortKey := maxSortKey + "~"
-	base := fmt.Sprintf("s%02de%02d", sn.Number, num)
 	title := "New Episode"
 	label := strconv.FormatInt(num, 10)
 
@@ -389,7 +392,7 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID string) error {
 		return err
 	}
 
-	slug, err := tx.generateEpisodeSlug(ctx, sn.EditionID, "", base, title, ep.ID)
+	slug, err := tx.episodeFindSlug(ctx, sn.EditionID, sn.Number, num, title)
 	if err != nil {
 		return err
 	}
@@ -405,59 +408,40 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID string) error {
 	})
 }
 
-// generateEpisodeSlug builds an episode slug from a base (e.g. "s01e05"
-// or "s02-special") and a title.
-// If the result matches oldSlug, it is returned as-is;
-// otherwise a uniqueness check deduplicates within the edition.
-func (tx *TxRW) generateEpisodeSlug(ctx Context, editionID, oldSlug, base, title, id string) (string, error) {
+// episodeFindSlug builds an episode slug from the season number,
+// episode number (0 for specials), and title.
+// Slugs in allow are accepted without a uniqueness check;
+// otherwise deduplication appends "-2", "-3", etc.
+func (tx *TxRW) episodeFindSlug(ctx Context, editionID string, seasonNum, episodeNum int64, title string, allow ...string) (string, error) {
+	var base string
+	if episodeNum == 0 {
+		base = fmt.Sprintf("s%02d-special", seasonNum)
+	} else {
+		base = fmt.Sprintf("s%02de%02d", seasonNum, episodeNum)
+	}
 	slug := base
 	if titleSlug := xstrings.ToSlug(title); titleSlug != "" {
 		slug += "-" + titleSlug
 	}
-	if slug == oldSlug {
+	if slices.Contains(allow, slug) {
 		return slug, nil
 	}
-	n, err := tx.q.SeasonEpisodeSlugExists(ctx, schema.SeasonEpisodeSlugExistsParams{
-		EditionID: editionID,
-		Slug:      slug,
-	})
-	if err != nil {
-		return "", err
-	}
-	if n == 0 {
-		return slug, nil
-	}
-	// Append the ID as a last resort.
-	return slug + "-" + id, nil
-}
-
-// episodeSlugBase extracts the "sNNeNN" or "sNN-special" prefix
-// from an episode slug segment like "s01e05-the-title".
-func episodeSlugBase(epPart string) string {
-	// Match "sNNeNN": s, digits, e, digits.
-	i := 0
-	if i >= len(epPart) || epPart[i] != 's' {
-		return epPart
-	}
-	i++
-	for i < len(epPart) && epPart[i] >= '0' && epPart[i] <= '9' {
-		i++
-	}
-	if i < len(epPart) && epPart[i] == 'e' {
-		i++
-		for i < len(epPart) && epPart[i] >= '0' && epPart[i] <= '9' {
-			i++
+	for i := 1; ; i++ {
+		candidate := slug
+		if i >= 2 {
+			candidate += "-" + strconv.Itoa(i)
 		}
-		return epPart[:i]
-	}
-	// Try "sNN-special".
-	if i < len(epPart) && epPart[i] == '-' {
-		const special = "-special"
-		if strings.HasPrefix(epPart[i:], special) {
-			return epPart[:i+len(special)]
+		n, err := tx.q.SeasonEpisodeSlugExists(ctx, schema.SeasonEpisodeSlugExistsParams{
+			EditionID: editionID,
+			Slug:      candidate,
+		})
+		if err != nil {
+			return "", err
+		}
+		if n == 0 {
+			return candidate, nil
 		}
 	}
-	return epPart
 }
 
 func epMapByID(eps []schema.Episode) map[string]*schema.Episode {

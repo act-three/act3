@@ -175,13 +175,7 @@ func (tx *TxRW) renumberSeason(ctx Context, sn schema.Season) error {
 			wantLabel = strconv.FormatInt(num, 10)
 		}
 
-		var base string
-		if isSpecial {
-			base = fmt.Sprintf("s%02d-special", sn.Number)
-		} else {
-			base = fmt.Sprintf("s%02de%02d", sn.Number, wantNum)
-		}
-		wantSlug, err := tx.generateEpisodeSlug(ctx, snep.EditionID, snep.Slug, base, ep.Title, snep.EpisodeID)
+		wantSlug, err := tx.episodeFindSlug(ctx, snep.EditionID, sn.Number, wantNum, ep.Title, snep.Slug)
 		if err != nil {
 			return err
 		}
