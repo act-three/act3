@@ -11,10 +11,7 @@
 
 .v-series-sidebar-section { padding: 1rem; }
 
-.v-series-content {
-	grid-column: span 8 / -1;
-	gap: 5rem;
-}
+.v-series-content { grid-column: span 8 / -1; }
 
 .v-series-episodes {
 	gap: 3rem;

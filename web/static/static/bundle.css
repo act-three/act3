@@ -2320,7 +2320,6 @@
   }
   .v-series-content {
     grid-column: span 8 / -1;
-    gap: 5rem;
   }
   .v-series-episodes {
     gap: 3rem;

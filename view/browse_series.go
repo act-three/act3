@@ -11,7 +11,7 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
-func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
+func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork) html.Node {
 	seasons := slices.Values(([]*model.Season)(nil)) // empty
 	if sed != nil {
 		seasons = sed.Seasons()
@@ -24,7 +24,6 @@ func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 					ImageFrame()(
 						PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
 					),
-					Box(Class("v-series-sidebar-section"))(Text(sr.Title(), TextBold)),
 					html.If(isUserAdmin(), func() html.Node {
 						return FlexRow()(
 							Link(
@@ -45,10 +44,35 @@ func BrowseSeriesEdition(sed *model.SeriesEdition) html.Node {
 					}),
 				),
 			),
-			FlexCol(Class("v-series-content"))(
-				html.RangeSeq(seasons, browseSeriesSeason),
+			FlexCol(Class("v-series-content"), Gap8)(
+				FlexCol(Gap4)(
+					Text(sr.Title(), Size7),
+					html.If(len(editions) > 1, func() html.Node {
+						return browseSeriesEditionSelect(editions, sed)
+					}),
+					TextNode(Size3)(html.Safe(sed.Summary())),
+				),
+				FlexCol(attr.Style("gap:5rem"))(
+					html.RangeSeq(seasons, browseSeriesSeason),
+				),
 			),
 		),
+	)
+}
+
+func browseSeriesEditionSelect(editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
+	return FlexRow(Gap2, attr.Style("flex-wrap:wrap"))(
+		html.Range(editions, func(ed *model.SeriesWork) html.Node {
+			selected := attr.Group()
+			if ed.SeriesEditionHead.ID() == current.ID() {
+				selected = attr.Attr("data-selected")
+			}
+			return Button(
+				ButtonSurface, ButtonSize3,
+				attr.Href(ed.TheaterPath()),
+				selected,
+			)(Text(ed.Label()))
+		}),
 	)
 }
 

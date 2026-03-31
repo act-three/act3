@@ -45,13 +45,21 @@ func (c *Config) browseSeries(ctx model.Context, tr *model.TxR, seriesSlug, slug
 		} else if err != nil {
 			return nil, err
 		}
-		return view.BrowseSeriesEdition(sed), nil
+		editions, err := tr.SeriesEditionList(ctx, sed.SeriesHead())
+		if err != nil {
+			return nil, err
+		}
+		return view.BrowseSeriesEdition(sed, editions), nil
 	}
 	sed, err := tr.SeriesEditionBySlug(ctx, seriesSlug, "")
 	if err != nil {
 		return nil, err
 	}
-	return view.BrowseSeriesEdition(sed), nil
+	editions, err := tr.SeriesEditionList(ctx, sed.SeriesHead())
+	if err != nil {
+		return nil, err
+	}
+	return view.BrowseSeriesEdition(sed, editions), nil
 }
 
 func (c *Config) browseMovie(ctx model.Context, tr *model.TxR, movieSlug, edSlug string) (html.Node, error) {
