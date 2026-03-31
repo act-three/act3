@@ -9,6 +9,8 @@ import { Controller } from "../web/stimulus.js";
 import Sortable from "../web/sortable.js";
 
 export default class extends Controller {
+	#drag = null;
+
 	connect() {
 		this.sortable = Sortable.create(this.element, {
 			group: "episodes",
@@ -18,6 +20,9 @@ export default class extends Controller {
 			animation: 150,
 			ghostClass: "u-sortable-ghost",
 			dragClass: "u-sortable-drag",
+			onStart: (e) => {
+				this.#drag = { item: e.item, parent: e.from, next: e.item.nextSibling };
+			},
 			onEnd: (e) => this.#onEnd(e),
 		});
 	}
@@ -26,7 +31,19 @@ export default class extends Controller {
 		this.sortable.destroy();
 	}
 
+	// Cancels a drag by reverting the element to its original position
+	// before ending the drag, so SortableJS sees no change.
+	cancel() {
+		if (!this.#drag) return;
+		this.#drag.parent.insertBefore(this.#drag.item, this.#drag.next);
+		this.#drag = null;
+		document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+	}
+
 	#onEnd(e) {
+		if (!this.#drag) return;
+		this.#drag = null;
+
 		const body = new URLSearchParams();
 		body.set("episode-id", e.item.dataset.episodeId);
 		body.set("from-season-id", e.from.dataset.seasonId);

@@ -302,6 +302,7 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 				),
 				turbo.StreamTarget("season-episodes-"+sn.ID(),
 					stimulus.Controller("sortable"),
+					stimulus.Action("keydown.esc@document->sortable#cancel"),
 					attr.Attr("data-season-id")(sn.ID()),
 				)(
 					html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
