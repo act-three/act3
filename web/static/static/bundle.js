@@ -10290,7 +10290,11 @@
           css(ghostEl, "transform", cssMatrix);
           lastDx = dx;
           lastDy = dy;
-          touchEvt = touch;
+          if (options.direction === "vertical") {
+            touchEvt = { clientX: tapEvt.clientX, clientY: touch.clientY };
+          } else {
+            touchEvt = touch;
+          }
         }
         evt.cancelable && evt.preventDefault();
       }
@@ -11313,6 +11317,8 @@
       this.sortable = sortable_default.create(this.element, {
         group: "episodes",
         handle: ".u-sortable-handle",
+        direction: "vertical",
+        forceFallback: true,
         animation: 150,
         ghostClass: "u-sortable-ghost",
         dragClass: "u-sortable-drag",
@@ -11382,4 +11388,9 @@ Copyright © 2025 37signals LLC
  * @author	RubaXa   <trash@rubaxa.org>
  * @author	owenm    <owen23355@gmail.com>
  * @license MIT
+ *
+ * LOCAL PATCH (act3): In _onTouchMove, when direction is "vertical",
+ * lock touchEvt.clientX to the drag-start X so that hit-testing and
+ * insert detection work even when the pointer drifts outside the
+ * container horizontally. Search for "LOCAL PATCH" to find the change.
  */

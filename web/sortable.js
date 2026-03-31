@@ -3,6 +3,11 @@
  * @author	RubaXa   <trash@rubaxa.org>
  * @author	owenm    <owen23355@gmail.com>
  * @license MIT
+ *
+ * LOCAL PATCH (act3): In _onTouchMove, when direction is "vertical",
+ * lock touchEvt.clientX to the drag-start X so that hit-testing and
+ * insert detection work even when the pointer drifts outside the
+ * container horizontally. Search for "LOCAL PATCH" to find the change.
  */
 function ownKeys(object, enumerableOnly) {
 	var keys = Object.keys(object);
@@ -1612,7 +1617,14 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
 				css(ghostEl, "transform", cssMatrix);
 				lastDx = dx;
 				lastDy = dy;
-				touchEvt = touch;
+				// LOCAL PATCH: lock X to drag-start position for vertical
+				// lists so hit-testing works when the pointer leaves the
+				// container horizontally.
+				if (options.direction === "vertical") {
+					touchEvt = { clientX: tapEvt.clientX, clientY: touch.clientY };
+				} else {
+					touchEvt = touch;
+				}
 			}
 			evt.cancelable && evt.preventDefault();
 		}
