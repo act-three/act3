@@ -92,6 +92,13 @@ func (ep *Episode) SnnEnn() string {
 	return fmt.Sprintf("S%d Special", ep.sn.sn.Number)
 }
 
+func (ep *Episode) CoarseType() string {
+	if ep.ep.Type == "regular" {
+		return "regular"
+	}
+	return "special"
+}
+
 func (ep *Episode) State() EpisodeState {
 	for _, v := range ep.Videos() {
 		if v.MVPlaylist() == "" {

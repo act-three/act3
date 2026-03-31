@@ -16,6 +16,12 @@ type SeasonHead struct {
 
 func (sn *SeasonHead) ID() string    { return sn.sn.ID }
 func (sn *SeasonHead) Title() string { return sn.sn.Title }
+func (sn *SeasonHead) Number() int   { return int(sn.sn.Number) }
+
+// Slug returns a synthetic slug, suitable for use in page anchors.
+func (sn *SeasonHead) Slug() string {
+	return fmt.Sprintf("s%d", sn.sn.Number)
+}
 
 func (sn *SeasonHead) addr(field string) []string {
 	return []string{"season", sn.ID(), field}

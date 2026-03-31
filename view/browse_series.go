@@ -8,6 +8,7 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 )
 
@@ -18,14 +19,18 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 	}
 	sr := sed.SeriesHead()
 	return browse(sr.Title(), sed.TVmazeImageURL())(
-		Grid12(Class("v-series"))(
-			Box(Class("v-series-sidebar"))(
-				Box(Class("v-series-sidebar-inner"))(
+		Grid12(
+			Class("v-series"),
+			stimulus.Controller("series"),
+			stimulus.Value("series", "mode")("regular"),
+		)(
+			FlexCol(Class("v-series-sidebar"))(
+				FlexCol(Class("v-series-sidebar-inner"), Gap4)(
 					ImageFrame()(
 						PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
 					),
 					html.If(isUserAdmin(), func() html.Node {
-						return FlexRow()(
+						return FlexCol(Class("v-series-sidebar-section"))(
 							Link(
 								sr.EditorPath(),
 								turbo.DataFrame("_top"),
@@ -34,14 +39,30 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 							)),
 						)
 					}),
-					Box(Class("v-series-sidebar-section"))(
-						Text("Show: regular & specials"),
+					FlexRow(Gap2)(
+						Button(
+							stimulus.Action("click->series#setRegular"),
+							stimulus.Target("series", "regular"),
+							attr.Attr("data-selected"),
+						)(Text("Regular")),
+						Button(
+							stimulus.Action("click->series#setSpecial"),
+							stimulus.Target("series", "special"),
+						)(Text("Specials")),
+						Button(
+							stimulus.Action("click->series#setAll"),
+							stimulus.Target("series", "all"),
+						)(Text("All")),
 					),
-					html.RangeSeq(seasons, func(sn *model.Season) html.Node {
-						return Box()(
-							Text(sn.Title()),
-						)
-					}),
+					FlexCol(Class("v-series-sidebar-section"))(
+						html.RangeSeq(seasons, func(sn *model.Season) html.Node {
+							return Box()(
+								Link("#" + sn.Slug())(
+									Text(sn.Title()),
+								),
+							)
+						}),
+					),
 				),
 			),
 			FlexCol(Class("v-series-content"), Gap8)(
@@ -77,7 +98,7 @@ func browseSeriesEditionSelect(editions []*model.SeriesWork, current *model.Seri
 }
 
 func browseSeriesSeason(sn *model.Season) html.Node {
-	return Box()(
+	return Box(attr.ID(sn.Slug()), Class("v-series-season"))(
 		Box(Class("v-series-season-header"))(Text(sn.Title(), TextBold)),
 		FlexCol(Class("v-series-episodes"))(
 			html.RangeSeq(sn.Episodes(model.AnyEpisode), browseSeriesEpisode),
@@ -95,7 +116,8 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 	playable := slices.IndexFunc(vids, func(v *model.Video) bool {
 		return v.MVPlaylist() != ""
 	})
-	return Grid8(Class("v-series-episode"), spoiler)(
+	typ := attr.Attr("data-type")(ep.CoarseType())
+	return Grid8(Class("v-series-episode"), typ, spoiler)(
 		FlexCol(Class("v-series-episode-info"))(
 			FlexRow(Class("v-series-episode-header"))(
 				Box()(
@@ -113,7 +135,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 						},
 					),
 				),
-				Link(ep.TheaterPath(), Class("v-series-episode"))(
+				Link(ep.TheaterPath())(
 					FlexCol()(
 						Box(Class("v-series-episode-number"))(Text(ep.SnnEnn(), TextNormal)),
 						FlexRow()(

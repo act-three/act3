@@ -9036,6 +9036,26 @@
     }
   };
 
+  // view/theater-series.js
+  var theater_series_default = class extends Controller {
+    static values = { mode: String };
+    static targets = ["regular", "special", "all"];
+    setRegular() {
+      this.modeValue = "regular";
+    }
+    setSpecial() {
+      this.modeValue = "special";
+    }
+    setAll() {
+      this.modeValue = "all";
+    }
+    modeValueChanged(mode) {
+      for (const t of ["regular", "special", "all"]) {
+        this[`${t}Target`].toggleAttribute("data-selected", t === mode);
+      }
+    }
+  };
+
   // web/sortable.js
   function ownKeys(object, enumerableOnly) {
     var keys = Object.keys(object);
@@ -11391,6 +11411,7 @@
   Stimulus.register("settings-text-area", settings_text_area_default);
   Stimulus.register("settings-text-field", settings_text_field_default);
   Stimulus.register("settings-toggle", settings_toggle_default);
+  Stimulus.register("series", theater_series_default);
   Stimulus.register("topbar", topbar_default);
 })();
 /*!

@@ -9,13 +9,25 @@
 	top: 5rem;
 }
 
-.v-series-sidebar-section { padding: 1rem; }
+.v-series-sidebar-section { padding: 0 0.5rem; }
 
-.v-series-content { grid-column: span 8 / -1; }
+.v-series-content {
+	grid-column: span 8 / -1;
+	padding-bottom: 30lvh;
+}
 
 .v-series-episodes {
 	gap: 3rem;
 	padding-block: 0.5rem;
+}
+
+.v-series-season {
+	/* This element is used as a scroll anchor.
+	So move its top 80px above the content, giving
+	room for the content to clear the fixed-position
+	navbar (4rem) plus a gap (1rem). */
+	margin-top: -5rem;
+	padding-top: 5rem;
 }
 
 .v-series-season-header {
@@ -26,6 +38,9 @@
 }
 
 .v-series-episode { color: var(--text-2); }
+
+.v-series[data-series-mode-value="regular"] .v-series-episode[data-type="special"] { display: none; }
+.v-series[data-series-mode-value="special"] .v-series-episode[data-type="regular"] { display: none; }
 
 .v-series-episode-info {
 	grid-column: span 5;
