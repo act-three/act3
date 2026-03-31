@@ -17,7 +17,7 @@ func BrowseEpisode(
 	return browse(ep.Title(), ep.ImageURL())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
-				Text(ep.SeriesHead().Title()),
+				Link(ep.EditionTheaterPath())(Text(ep.SeriesHead().Title())),
 				Grid7()(
 					Text("S01E01", Class("v-detail-muted")),
 					Box(ColSpan2)(

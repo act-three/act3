@@ -155,6 +155,13 @@ func (ep *Episode) SeasonHead() *SeasonHead {
 	return ep.sn
 }
 
+func (ep *Episode) EditionTheaterPath() string {
+	if ep.so.Slug() == "" {
+		return ep.sr.TheaterPath()
+	}
+	return path.Join(ep.sr.TheaterPath(), ep.so.Slug())
+}
+
 func (ep *Episode) TheaterPath() string {
 	if ep.so.Slug() == "" {
 		return path.Join("/", ep.sr.Slug(), ep.Slug())
