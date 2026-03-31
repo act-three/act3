@@ -325,7 +325,6 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	}
 	return SettingsItem(attr.Attr("data-episode-id")(ep.ID()))(
 		FlexRow(attr.Style("align-items:center"), Gap4)(
-			html.Div(Class("u-sortable-handle"))(Icon("line/dots-grid")),
 			SettingsItemLabelIcon()(icon),
 			SettingsItemLabel()(
 				SettingsItemLabelTitle(ep.Label()),
@@ -333,6 +332,7 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 			),
 		),
 		DialogButton(ep.EditDialogPath(), ButtonGhost)(Icon("line/info-circle")),
+		Grip(),
 	)
 }
 
