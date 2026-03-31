@@ -343,11 +343,11 @@ func (c *Config) doSeriesEditionAdd(w http.ResponseWriter, req *http.Request) (h
 		if editionID == "" {
 			return nil, &model.ValidationError{Op: "add series edition", Err: errNotFound}
 		}
-		_, err := tx.SeriesEditionClone(ctx, editionID)
+		sw, err := tx.SeriesEditionClone(ctx, editionID)
 		if err != nil {
 			return nil, err
 		}
-		w.WriteHeader(http.StatusNoContent)
+		http.Redirect(w, req, sw.EditorPath(), http.StatusSeeOther)
 		return nil, nil
 	})
 }

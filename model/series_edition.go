@@ -235,7 +235,7 @@ func (tx *TxRW) seriesEditionCreate(ctx Context, label, seriesID, summary, tvmaz
 // SeriesEditionClone creates a new edition by copying metadata,
 // seasons, and season-episode mappings from the edition with the given srcID.
 // Episodes themselves are shared, not copied.
-func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHead, error) {
+func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesWork, error) {
 	src, err := tx.q.SeriesEditionGet(ctx, srcID)
 	if err != nil {
 		return nil, err
@@ -279,7 +279,14 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesEditionHea
 			}
 		}
 	}
-	return &SeriesEditionHead{newSed}, nil
+	srData, err := tx.q.SeriesGet(ctx, src.SeriesID)
+	if err != nil {
+		return nil, err
+	}
+	return &SeriesWork{
+		SeriesHead:        SeriesHead{srData},
+		SeriesEditionHead: SeriesEditionHead{newSed},
+	}, nil
 }
 
 func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
