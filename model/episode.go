@@ -8,6 +8,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
+	"ily.dev/act3/web/static"
 	"ily.dev/act3/xstrings"
 	"kr.dev/errorfmt"
 )
@@ -76,12 +77,17 @@ func newEpisode(
 	return ep
 }
 
-func (ep *Episode) ID() string                 { return ep.ep.ID }
-func (ep *Episode) Slug() string               { return ep.snep.Slug }
-func (ep *Episode) Title() string              { return ep.ep.Title }
-func (ep *Episode) Airdate() string            { return ep.ep.Airdate }
-func (ep *Episode) Summary() string            { return ep.ep.Summary }
-func (ep *Episode) ImageURL() string           { return ep.ep.TVmazeImageURL }
+func (ep *Episode) ID() string      { return ep.ep.ID }
+func (ep *Episode) Slug() string    { return ep.snep.Slug }
+func (ep *Episode) Title() string   { return ep.ep.Title }
+func (ep *Episode) Airdate() string { return ep.ep.Airdate }
+func (ep *Episode) Summary() string { return ep.ep.Summary }
+func (ep *Episode) ThumbnailURL() string {
+	if ep.ep.ThumbnailID != "" {
+		return "/-/blob/" + ep.ep.ThumbnailID
+	}
+	return static.Path("/static/thumbnail-fallback.png")
+}
 func (ep *Episode) Type() string               { return ep.ep.Type }
 func (ep *Episode) Progress() []*progress.Item { return ep.prog }
 func (ep *Episode) Videos() []*Video           { return ep.videos }
@@ -250,6 +256,24 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName, edSlug string) (*
 		return ep, nil
 	}
 	return nil, fmt.Errorf("cannot load ep")
+}
+
+func (tx *TxRW) episodeThumbnailIDSet(ctx Context, id, thumbnailID string) error {
+	ep, err := tx.q.EpisodeGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = tx.q.EpisodeThumbnailIDSet(ctx, schema.EpisodeThumbnailIDSetParams{
+		ThumbnailID: thumbnailID,
+		ID:          id,
+	})
+	if err != nil {
+		return err
+	}
+	if ep.ThumbnailID != "" {
+		tx.m.store.Remove(ep.ThumbnailID)
+	}
+	return nil
 }
 
 func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {

@@ -29,11 +29,14 @@ func browseContainer(child ...html.Node) html.Node {
 	)
 }
 
-var posterFallback = static.Path("/static/poster-fallback.png")
+var (
+	posterFallback    = static.Path("/static/poster-fallback.png")
+	thumbnailFallback = static.Path("/static/thumbnail-fallback.png")
+)
 
 func browseWash(urls []string) html.Node {
 	urls = slices.DeleteFunc(urls, func(s string) bool {
-		return s == "" || s == posterFallback
+		return s == "" || s == posterFallback || s == thumbnailFallback
 	})
 	url := static.Path("/static/cb.jpeg")
 	if len(urls) > 0 {

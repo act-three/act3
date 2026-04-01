@@ -406,7 +406,7 @@ func AppEpisodeDialog(
 								SettingsItemLabelTitle("Thumbnail"),
 							),
 							ImageFrame(attr.Style("width:30px"))(
-								PosterImg(PosterFill, PosterAspect169, attr.Src(ep.ImageURL())),
+								PosterImg(PosterFill, PosterAspect169, attr.Src(ep.ThumbnailURL())),
 							),
 						),
 						SettingsItem()(

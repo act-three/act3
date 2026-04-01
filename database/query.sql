@@ -121,10 +121,9 @@ INSERT INTO Episode
 	Summary,
 	Type,
 	Airdate,
-	Runtime,
-	TVmazeImageURL
+	Runtime
 )
-VALUES (?, ?, ?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: EpisodeGet :one
@@ -147,6 +146,9 @@ ORDER BY ID;
 
 -- name: EpisodeSummarySet :exec
 UPDATE Episode SET Summary = ? WHERE ID = ?;
+
+-- name: EpisodeThumbnailIDSet :exec
+UPDATE Episode SET ThumbnailID = ? WHERE ID = ?;
 
 -- name: EpisodeTitleSet :exec
 UPDATE Episode SET Title = ? WHERE ID = ?;

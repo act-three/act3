@@ -151,7 +151,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 		),
 		Box(HoverOverlay, Class("v-series-episode-thumb"))(
 			html.A(attr.Href(ep.TheaterPath()))(
-				PosterImg(PosterFill, PosterAspect169, Class("v-series-episode-thumb"), attr.Src(ep.ImageURL())),
+				PosterImg(PosterFill, PosterAspect169, Class("v-series-episode-thumb"), attr.Src(ep.ThumbnailURL())),
 			),
 			Box(Class("v-series-spoiler-overlay")),
 			Box(Class("v-series-episode-progress"))(

@@ -55,7 +55,7 @@
 						"tagid": "TagID",
 						"tvdbid": "TVDBID",
 						"tvmazeid": "TVmazeID",
-						"tvmazeimageurl": "TVmazeImageURL",
+						"thumbnailid": "ThumbnailID",
 						"targetbitrate": "TargetBitrate",
 						"tvmazeupdatedat": "TVmazeUpdatedAt",
 						"tvmazeurl": "TVmazeURL",

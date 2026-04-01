@@ -15,6 +15,7 @@ type Episode struct {
 	Season        int
 	Episode       schema.EpisodeCreateParams
 	SeasonEpisode schema.SeasonEpisodeCreateParams
+	ImageURL      string
 	number        int
 	tvmazeID      int
 }
@@ -50,13 +51,13 @@ func TVmazeEpisodes(eps []tvmaze.Episode) []Episode {
 			Season:   te.Season,
 			number:   te.Number,
 			tvmazeID: te.ID,
+			ImageURL: te.Image.Medium(),
 			Episode: schema.EpisodeCreateParams{
-				Title:          te.Name,
-				Summary:        te.Summary,
-				Type:           te.Type,
-				Airdate:        te.Airdate,
-				Runtime:        int64(te.Runtime),
-				TVmazeImageURL: te.Image.Medium(),
+				Title:   te.Name,
+				Summary: te.Summary,
+				Type:    te.Type,
+				Airdate: te.Airdate,
+				Runtime: int64(te.Runtime),
 			},
 			SeasonEpisode: schema.SeasonEpisodeCreateParams{
 				Slug: rand.Text(),

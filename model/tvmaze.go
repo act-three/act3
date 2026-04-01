@@ -67,6 +67,12 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			if err != nil {
 				return err
 			}
+			if ne.ImageURL != "" {
+				err = tx.addTask(ctx, taskFetchEpisodeThumbnail, ep.ID, ne.ImageURL)
+				if err != nil {
+					return err
+				}
+			}
 		}
 		for _, sn := range sns {
 			err = tx.renumberSeason(ctx, sn.ID)
@@ -75,6 +81,29 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			}
 		}
 		return nil
+	})
+}
+
+func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) error {
+	epID := args[0]
+	url := args[1]
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("bad status %d", resp.StatusCode)
+	} else if t := resp.Header.Get("Content-Type"); t != "image/jpeg" {
+		return fmt.Errorf("bad content type %s", t)
+	}
+	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
+	thumbnailID, err := tx.m.store.CopyReader(body)
+	if err != nil {
+		return err
+	}
+	return tx.m.WithTxRW(func(tx *TxRW) error {
+		return tx.episodeThumbnailIDSet(ctx, epID, thumbnailID)
 	})
 }
 
@@ -91,7 +120,7 @@ func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 	} else if t := resp.Header.Get("Content-Type"); t != "image/jpeg" {
 		return fmt.Errorf("bad content type %s", t)
 	}
-	body := http.MaxBytesReader(nil, resp.Body, maxPosterBytes)
+	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
 	posterID, err := tx.m.store.CopyReader(body)
 	if err != nil {
 		return err

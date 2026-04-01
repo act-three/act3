@@ -20,11 +20,12 @@ import (
 	"kr.dev/errorfmt"
 )
 
-const maxPosterBytes = 100 << 20 // 100 MB
+const maxImageBytes = 100 << 20 // 100 MB
 
 const (
 	taskAddDownloadToTransmission = "add-download-to-transmission"
 	taskFetchEpisodes             = "fetch-episodes"
+	taskFetchEpisodeThumbnail     = "fetch-episode-thumbnail"
 	taskFetchSeriesPoster         = "fetch-series-poster"
 	taskFetchMoviePoster          = "fetch-movie-poster"
 	taskIngest                    = "ingest"
@@ -44,6 +45,7 @@ type taskFunc func(*TxR, Context, []string) error
 var taskTab = map[string]taskFunc{
 	taskAddDownloadToTransmission: (*TxR).taskAddDownloadToTransmission,
 	taskFetchEpisodes:             (*TxR).taskFetchEpisodes,
+	taskFetchEpisodeThumbnail:     (*TxR).taskFetchEpisodeThumbnail,
 	taskFetchSeriesPoster:         (*TxR).taskFetchSeriesPoster,
 	taskFetchMoviePoster:          (*TxR).taskFetchMoviePoster,
 	taskIngest:                    (*TxR).taskIngest,
@@ -56,6 +58,7 @@ var taskTab = map[string]taskFunc{
 var queueTab = map[string]string{
 	taskAddDownloadToTransmission: queueIO,
 	taskFetchEpisodes:             queueIO,
+	taskFetchEpisodeThumbnail:     queueIO,
 	taskFetchSeriesPoster:         queueIO,
 	taskFetchMoviePoster:          queueIO,
 	taskIngest:                    queueIO,

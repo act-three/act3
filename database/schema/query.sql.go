@@ -676,20 +676,18 @@ INSERT INTO Episode
 	Summary,
 	Type,
 	Airdate,
-	Runtime,
-	TVmazeImageURL
+	Runtime
 )
-VALUES (?, ?, ?, ?, ?, ?)
-RETURNING id, title, summary, type, airdate, runtime, tvmazeimageurl
+VALUES (?, ?, ?, ?, ?)
+RETURNING id, title, summary, type, airdate, runtime, thumbnailid
 `
 
 type EpisodeCreateParams struct {
-	Title          string
-	Summary        string
-	Type           string
-	Airdate        string
-	Runtime        int64
-	TVmazeImageURL string
+	Title   string
+	Summary string
+	Type    string
+	Airdate string
+	Runtime int64
 }
 
 func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (Episode, error) {
@@ -699,7 +697,6 @@ func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (E
 		arg.Type,
 		arg.Airdate,
 		arg.Runtime,
-		arg.TVmazeImageURL,
 	)
 	var i Episode
 	err := row.Scan(
@@ -709,13 +706,13 @@ func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (E
 		&i.Type,
 		&i.Airdate,
 		&i.Runtime,
-		&i.TVmazeImageURL,
+		&i.ThumbnailID,
 	)
 	return i, err
 }
 
 const episodeGet = `-- name: EpisodeGet :one
-SELECT id, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode WHERE ID = ?
+SELECT id, title, summary, type, airdate, runtime, thumbnailid FROM Episode WHERE ID = ?
 `
 
 func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
@@ -728,13 +725,13 @@ func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
 		&i.Type,
 		&i.Airdate,
 		&i.Runtime,
-		&i.TVmazeImageURL,
+		&i.ThumbnailID,
 	)
 	return i, err
 }
 
 const episodeListByEditionID = `-- name: EpisodeListByEditionID :many
-SELECT id, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode
+SELECT id, title, summary, type, airdate, runtime, thumbnailid FROM Episode
 WHERE ID IN (
 	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
 )
@@ -757,7 +754,7 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 			&i.Type,
 			&i.Airdate,
 			&i.Runtime,
-			&i.TVmazeImageURL,
+			&i.ThumbnailID,
 		); err != nil {
 			return nil, err
 		}
@@ -773,7 +770,7 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 }
 
 const episodeListBySeriesID = `-- name: EpisodeListBySeriesID :many
-SELECT id, title, summary, type, airdate, runtime, tvmazeimageurl FROM Episode
+SELECT id, title, summary, type, airdate, runtime, thumbnailid FROM Episode
 WHERE ID IN (
 	SELECT EpisodeID FROM SeasonEpisode
 	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
@@ -797,7 +794,7 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 			&i.Type,
 			&i.Airdate,
 			&i.Runtime,
-			&i.TVmazeImageURL,
+			&i.ThumbnailID,
 		); err != nil {
 			return nil, err
 		}
@@ -823,6 +820,20 @@ type EpisodeSummarySetParams struct {
 
 func (q *Queries) EpisodeSummarySet(ctx context.Context, arg EpisodeSummarySetParams) error {
 	_, err := q.db.ExecContext(ctx, episodeSummarySet, arg.Summary, arg.ID)
+	return err
+}
+
+const episodeThumbnailIDSet = `-- name: EpisodeThumbnailIDSet :exec
+UPDATE Episode SET ThumbnailID = ? WHERE ID = ?
+`
+
+type EpisodeThumbnailIDSetParams struct {
+	ThumbnailID string
+	ID          string
+}
+
+func (q *Queries) EpisodeThumbnailIDSet(ctx context.Context, arg EpisodeThumbnailIDSetParams) error {
+	_, err := q.db.ExecContext(ctx, episodeThumbnailIDSet, arg.ThumbnailID, arg.ID)
 	return err
 }
 

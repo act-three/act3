@@ -86,7 +86,7 @@ CREATE TABLE Episode
 	)),
 	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased
 	Runtime        INTEGER NOT NULL, -- minutes
-	TVmazeImageURL TEXT NOT NULL
+	ThumbnailID    TEXT NOT NULL DEFAULT ('')  -- storage blob ('' means unset)
 )
 STRICT;
 

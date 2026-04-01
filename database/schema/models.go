@@ -38,13 +38,13 @@ type DownloadPlan struct {
 }
 
 type Episode struct {
-	ID             string
-	Title          string
-	Summary        string
-	Type           string
-	Airdate        string
-	Runtime        int64
-	TVmazeImageURL string
+	ID          string
+	Title       string
+	Summary     string
+	Type        string
+	Airdate     string
+	Runtime     int64
+	ThumbnailID string
 }
 
 type EpisodeVideo struct {
