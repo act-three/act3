@@ -103,9 +103,9 @@ func main() {
 		serveDegraded(sme, dbPath)
 	}
 
-	casDir := filepath.Join(storageDir, "cas")
+	datDir := filepath.Join(storageDir, "dat")
 	tmpDir := filepath.Join(storageDir, "tmp")
-	if err := os.MkdirAll(casDir, 0755); err != nil {
+	if err := os.MkdirAll(datDir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -124,7 +124,7 @@ func main() {
 		ffmpeg.OverridePreset(v)
 	}
 
-	store := must(storage.Open(casDir))
+	store := must(storage.Open(datDir))
 	tmdbClient := tmdb.New()
 	tvmazeClient := must(tvmaze.New(dbw))
 	m := must(model.New(dbr, dbw, model.Config{

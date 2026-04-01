@@ -11,8 +11,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"lukechampine.com/blake3"
-
 	"ily.dev/act3/encoding/base32c"
 )
 
@@ -37,7 +35,7 @@ func (d *Dir) FS() fs.FS {
 	return &fanoutFS{d.root.FS()}
 }
 
-func (d *Dir) Copy(name string) (hash string, err error) {
+func (d *Dir) Copy(name string) (id string, err error) {
 	fr, err := os.Open(name)
 	if err != nil {
 		return "", err
@@ -54,11 +52,8 @@ func (d *Dir) Copy(name string) (hash string, err error) {
 	if err != nil {
 		return "", err
 	}
-	hash, err = d.digest(tmp)
-	if err != nil {
-		return "", err
-	}
-	path := filepath.Join(hash[:2], hash[2:4], hash[4:])
+	id = newID()
+	path := filepath.Join(id[:2], id[2:4], id[4:])
 	err = d.root.MkdirAll(path[:5], 0755)
 	if err != nil {
 		return "", err
@@ -67,19 +62,10 @@ func (d *Dir) Copy(name string) (hash string, err error) {
 	if err != nil {
 		return "", err
 	}
-	return hash, nil
+	return id, nil
 }
 
-func (d *Dir) digest(name string) (string, error) {
-	f, err := d.root.Open(name)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	return digest(f)
-}
-
-func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (hashes []string, err error) {
+func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (ids []string, err error) {
 	var tmps []string
 	for range n {
 		tmps = append(tmps, rand.Text()[:8])
@@ -107,15 +93,8 @@ func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (hashes []string, err
 
 	for _, tmp := range tmps {
 		slog.Debug("open", "path", tmp)
-		r, err := d.root.Open(tmp)
-		if err != nil {
-			return nil, err
-		}
-		hash, err := digest(r)
-		if err != nil {
-			return nil, err
-		}
-		path := filepath.Join(hash[:2], hash[2:4], hash[4:])
+		id := newID()
+		path := filepath.Join(id[:2], id[2:4], id[4:])
 		err = d.root.MkdirAll(path[:5], 0755)
 		if err != nil {
 			return nil, err
@@ -124,21 +103,21 @@ func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (hashes []string, err
 		if err != nil {
 			return nil, err
 		}
-		hashes = append(hashes, hash)
+		ids = append(ids, id)
 	}
-	return hashes, nil
+	return ids, nil
 }
 
-func (d *Dir) Remove(hash string) error {
-	p, err := keyPath(hash, true)
+func (d *Dir) Remove(id string) error {
+	p, err := keyPath(id, true)
 	if err != nil {
 		return err
 	}
 	return d.root.Remove(p)
 }
 
-func (d *Dir) Open(hash string) (*os.File, error) {
-	p, err := keyPath(hash, true)
+func (d *Dir) Open(id string) (*os.File, error) {
+	p, err := keyPath(id, true)
 	if err != nil {
 		return nil, err
 	}
@@ -148,36 +127,32 @@ func (d *Dir) Open(hash string) (*os.File, error) {
 
 type fanoutFS struct{ fs fs.FS }
 
-func (f *fanoutFS) Open(hash string) (fs.File, error) {
-	p, err := keyPath(hash, false)
+func (f *fanoutFS) Open(id string) (fs.File, error) {
+	p, err := keyPath(id, false)
 	if err != nil {
 		return nil, &fs.PathError{
 			Op:   "Open",
-			Path: hash,
+			Path: id,
 			Err:  fs.ErrNotExist,
 		}
 	}
 	return f.fs.Open(p)
 }
 
-func digest(r io.Reader) (string, error) {
-	s := blake3.New(byteSize, nil)
-	_, err := io.Copy(s, r)
-	if err != nil {
-		return "", err
-	}
-	p := s.Sum(nil)
-	return base32c.EncodeToString(p), nil
+func newID() string {
+	p := make([]byte, byteSize)
+	rand.Read(p)
+	return base32c.EncodeToString(p)
 }
 
-func keyPath(hash string, forFile bool) (string, error) {
-	_, err := base32c.DecodeString(hash)
-	if len(hash) != b32Size || err != nil {
-		return "", fmt.Errorf("bad hash")
+func keyPath(id string, forFile bool) (string, error) {
+	_, err := base32c.DecodeString(id)
+	if len(id) != b32Size || err != nil {
+		return "", fmt.Errorf("bad id")
 	}
 	if forFile {
-		return filepath.Join(hash[:2], hash[2:4], hash[4:]), nil
+		return filepath.Join(id[:2], id[2:4], id[4:]), nil
 	} else {
-		return path.Join(hash[:2], hash[2:4], hash[4:]), nil
+		return path.Join(id[:2], id[2:4], id[4:]), nil
 	}
 }
