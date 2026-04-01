@@ -57,8 +57,7 @@ type SeriesWork struct {
 	SeriesEditionHead
 }
 
-func (sw *SeriesWork) Title() string    { return sw.SeriesHead.Title() }
-func (sw *SeriesWork) ImageURL() string { return sw.TVmazeImageURL() }
+func (sw *SeriesWork) Title() string { return sw.SeriesHead.Title() }
 
 func (sw *SeriesWork) TheaterPath() string {
 	return path.Join(sw.SeriesHead.TheaterPath(), sw.SeriesEditionHead.Slug())
@@ -232,9 +231,15 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		return nil, err
 	}
 	sedData, err := tx.seriesEditionCreate(ctx,
-		AirDate, srID, show.Summary, show.Image.Medium())
+		AirDate, srID, show.Summary)
 	if err != nil {
 		return nil, err
+	}
+	if show.Image != nil {
+		err = tx.addTask(ctx, taskFetchSeriesPoster, sedData.ID, show.Image.OriginalURL)
+		if err != nil {
+			return nil, err
+		}
 	}
 	err = tx.addTask(ctx, taskFetchEpisodes,
 		strconv.FormatInt(id64, 10), sedData.ID)

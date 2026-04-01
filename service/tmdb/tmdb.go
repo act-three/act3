@@ -18,13 +18,9 @@ import (
 
 var baseURL = *must(url.Parse("https://api.themoviedb.org"))
 
-// ImageURL returns the full URL for a TMDB image path.
-// Returns empty string if posterPath is nil.
-func ImageURL(posterPath *string) string {
-	if posterPath == nil {
-		return ""
-	}
-	return "https://image.tmdb.org/t/p/w500" + *posterPath
+// PosterURL returns the full URL for a TMDB image path.
+func PosterURL(posterPath string) string {
+	return "https://image.tmdb.org/t/p/w500" + posterPath
 }
 
 // Client is a TMDB API client.

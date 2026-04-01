@@ -7,6 +7,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
+	"ily.dev/act3/web/static"
 )
 
 const (
@@ -19,12 +20,18 @@ type SeriesEditionHead struct {
 	sed schema.SeriesEdition
 }
 
-func (sed *SeriesEditionHead) ID() string             { return sed.sed.ID }
-func (sed *SeriesEditionHead) Slug() string           { return sed.sed.Slug }
-func (sed *SeriesEditionHead) Label() string          { return sed.sed.Label }
-func (sed *SeriesEditionHead) Summary() string        { return sed.sed.Summary }
-func (sed *SeriesEditionHead) TVmazeImageURL() string { return sed.sed.TVmazeImageURL }
-func (sed *SeriesEditionHead) SeriesID() string       { return sed.sed.SeriesID }
+func (sed *SeriesEditionHead) ID() string       { return sed.sed.ID }
+func (sed *SeriesEditionHead) Slug() string     { return sed.sed.Slug }
+func (sed *SeriesEditionHead) Label() string    { return sed.sed.Label }
+func (sed *SeriesEditionHead) Summary() string  { return sed.sed.Summary }
+func (sed *SeriesEditionHead) SeriesID() string { return sed.sed.SeriesID }
+
+func (sed *SeriesEditionHead) PosterURL() string {
+	if sed.sed.PosterID != "" {
+		return "/-/blob/" + sed.sed.PosterID
+	}
+	return static.Path("/static/poster-fallback.png")
+}
 
 func (sed *SeriesEditionHead) addr(field string) []string {
 	return []string{"series-edition", sed.ID(), field}
@@ -218,17 +225,16 @@ func (tx *TxR) SeriesEditionList(ctx Context, sr *SeriesHead) ([]*SeriesWork, er
 	return works, nil
 }
 
-func (tx *TxRW) seriesEditionCreate(ctx Context, label, seriesID, summary, tvmazeImageURL string) (schema.SeriesEdition, error) {
+func (tx *TxRW) seriesEditionCreate(ctx Context, label, seriesID, summary string) (schema.SeriesEdition, error) {
 	slug, err := tx.generateSeriesEditionSlug(ctx, label, seriesID)
 	if err != nil {
 		return schema.SeriesEdition{}, err
 	}
 	return tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
-		Label:          label,
-		Slug:           slug,
-		SeriesID:       seriesID,
-		Summary:        summary,
-		TVmazeImageURL: tvmazeImageURL,
+		Label:    label,
+		Slug:     slug,
+		SeriesID: seriesID,
+		Summary:  summary,
 	})
 }
 
@@ -241,7 +247,7 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesWork, erro
 		return nil, err
 	}
 	newSed, err := tx.seriesEditionCreate(ctx,
-		"Copy of "+src.Label, src.SeriesID, src.Summary, src.TVmazeImageURL)
+		"Copy of "+src.Label, src.SeriesID, src.Summary)
 	if err != nil {
 		return nil, err
 	}
@@ -328,6 +334,24 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 		Slug: slug,
 		ID:   id,
 	})
+}
+
+func (tx *TxRW) seriesEditionPosterIDSet(ctx Context, id, posterID string) error {
+	sed, err := tx.q.SeriesEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = tx.q.SeriesEditionPosterIDSet(ctx, schema.SeriesEditionPosterIDSetParams{
+		PosterID: posterID,
+		ID:       id,
+	})
+	if err != nil {
+		return err
+	}
+	if sed.PosterID != "" {
+		tx.m.store.Remove(sed.PosterID)
+	}
+	return nil
 }
 
 func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {

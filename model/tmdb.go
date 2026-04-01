@@ -1,6 +1,12 @@
 package model
 
-import "kr.dev/errorfmt"
+import (
+	"context"
+	"fmt"
+	"net/http"
+
+	"kr.dev/errorfmt"
+)
 
 func (m *Model) registerTMDBSettingHooks() {
 	SettingHook(SettingKeyTMDBAccessToken, func(s *Setting) {
@@ -19,4 +25,27 @@ func (tx *TxR) loadTMDBConfig(ctx Context) (err error) {
 		tx.m.tmdb.SetToken(token)
 	}
 	return nil
+}
+
+func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
+	medID := args[0]
+	url := args[1]
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("bad status %d", resp.StatusCode)
+	} else if t := resp.Header.Get("Content-Type"); t != "image/jpeg" {
+		return fmt.Errorf("bad content type %s", t)
+	}
+	body := http.MaxBytesReader(nil, resp.Body, maxPosterBytes)
+	posterID, err := tx.m.store.CopyReader(body)
+	if err != nil {
+		return err
+	}
+	return tx.m.WithTxRW(func(tx *TxRW) error {
+		return tx.movieEditionPosterIDSet(ctx, medID, posterID)
+	})
 }

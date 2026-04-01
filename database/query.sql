@@ -182,8 +182,8 @@ VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, Year, Runtime, ImageURL)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, Year, Runtime)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionGet :one
@@ -200,6 +200,9 @@ SELECT * FROM MovieEdition WHERE MovieID = ?;
 
 -- name: MovieEditionListDefault :many
 SELECT * FROM MovieEdition WHERE Slug = '';
+
+-- name: MovieEditionPosterIDSet :exec
+UPDATE MovieEdition SET PosterID = ? WHERE ID = ?;
 
 -- name: MovieEditionRuntimeSet :exec
 UPDATE MovieEdition SET Runtime = ? WHERE ID = ?;
@@ -423,8 +426,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Label, Slug, SeriesID, Summary, TVmazeImageURL)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO SeriesEdition (Label, Slug, SeriesID, Summary)
+VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: SeriesEditionGet :one
@@ -443,6 +446,9 @@ SELECT * FROM SeriesEdition WHERE SeriesID = ?;
 
 -- name: SeriesEditionListDefault :many
 SELECT * FROM SeriesEdition WHERE Slug = '';
+
+-- name: SeriesEditionPosterIDSet :exec
+UPDATE SeriesEdition SET PosterID = ? WHERE ID = ?;
 
 -- name: SeriesEditionSlugExists :one
 SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?;

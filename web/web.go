@@ -40,6 +40,7 @@ type Config struct {
 
 func Handle(mux *http.ServeMux, c *Config) {
 	// Keep routes alphabetized (with e.g. `sort`).
+	handle(mux, "GET /-/blob/{id}", c.blob)
 	handle(mux, "GET /-/dialog/episode-edit/{id}", c.dialogEditEpisode)
 	handle(mux, "GET /-/dialog/movie-add", c.movieAddDialogReq)
 	handle(mux, "GET /-/dialog/series-add", c.seriesAddDialogReq)
@@ -105,6 +106,11 @@ func Handle(mux *http.ServeMux, c *Config) {
 	mux.Handle("GET /-/icon/{type}/{name}", http.StripPrefix("/-/icon", icon.Handler()))
 	mux.Handle("GET /-/static/{name}", static.Handler())
 	mux.HandleFunc("GET /-/events", c.events)
+}
+
+func (c *Config) blob(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	http.ServeFileFS(w, req, c.Store, req.PathValue("id"))
+	return nil, nil
 }
 
 func (c *Config) withTxR(f func(*model.TxR) (html.Node, error)) (n html.Node, err error) {

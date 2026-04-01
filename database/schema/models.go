@@ -68,7 +68,7 @@ type MovieEdition struct {
 	Summary  string
 	Year     string
 	Runtime  int64
-	ImageURL string
+	PosterID string
 }
 
 type MovieVideo struct {
@@ -135,12 +135,12 @@ type Series struct {
 }
 
 type SeriesEdition struct {
-	ID             string
-	SeriesID       string
-	Slug           string
-	Label          string
-	Summary        string
-	TVmazeImageURL string
+	ID       string
+	SeriesID string
+	Slug     string
+	Label    string
+	Summary  string
+	PosterID string
 }
 
 type Seriesgenre struct {

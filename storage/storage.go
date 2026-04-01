@@ -65,6 +65,31 @@ func (d *Dir) Copy(name string) (id string, err error) {
 	return id, nil
 }
 
+func (d *Dir) CopyReader(r io.Reader) (id string, err error) {
+	tmp := rand.Text()[:8]
+	fw, err := d.root.Create(tmp)
+	if err != nil {
+		return "", err
+	}
+	defer fw.Close()
+	defer d.root.Remove(tmp)
+	_, err = io.Copy(fw, r)
+	if err != nil {
+		return "", err
+	}
+	id = newID()
+	path := filepath.Join(id[:2], id[2:4], id[4:])
+	err = d.root.MkdirAll(path[:5], 0755)
+	if err != nil {
+		return "", err
+	}
+	err = d.root.Rename(tmp, path)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
 func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (ids []string, err error) {
 	var tmps []string
 	for range n {

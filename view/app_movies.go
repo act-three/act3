@@ -11,6 +11,7 @@ import (
 	"ily.dev/act3/service/tmdb"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
+	"ily.dev/act3/web/static"
 )
 
 const AppMoviesListItems = "movie-list-items"
@@ -56,7 +57,7 @@ func AppMoviesListItem(
 		ListID(mo.MovieHead.ID()),
 		ListURL(mo.EditorPath()),
 	)(
-		CardMedia()(html.Img(attr.Src(mo.ImageURL()))),
+		CardMedia()(html.Img(attr.Src(mo.PosterURL()))),
 		CardContent()(
 			CardTitle()(LiveText(mo.TitleField())),
 			CardDescription(LineClamp2)(
@@ -136,7 +137,7 @@ func AppMoviesDetail(
 							),
 
 							ImageFrame(attr.Style("width:30px"))(
-								PosterImg(PosterFill, attr.Src(med.ImageURL())),
+								PosterImg(PosterFill, attr.Src(med.PosterURL())),
 							),
 						),
 
@@ -267,6 +268,13 @@ type MovieSearchResult struct {
 	Local *model.MovieHead
 }
 
+func posterURL(p *string) string {
+	if p != nil {
+		return tmdb.PosterURL(*p)
+	}
+	return static.Path("/static/poster-fallback.png")
+}
+
 // AppMovieSearchResults renders the search results for
 // adding a movie.
 func AppMovieSearchResults(results []MovieSearchResult) html.Node {
@@ -279,7 +287,7 @@ func AppMovieSearchResults(results []MovieSearchResult) html.Node {
 				)(
 					FlexRow(Gap4, attr.Style("height: 100%"))(
 						Inset(InsetSideLeft, Class("v-media-search-poster"))(
-							PosterImg(attr.Style("height: 100%"), attr.Src(tmdb.ImageURL(t.TMDB.PosterPath))),
+							PosterImg(attr.Style("height: 100%"), attr.Src(posterURL(t.TMDB.PosterPath))),
 						),
 						FlexCol(Gap2)(
 							movieSearchTitle(t.TMDB),

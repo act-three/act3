@@ -992,20 +992,19 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 }
 
 const movieEditionCreate = `-- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, Year, Runtime, ImageURL)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, movieid, slug, title, label, summary, year, runtime, imageurl
+INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, Year, Runtime)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING id, movieid, slug, title, label, summary, year, runtime, posterid
 `
 
 type MovieEditionCreateParams struct {
-	Title    string
-	Label    string
-	Slug     string
-	MovieID  string
-	Summary  string
-	Year     string
-	Runtime  int64
-	ImageURL string
+	Title   string
+	Label   string
+	Slug    string
+	MovieID string
+	Summary string
+	Year    string
+	Runtime int64
 }
 
 func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreateParams) (MovieEdition, error) {
@@ -1017,7 +1016,6 @@ func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreate
 		arg.Summary,
 		arg.Year,
 		arg.Runtime,
-		arg.ImageURL,
 	)
 	var i MovieEdition
 	err := row.Scan(
@@ -1029,13 +1027,13 @@ func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreate
 		&i.Summary,
 		&i.Year,
 		&i.Runtime,
-		&i.ImageURL,
+		&i.PosterID,
 	)
 	return i, err
 }
 
 const movieEditionGet = `-- name: MovieEditionGet :one
-SELECT id, movieid, slug, title, label, summary, year, runtime, imageurl FROM MovieEdition WHERE ID = ?
+SELECT id, movieid, slug, title, label, summary, year, runtime, posterid FROM MovieEdition WHERE ID = ?
 `
 
 func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition, error) {
@@ -1050,13 +1048,13 @@ func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition,
 		&i.Summary,
 		&i.Year,
 		&i.Runtime,
-		&i.ImageURL,
+		&i.PosterID,
 	)
 	return i, err
 }
 
 const movieEditionGetDefault = `-- name: MovieEditionGetDefault :one
-SELECT id, movieid, slug, title, label, summary, year, runtime, imageurl FROM MovieEdition WHERE MovieID = ? AND Slug = ''
+SELECT id, movieid, slug, title, label, summary, year, runtime, posterid FROM MovieEdition WHERE MovieID = ? AND Slug = ''
 `
 
 func (q *Queries) MovieEditionGetDefault(ctx context.Context, movieid string) (MovieEdition, error) {
@@ -1071,7 +1069,7 @@ func (q *Queries) MovieEditionGetDefault(ctx context.Context, movieid string) (M
 		&i.Summary,
 		&i.Year,
 		&i.Runtime,
-		&i.ImageURL,
+		&i.PosterID,
 	)
 	return i, err
 }
@@ -1091,7 +1089,7 @@ func (q *Queries) MovieEditionLabelSet(ctx context.Context, arg MovieEditionLabe
 }
 
 const movieEditionListByMovieID = `-- name: MovieEditionListByMovieID :many
-SELECT id, movieid, slug, title, label, summary, year, runtime, imageurl FROM MovieEdition WHERE MovieID = ?
+SELECT id, movieid, slug, title, label, summary, year, runtime, posterid FROM MovieEdition WHERE MovieID = ?
 `
 
 func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string) ([]MovieEdition, error) {
@@ -1112,7 +1110,7 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 			&i.Summary,
 			&i.Year,
 			&i.Runtime,
-			&i.ImageURL,
+			&i.PosterID,
 		); err != nil {
 			return nil, err
 		}
@@ -1128,7 +1126,7 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 }
 
 const movieEditionListDefault = `-- name: MovieEditionListDefault :many
-SELECT id, movieid, slug, title, label, summary, year, runtime, imageurl FROM MovieEdition WHERE Slug = ''
+SELECT id, movieid, slug, title, label, summary, year, runtime, posterid FROM MovieEdition WHERE Slug = ''
 `
 
 func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, error) {
@@ -1149,7 +1147,7 @@ func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, 
 			&i.Summary,
 			&i.Year,
 			&i.Runtime,
-			&i.ImageURL,
+			&i.PosterID,
 		); err != nil {
 			return nil, err
 		}
@@ -1162,6 +1160,20 @@ func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, 
 		return nil, err
 	}
 	return items, nil
+}
+
+const movieEditionPosterIDSet = `-- name: MovieEditionPosterIDSet :exec
+UPDATE MovieEdition SET PosterID = ? WHERE ID = ?
+`
+
+type MovieEditionPosterIDSetParams struct {
+	PosterID string
+	ID       string
+}
+
+func (q *Queries) MovieEditionPosterIDSet(ctx context.Context, arg MovieEditionPosterIDSetParams) error {
+	_, err := q.db.ExecContext(ctx, movieEditionPosterIDSet, arg.PosterID, arg.ID)
+	return err
 }
 
 const movieEditionRuntimeSet = `-- name: MovieEditionRuntimeSet :exec
@@ -2415,17 +2427,16 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 }
 
 const seriesEditionCreate = `-- name: SeriesEditionCreate :one
-INSERT INTO SeriesEdition (Label, Slug, SeriesID, Summary, TVmazeImageURL)
-VALUES (?, ?, ?, ?, ?)
-RETURNING id, seriesid, slug, label, summary, tvmazeimageurl
+INSERT INTO SeriesEdition (Label, Slug, SeriesID, Summary)
+VALUES (?, ?, ?, ?)
+RETURNING id, seriesid, slug, label, summary, posterid
 `
 
 type SeriesEditionCreateParams struct {
-	Label          string
-	Slug           string
-	SeriesID       string
-	Summary        string
-	TVmazeImageURL string
+	Label    string
+	Slug     string
+	SeriesID string
+	Summary  string
 }
 
 func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCreateParams) (SeriesEdition, error) {
@@ -2434,7 +2445,6 @@ func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCrea
 		arg.Slug,
 		arg.SeriesID,
 		arg.Summary,
-		arg.TVmazeImageURL,
 	)
 	var i SeriesEdition
 	err := row.Scan(
@@ -2443,13 +2453,13 @@ func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCrea
 		&i.Slug,
 		&i.Label,
 		&i.Summary,
-		&i.TVmazeImageURL,
+		&i.PosterID,
 	)
 	return i, err
 }
 
 const seriesEditionGet = `-- name: SeriesEditionGet :one
-SELECT id, seriesid, slug, label, summary, tvmazeimageurl FROM SeriesEdition WHERE ID = ?
+SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE ID = ?
 `
 
 func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEdition, error) {
@@ -2461,13 +2471,13 @@ func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEditio
 		&i.Slug,
 		&i.Label,
 		&i.Summary,
-		&i.TVmazeImageURL,
+		&i.PosterID,
 	)
 	return i, err
 }
 
 const seriesEditionGetBySlug = `-- name: SeriesEditionGetBySlug :one
-SELECT seriesedition.id, seriesedition.seriesid, seriesedition.slug, seriesedition.label, seriesedition.summary, seriesedition.tvmazeimageurl FROM SeriesEdition
+SELECT seriesedition.id, seriesedition.seriesid, seriesedition.slug, seriesedition.label, seriesedition.summary, seriesedition.posterid FROM SeriesEdition
 JOIN Series ON Series.ID = SeriesEdition.SeriesID
 WHERE Series.Slug = ?1 AND SeriesEdition.Slug = ?2
 `
@@ -2486,7 +2496,7 @@ func (q *Queries) SeriesEditionGetBySlug(ctx context.Context, arg SeriesEditionG
 		&i.Slug,
 		&i.Label,
 		&i.Summary,
-		&i.TVmazeImageURL,
+		&i.PosterID,
 	)
 	return i, err
 }
@@ -2506,7 +2516,7 @@ func (q *Queries) SeriesEditionLabelSet(ctx context.Context, arg SeriesEditionLa
 }
 
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
-SELECT id, seriesid, slug, label, summary, tvmazeimageurl FROM SeriesEdition WHERE SeriesID = ?
+SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE SeriesID = ?
 `
 
 func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid string) ([]SeriesEdition, error) {
@@ -2524,7 +2534,7 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 			&i.Slug,
 			&i.Label,
 			&i.Summary,
-			&i.TVmazeImageURL,
+			&i.PosterID,
 		); err != nil {
 			return nil, err
 		}
@@ -2540,7 +2550,7 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 }
 
 const seriesEditionListDefault = `-- name: SeriesEditionListDefault :many
-SELECT id, seriesid, slug, label, summary, tvmazeimageurl FROM SeriesEdition WHERE Slug = ''
+SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE Slug = ''
 `
 
 func (q *Queries) SeriesEditionListDefault(ctx context.Context) ([]SeriesEdition, error) {
@@ -2558,7 +2568,7 @@ func (q *Queries) SeriesEditionListDefault(ctx context.Context) ([]SeriesEdition
 			&i.Slug,
 			&i.Label,
 			&i.Summary,
-			&i.TVmazeImageURL,
+			&i.PosterID,
 		); err != nil {
 			return nil, err
 		}
@@ -2571,6 +2581,20 @@ func (q *Queries) SeriesEditionListDefault(ctx context.Context) ([]SeriesEdition
 		return nil, err
 	}
 	return items, nil
+}
+
+const seriesEditionPosterIDSet = `-- name: SeriesEditionPosterIDSet :exec
+UPDATE SeriesEdition SET PosterID = ? WHERE ID = ?
+`
+
+type SeriesEditionPosterIDSetParams struct {
+	PosterID string
+	ID       string
+}
+
+func (q *Queries) SeriesEditionPosterIDSet(ctx context.Context, arg SeriesEditionPosterIDSetParams) error {
+	_, err := q.db.ExecContext(ctx, seriesEditionPosterIDSet, arg.PosterID, arg.ID)
+	return err
 }
 
 const seriesEditionSlugExists = `-- name: SeriesEditionSlugExists :one

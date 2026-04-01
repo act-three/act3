@@ -251,14 +251,20 @@ func (tx *TxRW) MovieCreateByTMDBID(
 		return nil, err
 	}
 	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
-		Title:    movie.Title,
-		Summary:  movie.Overview,
-		Year:     year,
-		Runtime:  int64(movie.Runtime),
-		ImageURL: tmdb.ImageURL(movie.PosterPath),
+		Title:   movie.Title,
+		Summary: movie.Overview,
+		Year:    year,
+		Runtime: int64(movie.Runtime),
 	})
 	if err != nil {
 		return nil, err
+	}
+	if movie.PosterPath != nil {
+		u := tmdb.PosterURL(*movie.PosterPath)
+		err = tx.addTask(ctx, taskFetchMoviePoster, medHead.ID(), u)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &MovieWork{
 		MovieHead:        MovieHead{moData},

@@ -9,7 +9,7 @@ import (
 // fields needed to display both in a unified list.
 type Work interface {
 	Title() string
-	ImageURL() string
+	PosterURL() string
 	TheaterPath() string
 }
 

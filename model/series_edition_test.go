@@ -15,11 +15,10 @@ func TestNewSeriesEdition(t *testing.T) {
 
 	t.Run("creates edition with season and episodes", func(t *testing.T) {
 		sedData := schema.SeriesEdition{
-			ID:             "edition-1",
-			Label:          "Original",
-			SeriesID:       "series-1",
-			Summary:        "A test series",
-			TVmazeImageURL: "https://example.com/image.jpg",
+			ID:       "edition-1",
+			Label:    "Original",
+			SeriesID: "series-1",
+			Summary:  "A test series",
 		}
 		sns := []schema.Season{
 			{
@@ -55,9 +54,6 @@ func TestNewSeriesEdition(t *testing.T) {
 		}
 		if sed.Summary() != "A test series" {
 			t.Errorf("expected summary 'A test series', got '%s'", sed.Summary())
-		}
-		if sed.TVmazeImageURL() != "https://example.com/image.jpg" {
-			t.Errorf("expected TVmazeImageURL 'https://example.com/image.jpg', got '%s'", sed.TVmazeImageURL())
 		}
 
 		seasonCount := 0

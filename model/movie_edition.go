@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/web/static"
 )
 
 const (
@@ -19,14 +20,20 @@ type MovieEditionHead struct {
 	med schema.MovieEdition
 }
 
-func (med *MovieEditionHead) ID() string       { return med.med.ID }
-func (med *MovieEditionHead) Slug() string     { return med.med.Slug }
-func (med *MovieEditionHead) Title() string    { return med.med.Title }
-func (med *MovieEditionHead) Label() string    { return med.med.Label }
-func (med *MovieEditionHead) Summary() string  { return med.med.Summary }
-func (med *MovieEditionHead) Year() string     { return med.med.Year }
-func (med *MovieEditionHead) Runtime() int64   { return med.med.Runtime }
-func (med *MovieEditionHead) ImageURL() string { return med.med.ImageURL }
+func (med *MovieEditionHead) ID() string      { return med.med.ID }
+func (med *MovieEditionHead) Slug() string    { return med.med.Slug }
+func (med *MovieEditionHead) Title() string   { return med.med.Title }
+func (med *MovieEditionHead) Label() string   { return med.med.Label }
+func (med *MovieEditionHead) Summary() string { return med.med.Summary }
+func (med *MovieEditionHead) Year() string    { return med.med.Year }
+func (med *MovieEditionHead) Runtime() int64  { return med.med.Runtime }
+
+func (med *MovieEditionHead) PosterURL() string {
+	if med.med.PosterID != "" {
+		return "/-/blob/" + med.med.PosterID
+	}
+	return static.Path("/static/poster-fallback.png")
+}
 
 func (med *MovieEditionHead) addr(field string) []string {
 	return []string{"movie-edition", med.ID(), field}
@@ -138,11 +145,10 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 
 // movieEditionParams holds metadata for a new movie edition.
 type movieEditionParams struct {
-	Title    string
-	Summary  string
-	Year     string
-	Runtime  int64
-	ImageURL string
+	Title   string
+	Summary string
+	Year    string
+	Runtime int64
 }
 
 func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error) {
@@ -166,14 +172,13 @@ func (tx *TxRW) movieEditionCreate(ctx Context, label, movieID string, p movieEd
 		return nil, err
 	}
 	medData, err := tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
-		Title:    p.Title,
-		Label:    label,
-		Slug:     slug,
-		MovieID:  movieID,
-		Summary:  p.Summary,
-		Year:     p.Year,
-		Runtime:  p.Runtime,
-		ImageURL: p.ImageURL,
+		Title:   p.Title,
+		Label:   label,
+		Slug:    slug,
+		MovieID: movieID,
+		Summary: p.Summary,
+		Year:    p.Year,
+		Runtime: p.Runtime,
 	})
 	if err != nil {
 		return nil, err
@@ -190,11 +195,10 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 		return nil, err
 	}
 	med, err := tx.movieEditionCreate(ctx, "Copy of "+src.Label(), src.med.MovieID, movieEditionParams{
-		Title:    src.med.Title,
-		Summary:  src.med.Summary,
-		Year:     src.med.Year,
-		Runtime:  src.med.Runtime,
-		ImageURL: src.med.ImageURL,
+		Title:   src.med.Title,
+		Summary: src.med.Summary,
+		Year:    src.med.Year,
+		Runtime: src.med.Runtime,
 	})
 	if err != nil {
 		return nil, err
@@ -348,6 +352,24 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 			NewText: summary,
 		})
 	})
+	return nil
+}
+
+func (tx *TxRW) movieEditionPosterIDSet(ctx Context, id, posterID string) error {
+	med, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = tx.q.MovieEditionPosterIDSet(ctx, schema.MovieEditionPosterIDSetParams{
+		PosterID: posterID,
+		ID:       id,
+	})
+	if err != nil {
+		return err
+	}
+	if med.PosterID != "" {
+		tx.m.store.Remove(med.PosterID)
+	}
 	return nil
 }
 

@@ -58,7 +58,7 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 		ListID(ss.SeriesHead.ID()),
 		ListURL(ss.EditorPath()),
 	)(
-		CardMedia()(html.Img(attr.Src(ss.TVmazeImageURL()))),
+		CardMedia()(html.Img(attr.Src(ss.PosterURL()))),
 		CardContent()(
 			CardTitle()(LiveText(ss.SeriesHead.TitleField())),
 			CardDescription(LineClamp2)(
@@ -218,7 +218,7 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 			SettingsItemLabelTitle("Poster"),
 		),
 		ImageFrame(attr.Style("width:30px"))(
-			PosterImg(PosterFill, attr.Src(sed.TVmazeImageURL())),
+			PosterImg(PosterFill, attr.Src(sed.PosterURL())),
 		),
 	)
 }

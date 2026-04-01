@@ -58,7 +58,7 @@ CREATE TABLE SeriesEdition
 	Slug           TEXT NOT NULL,
 	Label          TEXT NOT NULL,
 	Summary        TEXT NOT NULL,
-	TVmazeImageURL TEXT NOT NULL,
+	PosterID       TEXT NOT NULL DEFAULT (''), -- storage blob ('' means unset)
 	UNIQUE (SeriesID, Slug)
 )
 STRICT;
@@ -125,7 +125,7 @@ CREATE TABLE MovieEdition
 	Summary  TEXT NOT NULL,
 	Year     TEXT NOT NULL,
 	Runtime  INTEGER NOT NULL,    -- minutes
-	ImageURL TEXT NOT NULL,
+	PosterID TEXT NOT NULL DEFAULT (''), -- storage blob ('' means unset)
 	UNIQUE (MovieID, Slug)
 )
 STRICT;
