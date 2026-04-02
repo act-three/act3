@@ -114,6 +114,10 @@ case "${1:-}" in
 		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user playwright \
 			-- npx @playwright/mcp@latest --cdp-endpoint http://localhost:9222
 
+		# Chrome DevTools MCP — Chrome's own DevTools Protocol MCP server
+		docker exec -u dev $container /home/dev/.local/bin/claude mcp add --scope user chrome-devtools \
+			-- npx chrome-devtools-mcp@latest --browser-url=http://localhost:9222
+
 		# Install SSH key
 		docker cp "$HOME/.ssh/id_ed25519.pub" $container:/home/dev/.ssh/authorized_keys
 		docker exec $container chown dev:dev /home/dev/.ssh/authorized_keys
