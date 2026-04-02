@@ -41,28 +41,7 @@ func (d *Dir) CopyFile(name string) (id string, err error) {
 		return "", err
 	}
 	defer fr.Close()
-	tmp := rand.Text()[:8]
-	fw, err := d.root.Create(tmp)
-	if err != nil {
-		return "", err
-	}
-	defer fw.Close()
-	defer d.root.Remove(tmp)
-	_, err = io.Copy(fw, fr)
-	if err != nil {
-		return "", err
-	}
-	id = newID()
-	path := filepath.Join(id[:2], id[2:4], id[4:])
-	err = d.root.MkdirAll(path[:5], 0755)
-	if err != nil {
-		return "", err
-	}
-	err = d.root.Rename(tmp, path)
-	if err != nil {
-		return "", err
-	}
-	return id, nil
+	return d.Copy(fr)
 }
 
 func (d *Dir) Copy(r io.Reader) (id string, err error) {
