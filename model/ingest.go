@@ -51,7 +51,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
-	hash, err := tx.m.store.Copy(diskPath)
+	hash, err := tx.m.store.CopyFile(diskPath)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
 		return err
@@ -435,7 +435,7 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 
 	// Copy source from download path into CAS.
 	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
-	hash, err := tx.m.store.Copy(srcPath)
+	hash, err := tx.m.store.CopyFile(srcPath)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
 		return err

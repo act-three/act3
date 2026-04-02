@@ -98,7 +98,7 @@ func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) err
 		return fmt.Errorf("bad content type %s", t)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	thumbnailID, err := tx.m.store.CopyReader(body)
+	thumbnailID, err := tx.m.store.Copy(body)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 		return fmt.Errorf("bad content type %s", t)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	posterID, err := tx.m.store.CopyReader(body)
+	posterID, err := tx.m.store.Copy(body)
 	if err != nil {
 		return err
 	}

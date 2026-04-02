@@ -113,7 +113,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 // It does not open a database transaction,
 // so callers can use the returned ID in their own transactions.
 func (m *Model) Store(r io.Reader) (string, error) {
-	return m.store.CopyReader(r)
+	return m.store.Copy(r)
 }
 
 var configLoaders = []func(*TxR, Context) error{

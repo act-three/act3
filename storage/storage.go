@@ -35,7 +35,7 @@ func (d *Dir) FS() fs.FS {
 	return &fanoutFS{d.root.FS()}
 }
 
-func (d *Dir) Copy(name string) (id string, err error) {
+func (d *Dir) CopyFile(name string) (id string, err error) {
 	fr, err := os.Open(name)
 	if err != nil {
 		return "", err
@@ -65,7 +65,7 @@ func (d *Dir) Copy(name string) (id string, err error) {
 	return id, nil
 }
 
-func (d *Dir) CopyReader(r io.Reader) (id string, err error) {
+func (d *Dir) Copy(r io.Reader) (id string, err error) {
 	tmp := rand.Text()[:8]
 	fw, err := d.root.Create(tmp)
 	if err != nil {

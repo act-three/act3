@@ -41,7 +41,7 @@ func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
 		return fmt.Errorf("bad content type %s", t)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	posterID, err := tx.m.store.CopyReader(body)
+	posterID, err := tx.m.store.Copy(body)
 	if err != nil {
 		return err
 	}
