@@ -126,6 +126,6 @@ func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 		return err
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		return tx.seriesEditionPosterIDSet(ctx, sedID, posterID)
+		return tx.SeriesEditionPosterIDSet(ctx, sedID, posterID)
 	})
 }

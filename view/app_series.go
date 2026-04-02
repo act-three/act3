@@ -15,6 +15,7 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
+	"ily.dev/act3/web/static"
 )
 
 const AppSeriesListItems = "series-list-items"
@@ -227,7 +228,10 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) html.Node {
 	return DialogStream(
 		ImageFrame()(
-			PosterImg(PosterFill, attr.Src(sed.PosterURL())),
+			buttonUpload()(
+				Hidden("sed-id", sed.ID()),
+				PosterImg(PosterFill, attr.Src(sed.PosterURL())),
+			),
 		),
 	)
 }
@@ -694,6 +698,16 @@ func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
 		turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
 		turbo.URLReplace(oldEditorPath, ed.EditorPath()),
 	)
+}
+
+func SeriesEditionChangePoster(sed *model.SeriesEditionHead, oldPosterID string) html.Node {
+	var oldURL string
+	if oldPosterID != "" {
+		oldURL = "/-/blob/" + oldPosterID
+	} else {
+		oldURL = static.Path("/static/poster-fallback.png")
+	}
+	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(sed.PosterURL()))())
 }
 
 func truncate(s string, max int) string {

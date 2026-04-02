@@ -336,11 +336,19 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	})
 }
 
-func (tx *TxRW) seriesEditionPosterIDSet(ctx Context, id, posterID string) error {
+func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error {
 	sed, err := tx.q.SeriesEditionGet(ctx, id)
 	if err != nil {
 		return err
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventSeriesEditionChangePoster,
+			ID:      id,
+			OldText: sed.PosterID,
+			NewText: posterID,
+		})
+	})
 	err = tx.q.SeriesEditionPosterIDSet(ctx, schema.SeriesEditionPosterIDSetParams{
 		PosterID: posterID,
 		ID:       id,

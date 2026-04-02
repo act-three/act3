@@ -46,6 +46,8 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventMovieEditionChangePoster:
 		return c.eventMovieEditionChangePoster(ctx, ev.ID, ev.OldText, ev.NewText)
+	case model.EventSeriesEditionChangePoster:
+		return c.eventSeriesEditionChangePoster(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventSeasonRenumber:
 		return c.eventSeasonRenumber(ctx, ev.ID)
 	}
@@ -116,6 +118,17 @@ func (c *Config) eventMovieEditionChangePoster(ctx context.Context, editionID, o
 			return nil, err
 		}
 		return view.MovieEditionChangePoster(med, oldPosterID), nil
+	})
+	return n
+}
+
+func (c *Config) eventSeriesEditionChangePoster(ctx context.Context, editionID, oldPosterID, newPosterID string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		sed, err := tx.SeriesEditionHead(ctx, editionID)
+		if err != nil {
+			return nil, err
+		}
+		return view.SeriesEditionChangePoster(sed, oldPosterID), nil
 	})
 	return n
 }
