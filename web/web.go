@@ -103,6 +103,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/tmdb-settings-update", c.doTMDBSettingsUpdate)
 	handle(mux, "POST /-/do/torrent-add", c.doTorrentAdd)
 	handle(mux, "POST /-/do/transmission-settings-update", c.doTransmissionSettingsUpdate)
+	handle(mux, "POST /-/do/upload", c.doUpload)
 	handle(mux, "POST /-/do/video-reencode/{id}", c.doVideoReencode)
 	handle(mux, "POST /-/do/video-reimport/{id}", c.doVideoReimport)
 	mux.Handle("GET /-/icon/{type}/{name}", http.StripPrefix("/-/icon", icon.Handler()))

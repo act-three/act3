@@ -46,6 +46,6 @@ func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
 		return err
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		return tx.movieEditionPosterIDSet(ctx, medID, posterID)
+		return tx.MovieEditionPosterIDSet(ctx, medID, posterID)
 	})
 }

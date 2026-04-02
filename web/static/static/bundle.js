@@ -8417,8 +8417,8 @@
     }
   };
 
-  // view/add-torrent.js
-  var add_torrent_default = class extends Controller {
+  // view/upload.js
+  var upload_default = class extends Controller {
     static targets = ["picker", "button"];
     open() {
       this.pickerTarget.click();
@@ -11402,7 +11402,7 @@
   Stimulus.register("player", player_default);
   Stimulus.register("list", list_default);
   Stimulus.register("sidebar", sidebar_default);
-  Stimulus.register("add-torrent", add_torrent_default);
+  Stimulus.register("upload", upload_default);
   Stimulus.register("note-port", note_port_default);
   Stimulus.register("season-title", season_title_default);
   Stimulus.register("select", select_default);

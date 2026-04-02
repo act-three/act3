@@ -355,7 +355,7 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 	return nil
 }
 
-func (tx *TxRW) movieEditionPosterIDSet(ctx Context, id, posterID string) error {
+func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error {
 	med, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {
 		return err

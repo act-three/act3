@@ -2922,6 +2922,34 @@
   }
 }
 
+/* view/upload.css */
+@layer components {
+  .v-button-upload {
+    position: relative;
+  }
+  .v-button-upload-picker {
+    display: none;
+  }
+  .v-button-upload-button {
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+  }
+  .v-button-upload-overlay {
+    position: absolute;
+    inset: 0;
+    background: oklch(0 0 0 / 0.5);
+    pointer-events: none;
+    visibility: hidden;
+    display: grid;
+    place-items: center;
+    font-size: 64px;
+  }
+  .v-button-upload:hover .v-button-upload-overlay {
+    visibility: visible;
+  }
+}
+
 /* view/view.css */
 @layer components;
 

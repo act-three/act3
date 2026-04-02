@@ -128,21 +128,21 @@ func addTorrentButton(inputName, inputValue string) html.Node {
 		attr.Method("POST"),
 		attr.Enctype("multipart/form-data"),
 		attr.Action("/-/do/torrent-add"),
-		stimulus.Controller("add-torrent"),
-		stimulus.Action("turbo:submit-end->add-torrent#reset"),
+		stimulus.Controller("upload"),
+		stimulus.Action("turbo:submit-end->upload#reset"),
 	)(
 		Hidden(inputName, inputValue),
 		html.Input(
 			attr.Class("v-media-torrent-picker"),
 			attr.Type("file"),
 			attr.Name("torrent"),
-			stimulus.Target("add-torrent", "picker"),
-			stimulus.Action("change->add-torrent#upload"),
+			stimulus.Target("upload", "picker"),
+			stimulus.Action("change->upload#upload"),
 		),
 		Button(
 			ButtonGhost,
-			stimulus.Target("add-torrent", "button"),
-			stimulus.Action("click->add-torrent#open:prevent"),
+			stimulus.Target("upload", "button"),
+			stimulus.Action("click->upload#open:prevent"),
 		)(
 			html.Text("Add Torrent"),
 		),
