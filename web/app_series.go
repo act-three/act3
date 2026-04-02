@@ -254,6 +254,17 @@ func (c *Config) dialogSeriesEditionPoster(_ http.ResponseWriter, req *http.Requ
 	})
 }
 
+func (c *Config) dialogEpisodeThumbnail(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ep, err := tx.EpisodeHead(ctx, req.PathValue("id"))
+		if err != nil {
+			return nil, err
+		}
+		return view.AppEpisodeThumbnailDialog(ep), nil
+	})
+}
+
 func (c *Config) doVideoReimport(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	_, err := c.withTxRW(func(tx *model.TxRW) (html.Node, error) {

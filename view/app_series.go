@@ -419,8 +419,9 @@ func AppEpisodeDetail(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Thumbnail"),
 							),
-							ImageFrame(attr.Style("width:30px"))(
-								PosterImg(PosterFill, PosterAspect169, attr.Src(ep.ThumbnailURL())),
+							buttonThumbnailEdit(
+								"/-/dialog/episode-thumbnail/"+ep.ID(),
+								ep.ThumbnailURL(),
 							),
 						),
 						SettingsItem()(
@@ -704,6 +705,22 @@ func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
 func SeriesEditionChangePoster(sed *model.SeriesEditionHead, oldPosterID string) html.Node {
 	oldURL := model.PosterPath(oldPosterID)
 	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(sed.PosterPath()))())
+}
+
+func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) html.Node {
+	return DialogStream(
+		ImageFrame()(
+			buttonUpload()(
+				Hidden("ep-id", ep.ID()),
+				PosterImg(PosterFill, PosterAspect169, attr.Src(ep.ThumbnailURL())),
+			),
+		),
+	)
+}
+
+func EpisodeChangeThumbnail(ep *model.EpisodeHead, oldThumbnailID string) html.Node {
+	oldURL := model.ThumbnailPath(oldThumbnailID)
+	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(ep.ThumbnailURL()))())
 }
 
 func truncate(s string, max int) string {

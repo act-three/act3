@@ -103,7 +103,7 @@ func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) err
 		return err
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		return tx.episodeThumbnailIDSet(ctx, epID, thumbnailID)
+		return tx.EpisodeThumbnailIDSet(ctx, epID, thumbnailID)
 	})
 }
 

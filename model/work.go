@@ -14,6 +14,13 @@ func PosterPath(id string) string {
 	return static.Path("/static/poster-fallback.png")
 }
 
+func ThumbnailPath(id string) string {
+	if id != "" {
+		return "/-/blob/" + id
+	}
+	return static.Path("/static/thumbnail-fallback.png")
+}
+
 // Work represents either a movie or a series — the common
 // fields needed to display both in a unified list.
 type Work interface {

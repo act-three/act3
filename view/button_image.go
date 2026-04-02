@@ -10,6 +10,10 @@ func buttonPosterEdit(dialogURL, imageURL string) html.Node {
 	return buttonImageEdit(dialogURL, imageURL, "2 / 3")
 }
 
+func buttonThumbnailEdit(dialogURL, imageURL string) html.Node {
+	return buttonImageEdit(dialogURL, imageURL, "16 / 9")
+}
+
 func buttonImageEdit(dialogURL, imageURL, ratio string) html.Node {
 	return html.Div(
 		Class("v-button-image-edit"),

@@ -8,7 +8,6 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
-	"ily.dev/act3/web/static"
 	"ily.dev/act3/xstrings"
 	"kr.dev/errorfmt"
 )
@@ -43,6 +42,13 @@ type seasonEpisode struct {
 	ep   schema.Episode
 	snep schema.SeasonEpisode
 }
+
+type EpisodeHead struct {
+	ep schema.Episode
+}
+
+func (ep *EpisodeHead) ID() string           { return ep.ep.ID }
+func (ep *EpisodeHead) ThumbnailURL() string { return ThumbnailPath(ep.ep.ThumbnailID) }
 
 type Episode struct {
 	ep     schema.Episode
@@ -83,10 +89,7 @@ func (ep *Episode) Title() string   { return ep.ep.Title }
 func (ep *Episode) Airdate() string { return ep.ep.Airdate }
 func (ep *Episode) Summary() string { return ep.ep.Summary }
 func (ep *Episode) ThumbnailURL() string {
-	if ep.ep.ThumbnailID != "" {
-		return "/-/blob/" + ep.ep.ThumbnailID
-	}
-	return static.Path("/static/thumbnail-fallback.png")
+	return ThumbnailPath(ep.ep.ThumbnailID)
 }
 func (ep *Episode) Type() string               { return ep.ep.Type }
 func (ep *Episode) Progress() []*progress.Item { return ep.prog }
@@ -180,6 +183,14 @@ func (ep *Episode) TheaterPath() string {
 	return path.Join("/", ep.sr.Slug(), ep.so.Slug(), ep.Slug())
 }
 
+func (tx *TxR) EpisodeHead(ctx Context, id string) (*EpisodeHead, error) {
+	ep, err := tx.q.EpisodeGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &EpisodeHead{ep}, nil
+}
+
 // EpisodeBySlug looks up an episode by its slug components.
 // edSlug selects the edition; empty string selects the default.
 func (tx *TxR) EpisodeBySlug(ctx Context, seriesSlug, edSlug, epSlug string) (*Episode, error) {
@@ -254,11 +265,19 @@ func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) 
 	return nil, fmt.Errorf("cannot load ep")
 }
 
-func (tx *TxRW) episodeThumbnailIDSet(ctx Context, id, thumbnailID string) error {
+func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error {
 	ep, err := tx.q.EpisodeGet(ctx, id)
 	if err != nil {
 		return err
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventEpisodeChangeThumbnail,
+			ID:      id,
+			OldText: ep.ThumbnailID,
+			NewText: thumbnailID,
+		})
+	})
 	err = tx.q.EpisodeThumbnailIDSet(ctx, schema.EpisodeThumbnailIDSetParams{
 		ThumbnailID: thumbnailID,
 		ID:          id,

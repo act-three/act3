@@ -41,6 +41,7 @@ type Config struct {
 func Handle(mux *http.ServeMux, c *Config) {
 	// Keep routes alphabetized (with e.g. `sort`).
 	handle(mux, "GET /-/blob/{id}", c.blob)
+	handle(mux, "GET /-/dialog/episode-thumbnail/{id}", c.dialogEpisodeThumbnail)
 	handle(mux, "GET /-/dialog/movie-add", c.movieAddDialogReq)
 	handle(mux, "GET /-/dialog/movie-poster/{id}", c.dialogMoviePoster)
 	handle(mux, "GET /-/dialog/series-add", c.seriesAddDialogReq)

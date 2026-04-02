@@ -15,6 +15,7 @@ var (
 	EventMovieEditionSetSlug       = "movie-edition-set-slug"
 	EventMovieEditionChangePoster  = "movie-edition-change-poster"
 	EventSeriesEditionChangePoster = "series-edition-change-poster"
+	EventEpisodeChangeThumbnail    = "episode-change-thumbnail"
 )
 
 type Event struct {
