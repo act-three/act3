@@ -11374,20 +11374,6 @@
     }
   };
 
-  // view/topbar.js
-  var topbar_default = class extends Controller {
-    #ro;
-    connect() {
-      this.#ro = new ResizeObserver(([e]) => {
-        document.body.style.paddingTop = e.contentRect.height + "px";
-      });
-      this.#ro.observe(this.element);
-    }
-    disconnect() {
-      this.#ro.disconnect();
-    }
-  };
-
   // view/wash.js
   document.addEventListener("turbo:before-render", (event) => {
     if (!document.documentElement.hasAttribute("data-turbo-preview")) return;
@@ -11414,7 +11400,6 @@
   Stimulus.register("settings-text-field", settings_text_field_default);
   Stimulus.register("settings-toggle", settings_toggle_default);
   Stimulus.register("series", theater_series_default);
-  Stimulus.register("topbar", topbar_default);
 })();
 /*!
 Turbo 8.0.19

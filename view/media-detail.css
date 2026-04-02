@@ -1,6 +1,5 @@
 /* shared media detail layout (episode + movie pages) */
 
-/* detail page top padding (clears nav bar) */
 .v-detail { padding-top: 4rem; }
 
 .v-detail-info { gap: 1rem; }

@@ -7,14 +7,13 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
 
 func browse(title string, washURL ...string) html.Element {
 	return func(child ...html.Node) html.Node {
-		return base(title)()(
+		return base(title)(attr.Style("padding-top:var(--nav-h)"))(
 			browseWash(washURL),
 			browseContainer(child...),
 			browseNavigationMenu(),
@@ -49,7 +48,6 @@ func browseWash(urls []string) html.Node {
 
 func browseNavigationMenu() html.Node {
 	return FlexCol(
-		stimulus.Controller("topbar"),
 		Class("v-media-nav"),
 	)(
 		browseContainer(

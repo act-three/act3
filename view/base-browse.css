@@ -23,6 +23,7 @@
 	position: fixed;
 	top: 0;
 	width: 100%;
+	height: var(--nav-h);
 	align-items: center;
 	backdrop-filter: blur(24px) brightness(1.5) saturate(1.8);
 	background-color: color-mix(in oklab, black 60%, transparent);

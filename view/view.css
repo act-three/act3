@@ -1,4 +1,6 @@
-/* keep sorted */
+@import "./tokens.css";
+
+/* components -- keep sorted */
 @import "./app-media.css";
 @import "./app-system.css";
 @import "./base-app.css";

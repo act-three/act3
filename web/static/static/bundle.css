@@ -2040,6 +2040,13 @@
 /* ui/ui.css */
 @layer components;
 
+/* view/tokens.css */
+@layer components {
+  :root {
+    --nav-h: 4rem;
+  }
+}
+
 /* view/app-media.css */
 @layer components {
   .v-media-page {
@@ -2223,6 +2230,7 @@
     position: fixed;
     top: 0;
     width: 100%;
+    height: var(--nav-h);
     align-items: center;
     backdrop-filter: blur(24px) brightness(1.5) saturate(1.8);
     background-color: color-mix(in oklab, black 60%, transparent);
@@ -2339,7 +2347,7 @@
   }
   .v-series-sidebar-inner {
     position: sticky;
-    top: 5rem;
+    top: calc(var(--nav-h) + 1rem);
   }
   .v-series-sidebar-section {
     padding: 0 0.5rem;
@@ -2353,8 +2361,8 @@
     padding-block: 0.5rem;
   }
   .v-series-season {
-    margin-top: -5rem;
-    padding-top: 5rem;
+    margin-top: calc(-1 * (var(--nav-h) + 1rem));
+    padding-top: calc(var(--nav-h) + 1rem);
   }
   .v-series-season-header {
     padding-block: 1rem 2rem;

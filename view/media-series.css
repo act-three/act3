@@ -6,7 +6,7 @@
 /* sticky sidebar inner wrapper */
 .v-series-sidebar-inner {
 	position: sticky;
-	top: 5rem;
+	top: calc(var(--nav-h) + 1rem);
 }
 
 .v-series-sidebar-section { padding: 0 0.5rem; }
@@ -23,11 +23,11 @@
 
 .v-series-season {
 	/* This element is used as a scroll anchor.
-	So move its top 80px above the content, giving
+	So move its top way above the content, giving
 	room for the content to clear the fixed-position
-	navbar (4rem) plus a gap (1rem). */
-	margin-top: -5rem;
-	padding-top: 5rem;
+	navbar plus a gap (1rem). */
+	margin-top: calc(-1 * (var(--nav-h) + 1rem));
+	padding-top: calc(var(--nav-h) + 1rem);
 }
 
 .v-series-season-header {

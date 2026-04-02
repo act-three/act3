@@ -15,7 +15,6 @@ import SettingsToggleController from "./ui/settings-toggle.js";
 import SeasonTitleController from "./view/season-title.js";
 import Series from "./view/theater-series.js";
 import SortableController from "./ui/sortable.js";
-import TopbarController from "./view/topbar.js";
 import "./view/wash.js";
 
 window.Stimulus = Application.start();
@@ -33,4 +32,3 @@ Stimulus.register("settings-text-area", SettingsTextAreaController);
 Stimulus.register("settings-text-field", SettingsTextFieldController);
 Stimulus.register("settings-toggle", SettingsToggleController);
 Stimulus.register("series", Series);
-Stimulus.register("topbar", TopbarController);
