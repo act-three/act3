@@ -57,7 +57,7 @@ func AppMoviesListItem(
 		ListID(mo.MovieHead.ID()),
 		ListURL(mo.EditorPath()),
 	)(
-		CardMedia()(html.Img(attr.Src(mo.PosterURL()))),
+		CardMedia()(html.Img(attr.Src(mo.PosterPath()))),
 		CardContent()(
 			CardTitle()(LiveText(mo.TitleField())),
 			CardDescription(LineClamp2)(
@@ -138,7 +138,7 @@ func AppMoviesDetail(
 
 							buttonPosterEdit(
 								"/-/dialog/movie-poster/"+med.ID(),
-								med.PosterURL(),
+								med.PosterPath(),
 							),
 						),
 
@@ -267,7 +267,7 @@ func AppMoviePosterDialog(med *model.MovieEdition) html.Node {
 		ImageFrame()(
 			buttonUpload()(
 				Hidden("med-id", med.ID()),
-				PosterImg(PosterFill, attr.Src(med.PosterURL())),
+				PosterImg(PosterFill, attr.Src(med.PosterPath())),
 			),
 		),
 	)
@@ -435,7 +435,7 @@ func MovieEditionSetSlug(ed *model.MovieWork, oldSlug string) html.Node {
 
 func MovieEditionChangePoster(med *model.MovieEditionHead, oldPosterID string) html.Node {
 	oldURL := model.PosterPath(oldPosterID)
-	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(med.PosterURL()))())
+	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(med.PosterPath()))())
 }
 
 func appMoviesDetailVideos(med *model.MovieEdition) html.Node {

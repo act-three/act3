@@ -18,7 +18,7 @@ func PosterPath(id string) string {
 // fields needed to display both in a unified list.
 type Work interface {
 	Title() string
-	PosterURL() string
+	PosterPath() string
 	TheaterPath() string
 }
 

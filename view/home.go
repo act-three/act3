@@ -10,7 +10,7 @@ import (
 func Home(works []model.Work) html.Node {
 	var washURLs []string
 	for _, w := range works {
-		washURLs = append(washURLs, w.PosterURL())
+		washURLs = append(washURLs, w.PosterPath())
 	}
 	return browse("Act Three", washURLs...)(
 		FlexRow(Gap4, Class("v-home-toolbar"))(
@@ -37,7 +37,7 @@ func workPosterLink(w model.Work) html.Node {
 			Class("v-home-poster-link"),
 			attr.Href(w.TheaterPath()),
 		)(
-			PosterImg(PosterFill, attr.Src(w.PosterURL())),
+			PosterImg(PosterFill, attr.Src(w.PosterPath())),
 		),
 	)
 }

@@ -25,7 +25,7 @@ func (sed *SeriesEditionHead) Label() string    { return sed.sed.Label }
 func (sed *SeriesEditionHead) Summary() string  { return sed.sed.Summary }
 func (sed *SeriesEditionHead) SeriesID() string { return sed.sed.SeriesID }
 
-func (sed *SeriesEditionHead) PosterURL() string {
+func (sed *SeriesEditionHead) PosterPath() string {
 	return PosterPath(sed.sed.PosterID)
 }
 

@@ -14,7 +14,7 @@ func BrowseMovieEdition(
 	editions []*model.MovieWork,
 	dls []*model.RenditionForDownload,
 ) html.Node {
-	return browse(med.Title(), med.PosterURL())(
+	return browse(med.Title(), med.PosterPath())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
 				html.If(len(editions) > 1, func() html.Node {
@@ -58,7 +58,7 @@ func BrowseMovieEdition(
 			Box(),
 			Box(ColSpan4)(
 				ImageFrame()(
-					PosterImg(PosterFill, attr.Src(med.PosterURL())),
+					PosterImg(PosterFill, attr.Src(med.PosterPath())),
 				),
 			),
 		),

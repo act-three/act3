@@ -18,7 +18,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 		seasons = sed.Seasons()
 	}
 	sr := sed.SeriesHead()
-	return browse(sr.Title(), sed.PosterURL())(
+	return browse(sr.Title(), sed.PosterPath())(
 		Grid12(
 			Class("v-series"),
 			stimulus.Controller("series"),
@@ -27,7 +27,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 			FlexCol(Class("v-series-sidebar"))(
 				FlexCol(Class("v-series-sidebar-inner"), Gap4)(
 					ImageFrame()(
-						PosterImg(PosterFill, attr.Src(sed.PosterURL())),
+						PosterImg(PosterFill, attr.Src(sed.PosterPath())),
 					),
 					html.If(isUserAdmin(), func() html.Node {
 						return FlexCol(Class("v-series-sidebar-section"))(

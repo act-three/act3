@@ -27,7 +27,7 @@ func (med *MovieEditionHead) Summary() string { return med.med.Summary }
 func (med *MovieEditionHead) Year() string    { return med.med.Year }
 func (med *MovieEditionHead) Runtime() int64  { return med.med.Runtime }
 
-func (med *MovieEditionHead) PosterURL() string {
+func (med *MovieEditionHead) PosterPath() string {
 	return PosterPath(med.med.PosterID)
 }
 

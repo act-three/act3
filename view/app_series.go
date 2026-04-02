@@ -58,7 +58,7 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 		ListID(ss.SeriesHead.ID()),
 		ListURL(ss.EditorPath()),
 	)(
-		CardMedia()(html.Img(attr.Src(ss.PosterURL()))),
+		CardMedia()(html.Img(attr.Src(ss.PosterPath()))),
 		CardContent()(
 			CardTitle()(LiveText(ss.SeriesHead.TitleField())),
 			CardDescription(LineClamp2)(
@@ -219,7 +219,7 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 		),
 		buttonPosterEdit(
 			"/-/dialog/series-edition-poster/"+sed.ID(),
-			sed.PosterURL(),
+			sed.PosterPath(),
 		),
 	)
 }
@@ -229,7 +229,7 @@ func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) html.Node {
 		ImageFrame()(
 			buttonUpload()(
 				Hidden("sed-id", sed.ID()),
-				PosterImg(PosterFill, attr.Src(sed.PosterURL())),
+				PosterImg(PosterFill, attr.Src(sed.PosterPath())),
 			),
 		),
 	)
@@ -701,7 +701,7 @@ func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
 
 func SeriesEditionChangePoster(sed *model.SeriesEditionHead, oldPosterID string) html.Node {
 	oldURL := model.PosterPath(oldPosterID)
-	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(sed.PosterURL()))())
+	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(sed.PosterPath()))())
 }
 
 func truncate(s string, max int) string {
