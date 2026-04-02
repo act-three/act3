@@ -39,21 +39,23 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 							)),
 						)
 					}),
-					FlexRow(Gap2)(
-						Button(
-							stimulus.Action("click->series#setRegular"),
-							stimulus.Target("series", "regular"),
-							attr.Attr("data-selected"),
-						)(Text("Regular")),
-						Button(
-							stimulus.Action("click->series#setSpecial"),
-							stimulus.Target("series", "special"),
-						)(Text("Specials")),
-						Button(
-							stimulus.Action("click->series#setAll"),
-							stimulus.Target("series", "all"),
-						)(Text("All")),
-					),
+					html.If(haveSpecials(sed), func() html.Node {
+						return FlexRow(Gap2)(
+							Button(
+								stimulus.Action("click->series#setRegular"),
+								stimulus.Target("series", "regular"),
+								attr.Attr("data-selected"),
+							)(Text("Regular")),
+							Button(
+								stimulus.Action("click->series#setSpecial"),
+								stimulus.Target("series", "special"),
+							)(Text("Specials")),
+							Button(
+								stimulus.Action("click->series#setAll"),
+								stimulus.Target("series", "all"),
+							)(Text("All")),
+						)
+					}),
 					FlexCol(Class("v-series-sidebar-section"))(
 						html.RangeSeq(seasons, func(sn *model.Season) html.Node {
 							return Box()(
@@ -159,4 +161,11 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 			),
 		),
 	)
+}
+
+func haveSpecials(sed *model.SeriesEdition) bool {
+	for range sed.Episodes(model.AnySpecial) {
+		return true
+	}
+	return false
 }
