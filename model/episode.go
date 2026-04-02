@@ -197,19 +197,10 @@ func (tx *TxR) EpisodeBySlug(ctx Context, seriesSlug, edSlug, epSlug string) (*E
 	if err != nil {
 		return nil, err
 	}
-	return tx.episodeInContext(ctx, snep.EpisodeID, sed.ID, "", "")
-}
-
-// Episode is like EpisodeInEdition, but it assumes the Air Date edition.
-func (tx *TxR) Episode(ctx Context, id string) (*Episode, error) {
-	return tx.episodeInContext(ctx, id, "", AirDate, "")
+	return tx.EpisodeInEdition(ctx, snep.EpisodeID, sed.ID)
 }
 
 func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) {
-	return tx.episodeInContext(ctx, id, edID, "", "")
-}
-
-func (tx *TxR) episodeInContext(ctx Context, id, edID, edName, edSlug string) (*Episode, error) {
 	epRec, err := tx.q.EpisodeGet(ctx, id)
 	if err != nil {
 		return nil, err
@@ -247,7 +238,7 @@ func (tx *TxR) episodeInContext(ctx Context, id, edID, edName, edSlug string) (*
 		if err != nil {
 			return nil, err
 		}
-		if seq.ID != edID && seq.Label != edName && seq.Slug != edSlug && i < len(sneps)-1 {
+		if seq.ID != edID && i < len(sneps)-1 {
 			continue
 		}
 		sr, err := tx.q.SeriesGet(ctx, seq.SeriesID)
