@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"ily.dev/act3/database/schema"
-	"ily.dev/act3/web/static"
 )
 
 const (
@@ -29,10 +28,7 @@ func (med *MovieEditionHead) Year() string    { return med.med.Year }
 func (med *MovieEditionHead) Runtime() int64  { return med.med.Runtime }
 
 func (med *MovieEditionHead) PosterURL() string {
-	if med.med.PosterID != "" {
-		return "/-/blob/" + med.med.PosterID
-	}
-	return static.Path("/static/poster-fallback.png")
+	return PosterPath(med.med.PosterID)
 }
 
 func (med *MovieEditionHead) addr(field string) []string {

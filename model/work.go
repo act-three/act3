@@ -3,7 +3,16 @@ package model
 import (
 	"cmp"
 	"slices"
+
+	"ily.dev/act3/web/static"
 )
+
+func PosterPath(id string) string {
+	if id != "" {
+		return "/-/blob/" + id
+	}
+	return static.Path("/static/poster-fallback.png")
+}
 
 // Work represents either a movie or a series — the common
 // fields needed to display both in a unified list.

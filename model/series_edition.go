@@ -7,7 +7,6 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
-	"ily.dev/act3/web/static"
 )
 
 const (
@@ -27,10 +26,7 @@ func (sed *SeriesEditionHead) Summary() string  { return sed.sed.Summary }
 func (sed *SeriesEditionHead) SeriesID() string { return sed.sed.SeriesID }
 
 func (sed *SeriesEditionHead) PosterURL() string {
-	if sed.sed.PosterID != "" {
-		return "/-/blob/" + sed.sed.PosterID
-	}
-	return static.Path("/static/poster-fallback.png")
+	return PosterPath(sed.sed.PosterID)
 }
 
 func (sed *SeriesEditionHead) addr(field string) []string {

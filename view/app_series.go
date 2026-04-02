@@ -15,7 +15,6 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
-	"ily.dev/act3/web/static"
 )
 
 const AppSeriesListItems = "series-list-items"
@@ -701,12 +700,7 @@ func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
 }
 
 func SeriesEditionChangePoster(sed *model.SeriesEditionHead, oldPosterID string) html.Node {
-	var oldURL string
-	if oldPosterID != "" {
-		oldURL = "/-/blob/" + oldPosterID
-	} else {
-		oldURL = static.Path("/static/poster-fallback.png")
-	}
+	oldURL := model.PosterPath(oldPosterID)
 	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(sed.PosterURL()))())
 }
 
