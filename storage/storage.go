@@ -57,7 +57,7 @@ func (d *Dir) Copy(r io.Reader) (id string, err error) {
 		return "", err
 	}
 	id = newID()
-	path := filepath.Join(id[:2], id[2:4], id[4:])
+	path, _ := keyPath(id, filepath.Join)
 	err = d.root.MkdirAll(path[:5], 0755)
 	if err != nil {
 		return "", err
@@ -87,7 +87,7 @@ func (d *Dir) CreateFunc(f func(*os.File) error) (id string, err error) {
 	}
 
 	id = newID()
-	path := filepath.Join(id[:2], id[2:4], id[4:])
+	path, _ := keyPath(id, filepath.Join)
 	err = d.root.MkdirAll(path[:5], 0755)
 	if err != nil {
 		return "", err
@@ -100,7 +100,7 @@ func (d *Dir) CreateFunc(f func(*os.File) error) (id string, err error) {
 }
 
 func (d *Dir) Remove(id string) error {
-	p, err := keyPath(id, true)
+	p, err := keyPath(id, filepath.Join)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (d *Dir) Remove(id string) error {
 }
 
 func (d *Dir) Open(id string) (*os.File, error) {
-	p, err := keyPath(id, true)
+	p, err := keyPath(id, filepath.Join)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (d *Dir) Open(id string) (*os.File, error) {
 type fanoutFS struct{ fs fs.FS }
 
 func (f *fanoutFS) Open(id string) (fs.File, error) {
-	p, err := keyPath(id, false)
+	p, err := keyPath(id, path.Join)
 	if err != nil {
 		return nil, &fs.PathError{
 			Op:   "Open",
@@ -136,14 +136,10 @@ func newID() string {
 	return base32c.EncodeToString(p)
 }
 
-func keyPath(id string, forFile bool) (string, error) {
+func keyPath(id string, join func(...string) string) (string, error) {
 	_, err := base32c.DecodeString(id)
 	if len(id) != b32Size || err != nil {
 		return "", fmt.Errorf("bad id")
 	}
-	if forFile {
-		return filepath.Join(id[:2], id[2:4], id[4:]), nil
-	} else {
-		return path.Join(id[:2], id[2:4], id[4:]), nil
-	}
+	return join(id[:2], id[2:4], id[4:]), nil
 }
