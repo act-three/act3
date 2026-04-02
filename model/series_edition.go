@@ -85,7 +85,11 @@ func (sed *SeriesEdition) TheaterPath() string {
 }
 
 func (sed *SeriesEdition) EditorPath() string {
-	return path.Join(sed.sr.EditorPath(), sed.Slug())
+	return SeriesEditionEditorPath(sed.sr, &sed.SeriesEditionHead)
+}
+
+func SeriesEditionEditorPath(sr *SeriesHead, sed *SeriesEditionHead) string {
+	return path.Join(sr.EditorPath(), sed.Slug())
 }
 
 // seasonByNumber returns season n in the order defined by sed.

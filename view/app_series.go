@@ -343,7 +343,7 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 				progressContainer(ep.ID(), ep.Progress()),
 			),
 		),
-		DialogButton(ep.EditDialogPath(), ButtonGhost)(Icon("line/info-circle")),
+		Button(attr.Href(ep.EditorPath()), ButtonGhost)(Icon("line/info-circle")),
 		Grip(),
 	)
 }
@@ -375,25 +375,27 @@ func AppSeriesAddDialog() html.Node {
 	)
 }
 
-// AppEpisodeDialog renders the dialog for inspecting an
+// AppEpisodeDetail renders the dialog for inspecting an
 // episode's videos, renditions, and metadata.
-func AppEpisodeDialog(
+func AppEpisodeDetail(
 	ep *model.Episode,
 	videos []schema.Video,
 	renditions []schema.RenditionForStreaming,
 ) html.Node {
-	return DialogStream(
-		ScrollY(attr.Style("padding:2em; width: 100vw"))(
+	return ScrollY(attr.Style("padding:0.5rem"))(
+		Button(attr.Href(model.SeriesEditionEditorPath(ep.SeriesHead(), ep.SeriesEditionHead())), ButtonGhost)(
+			Label("line/chevron-left", ep.SeriesHead().Title()),
+		),
+		SettingsPage()(
 			FlexCol(Gap8)(
 				FlexCol(Gap4)(
 					SettingsContent()(
-						TextNode(Size5)(LiveText(ep.SeriesHead().TitleField())),
 						TextNode(Size3)(
 							LiveText(ep.SeriesEditionHead().LabelField()),
 							html.Text(" "),
 							html.Text(ep.SnnEnn()),
 						),
-						TextNode(Size3)(LiveText((ep.TitleField()))),
+						TextNode(Size5)(LiveText((ep.TitleField()))),
 					),
 
 					SettingsGroup()(

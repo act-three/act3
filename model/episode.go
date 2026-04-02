@@ -145,8 +145,13 @@ func (ep *Episode) Label() string {
 	return ep.snep.Label + ". " + ep.ep.Title
 }
 
-func (ep *Episode) EditDialogPath() string {
-	return "/-/dialog/episode-edit/" + ep.ep.ID
+func (ep *Episode) EditorPath() string {
+	return path.Join(
+		"/app/series",
+		ep.SeriesHead().Slug(),
+		ep.SeriesEditionHead().Slug(),
+		ep.Slug(),
+	)
 }
 
 func (ep *Episode) SeriesHead() *SeriesHead {

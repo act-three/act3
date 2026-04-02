@@ -64,7 +64,7 @@ func (sw *SeriesWork) TheaterPath() string {
 }
 
 func (sw *SeriesWork) EditorPath() string {
-	return path.Join(sw.SeriesHead.EditorPath(), sw.SeriesEditionHead.Slug())
+	return SeriesEditionEditorPath(&sw.SeriesHead, &sw.SeriesEditionHead)
 }
 
 func (tx *TxR) SeriesHead(ctx Context, id string) (*SeriesHead, error) {

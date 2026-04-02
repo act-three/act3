@@ -12,7 +12,6 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view"
-	"ily.dev/act3/xstrings"
 )
 
 func (c *Config) appSeries(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
@@ -29,10 +28,13 @@ func (c *Config) appSeries(_ http.ResponseWriter, req *http.Request) (html.Node,
 func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		sed, err := tx.SeriesEditionBySlug(ctx, req.PathValue("slug"), req.PathValue("edslug"))
+		slug2 := req.PathValue("slug2")
+		sed, err := tx.SeriesEditionBySlug(ctx, req.PathValue("slug"), slug2)
 		if err == sql.ErrNoRows {
-			http.Redirect(w, req, "/app/series", http.StatusSeeOther)
-			return nil, nil
+			// slug2 might be an episode in the default edition.
+			req.SetPathValue("edslug", "")
+			req.SetPathValue("epslug", slug2)
+			return c.appEpisodeDetail(w, req)
 		} else if err != nil {
 			return nil, err
 		}
@@ -58,6 +60,44 @@ func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html
 			return nil, err
 		}
 		return view.AppSeries(sr.Title(), all, detail), nil
+	})
+}
+
+func (c *Config) appEpisodeDetail(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		ep, err := tx.EpisodeBySlug(ctx,
+			req.PathValue("slug"),
+			req.PathValue("edslug"),
+			req.PathValue("epslug"),
+		)
+		if err == sql.ErrNoRows {
+			http.Redirect(w, req, "/app/series", http.StatusSeeOther)
+			return nil, nil
+		} else if err != nil {
+			return nil, err
+		}
+
+		videos, err := tx.VideoListByEpisodeID(ctx, ep.ID())
+		if err != nil {
+			return nil, err
+		}
+
+		renditions, err := tx.RenditionForStreamingListByEpisodeID(ctx, ep.ID())
+		if err != nil {
+			return nil, err
+		}
+
+		detail := view.AppEpisodeDetail(ep, videos, renditions)
+		if req.Header.Get("turbo-frame") == "detail" {
+			return view.PageFrame(ep.Title(), "detail", detail), nil
+		}
+
+		all, err := tx.SeriesWorkList(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return view.AppSeries(ep.Title(), all, detail), nil
 	})
 }
 
@@ -211,29 +251,6 @@ func (c *Config) dialogSeriesEditionPoster(_ http.ResponseWriter, req *http.Requ
 			return nil, err
 		}
 		return view.AppSeriesEditionPosterDialog(sed), nil
-	})
-}
-
-func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
-		ctx := req.Context()
-		_, id, _ := xstrings.LastCut(req.PathValue("id"), "-")
-		ep, err := tr.Episode(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-
-		videos, err := tr.VideoListByEpisodeID(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-
-		renditions, err := tr.RenditionForStreamingListByEpisodeID(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-
-		return view.AppEpisodeDialog(ep, videos, renditions), nil
 	})
 }
 

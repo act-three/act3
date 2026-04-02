@@ -41,7 +41,6 @@ type Config struct {
 func Handle(mux *http.ServeMux, c *Config) {
 	// Keep routes alphabetized (with e.g. `sort`).
 	handle(mux, "GET /-/blob/{id}", c.blob)
-	handle(mux, "GET /-/dialog/episode-edit/{id}", c.dialogEditEpisode)
 	handle(mux, "GET /-/dialog/movie-add", c.movieAddDialogReq)
 	handle(mux, "GET /-/dialog/movie-poster/{id}", c.dialogMoviePoster)
 	handle(mux, "GET /-/dialog/series-add", c.seriesAddDialogReq)
@@ -64,7 +63,8 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /app/security", c.appSecurity)
 	handle(mux, "GET /app/series", c.appSeries)
 	handle(mux, "GET /app/series/{slug}", c.appSeriesDetail)
-	handle(mux, "GET /app/series/{slug}/{edslug}", c.appSeriesDetail)
+	handle(mux, "GET /app/series/{slug}/{slug2}", c.appSeriesDetail)
+	handle(mux, "GET /app/series/{slug}/{edslug}/{epslug}", c.appEpisodeDetail)
 	handle(mux, "GET /app/storage", c.appStorage)
 	handle(mux, "GET /app/tasks", c.appTasks)
 	handle(mux, "GET /app/tmdb", c.appTMDB)
