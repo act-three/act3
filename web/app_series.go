@@ -201,6 +201,19 @@ func (c *Config) seriesAddDialogReq(_ http.ResponseWriter, req *http.Request) (h
 	return view.AppSeriesAddDialog(), nil
 }
 
+func (c *Config) dialogSeriesEditionPoster(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		sed, err := tx.SeriesEdition(ctx, req.PathValue("id"))
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows
+		} else if err != nil {
+			return nil, err
+		}
+		return view.AppSeriesEditionPosterDialog(sed), nil
+	})
+}
+
 func (c *Config) dialogEditEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
 		ctx := req.Context()

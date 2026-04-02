@@ -45,6 +45,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /-/dialog/movie-add", c.movieAddDialogReq)
 	handle(mux, "GET /-/dialog/movie-poster/{id}", c.dialogMoviePoster)
 	handle(mux, "GET /-/dialog/series-add", c.seriesAddDialogReq)
+	handle(mux, "GET /-/dialog/series-edition-poster/{id}", c.dialogSeriesEditionPoster)
 	handle(mux, "GET /-/dl/{hash}/{name}", c.videoDownload)
 	handle(mux, "GET /-/part/movie-search", c.movieSearch)
 	handle(mux, "GET /-/part/series-search", c.seriesSearch)

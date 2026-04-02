@@ -217,7 +217,16 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 		SettingsItemLabel()(
 			SettingsItemLabelTitle("Poster"),
 		),
-		ImageFrame(attr.Style("width:30px"))(
+		buttonPosterEdit(
+			"/-/dialog/series-edition-poster/"+sed.ID(),
+			sed.PosterURL(),
+		),
+	)
+}
+
+func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) html.Node {
+	return DialogStream(
+		ImageFrame()(
 			PosterImg(PosterFill, attr.Src(sed.PosterURL())),
 		),
 	)
