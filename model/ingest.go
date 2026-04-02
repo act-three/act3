@@ -315,8 +315,8 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	}
 
 	var playlist string
-	hashes, err := tx.m.store.CreateNFunc(1, func(dstFiles []*os.File) error {
-		dst.File = dstFiles[0]
+	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
+		dst.File = dstFile
 		onProgress := func(v float64) { tx.m.prog.Update(progKey, v) }
 
 		if rfs.Remux != 0 {
@@ -341,14 +341,14 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	}
 
 	// Fixup media playlist: replace temp media filename with storage hash.
-	playlist = video.FixupMediaPlaylist(playlist, ffmpeg.MediaName(0), "/-/vid/"+hashes[0]+".mp4")
+	playlist = video.FixupMediaPlaylist(playlist, ffmpeg.MediaName(0), "/-/vid/"+hash+".mp4")
 
 	tx.m.prog.UpdateStatus(progKey, desc+": saving")
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
 		_, err := txw.q.RenditionForStreamingUpdateEncode(ctx,
 			schema.RenditionForStreamingUpdateEncodeParams{
 				ID:       rfs.ID,
-				Hash:     hashes[0],
+				Hash:     hash,
 				Playlist: playlist,
 			},
 		)

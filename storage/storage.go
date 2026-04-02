@@ -69,47 +69,34 @@ func (d *Dir) Copy(r io.Reader) (id string, err error) {
 	return id, nil
 }
 
-func (d *Dir) CreateNFunc(n int, f func([]*os.File) error) (ids []string, err error) {
-	var tmps []string
-	for range n {
-		tmps = append(tmps, rand.Text()[:8])
-	}
-	var ws []*os.File
-	for _, tmp := range tmps {
-		w, err := d.root.Create(tmp)
-		if err != nil {
-			return nil, err
-		}
-		defer d.root.Remove(tmp)
-		ws = append(ws, w)
-	}
-
-	err = f(ws)
+func (d *Dir) CreateFunc(f func(*os.File) error) (id string, err error) {
+	tmp := rand.Text()[:8]
+	w, err := d.root.Create(tmp)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	for _, w := range ws {
-		err = w.Close()
-		if err != nil && !errors.Is(err, os.ErrClosed) {
-			return nil, err
-		}
+	defer d.root.Remove(tmp)
+
+	err = f(w)
+	if err != nil {
+		return "", err
+	}
+	err = w.Close()
+	if err != nil && !errors.Is(err, os.ErrClosed) {
+		return "", err
 	}
 
-	for _, tmp := range tmps {
-		slog.Debug("open", "path", tmp)
-		id := newID()
-		path := filepath.Join(id[:2], id[2:4], id[4:])
-		err = d.root.MkdirAll(path[:5], 0755)
-		if err != nil {
-			return nil, err
-		}
-		err = d.root.Rename(tmp, path)
-		if err != nil {
-			return nil, err
-		}
-		ids = append(ids, id)
+	id = newID()
+	path := filepath.Join(id[:2], id[2:4], id[4:])
+	err = d.root.MkdirAll(path[:5], 0755)
+	if err != nil {
+		return "", err
 	}
-	return ids, nil
+	err = d.root.Rename(tmp, path)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
 }
 
 func (d *Dir) Remove(id string) error {
