@@ -360,6 +360,14 @@ func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error 
 	if err != nil {
 		return err
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventMovieEditionChangePoster,
+			ID:      id,
+			OldText: med.PosterID,
+			NewText: posterID,
+		})
+	})
 	err = tx.q.MovieEditionPosterIDSet(ctx, schema.MovieEditionPosterIDSetParams{
 		PosterID: posterID,
 		ID:       id,

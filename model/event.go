@@ -7,12 +7,13 @@ import (
 )
 
 var (
-	EventLiveUpdate           = "live-update"
-	EventSeasonRenumber       = "season-renumber"
-	EventSeriesSetSlug        = "series-set-slug"
-	EventSeriesEditionSetSlug = "series-edition-set-slug"
-	EventMovieSetSlug         = "movie-set-slug"
-	EventMovieEditionSetSlug  = "movie-edition-set-slug"
+	EventLiveUpdate               = "live-update"
+	EventSeasonRenumber           = "season-renumber"
+	EventSeriesSetSlug            = "series-set-slug"
+	EventSeriesEditionSetSlug     = "series-edition-set-slug"
+	EventMovieSetSlug             = "movie-set-slug"
+	EventMovieEditionSetSlug      = "movie-edition-set-slug"
+	EventMovieEditionChangePoster = "movie-edition-change-poster"
 )
 
 type Event struct {

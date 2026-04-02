@@ -433,6 +433,16 @@ func MovieEditionSetSlug(ed *model.MovieWork, oldSlug string) html.Node {
 	)
 }
 
+func MovieEditionChangePoster(med *model.MovieEditionHead, oldPosterID string) html.Node {
+	var oldURL string
+	if oldPosterID != "" {
+		oldURL = "/-/blob/" + oldPosterID
+	} else {
+		oldURL = static.Path("/static/poster-fallback.png")
+	}
+	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(med.PosterURL()))())
+}
+
 func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 	vids := med.Videos()
 	if len(vids) == 0 {
