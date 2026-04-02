@@ -9051,7 +9051,9 @@
     }
     modeValueChanged(mode) {
       for (const t of ["regular", "special", "all"]) {
-        this[`${t}Target`].toggleAttribute("data-selected", t === mode);
+        for (const el of this[`${t}Targets`]) {
+          el.toggleAttribute("data-selected", t === mode);
+        }
       }
     }
   };
