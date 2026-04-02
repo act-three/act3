@@ -1,0 +1,22 @@
+.v-button-image-edit {
+	height: 32px;
+	/* width is set by aspect ratio in inline style */
+
+	border-radius: 0.1875rem;
+	overflow: clip;
+	position: relative;
+}
+
+.v-button-image-edit-overlay {
+	position: absolute;
+	inset: 0;
+	background: oklch(0 0 0 / 0.5);
+	pointer-events: none;
+	visibility: hidden;
+	display: grid;
+	place-items: center;
+}
+
+.v-button-image-edit:hover .v-button-image-edit-overlay { visibility: visible; }
+
+.v-button-image-edit button { display: block; }

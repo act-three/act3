@@ -34,6 +34,7 @@
 	border-radius: 0.875rem;
 	background-color: oklch(from var(--bg) 0.17 0.02 h);
 	pointer-events: auto;
+	overflow: clip;
 }
 
 .u-dialog-close {

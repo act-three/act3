@@ -694,6 +694,7 @@
     border-radius: 0.875rem;
     background-color: oklch(from var(--bg) 0.17 0.02 h);
     pointer-events: auto;
+    overflow: clip;
   }
   .u-dialog-close {
     position: absolute;
@@ -2249,6 +2250,31 @@
     mask-size: contain;
     mask-repeat: no-repeat;
     transform: translateY(-1px);
+  }
+}
+
+/* view/button-image.css */
+@layer components {
+  .v-button-image-edit {
+    height: 32px;
+    border-radius: 0.1875rem;
+    overflow: clip;
+    position: relative;
+  }
+  .v-button-image-edit-overlay {
+    position: absolute;
+    inset: 0;
+    background: oklch(0 0 0 / 0.5);
+    pointer-events: none;
+    visibility: hidden;
+    display: grid;
+    place-items: center;
+  }
+  .v-button-image-edit:hover .v-button-image-edit-overlay {
+    visibility: visible;
+  }
+  .v-button-image-edit button {
+    display: block;
   }
 }
 

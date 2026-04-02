@@ -234,6 +234,21 @@ func (c *Config) movieAddDialogReq(_ http.ResponseWriter, req *http.Request) (ht
 	return view.AppMovieAddDialog(), nil
 }
 
+func (c *Config) dialogMoviePoster(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		med, err := tx.MovieEdition(ctx, req.PathValue("id"))
+		if err == sql.ErrNoRows {
+			// TODO: show notification sayng "not found".
+			// Maybe by hooking into turbo events!
+			return nil, sql.ErrNoRows
+		} else if err != nil {
+			return nil, err
+		}
+		return view.AppMoviePosterDialog(med), nil
+	})
+}
+
 func (c *Config) movieSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	query := req.FormValue("q")

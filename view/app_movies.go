@@ -136,8 +136,9 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Poster"),
 							),
 
-							ImageFrame(attr.Style("width:30px"))(
-								PosterImg(PosterFill, attr.Src(med.PosterURL())),
+							buttonPosterEdit(
+								"/-/dialog/movie-poster/"+med.ID(),
+								med.PosterURL(),
 							),
 						),
 
@@ -257,6 +258,14 @@ func AppMovieAddDialog() html.Node {
 			)(
 				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
 			),
+		),
+	)
+}
+
+func AppMoviePosterDialog(med *model.MovieEdition) html.Node {
+	return DialogStream(
+		ImageFrame()(
+			PosterImg(PosterFill, attr.Src(med.PosterURL())),
 		),
 	)
 }
