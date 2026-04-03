@@ -4,6 +4,7 @@
 	width: 100%;
 	border-radius: 9999px;
 	background-color: var(--bg-hover-a);
+	height: var(--progress-height, 0.5rem);
 }
 
 .u-progress-fill {
@@ -15,8 +16,6 @@
 	transition-timing-function: linear;
 }
 
-.u-progress, [data-progress-size="md"] { &.u-progress, & .u-progress:not([data-progress-size]) { height: 0.5rem; } }
-
-[data-progress-size="sm"] { &.u-progress, & .u-progress:not([data-progress-size]) { height: 0.25rem; } }
-
-[data-progress-size="lg"] { &.u-progress, & .u-progress:not([data-progress-size]) { height: 0.75rem; } }
+[data-progress-size="sm"] { --progress-height: 0.25rem; }
+[data-progress-size="md"] { --progress-height: 0.5rem; }
+[data-progress-size="lg"] { --progress-height: 0.75rem; }

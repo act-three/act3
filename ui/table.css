@@ -5,52 +5,36 @@
 	background-color: var(--panel);
 	backdrop-filter: blur(64px);
 	overflow: hidden;
+	font-size: var(--table-font-size, 0.875rem);
+	line-height: var(--table-line-height, 1.25rem);
 	& .u-table-header .u-table-row { background-color: var(--bg-surface-a); }
 }
 
-.u-table, [data-table-size="2"] {
-	&.u-table, & .u-table:not([data-table-size]) {
-		font-size: 0.875rem;
-		line-height: 1.25rem;
-		& .u-table-head {
-			height: 2.5rem;
-			padding: 0.75rem;
-		}
-		& .u-table-cell {
-			padding: 0.75rem;
-			min-height: 44px;
-		}
-	}
+[data-table-size="1"] {
+	--table-font-size: 0.875rem;
+	--table-line-height: 1.25rem;
+	--table-head-height: 2rem;
+	--table-head-padding: 0.5rem;
+	--table-cell-padding: 0.5rem;
+	--table-cell-min-height: 36px;
 }
 
-[data-table-size="1"] {
-	&.u-table, & .u-table:not([data-table-size]) {
-		font-size: 0.875rem;
-		line-height: 1.25rem;
-		& .u-table-head {
-			height: 2rem;
-			padding: 0.5rem;
-		}
-		& .u-table-cell {
-			padding: 0.5rem;
-			min-height: 36px;
-		}
-	}
+[data-table-size="2"] {
+	--table-font-size: 0.875rem;
+	--table-line-height: 1.25rem;
+	--table-head-height: 2.5rem;
+	--table-head-padding: 0.75rem;
+	--table-cell-padding: 0.75rem;
+	--table-cell-min-height: 44px;
 }
 
 [data-table-size="3"] {
-	&.u-table, & .u-table:not([data-table-size]) {
-		font-size: 1rem;
-		line-height: 1.5rem;
-		& .u-table-head {
-			height: 2.75rem;
-			padding: 0.75rem 1rem;
-		}
-		& .u-table-cell {
-			padding: 0.75rem 1rem;
-			min-height: 48px;
-		}
-	}
+	--table-font-size: 1rem;
+	--table-line-height: 1.5rem;
+	--table-head-height: 2.75rem;
+	--table-head-padding: 0.75rem 1rem;
+	--table-cell-padding: 0.75rem 1rem;
+	--table-cell-min-height: 48px;
 }
 
 .u-table-row {
@@ -62,6 +46,8 @@
 .u-table-row[data-state="selected"] { background-color: var(--bg-surface-a); }
 
 .u-table-head {
+	height: var(--table-head-height, 2.5rem);
+	padding: var(--table-head-padding, 0.75rem);
 	color: var(--text);
 	background-clip: padding-box;
 	text-align: start;
@@ -73,6 +59,8 @@
 }
 
 .u-table-cell {
+	padding: var(--table-cell-padding, 0.75rem);
+	min-height: var(--table-cell-min-height, 44px);
 	background-clip: padding-box;
 	vertical-align: middle;
 	white-space: nowrap;
