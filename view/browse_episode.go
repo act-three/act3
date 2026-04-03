@@ -8,6 +8,7 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/turbo"
 )
 
 func BrowseEpisode(
@@ -25,6 +26,14 @@ func BrowseEpisode(
 					),
 				),
 				Text(ep.Title(), Size7),
+				html.If(isUserAdmin(), func() html.Node {
+					return Link(
+						ep.EditorPath(),
+						turbo.DataFrame("_top"),
+					)(Text("View in Editor", Size3,
+						attr.Style("display: inline-block"),
+					))
+				}),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
 						browsePlayButton(ep),
