@@ -14,11 +14,11 @@ func Home(works []model.Work) html.Node {
 	}
 	return browse("Act Three", washURLs...)(
 		FlexRow(Gap4, Class("v-home-toolbar"))(
-			ButtonGroup()(
+			FlexRow(Gap1)(
 				Button(ButtonSurface)(Text("Title")),
 				Button(ButtonSurface)(Icon("line/switch-vertical-01")),
 			),
-			ButtonGroup()(
+			FlexRow(Gap1)(
 				Button(ButtonSurface)(Text("Movies")),
 				Button(ButtonSurface)(Text("Series")),
 			),
