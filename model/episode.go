@@ -265,6 +265,42 @@ func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) 
 	return nil, fmt.Errorf("cannot load ep")
 }
 
+// EpisodeEditions returns the episode as it appears in each edition.
+func (tx *TxR) EpisodeEditions(ctx Context, episodeID string) ([]*Episode, error) {
+	epRec, err := tx.q.EpisodeGet(ctx, episodeID)
+	if err != nil {
+		return nil, err
+	}
+	sneps, err := tx.q.SeasonEpisodeListByEpisodeID(ctx, episodeID)
+	if err != nil {
+		return nil, err
+	}
+	var eps []*Episode
+	for _, snep := range sneps {
+		sn, err := tx.q.SeasonGet(ctx, snep.SeasonID)
+		if err != nil {
+			return nil, err
+		}
+		sed, err := tx.q.SeriesEditionGet(ctx, sn.EditionID)
+		if err != nil {
+			return nil, err
+		}
+		sr, err := tx.q.SeriesGet(ctx, sed.SeriesID)
+		if err != nil {
+			return nil, err
+		}
+		eps = append(eps, &Episode{
+			ep:    epRec,
+			snep:  snep,
+			type_: episodeTypeByName[epRec.Type],
+			sn:    &SeasonHead{sn},
+			so:    &SeriesEditionHead{sed},
+			sr:    &SeriesHead{sr},
+		})
+	}
+	return eps, nil
+}
+
 func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error {
 	ep, err := tx.q.EpisodeGet(ctx, id)
 	if err != nil {

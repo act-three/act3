@@ -88,7 +88,12 @@ func (c *Config) appEpisodeDetail(w http.ResponseWriter, req *http.Request) (htm
 			return nil, err
 		}
 
-		detail := view.AppEpisodeDetail(ep, videos, renditions)
+		episodeEditions, err := tx.EpisodeEditions(ctx, ep.ID())
+		if err != nil {
+			return nil, err
+		}
+
+		detail := view.AppEpisodeDetail(ep, episodeEditions, videos, renditions)
 		if req.Header.Get("turbo-frame") == "detail" {
 			return view.PageFrame(ep.Title(), "detail", detail), nil
 		}

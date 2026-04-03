@@ -385,6 +385,7 @@ func AppSeriesAddDialog() html.Node {
 // episode's videos, renditions, and metadata.
 func AppEpisodeDetail(
 	ep *model.Episode,
+	episodeEditions []*model.Episode,
 	videos []schema.Video,
 	renditions []schema.RenditionForStreaming,
 ) html.Node {
@@ -395,13 +396,43 @@ func AppEpisodeDetail(
 		SettingsPage()(
 			FlexCol(Gap8)(
 				FlexCol(Gap4)(
-					SettingsContent()(
-						TextNode(Size3)(
-							LiveText(ep.SeriesEditionHead().LabelField()),
-							html.Text(" "),
-							html.Text(ep.SnnEnn()),
-						),
-						TextNode(Size5)(LiveText((ep.TitleField()))),
+					expr.IfElse(len(episodeEditions) > 1,
+						func() html.Node {
+							return FlexCol(Gap8)(
+								SettingsGroup()(
+									SettingsGroupHead(Class("v-season-group-head"))(
+										SettingsItemLabel()(
+											SettingsItemLabelTitle(fmt.Sprintf("%d Editions", len(episodeEditions))),
+											SettingsItemLabelDescription("Editing this episode affects these editions."),
+										),
+									),
+									html.Range(episodeEditions, func(eped *model.Episode) html.Node {
+										return SettingsItem()(
+											SettingsItemLabel()(
+												TextNode(Size2)(
+													LiveText(eped.SeriesEditionHead().LabelField()),
+													html.Text(" "),
+													html.Text(eped.SnnEnn()),
+												),
+											),
+										)
+									}),
+								),
+								SettingsContent()(
+									TextNode(Size5)(LiveText((ep.TitleField()))),
+								),
+							)
+						},
+						func() html.Node {
+							return SettingsContent()(
+								TextNode(Size3)(
+									LiveText(ep.SeriesEditionHead().LabelField()),
+									html.Text(" "),
+									html.Text(ep.SnnEnn()),
+								),
+								TextNode(Size5)(LiveText((ep.TitleField()))),
+							)
+						},
 					),
 
 					SettingsGroup()(
