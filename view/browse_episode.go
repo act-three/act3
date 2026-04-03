@@ -20,9 +20,9 @@ func BrowseEpisode(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
 				Link(ep.EditionTheaterPath())(Text(ep.SeriesHead().Title())),
 				Grid7()(
-					Text("S01E01", Class("v-detail-muted")),
+					Text(ep.SnnEnn(), Class("v-detail-muted")),
 					Box(ColSpan2)(
-						Text("2026-03-05", Class("v-detail-muted")),
+						Text(ep.Airdate(), Class("v-detail-muted")),
 					),
 				),
 				Text(ep.Title(), Size7),
