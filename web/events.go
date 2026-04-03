@@ -50,10 +50,23 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventSeriesEditionChangePoster(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventEpisodeChangeThumbnail:
 		return c.eventEpisodeChangeThumbnail(ctx, ev.ID, ev.OldText, ev.NewText)
+	case model.EventSeasonAdd:
+		return c.eventSeasonAdd(ctx, ev.ID)
 	case model.EventSeasonRenumber:
 		return c.eventSeasonRenumber(ctx, ev.ID)
 	}
 	return nil
+}
+
+func (c *Config) eventSeasonAdd(ctx context.Context, seasonID string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		sn, err := tx.SeasonInEdition(ctx, seasonID)
+		if err != nil {
+			return nil, err
+		}
+		return view.SeasonAppend(sn), nil
+	})
+	return n
 }
 
 func (c *Config) eventSeasonRenumber(ctx context.Context, seasonID string) html.Node {

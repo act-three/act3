@@ -277,50 +277,56 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 
 func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 	return FlexCol(Gap8)(
-		html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
-			return SettingsGroup()(
-				SettingsGroupHead(Class("v-season-group-head"))(
-					SettingsItemLabel(Class("v-season-label"),
-						stimulus.Controller("season-title"),
-						stimulus.Value("season-title", "mode")("display"),
-					)(
-						html.Div(Class("v-season-display"))(
-							FlexRow(Class("v-season-title-row"))(
-								TextNode(Size2)(LiveText(sn.TitleField())),
-								Button(ButtonCircle, ButtonGhost, ButtonSize1,
-									Class("v-season-title-edit-button"),
-									stimulus.Action("click->season-title#edit"),
-								)(Icon("line/edit-02")),
-							),
-							SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
-						),
-						html.Div(Class("v-season-edit"),
-							stimulus.Action("settings-text-field:commit->season-title#display"),
-							stimulus.Action("settings-text-field:error->season-title#display"),
-							stimulus.Action("settings-text-field:cancel->season-title#display"),
-						)(
-							SettingsTextField("/-/do/season-set-title", "title", sn.Title(), LiveAddr(sn.TitleAddr()))(
-								html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sn.ID())),
-							),
-						),
+		turbo.StreamTarget("edition-seasons-" + sed.ID())(
+			html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
+				return appSeriesDetailSeasonItem(sn)
+			}),
+		),
+	)
+}
+
+func appSeriesDetailSeasonItem(sn *model.Season) html.Node {
+	return SettingsGroup()(
+		SettingsGroupHead(Class("v-season-group-head"))(
+			SettingsItemLabel(Class("v-season-label"),
+				stimulus.Controller("season-title"),
+				stimulus.Value("season-title", "mode")("display"),
+			)(
+				html.Div(Class("v-season-display"))(
+					FlexRow(Class("v-season-title-row"))(
+						TextNode(Size2)(LiveText(sn.TitleField())),
+						Button(ButtonCircle, ButtonGhost, ButtonSize1,
+							Class("v-season-title-edit-button"),
+							stimulus.Action("click->season-title#edit"),
+						)(Icon("line/edit-02")),
 					),
-					html.Form(
-						attr.Method("POST"),
-						attr.Action("/-/do/series-episode-add"),
-					)(
-						Hidden("season-id", sn.ID()),
-						Button(ButtonGhost, ButtonSize2)(Text("Add Episode")),
-					),
+					SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
 				),
-				turbo.StreamTarget("season-episodes-"+sn.ID(),
-					stimulus.Controller("sortable"),
-					stimulus.Action("keydown.esc@document->sortable#cancel"),
-					attr.Attr("data-season-id")(sn.ID()),
+				html.Div(Class("v-season-edit"),
+					stimulus.Action("settings-text-field:commit->season-title#display"),
+					stimulus.Action("settings-text-field:error->season-title#display"),
+					stimulus.Action("settings-text-field:cancel->season-title#display"),
 				)(
-					html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
+					SettingsTextField("/-/do/season-set-title", "title", sn.Title(), LiveAddr(sn.TitleAddr()))(
+						html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sn.ID())),
+					),
 				),
-			)
-		}),
+			),
+			html.Form(
+				attr.Method("POST"),
+				attr.Action("/-/do/series-episode-add"),
+			)(
+				Hidden("season-id", sn.ID()),
+				Button(ButtonGhost, ButtonSize2)(Text("Add Episode")),
+			),
+		),
+		turbo.StreamTarget("season-episodes-"+sn.ID(),
+			stimulus.Controller("sortable"),
+			stimulus.Action("keydown.esc@document->sortable#cancel"),
+			attr.Attr("data-season-id")(sn.ID()),
+		)(
+			html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
+		),
 	)
 }
 
@@ -664,6 +670,12 @@ func seriesTheaterPathText(sr *model.SeriesHead, sed *model.SeriesEditionHead) h
 	return Group(
 		html.Text("/"), LiveText(sr.SlugField()),
 		html.Text("/"), LiveText(sed.SlugField()),
+	)
+}
+
+func SeasonAppend(sn *model.Season) html.Node {
+	return turbo.Append("edition-seasons-"+sn.EditionID(),
+		appSeriesDetailSeasonItem(sn),
 	)
 }
 

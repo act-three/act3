@@ -14,9 +14,10 @@ type SeasonHead struct {
 	sn schema.Season
 }
 
-func (sn *SeasonHead) ID() string    { return sn.sn.ID }
-func (sn *SeasonHead) Title() string { return sn.sn.Title }
-func (sn *SeasonHead) Number() int   { return int(sn.sn.Number) }
+func (sn *SeasonHead) ID() string        { return sn.sn.ID }
+func (sn *SeasonHead) EditionID() string { return sn.sn.EditionID }
+func (sn *SeasonHead) Title() string     { return sn.sn.Title }
+func (sn *SeasonHead) Number() int       { return int(sn.sn.Number) }
 
 // Slug returns a synthetic slug, suitable for use in page anchors.
 func (sn *SeasonHead) Slug() string {
@@ -154,13 +155,22 @@ func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
 		maxNumber = max(maxNumber, sn.Number)
 	}
 	next := maxNumber + 1
-	_, err = tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
+	sn, err := tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
 		EditionID: editionID,
 		SortKey:   fmt.Sprintf("%03d", next),
 		Title:     fmt.Sprintf("Season %d", next),
 		Number:    next,
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type: EventSeasonAdd,
+			ID:   sn.ID,
+		})
+	})
+	return nil
 }
 
 // renumberSeason derives Number, Label, and Slug for every episode
