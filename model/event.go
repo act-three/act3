@@ -17,6 +17,7 @@ var (
 	EventSeriesEditionChangePoster = "series-edition-change-poster"
 	EventEpisodeChangeThumbnail    = "episode-change-thumbnail"
 	EventSeasonAdd                 = "season-add"
+	EventTaskStatsChange           = "task-stats-change"
 )
 
 type Event struct {

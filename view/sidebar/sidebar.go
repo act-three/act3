@@ -20,13 +20,16 @@ type MenuSection struct {
 	Items []MenuItem
 }
 
+const TaskStatsID = "sidebar-task-stats"
+
 type MenuItem struct {
-	Icon  string
-	Path  string
-	Label string
-	Value string // shown in muted text on right
-	Badge string // shown in bright capsule on right
-	Attr  attr.Node
+	Icon    string
+	Path    string
+	Label   string
+	Value   string // shown in muted text on right
+	Badge   string // shown in bright capsule on right
+	Attr    attr.Node
+	StatsID string // if set, wraps value/badge in a stream target
 }
 
 func sidebarData(c Config) []MenuSection {
@@ -34,27 +37,27 @@ func sidebarData(c Config) []MenuSection {
 		{
 			Label: "Account",
 			Items: []MenuItem{
-				{"line/user-circle", "/app/profile", "Profile", "", "", nil},
-				{"line/fingerprint-04", "/app/security", "Security", "", "", nil},
+				{"line/user-circle", "/app/profile", "Profile", "", "", nil, ""},
+				{"line/fingerprint-04", "/app/security", "Security", "", "", nil, ""},
 			},
 		},
 		{
 			Label: "Edit Media",
 			Items: []MenuItem{
-				{"line/arrow-circle-down", "/app/downloads", "Downloads", "", "", nil},
-				{"line/file-question-03", "/app/missing", "Missing Media", "", "", nil},
-				{"line/trash-01", "/app/trash", "Trash", "", "", nil},
-				{"line/film-01", "/app/movies", "All Movies", "", "", nil},
-				{"line/tv-03", "/app/series", "All Series", "", "", nil},
+				{"line/arrow-circle-down", "/app/downloads", "Downloads", "", "", nil, ""},
+				{"line/file-question-03", "/app/missing", "Missing Media", "", "", nil, ""},
+				{"line/trash-01", "/app/trash", "Trash", "", "", nil, ""},
+				{"line/film-01", "/app/movies", "All Movies", "", "", nil, ""},
+				{"line/tv-03", "/app/series", "All Series", "", "", nil, ""},
 			},
 		},
 		{
 			Label: "System",
 			Items: []MenuItem{
-				{"line/cloud-01", "/app/transmission", "Download Client", "", "", nil},
-				{"line/database-01", "/app/tmdb", "TMDB", "", "", nil},
-				{"line/hard-drive", "/app/storage", "Storage", "", "", nil},
-				{"line/calendar-check-01", "/app/tasks", "Tasks", numeric(c.TaskCount), numeric(c.TaskCountError), nil},
+				{"line/cloud-01", "/app/transmission", "Download Client", "", "", nil, ""},
+				{"line/database-01", "/app/tmdb", "TMDB", "", "", nil, ""},
+				{"line/hard-drive", "/app/storage", "Storage", "", "", nil, ""},
+				{"line/calendar-check-01", "/app/tasks", "Tasks", numeric(c.TaskCount), numeric(c.TaskCountError), nil, TaskStatsID},
 			},
 		},
 	}
@@ -156,14 +159,32 @@ func sidebarMenuButton(it MenuItem) html.Node {
 		attr.Attr("data-size")("default"),
 	)(
 		Label(it.Icon, it.Label),
-		FlexRow(Gap2)(
-			html.If(it.Value != "", func() html.Node {
-				return html.Div(Class("v-sidebar-menu-value"))(html.Text(it.Value))
-			}),
-			html.If(it.Badge != "", func() html.Node {
-				return html.Div(Class("v-sidebar-menu-badge"))(html.Text(it.Badge))
-			}),
-		),
+		menuStats(it),
+	)
+}
+
+func menuStats(it MenuItem) html.Node {
+	inner := menuStatsInner(it.Value, it.Badge)
+	if it.StatsID != "" {
+		return turbo.StreamTarget(it.StatsID)(inner)
+	}
+	return inner
+}
+
+func menuStatsInner(value, badge string) html.Node {
+	return FlexRow(Gap2)(
+		html.If(value != "", func() html.Node {
+			return html.Div(Class("v-sidebar-menu-value"))(html.Text(value))
+		}),
+		html.If(badge != "", func() html.Node {
+			return html.Div(Class("v-sidebar-menu-badge"))(html.Text(badge))
+		}),
+	)
+}
+
+func TaskStats(count, countError int) html.Node {
+	return turbo.Update(TaskStatsID)(
+		menuStatsInner(numeric(count), numeric(countError)),
 	)
 }
 

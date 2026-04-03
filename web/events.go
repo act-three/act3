@@ -10,6 +10,7 @@ import (
 	"ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view"
+	"ily.dev/act3/view/sidebar"
 )
 
 func (c *Config) events(w http.ResponseWriter, req *http.Request) {
@@ -54,8 +55,21 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventSeasonAdd(ctx, ev.ID)
 	case model.EventSeasonRenumber:
 		return c.eventSeasonRenumber(ctx, ev.ID)
+	case model.EventTaskStatsChange:
+		return c.eventTaskStatsChange(ctx)
 	}
 	return nil
+}
+
+func (c *Config) eventTaskStatsChange(ctx context.Context) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		stats, err := tx.TaskStats(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return sidebar.TaskStats(stats.Queued+stats.Running, stats.CountError), nil
+	})
+	return n
 }
 
 func (c *Config) eventSeasonAdd(ctx context.Context, seasonID string) html.Node {
