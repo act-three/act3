@@ -73,7 +73,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 					html.If(len(editions) > 1, func() html.Node {
 						return browseSeriesEditionSelect(editions, sed)
 					}),
-					TextNode(Size3)(html.Safe(sed.Summary())),
+					TextNode(Size3, LineClamp5)(html.Safe(sed.Summary())),
 				),
 				FlexCol(attr.Style("gap:5rem"))(
 					html.RangeSeq(seasons, browseSeriesSeason),
