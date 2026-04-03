@@ -15,7 +15,8 @@ func (c *Config) appTMDB(_ http.ResponseWriter, req *http.Request) (html.Node, e
 		if err != nil {
 			return nil, err
 		}
-		return view.AppTMDB(settings), nil
+		title, body := view.AppTMDB(settings)
+		return c.app(ctx, tx, title, body)
 	})
 }
 

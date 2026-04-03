@@ -20,8 +20,8 @@ func AppMovies(
 	title string,
 	s []*model.MovieWork,
 	detail ...html.Node,
-) html.Node {
-	return app(title, FlexCol(attr.Class("v-media-page"))(
+) (string, html.Node) {
+	return title, FlexCol(attr.Class("v-media-page"))(
 		ToolbarPrimary()(
 			DialogButton("/-/dialog/movie-add", ButtonSurface)(
 				Text("Add Movie"),
@@ -46,7 +46,7 @@ func AppMovies(
 				),
 			),
 		),
-	))
+	)
 }
 
 func AppMoviesListItem(

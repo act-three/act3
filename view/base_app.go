@@ -8,7 +8,12 @@ import (
 	"ily.dev/act3/view/sidebar"
 )
 
-func app(title string, child ...html.Node) html.Node {
+type AppConfig struct {
+	TaskCount      int
+	TaskCountError int
+}
+
+func App(title string, body html.Node, cfg AppConfig) html.Node {
 	return base(title)()(
 		turbo.StreamSource("/-/events"),
 		html.Div(
@@ -16,7 +21,10 @@ func app(title string, child ...html.Node) html.Node {
 			attr.Class("v-app"),
 			attr.Style("--sidebar-width: 200px; --sidebar-width-mobile: 20rem;"),
 		)(
-			sidebar.Sidebar(),
+			sidebar.Sidebar(sidebar.Config{
+				TaskCount:      cfg.TaskCount,
+				TaskCountError: cfg.TaskCountError,
+			}),
 			html.Div(
 				attr.Role("main"),
 				attr.Attr("data-slot")("sidebar-inset"),
@@ -25,7 +33,7 @@ func app(title string, child ...html.Node) html.Node {
 				turbo.Frame("main",
 					turbo.Advance(),
 				)(
-					child...,
+					body,
 				),
 			),
 		),

@@ -21,7 +21,8 @@ func (c *Config) appMovies(_ http.ResponseWriter, req *http.Request) (html.Node,
 		if err != nil {
 			return nil, err
 		}
-		return view.AppMovies("All Movies", all), nil
+		title, body := view.AppMovies("All Movies", all)
+		return c.app(ctx, tx, title, body)
 	})
 }
 
@@ -55,7 +56,8 @@ func (c *Config) appMoviesDetail(w http.ResponseWriter, req *http.Request) (html
 		if err != nil {
 			return nil, err
 		}
-		return view.AppMovies(med.Title(), all, detail), nil
+		title, body := view.AppMovies(med.Title(), all, detail)
+		return c.app(ctx, tx, title, body)
 	})
 }
 

@@ -23,8 +23,8 @@ func AppSeries(
 	title string,
 	s []*model.SeriesWork,
 	detail ...html.Node,
-) html.Node {
-	return app(title, FlexCol(attr.Class("v-media-page"))(
+) (string, html.Node) {
+	return title, FlexCol(attr.Class("v-media-page"))(
 		ToolbarPrimary()(
 			DialogButton("/-/dialog/series-add", ButtonSurface)(
 				Text("Add Series"),
@@ -49,7 +49,7 @@ func AppSeries(
 				),
 			),
 		),
-	))
+	)
 }
 
 func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {

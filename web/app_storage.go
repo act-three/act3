@@ -55,7 +55,8 @@ func (c *Config) appStorage(_ http.ResponseWriter, req *http.Request) (html.Node
 			})
 		}
 
-		return view.AppStorage(storage, fs), nil
+		title, body := view.AppStorage(storage, fs)
+		return c.app(ctx, tx, title, body)
 	})
 }
 

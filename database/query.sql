@@ -524,6 +524,12 @@ INSERT INTO Storage (Path, Contents) VALUES (?, ?);
 -- name: StorageList :many
 SELECT * FROM Storage;
 
+-- name: TaskCountError :one
+SELECT COUNT(*) FROM Task WHERE Failures > 0;
+
+-- name: TaskCountQueued :one
+SELECT COUNT(*) FROM Task WHERE Running = 0;
+
 -- name: TaskCreate :one
 INSERT INTO Task (Type, Args, Priority, Queue, NextRun) VALUES (?, ?, ?, ?, ?)
 RETURNING *;

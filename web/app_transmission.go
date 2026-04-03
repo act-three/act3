@@ -15,7 +15,8 @@ func (c *Config) appTransmission(_ http.ResponseWriter, req *http.Request) (html
 		if err != nil {
 			return nil, err
 		}
-		return view.AppTransmission(settings), nil
+		title, body := view.AppTransmission(settings)
+		return c.app(ctx, tx, title, body)
 	})
 }
 

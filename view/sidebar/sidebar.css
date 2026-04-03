@@ -84,6 +84,7 @@
 	display: flex;
 	width: 100%;
 	align-items: center;
+	justify-content: space-between;
 	gap: 0.5rem;
 	overflow: hidden;
 	border-radius: var(--radius-2);
@@ -112,4 +113,12 @@
 .v-sidebar-menu-button[data-selected] {
 	background-color: var(--bg-active);
 	color: var(--accent-text);
+}
+
+.v-sidebar-menu-value { /* ok */ }
+
+.v-sidebar-menu-badge {
+	background: var(--warmred);
+	padding: 0.25rem;
+	border-radius: 9999px;
 }

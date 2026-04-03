@@ -17,7 +17,8 @@ func (c *Config) appDownloads(_ http.ResponseWriter, req *http.Request) (html.No
 		if err != nil {
 			return nil, err
 		}
-		return view.AppDownloads("Downloads", dls, nil), nil
+		title, body := view.AppDownloads("Downloads", dls, nil)
+		return c.app(ctx, tx, title, body)
 	})
 }
 
@@ -42,7 +43,8 @@ func (c *Config) appDownloadsDetail(w http.ResponseWriter, req *http.Request) (h
 		if err != nil {
 			return nil, err
 		}
-		return view.AppDownloads(dl.Title(), dls, dl), nil
+		title, body := view.AppDownloads(dl.Title(), dls, dl)
+		return c.app(ctx, tx, title, body)
 	})
 }
 

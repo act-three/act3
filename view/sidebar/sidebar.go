@@ -1,12 +1,19 @@
 package sidebar
 
 import (
+	"fmt"
+
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 )
+
+type Config struct {
+	TaskCount      int
+	TaskCountError int
+}
 
 type MenuSection struct {
 	Label string
@@ -17,41 +24,43 @@ type MenuItem struct {
 	Icon  string
 	Path  string
 	Label string
+	Value string // shown in muted text on right
+	Badge string // shown in bright capsule on right
 	Attr  attr.Node
 }
 
-func sidebarData() []MenuSection {
+func sidebarData(c Config) []MenuSection {
 	return []MenuSection{
 		{
 			Label: "Account",
 			Items: []MenuItem{
-				{"line/user-circle", "/app/profile", "Profile", nil},
-				{"line/fingerprint-04", "/app/security", "Security", nil},
+				{"line/user-circle", "/app/profile", "Profile", "", "", nil},
+				{"line/fingerprint-04", "/app/security", "Security", "", "", nil},
 			},
 		},
 		{
 			Label: "Edit Media",
 			Items: []MenuItem{
-				{"line/arrow-circle-down", "/app/downloads", "Downloads", nil},
-				{"line/file-question-03", "/app/missing", "Missing Media", nil},
-				{"line/trash-01", "/app/trash", "Trash", nil},
-				{"line/film-01", "/app/movies", "All Movies", nil},
-				{"line/tv-03", "/app/series", "All Series", nil},
+				{"line/arrow-circle-down", "/app/downloads", "Downloads", "", "", nil},
+				{"line/file-question-03", "/app/missing", "Missing Media", "", "", nil},
+				{"line/trash-01", "/app/trash", "Trash", "", "", nil},
+				{"line/film-01", "/app/movies", "All Movies", "", "", nil},
+				{"line/tv-03", "/app/series", "All Series", "", "", nil},
 			},
 		},
 		{
 			Label: "System",
 			Items: []MenuItem{
-				{"line/cloud-01", "/app/transmission", "Download Client", nil},
-				{"line/database-01", "/app/tmdb", "TMDB", nil},
-				{"line/hard-drive", "/app/storage", "Storage", nil},
-				{"line/calendar-check-01", "/app/tasks", "Tasks", nil},
+				{"line/cloud-01", "/app/transmission", "Download Client", "", "", nil},
+				{"line/database-01", "/app/tmdb", "TMDB", "", "", nil},
+				{"line/hard-drive", "/app/storage", "Storage", "", "", nil},
+				{"line/calendar-check-01", "/app/tasks", "Tasks", numeric(c.TaskCount), numeric(c.TaskCountError), nil},
 			},
 		},
 	}
 }
 
-func Sidebar() html.Node {
+func Sidebar(c Config) html.Node {
 	return html.Div(
 		attr.Class("v-sidebar"),
 		attr.Attr("data-state")(""),
@@ -71,12 +80,12 @@ func Sidebar() html.Node {
 			attr.Attr("data-slot")("sidebar-container"),
 			attr.Class("v-sidebar-container"),
 		)(
-			sidebarContent(),
+			sidebarContent(c),
 		),
 	)
 }
 
-func sidebarContent() html.Node {
+func sidebarContent(c Config) html.Node {
 	return html.Div(
 		attr.Attr("data-slot")("sidebar-content"),
 		attr.Attr("data-sidebar")("content"),
@@ -85,7 +94,7 @@ func sidebarContent() html.Node {
 		html.Div(attr.Class("v-sidebar-heading"))(
 			Link("/")(Box(Class("v-wordmark"))),
 		),
-		html.Range(sidebarData(), sidebarGroup),
+		html.Range(sidebarData(c), sidebarGroup),
 	)
 }
 
@@ -146,7 +155,21 @@ func sidebarMenuButton(it MenuItem) html.Node {
 		attr.Attr("data-sidebar")("menu-button"),
 		attr.Attr("data-size")("default"),
 	)(
-		Icon(it.Icon),
-		html.Span()(html.Text(it.Label)),
+		Label(it.Icon, it.Label),
+		FlexRow(Gap2)(
+			html.If(it.Value != "", func() html.Node {
+				return html.Div(Class("v-sidebar-menu-value"))(html.Text(it.Value))
+			}),
+			html.If(it.Badge != "", func() html.Node {
+				return html.Div(Class("v-sidebar-menu-badge"))(html.Text(it.Badge))
+			}),
+		),
 	)
+}
+
+func numeric(n int) string {
+	if n > 0 {
+		return fmt.Sprintf("%d", n)
+	}
+	return ""
 }

@@ -19,35 +19,33 @@ func AppDownloads(
 	title string,
 	items []*model.DownloadHead,
 	selected *model.Download,
-) html.Node {
+) (string, html.Node) {
 	const torrentListID = "torrent-list"
-	return app(title,
-		FlexCol(Class("v-media-page"))(
-			ToolbarPrimary()(
-				Box(),
-				Box(Class("v-media-searchbar"))(
-					appDownloadsSearchBar(),
-				),
-				Box(),
+	return title, FlexCol(Class("v-media-page"))(
+		ToolbarPrimary()(
+			Box(),
+			Box(Class("v-media-searchbar"))(
+				appDownloadsSearchBar(),
 			),
-			Split()(
-				List("/app/downloads/", "detail",
-					attr.ID(torrentListID),
-					attr.Style("flex: 1"),
-				)(
-					ListItems(items, appDownloadsListItem),
-				),
-				turbo.Frame("detail", turbo.Advance())(
-					expr.IfElse(selected != nil,
-						func() html.Node {
-							return appDownloadsDetail(selected)
-						},
-						func() html.Node {
-							return Center(Class("v-media-muted"))(
-								html.Text("No Download Selected"),
-							)
-						},
-					),
+			Box(),
+		),
+		Split()(
+			List("/app/downloads/", "detail",
+				attr.ID(torrentListID),
+				attr.Style("flex: 1"),
+			)(
+				ListItems(items, appDownloadsListItem),
+			),
+			turbo.Frame("detail", turbo.Advance())(
+				expr.IfElse(selected != nil,
+					func() html.Node {
+						return appDownloadsDetail(selected)
+					},
+					func() html.Node {
+						return Center(Class("v-media-muted"))(
+							html.Text("No Download Selected"),
+						)
+					},
 				),
 			),
 		),

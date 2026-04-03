@@ -340,6 +340,28 @@ func (m *Model) wake(ttype string) {
 	}
 }
 
+type TaskStats struct {
+	Queued     int
+	Running    int
+	CountError int
+}
+
+func (tx *TxR) TaskStats(ctx Context) (TaskStats, error) {
+	queued, err := tx.q.TaskCountQueued(ctx)
+	if err != nil {
+		return TaskStats{}, err
+	}
+	countError, err := tx.q.TaskCountError(ctx)
+	if err != nil {
+		return TaskStats{}, err
+	}
+	return TaskStats{
+		Queued:     int(queued),
+		Running:    len(tx.m.RunningTasks()),
+		CountError: int(countError),
+	}, nil
+}
+
 func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
 	list, err := tx.q.TaskList(ctx)
 	if err != nil {

@@ -3051,6 +3051,28 @@ func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
 	return items, nil
 }
 
+const taskCountError = `-- name: TaskCountError :one
+SELECT COUNT(*) FROM Task WHERE Failures > 0
+`
+
+func (q *Queries) TaskCountError(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, taskCountError)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const taskCountQueued = `-- name: TaskCountQueued :one
+SELECT COUNT(*) FROM Task WHERE Running = 0
+`
+
+func (q *Queries) TaskCountQueued(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, taskCountQueued)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const taskCreate = `-- name: TaskCreate :one
 INSERT INTO Task (Type, Args, Priority, Queue, NextRun) VALUES (?, ?, ?, ?, ?)
 RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, running

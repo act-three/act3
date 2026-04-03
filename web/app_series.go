@@ -21,7 +21,8 @@ func (c *Config) appSeries(_ http.ResponseWriter, req *http.Request) (html.Node,
 		if err != nil {
 			return nil, err
 		}
-		return view.AppSeries("Edit Series", all), nil
+		title, body := view.AppSeries("Edit Series", all)
+		return c.app(ctx, tx, title, body)
 	})
 }
 
@@ -59,7 +60,8 @@ func (c *Config) appSeriesDetail(w http.ResponseWriter, req *http.Request) (html
 		if err != nil {
 			return nil, err
 		}
-		return view.AppSeries(sr.Title(), all, detail), nil
+		title, body := view.AppSeries(sr.Title(), all, detail)
+		return c.app(ctx, tx, title, body)
 	})
 }
 
@@ -102,7 +104,8 @@ func (c *Config) appEpisodeDetail(w http.ResponseWriter, req *http.Request) (htm
 		if err != nil {
 			return nil, err
 		}
-		return view.AppSeries(ep.Title(), all, detail), nil
+		title, body := view.AppSeries(ep.Title(), all, detail)
+		return c.app(ctx, tx, title, body)
 	})
 }
 

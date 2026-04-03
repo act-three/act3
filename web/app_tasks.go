@@ -16,7 +16,8 @@ func (c *Config) appTasks(_ http.ResponseWriter, req *http.Request) (html.Node, 
 		if err != nil {
 			return nil, err
 		}
-		return view.AppTasks(running, queued), nil
+		title, body := view.AppTasks(running, queued)
+		return c.app(ctx, tx, title, body)
 	})
 }
 
