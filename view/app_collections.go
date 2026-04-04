@@ -226,8 +226,9 @@ func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSear
 
 func collectionMovieItem(mo *model.MovieWork) html.Node {
 	return SettingsItem()(
-		FlexRow(Gap2)(
-			SettingsItemLabelTitle(mo.Title() + " (" + mo.Year() + ")"),
+		FlexRow(attr.Style("align-items:center"), Gap4)(
+			SettingsItemLabelIcon()(Icon("line/film-01")),
+			SettingsItemLabelTitle(mo.Title()+" ("+mo.Year()+")"),
 		),
 	)
 }
