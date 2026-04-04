@@ -107,9 +107,7 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							),
 						),
 						turbo.StreamTarget("collection-"+col.ID()+"-movies")(
-							html.Range(col.Movies(), func(mo *model.MovieWork) html.Node {
-								return collectionMovieItem(col.ID(), mo)
-							}),
+							collectionMovieItems(col),
 						),
 					),
 
@@ -125,9 +123,7 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							),
 						),
 						turbo.StreamTarget("collection-"+col.ID()+"-series")(
-							html.Range(col.Series(), func(sw *model.SeriesWork) html.Node {
-								return collectionSeriesItem(col.ID(), sw)
-							}),
+							collectionSeriesItems(col),
 						),
 					),
 				),
@@ -230,27 +226,29 @@ func collectionMovieItemID(colID, movieID string) string {
 	return "col-" + colID + "-mo-" + movieID
 }
 
-func collectionMovieItem(colID string, mo *model.MovieWork) html.Node {
-	return SettingsItem(attr.ID(collectionMovieItemID(colID, mo.MovieHead.ID())))(
-		FlexRow(attr.Style("align-items:center"), Gap4)(
-			SettingsItemLabelIcon()(Icon("line/film-01")),
-			SettingsItemLabelTitle(mo.Title()+" ("+mo.Year()+")"),
-		),
-		html.Form(
-			attr.Method("POST"),
-			attr.Action("/-/do/collection-movie-remove"),
-		)(
-			Hidden("col-id", colID),
-			Hidden("movie-id", mo.MovieHead.ID()),
-			Button(SettingsHover, ButtonGhost)(Text("Remove")),
-		),
-	)
+func collectionMovieItems(col *model.Collection) html.Node {
+	return html.Range(col.Movies(), func(mo *model.MovieWork) html.Node {
+		return SettingsItem(attr.ID(collectionMovieItemID(col.ID(), mo.MovieHead.ID())))(
+			FlexRow(attr.Style("align-items:center"), Gap4)(
+				SettingsItemLabelIcon()(Icon("line/film-01")),
+				SettingsItemLabelTitle(mo.Title()+" ("+mo.Year()+")"),
+			),
+			html.Form(
+				attr.Method("POST"),
+				attr.Action("/-/do/collection-movie-remove"),
+			)(
+				Hidden("col-id", col.ID()),
+				Hidden("movie-id", mo.MovieHead.ID()),
+				Button(SettingsHover, ButtonGhost)(Text("Remove")),
+			),
+		)
+	})
 }
 
-func CollectionMovieAppend(col *model.Collection, mw *model.MovieWork) html.Node {
+func CollectionMovieAppend(col *model.Collection) html.Node {
 	return Group(
-		turbo.Append("collection-"+col.ID()+"-movies",
-			collectionMovieItem(col.ID(), mw),
+		turbo.Update("collection-"+col.ID()+"-movies")(
+			collectionMovieItems(col),
 		),
 		LiveTextUpdate(col.MovieCountField()),
 	)
@@ -336,27 +334,29 @@ func collectionSeriesItemID(colID, seriesID string) string {
 	return "col-" + colID + "-sr-" + seriesID
 }
 
-func collectionSeriesItem(colID string, sw *model.SeriesWork) html.Node {
-	return SettingsItem(attr.ID(collectionSeriesItemID(colID, sw.SeriesHead.ID())))(
-		FlexRow(attr.Style("align-items:center"), Gap4)(
-			SettingsItemLabelIcon()(Icon("line/tv-03")),
-			SettingsItemLabelTitle(sw.Title()),
-		),
-		html.Form(
-			attr.Method("POST"),
-			attr.Action("/-/do/collection-series-remove"),
-		)(
-			Hidden("col-id", colID),
-			Hidden("series-id", sw.SeriesHead.ID()),
-			Button(SettingsHover, ButtonGhost)(Text("Remove")),
-		),
-	)
+func collectionSeriesItems(col *model.Collection) html.Node {
+	return html.Range(col.Series(), func(sw *model.SeriesWork) html.Node {
+		return SettingsItem(attr.ID(collectionSeriesItemID(col.ID(), sw.SeriesHead.ID())))(
+			FlexRow(attr.Style("align-items:center"), Gap4)(
+				SettingsItemLabelIcon()(Icon("line/tv-03")),
+				SettingsItemLabelTitle(sw.Title()),
+			),
+			html.Form(
+				attr.Method("POST"),
+				attr.Action("/-/do/collection-series-remove"),
+			)(
+				Hidden("col-id", col.ID()),
+				Hidden("series-id", sw.SeriesHead.ID()),
+				Button(SettingsHover, ButtonGhost)(Text("Remove")),
+			),
+		)
+	})
 }
 
-func CollectionSeriesAppend(col *model.Collection, sw *model.SeriesWork) html.Node {
+func CollectionSeriesAppend(col *model.Collection) html.Node {
 	return Group(
-		turbo.Append("collection-"+col.ID()+"-series",
-			collectionSeriesItem(col.ID(), sw),
+		turbo.Update("collection-"+col.ID()+"-series")(
+			collectionSeriesItems(col),
 		),
 		LiveTextUpdate(col.SeriesCountField()),
 	)

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strconv"
@@ -130,6 +131,19 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 			series = append(series, sw)
 		}
 	}
+	slices.SortFunc(movies, func(a, b *MovieWork) int {
+		return cmp.Compare(a.Year(), b.Year())
+	})
+	slices.SortFunc(series, func(a, b *SeriesWork) int {
+		var as, bs string
+		if p := a.PremieredOn(); p != nil {
+			as = *p
+		}
+		if p := b.PremieredOn(); p != nil {
+			bs = *p
+		}
+		return cmp.Compare(as, bs)
+	})
 	return &Collection{
 		CollectionHead: CollectionHead{colData},
 		movies:         movies,

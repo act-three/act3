@@ -158,12 +158,7 @@ func (c *Config) eventCollectionMovieAdd(ctx context.Context, colID, movieID str
 		if err != nil {
 			return nil, err
 		}
-		for _, mw := range col.Movies() {
-			if mw.MovieHead.ID() == movieID {
-				return view.CollectionMovieAppend(col, mw), nil
-			}
-		}
-		return nil, nil
+		return view.CollectionMovieAppend(col), nil
 	})
 	return n
 }
@@ -185,12 +180,7 @@ func (c *Config) eventCollectionSeriesAdd(ctx context.Context, colID, seriesID s
 		if err != nil {
 			return nil, err
 		}
-		for _, sw := range col.Series() {
-			if sw.SeriesHead.ID() == seriesID {
-				return view.CollectionSeriesAppend(col, sw), nil
-			}
-		}
-		return nil, nil
+		return view.CollectionSeriesAppend(col), nil
 	})
 	return n
 }
