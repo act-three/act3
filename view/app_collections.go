@@ -181,14 +181,21 @@ func AppCollectionMovieAddDialog(colID string) html.Node {
 	)
 }
 
-func AppCollectionMovieSearchResults(colID string, results []*model.MovieWork) html.Node {
+type CollectionMovieSearchResult struct {
+	Movie        *model.MovieWork
+	InCollection bool
+}
+
+func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSearchResult) html.Node {
 	return turbo.Frame("results")(
 		FlexCol(Gap4, Class("v-media-detail-body"))(
-			html.Range(results, func(mw *model.MovieWork) html.Node {
+			html.Range(results, func(r CollectionMovieSearchResult) html.Node {
+				mw := r.Movie
 				return html.Form(
 					attr.Method("POST"),
 					attr.Action("/-/do/collection-movie-add"),
 					stimulus.Action("turbo:submit-end->dialog#close"),
+					Disabled(r.InCollection),
 				)(
 					Hidden("col-id", colID),
 					Hidden("movie-id", mw.MovieHead.ID()),
@@ -201,6 +208,9 @@ func AppCollectionMovieSearchResults(colID string, results []*model.MovieWork) h
 									PosterImg(attr.Style("height: 100%"), attr.Src(mw.PosterPath())),
 								),
 								FlexCol(Gap2)(
+									html.If(r.InCollection, func() html.Node {
+										return Label("solid/check-circle", "Already in Collection")
+									}),
 									TextNode(TextBold)(html.Text(mw.Title())),
 									TextNode()(html.Text(mw.MovieEditionHead.Year())),
 									TextNode()(html.Text(fmt.Sprintf("%d min", mw.MovieEditionHead.Runtime()))),

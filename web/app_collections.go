@@ -60,15 +60,26 @@ func (c *Config) collectionMovieSearch(_ http.ResponseWriter, req *http.Request)
 		if strings.TrimSpace(query) == "" {
 			return turbo.Frame("results"), nil
 		}
+		col, err := tx.Collection(ctx, colID)
+		if err != nil {
+			return nil, err
+		}
 		all, err := tx.MovieWorkList(ctx)
 		if err != nil {
 			return nil, err
 		}
+		existing := make(map[string]bool, len(col.Movies()))
+		for _, mo := range col.Movies() {
+			existing[mo.ID()] = true
+		}
 		query = strings.ToLower(query)
-		var matches []*model.MovieWork
+		var matches []view.CollectionMovieSearchResult
 		for _, mw := range all {
 			if strings.Contains(strings.ToLower(mw.Title()), query) {
-				matches = append(matches, mw)
+				matches = append(matches, view.CollectionMovieSearchResult{
+					Movie:        mw,
+					InCollection: existing[mw.MovieHead.ID()],
+				})
 			}
 		}
 		return view.AppCollectionMovieSearchResults(colID, matches), nil
