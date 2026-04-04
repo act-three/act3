@@ -2158,22 +2158,6 @@
   .v-home-toolbar {
     padding-block: 1rem;
   }
-  .v-home-grid {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-content: flex-start;
-    gap: 1px;
-  }
-  .v-home-poster {
-    aspect-ratio: 2 / 3;
-    width: 187px;
-  }
-  .v-home-poster-link {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
 }
 
 /* view/media-detail.css */
@@ -2633,6 +2617,26 @@
   .v-player-quality-option[data-active] {
     color: white;
     font-weight: 700;
+  }
+}
+
+/* view/poster-grid.css */
+@layer components {
+  .v-poster-grid {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: flex-start;
+    gap: 1px;
+  }
+  .v-poster-grid-poster {
+    aspect-ratio: 2 / 3;
+    width: 187px;
+  }
+  .v-poster-grid-link {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 }
 

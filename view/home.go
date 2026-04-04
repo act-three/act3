@@ -2,7 +2,6 @@ package view
 
 import (
 	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 )
@@ -25,19 +24,6 @@ func Home(works []model.Work) html.Node {
 			Button(ButtonSurface)(Icon("line/filter-lines")),
 			InputText()(),
 		),
-		FlexRow(Class("v-home-grid"))(
-			html.Range(works, workPosterLink),
-		),
-	)
-}
-
-func workPosterLink(w model.Work) html.Node {
-	return Box(HoverOverlay, Class("v-home-poster"))(
-		html.A(
-			Class("v-home-poster-link"),
-			attr.Href(w.TheaterPath()),
-		)(
-			PosterImg(PosterFill, attr.Src(w.PosterPath())),
-		),
+		posterGrid(works),
 	)
 }
