@@ -4,39 +4,31 @@ import (
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
+	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 )
-
-type CollectionStub struct {
-	Slug  string
-	Title string
-}
-
-var placeholderCollections = []CollectionStub{
-	{"the-dark-knight-trilogy", "The Dark Knight Trilogy"},
-	{"before-trilogy", "Before Trilogy"},
-	{"cornetto-trilogy", "Cornetto Trilogy"},
-	{"lord-of-the-rings", "Lord of the Rings"},
-	{"star-wars-original", "Star Wars: Original Trilogy"},
-}
 
 const AppCollectionsListItems = "collection-list-items"
 
 func AppCollections(
 	title string,
+	s []*model.CollectionHead,
 	detail ...html.Node,
 ) (string, html.Node) {
 	return title, FlexCol(attr.Class("v-media-page"))(
 		ToolbarPrimary()(
-			Button(ButtonSurface, Disabled(true))(
-				Text("Add Collection"),
+			html.Form(
+				attr.Method("POST"),
+				attr.Action("/-/do/collection-add"),
+			)(
+				Button(ButtonSurface)(Text("Add Collection")),
 			),
 		),
 		Split()(
 			List("/app/collections/", "detail")(
 				turbo.StreamTarget(AppCollectionsListItems)(
-					ListItems(placeholderCollections, AppCollectionsListItem),
+					ListItems(s, AppCollectionsListItem),
 				),
 			),
 			turbo.Frame("detail", turbo.Advance())(
@@ -56,39 +48,26 @@ func AppCollections(
 }
 
 func AppCollectionsListItem(
-	c CollectionStub, attrs ...attr.Node,
+	c *model.CollectionHead, attrs ...attr.Node,
 ) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
-		ListID(c.Slug),
-		ListURL("/app/collections/"+c.Slug),
+		ListID(c.ID()),
+		ListURL(c.EditorPath()),
 	)(
 		CardContent()(
-			CardTitle()(html.Text(c.Title)),
+			CardTitle()(LiveText(c.TitleField())),
 		),
 	)
 }
 
-func AppCollectionDetail(slug string) html.Node {
-	var col CollectionStub
-	for _, c := range placeholderCollections {
-		if c.Slug == slug {
-			col = c
-			break
-		}
-	}
-	if col.Slug == "" {
-		return Center(Class("v-media-muted"))(
-			html.Text("Collection not found"),
-		)
-	}
-
+func AppCollectionDetail(col *model.Collection) html.Node {
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(Class("v-media-detail-body"))(
 			SettingsPage()(
 				FlexCol(Gap6)(
 					SettingsContent()(
-						TextNode(Size6)(html.Text(col.Title)),
+						TextNode(Size6)(LiveText(col.TitleField())),
 					),
 
 					SettingsGroup()(
@@ -96,14 +75,50 @@ func AppCollectionDetail(slug string) html.Node {
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Title"),
 							),
-							TextNode()(html.Text(col.Title)),
+							SettingsTextField("/-/do/collection-set-title", "title", col.Title(), LiveAddr(col.TitleAddr()))(
+								Hidden("id", col.ID()),
+							),
 						),
 
 						SettingsItem()(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Slug"),
 							),
-							TextNode()(html.Text(col.Slug)),
+							TextNode()(LiveText(col.SlugField())),
+						),
+					),
+
+					SettingsGroup()(
+						SettingsGroupHead()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Movies"),
+							),
+						),
+						html.Div(SettingsGroupItems)(
+							html.Range(col.Movies(), func(mo *model.MovieHead) html.Node {
+								return SettingsItem()(
+									SettingsItemLabel()(
+										SettingsItemLabelTitle(mo.Slug()),
+									),
+								)
+							}),
+						),
+					),
+
+					SettingsGroup()(
+						SettingsGroupHead()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Series"),
+							),
+						),
+						html.Div(SettingsGroupItems)(
+							html.Range(col.Series(), func(sr *model.SeriesHead) html.Node {
+								return SettingsItem()(
+									SettingsItemLabel()(
+										SettingsItemLabelTitle(sr.Title()),
+									),
+								)
+							}),
 						),
 					),
 				),

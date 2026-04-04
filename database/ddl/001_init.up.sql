@@ -10,7 +10,7 @@ STRICT;
 CREATE TABLE Slug
 (
 	Slug   TEXT PRIMARY KEY,
-	Kind   TEXT NOT NULL CHECK (Kind IN ('movie', 'series')),
+	Kind   TEXT NOT NULL CHECK (Kind IN ('movie', 'series', 'collection')),
 	Target TEXT NOT NULL UNIQUE
 )
 STRICT;
@@ -287,3 +287,28 @@ CREATE TABLE Setting
 )
 STRICT, WITHOUT ROWID;
 CREATE INDEX Index_Setting_Group ON Setting ("Group");
+
+CREATE TABLE Collection
+(
+	ID       TEXT PRIMARY KEY DEFAULT ('col'||newID()),
+	Slug     TEXT NOT NULL UNIQUE,
+	Title    TEXT NOT NULL,
+	BannerID TEXT NOT NULL DEFAULT ('') -- storage blob ('' means unset)
+)
+STRICT, WITHOUT ROWID;
+
+CREATE TABLE CollectionMovie
+(
+	CollectionID TEXT NOT NULL REFERENCES Collection,
+	MovieID      TEXT NOT NULL REFERENCES Movie,
+	PRIMARY KEY (CollectionID, MovieID)
+)
+STRICT, WITHOUT ROWID;
+
+CREATE TABLE CollectionSeries
+(
+	CollectionID TEXT NOT NULL REFERENCES Collection,
+	SeriesID      TEXT NOT NULL REFERENCES Series,
+	PRIMARY KEY (CollectionID, SeriesID)
+)
+STRICT, WITHOUT ROWID;

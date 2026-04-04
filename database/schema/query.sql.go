@@ -164,6 +164,198 @@ func (q *Queries) AuthorList(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
+const collectionCreate = `-- name: CollectionCreate :one
+INSERT INTO Collection (Slug, Title)
+VALUES (?, ?)
+RETURNING id, slug, title, bannerid
+`
+
+type CollectionCreateParams struct {
+	Slug  string
+	Title string
+}
+
+func (q *Queries) CollectionCreate(ctx context.Context, arg CollectionCreateParams) (Collection, error) {
+	row := q.db.QueryRowContext(ctx, collectionCreate, arg.Slug, arg.Title)
+	var i Collection
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.BannerID,
+	)
+	return i, err
+}
+
+const collectionGet = `-- name: CollectionGet :one
+SELECT id, slug, title, bannerid FROM Collection WHERE ID = ?
+`
+
+func (q *Queries) CollectionGet(ctx context.Context, id string) (Collection, error) {
+	row := q.db.QueryRowContext(ctx, collectionGet, id)
+	var i Collection
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.BannerID,
+	)
+	return i, err
+}
+
+const collectionGetBySlug = `-- name: CollectionGetBySlug :one
+SELECT id, slug, title, bannerid FROM Collection WHERE Slug = ?
+`
+
+func (q *Queries) CollectionGetBySlug(ctx context.Context, slug string) (Collection, error) {
+	row := q.db.QueryRowContext(ctx, collectionGetBySlug, slug)
+	var i Collection
+	err := row.Scan(
+		&i.ID,
+		&i.Slug,
+		&i.Title,
+		&i.BannerID,
+	)
+	return i, err
+}
+
+const collectionList = `-- name: CollectionList :many
+SELECT id, slug, title, bannerid FROM Collection
+ORDER BY Title
+`
+
+func (q *Queries) CollectionList(ctx context.Context) ([]Collection, error) {
+	rows, err := q.db.QueryContext(ctx, collectionList)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Collection
+	for rows.Next() {
+		var i Collection
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.BannerID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const collectionMovieList = `-- name: CollectionMovieList :many
+SELECT m.id, m.slug, m.tmdbid, m.imdbid FROM Movie m
+JOIN CollectionMovie cm ON cm.MovieID = m.ID
+WHERE cm.CollectionID = ?
+ORDER BY m.Slug
+`
+
+func (q *Queries) CollectionMovieList(ctx context.Context, collectionid string) ([]Movie, error) {
+	rows, err := q.db.QueryContext(ctx, collectionMovieList, collectionid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Movie
+	for rows.Next() {
+		var i Movie
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.TMDBID,
+			&i.IMDBID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const collectionSeriesList = `-- name: CollectionSeriesList :many
+SELECT s.id, s.slug, s.title, s.status, s.premieredon, s.endedon, s.tvmazeid, s.imdbid, s.tvdbid, s.tvrageid FROM Series s
+JOIN CollectionSeries cs ON cs.SeriesID = s.ID
+WHERE cs.CollectionID = ?
+ORDER BY s.Title
+`
+
+func (q *Queries) CollectionSeriesList(ctx context.Context, collectionid string) ([]Series, error) {
+	rows, err := q.db.QueryContext(ctx, collectionSeriesList, collectionid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Series
+	for rows.Next() {
+		var i Series
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Status,
+			&i.PremieredOn,
+			&i.EndedOn,
+			&i.TVmazeID,
+			&i.IMDBID,
+			&i.TVDBID,
+			&i.TVRageID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const collectionSetSlug = `-- name: CollectionSetSlug :exec
+UPDATE Collection SET Slug = ? WHERE ID = ?
+`
+
+type CollectionSetSlugParams struct {
+	Slug string
+	ID   string
+}
+
+func (q *Queries) CollectionSetSlug(ctx context.Context, arg CollectionSetSlugParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSetSlug, arg.Slug, arg.ID)
+	return err
+}
+
+const collectionSetTitle = `-- name: CollectionSetTitle :exec
+UPDATE Collection SET Title = ? WHERE ID = ?
+`
+
+type CollectionSetTitleParams struct {
+	Title string
+	ID    string
+}
+
+func (q *Queries) CollectionSetTitle(ctx context.Context, arg CollectionSetTitleParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSetTitle, arg.Title, arg.ID)
+	return err
+}
+
 const downloadCreate = `-- name: DownloadCreate :one
 INSERT INTO Download
 (

@@ -28,6 +28,9 @@ func (c *Config) browseWork(w http.ResponseWriter, req *http.Request) (html.Node
 			return c.browseSeries(ctx, tr, slug0, slug1, slug2)
 		case model.SlugMovie:
 			return c.browseMovie(ctx, tr, slug0, slug1)
+		case model.SlugCollection:
+			// Leave this as-is for now. We'll fill it in later.
+			return nil, errNotFound
 		default:
 			return nil, errNotFound
 		}

@@ -95,8 +95,9 @@ func isReservedSlug(s string) bool {
 type SlugKind string
 
 const (
-	SlugMovie  SlugKind = "movie"
-	SlugSeries SlugKind = "series"
+	SlugMovie      SlugKind = "movie"
+	SlugSeries     SlugKind = "series"
+	SlugCollection SlugKind = "collection"
 )
 
 // SlugResolve looks up a top-level slug and returns its kind.

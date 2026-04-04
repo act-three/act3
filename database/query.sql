@@ -32,6 +32,39 @@ LIMIT 1;
 SELECT * FROM User
 ORDER BY Name;
 
+-- name: CollectionCreate :one
+INSERT INTO Collection (Slug, Title)
+VALUES (?, ?)
+RETURNING *;
+
+-- name: CollectionGet :one
+SELECT * FROM Collection WHERE ID = ?;
+
+-- name: CollectionGetBySlug :one
+SELECT * FROM Collection WHERE Slug = ?;
+
+-- name: CollectionList :many
+SELECT * FROM Collection
+ORDER BY Title;
+
+-- name: CollectionMovieList :many
+SELECT m.* FROM Movie m
+JOIN CollectionMovie cm ON cm.MovieID = m.ID
+WHERE cm.CollectionID = ?
+ORDER BY m.Slug;
+
+-- name: CollectionSeriesList :many
+SELECT s.* FROM Series s
+JOIN CollectionSeries cs ON cs.SeriesID = s.ID
+WHERE cs.CollectionID = ?
+ORDER BY s.Title;
+
+-- name: CollectionSetSlug :exec
+UPDATE Collection SET Slug = ? WHERE ID = ?;
+
+-- name: CollectionSetTitle :exec
+UPDATE Collection SET Title = ? WHERE ID = ?;
+
 -- name: DownloadCreate :one
 INSERT INTO Download
 (

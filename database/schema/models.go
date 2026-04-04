@@ -15,6 +15,23 @@ type AudioTrack struct {
 	Codec         string
 }
 
+type Collection struct {
+	ID       string
+	Slug     string
+	Title    string
+	BannerID string
+}
+
+type CollectionMovie struct {
+	CollectionID string
+	MovieID      string
+}
+
+type CollectionSeries struct {
+	CollectionID string
+	SeriesID     string
+}
+
 type Download struct {
 	ID                  string
 	Createdat           int64

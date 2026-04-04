@@ -76,6 +76,8 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /{slug0}", c.browseWork)
 	handle(mux, "GET /{slug0}/{slug1}", c.browseWork)
 	handle(mux, "GET /{slug0}/{slug1}/{slug2}", c.browseWork)
+	handle(mux, "POST /-/do/collection-add", c.doCollectionAdd)
+	handle(mux, "POST /-/do/collection-set-title", c.doCollectionSetTitle)
 	handle(mux, "POST /-/do/download-auto-import", c.doDownloadAutoImport)
 	handle(mux, "POST /-/do/download-import", c.doDownloadImport)
 	handle(mux, "POST /-/do/episode-move", c.doEpisodeMove)
