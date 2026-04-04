@@ -137,6 +137,10 @@ func URLReplace(from, to string) html.Node {
 	return stream(action("url"), attr.Attr("from")(from), attr.Attr("to")(to))
 }
 
+func Remove(id string) html.Node {
+	return stream(action("remove"), target(id))
+}
+
 func RemoveTargets(selector string) html.Node {
 	return stream(action("remove"), targets(selector))
 }

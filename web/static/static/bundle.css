@@ -1382,6 +1382,12 @@
     bottom: 0;
     z-index: 1;
   }
+  .u-settings-item-hover {
+    visibility: hidden;
+  }
+  .u-settings-item:hover .u-settings-item-hover {
+    visibility: visible;
+  }
   .u-settings-label-description {
     color: var(--text-3);
   }

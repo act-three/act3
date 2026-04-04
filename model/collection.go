@@ -155,6 +155,20 @@ func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) er
 	})
 }
 
+func (tx *TxRW) CollectionMovieRemove(ctx Context, collectionID, movieID string) error {
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventCollectionMovieRemove,
+			ID:      collectionID,
+			NewText: movieID,
+		})
+	})
+	return tx.q.CollectionMovieDelete(ctx, schema.CollectionMovieDeleteParams{
+		CollectionID: collectionID,
+		MovieID:      movieID,
+	})
+}
+
 func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 	col, err := tx.q.CollectionGet(ctx, id)
 	if err != nil {

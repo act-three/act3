@@ -267,6 +267,20 @@ func (q *Queries) CollectionMovieAdd(ctx context.Context, arg CollectionMovieAdd
 	return err
 }
 
+const collectionMovieDelete = `-- name: CollectionMovieDelete :exec
+DELETE FROM CollectionMovie WHERE CollectionID = ? AND MovieID = ?
+`
+
+type CollectionMovieDeleteParams struct {
+	CollectionID string
+	MovieID      string
+}
+
+func (q *Queries) CollectionMovieDelete(ctx context.Context, arg CollectionMovieDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, collectionMovieDelete, arg.CollectionID, arg.MovieID)
+	return err
+}
+
 const collectionMovieList = `-- name: CollectionMovieList :many
 SELECT m.id, m.slug, m.tmdbid, m.imdbid FROM Movie m
 JOIN CollectionMovie cm ON cm.MovieID = m.ID

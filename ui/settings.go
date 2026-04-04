@@ -5,6 +5,8 @@ import (
 	"ily.dev/act3/html/attr"
 )
 
+var SettingsHover = Class("u-settings-item-hover")
+
 func SettingsPage() html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(attr.Class("u-settings-page"))(

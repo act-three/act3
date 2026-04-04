@@ -17,6 +17,7 @@ var (
 	EventSeriesEditionChangePoster = "series-edition-change-poster"
 	EventCollectionChangeBanner    = "collection-change-banner"
 	EventCollectionMovieAdd        = "collection-movie-add"
+	EventCollectionMovieRemove     = "collection-movie-remove"
 	EventCollectionSetSlug         = "collection-set-slug"
 	EventEpisodeChangeThumbnail    = "episode-change-thumbnail"
 	EventSeasonAdd                 = "season-add"

@@ -47,6 +47,8 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventCollectionMovieAdd:
 		return c.eventCollectionMovieAdd(ctx, ev.ID, ev.NewText)
+	case model.EventCollectionMovieRemove:
+		return c.eventCollectionMovieRemove(ctx, ev.ID, ev.NewText)
 	case model.EventCollectionChangeBanner:
 		return c.eventCollectionChangeBanner(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventCollectionSetSlug:
@@ -158,6 +160,17 @@ func (c *Config) eventCollectionMovieAdd(ctx context.Context, colID, movieID str
 			}
 		}
 		return nil, nil
+	})
+	return n
+}
+
+func (c *Config) eventCollectionMovieRemove(ctx context.Context, colID, movieID string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		col, err := tx.Collection(ctx, colID)
+		if err != nil {
+			return nil, err
+		}
+		return view.CollectionMovieRemove(col, movieID), nil
 	})
 	return n
 }

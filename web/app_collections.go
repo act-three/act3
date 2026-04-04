@@ -103,6 +103,23 @@ func (c *Config) doCollectionMovieAdd(w http.ResponseWriter, req *http.Request) 
 	})
 }
 
+func (c *Config) doCollectionMovieRemove(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		colID := req.FormValue("col-id")
+		movieID := req.FormValue("movie-id")
+		if colID == "" || movieID == "" {
+			return nil, &model.ValidationError{Op: "remove movie from collection", Err: errNotFound}
+		}
+		err := tx.CollectionMovieRemove(ctx, colID, movieID)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) dialogCollectionBanner(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {

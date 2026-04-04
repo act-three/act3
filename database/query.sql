@@ -51,6 +51,9 @@ ORDER BY Title;
 INSERT INTO CollectionMovie (CollectionID, MovieID)
 VALUES (?, ?);
 
+-- name: CollectionMovieDelete :exec
+DELETE FROM CollectionMovie WHERE CollectionID = ? AND MovieID = ?;
+
 -- name: CollectionMovieList :many
 SELECT m.* FROM Movie m
 JOIN CollectionMovie cm ON cm.MovieID = m.ID

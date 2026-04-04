@@ -107,7 +107,9 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							),
 						),
 						turbo.StreamTarget("collection-"+col.ID()+"-movies")(
-							html.Range(col.Movies(), collectionMovieItem),
+							html.Range(col.Movies(), func(mo *model.MovieWork) html.Node {
+								return collectionMovieItem(col.ID(), mo)
+							}),
 						),
 					),
 
@@ -224,11 +226,23 @@ func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSear
 	)
 }
 
-func collectionMovieItem(mo *model.MovieWork) html.Node {
-	return SettingsItem()(
+func collectionMovieItemID(colID, movieID string) string {
+	return "col-" + colID + "-mo-" + movieID
+}
+
+func collectionMovieItem(colID string, mo *model.MovieWork) html.Node {
+	return SettingsItem(attr.ID(collectionMovieItemID(colID, mo.MovieHead.ID())))(
 		FlexRow(attr.Style("align-items:center"), Gap4)(
 			SettingsItemLabelIcon()(Icon("line/film-01")),
 			SettingsItemLabelTitle(mo.Title()+" ("+mo.Year()+")"),
+		),
+		html.Form(
+			attr.Method("POST"),
+			attr.Action("/-/do/collection-movie-remove"),
+		)(
+			Hidden("col-id", colID),
+			Hidden("movie-id", mo.MovieHead.ID()),
+			Button(SettingsHover, ButtonGhost)(Text("Remove")),
 		),
 	)
 }
@@ -236,8 +250,15 @@ func collectionMovieItem(mo *model.MovieWork) html.Node {
 func CollectionMovieAppend(col *model.Collection, mw *model.MovieWork) html.Node {
 	return Group(
 		turbo.Append("collection-"+col.ID()+"-movies",
-			collectionMovieItem(mw),
+			collectionMovieItem(col.ID(), mw),
 		),
+		LiveTextUpdate(col.MovieCountField()),
+	)
+}
+
+func CollectionMovieRemove(col *model.Collection, movieID string) html.Node {
+	return Group(
+		turbo.Remove(collectionMovieItemID(col.ID(), movieID)),
 		LiveTextUpdate(col.MovieCountField()),
 	)
 }
