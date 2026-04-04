@@ -45,6 +45,8 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventMovieSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventMovieEditionSetSlug:
 		return c.eventMovieEditionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
+	case model.EventCollectionMovieAdd:
+		return c.eventCollectionMovieAdd(ctx, ev.ID, ev.NewText)
 	case model.EventCollectionChangeBanner:
 		return c.eventCollectionChangeBanner(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventCollectionSetSlug:
@@ -140,6 +142,17 @@ func (c *Config) eventMovieEditionSetSlug(ctx context.Context, editionID, oldSlu
 		}
 		ed := &model.MovieWork{MovieHead: *mo, MovieEditionHead: *med}
 		return view.MovieEditionSetSlug(ed, oldSlug), nil
+	})
+	return n
+}
+
+func (c *Config) eventCollectionMovieAdd(ctx context.Context, colID, movieID string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		mo, err := tx.MovieHead(ctx, movieID)
+		if err != nil {
+			return nil, err
+		}
+		return view.CollectionMovieAppend(colID, mo), nil
 	})
 	return n
 }

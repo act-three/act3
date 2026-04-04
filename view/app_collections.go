@@ -217,6 +217,16 @@ func AppCollectionMovieSearchResults(colID string, results []*model.MovieWork) h
 	)
 }
 
+func CollectionMovieAppend(colID string, mo *model.MovieHead) html.Node {
+	return turbo.Append("collection-"+colID+"-movies",
+		SettingsItem()(
+			SettingsItemLabel()(
+				SettingsItemLabelTitle(mo.Slug()),
+			),
+		),
+	)
+}
+
 func CollectionSetSlug(col *model.CollectionHead, oldSlug string) html.Node {
 	oldEditorPath := "/app/collections/" + oldSlug
 	return Group(

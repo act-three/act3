@@ -110,6 +110,13 @@ func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, er
 }
 
 func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) error {
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventCollectionMovieAdd,
+			ID:      collectionID,
+			NewText: movieID,
+		})
+	})
 	return tx.q.CollectionMovieAdd(ctx, schema.CollectionMovieAddParams{
 		CollectionID: collectionID,
 		MovieID:      movieID,
