@@ -82,13 +82,6 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 
 						SettingsItem()(
 							SettingsItemLabel()(
-								SettingsItemLabelTitle("Slug"),
-							),
-							TextNode()(LiveText(col.SlugField())),
-						),
-
-						SettingsItem()(
-							SettingsItemLabel()(
 								SettingsItemLabelTitle("Banner"),
 							),
 							buttonBannerEdit(
