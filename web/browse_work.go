@@ -29,8 +29,7 @@ func (c *Config) browseWork(w http.ResponseWriter, req *http.Request) (html.Node
 		case model.SlugMovie:
 			return c.browseMovie(ctx, tr, slug0, slug1)
 		case model.SlugCollection:
-			// Leave this as-is for now. We'll fill it in later.
-			return nil, errNotFound
+			return c.browseCollection(ctx, tr, slug0)
 		default:
 			return nil, errNotFound
 		}
@@ -91,4 +90,12 @@ func (c *Config) browseEpisode(ctx model.Context, tr *model.TxR, seriesSlug, edS
 		return nil, err
 	}
 	return view.BrowseEpisode(ep, dls), nil
+}
+
+func (c *Config) browseCollection(ctx model.Context, tr *model.TxR, slug string) (html.Node, error) {
+	col, err := tr.CollectionBySlug(ctx, slug)
+	if err != nil {
+		return nil, err
+	}
+	return view.TheaterCollection(col), nil
 }

@@ -192,6 +192,30 @@ func (c *Config) doCollectionSeriesRemove(w http.ResponseWriter, req *http.Reque
 	})
 }
 
+func (c *Config) collectionOverview(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		col, err := tx.Collection(req.Context(), req.PathValue("id"))
+		if err != nil {
+			return nil, err
+		}
+		return turbo.Frame("collection-content")(
+			view.TheaterCollectionOverview(col),
+		), nil
+	})
+}
+
+func (c *Config) collectionPlaylist(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		col, err := tx.Collection(req.Context(), req.PathValue("id"))
+		if err != nil {
+			return nil, err
+		}
+		return turbo.Frame("collection-content")(
+			view.TheaterCollectionPlaylist(col),
+		), nil
+	})
+}
+
 func (c *Config) dialogCollectionBanner(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {

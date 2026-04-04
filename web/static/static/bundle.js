@@ -9036,6 +9036,38 @@
     }
   };
 
+  // view/theater-collections.js
+  var theater_collections_default = class extends Controller {
+    static values = { mode: String };
+    static targets = ["overview", "playlist", "frame", "prefetch"];
+    setOverview() {
+      this.modeValue = "overview";
+    }
+    setPlaylist() {
+      this.modeValue = "playlist";
+    }
+    prefetch(event) {
+      const url = event.currentTarget.dataset.url;
+      if (!url) return;
+      for (const a of this.prefetchTargets) {
+        if (a.href === url || a.getAttribute("href") === url) {
+          a.dispatchEvent(new MouseEvent("mouseenter", { bubbles: true }));
+          return;
+        }
+      }
+    }
+    modeValueChanged(mode) {
+      for (const t of ["overview", "playlist"]) {
+        for (const el of this[`${t}Targets`]) {
+          el.toggleAttribute("data-selected", t === mode);
+          if (t === mode) {
+            this.frameTarget.src = el.dataset.url;
+          }
+        }
+      }
+    }
+  };
+
   // view/theater-series.js
   var theater_series_default = class extends Controller {
     static values = { mode: String };
@@ -11399,6 +11431,7 @@
   Stimulus.register("settings-text-area", settings_text_area_default);
   Stimulus.register("settings-text-field", settings_text_field_default);
   Stimulus.register("settings-toggle", settings_toggle_default);
+  Stimulus.register("collection", theater_collections_default);
   Stimulus.register("series", theater_series_default);
 })();
 /*!
