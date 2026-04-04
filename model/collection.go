@@ -53,6 +53,31 @@ type Collection struct {
 func (c *Collection) Movies() []*MovieWork  { return c.movies }
 func (c *Collection) Series() []*SeriesWork { return c.series }
 
+// Works returns all movies and series in c in release order.
+func (c *Collection) Works() []Work {
+	works := make([]Work, 0, len(c.movies)+len(c.series))
+	for _, mw := range c.movies {
+		works = append(works, mw)
+	}
+	for _, sw := range c.series {
+		works = append(works, sw)
+	}
+	slices.SortFunc(works, func(a, b Work) int {
+		return cmp.Compare(releaseDate(a), releaseDate(b))
+	})
+	return works
+}
+
+func releaseDate(w Work) string {
+	switch v := w.(type) {
+	case *MovieWork:
+		return v.Year()
+	case *SeriesWork:
+		return v.PremieredOn()
+	}
+	return ""
+}
+
 func (c *Collection) MovieCountAddr() []string { return c.addr("movie-count") }
 func (c *Collection) MovieCountField() (string, []string) {
 	return fmt.Sprintf("%d Movies", len(c.movies)), c.MovieCountAddr()

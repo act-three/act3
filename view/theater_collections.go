@@ -58,7 +58,7 @@ func TheaterCollection(c *model.Collection) html.Node {
 }
 
 func TheaterCollectionOverview(c *model.Collection) html.Node {
-	return html.Text("Overview placeholder")
+	return posterGrid(c.Works())
 }
 
 func TheaterCollectionPlaylist(c *model.Collection) html.Node {
