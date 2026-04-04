@@ -103,7 +103,7 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 								Text("Add Movie"),
 							),
 						),
-						html.Div(SettingsGroupItems)(
+						turbo.StreamTarget("collection-"+col.ID()+"-movies", SettingsGroupItems)(
 							html.Range(col.Movies(), func(mo *model.MovieHead) html.Node {
 								return SettingsItem()(
 									SettingsItemLabel()(
@@ -121,7 +121,7 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							),
 							Button(ButtonGhost)(Text("Add Series")),
 						),
-						html.Div(SettingsGroupItems)(
+						turbo.StreamTarget("collection-"+col.ID()+"-series", SettingsGroupItems)(
 							html.Range(col.Series(), func(sr *model.SeriesHead) html.Node {
 								return SettingsItem()(
 									SettingsItemLabel()(
