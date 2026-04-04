@@ -3,9 +3,11 @@ package web
 import (
 	"database/sql"
 	"net/http"
+	"strings"
 
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
+	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view"
 )
 
@@ -43,6 +45,50 @@ func (c *Config) appCollectionsDetail(w http.ResponseWriter, req *http.Request) 
 		}
 		title, body := view.AppCollections(col.Title(), all, detail)
 		return c.app(ctx, tx, title, body)
+	})
+}
+
+func (c *Config) dialogCollectionMovieAdd(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return view.AppCollectionMovieAddDialog(req.PathValue("id")), nil
+}
+
+func (c *Config) collectionMovieSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		query := req.FormValue("q")
+		colID := req.FormValue("col-id")
+		if strings.TrimSpace(query) == "" {
+			return turbo.Frame("results"), nil
+		}
+		all, err := tx.MovieWorkList(ctx)
+		if err != nil {
+			return nil, err
+		}
+		query = strings.ToLower(query)
+		var matches []*model.MovieWork
+		for _, mw := range all {
+			if strings.Contains(strings.ToLower(mw.Title()), query) {
+				matches = append(matches, mw)
+			}
+		}
+		return view.AppCollectionMovieSearchResults(colID, matches), nil
+	})
+}
+
+func (c *Config) doCollectionMovieAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		colID := req.FormValue("col-id")
+		movieID := req.FormValue("movie-id")
+		if colID == "" || movieID == "" {
+			return nil, &model.ValidationError{Op: "add movie to collection", Err: errNotFound}
+		}
+		err := tx.CollectionMovieAdd(ctx, colID, movieID)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
 	})
 }
 

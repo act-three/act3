@@ -47,6 +47,10 @@ SELECT * FROM Collection WHERE Slug = ?;
 SELECT * FROM Collection
 ORDER BY Title;
 
+-- name: CollectionMovieAdd :exec
+INSERT OR IGNORE INTO CollectionMovie (CollectionID, MovieID)
+VALUES (?, ?);
+
 -- name: CollectionMovieList :many
 SELECT m.* FROM Movie m
 JOIN CollectionMovie cm ON cm.MovieID = m.ID

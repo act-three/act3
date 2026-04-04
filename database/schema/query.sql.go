@@ -252,6 +252,21 @@ func (q *Queries) CollectionList(ctx context.Context) ([]Collection, error) {
 	return items, nil
 }
 
+const collectionMovieAdd = `-- name: CollectionMovieAdd :exec
+INSERT OR IGNORE INTO CollectionMovie (CollectionID, MovieID)
+VALUES (?, ?)
+`
+
+type CollectionMovieAddParams struct {
+	CollectionID string
+	MovieID      string
+}
+
+func (q *Queries) CollectionMovieAdd(ctx context.Context, arg CollectionMovieAddParams) error {
+	_, err := q.db.ExecContext(ctx, collectionMovieAdd, arg.CollectionID, arg.MovieID)
+	return err
+}
+
 const collectionMovieList = `-- name: CollectionMovieList :many
 SELECT m.id, m.slug, m.tmdbid, m.imdbid FROM Movie m
 JOIN CollectionMovie cm ON cm.MovieID = m.ID

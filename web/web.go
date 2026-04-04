@@ -42,6 +42,8 @@ func Handle(mux *http.ServeMux, c *Config) {
 	// Keep routes alphabetized (with e.g. `sort`).
 	handle(mux, "GET /-/blob/{id}", c.blob)
 	handle(mux, "GET /-/dialog/collection-banner/{id}", c.dialogCollectionBanner)
+	handle(mux, "GET /-/dialog/collection-movie-add/{id}", c.dialogCollectionMovieAdd)
+	handle(mux, "GET /-/part/collection-movie-search", c.collectionMovieSearch)
 	handle(mux, "GET /-/dialog/episode-thumbnail/{id}", c.dialogEpisodeThumbnail)
 	handle(mux, "GET /-/dialog/movie-add", c.movieAddDialogReq)
 	handle(mux, "GET /-/dialog/movie-poster/{id}", c.dialogMoviePoster)
@@ -78,6 +80,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /{slug0}/{slug1}", c.browseWork)
 	handle(mux, "GET /{slug0}/{slug1}/{slug2}", c.browseWork)
 	handle(mux, "POST /-/do/collection-add", c.doCollectionAdd)
+	handle(mux, "POST /-/do/collection-movie-add", c.doCollectionMovieAdd)
 	handle(mux, "POST /-/do/collection-set-title", c.doCollectionSetTitle)
 	handle(mux, "POST /-/do/download-auto-import", c.doDownloadAutoImport)
 	handle(mux, "POST /-/do/download-import", c.doDownloadImport)

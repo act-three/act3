@@ -109,6 +109,13 @@ func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, er
 	return &CollectionHead{colData}, nil
 }
 
+func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) error {
+	return tx.q.CollectionMovieAdd(ctx, schema.CollectionMovieAddParams{
+		CollectionID: collectionID,
+		MovieID:      movieID,
+	})
+}
+
 func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 	col, err := tx.q.CollectionGet(ctx, id)
 	if err != nil {

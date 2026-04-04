@@ -1,11 +1,14 @@
 package view
 
 import (
+	"fmt"
+
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 )
 
@@ -94,7 +97,10 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 					SettingsGroup()(
 						SettingsGroupHead()(
 							SettingsItemLabel()(
-								SettingsItemLabelTitle("Movies"),
+								SettingsItemLabelTitle(fmt.Sprintf("%d Movies", len(col.Movies()))),
+							),
+							DialogButton("/-/dialog/collection-movie-add/"+col.ID(), ButtonGhost)(
+								Text("Add Movie"),
 							),
 						),
 						html.Div(SettingsGroupItems)(
@@ -111,8 +117,9 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 					SettingsGroup()(
 						SettingsGroupHead()(
 							SettingsItemLabel()(
-								SettingsItemLabelTitle("Series"),
+								SettingsItemLabelTitle(fmt.Sprintf("%d Series", len(col.Series()))),
 							),
+							Button(ButtonGhost)(Text("Add Series")),
 						),
 						html.Div(SettingsGroupItems)(
 							html.Range(col.Series(), func(sr *model.SeriesHead) html.Node {
@@ -147,6 +154,67 @@ func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
 func CollectionChangeBanner(col *model.CollectionHead, oldBannerID string) html.Node {
 	oldURL := model.BannerPath(oldBannerID)
 	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(col.BannerPath()))())
+}
+
+func AppCollectionMovieAddDialog(colID string) html.Node {
+	return DialogStream(
+		FlexCol(Gap2, Class("v-media-dialog"))(
+			html.Div(
+				attr.Class("v-media-dialog-fixed"),
+			)(
+				html.Text("Add Movie to Collection"),
+			),
+			html.Form(
+				attr.Action("/-/part/collection-movie-search"),
+				attr.Attr("data-turbo-frame")("results"),
+			)(
+				Hidden("col-id", colID),
+				InputText(
+					attr.Attr("autofocus"),
+					attr.Class("v-media-dialog-fixed"),
+					attr.Name("q"),
+				),
+			),
+			html.Div(
+				attr.Class("v-media-dialog-results"),
+			)(
+				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
+			),
+		),
+	)
+}
+
+func AppCollectionMovieSearchResults(colID string, results []*model.MovieWork) html.Node {
+	return turbo.Frame("results")(
+		FlexCol(Gap4, Class("v-media-detail-body"))(
+			html.Range(results, func(mw *model.MovieWork) html.Node {
+				return html.Form(
+					attr.Method("POST"),
+					attr.Action("/-/do/collection-movie-add"),
+					stimulus.Action("turbo:submit-end->dialog#close"),
+				)(
+					Hidden("col-id", colID),
+					Hidden("movie-id", mw.MovieHead.ID()),
+					html.Button(
+						attr.Style("all: unset; cursor: pointer; width: 100%"),
+					)(
+						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
+							FlexRow(Gap4, attr.Style("height: 100%"))(
+								Inset(InsetSideLeft, Class("v-media-search-poster"))(
+									PosterImg(attr.Style("height: 100%"), attr.Src(mw.PosterPath())),
+								),
+								FlexCol(Gap2)(
+									TextNode(TextBold)(html.Text(mw.Title())),
+									TextNode()(html.Text(mw.MovieEditionHead.Year())),
+									TextNode()(html.Text(fmt.Sprintf("%d min", mw.MovieEditionHead.Runtime()))),
+								),
+							),
+						),
+					),
+				)
+			}),
+		),
+	)
 }
 
 func CollectionSetSlug(col *model.CollectionHead, oldSlug string) html.Node {
