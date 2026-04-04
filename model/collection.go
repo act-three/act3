@@ -135,14 +135,7 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 		return cmp.Compare(a.Year(), b.Year())
 	})
 	slices.SortFunc(series, func(a, b *SeriesWork) int {
-		var as, bs string
-		if p := a.PremieredOn(); p != nil {
-			as = *p
-		}
-		if p := b.PremieredOn(); p != nil {
-			bs = *p
-		}
-		return cmp.Compare(as, bs)
+		return cmp.Compare(a.PremieredOn(), b.PremieredOn())
 	})
 	return &Collection{
 		CollectionHead: CollectionHead{colData},

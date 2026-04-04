@@ -10,7 +10,6 @@ import (
 var noProgress = func(string) []*progress.Item { return nil }
 
 func TestSeriesHeadMethods(t *testing.T) {
-	premiered := "2020-01-01"
 	tvmazeID := int64(12345)
 
 	sr := &SeriesHead{schema.Series{
@@ -18,7 +17,7 @@ func TestSeriesHeadMethods(t *testing.T) {
 		Slug:        "test-series",
 		Title:       "Test Series",
 		Status:      "Running",
-		PremieredOn: &premiered,
+		PremieredOn: "2020-01-01",
 		TVmazeID:    &tvmazeID,
 	}}
 
@@ -47,11 +46,8 @@ func TestSeriesHeadMethods(t *testing.T) {
 	})
 
 	t.Run("PremieredOn returns correct value", func(t *testing.T) {
-		if sr.PremieredOn() == nil {
-			t.Fatal("expected non-nil premiered date")
-		}
-		if *sr.PremieredOn() != "2020-01-01" {
-			t.Errorf("expected '2020-01-01', got '%s'", *sr.PremieredOn())
+		if sr.PremieredOn() != "2020-01-01" {
+			t.Errorf("expected '2020-01-01', got '%s'", sr.PremieredOn())
 		}
 	})
 

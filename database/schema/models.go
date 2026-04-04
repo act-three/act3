@@ -143,8 +143,8 @@ type Series struct {
 	Slug        string
 	Title       string
 	Status      string
-	PremieredOn *string
-	EndedOn     *string
+	PremieredOn string
+	EndedOn     string
 	TVmazeID    *int64
 	IMDBID      *string
 	TVDBID      *int64

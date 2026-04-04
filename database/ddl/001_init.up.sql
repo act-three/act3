@@ -33,8 +33,8 @@ CREATE TABLE Series
 		'Ended',
 		'To Be Determined'
 	)),
-	PremieredOn TEXT,
-	EndedOn     TEXT,
+	PremieredOn TEXT NOT NULL DEFAULT (''),
+	EndedOn     TEXT NOT NULL DEFAULT (''),
 
 	TVmazeID INTEGER UNIQUE,
 	IMDBID   TEXT UNIQUE,

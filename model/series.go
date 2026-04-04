@@ -24,12 +24,12 @@ func newSeriesHeadList(list []schema.Series) []*SeriesHead {
 	return sss
 }
 
-func (sr *SeriesHead) ID() string           { return sr.sr.ID }
-func (sr *SeriesHead) Slug() string         { return sr.sr.Slug }
-func (sr *SeriesHead) PremieredOn() *string { return sr.sr.PremieredOn }
-func (sr *SeriesHead) Status() string       { return sr.sr.Status }
-func (sr *SeriesHead) Title() string        { return sr.sr.Title }
-func (sr *SeriesHead) TVmazeID() *int64     { return sr.sr.TVmazeID }
+func (sr *SeriesHead) ID() string          { return sr.sr.ID }
+func (sr *SeriesHead) Slug() string        { return sr.sr.Slug }
+func (sr *SeriesHead) PremieredOn() string { return sr.sr.PremieredOn }
+func (sr *SeriesHead) Status() string      { return sr.sr.Status }
+func (sr *SeriesHead) Title() string       { return sr.sr.Title }
+func (sr *SeriesHead) TVmazeID() *int64    { return sr.sr.TVmazeID }
 
 func (sr *SeriesHead) addr(field string) []string {
 	return []string{"series", sr.ID(), field}
@@ -109,7 +109,7 @@ func (tx *TxR) SlugResolve(ctx Context, slug string) (SlugKind, error) {
 	return SlugKind(s.Kind), nil
 }
 
-func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string, id string, allow ...string) (string, error) {
+func (tx *TxRW) generateSeriesSlug(ctx Context, title, premiered, id string, allow ...string) (string, error) {
 	slug := xstrings.ToSlug(title)
 	if slug == "" {
 		slug = id
@@ -128,8 +128,8 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title string, premiered *string,
 	}
 
 	// Try slug-year.
-	if premiered != nil {
-		year, _, _ := strings.Cut(*premiered, "-")
+	if premiered != "" {
+		year, _, _ := strings.Cut(premiered, "-")
 		if year != "" {
 			candidate := slug + "-" + year
 			if slices.Contains(allow, candidate) {
@@ -201,8 +201,15 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 	id64 := int64(show.ID)
 
 	srID := "sr" + flurry.NewID()
+	var premiered, ended string
+	if show.Premiered != nil {
+		premiered = *show.Premiered
+	}
+	if show.Ended != nil {
+		ended = *show.Ended
+	}
 	slug, err := tx.generateSeriesSlug(ctx,
-		show.Name, show.Premiered, srID)
+		show.Name, premiered, srID)
 	if err != nil {
 		return nil, err
 	}
@@ -212,8 +219,8 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		Slug:        slug,
 		Title:       show.Name,
 		Status:      show.Status,
-		PremieredOn: show.Premiered,
-		EndedOn:     show.Ended,
+		PremieredOn: premiered,
+		EndedOn:     ended,
 
 		TVmazeID: &id64,
 		IMDBID:   show.Externals.IMDB,

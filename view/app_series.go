@@ -62,8 +62,8 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 		CardContent()(
 			CardTitle()(LiveText(ss.SeriesHead.TitleField())),
 			CardDescription(LineClamp2)(
-				html.If(ss.PremieredOn() != nil,
-					func() html.Node { return html.Text(*ss.PremieredOn()) },
+				html.If(ss.PremieredOn() != "",
+					func() html.Node { return html.Text(ss.PremieredOn()) },
 				),
 				html.Text(ss.Status()),
 			),
