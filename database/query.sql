@@ -59,6 +59,9 @@ JOIN CollectionSeries cs ON cs.SeriesID = s.ID
 WHERE cs.CollectionID = ?
 ORDER BY s.Title;
 
+-- name: CollectionSetBannerID :exec
+UPDATE Collection SET BannerID = ? WHERE ID = ?;
+
 -- name: CollectionSetSlug :exec
 UPDATE Collection SET Slug = ? WHERE ID = ?;
 

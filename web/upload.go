@@ -22,6 +22,7 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, 
 	medID := req.FormValue("med-id")
 	sedID := req.FormValue("sed-id")
 	epID := req.FormValue("ep-id")
+	colID := req.FormValue("col-id")
 	switch {
 	case medID != "":
 		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
@@ -35,10 +36,14 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, 
 		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 			return nil, tx.EpisodeThumbnailIDSet(ctx, epID, blobID)
 		})
+	case colID != "":
+		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+			return nil, tx.CollectionBannerIDSet(ctx, colID, blobID)
+		})
 	default:
 		return nil, &model.ValidationError{
 			Op:  "params",
-			Err: fmt.Errorf("missing param med-id, sed-id, or ep-id"),
+			Err: fmt.Errorf("missing param med-id, sed-id, ep-id, or col-id"),
 		}
 	}
 	if err != nil {

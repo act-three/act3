@@ -86,6 +86,16 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							),
 							TextNode()(LiveText(col.SlugField())),
 						),
+
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Banner"),
+							),
+							buttonBannerEdit(
+								"/-/dialog/collection-banner/"+col.ID(),
+								col.BannerPath(),
+							),
+						),
 					),
 
 					SettingsGroup()(
@@ -125,4 +135,23 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 			),
 		),
 	)
+}
+
+func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
+	return DialogStream(
+		ImageFrame()(
+			buttonUpload()(
+				Hidden("col-id", col.ID()),
+				html.Img(
+					attr.Src(col.BannerPath()),
+					attr.Style("width: 100%; aspect-ratio: 1000/185; object-fit: cover"),
+				),
+			),
+		),
+	)
+}
+
+func CollectionChangeBanner(col *model.CollectionHead, oldBannerID string) html.Node {
+	oldURL := model.BannerPath(oldBannerID)
+	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(col.BannerPath()))())
 }

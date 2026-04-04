@@ -14,6 +14,13 @@ func PosterPath(id string) string {
 	return static.Path("/static/poster-fallback.png")
 }
 
+func BannerPath(id string) string {
+	if id != "" {
+		return "/-/blob/" + id
+	}
+	return static.Path("/static/banner-fallback.png")
+}
+
 func ThumbnailPath(id string) string {
 	if id != "" {
 		return "/-/blob/" + id

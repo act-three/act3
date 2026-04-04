@@ -46,6 +46,19 @@ func (c *Config) appCollectionsDetail(w http.ResponseWriter, req *http.Request) 
 	})
 }
 
+func (c *Config) dialogCollectionBanner(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		col, err := tx.CollectionHead(ctx, req.PathValue("id"))
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows
+		} else if err != nil {
+			return nil, err
+		}
+		return view.AppCollectionBannerDialog(col), nil
+	})
+}
+
 func (c *Config) doCollectionSetTitle(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()

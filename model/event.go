@@ -15,6 +15,7 @@ var (
 	EventMovieEditionSetSlug       = "movie-edition-set-slug"
 	EventMovieEditionChangePoster  = "movie-edition-change-poster"
 	EventSeriesEditionChangePoster = "series-edition-change-poster"
+	EventCollectionChangeBanner    = "collection-change-banner"
 	EventEpisodeChangeThumbnail    = "episode-change-thumbnail"
 	EventSeasonAdd                 = "season-add"
 	EventTaskStatsChange           = "task-stats-change"

@@ -328,6 +328,20 @@ func (q *Queries) CollectionSeriesList(ctx context.Context, collectionid string)
 	return items, nil
 }
 
+const collectionSetBannerID = `-- name: CollectionSetBannerID :exec
+UPDATE Collection SET BannerID = ? WHERE ID = ?
+`
+
+type CollectionSetBannerIDParams struct {
+	BannerID string
+	ID       string
+}
+
+func (q *Queries) CollectionSetBannerID(ctx context.Context, arg CollectionSetBannerIDParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSetBannerID, arg.BannerID, arg.ID)
+	return err
+}
+
 const collectionSetSlug = `-- name: CollectionSetSlug :exec
 UPDATE Collection SET Slug = ? WHERE ID = ?
 `

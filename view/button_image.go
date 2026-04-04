@@ -10,6 +10,10 @@ func buttonPosterEdit(dialogURL, imageURL string) html.Node {
 	return buttonImageEdit(dialogURL, imageURL, "2 / 3")
 }
 
+func buttonBannerEdit(dialogURL, imageURL string) html.Node {
+	return buttonImageEdit(dialogURL, imageURL, "1000 / 185")
+}
+
 func buttonThumbnailEdit(dialogURL, imageURL string) html.Node {
 	return buttonImageEdit(dialogURL, imageURL, "16 / 9")
 }

@@ -28,6 +28,10 @@ func (c *CollectionHead) SlugAddr() []string  { return c.addr("slug") }
 func (c *CollectionHead) TitleField() (string, []string) { return c.Title(), c.TitleAddr() }
 func (c *CollectionHead) SlugField() (string, []string)  { return c.Slug(), c.SlugAddr() }
 
+func (c *CollectionHead) BannerPath() string {
+	return BannerPath(c.col.BannerID)
+}
+
 func (c *CollectionHead) EditorPath() string {
 	return "/app/collections/" + c.col.Slug
 }
@@ -41,6 +45,14 @@ type Collection struct {
 
 func (c *Collection) Movies() []*MovieHead  { return c.movies }
 func (c *Collection) Series() []*SeriesHead { return c.series }
+
+func (tx *TxR) CollectionHead(ctx Context, id string) (*CollectionHead, error) {
+	colData, err := tx.q.CollectionGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return &CollectionHead{colData}, nil
+}
 
 func (tx *TxR) CollectionHeadList(ctx Context) ([]*CollectionHead, error) {
 	a, err := tx.q.CollectionList(ctx)
@@ -95,6 +107,32 @@ func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, er
 		return nil, err
 	}
 	return &CollectionHead{colData}, nil
+}
+
+func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
+	col, err := tx.q.CollectionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventCollectionChangeBanner,
+			ID:      id,
+			OldText: col.BannerID,
+			NewText: bannerID,
+		})
+	})
+	err = tx.q.CollectionSetBannerID(ctx, schema.CollectionSetBannerIDParams{
+		BannerID: bannerID,
+		ID:       id,
+	})
+	if err != nil {
+		return err
+	}
+	if col.BannerID != "" {
+		tx.m.store.Remove(col.BannerID)
+	}
+	return nil
 }
 
 func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
