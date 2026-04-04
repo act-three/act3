@@ -46,7 +46,7 @@ func TheaterCollection(c *model.Collection) html.Node {
 						stimulus.Target("collection", "playlist"),
 					),
 				),
-				Text("10 items, 105m, 4% watched", attr.Style("padding-right:0.5rem")),
+				collectionStatus(),
 			),
 			turbo.Frame("collection-content",
 				stimulus.Target("collection", "frame"),
@@ -63,6 +63,10 @@ func TheaterCollectionOverview(c *model.Collection) html.Node {
 
 func TheaterCollectionPlaylist(c *model.Collection) html.Node {
 	return html.Text("Playlist placeholder")
+}
+
+func collectionStatus() html.Node {
+	return Text("10 items, 105m, 4% watched", attr.Style("padding-right:0.25rem"))
 }
 
 func collectionTabButton(url, label string, attrs ...attr.Node) html.Node {
