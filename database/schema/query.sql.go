@@ -253,7 +253,7 @@ func (q *Queries) CollectionList(ctx context.Context) ([]Collection, error) {
 }
 
 const collectionMovieAdd = `-- name: CollectionMovieAdd :exec
-INSERT OR IGNORE INTO CollectionMovie (CollectionID, MovieID)
+INSERT INTO CollectionMovie (CollectionID, MovieID)
 VALUES (?, ?)
 `
 

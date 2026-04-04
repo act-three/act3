@@ -48,7 +48,7 @@ SELECT * FROM Collection
 ORDER BY Title;
 
 -- name: CollectionMovieAdd :exec
-INSERT OR IGNORE INTO CollectionMovie (CollectionID, MovieID)
+INSERT INTO CollectionMovie (CollectionID, MovieID)
 VALUES (?, ?);
 
 -- name: CollectionMovieList :many
