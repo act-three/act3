@@ -60,6 +60,13 @@ JOIN CollectionMovie cm ON cm.MovieID = m.ID
 WHERE cm.CollectionID = ?
 ORDER BY m.Slug;
 
+-- name: CollectionSeriesAdd :exec
+INSERT INTO CollectionSeries (CollectionID, SeriesID)
+VALUES (?, ?);
+
+-- name: CollectionSeriesDelete :exec
+DELETE FROM CollectionSeries WHERE CollectionID = ? AND SeriesID = ?;
+
 -- name: CollectionSeriesList :many
 SELECT s.* FROM Series s
 JOIN CollectionSeries cs ON cs.SeriesID = s.ID

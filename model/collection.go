@@ -41,15 +41,20 @@ func (c *CollectionHead) EditorPath() string {
 type Collection struct {
 	CollectionHead
 	movies []*MovieWork
-	series []*SeriesHead
+	series []*SeriesWork
 }
 
 func (c *Collection) Movies() []*MovieWork  { return c.movies }
-func (c *Collection) Series() []*SeriesHead { return c.series }
+func (c *Collection) Series() []*SeriesWork { return c.series }
 
 func (c *Collection) MovieCountAddr() []string { return c.addr("movie-count") }
 func (c *Collection) MovieCountField() (string, []string) {
 	return fmt.Sprintf("%d Movies", len(c.movies)), c.MovieCountAddr()
+}
+
+func (c *Collection) SeriesCountAddr() []string { return c.addr("series-count") }
+func (c *Collection) SeriesCountField() (string, []string) {
+	return fmt.Sprintf("%d Series", len(c.series)), c.SeriesCountAddr()
 }
 
 func (tx *TxR) CollectionHead(ctx Context, id string) (*CollectionHead, error) {
@@ -107,14 +112,28 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 			movies = append(movies, mw)
 		}
 	}
-	series, err := tx.q.CollectionSeriesList(ctx, colData.ID)
+	seriesIDs, err := tx.q.CollectionSeriesList(ctx, colData.ID)
 	if err != nil {
 		return nil, err
+	}
+	allSeries, err := tx.SeriesWorkList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	seriesMemberIDs := make(map[string]bool, len(seriesIDs))
+	for _, sr := range seriesIDs {
+		seriesMemberIDs[sr.ID] = true
+	}
+	var series []*SeriesWork
+	for _, sw := range allSeries {
+		if seriesMemberIDs[sw.SeriesHead.ID()] {
+			series = append(series, sw)
+		}
 	}
 	return &Collection{
 		CollectionHead: CollectionHead{colData},
 		movies:         movies,
-		series:         newSeriesHeadList(series),
+		series:         series,
 	}, nil
 }
 
@@ -166,6 +185,34 @@ func (tx *TxRW) CollectionMovieRemove(ctx Context, collectionID, movieID string)
 	return tx.q.CollectionMovieDelete(ctx, schema.CollectionMovieDeleteParams{
 		CollectionID: collectionID,
 		MovieID:      movieID,
+	})
+}
+
+func (tx *TxRW) CollectionSeriesAdd(ctx Context, collectionID, seriesID string) error {
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventCollectionSeriesAdd,
+			ID:      collectionID,
+			NewText: seriesID,
+		})
+	})
+	return tx.q.CollectionSeriesAdd(ctx, schema.CollectionSeriesAddParams{
+		CollectionID: collectionID,
+		SeriesID:     seriesID,
+	})
+}
+
+func (tx *TxRW) CollectionSeriesRemove(ctx Context, collectionID, seriesID string) error {
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventCollectionSeriesRemove,
+			ID:      collectionID,
+			NewText: seriesID,
+		})
+	})
+	return tx.q.CollectionSeriesDelete(ctx, schema.CollectionSeriesDeleteParams{
+		CollectionID: collectionID,
+		SeriesID:     seriesID,
 	})
 }
 

@@ -316,6 +316,35 @@ func (q *Queries) CollectionMovieList(ctx context.Context, collectionid string) 
 	return items, nil
 }
 
+const collectionSeriesAdd = `-- name: CollectionSeriesAdd :exec
+INSERT INTO CollectionSeries (CollectionID, SeriesID)
+VALUES (?, ?)
+`
+
+type CollectionSeriesAddParams struct {
+	CollectionID string
+	SeriesID     string
+}
+
+func (q *Queries) CollectionSeriesAdd(ctx context.Context, arg CollectionSeriesAddParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSeriesAdd, arg.CollectionID, arg.SeriesID)
+	return err
+}
+
+const collectionSeriesDelete = `-- name: CollectionSeriesDelete :exec
+DELETE FROM CollectionSeries WHERE CollectionID = ? AND SeriesID = ?
+`
+
+type CollectionSeriesDeleteParams struct {
+	CollectionID string
+	SeriesID     string
+}
+
+func (q *Queries) CollectionSeriesDelete(ctx context.Context, arg CollectionSeriesDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSeriesDelete, arg.CollectionID, arg.SeriesID)
+	return err
+}
+
 const collectionSeriesList = `-- name: CollectionSeriesList :many
 SELECT s.id, s.slug, s.title, s.status, s.premieredon, s.endedon, s.tvmazeid, s.imdbid, s.tvdbid, s.tvrageid FROM Series s
 JOIN CollectionSeries cs ON cs.SeriesID = s.ID

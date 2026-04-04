@@ -18,6 +18,8 @@ var (
 	EventCollectionChangeBanner    = "collection-change-banner"
 	EventCollectionMovieAdd        = "collection-movie-add"
 	EventCollectionMovieRemove     = "collection-movie-remove"
+	EventCollectionSeriesAdd       = "collection-series-add"
+	EventCollectionSeriesRemove    = "collection-series-remove"
 	EventCollectionSetSlug         = "collection-set-slug"
 	EventEpisodeChangeThumbnail    = "episode-change-thumbnail"
 	EventSeasonAdd                 = "season-add"

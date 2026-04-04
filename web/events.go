@@ -49,6 +49,10 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventCollectionMovieAdd(ctx, ev.ID, ev.NewText)
 	case model.EventCollectionMovieRemove:
 		return c.eventCollectionMovieRemove(ctx, ev.ID, ev.NewText)
+	case model.EventCollectionSeriesAdd:
+		return c.eventCollectionSeriesAdd(ctx, ev.ID, ev.NewText)
+	case model.EventCollectionSeriesRemove:
+		return c.eventCollectionSeriesRemove(ctx, ev.ID, ev.NewText)
 	case model.EventCollectionChangeBanner:
 		return c.eventCollectionChangeBanner(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventCollectionSetSlug:
@@ -171,6 +175,33 @@ func (c *Config) eventCollectionMovieRemove(ctx context.Context, colID, movieID 
 			return nil, err
 		}
 		return view.CollectionMovieRemove(col, movieID), nil
+	})
+	return n
+}
+
+func (c *Config) eventCollectionSeriesAdd(ctx context.Context, colID, seriesID string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		col, err := tx.Collection(ctx, colID)
+		if err != nil {
+			return nil, err
+		}
+		for _, sw := range col.Series() {
+			if sw.SeriesHead.ID() == seriesID {
+				return view.CollectionSeriesAppend(col, sw), nil
+			}
+		}
+		return nil, nil
+	})
+	return n
+}
+
+func (c *Config) eventCollectionSeriesRemove(ctx context.Context, colID, seriesID string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		col, err := tx.Collection(ctx, colID)
+		if err != nil {
+			return nil, err
+		}
+		return view.CollectionSeriesRemove(col, seriesID), nil
 	})
 	return n
 }

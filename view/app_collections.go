@@ -116,17 +116,17 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 					SettingsGroup()(
 						SettingsGroupHead()(
 							SettingsItemLabel()(
-								SettingsItemLabelTitle(fmt.Sprintf("%d Series", len(col.Series()))),
+								TextNode(Size2)(
+									LiveText(col.SeriesCountField()),
+								),
 							),
-							Button(ButtonGhost)(Text("Add Series")),
+							DialogButton("/-/dialog/collection-series-add/"+col.ID(), ButtonGhost)(
+								Text("Add Series"),
+							),
 						),
 						turbo.StreamTarget("collection-"+col.ID()+"-series")(
-							html.Range(col.Series(), func(sr *model.SeriesHead) html.Node {
-								return SettingsItem()(
-									SettingsItemLabel()(
-										SettingsItemLabelTitle(sr.Title()),
-									),
-								)
+							html.Range(col.Series(), func(sw *model.SeriesWork) html.Node {
+								return collectionSeriesItem(col.ID(), sw)
 							}),
 						),
 					),
@@ -260,6 +260,112 @@ func CollectionMovieRemove(col *model.Collection, movieID string) html.Node {
 	return Group(
 		turbo.Remove(collectionMovieItemID(col.ID(), movieID)),
 		LiveTextUpdate(col.MovieCountField()),
+	)
+}
+
+func AppCollectionSeriesAddDialog(colID string) html.Node {
+	return DialogStream(
+		FlexCol(Gap2, Class("v-media-dialog"))(
+			html.Div(
+				attr.Class("v-media-dialog-fixed"),
+			)(
+				html.Text("Add Series to Collection"),
+			),
+			html.Form(
+				attr.Action("/-/part/collection-series-search"),
+				attr.Attr("data-turbo-frame")("results"),
+			)(
+				Hidden("col-id", colID),
+				InputText(
+					attr.Attr("autofocus"),
+					attr.Class("v-media-dialog-fixed"),
+					attr.Name("q"),
+				),
+			),
+			html.Div(
+				attr.Class("v-media-dialog-results"),
+			)(
+				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
+			),
+		),
+	)
+}
+
+type CollectionSeriesSearchResult struct {
+	Series       *model.SeriesWork
+	InCollection bool
+}
+
+func AppCollectionSeriesSearchResults(colID string, results []CollectionSeriesSearchResult) html.Node {
+	return turbo.Frame("results")(
+		FlexCol(Gap4, Class("v-media-detail-body"))(
+			html.Range(results, func(r CollectionSeriesSearchResult) html.Node {
+				sw := r.Series
+				return html.Form(
+					attr.Method("POST"),
+					attr.Action("/-/do/collection-series-add"),
+					stimulus.Action("turbo:submit-end->dialog#close"),
+					Disabled(r.InCollection),
+				)(
+					Hidden("col-id", colID),
+					Hidden("series-id", sw.SeriesHead.ID()),
+					html.Button(
+						attr.Style("all: unset; cursor: pointer; width: 100%"),
+					)(
+						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
+							FlexRow(Gap4, attr.Style("height: 100%"))(
+								Inset(InsetSideLeft, Class("v-media-search-poster"))(
+									PosterImg(attr.Style("height: 100%"), attr.Src(sw.PosterPath())),
+								),
+								FlexCol(Gap2)(
+									html.If(r.InCollection, func() html.Node {
+										return Label("solid/check-circle", "Already in Collection")
+									}),
+									TextNode(TextBold)(html.Text(sw.Title())),
+								),
+							),
+						),
+					),
+				)
+			}),
+		),
+	)
+}
+
+func collectionSeriesItemID(colID, seriesID string) string {
+	return "col-" + colID + "-sr-" + seriesID
+}
+
+func collectionSeriesItem(colID string, sw *model.SeriesWork) html.Node {
+	return SettingsItem(attr.ID(collectionSeriesItemID(colID, sw.SeriesHead.ID())))(
+		FlexRow(attr.Style("align-items:center"), Gap4)(
+			SettingsItemLabelIcon()(Icon("line/tv-03")),
+			SettingsItemLabelTitle(sw.Title()),
+		),
+		html.Form(
+			attr.Method("POST"),
+			attr.Action("/-/do/collection-series-remove"),
+		)(
+			Hidden("col-id", colID),
+			Hidden("series-id", sw.SeriesHead.ID()),
+			Button(SettingsHover, ButtonGhost)(Text("Remove")),
+		),
+	)
+}
+
+func CollectionSeriesAppend(col *model.Collection, sw *model.SeriesWork) html.Node {
+	return Group(
+		turbo.Append("collection-"+col.ID()+"-series",
+			collectionSeriesItem(col.ID(), sw),
+		),
+		LiveTextUpdate(col.SeriesCountField()),
+	)
+}
+
+func CollectionSeriesRemove(col *model.Collection, seriesID string) html.Node {
+	return Group(
+		turbo.Remove(collectionSeriesItemID(col.ID(), seriesID)),
+		LiveTextUpdate(col.SeriesCountField()),
 	)
 }
 

@@ -120,6 +120,78 @@ func (c *Config) doCollectionMovieRemove(w http.ResponseWriter, req *http.Reques
 	})
 }
 
+func (c *Config) dialogCollectionSeriesAdd(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return view.AppCollectionSeriesAddDialog(req.PathValue("id")), nil
+}
+
+func (c *Config) collectionSeriesSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		query := req.FormValue("q")
+		colID := req.FormValue("col-id")
+		if strings.TrimSpace(query) == "" {
+			return turbo.Frame("results"), nil
+		}
+		col, err := tx.Collection(ctx, colID)
+		if err != nil {
+			return nil, err
+		}
+		all, err := tx.SeriesWorkList(ctx)
+		if err != nil {
+			return nil, err
+		}
+		existing := make(map[string]bool, len(col.Series()))
+		for _, sr := range col.Series() {
+			existing[sr.SeriesHead.ID()] = true
+		}
+		query = strings.ToLower(query)
+		var matches []view.CollectionSeriesSearchResult
+		for _, sw := range all {
+			if strings.Contains(strings.ToLower(sw.Title()), query) {
+				matches = append(matches, view.CollectionSeriesSearchResult{
+					Series:       sw,
+					InCollection: existing[sw.SeriesHead.ID()],
+				})
+			}
+		}
+		return view.AppCollectionSeriesSearchResults(colID, matches), nil
+	})
+}
+
+func (c *Config) doCollectionSeriesAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		colID := req.FormValue("col-id")
+		seriesID := req.FormValue("series-id")
+		if colID == "" || seriesID == "" {
+			return nil, &model.ValidationError{Op: "add series to collection", Err: errNotFound}
+		}
+		err := tx.CollectionSeriesAdd(ctx, colID, seriesID)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
+func (c *Config) doCollectionSeriesRemove(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		colID := req.FormValue("col-id")
+		seriesID := req.FormValue("series-id")
+		if colID == "" || seriesID == "" {
+			return nil, &model.ValidationError{Op: "remove series from collection", Err: errNotFound}
+		}
+		err := tx.CollectionSeriesRemove(ctx, colID, seriesID)
+		if err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
 func (c *Config) dialogCollectionBanner(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
