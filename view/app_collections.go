@@ -148,3 +148,14 @@ func CollectionChangeBanner(col *model.CollectionHead, oldBannerID string) html.
 	oldURL := model.BannerPath(oldBannerID)
 	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(col.BannerPath()))())
 }
+
+func CollectionSetSlug(col *model.CollectionHead, oldSlug string) html.Node {
+	oldEditorPath := "/app/collections/" + oldSlug
+	return Group(
+		LiveTextUpdate(col.SlugField()),
+		turbo.SetTargets(`[data-list-id-param="`+col.ID()+`"]`,
+			html.Div(ListURL(col.EditorPath()))(),
+		),
+		turbo.URLReplace(oldEditorPath, col.EditorPath()),
+	)
+}

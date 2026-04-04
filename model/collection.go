@@ -162,6 +162,14 @@ func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
 	if slug == col.Slug {
 		return nil
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventCollectionSetSlug,
+			ID:      id,
+			NewText: slug,
+			OldText: col.Slug,
+		})
+	})
 	err = tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{
 		Slug:   slug,
 		Target: id,
