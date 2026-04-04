@@ -152,11 +152,12 @@ func (c *Config) eventCollectionMovieAdd(ctx context.Context, colID, movieID str
 		if err != nil {
 			return nil, err
 		}
-		mo, err := tx.MovieHead(ctx, movieID)
-		if err != nil {
-			return nil, err
+		for _, mw := range col.Movies() {
+			if mw.MovieHead.ID() == movieID {
+				return view.CollectionMovieAppend(col, mw), nil
+			}
 		}
-		return view.CollectionMovieAppend(col, mo), nil
+		return nil, nil
 	})
 	return n
 }

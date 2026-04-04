@@ -70,7 +70,7 @@ func (c *Config) collectionMovieSearch(_ http.ResponseWriter, req *http.Request)
 		}
 		existing := make(map[string]bool, len(col.Movies()))
 		for _, mo := range col.Movies() {
-			existing[mo.ID()] = true
+			existing[mo.MovieHead.ID()] = true
 		}
 		query = strings.ToLower(query)
 		var matches []view.CollectionMovieSearchResult

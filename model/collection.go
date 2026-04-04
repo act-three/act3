@@ -40,11 +40,11 @@ func (c *CollectionHead) EditorPath() string {
 // Collection is the full representation with associated movies and series.
 type Collection struct {
 	CollectionHead
-	movies []*MovieHead
+	movies []*MovieWork
 	series []*SeriesHead
 }
 
-func (c *Collection) Movies() []*MovieHead  { return c.movies }
+func (c *Collection) Movies() []*MovieWork  { return c.movies }
 func (c *Collection) Series() []*SeriesHead { return c.series }
 
 func (c *Collection) MovieCountAddr() []string { return c.addr("movie-count") }
@@ -89,9 +89,23 @@ func (tx *TxR) CollectionBySlug(ctx Context, slug string) (*Collection, error) {
 }
 
 func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Collection, error) {
-	movies, err := tx.q.CollectionMovieList(ctx, colData.ID)
+	movieIDs, err := tx.q.CollectionMovieList(ctx, colData.ID)
 	if err != nil {
 		return nil, err
+	}
+	allWorks, err := tx.MovieWorkList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	memberIDs := make(map[string]bool, len(movieIDs))
+	for _, mo := range movieIDs {
+		memberIDs[mo.ID] = true
+	}
+	var movies []*MovieWork
+	for _, mw := range allWorks {
+		if memberIDs[mw.MovieHead.ID()] {
+			movies = append(movies, mw)
+		}
 	}
 	series, err := tx.q.CollectionSeriesList(ctx, colData.ID)
 	if err != nil {
@@ -99,7 +113,7 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 	}
 	return &Collection{
 		CollectionHead: CollectionHead{colData},
-		movies:         newMovieHeadList(movies),
+		movies:         movies,
 		series:         newSeriesHeadList(series),
 	}, nil
 }

@@ -224,18 +224,18 @@ func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSear
 	)
 }
 
-func collectionMovieItem(mo *model.MovieHead) html.Node {
+func collectionMovieItem(mo *model.MovieWork) html.Node {
 	return SettingsItem()(
-		SettingsItemLabel()(
-			SettingsItemLabelTitle(mo.Slug()),
+		FlexRow(Gap2)(
+			SettingsItemLabelTitle(mo.Title() + " (" + mo.Year() + ")"),
 		),
 	)
 }
 
-func CollectionMovieAppend(col *model.Collection, mo *model.MovieHead) html.Node {
+func CollectionMovieAppend(col *model.Collection, mw *model.MovieWork) html.Node {
 	return Group(
 		turbo.Append("collection-"+col.ID()+"-movies",
-			collectionMovieItem(mo),
+			collectionMovieItem(mw),
 		),
 		LiveTextUpdate(col.MovieCountField()),
 	)
