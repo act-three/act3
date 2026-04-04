@@ -55,6 +55,8 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /-/pls/{id}", c.videoRenditionPlaylist)
 	handle(mux, "GET /-/status", c.status)
 	handle(mux, "GET /-/vid/{hash}", c.videoStream)
+	handle(mux, "GET /app/collections", c.appCollections)
+	handle(mux, "GET /app/collections/{slug}", c.appCollectionsDetail)
 	handle(mux, "GET /app/downloads", c.appDownloads)
 	handle(mux, "GET /app/downloads/{id}", c.appDownloadsDetail)
 	handle(mux, "GET /app/movies", c.appMovies)

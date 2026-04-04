@@ -47,6 +47,7 @@ func sidebarData(c Config) []MenuSection {
 				{"line/arrow-circle-down", "/app/downloads", "Downloads", "", "", nil, ""},
 				{"line/file-question-03", "/app/missing", "Missing Media", "", "", nil, ""},
 				{"line/trash-01", "/app/trash", "Trash", "", "", nil, ""},
+				{"line/layers-three-01", "/app/collections", "Collections", "", "", nil, ""},
 				{"line/film-01", "/app/movies", "All Movies", "", "", nil, ""},
 				{"line/tv-03", "/app/series", "All Series", "", "", nil, ""},
 			},
