@@ -77,6 +77,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "GET /app/tasks", c.appTasks)
 	handle(mux, "GET /app/tmdb", c.appTMDB)
 	handle(mux, "GET /app/transmission", c.appTransmission)
+	handle(mux, "GET /collections", c.collections)
 	handle(mux, "GET /{$}", c.home)
 	handle(mux, "GET /{slug0}", c.browseWork)
 	handle(mux, "GET /{slug0}/{slug1}", c.browseWork)

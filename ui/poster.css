@@ -6,3 +6,5 @@
 .u-poster[data-fill] { width: 100%; }
 
 .u-poster[data-aspect="16-9"] { aspect-ratio: 16 / 9; }
+
+.u-poster[data-aspect="1000-185"] { aspect-ratio: 1000 / 185; }

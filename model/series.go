@@ -84,8 +84,9 @@ func (tx *TxR) SeriesHeadListByTVmazeID(ctx Context, id []*int64) ([]*SeriesHead
 }
 
 var reservedSlugs = map[string]bool{
-	"app": true,
-	"-":   true,
+	"app":         true,
+	"collections": true,
+	"-":           true,
 }
 
 func isReservedSlug(s string) bool {

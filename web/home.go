@@ -18,3 +18,14 @@ func (c *Config) home(_ http.ResponseWriter, req *http.Request) (html.Node, erro
 		return view.Home(works), nil
 	})
 }
+
+func (c *Config) collections(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		cols, err := tr.CollectionHeadList(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return view.Collections(cols), nil
+	})
+}

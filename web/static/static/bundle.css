@@ -1134,6 +1134,9 @@
   .u-poster[data-aspect="16-9"] {
     aspect-ratio: 16 / 9;
   }
+  .u-poster[data-aspect="1000-185"] {
+    aspect-ratio: 1000 / 185;
+  }
 }
 
 /* ui/progress.css */
@@ -2787,6 +2790,33 @@
     background: var(--warmred);
     padding: 0.25rem;
     border-radius: 9999px;
+  }
+}
+
+/* view/theater-collections.css */
+@layer components {
+  .v-collection-banner {
+    position: relative;
+    aspect-ratio: 1000 / 185;
+    width: 100%;
+  }
+  .v-collection-banner-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .v-collection-title {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: 35px;
+    line-height: 40px;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    pointer-events: none;
   }
 }
 

@@ -3,6 +3,7 @@ package model
 import (
 	"cmp"
 	"fmt"
+	"path"
 	"slices"
 	"strconv"
 
@@ -32,6 +33,10 @@ func (c *CollectionHead) SlugField() (string, []string)  { return c.Slug(), c.Sl
 
 func (c *CollectionHead) BannerPath() string {
 	return BannerPath(c.col.BannerID)
+}
+
+func (c *CollectionHead) TheaterPath() string {
+	return path.Join("/", c.col.Slug)
 }
 
 func (c *CollectionHead) EditorPath() string {
