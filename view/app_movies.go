@@ -168,7 +168,7 @@ func AppMoviesDetail(
 						),
 						addTorrentButton("med-id", med.ID()),
 					),
-					turbo.StreamTarget("edition-torrents-"+med.ID(), SettingsGroupItems)(
+					turbo.StreamTarget("edition-torrents-"+med.ID())(
 						html.Range(dls, downloadListItem),
 					),
 				),

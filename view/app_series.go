@@ -157,7 +157,7 @@ func AppSeriesDetail(
 						),
 						addTorrentButton("sed-id", sed.ID()),
 					),
-					turbo.StreamTarget("edition-torrents-"+sed.ID(), SettingsGroupItems)(
+					turbo.StreamTarget("edition-torrents-"+sed.ID())(
 						html.Range(dls, downloadListItem),
 					),
 				),
