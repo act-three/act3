@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"slices"
 	"strconv"
 
@@ -46,6 +47,11 @@ type Collection struct {
 func (c *Collection) Movies() []*MovieHead  { return c.movies }
 func (c *Collection) Series() []*SeriesHead { return c.series }
 
+func (c *Collection) MovieCountAddr() []string { return c.addr("movie-count") }
+func (c *Collection) MovieCountField() (string, []string) {
+	return fmt.Sprintf("%d Movies", len(c.movies)), c.MovieCountAddr()
+}
+
 func (tx *TxR) CollectionHead(ctx Context, id string) (*CollectionHead, error) {
 	colData, err := tx.q.CollectionGet(ctx, id)
 	if err != nil {
@@ -66,11 +72,23 @@ func (tx *TxR) CollectionHeadList(ctx Context) ([]*CollectionHead, error) {
 	return cols, nil
 }
 
+func (tx *TxR) Collection(ctx Context, id string) (*Collection, error) {
+	colData, err := tx.q.CollectionGet(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	return tx.collectionFromData(ctx, colData)
+}
+
 func (tx *TxR) CollectionBySlug(ctx Context, slug string) (*Collection, error) {
 	colData, err := tx.q.CollectionGetBySlug(ctx, slug)
 	if err != nil {
 		return nil, err
 	}
+	return tx.collectionFromData(ctx, colData)
+}
+
+func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Collection, error) {
 	movies, err := tx.q.CollectionMovieList(ctx, colData.ID)
 	if err != nil {
 		return nil, err

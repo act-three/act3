@@ -148,11 +148,15 @@ func (c *Config) eventMovieEditionSetSlug(ctx context.Context, editionID, oldSlu
 
 func (c *Config) eventCollectionMovieAdd(ctx context.Context, colID, movieID string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		col, err := tx.Collection(ctx, colID)
+		if err != nil {
+			return nil, err
+		}
 		mo, err := tx.MovieHead(ctx, movieID)
 		if err != nil {
 			return nil, err
 		}
-		return view.CollectionMovieAppend(colID, mo), nil
+		return view.CollectionMovieAppend(col, mo), nil
 	})
 	return n
 }

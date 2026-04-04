@@ -97,20 +97,17 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 					SettingsGroup()(
 						SettingsGroupHead()(
 							SettingsItemLabel()(
-								SettingsItemLabelTitle(fmt.Sprintf("%d Movies", len(col.Movies()))),
+								TextNode(Size2)(
+									//fmt.Sprintf("%d Movies", len(col.Movies())),
+									LiveText(col.MovieCountField()),
+								),
 							),
 							DialogButton("/-/dialog/collection-movie-add/"+col.ID(), ButtonGhost)(
 								Text("Add Movie"),
 							),
 						),
 						turbo.StreamTarget("collection-"+col.ID()+"-movies")(
-							html.Range(col.Movies(), func(mo *model.MovieHead) html.Node {
-								return SettingsItem()(
-									SettingsItemLabel()(
-										SettingsItemLabelTitle(mo.Slug()),
-									),
-								)
-							}),
+							html.Range(col.Movies(), collectionMovieItem),
 						),
 					),
 
@@ -217,13 +214,20 @@ func AppCollectionMovieSearchResults(colID string, results []*model.MovieWork) h
 	)
 }
 
-func CollectionMovieAppend(colID string, mo *model.MovieHead) html.Node {
-	return turbo.Append("collection-"+colID+"-movies",
-		SettingsItem()(
-			SettingsItemLabel()(
-				SettingsItemLabelTitle(mo.Slug()),
-			),
+func collectionMovieItem(mo *model.MovieHead) html.Node {
+	return SettingsItem()(
+		SettingsItemLabel()(
+			SettingsItemLabelTitle(mo.Slug()),
 		),
+	)
+}
+
+func CollectionMovieAppend(col *model.Collection, mo *model.MovieHead) html.Node {
+	return Group(
+		turbo.Append("collection-"+col.ID()+"-movies",
+			collectionMovieItem(mo),
+		),
+		LiveTextUpdate(col.MovieCountField()),
 	)
 }
 
