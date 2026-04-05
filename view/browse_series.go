@@ -22,7 +22,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 		Grid12(
 			Class("v-series"),
 			stimulus.Controller("series"),
-			stimulus.Value("series", "mode")("all"),
+			stimulus.Value("series", "mode")(""),
 		)(
 			FlexCol(Class("v-series-sidebar"))(
 				FlexCol(Class("v-series-sidebar-inner"), Gap4)(
@@ -44,16 +44,11 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 							Button(
 								stimulus.Action("click->series#setRegular"),
 								stimulus.Target("series", "regular"),
-								attr.Attr("data-selected"),
 							)(Text("Regular")),
 							Button(
 								stimulus.Action("click->series#setSpecial"),
 								stimulus.Target("series", "special"),
 							)(Text("Specials")),
-							Button(
-								stimulus.Action("click->series#setAll"),
-								stimulus.Target("series", "all"),
-							)(Text("All")),
 						)
 					}),
 					FlexCol(Class("v-series-sidebar-section"))(
