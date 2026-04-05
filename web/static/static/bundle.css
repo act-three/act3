@@ -2873,6 +2873,7 @@
   }
   .v-collection-playlist-row {
     position: relative;
+    isolation: isolate;
     width: 100%;
     align-items: center;
     padding-right: 1rem;
