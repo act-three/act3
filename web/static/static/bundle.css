@@ -2624,14 +2624,12 @@
 @layer components {
   .v-poster-grid {
     width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-content: flex-start;
-    gap: 1px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
   }
   .v-poster-grid-poster {
     aspect-ratio: 2 / 3;
-    width: 187px;
+    width: 100%;
   }
   .v-poster-grid-link {
     display: block;

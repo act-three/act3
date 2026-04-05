@@ -8,7 +8,7 @@ import (
 )
 
 func posterGrid(works []model.Work) html.Node {
-	return FlexRow(Class("v-poster-grid"))(
+	return Box(Class("v-poster-grid"))(
 		html.Range(works, posterGridLink),
 	)
 }
