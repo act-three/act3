@@ -21,7 +21,7 @@ func Home(works []model.Work) html.Node {
 			FlexRow(Gap4, Class("v-home-toolbar"))(
 				FlexRow(Gap1)(
 					Button(ButtonSurface)(Text("Title")),
-					Button(ButtonSurface)(Icon("line/switch-vertical-01")),
+					Button(ButtonSurface, ButtonCircle)(Icon("line/switch-vertical-01")),
 				),
 				FlexRow(Gap1)(
 					Button(
@@ -35,7 +35,7 @@ func Home(works []model.Work) html.Node {
 						stimulus.Target("home", "series"),
 					)(Text("Series")),
 				),
-				Button(ButtonSurface)(Icon("line/filter-lines")),
+				Button(ButtonSurface, ButtonCircle)(Icon("line/filter-lines")),
 				InputText()(),
 			),
 			posterGrid(works),
