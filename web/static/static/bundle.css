@@ -2164,6 +2164,12 @@
   .v-home[data-home-mode-value=series] .v-poster-grid-poster[data-kind=movie] {
     display: none;
   }
+  .v-home[data-home-mode-value=movie] .v-home-collections {
+    display: none;
+  }
+  .v-home[data-home-mode-value=series] .v-home-collections {
+    display: none;
+  }
   [data-search-hidden] {
     display: none;
   }

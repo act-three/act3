@@ -48,7 +48,7 @@ func Home(
 					),
 				),
 			),
-			FlexCol()(
+			FlexCol(Class("v-home-collections"))(
 				html.Range(cols, func(c *model.CollectionHead) html.Node {
 					return collectionBannerLink(c, attr.Attr("data-search-hidden"))
 				}),
