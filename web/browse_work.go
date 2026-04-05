@@ -97,5 +97,9 @@ func (c *Config) browseCollection(ctx model.Context, tr *model.TxR, slug string)
 	if err != nil {
 		return nil, err
 	}
-	return view.TheaterCollection(col), nil
+	itemCount, runtimeMinutes, err := tr.CollectionStats(ctx, col.ID())
+	if err != nil {
+		return nil, err
+	}
+	return view.TheaterCollection(col, itemCount, runtimeMinutes), nil
 }

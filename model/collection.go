@@ -174,6 +174,16 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 	}, nil
 }
 
+// CollectionStats returns the total number of playable items
+// and their combined runtime in minutes.
+func (tx *TxR) CollectionStats(ctx Context, id string) (itemCount, runtimeMinutes int64, err error) {
+	row, err := tx.q.CollectionGetStats(ctx, id)
+	if err != nil {
+		return 0, 0, err
+	}
+	return row.Itemcount, row.Runtimeminutes, nil
+}
+
 // CollectionPlayables returns the default movie editions and
 // all episodes from default series editions in the collection,
 // sorted by release date.

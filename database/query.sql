@@ -43,6 +43,25 @@ SELECT * FROM Collection WHERE ID = ?;
 -- name: CollectionGetBySlug :one
 SELECT * FROM Collection WHERE Slug = ?;
 
+-- name: CollectionGetStats :one
+SELECT COUNT(*) AS ItemCount, CAST(COALESCE(SUM(Runtime), 0) AS INTEGER) AS RuntimeMinutes FROM (
+	SELECT MovieEdition.Runtime FROM MovieEdition
+	WHERE MovieEdition.Slug = '' AND MovieEdition.MovieID IN (
+		SELECT CollectionMovie.MovieID FROM CollectionMovie WHERE CollectionMovie.CollectionID = sqlc.arg(ID)
+	)
+	UNION ALL
+	SELECT Episode.Runtime FROM Episode
+	WHERE Episode.Type != 'insignificant_special' AND Episode.ID IN (
+		SELECT SeasonEpisode.EpisodeID FROM SeasonEpisode WHERE SeasonEpisode.SeasonID IN (
+			SELECT Season.ID FROM Season WHERE Season.EditionID IN (
+				SELECT SeriesEdition.ID FROM SeriesEdition WHERE SeriesEdition.Slug = '' AND SeriesEdition.SeriesID IN (
+					SELECT CollectionSeries.SeriesID FROM CollectionSeries WHERE CollectionSeries.CollectionID = sqlc.arg(ID)
+				)
+			)
+		)
+	)
+);
+
 -- name: CollectionList :many
 SELECT * FROM Collection
 ORDER BY Title;

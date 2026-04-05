@@ -219,6 +219,38 @@ func (q *Queries) CollectionGetBySlug(ctx context.Context, slug string) (Collect
 	return i, err
 }
 
+const collectionGetStats = `-- name: CollectionGetStats :one
+SELECT COUNT(*) AS ItemCount, CAST(COALESCE(SUM(Runtime), 0) AS INTEGER) AS RuntimeMinutes FROM (
+	SELECT MovieEdition.Runtime FROM MovieEdition
+	WHERE MovieEdition.Slug = '' AND MovieEdition.MovieID IN (
+		SELECT CollectionMovie.MovieID FROM CollectionMovie WHERE CollectionMovie.CollectionID = ?1
+	)
+	UNION ALL
+	SELECT Episode.Runtime FROM Episode
+	WHERE Episode.Type != 'insignificant_special' AND Episode.ID IN (
+		SELECT SeasonEpisode.EpisodeID FROM SeasonEpisode WHERE SeasonEpisode.SeasonID IN (
+			SELECT Season.ID FROM Season WHERE Season.EditionID IN (
+				SELECT SeriesEdition.ID FROM SeriesEdition WHERE SeriesEdition.Slug = '' AND SeriesEdition.SeriesID IN (
+					SELECT CollectionSeries.SeriesID FROM CollectionSeries WHERE CollectionSeries.CollectionID = ?1
+				)
+			)
+		)
+	)
+)
+`
+
+type CollectionGetStatsRow struct {
+	Itemcount      int64
+	Runtimeminutes int64
+}
+
+func (q *Queries) CollectionGetStats(ctx context.Context, id string) (CollectionGetStatsRow, error) {
+	row := q.db.QueryRowContext(ctx, collectionGetStats, id)
+	var i CollectionGetStatsRow
+	err := row.Scan(&i.Itemcount, &i.Runtimeminutes)
+	return i, err
+}
+
 const collectionList = `-- name: CollectionList :many
 SELECT id, slug, title, bannerid FROM Collection
 ORDER BY Title

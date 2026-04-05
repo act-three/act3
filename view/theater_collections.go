@@ -1,6 +1,8 @@
 package view
 
 import (
+	"fmt"
+
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
@@ -21,7 +23,7 @@ func Collections(cols []*model.CollectionHead) html.Node {
 	)
 }
 
-func TheaterCollection(c *model.Collection) html.Node {
+func TheaterCollection(c *model.Collection, itemCount, runtimeMinutes int64) html.Node {
 	return browse("Collections", c.BannerPath())(
 		FlexCol(
 			Gap8,
@@ -46,7 +48,7 @@ func TheaterCollection(c *model.Collection) html.Node {
 						stimulus.Target("collection", "playlist"),
 					),
 				),
-				collectionStatus(),
+				collectionStatus(itemCount, runtimeMinutes),
 			),
 			turbo.Frame("collection-content",
 				stimulus.Target("collection", "frame"),
@@ -102,8 +104,9 @@ func theaterCollectionPlayableImage(p model.Playable, h int) html.Node {
 	)
 }
 
-func collectionStatus() html.Node {
-	return Text("10 items, 105m, 4% watched", attr.Style("padding-right:0.25rem"))
+func collectionStatus(itemCount, runtimeMinutes int64) html.Node {
+	s := fmt.Sprintf("%d episodes & movies, %dm", itemCount, runtimeMinutes)
+	return Text(s, attr.Style("padding-right:0.25rem"))
 }
 
 func collectionTabButton(url, label string, attrs ...attr.Node) html.Node {
