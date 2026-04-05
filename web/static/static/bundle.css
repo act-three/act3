@@ -2164,6 +2164,38 @@
   .v-home[data-home-mode-value=series] .v-poster-grid-poster[data-kind=movie] {
     display: none;
   }
+  .v-home-search {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-width: 0;
+  }
+  .v-home-search > svg {
+    position: absolute;
+    left: 0.625rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+  }
+  .v-home-search-input {
+    width: 100%;
+    height: 32px;
+    border: 0.5px solid var(--border-strong);
+    background-color: oklch(from var(--bg-input) l c h / 0.2);
+    color: var(--text);
+    font-size: 14px;
+    padding-inline: 2rem 1rem;
+    border-radius: 9999px;
+    outline: none;
+    outline-offset: -1px;
+    text-overflow: ellipsis;
+  }
+  .v-home-search-input:focus {
+    outline: 1px solid var(--accent);
+  }
 }
 
 /* view/media-detail.css */

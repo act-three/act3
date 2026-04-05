@@ -36,7 +36,10 @@ func Home(works []model.Work) html.Node {
 					)(Text("Series")),
 				),
 				Button(ButtonSurface, ButtonCircle)(Icon("line/filter-lines")),
-				InputText()(),
+				Box(Class("v-home-search"))(
+					Icon("line/search-sm"),
+					html.Input(Class("v-home-search-input")),
+				),
 			),
 			posterGrid(works),
 		),
