@@ -48,7 +48,7 @@ func TheaterCollection(c *model.Collection, itemCount, runtimeMinutes int64) htm
 						stimulus.Target("collection", "playlist"),
 					),
 				),
-				collectionStatus(itemCount, runtimeMinutes),
+				collectionStatus(c, itemCount, runtimeMinutes),
 			),
 			turbo.Frame("collection-content",
 				stimulus.Target("collection", "frame"),
@@ -106,8 +106,21 @@ func theaterCollectionPlayableImage(p model.Playable, h int) html.Node {
 	)
 }
 
-func collectionStatus(itemCount, runtimeMinutes int64) html.Node {
-	s := fmt.Sprintf("%d episodes & movies, %dm", itemCount, runtimeMinutes)
+func collectionStatus(c *model.Collection, itemCount, runtimeMinutes int64) html.Node {
+	hasMovies := len(c.Movies()) > 0
+	hasSeries := len(c.Series()) > 0
+	var kind string
+	switch {
+	case hasMovies && hasSeries:
+		kind = "episodes & movies"
+	case hasMovies:
+		kind = "movies"
+	case hasSeries:
+		kind = "episodes"
+	default:
+		kind = "episodes or movies"
+	}
+	s := fmt.Sprintf("%d %s, %dm", itemCount, kind, runtimeMinutes)
 	return Text(s, attr.Style("padding-right:0.25rem"))
 }
 
