@@ -54,6 +54,9 @@ func Home(
 				}),
 			),
 			posterGrid(works),
+			Box(Size4, Class("v-home-no-results"), stimulus.Target("home", "noResults"))(
+				Text("No Results"),
+			),
 		),
 	)
 }

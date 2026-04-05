@@ -6,6 +6,16 @@
 .v-home[data-home-mode-value="series"] .v-home-collections { display: none; }
 [data-search-hidden] { display: none; }
 
+.v-home-no-results {
+	display: none;
+	padding: 4rem;
+	background-color: oklch(0 0 0 / 0.2);
+	border-radius: var(--radius-4);
+	text-align: center;
+	color: var(--text-3);
+}
+.v-home-no-results[data-visible] { display: block; }
+
 .v-home-search {
 	position: relative;
 	display: flex;
