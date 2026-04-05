@@ -87,12 +87,37 @@ func (med *MovieEdition) EditorPath() string {
 	return path.Join(med.mo.EditorPath(), med.Slug())
 }
 
-func (med *MovieEdition) PlayerPath(v *Video) string {
+func (med *MovieEdition) Info() []string {
+	if med.Label() != DefaultEdition {
+		return []string{med.Label()}
+	}
+	return nil
+}
+
+func (med *MovieEdition) ImagePath() string       { return med.PosterPath() }
+func (med *MovieEdition) ImageAspect() (n, d int) { return 2, 3 }
+func (med *MovieEdition) ReleaseDate() string     { return med.Year() }
+
+func (med *MovieEdition) Runtime() string {
+	if r := med.MovieEditionHead.Runtime(); r > 0 {
+		return fmt.Sprintf("%d", r)
+	}
+	return ""
+}
+
+func (med *MovieEdition) PlayerPath() string {
+	if v := med.PlayableVideo(); v != nil {
+		return med.VideoPlayerPath(v)
+	}
+	return ""
+}
+
+func (med *MovieEdition) VideoPlayerPath(v *Video) string {
 	return "/-/player/" + v.ID() + "/" + med.med.ID
 }
 
-// Playable returns the first video with a playlist, or nil.
-func (med *MovieEdition) Playable() *Video {
+// PlayableVideo returns the first video with a playlist, or nil.
+func (med *MovieEdition) PlayableVideo() *Video {
 	for _, v := range med.videos {
 		if v.MVPlaylist() != "" {
 			return v

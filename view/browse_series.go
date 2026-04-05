@@ -126,7 +126,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 					expr.IfElse(playable >= 0,
 						func() html.Node {
 							return Button(
-								attr.Href(ep.PlayerPath(vids[playable])),
+								attr.Href(ep.VideoPlayerPath(vids[playable])),
 								attr.Attr("data-turbo-frame")("player"),
 								ButtonSurface,
 								ButtonCircle,

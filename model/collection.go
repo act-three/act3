@@ -174,6 +174,41 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 	}, nil
 }
 
+// CollectionPlayables returns the default movie editions and
+// all episodes from default series editions in the collection,
+// sorted by release date.
+func (tx *TxR) CollectionPlayables(ctx Context, id string) ([]Playable, error) {
+	movieIDs, err := tx.q.CollectionMovieList(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	var playables []Playable
+	for _, mo := range movieIDs {
+		med, err := tx.MovieEditionBySlug(ctx, mo.Slug, "")
+		if err != nil {
+			return nil, err
+		}
+		playables = append(playables, med)
+	}
+	seriesIDs, err := tx.q.CollectionSeriesList(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	for _, sr := range seriesIDs {
+		sed, err := tx.SeriesEditionBySlug(ctx, sr.Slug, "")
+		if err != nil {
+			return nil, err
+		}
+		for ep := range sed.Episodes(Significant) {
+			playables = append(playables, ep)
+		}
+	}
+	slices.SortFunc(playables, func(a, b Playable) int {
+		return cmp.Compare(a.ReleaseDate(), b.ReleaseDate())
+	})
+	return playables, nil
+}
+
 func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, error) {
 	slug, err := tx.collectionFindSlug(ctx, title)
 	if err != nil {

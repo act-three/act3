@@ -36,6 +36,26 @@ type Work interface {
 	TheaterPath() string
 }
 
+var (
+	_ Playable = (*MovieEdition)(nil)
+	_ Playable = (*Episode)(nil)
+)
+
+// Playable represents something that can be played.
+// It is either a movie edition or an episode.
+// This interface contains the common data needed
+// to display episodes and movies in a unified list.
+type Playable interface {
+	Title() string           // Movie or Episode title
+	Info() []string          // Edtion Title, Series Title, etc
+	ImagePath() string       // poster or thumbnail
+	ImageAspect() (n, d int) // (2, 3) or (16, 9)
+	ReleaseDate() string     // YYYY-MM-DD
+	Runtime() string         // "123" (minutes)
+	TheaterPath() string
+	PlayerPath() string // empty if unplayable
+}
+
 // WorkList returns all movies and series as a unified list,
 // sorted by title.
 func (tx *TxR) WorkList(ctx Context) ([]Work, error) {

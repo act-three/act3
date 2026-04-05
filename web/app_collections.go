@@ -206,12 +206,18 @@ func (c *Config) collectionOverview(_ http.ResponseWriter, req *http.Request) (h
 
 func (c *Config) collectionPlaylist(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
-		col, err := tx.Collection(req.Context(), req.PathValue("id"))
+		ctx := req.Context()
+		id := req.PathValue("id")
+		col, err := tx.Collection(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		ps, err := tx.CollectionPlayables(ctx, id)
 		if err != nil {
 			return nil, err
 		}
 		return turbo.Frame("collection-content")(
-			view.TheaterCollectionPlaylist(col),
+			view.TheaterCollectionPlaylist(col, ps),
 		), nil
 	})
 }

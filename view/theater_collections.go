@@ -61,8 +61,45 @@ func TheaterCollectionOverview(c *model.Collection) html.Node {
 	return posterGrid(c.Works())
 }
 
-func TheaterCollectionPlaylist(c *model.Collection) html.Node {
-	return html.Text("Playlist placeholder")
+func TheaterCollectionPlaylist(c *model.Collection, ps []model.Playable) html.Node {
+	return FlexCol(Class("v-collection-playlist"))(
+		html.Range(ps, theaterCollectionPlayable),
+	)
+}
+
+const imageWidth = 8 * 16 // px
+
+func theaterCollectionPlayable(p model.Playable) html.Node {
+	n, d := p.ImageAspect()
+	h := imageWidth * d / n
+	return FlexRow(
+		Gap4,
+		Class("v-collection-playlist-row"),
+		attr.Stylef("height:%dpx", h),
+	)(
+		theaterCollectionPlayableImage(p, h),
+		playButtonForList(p),
+		FlexCol(Class("v-collection-playlist-text"), Size3)(
+			Text(p.Title(), Class("v-collection-playlist-title")),
+			FlexRow(Gap2)(
+				html.Range(p.Info(), func(s string) html.Node {
+					return Text(s, Class("v-collection-playlist-info"))
+				}),
+			),
+		),
+		Text(p.ReleaseDate(), Class("v-collection-playlist-release-date")),
+		Text(p.Runtime()+"m"),
+		Button(ButtonGhost, ButtonCircle)(Icon("line/check")), // placeholder for watched status & button
+	)
+}
+
+func theaterCollectionPlayableImage(p model.Playable, h int) html.Node {
+	return html.Img(
+		Class("v-collection-playlist-row-image"),
+		attr.Stylef("width:%dpx", imageWidth),
+		attr.Stylef("height:%dpx", h),
+		attr.Src(p.ImagePath()),
+	)
 }
 
 func collectionStatus() html.Node {

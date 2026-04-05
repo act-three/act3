@@ -27,9 +27,9 @@ const (
 type EpisodeState = int
 
 const (
-	Empty EpisodeState = iota
-	Downloading
-	Playable
+	EpIsEmpty EpisodeState = iota
+	EpIsDownloading
+	EpIsPlayable
 )
 
 var episodeTypeByName = map[string]EpisodeType{
@@ -111,13 +111,13 @@ func (ep *Episode) CoarseType() string {
 func (ep *Episode) State() EpisodeState {
 	for _, v := range ep.Videos() {
 		if v.MVPlaylist() == "" {
-			return Downloading
+			return EpIsDownloading
 		}
 	}
 	if len(ep.Videos()) > 0 {
-		return Playable
+		return EpIsPlayable
 	}
-	return Empty
+	return EpIsEmpty
 }
 
 func (ep *Episode) AirdateAddr() []string { return ep.addr("airdate") }
@@ -132,7 +132,31 @@ func (ep *Episode) addr(field string) []string {
 	return []string{"episode", ep.ep.ID, field}
 }
 
-func (ep *Episode) PlayerPath(v *Video) string {
+func (ep *Episode) Info() []string {
+	return []string{ep.SnnEnn(), ep.sr.Title()}
+}
+
+func (ep *Episode) ImagePath() string       { return ep.ThumbnailURL() }
+func (ep *Episode) ImageAspect() (n, d int) { return 16, 9 }
+func (ep *Episode) ReleaseDate() string     { return ep.Airdate() }
+
+func (ep *Episode) Runtime() string {
+	if ep.ep.Runtime > 0 {
+		return fmt.Sprintf("%d", ep.ep.Runtime)
+	}
+	return ""
+}
+
+func (ep *Episode) PlayerPath() string {
+	for _, v := range ep.videos {
+		if v.MVPlaylist() != "" {
+			return ep.VideoPlayerPath(v)
+		}
+	}
+	return ""
+}
+
+func (ep *Episode) VideoPlayerPath(v *Video) string {
 	return fmt.Sprintf("/-/player/%s/%s/%s", v.ID(), ep.ID(), ep.so.ID())
 }
 

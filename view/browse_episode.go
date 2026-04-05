@@ -102,7 +102,7 @@ func browsePlayButton(ep *model.Episode) html.Node {
 	return expr.IfElse(playable >= 0,
 		func() html.Node {
 			return Button(
-				attr.Href(ep.PlayerPath(v[playable])),
+				attr.Href(ep.VideoPlayerPath(v[playable])),
 				attr.Attr("data-turbo-frame")("player"),
 				ButtonSize3)(Icon("solid/play"), Text("Start"))
 		},

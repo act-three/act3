@@ -66,11 +66,11 @@ func BrowseMovieEdition(
 }
 
 func browseMoviePlayButton(med *model.MovieEdition) html.Node {
-	v := med.Playable()
+	v := med.PlayableVideo()
 	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
-				attr.Href(med.PlayerPath(v)),
+				attr.Href(med.VideoPlayerPath(v)),
 				attr.Attr("data-turbo-frame")("player"),
 				ButtonSize3,
 			)(Icon("solid/play"), Text("Play"))
@@ -83,7 +83,7 @@ func browseMoviePlayButton(med *model.MovieEdition) html.Node {
 }
 
 func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
-	v := med.Playable()
+	v := med.PlayableVideo()
 	if v == nil {
 		return html.Group()
 	}

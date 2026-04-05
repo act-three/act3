@@ -333,12 +333,12 @@ func appSeriesDetailSeasonItem(sn *model.Season) html.Node {
 func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	icon := Group()
 	switch ep.State() {
-	case model.Empty:
+	case model.EpIsEmpty:
 		icon = Icon("line/x")
-	case model.Downloading:
+	case model.EpIsDownloading:
 		// TODO(april): icon = LiveProgress(...)
 		icon = Spinner()
-	case model.Playable:
+	case model.EpIsPlayable:
 		icon = Icon("solid/check-circle")
 	}
 	return SettingsItem(attr.Attr("data-episode-id")(ep.ID()))(
