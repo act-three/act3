@@ -18,4 +18,12 @@ export default class extends Controller {
 			}
 		}
 	}
+
+	search(e) {
+		const q = e.target.value.toLowerCase();
+		for (const el of this.element.querySelectorAll(".v-poster-grid-poster")) {
+			const title = (el.dataset.title || "").toLowerCase();
+			el.toggleAttribute("data-search-hidden", q !== "" && !title.includes(q));
+		}
+	}
 }

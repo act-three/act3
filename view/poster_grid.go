@@ -18,6 +18,7 @@ func posterGridLink(w model.Work) html.Node {
 		HoverOverlay,
 		Class("v-poster-grid-poster"),
 		attr.Attr("data-kind")(w.Kind()),
+		attr.Attr("data-title")(w.Title()),
 	)(
 		html.A(
 			Class("v-poster-grid-link"),

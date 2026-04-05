@@ -2164,6 +2164,9 @@
   .v-home[data-home-mode-value=series] .v-poster-grid-poster[data-kind=movie] {
     display: none;
   }
+  .v-poster-grid-poster[data-search-hidden] {
+    display: none;
+  }
   .v-home-search {
     position: relative;
     display: flex;
