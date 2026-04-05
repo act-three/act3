@@ -4,6 +4,7 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 )
 
 func Home(works []model.Work) html.Node {
@@ -12,18 +13,32 @@ func Home(works []model.Work) html.Node {
 		washURLs = append(washURLs, w.PosterPath())
 	}
 	return browse("Act Three", washURLs...)(
-		FlexRow(Gap4, Class("v-home-toolbar"))(
-			FlexRow(Gap1)(
-				Button(ButtonSurface)(Text("Title")),
-				Button(ButtonSurface)(Icon("line/switch-vertical-01")),
+		Box(
+			Class("v-home"),
+			stimulus.Controller("home"),
+			stimulus.Value("home", "mode")(""),
+		)(
+			FlexRow(Gap4, Class("v-home-toolbar"))(
+				FlexRow(Gap1)(
+					Button(ButtonSurface)(Text("Title")),
+					Button(ButtonSurface)(Icon("line/switch-vertical-01")),
+				),
+				FlexRow(Gap1)(
+					Button(
+						ButtonSurface,
+						stimulus.Action("click->home#setMovie"),
+						stimulus.Target("home", "movie"),
+					)(Text("Movies")),
+					Button(
+						ButtonSurface,
+						stimulus.Action("click->home#setSeries"),
+						stimulus.Target("home", "series"),
+					)(Text("Series")),
+				),
+				Button(ButtonSurface)(Icon("line/filter-lines")),
+				InputText()(),
 			),
-			FlexRow(Gap1)(
-				Button(ButtonSurface)(Text("Movies")),
-				Button(ButtonSurface)(Text("Series")),
-			),
-			Button(ButtonSurface)(Icon("line/filter-lines")),
-			InputText()(),
+			posterGrid(works),
 		),
-		posterGrid(works),
 	)
 }

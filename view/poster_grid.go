@@ -14,7 +14,11 @@ func posterGrid(works []model.Work) html.Node {
 }
 
 func posterGridLink(w model.Work) html.Node {
-	return Box(HoverOverlay, Class("v-poster-grid-poster"))(
+	return Box(
+		HoverOverlay,
+		Class("v-poster-grid-poster"),
+		attr.Attr("data-kind")(w.Kind()),
+	)(
 		html.A(
 			Class("v-poster-grid-link"),
 			attr.Href(w.TheaterPath()),

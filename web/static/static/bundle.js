@@ -9090,6 +9090,25 @@
     }
   };
 
+  // view/home.js
+  var home_default = class extends Controller {
+    static values = { mode: String };
+    static targets = ["movie", "series"];
+    setMovie() {
+      this.modeValue = this.modeValue === "movie" ? "" : "movie";
+    }
+    setSeries() {
+      this.modeValue = this.modeValue === "series" ? "" : "series";
+    }
+    modeValueChanged(mode) {
+      for (const t of ["movie", "series"]) {
+        for (const el of this[`${t}Targets`]) {
+          el.toggleAttribute("data-selected", t === mode);
+        }
+      }
+    }
+  };
+
   // web/sortable.js
   function ownKeys(object, enumerableOnly) {
     var keys = Object.keys(object);
@@ -11433,6 +11452,7 @@
   Stimulus.register("settings-toggle", settings_toggle_default);
   Stimulus.register("collection", theater_collections_default);
   Stimulus.register("series", theater_series_default);
+  Stimulus.register("home", home_default);
 })();
 /*!
 Turbo 8.0.19

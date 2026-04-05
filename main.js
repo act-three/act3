@@ -15,6 +15,7 @@ import SettingsToggleController from "./ui/settings-toggle.js";
 import SeasonTitleController from "./view/season-title.js";
 import CollectionController from "./view/theater-collections.js";
 import Series from "./view/theater-series.js";
+import HomeController from "./view/home.js";
 import SortableController from "./ui/sortable.js";
 import "./view/wash.js";
 
@@ -34,3 +35,4 @@ Stimulus.register("settings-text-field", SettingsTextFieldController);
 Stimulus.register("settings-toggle", SettingsToggleController);
 Stimulus.register("collection", CollectionController);
 Stimulus.register("series", Series);
+Stimulus.register("home", HomeController);

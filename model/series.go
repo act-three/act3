@@ -57,6 +57,7 @@ type SeriesWork struct {
 	SeriesEditionHead
 }
 
+func (sw *SeriesWork) Kind() string  { return "series" }
 func (sw *SeriesWork) Title() string { return sw.SeriesHead.Title() }
 
 func (sw *SeriesWork) TheaterPath() string {

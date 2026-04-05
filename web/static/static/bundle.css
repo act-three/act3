@@ -2158,6 +2158,12 @@
   .v-home-toolbar {
     padding-block: 1rem;
   }
+  .v-home[data-home-mode-value=movie] .v-poster-grid-poster[data-kind=series] {
+    display: none;
+  }
+  .v-home[data-home-mode-value=series] .v-poster-grid-poster[data-kind=movie] {
+    display: none;
+  }
 }
 
 /* view/media-detail.css */

@@ -34,6 +34,7 @@ type Work interface {
 	Title() string
 	PosterPath() string
 	TheaterPath() string
+	Kind() string // "movie" or "series"
 }
 
 var (

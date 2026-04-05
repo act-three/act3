@@ -53,6 +53,8 @@ type MovieWork struct {
 	MovieEditionHead
 }
 
+func (mw *MovieWork) Kind() string { return "movie" }
+
 func (mw *MovieWork) TheaterPath() string {
 	return path.Join(mw.MovieHead.TheaterPath(), mw.MovieEditionHead.Slug())
 }
