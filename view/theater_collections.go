@@ -52,6 +52,7 @@ func TheaterCollection(c *model.Collection, itemCount, runtimeMinutes int64) htm
 			),
 			turbo.Frame("collection-content",
 				stimulus.Target("collection", "frame"),
+				turbo.FrameOption(attr.Attr("target")("_top")),
 			)(
 				TheaterCollectionOverview(c),
 			),
@@ -79,6 +80,7 @@ func theaterCollectionPlayable(p model.Playable) html.Node {
 		Class("v-collection-playlist-row"),
 		attr.Stylef("height:%dpx", h),
 	)(
+		html.A(attr.Href(p.TheaterPath()), Class("v-collection-playlist-row-link")),
 		theaterCollectionPlayableImage(p, h),
 		playButtonForList(p),
 		FlexCol(Class("v-collection-playlist-text"), Size3)(

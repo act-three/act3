@@ -37,14 +37,25 @@
 }
 
 .v-collection-playlist-row {
+	position: relative;
 	width: 100%;
 	align-items: center;
 	padding-right: 1rem;
+	border-radius: var(--radius-3);
 }
 
-.v-collection-playlist-row:nth-child(odd) {
-	background: oklch(0 0 0 / 0.1);
-	border-radius: var(--radius-3);
+.v-collection-playlist-row:nth-child(odd) { background: oklch(0 0 0 / 0.1); }
+
+.v-collection-playlist-row:hover:not(:has(button:hover)) { background: oklch(1 0 0 / 0.1); }
+
+.v-collection-playlist-row-link {
+	position: absolute;
+	inset: 0;
+}
+
+.v-collection-playlist-row > button {
+	position: relative;
+	z-index: 1;
 }
 
 .v-collection-playlist-row > * { flex: 0 0 auto; }
