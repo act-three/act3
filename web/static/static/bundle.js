@@ -9105,14 +9105,16 @@
       }
     }
     search(e) {
-      const q = e.target.value.toLowerCase();
+      const terms = e.target.value.toLowerCase().split(/\s+/).filter(Boolean);
       for (const el of this.element.querySelectorAll(".v-poster-grid-poster")) {
-        const title = (el.dataset.title || "").toLowerCase();
-        el.toggleAttribute("data-search-hidden", q !== "" && !title.includes(q));
+        const words = (el.dataset.title || "").toLowerCase().split(/\s+/);
+        const match = terms.every((t) => words.some((w) => w.startsWith(t)));
+        el.toggleAttribute("data-search-hidden", terms.length > 0 && !match);
       }
       for (const el of this.element.querySelectorAll(".v-collection-banner-x")) {
-        const title = (el.dataset.title || "").toLowerCase();
-        el.toggleAttribute("data-search-hidden", q === "" || !title.includes(q));
+        const words = (el.dataset.title || "").toLowerCase().split(/\s+/);
+        const match = terms.every((t) => words.some((w) => w.startsWith(t)));
+        el.toggleAttribute("data-search-hidden", terms.length === 0 || !match);
       }
     }
   };
