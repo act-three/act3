@@ -2927,6 +2927,7 @@
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: none;
     text-size-adjust: none;
+    color-scheme: only dark;
   }
   body:has(.v-app),
   body:has(#full-player) {
