@@ -3,7 +3,7 @@
 .v-media-container {
 	width: 100%;
 	max-width: 79.5rem;
-	padding-inline: 1.5rem;
+	padding: 0 1.5rem 8rem;
 	margin-inline: auto;
 }
 
