@@ -18,7 +18,9 @@ func Collections(cols []*model.CollectionHead) html.Node {
 	}
 	return browse("Collections", washURLs...)(
 		FlexCol(attr.Style("padding-top:1rem"))(
-			html.Range(cols, collectionBannerLink),
+			html.Range(cols, func(c *model.CollectionHead) html.Node {
+				return collectionBannerLink(c)
+			}),
 		),
 	)
 }
@@ -142,8 +144,13 @@ func collectionTabButton(url, label string, attrs ...attr.Node) html.Node {
 	)
 }
 
-func collectionBannerLink(c *model.CollectionHead) html.Node {
-	return Box(HoverOverlay, Class("v-collection-banner-x"))(
+func collectionBannerLink(c *model.CollectionHead, attrs ...attr.Node) html.Node {
+	return Box(
+		HoverOverlay,
+		Class("v-collection-banner-x"),
+		attr.Attr("data-title")(c.Title()),
+		attr.Group(attrs...),
+	)(
 		html.A(
 			Class("v-collection-banner-link"),
 			attr.Href(c.TheaterPath()),

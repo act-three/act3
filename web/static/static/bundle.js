@@ -9113,6 +9113,10 @@
         const title = (el.dataset.title || "").toLowerCase();
         el.toggleAttribute("data-search-hidden", q !== "" && !title.includes(q));
       }
+      for (const el of this.element.querySelectorAll(".v-collection-banner-x")) {
+        const title = (el.dataset.title || "").toLowerCase();
+        el.toggleAttribute("data-search-hidden", q === "" || !title.includes(q));
+      }
     }
   };
 

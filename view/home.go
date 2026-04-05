@@ -2,12 +2,16 @@ package view
 
 import (
 	"ily.dev/act3/html"
+	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 )
 
-func Home(works []model.Work) html.Node {
+func Home(
+	works []model.Work,
+	cols []*model.CollectionHead,
+) html.Node {
 	var washURLs []string
 	for _, w := range works {
 		washURLs = append(washURLs, w.PosterPath())
@@ -43,6 +47,11 @@ func Home(works []model.Work) html.Node {
 						stimulus.Action("input->home#search"),
 					),
 				),
+			),
+			FlexCol()(
+				html.Range(cols, func(c *model.CollectionHead) html.Node {
+					return collectionBannerLink(c, attr.Attr("data-search-hidden"))
+				}),
 			),
 			posterGrid(works),
 		),

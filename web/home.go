@@ -15,7 +15,11 @@ func (c *Config) home(_ http.ResponseWriter, req *http.Request) (html.Node, erro
 		if err != nil {
 			return nil, err
 		}
-		return view.Home(works), nil
+		cols, err := tr.CollectionHeadList(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return view.Home(works, cols), nil
 	})
 }
 
