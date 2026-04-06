@@ -1792,50 +1792,6 @@ func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) (
 	return items, nil
 }
 
-const releaseCreate = `-- name: ReleaseCreate :one
-INSERT INTO Release
-(
-	Name,
-	InfoHash
-)
-VALUES (?, ?)
-RETURNING id, name, infohash
-`
-
-type ReleaseCreateParams struct {
-	Name     string
-	InfoHash *string
-}
-
-func (q *Queries) ReleaseCreate(ctx context.Context, arg ReleaseCreateParams) (Release, error) {
-	row := q.db.QueryRowContext(ctx, releaseCreate, arg.Name, arg.InfoHash)
-	var i Release
-	err := row.Scan(&i.ID, &i.Name, &i.InfoHash)
-	return i, err
-}
-
-const releaseGet = `-- name: ReleaseGet :one
-SELECT id, name, infohash FROM Release WHERE ID = ?
-`
-
-func (q *Queries) ReleaseGet(ctx context.Context, id string) (Release, error) {
-	row := q.db.QueryRowContext(ctx, releaseGet, id)
-	var i Release
-	err := row.Scan(&i.ID, &i.Name, &i.InfoHash)
-	return i, err
-}
-
-const releaseGetByInfoHash = `-- name: ReleaseGetByInfoHash :one
-SELECT id, name, infohash FROM Release WHERE InfoHash = ?
-`
-
-func (q *Queries) ReleaseGetByInfoHash(ctx context.Context, infohash *string) (Release, error) {
-	row := q.db.QueryRowContext(ctx, releaseGetByInfoHash, infohash)
-	var i Release
-	err := row.Scan(&i.ID, &i.Name, &i.InfoHash)
-	return i, err
-}
-
 const renditionForStreamingCountUnencoded = `-- name: RenditionForStreamingCountUnencoded :one
 SELECT COUNT(*) FROM RenditionForStreaming
 WHERE VideoID = ? AND Hash = ''
@@ -3534,25 +3490,25 @@ func (q *Queries) TaskUnlock(ctx context.Context, id string) error {
 const videoCreate = `-- name: VideoCreate :one
 INSERT INTO Video
 (
-	ReleaseID,
-	ReleasePath
+	InfoHash,
+	Name
 )
 VALUES (?, ?)
-RETURNING id, releaseid, releasepath, originalhash, mvplaylist
+RETURNING id, infohash, name, originalhash, mvplaylist
 `
 
 type VideoCreateParams struct {
-	ReleaseID   string
-	ReleasePath string
+	InfoHash *string
+	Name     string
 }
 
 func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video, error) {
-	row := q.db.QueryRowContext(ctx, videoCreate, arg.ReleaseID, arg.ReleasePath)
+	row := q.db.QueryRowContext(ctx, videoCreate, arg.InfoHash, arg.Name)
 	var i Video
 	err := row.Scan(
 		&i.ID,
-		&i.ReleaseID,
-		&i.ReleasePath,
+		&i.InfoHash,
+		&i.Name,
 		&i.OriginalHash,
 		&i.MVPlaylist,
 	)
@@ -3560,7 +3516,7 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 }
 
 const videoGet = `-- name: VideoGet :one
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video WHERE ID = ?
+SELECT id, infohash, name, originalhash, mvplaylist FROM Video WHERE ID = ?
 `
 
 func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
@@ -3568,30 +3524,30 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 	var i Video
 	err := row.Scan(
 		&i.ID,
-		&i.ReleaseID,
-		&i.ReleasePath,
+		&i.InfoHash,
+		&i.Name,
 		&i.OriginalHash,
 		&i.MVPlaylist,
 	)
 	return i, err
 }
 
-const videoGetByReleasePath = `-- name: VideoGetByReleasePath :one
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video WHERE ReleaseID = ? AND ReleasePath = ?
+const videoGetByName = `-- name: VideoGetByName :one
+SELECT id, infohash, name, originalhash, mvplaylist FROM Video WHERE InfoHash = ? AND Name = ?
 `
 
-type VideoGetByReleasePathParams struct {
-	ReleaseID   string
-	ReleasePath string
+type VideoGetByNameParams struct {
+	InfoHash *string
+	Name     string
 }
 
-func (q *Queries) VideoGetByReleasePath(ctx context.Context, arg VideoGetByReleasePathParams) (Video, error) {
-	row := q.db.QueryRowContext(ctx, videoGetByReleasePath, arg.ReleaseID, arg.ReleasePath)
+func (q *Queries) VideoGetByName(ctx context.Context, arg VideoGetByNameParams) (Video, error) {
+	row := q.db.QueryRowContext(ctx, videoGetByName, arg.InfoHash, arg.Name)
 	var i Video
 	err := row.Scan(
 		&i.ID,
-		&i.ReleaseID,
-		&i.ReleasePath,
+		&i.InfoHash,
+		&i.Name,
 		&i.OriginalHash,
 		&i.MVPlaylist,
 	)
@@ -3599,7 +3555,7 @@ func (q *Queries) VideoGetByReleasePath(ctx context.Context, arg VideoGetByRelea
 }
 
 const videoListByEditionID = `-- name: VideoListByEditionID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
+SELECT id, infohash, name, originalhash, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
@@ -3619,8 +3575,8 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 		var i Video
 		if err := rows.Scan(
 			&i.ID,
-			&i.ReleaseID,
-			&i.ReleasePath,
+			&i.InfoHash,
+			&i.Name,
 			&i.OriginalHash,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3638,7 +3594,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 }
 
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
+SELECT id, infohash, name, originalhash, mvplaylist FROM Video
 WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 `
 
@@ -3653,8 +3609,8 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 		var i Video
 		if err := rows.Scan(
 			&i.ID,
-			&i.ReleaseID,
-			&i.ReleasePath,
+			&i.InfoHash,
+			&i.Name,
 			&i.OriginalHash,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3672,7 +3628,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 }
 
 const videoListByMovieEditionID = `-- name: VideoListByMovieEditionID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
+SELECT id, infohash, name, originalhash, mvplaylist FROM Video
 WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
 `
 
@@ -3687,8 +3643,8 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 		var i Video
 		if err := rows.Scan(
 			&i.ID,
-			&i.ReleaseID,
-			&i.ReleasePath,
+			&i.InfoHash,
+			&i.Name,
 			&i.OriginalHash,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3706,7 +3662,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 }
 
 const videoListByMovieID = `-- name: VideoListByMovieID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
+SELECT id, infohash, name, originalhash, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM MovieVideo
 	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
@@ -3724,8 +3680,8 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 		var i Video
 		if err := rows.Scan(
 			&i.ID,
-			&i.ReleaseID,
-			&i.ReleasePath,
+			&i.InfoHash,
+			&i.Name,
 			&i.OriginalHash,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3743,7 +3699,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 }
 
 const videoListBySeriesID = `-- name: VideoListBySeriesID :many
-SELECT id, releaseid, releasepath, originalhash, mvplaylist FROM Video
+SELECT id, infohash, name, originalhash, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
@@ -3764,8 +3720,8 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 		var i Video
 		if err := rows.Scan(
 			&i.ID,
-			&i.ReleaseID,
-			&i.ReleasePath,
+			&i.InfoHash,
+			&i.Name,
 			&i.OriginalHash,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3784,7 +3740,7 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 
 const videoUpdateMVPlaylist = `-- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?
-RETURNING id, releaseid, releasepath, originalhash, mvplaylist
+RETURNING id, infohash, name, originalhash, mvplaylist
 `
 
 type VideoUpdateMVPlaylistParams struct {
@@ -3797,8 +3753,8 @@ func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPl
 	var i Video
 	err := row.Scan(
 		&i.ID,
-		&i.ReleaseID,
-		&i.ReleasePath,
+		&i.InfoHash,
+		&i.Name,
 		&i.OriginalHash,
 		&i.MVPlaylist,
 	)
@@ -3807,7 +3763,7 @@ func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPl
 
 const videoUpdateOriginalHash = `-- name: VideoUpdateOriginalHash :one
 UPDATE Video SET OriginalHash = ? WHERE ID = ?
-RETURNING id, releaseid, releasepath, originalhash, mvplaylist
+RETURNING id, infohash, name, originalhash, mvplaylist
 `
 
 type VideoUpdateOriginalHashParams struct {
@@ -3820,8 +3776,8 @@ func (q *Queries) VideoUpdateOriginalHash(ctx context.Context, arg VideoUpdateOr
 	var i Video
 	err := row.Scan(
 		&i.ID,
-		&i.ReleaseID,
-		&i.ReleasePath,
+		&i.InfoHash,
+		&i.Name,
 		&i.OriginalHash,
 		&i.MVPlaylist,
 	)

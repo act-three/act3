@@ -538,8 +538,8 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 			html.Text(v.ID),
 		),
 		html.Div()(
-			html.Text("Release Path: "),
-			html.Text(v.ReleasePath),
+			html.Text("Name: "),
+			html.Text(v.Name),
 		),
 		html.Div()(
 			html.Text("Original Hash: "),

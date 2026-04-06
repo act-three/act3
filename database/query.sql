@@ -329,21 +329,6 @@ WHERE MovieEditionID = ?;
 SELECT * FROM MovieVideo
 WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?);
 
--- name: ReleaseCreate :one
-INSERT INTO Release
-(
-	Name,
-	InfoHash
-)
-VALUES (?, ?)
-RETURNING *;
-
--- name: ReleaseGet :one
-SELECT * FROM Release WHERE ID = ?;
-
--- name: ReleaseGetByInfoHash :one
-SELECT * FROM Release WHERE InfoHash = ?;
-
 -- name: RenditionForStreamingCountUnencoded :one
 SELECT COUNT(*) FROM RenditionForStreaming
 WHERE VideoID = ? AND Hash = '';
@@ -637,8 +622,8 @@ UPDATE Task SET Running = 0 WHERE ID = ?;
 -- name: VideoCreate :one
 INSERT INTO Video
 (
-	ReleaseID,
-	ReleasePath
+	InfoHash,
+	Name
 )
 VALUES (?, ?)
 RETURNING *;
@@ -646,8 +631,8 @@ RETURNING *;
 -- name: VideoGet :one
 SELECT * FROM Video WHERE ID = ?;
 
--- name: VideoGetByReleasePath :one
-SELECT * FROM Video WHERE ReleaseID = ? AND ReleasePath = ?;
+-- name: VideoGetByName :one
+SELECT * FROM Video WHERE InfoHash = ? AND Name = ?;
 
 -- name: VideoListByEditionID :many
 SELECT * FROM Video

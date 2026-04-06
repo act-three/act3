@@ -50,7 +50,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
-	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
+	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
 	hash, err := tx.m.store.CopyFile(diskPath)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
@@ -162,7 +162,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
-	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Starting")
+	tx.m.prog.Open(vid.ID, vid.Name, "Starting")
 
 	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -284,7 +284,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 	desc := rendDesc(rfs)
-	tx.m.prog.Open(progKey, vid.ReleasePath, desc+": starting")
+	tx.m.prog.Open(progKey, vid.Name, desc+": starting")
 
 	src, err := tx.m.store.Open(vid.OriginalHash)
 	if err != nil {
@@ -384,25 +384,21 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 	}
 
 	// Look up the download path via Transmission.
-	rel, err := tx.q.ReleaseGet(ctx, vid.ReleaseID)
-	if err != nil {
-		return err
-	}
-	if rel.InfoHash == nil {
-		return fmt.Errorf("release %s has no info hash", rel.ID)
+	if vid.InfoHash == nil {
+		return fmt.Errorf("video %s has no info hash", vid.ID)
 	}
 	tm := tx.m.transmission.Load()
 	if tm == nil {
 		return fmt.Errorf("no transmission client available")
 	}
-	ts, err := tm.TorrentGetAllForHashes(ctx, []string{*rel.InfoHash})
+	ts, err := tm.TorrentGetAllForHashes(ctx, []string{*vid.InfoHash})
 	if err != nil {
 		return err
 	}
 	if len(ts) != 1 {
-		return fmt.Errorf("torrent %s: got %d results, wanted 1", *rel.InfoHash, len(ts))
+		return fmt.Errorf("torrent %s: got %d results, wanted 1", *vid.InfoHash, len(ts))
 	}
-	srcPath, err := tx.transmissionDiskPath(ctx, &ts[0], vid.ReleasePath)
+	srcPath, err := tx.transmissionDiskPath(ctx, &ts[0], vid.Name)
 	if err != nil {
 		return err
 	}
@@ -434,7 +430,7 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 	}
 
 	// Copy source from download path into CAS.
-	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Copying")
+	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
 	hash, err := tx.m.store.CopyFile(srcPath)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
@@ -541,7 +537,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
-	tx.m.prog.Open(vid.ID, vid.ReleasePath, "Re-encoding")
+	tx.m.prog.Open(vid.ID, vid.Name, "Re-encoding")
 
 	return tx.planAndCreateRenditions(ctx, vid)
 }

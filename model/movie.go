@@ -178,7 +178,7 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 			path:     "/-/dl/" + vid.OriginalHash + "/" + filename,
 			filename: filename,
 			label: "Original (" +
-				strings.ReplaceAll(vid.ReleasePath, "/", " / ") + ")",
+				strings.ReplaceAll(vid.Name, "/", " / ") + ")",
 		})
 	}
 	return rends, nil

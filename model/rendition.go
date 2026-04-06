@@ -85,7 +85,7 @@ func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionF
 		rends = append(rends, &RenditionForDownload{
 			path:     path.Join("/-/dl", vid.OriginalHash, filename),
 			filename: filename,
-			label:    fmt.Sprintf("Original (%s)", vid.ReleasePath),
+			label:    fmt.Sprintf("Original (%s)", vid.Name),
 		})
 	}
 	return rends, nil

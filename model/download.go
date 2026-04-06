@@ -703,20 +703,9 @@ func (tx *TxRW) importEpisode(ctx Context,
 }
 
 func (tx *TxRW) importVideo(ctx Context, t *transmissionrpc.Torrent, path string) (*schema.Video, error) {
-	rel, err := tx.q.ReleaseGetByInfoHash(ctx, t.HashString)
-	if err == sql.ErrNoRows {
-		rel, err = tx.q.ReleaseCreate(ctx, schema.ReleaseCreateParams{
-			Name:     *t.Name,
-			InfoHash: t.HashString,
-		})
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	vid, err := tx.q.VideoGetByReleasePath(ctx, schema.VideoGetByReleasePathParams{
-		ReleaseID:   rel.ID,
-		ReleasePath: path,
+	vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
+		InfoHash: t.HashString,
+		Name:     path,
 	})
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
@@ -725,8 +714,8 @@ func (tx *TxRW) importVideo(ctx Context, t *transmissionrpc.Torrent, path string
 	}
 
 	vid, err = tx.q.VideoCreate(ctx, schema.VideoCreateParams{
-		ReleaseID:   rel.ID,
-		ReleasePath: path,
+		InfoHash: t.HashString,
+		Name:     path,
 	})
 	if err != nil {
 		return nil, err

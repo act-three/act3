@@ -115,14 +115,6 @@ CREATE TABLE MovieEdition
 )
 STRICT;
 
-CREATE TABLE Release
-(
-	ID       TEXT PRIMARY KEY DEFAULT ('rel'||newID()),
-	Name     TEXT NOT NULL,
-	InfoHash TEXT UNIQUE
-)
-STRICT;
-
 CREATE TABLE EpisodeVideo
 (
 	EpisodeID TEXT NOT NULL REFERENCES Episode,
@@ -142,11 +134,11 @@ STRICT, WITHOUT ROWID;
 CREATE TABLE Video
 (
 	ID           TEXT PRIMARY KEY DEFAULT ('vid'||newID()),
-	ReleaseID    TEXT NOT NULL REFERENCES Release,
-	ReleasePath  TEXT NOT NULL,
+	InfoHash     TEXT REFERENCES Download (InfoHash),
+	Name         TEXT NOT NULL, -- torrent path or file name
 	OriginalHash TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
-	UNIQUE (ReleaseID, ReleasePath)
+	UNIQUE (InfoHash, Name)
 )
 STRICT;
 

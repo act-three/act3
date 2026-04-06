@@ -10,7 +10,7 @@ type Video struct {
 }
 
 func (v *Video) ID() string                 { return v.v.ID }
-func (v *Video) ReleasePath() string        { return v.v.ReleasePath }
+func (v *Video) Name() string               { return v.v.Name }
 func (v *Video) OriginalHash() string       { return v.v.OriginalHash }
 func (v *Video) MVPlaylist() string         { return v.v.MVPlaylist }
 func (v *Video) PlaylistPath() string       { return "/-/plr/" + v.ID() + ".m3u8" }

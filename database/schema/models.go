@@ -93,12 +93,6 @@ type MovieVideo struct {
 	VideoID        string
 }
 
-type Release struct {
-	ID       string
-	Name     string
-	InfoHash *string
-}
-
 type RenditionForStreaming struct {
 	ID            string
 	VideoID       string
@@ -191,8 +185,8 @@ type User struct {
 
 type Video struct {
 	ID           string
-	ReleaseID    string
-	ReleasePath  string
+	InfoHash     *string
+	Name         string
 	OriginalHash string
 	MVPlaylist   string
 }

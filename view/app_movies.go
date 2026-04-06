@@ -454,8 +454,8 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 					html.Text(v.ID()),
 				),
 				html.Div()(
-					html.Text("Path: "),
-					html.Text(v.ReleasePath()),
+					html.Text("Name: "),
+					html.Text(v.Name()),
 				),
 				FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
 					html.Form(
