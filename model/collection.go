@@ -16,10 +16,10 @@ type CollectionHead struct {
 	col schema.Collection
 }
 
-func (c *CollectionHead) ID() string       { return c.col.ID }
-func (c *CollectionHead) Slug() string     { return c.col.Slug }
-func (c *CollectionHead) Title() string    { return c.col.Title }
-func (c *CollectionHead) BannerID() string { return c.col.BannerID }
+func (c *CollectionHead) ID() string        { return c.col.ID }
+func (c *CollectionHead) Slug() string      { return c.col.Slug }
+func (c *CollectionHead) Title() string     { return c.col.Title }
+func (c *CollectionHead) BannerKey() string { return c.col.BannerKey }
 
 func (c *CollectionHead) addr(field string) []string {
 	return []string{"collection", c.ID(), field}
@@ -32,7 +32,7 @@ func (c *CollectionHead) TitleField() (string, []string) { return c.Title(), c.T
 func (c *CollectionHead) SlugField() (string, []string)  { return c.Slug(), c.SlugAddr() }
 
 func (c *CollectionHead) BannerPath() string {
-	return BannerPath(c.col.BannerID)
+	return BannerPath(c.col.BannerKey)
 }
 
 func (c *CollectionHead) TheaterPath() string {
@@ -298,7 +298,7 @@ func (tx *TxRW) CollectionSeriesRemove(ctx Context, collectionID, seriesID strin
 	})
 }
 
-func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
+func (tx *TxRW) CollectionBannerKeySet(ctx Context, id, bannerKey string) error {
 	col, err := tx.q.CollectionGet(ctx, id)
 	if err != nil {
 		return err
@@ -307,19 +307,19 @@ func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 		tx.m.addEvent(&Event{
 			Type:    EventCollectionChangeBanner,
 			ID:      id,
-			OldText: col.BannerID,
-			NewText: bannerID,
+			OldText: col.BannerKey,
+			NewText: bannerKey,
 		})
 	})
-	err = tx.q.CollectionSetBannerID(ctx, schema.CollectionSetBannerIDParams{
-		BannerID: bannerID,
-		ID:       id,
+	err = tx.q.CollectionSetBannerKey(ctx, schema.CollectionSetBannerKeyParams{
+		BannerKey: bannerKey,
+		ID:        id,
 	})
 	if err != nil {
 		return err
 	}
-	if col.BannerID != "" {
-		tx.m.store.Remove(col.BannerID)
+	if col.BannerKey != "" {
+		tx.m.store.Remove(col.BannerKey)
 	}
 	return nil
 }

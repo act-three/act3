@@ -207,46 +207,46 @@ func (c *Config) eventCollectionSetSlug(ctx context.Context, colID, oldSlug, new
 	return n
 }
 
-func (c *Config) eventCollectionChangeBanner(ctx context.Context, colID, oldBannerID, newBannerID string) html.Node {
+func (c *Config) eventCollectionChangeBanner(ctx context.Context, colID, oldBannerKey, newBannerKey string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		col, err := tx.CollectionHead(ctx, colID)
 		if err != nil {
 			return nil, err
 		}
-		return view.CollectionChangeBanner(col, oldBannerID), nil
+		return view.CollectionChangeBanner(col, oldBannerKey), nil
 	})
 	return n
 }
 
-func (c *Config) eventMovieEditionChangePoster(ctx context.Context, editionID, oldPosterID, newPosterID string) html.Node {
+func (c *Config) eventMovieEditionChangePoster(ctx context.Context, editionID, oldPosterKey, newPosterKey string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		med, err := tx.MovieEditionHead(ctx, editionID)
 		if err != nil {
 			return nil, err
 		}
-		return view.MovieEditionChangePoster(med, oldPosterID), nil
+		return view.MovieEditionChangePoster(med, oldPosterKey), nil
 	})
 	return n
 }
 
-func (c *Config) eventSeriesEditionChangePoster(ctx context.Context, editionID, oldPosterID, newPosterID string) html.Node {
+func (c *Config) eventSeriesEditionChangePoster(ctx context.Context, editionID, oldPosterKey, newPosterKey string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		sed, err := tx.SeriesEditionHead(ctx, editionID)
 		if err != nil {
 			return nil, err
 		}
-		return view.SeriesEditionChangePoster(sed, oldPosterID), nil
+		return view.SeriesEditionChangePoster(sed, oldPosterKey), nil
 	})
 	return n
 }
 
-func (c *Config) eventEpisodeChangeThumbnail(ctx context.Context, episodeID, oldThumbnailID, newThumbnailID string) html.Node {
+func (c *Config) eventEpisodeChangeThumbnail(ctx context.Context, episodeID, oldThumbnailKey, newThumbnailKey string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ep, err := tx.EpisodeHead(ctx, episodeID)
 		if err != nil {
 			return nil, err
 		}
-		return view.EpisodeChangeThumbnail(ep, oldThumbnailID), nil
+		return view.EpisodeChangeThumbnail(ep, oldThumbnailKey), nil
 	})
 	return n
 }

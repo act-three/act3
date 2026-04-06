@@ -48,7 +48,7 @@ type EpisodeHead struct {
 }
 
 func (ep *EpisodeHead) ID() string           { return ep.ep.ID }
-func (ep *EpisodeHead) ThumbnailURL() string { return ThumbnailPath(ep.ep.ThumbnailID) }
+func (ep *EpisodeHead) ThumbnailURL() string { return ThumbnailPath(ep.ep.ThumbnailKey) }
 
 type Episode struct {
 	ep     schema.Episode
@@ -89,7 +89,7 @@ func (ep *Episode) Title() string   { return ep.ep.Title }
 func (ep *Episode) Airdate() string { return ep.ep.Airdate }
 func (ep *Episode) Summary() string { return ep.ep.Summary }
 func (ep *Episode) ThumbnailURL() string {
-	return ThumbnailPath(ep.ep.ThumbnailID)
+	return ThumbnailPath(ep.ep.ThumbnailKey)
 }
 func (ep *Episode) Type() string               { return ep.ep.Type }
 func (ep *Episode) Progress() []*progress.Item { return ep.prog }
@@ -325,7 +325,7 @@ func (tx *TxR) EpisodeEditions(ctx Context, episodeID string) ([]*Episode, error
 	return eps, nil
 }
 
-func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error {
+func (tx *TxRW) EpisodeThumbnailKeySet(ctx Context, id, thumbnailKey string) error {
 	ep, err := tx.q.EpisodeGet(ctx, id)
 	if err != nil {
 		return err
@@ -334,19 +334,19 @@ func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error
 		tx.m.addEvent(&Event{
 			Type:    EventEpisodeChangeThumbnail,
 			ID:      id,
-			OldText: ep.ThumbnailID,
-			NewText: thumbnailID,
+			OldText: ep.ThumbnailKey,
+			NewText: thumbnailKey,
 		})
 	})
-	err = tx.q.EpisodeThumbnailIDSet(ctx, schema.EpisodeThumbnailIDSetParams{
-		ThumbnailID: thumbnailID,
-		ID:          id,
+	err = tx.q.EpisodeThumbnailKeySet(ctx, schema.EpisodeThumbnailKeySetParams{
+		ThumbnailKey: thumbnailKey,
+		ID:           id,
 	})
 	if err != nil {
 		return err
 	}
-	if ep.ThumbnailID != "" {
-		tx.m.store.Remove(ep.ThumbnailID)
+	if ep.ThumbnailKey != "" {
+		tx.m.store.Remove(ep.ThumbnailKey)
 	}
 	return nil
 }

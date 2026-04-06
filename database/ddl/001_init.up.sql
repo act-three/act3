@@ -43,7 +43,7 @@ CREATE TABLE SeriesEdition
 	Slug           TEXT NOT NULL,
 	Label          TEXT NOT NULL,
 	Summary        TEXT NOT NULL,
-	PosterID       TEXT NOT NULL DEFAULT (''), -- storage blob ('' means unset)
+	PosterKey      TEXT NOT NULL DEFAULT (''), -- storage blob ('' means unset)
 	UNIQUE (SeriesID, Slug)
 )
 STRICT;
@@ -71,7 +71,7 @@ CREATE TABLE Episode
 	)),
 	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased
 	Runtime        INTEGER NOT NULL, -- minutes
-	ThumbnailID    TEXT NOT NULL DEFAULT ('')  -- storage blob ('' means unset)
+	ThumbnailKey   TEXT NOT NULL DEFAULT ('')  -- storage blob ('' means unset)
 )
 STRICT;
 
@@ -110,7 +110,7 @@ CREATE TABLE MovieEdition
 	Summary  TEXT NOT NULL,
 	Year     TEXT NOT NULL,
 	Runtime  INTEGER NOT NULL,    -- minutes
-	PosterID TEXT NOT NULL DEFAULT (''), -- storage blob ('' means unset)
+	PosterKey TEXT NOT NULL DEFAULT (''), -- storage blob ('' means unset)
 	UNIQUE (MovieID, Slug)
 )
 STRICT;
@@ -136,7 +136,7 @@ CREATE TABLE Video
 	ID           TEXT PRIMARY KEY DEFAULT ('vid'||newID()),
 	InfoHash     TEXT REFERENCES Download (InfoHash),
 	Name         TEXT NOT NULL, -- torrent path or file name
-	OriginalHash TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	OriginalKey  TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	UNIQUE (InfoHash, Name)
 )
@@ -167,7 +167,7 @@ CREATE TABLE RenditionForStreaming
 	MaxFPS        INTEGER NOT NULL, -- 0 = source
 	CopyAudio     INTEGER NOT NULL, -- 1: copy audio; 0: reencode to AAC
 	SurroundAudio INTEGER NOT NULL, -- 1: encode as 5.1(back); 0: stereo downmix
-	Hash          TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	Key           TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	Playlist      TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	Priority      INTEGER NOT NULL -- 0 = highest priority (best rendition)
 )
@@ -243,7 +243,7 @@ CREATE TABLE Collection
 	ID       TEXT PRIMARY KEY DEFAULT ('col'||newID()),
 	Slug     TEXT NOT NULL UNIQUE,
 	Title    TEXT NOT NULL,
-	BannerID TEXT NOT NULL DEFAULT ('') -- storage blob ('' means unset)
+	BannerKey TEXT NOT NULL DEFAULT ('') -- storage blob ('' means unset)
 )
 STRICT, WITHOUT ROWID;
 

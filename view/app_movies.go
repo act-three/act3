@@ -433,8 +433,8 @@ func MovieEditionSetSlug(ed *model.MovieWork, oldSlug string) html.Node {
 	)
 }
 
-func MovieEditionChangePoster(med *model.MovieEditionHead, oldPosterID string) html.Node {
-	oldURL := model.PosterPath(oldPosterID)
+func MovieEditionChangePoster(med *model.MovieEditionHead, oldPosterKey string) html.Node {
+	oldURL := model.PosterPath(oldPosterKey)
 	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(med.PosterPath()))())
 }
 
@@ -466,7 +466,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 							html.Text("Re-import"),
 						),
 					),
-					expr.IfElse(v.OriginalHash() != "",
+					expr.IfElse(v.OriginalKey() != "",
 						func() html.Node {
 							return html.Form(
 								attr.Action(

@@ -146,8 +146,8 @@ func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
 	)
 }
 
-func CollectionChangeBanner(col *model.CollectionHead, oldBannerID string) html.Node {
-	oldURL := model.BannerPath(oldBannerID)
+func CollectionChangeBanner(col *model.CollectionHead, oldBannerKey string) html.Node {
+	oldURL := model.BannerPath(oldBannerKey)
 	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(col.BannerPath()))())
 }
 

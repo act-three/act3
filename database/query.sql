@@ -92,8 +92,8 @@ JOIN CollectionSeries cs ON cs.SeriesID = s.ID
 WHERE cs.CollectionID = ?
 ORDER BY s.Title;
 
--- name: CollectionSetBannerID :exec
-UPDATE Collection SET BannerID = ? WHERE ID = ?;
+-- name: CollectionSetBannerKey :exec
+UPDATE Collection SET BannerKey = ? WHERE ID = ?;
 
 -- name: CollectionSetSlug :exec
 UPDATE Collection SET Slug = ? WHERE ID = ?;
@@ -213,8 +213,8 @@ ORDER BY ID;
 -- name: EpisodeSummarySet :exec
 UPDATE Episode SET Summary = ? WHERE ID = ?;
 
--- name: EpisodeThumbnailIDSet :exec
-UPDATE Episode SET ThumbnailID = ? WHERE ID = ?;
+-- name: EpisodeThumbnailKeySet :exec
+UPDATE Episode SET ThumbnailKey = ? WHERE ID = ?;
 
 -- name: EpisodeTitleSet :exec
 UPDATE Episode SET Title = ? WHERE ID = ?;
@@ -269,8 +269,8 @@ SELECT * FROM MovieEdition WHERE MovieID = ?;
 -- name: MovieEditionListDefault :many
 SELECT * FROM MovieEdition WHERE Slug = '';
 
--- name: MovieEditionPosterIDSet :exec
-UPDATE MovieEdition SET PosterID = ? WHERE ID = ?;
+-- name: MovieEditionPosterKeySet :exec
+UPDATE MovieEdition SET PosterKey = ? WHERE ID = ?;
 
 -- name: MovieEditionRuntimeSet :exec
 UPDATE MovieEdition SET Runtime = ? WHERE ID = ?;
@@ -328,7 +328,7 @@ WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?);
 
 -- name: RenditionForStreamingCountUnencoded :one
 SELECT COUNT(*) FROM RenditionForStreaming
-WHERE VideoID = ? AND Hash = '';
+WHERE VideoID = ? AND Key = '';
 
 -- name: RenditionForStreamingCreate :one
 INSERT INTO RenditionForStreaming (
@@ -373,16 +373,16 @@ WHERE VideoID = ?;
 
 -- name: RenditionForStreamingListEncodedByVideoID :many
 SELECT * FROM RenditionForStreaming
-WHERE VideoID = ? AND Hash != '';
+WHERE VideoID = ? AND Key != '';
 
 -- name: RenditionForStreamingNextUnencoded :one
 SELECT * FROM RenditionForStreaming
-WHERE VideoID = ? AND Hash = ''
+WHERE VideoID = ? AND Key = ''
 ORDER BY Priority ASC LIMIT 1;
 
 -- name: RenditionForStreamingUpdateEncode :one
 UPDATE RenditionForStreaming
-SET Hash = ?, Playlist = ?
+SET Key = ?, Playlist = ?
 WHERE ID = ?
 RETURNING *;
 
@@ -500,8 +500,8 @@ SELECT * FROM SeriesEdition WHERE SeriesID = ?;
 -- name: SeriesEditionListDefault :many
 SELECT * FROM SeriesEdition WHERE Slug = '';
 
--- name: SeriesEditionPosterIDSet :exec
-UPDATE SeriesEdition SET PosterID = ? WHERE ID = ?;
+-- name: SeriesEditionPosterKeySet :exec
+UPDATE SeriesEdition SET PosterKey = ? WHERE ID = ?;
 
 -- name: SeriesEditionSlugExists :one
 SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?;
@@ -669,6 +669,6 @@ WHERE ID IN (
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?
 RETURNING *;
 
--- name: VideoUpdateOriginalHash :one
-UPDATE Video SET OriginalHash = ? WHERE ID = ?
+-- name: VideoUpdateOriginalKey :one
+UPDATE Video SET OriginalKey = ? WHERE ID = ?
 RETURNING *;

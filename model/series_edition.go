@@ -26,7 +26,7 @@ func (sed *SeriesEditionHead) Summary() string  { return sed.sed.Summary }
 func (sed *SeriesEditionHead) SeriesID() string { return sed.sed.SeriesID }
 
 func (sed *SeriesEditionHead) PosterPath() string {
-	return PosterPath(sed.sed.PosterID)
+	return PosterPath(sed.sed.PosterKey)
 }
 
 func (sed *SeriesEditionHead) addr(field string) []string {
@@ -336,7 +336,7 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	})
 }
 
-func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error {
+func (tx *TxRW) SeriesEditionPosterKeySet(ctx Context, id, posterKey string) error {
 	sed, err := tx.q.SeriesEditionGet(ctx, id)
 	if err != nil {
 		return err
@@ -345,19 +345,19 @@ func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error
 		tx.m.addEvent(&Event{
 			Type:    EventSeriesEditionChangePoster,
 			ID:      id,
-			OldText: sed.PosterID,
-			NewText: posterID,
+			OldText: sed.PosterKey,
+			NewText: posterKey,
 		})
 	})
-	err = tx.q.SeriesEditionPosterIDSet(ctx, schema.SeriesEditionPosterIDSetParams{
-		PosterID: posterID,
-		ID:       id,
+	err = tx.q.SeriesEditionPosterKeySet(ctx, schema.SeriesEditionPosterKeySetParams{
+		PosterKey: posterKey,
+		ID:        id,
 	})
 	if err != nil {
 		return err
 	}
-	if sed.PosterID != "" {
-		tx.m.store.Remove(sed.PosterID)
+	if sed.PosterKey != "" {
+		tx.m.store.Remove(sed.PosterKey)
 	}
 	return nil
 }

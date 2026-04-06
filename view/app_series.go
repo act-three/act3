@@ -542,8 +542,8 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 			html.Text(v.Name),
 		),
 		html.Div()(
-			html.Text("Original Hash: "),
-			html.Text(v.OriginalHash),
+			html.Text("Original Key: "),
+			html.Text(v.OriginalKey),
 		),
 		expr.IfElse(v.MVPlaylist != "",
 			func() html.Node {
@@ -565,7 +565,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 					html.Text("Re-import"),
 				),
 			),
-			expr.IfElse(v.OriginalHash != "",
+			expr.IfElse(v.OriginalKey != "",
 				func() html.Node {
 					return html.Form(
 						attr.Action("/-/do/video-reencode/"+v.ID),
@@ -623,11 +623,11 @@ func appEpisodeDialogRendition(r schema.RenditionForStreaming) html.Node {
 			},
 			func() html.Node { return html.Group() },
 		),
-		expr.IfElse(r.Hash != "",
+		expr.IfElse(r.Key != "",
 			func() html.Node {
 				return html.Div()(
-					html.Text("Hash: "),
-					html.Text(r.Hash),
+					html.Text("Key: "),
+					html.Text(r.Key),
 				)
 			},
 			func() html.Node { return html.Group() },
@@ -745,8 +745,8 @@ func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
 	)
 }
 
-func SeriesEditionChangePoster(sed *model.SeriesEditionHead, oldPosterID string) html.Node {
-	oldURL := model.PosterPath(oldPosterID)
+func SeriesEditionChangePoster(sed *model.SeriesEditionHead, oldPosterKey string) html.Node {
+	oldURL := model.PosterPath(oldPosterKey)
 	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(sed.PosterPath()))())
 }
 
@@ -761,8 +761,8 @@ func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) html.Node {
 	)
 }
 
-func EpisodeChangeThumbnail(ep *model.EpisodeHead, oldThumbnailID string) html.Node {
-	oldURL := model.ThumbnailPath(oldThumbnailID)
+func EpisodeChangeThumbnail(ep *model.EpisodeHead, oldThumbnailKey string) html.Node {
+	oldURL := model.ThumbnailPath(oldThumbnailKey)
 	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(ep.ThumbnailURL()))())
 }
 

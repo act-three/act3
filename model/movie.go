@@ -175,7 +175,7 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 	for _, vid := range vids {
 		filename := "movie.mkv"
 		rends = append(rends, &RenditionForDownload{
-			path:     "/-/dl/" + vid.OriginalHash + "/" + filename,
+			path:     "/-/dl/" + vid.OriginalKey + "/" + filename,
 			filename: filename,
 			label: "Original (" +
 				strings.ReplaceAll(vid.Name, "/", " / ") + ")",

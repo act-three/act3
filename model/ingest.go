@@ -58,9 +58,9 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	}
 
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		vid, err = txw.q.VideoUpdateOriginalHash(ctx, schema.VideoUpdateOriginalHashParams{
-			ID:           vid.ID,
-			OriginalHash: hash,
+		vid, err = txw.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+			ID:          vid.ID,
+			OriginalKey: hash,
 		})
 		return err
 	})
@@ -74,11 +74,11 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 
 // planAndCreateRenditions probes the source in CAS, plans a
 // rendition ladder, creates the rendition DB records, and queues
-// pass1. The caller must have already set vid.OriginalHash and
+// pass1. The caller must have already set vid.OriginalKey and
 // opened progress tracking for vid.ID.
 func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 	tx.m.prog.UpdateStatus(vid.ID, "Probing")
-	f, err := tx.m.store.Open(vid.OriginalHash)
+	f, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
 		return err
@@ -182,7 +182,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 
 	// If there are reencode renditions, run pass 1.
 	if len(encodeIdxs) > 0 {
-		src, err := tx.m.store.Open(vid.OriginalHash)
+		src, err := tx.m.store.Open(vid.OriginalKey)
 		if err != nil {
 			return err
 		}
@@ -286,7 +286,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	desc := rendDesc(rfs)
 	tx.m.prog.Open(progKey, vid.Name, desc+": starting")
 
-	src, err := tx.m.store.Open(vid.OriginalHash)
+	src, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {
 		return err
 	}
@@ -348,7 +348,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		_, err := txw.q.RenditionForStreamingUpdateEncode(ctx,
 			schema.RenditionForStreamingUpdateEncodeParams{
 				ID:       rfs.ID,
-				Hash:     hash,
+				Key:      hash,
 				Playlist: playlist,
 			},
 		)
@@ -409,15 +409,15 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 		return err
 	}
 	for _, rfs := range rfsList {
-		if rfs.Hash != "" {
-			tx.m.store.Remove(rfs.Hash)
+		if rfs.Key != "" {
+			tx.m.store.Remove(rfs.Key)
 		}
 		tx.m.removePass1Stats(vid.ID, rfs.ID)
 	}
 
 	// Remove old original from CAS.
-	if vid.OriginalHash != "" {
-		tx.m.store.Remove(vid.OriginalHash)
+	if vid.OriginalKey != "" {
+		tx.m.store.Remove(vid.OriginalKey)
 	}
 
 	// Set up progress tracking.
@@ -454,9 +454,9 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		vid, err = txw.q.VideoUpdateOriginalHash(ctx, schema.VideoUpdateOriginalHashParams{
-			ID:           vid.ID,
-			OriginalHash: hash,
+		vid, err = txw.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+			ID:          vid.ID,
+			OriginalKey: hash,
 		})
 		return err
 	})
@@ -478,7 +478,7 @@ func (m *Model) ReencodeVideo(ctx Context, videoID string) (err error) {
 	if err != nil {
 		return err
 	}
-	if vid.OriginalHash == "" {
+	if vid.OriginalKey == "" {
 		return fmt.Errorf("video has no original hash")
 	}
 	return m.WithTxRW(func(tx *TxRW) error {
@@ -493,7 +493,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	if vid.OriginalHash == "" {
+	if vid.OriginalKey == "" {
 		return fmt.Errorf("video %s has no original hash", vid.ID)
 	}
 
@@ -503,8 +503,8 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 		return err
 	}
 	for _, rfs := range rfsList {
-		if rfs.Hash != "" {
-			tx.m.store.Remove(rfs.Hash)
+		if rfs.Key != "" {
+			tx.m.store.Remove(rfs.Key)
 		}
 		tx.m.removePass1Stats(vid.ID, rfs.ID)
 	}

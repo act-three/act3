@@ -103,7 +103,7 @@ func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) err
 		return err
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		return tx.EpisodeThumbnailIDSet(ctx, epID, thumbnailID)
+		return tx.EpisodeThumbnailKeySet(ctx, epID, thumbnailID)
 	})
 }
 
@@ -126,6 +126,6 @@ func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 		return err
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		return tx.SeriesEditionPosterIDSet(ctx, sedID, posterID)
+		return tx.SeriesEditionPosterKeySet(ctx, sedID, posterID)
 	})
 }

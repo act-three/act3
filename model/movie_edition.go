@@ -28,7 +28,7 @@ func (med *MovieEditionHead) Year() string    { return med.med.Year }
 func (med *MovieEditionHead) Runtime() int64  { return med.med.Runtime }
 
 func (med *MovieEditionHead) PosterPath() string {
-	return PosterPath(med.med.PosterID)
+	return PosterPath(med.med.PosterKey)
 }
 
 func (med *MovieEditionHead) addr(field string) []string {
@@ -376,7 +376,7 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 	return nil
 }
 
-func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error {
+func (tx *TxRW) MovieEditionPosterKeySet(ctx Context, id, posterKey string) error {
 	med, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {
 		return err
@@ -385,19 +385,19 @@ func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error 
 		tx.m.addEvent(&Event{
 			Type:    EventMovieEditionChangePoster,
 			ID:      id,
-			OldText: med.PosterID,
-			NewText: posterID,
+			OldText: med.PosterKey,
+			NewText: posterKey,
 		})
 	})
-	err = tx.q.MovieEditionPosterIDSet(ctx, schema.MovieEditionPosterIDSetParams{
-		PosterID: posterID,
-		ID:       id,
+	err = tx.q.MovieEditionPosterKeySet(ctx, schema.MovieEditionPosterKeySetParams{
+		PosterKey: posterKey,
+		ID:        id,
 	})
 	if err != nil {
 		return err
 	}
-	if med.PosterID != "" {
-		tx.m.store.Remove(med.PosterID)
+	if med.PosterKey != "" {
+		tx.m.store.Remove(med.PosterKey)
 	}
 	return nil
 }

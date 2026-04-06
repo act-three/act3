@@ -83,7 +83,7 @@ func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionF
 		filename := "episode.mkv"
 
 		rends = append(rends, &RenditionForDownload{
-			path:     path.Join("/-/dl", vid.OriginalHash, filename),
+			path:     path.Join("/-/dl", vid.OriginalKey, filename),
 			filename: filename,
 			label:    fmt.Sprintf("Original (%s)", vid.Name),
 		})

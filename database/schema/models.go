@@ -16,10 +16,10 @@ type AudioTrack struct {
 }
 
 type Collection struct {
-	ID       string
-	Slug     string
-	Title    string
-	BannerID string
+	ID        string
+	Slug      string
+	Title     string
+	BannerKey string
 }
 
 type CollectionMovie struct {
@@ -54,13 +54,13 @@ type DownloadPlan struct {
 }
 
 type Episode struct {
-	ID          string
-	Title       string
-	Summary     string
-	Type        string
-	Airdate     string
-	Runtime     int64
-	ThumbnailID string
+	ID           string
+	Title        string
+	Summary      string
+	Type         string
+	Airdate      string
+	Runtime      int64
+	ThumbnailKey string
 }
 
 type EpisodeVideo struct {
@@ -76,15 +76,15 @@ type Movie struct {
 }
 
 type MovieEdition struct {
-	ID       string
-	MovieID  string
-	Slug     string
-	Title    string
-	Label    string
-	Summary  string
-	Year     string
-	Runtime  int64
-	PosterID string
+	ID        string
+	MovieID   string
+	Slug      string
+	Title     string
+	Label     string
+	Summary   string
+	Year      string
+	Runtime   int64
+	PosterKey string
 }
 
 type MovieVideo struct {
@@ -102,7 +102,7 @@ type RenditionForStreaming struct {
 	MaxFPS        int64
 	CopyAudio     int64
 	SurroundAudio int64
-	Hash          string
+	Key           string
 	Playlist      string
 	Priority      int64
 }
@@ -145,12 +145,12 @@ type Series struct {
 }
 
 type SeriesEdition struct {
-	ID       string
-	SeriesID string
-	Slug     string
-	Label    string
-	Summary  string
-	PosterID string
+	ID        string
+	SeriesID  string
+	Slug      string
+	Label     string
+	Summary   string
+	PosterKey string
 }
 
 type Setting struct {
@@ -183,9 +183,9 @@ type User struct {
 }
 
 type Video struct {
-	ID           string
-	InfoHash     *string
-	Name         string
-	OriginalHash string
-	MVPlaylist   string
+	ID          string
+	InfoHash    *string
+	Name        string
+	OriginalKey string
+	MVPlaylist  string
 }
