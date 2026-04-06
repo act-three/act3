@@ -69,7 +69,7 @@ func appDownloadsSearchBar() html.Node {
 func appDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
-		ListID(dl.ID()),
+		ListID(dl.InfoHash()),
 		ListURL(dl.EditorPath()),
 	)(
 		CardContent()(
@@ -175,7 +175,7 @@ func appDownloadsDetail(dl *model.Download) html.Node {
 func appDownloadsImportControl(dl *model.Download) html.Node {
 	switch dl.State() {
 	case "downloaded":
-		return appDownloadsImportButton(dl.ID())
+		return appDownloadsImportButton(dl.InfoHash())
 	case "queued", "downloading":
 		return appDownloadsAutoImportToggle(dl)
 	default: // "imported", "error"
@@ -196,7 +196,7 @@ func appDownloadsImportButton(id string) html.Node {
 func appDownloadsAutoImportToggle(dl *model.Download) html.Node {
 	return html.Label(attr.Class("v-media-auto-import"))(
 		SettingsToggle("/-/do/download-auto-import", "auto-import", dl.AutoImport())(
-			Hidden("id", dl.ID()),
+			Hidden("id", dl.InfoHash()),
 		),
 		html.Text("Automatically import when download completes"),
 	)

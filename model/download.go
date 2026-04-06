@@ -39,7 +39,7 @@ type DownloadHead struct {
 	filesLen     int
 }
 
-func (d *DownloadHead) ID() string        { return d.d.ID }
+func (d *DownloadHead) InfoHash() string  { return d.d.InfoHash }
 func (d *DownloadHead) State() string     { return d.d.State }
 func (d *DownloadHead) Title() string     { return d.d.Title }
 func (d *DownloadHead) Error() string     { return d.d.Error }
@@ -47,7 +47,7 @@ func (d *DownloadHead) Progress() float64 { return d.d.Progress }
 func (d *DownloadHead) AutoImport() bool  { return d.d.Autoimport != 0 }
 
 func (d *DownloadHead) EditorPath() string {
-	return "/app/downloads/" + d.d.ID
+	return "/app/downloads/" + d.d.InfoHash
 }
 
 func (d *DownloadHead) PlanLen() int { return d.planLen }
@@ -150,7 +150,7 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 		return nil, err
 	}
 
-	d.plans, err = tx.q.DownloadPlanListByDownloadID(ctx, dl.ID)
+	d.plans, err = tx.q.DownloadPlanListByInfoHash(ctx, dl.InfoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 			return nil, err
 		}
 	}
-	items := tx.m.prog.List("dl-" + dl.ID)
+	items := tx.m.prog.List("dl-" + dl.InfoHash)
 	if len(items) > 0 {
 		d.fileProgress = map[string]float64{}
 		for _, item := range items {
@@ -240,7 +240,7 @@ func (tx *TxR) newDownloadHeadList(dls []schema.Download, err error) ([]*Downloa
 	}
 	res := make([]*DownloadHead, len(dls))
 	for i := range dls {
-		n, err := tx.q.DownloadPlanCountByDownloadID(context.Background(), dls[i].ID)
+		n, err := tx.q.DownloadPlanCountByInfoHash(context.Background(), dls[i].InfoHash)
 		if err != nil {
 			return nil, err
 		}
@@ -261,36 +261,28 @@ func (tx *TxR) DownloadHeadListByMovieEditionID(ctx Context, id string) ([]*Down
 	return tx.newDownloadHeadList(tx.q.DownloadListByPlanMovieEditionID(ctx, &id))
 }
 
-func (tx *TxR) Download(ctx Context, id string) (*Download, error) {
-	dl, err := tx.q.DownloadGet(ctx, id)
+func (tx *TxR) Download(ctx Context, infoHash string) (*Download, error) {
+	dl, err := tx.q.DownloadGet(ctx, infoHash)
 	if err != nil {
 		return nil, err
 	}
 	return tx.newDownload(ctx, dl)
 }
 
-func (tx *TxR) DownloadByInfoHash(ctx Context, hash string) (*Download, error) {
-	dl, err := tx.q.DownloadGetByInfoHash(ctx, hash)
-	if err != nil {
-		return nil, err
-	}
-	return tx.newDownload(ctx, dl)
-}
-
-func (tx *TxRW) DownloadAutoImportSet(ctx Context, id string, auto bool) error {
+func (tx *TxRW) DownloadAutoImportSet(ctx Context, infoHash string, auto bool) error {
 	v := int64(0)
 	if auto {
 		v = 1
 	}
 	_, err := tx.q.DownloadUpdateAutoImport(ctx, schema.DownloadUpdateAutoImportParams{
 		Autoimport: v,
-		ID:         id,
+		InfoHash:   infoHash,
 	})
 	if err != nil {
 		return err
 	}
 	if auto {
-		return tx.DownloadImport(ctx, id)
+		return tx.DownloadImport(ctx, infoHash)
 	}
 	return nil
 }
@@ -298,9 +290,9 @@ func (tx *TxRW) DownloadAutoImportSet(ctx Context, id string, auto bool) error {
 // DownloadImport imports all planned files for a download.
 // It fetches the torrent state from Transmission and imports
 // each completed file that has a plan entry.
-func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
-	defer errorfmt.Handlef("DownloadImport(%s): %w", id, &err)
-	d, err := tx.Download(ctx, id)
+func (tx *TxRW) DownloadImport(ctx Context, infoHash string) (err error) {
+	defer errorfmt.Handlef("DownloadImport(%s): %w", infoHash, &err)
+	d, err := tx.Download(ctx, infoHash)
 	if err != nil {
 		return err
 	}
@@ -336,9 +328,9 @@ func (tx *TxRW) DownloadImport(ctx Context, id string) (err error) {
 			return err
 		}
 		err = tx.q.DownloadPlanUpdateState(ctx, schema.DownloadPlanUpdateStateParams{
-			State:      "imported",
-			DownloadID: d.ID(),
-			Path:       path,
+			State:    "imported",
+			InfoHash: d.InfoHash(),
+			Path:     path,
 		})
 		if err != nil {
 			return err
@@ -361,21 +353,21 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err
 		}
 	}
 	infoHash := mi.HashInfoBytes().HexString()
-	if dl, err := tx.q.DownloadGetByInfoHash(ctx, infoHash); err != nil && err != sql.ErrNoRows {
+	if dl, err := tx.q.DownloadGet(ctx, infoHash); err != nil && err != sql.ErrNoRows {
 		return nil, err
 	} else if err == nil {
 		return tx.newDownload(ctx, dl)
 	}
 	dl, err := tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
+		InfoHash: infoHash,
 		State:    "queued",
 		Title:    info.Name,
 		Torrent:  b,
-		InfoHash: infoHash,
 	})
 	if err != nil {
 		return nil, err
 	}
-	err = tx.addTask(ctx, taskAddDownloadToTransmission, dl.ID)
+	err = tx.addTask(ctx, taskAddDownloadToTransmission, dl.InfoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -415,8 +407,8 @@ func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) error {
 // downloadForPlanning fetches a download and validates it
 // can still be planned (not already done/error),
 // then parses the torrent info.
-func (tx *TxRW) downloadForPlanning(ctx Context, id string) (schema.Download, *metainfo.Info, error) {
-	dl, err := tx.q.DownloadGet(ctx, id)
+func (tx *TxRW) downloadForPlanning(ctx Context, infoHash string) (schema.Download, *metainfo.Info, error) {
+	dl, err := tx.q.DownloadGet(ctx, infoHash)
 	if err != nil {
 		return dl, nil, err
 	}
@@ -437,9 +429,9 @@ func (tx *TxRW) downloadForPlanning(ctx Context, id string) (schema.Download, *m
 	return dl, info, nil
 }
 
-func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Download, err error) {
-	defer errorfmt.Handlef("CreateDownloadPlanSeries(%s, %s): %w", id, sedID, &err)
-	dl, info, err := tx.downloadForPlanning(ctx, id)
+func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, infoHash, sedID string) (d *Download, err error) {
+	defer errorfmt.Handlef("CreateDownloadPlanSeries(%s, %s): %w", infoHash, sedID, &err)
+	dl, info, err := tx.downloadForPlanning(ctx, infoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +439,7 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Down
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.DownloadPlanDeleteByDownloadID(ctx, dl.ID)
+	err = tx.q.DownloadPlanDeleteByInfoHash(ctx, dl.InfoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -462,16 +454,16 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Down
 			continue
 		}
 		err = tx.q.DownloadPlanCreate(ctx, schema.DownloadPlanCreateParams{
-			DownloadID: dl.ID,
-			Path:       p,
-			EpisodeID:  &ep.ep.ID,
+			InfoHash:  dl.InfoHash,
+			Path:      p,
+			EpisodeID: &ep.ep.ID,
 		})
 		if err != nil {
 			return nil, err
 		}
 	}
 	dl, err = tx.q.DownloadUpdatePlanSeries(ctx, schema.DownloadUpdatePlanSeriesParams{
-		ID:                  dl.ID,
+		InfoHash:            dl.InfoHash,
 		PlanSeriesEditionID: &sedID,
 	})
 	if err != nil {
@@ -480,13 +472,13 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, id, sedID string) (d *Down
 	return tx.newDownload(ctx, dl)
 }
 
-func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, id, medID string) (d *Download, err error) {
-	defer errorfmt.Handlef("CreateDownloadPlanMovie(%s, %s): %w", id, medID, &err)
-	dl, info, err := tx.downloadForPlanning(ctx, id)
+func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d *Download, err error) {
+	defer errorfmt.Handlef("CreateDownloadPlanMovie(%s, %s): %w", infoHash, medID, &err)
+	dl, info, err := tx.downloadForPlanning(ctx, infoHash)
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.DownloadPlanDeleteByDownloadID(ctx, dl.ID)
+	err = tx.q.DownloadPlanDeleteByInfoHash(ctx, dl.InfoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +487,7 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, id, medID string) (d *Downl
 			return nil
 		}
 		return tx.q.DownloadPlanCreate(ctx, schema.DownloadPlanCreateParams{
-			DownloadID:     dl.ID,
+			InfoHash:       dl.InfoHash,
 			Path:           path,
 			MovieEditionID: &medID,
 		})
@@ -512,7 +504,7 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, id, medID string) (d *Downl
 		}
 	}
 	dl, err = tx.q.DownloadUpdatePlanMovie(ctx, schema.DownloadUpdatePlanMovieParams{
-		ID:                 dl.ID,
+		InfoHash:           dl.InfoHash,
 		PlanMovieEditionID: &medID,
 	})
 	if err != nil {
@@ -524,16 +516,16 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, id, medID string) (d *Downl
 func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.Download, error) {
 	slog.InfoContext(ctx, "update-download", "hash", *t.HashString)
 
-	d, err := tx.DownloadByInfoHash(ctx, *t.HashString)
+	d, err := tx.Download(ctx, *t.HashString)
 	if err != nil {
 		return schema.Download{}, err
 	}
-	ctx = logcontext.With(ctx, "dl", d.ID())
+	ctx = logcontext.With(ctx, "dl", d.InfoHash())
 
 	if t.ErrorString != nil && *t.ErrorString != "" {
 		return tx.q.DownloadUpdateError(ctx, schema.DownloadUpdateErrorParams{
-			ID:    d.ID(),
-			Error: *t.ErrorString,
+			InfoHash: d.InfoHash(),
+			Error:    *t.ErrorString,
 		})
 	}
 
@@ -557,9 +549,9 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 			continue
 		}
 		err = tx.q.DownloadPlanUpdateState(ctx, schema.DownloadPlanUpdateStateParams{
-			State:      "downloaded",
-			DownloadID: d.ID(),
-			Path:       path,
+			State:    "downloaded",
+			InfoHash: d.InfoHash(),
+			Path:     path,
 		})
 		if err != nil {
 			return schema.Download{}, err
@@ -579,9 +571,9 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 				return schema.Download{}, err
 			}
 			err = tx.q.DownloadPlanUpdateState(ctx, schema.DownloadPlanUpdateStateParams{
-				State:      "imported",
-				DownloadID: d.ID(),
-				Path:       path,
+				State:    "imported",
+				InfoHash: d.InfoHash(),
+				Path:     path,
 			})
 			if err != nil {
 				return schema.Download{}, err
@@ -595,7 +587,7 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.
 		doneness = *t.PercentDone
 	}
 	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
-		ID:       d.ID(),
+		InfoHash: d.InfoHash(),
 		State:    d.deriveState(),
 		Progress: doneness,
 	})
@@ -638,7 +630,7 @@ func (tx *TxRW) downloadUpdateState(ctx Context, d *Download) error {
 		tx.m.setInfoHashActive(d.d.InfoHash, state == "downloading")
 	})
 	_, err := tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
-		ID:       d.ID(),
+		InfoHash: d.InfoHash(),
 		State:    state,
 		Progress: d.Progress(),
 	})
@@ -775,7 +767,7 @@ func (m *Model) pollTransmissionOnce() error {
 			if ts[i].HashString == nil {
 				continue
 			}
-			dl, err := tx.DownloadByInfoHash(ctx, *ts[i].HashString)
+			dl, err := tx.Download(ctx, *ts[i].HashString)
 			if err != nil {
 				return err
 			}
@@ -799,10 +791,10 @@ func (m *Model) updateFileProgress(t *transmissionrpc.Torrent, dl *Download) {
 			continue
 		}
 		h := sha256.Sum256([]byte(p))
-		key := "dlf-" + dl.ID() + "-" + hex.EncodeToString(h[:8])
+		key := "dlf-" + dl.InfoHash() + "-" + hex.EncodeToString(h[:8])
 		if tf.Length > 0 {
 			frac := float64(tf.BytesCompleted) / float64(tf.Length)
-			m.prog.AddEdge("dl-"+dl.ID(), key)
+			m.prog.AddEdge("dl-"+dl.InfoHash(), key)
 			m.prog.AddEdge(epID, key)
 			m.prog.Open(key, p, "Downloading")
 			m.prog.Update(key, frac)

@@ -33,13 +33,12 @@ type CollectionSeries struct {
 }
 
 type Download struct {
-	ID                  string
+	InfoHash            string
 	Createdat           int64
 	State               string
 	Title               string
 	Error               string
 	Torrent             []byte
-	InfoHash            string
 	Progress            float64
 	Autoimport          int64
 	PlanSeriesEditionID *string
@@ -47,7 +46,7 @@ type Download struct {
 }
 
 type DownloadPlan struct {
-	DownloadID     string
+	InfoHash       string
 	Path           string
 	EpisodeID      *string
 	MovieEditionID *string

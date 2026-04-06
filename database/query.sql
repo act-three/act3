@@ -104,73 +104,70 @@ UPDATE Collection SET Title = ? WHERE ID = ?;
 -- name: DownloadCreate :one
 INSERT INTO Download
 (
+	InfoHash,
 	State,
 	Title,
-	Torrent,
-	InfoHash
+	Torrent
 )
 VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: DownloadGet :one
-SELECT * FROM Download WHERE ID = ?;
-
--- name: DownloadGetByInfoHash :one
 SELECT * FROM Download WHERE InfoHash = ?;
 
 -- name: DownloadList :many
 SELECT * FROM Download
-ORDER BY ID DESC;
+ORDER BY CreatedAt DESC;
 
 -- name: DownloadListByPlanMovieEditionID :many
 SELECT * FROM Download
 WHERE PlanMovieEditionID = ?
-ORDER BY ID DESC;
+ORDER BY CreatedAt DESC;
 
 -- name: DownloadListByPlanSeriesEditionID :many
 SELECT * FROM Download
 WHERE PlanSeriesEditionID = ?
-ORDER BY ID DESC;
+ORDER BY CreatedAt DESC;
 
 -- name: DownloadListInfoHashesDownloading :many
 SELECT InfoHash FROM Download
 WHERE State = 'downloading';
 
--- name: DownloadPlanCountActiveByDownloadID :one
-SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ? AND State != 'imported';
+-- name: DownloadPlanCountActiveByInfoHash :one
+SELECT COUNT(*) FROM DownloadPlan WHERE InfoHash = ? AND State != 'imported';
 
--- name: DownloadPlanCountByDownloadID :one
-SELECT COUNT(*) FROM DownloadPlan WHERE DownloadID = ?;
+-- name: DownloadPlanCountByInfoHash :one
+SELECT COUNT(*) FROM DownloadPlan WHERE InfoHash = ?;
 
 -- name: DownloadPlanCreate :exec
-INSERT INTO DownloadPlan (DownloadID, Path, EpisodeID, MovieEditionID)
+INSERT INTO DownloadPlan (InfoHash, Path, EpisodeID, MovieEditionID)
 VALUES (?, ?, ?, ?);
 
--- name: DownloadPlanDeleteByDownloadID :exec
-DELETE FROM DownloadPlan WHERE DownloadID = ?;
+-- name: DownloadPlanDeleteByInfoHash :exec
+DELETE FROM DownloadPlan WHERE InfoHash = ?;
 
--- name: DownloadPlanListByDownloadID :many
-SELECT * FROM DownloadPlan WHERE DownloadID = ?;
+-- name: DownloadPlanListByInfoHash :many
+SELECT * FROM DownloadPlan WHERE InfoHash = ?;
 
 -- name: DownloadPlanUpdateState :exec
-UPDATE DownloadPlan SET State = ? WHERE DownloadID = ? AND Path = ?;
+UPDATE DownloadPlan SET State = ? WHERE InfoHash = ? AND Path = ?;
 
 -- name: DownloadUpdateAutoImport :one
-UPDATE Download SET AutoImport = ? WHERE ID = ? RETURNING *;
+UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING *;
 
 -- name: DownloadUpdateError :one
-UPDATE Download SET State = 'error', Error = ? WHERE ID = ? RETURNING *;
+UPDATE Download SET State = 'error', Error = ? WHERE InfoHash = ? RETURNING *;
 
 -- name: DownloadUpdatePlanMovie :one
 UPDATE Download SET
 	PlanMovieEditionID = ?
-WHERE ID = ?
+WHERE InfoHash = ?
 RETURNING *;
 
 -- name: DownloadUpdatePlanSeries :one
 UPDATE Download SET
 	PlanSeriesEditionID = ?
-WHERE ID = ?
+WHERE InfoHash = ?
 RETURNING *;
 
 -- name: DownloadUpdateProgress :one
@@ -178,7 +175,7 @@ UPDATE Download SET
 	State = ?,
 	Progress = ?,
 	Error = ''
-WHERE ID = ? RETURNING *;
+WHERE InfoHash = ? RETURNING *;
 
 -- name: EpisodeAirdateSet :exec
 UPDATE Episode SET Airdate = ? WHERE ID = ?;

@@ -91,10 +91,10 @@ func (c *Config) doTorrentAdd(w http.ResponseWriter, req *http.Request) (html.No
 		// depending on which hidden field is present.
 		var edID string
 		if sedID := req.FormValue("sed-id"); sedID != "" {
-			dl, err = tx.DownloadCreatePlanSeries(ctx, dl.ID(), sedID)
+			dl, err = tx.DownloadCreatePlanSeries(ctx, dl.InfoHash(), sedID)
 			edID = sedID
 		} else if medID := req.FormValue("med-id"); medID != "" {
-			dl, err = tx.DownloadCreatePlanMovie(ctx, dl.ID(), medID)
+			dl, err = tx.DownloadCreatePlanMovie(ctx, dl.InfoHash(), medID)
 			edID = medID
 		}
 		if err != nil {

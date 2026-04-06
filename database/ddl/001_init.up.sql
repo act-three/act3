@@ -190,9 +190,9 @@ CREATE INDEX Index_Task_Queue ON Task (Queue, Running, NextRun, Priority, ID);
 
 CREATE TABLE Download
 (
-	ID        TEXT PRIMARY KEY DEFAULT ('dl'||newID()),
-	CreatedAt INTEGER NOT NULL DEFAULT (unixepoch()),
-	State     TEXT NOT NULL CHECK (State IN (
+	InfoHash            TEXT PRIMARY KEY,
+	CreatedAt           INTEGER NOT NULL DEFAULT (unixepoch()),
+	State               TEXT NOT NULL CHECK (State IN (
 		'queued',
 		'downloading',
 		'downloaded',
@@ -202,7 +202,6 @@ CREATE TABLE Download
 	Title               TEXT NOT NULL,
 	Error               TEXT NOT NULL DEFAULT (''),
 	Torrent             BLOB NOT NULL,
-	InfoHash            TEXT NOT NULL UNIQUE,
 	Progress            REAL NOT NULL DEFAULT (0.0),
 	AutoImport          INTEGER NOT NULL DEFAULT (0),
 	PlanSeriesEditionID TEXT REFERENCES SeriesEdition,
@@ -216,7 +215,7 @@ WHERE PlanMovieEditionID IS NOT NULL;
 
 CREATE TABLE DownloadPlan
 (
-	DownloadID     TEXT NOT NULL REFERENCES Download,
+	InfoHash       TEXT NOT NULL REFERENCES Download,
 	Path           TEXT NOT NULL,
 	EpisodeID      TEXT REFERENCES Episode,
 	MovieEditionID TEXT REFERENCES MovieEdition,
@@ -225,7 +224,7 @@ CREATE TABLE DownloadPlan
 		'downloaded',
 		'imported'
 	)),
-	PRIMARY KEY (DownloadID, Path),
+	PRIMARY KEY (InfoHash, Path),
 	CHECK (EpisodeID IS NULL OR MovieEditionID IS NULL)
 )
 STRICT, WITHOUT ROWID;

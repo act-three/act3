@@ -68,7 +68,6 @@
 						"surroundaudio": "SurroundAudio",
 						"videoid": "VideoID",
 						"downloadplan": "DownloadPlan",
-						"downloadid": "DownloadID",
 						"group": "Group",
 						"kind": "Kind",
 						"target": "Target"
