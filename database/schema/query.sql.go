@@ -2948,47 +2948,6 @@ func (q *Queries) SeriesEditionSummarySet(ctx context.Context, arg SeriesEdition
 	return err
 }
 
-const seriesGenreAdd = `-- name: SeriesGenreAdd :exec
-INSERT INTO SeriesGenre (SeriesID, GenreName) VALUES (?, ?)
-`
-
-type SeriesGenreAddParams struct {
-	SeriesID  string
-	GenreName string
-}
-
-func (q *Queries) SeriesGenreAdd(ctx context.Context, arg SeriesGenreAddParams) error {
-	_, err := q.db.ExecContext(ctx, seriesGenreAdd, arg.SeriesID, arg.GenreName)
-	return err
-}
-
-const seriesGenreList = `-- name: SeriesGenreList :many
-SELECT GenreName FROM SeriesGenre WHERE SeriesID = ?
-`
-
-func (q *Queries) SeriesGenreList(ctx context.Context, seriesid string) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, seriesGenreList, seriesid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []string
-	for rows.Next() {
-		var genrename string
-		if err := rows.Scan(&genrename); err != nil {
-			return nil, err
-		}
-		items = append(items, genrename)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const seriesGet = `-- name: SeriesGet :one
 SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE ID = ?
 `
@@ -3304,47 +3263,6 @@ type SlugUpdateParams struct {
 func (q *Queries) SlugUpdate(ctx context.Context, arg SlugUpdateParams) error {
 	_, err := q.db.ExecContext(ctx, slugUpdate, arg.Slug, arg.Target)
 	return err
-}
-
-const storageCreate = `-- name: StorageCreate :exec
-INSERT INTO Storage (Path, Contents) VALUES (?, ?)
-`
-
-type StorageCreateParams struct {
-	Path     string
-	Contents string
-}
-
-func (q *Queries) StorageCreate(ctx context.Context, arg StorageCreateParams) error {
-	_, err := q.db.ExecContext(ctx, storageCreate, arg.Path, arg.Contents)
-	return err
-}
-
-const storageList = `-- name: StorageList :many
-SELECT path, contents FROM Storage
-`
-
-func (q *Queries) StorageList(ctx context.Context) ([]Storage, error) {
-	rows, err := q.db.QueryContext(ctx, storageList)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Storage
-	for rows.Next() {
-		var i Storage
-		if err := rows.Scan(&i.Path, &i.Contents); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const taskCountError = `-- name: TaskCountError :one

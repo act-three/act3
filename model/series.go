@@ -256,15 +256,6 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 	if err != nil {
 		return nil, err
 	}
-	for _, g := range show.Genres {
-		err := tx.q.SeriesGenreAdd(ctx, schema.SeriesGenreAddParams{
-			SeriesID:  srID,
-			GenreName: g,
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
 	return &SeriesWork{
 		SeriesHead:        SeriesHead{srData},
 		SeriesEditionHead: SeriesEditionHead{sedData},

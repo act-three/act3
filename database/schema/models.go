@@ -160,11 +160,6 @@ type SeriesEdition struct {
 	PosterID string
 }
 
-type Seriesgenre struct {
-	SeriesID  string
-	GenreName string
-}
-
 type Setting struct {
 	Key   string
 	Group string
@@ -175,27 +170,6 @@ type Slug struct {
 	Slug   string
 	Kind   string
 	Target string
-}
-
-type Storage struct {
-	Path     string
-	Contents string
-}
-
-type Tag struct {
-	ID      string
-	Name    string
-	OwnerID *int64
-}
-
-type Tagmovie struct {
-	TagID   string
-	MovieID string
-}
-
-type Tagseries struct {
-	TagID    string
-	SeriesID string
 }
 
 type Task struct {

@@ -20,10 +20,6 @@ var excludeFSType = map[string]bool{
 func (c *Config) appStorage(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		storage, err := tx.StorageList(ctx)
-		if err != nil {
-			return nil, err
-		}
 		fsList, err := fsinfo.GetInfo()
 		if err != nil {
 			return nil, err
@@ -55,7 +51,7 @@ func (c *Config) appStorage(_ http.ResponseWriter, req *http.Request) (html.Node
 			})
 		}
 
-		title, body := view.AppStorage(storage, fs)
+		title, body := view.AppStorage(fs)
 		return c.app(ctx, tx, title, body)
 	})
 }

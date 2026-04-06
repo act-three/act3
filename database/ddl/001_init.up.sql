@@ -15,13 +15,6 @@ CREATE TABLE Slug
 )
 STRICT;
 
-CREATE TABLE Storage
-(
-	Path     TEXT PRIMARY KEY,
-	Contents TEXT NOT NULL CHECK (Contents IN ('Movie', 'Series'))
-)
-STRICT;
-
 CREATE TABLE Series
 (
 	ID     TEXT PRIMARY KEY,
@@ -42,14 +35,6 @@ CREATE TABLE Series
 	TVRageID INTEGER UNIQUE
 )
 STRICT;
-
-CREATE TABLE SeriesGenre
-(
-	SeriesID  TEXT NOT NULL REFERENCES Series,
-	GenreName TEXT NOT NULL,
-	PRIMARY KEY (SeriesID, GenreName)
-)
-STRICT, WITHOUT ROWID;
 
 CREATE TABLE SeriesEdition
 (
@@ -129,32 +114,6 @@ CREATE TABLE MovieEdition
 	UNIQUE (MovieID, Slug)
 )
 STRICT;
-
-CREATE TABLE Tag
-(
-	ID      TEXT PRIMARY KEY DEFAULT ('t'||newID()),
-	Name    TEXT NOT NULL,
-	OwnerID INTEGER
-)
-STRICT;
-
-CREATE TABLE TagSeries
-(
-	TagID    TEXT NOT NULL REFERENCES Tag,
-	SeriesID TEXT NOT NULL REFERENCES Series,
-	PRIMARY KEY (TagID, SeriesID)
-)
-STRICT, WITHOUT ROWID;
-CREATE INDEX Index_TagSeries_SeriesID ON TagSeries (SeriesID);
-
-CREATE TABLE TagMovie
-(
-	TagID   TEXT NOT NULL REFERENCES Tag,
-	MovieID TEXT NOT NULL REFERENCES Movie,
-	PRIMARY KEY (TagID, MovieID)
-)
-STRICT, WITHOUT ROWID;
-CREATE INDEX Index_TagMovie_MovieID ON TagMovie (MovieID);
 
 CREATE TABLE Release
 (

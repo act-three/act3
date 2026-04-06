@@ -530,13 +530,6 @@ UPDATE SeriesEdition SET Slug = ? WHERE ID = ?;
 -- name: SeriesEditionSummarySet :exec
 UPDATE SeriesEdition SET Summary = ? WHERE ID = ?;
 
-
--- name: SeriesGenreAdd :exec
-INSERT INTO SeriesGenre (SeriesID, GenreName) VALUES (?, ?);
-
--- name: SeriesGenreList :many
-SELECT GenreName FROM SeriesGenre WHERE SeriesID = ?;
-
 -- name: SeriesGet :one
 SELECT * FROM Series WHERE ID = ?;
 
@@ -586,12 +579,6 @@ SELECT * FROM Slug WHERE Slug = ?;
 
 -- name: SlugUpdate :exec
 UPDATE Slug SET Slug = ? WHERE Target = ?;
-
--- name: StorageCreate :exec
-INSERT INTO Storage (Path, Contents) VALUES (?, ?);
-
--- name: StorageList :many
-SELECT * FROM Storage;
 
 -- name: TaskCountError :one
 SELECT COUNT(*) FROM Task WHERE Failures > 0;
