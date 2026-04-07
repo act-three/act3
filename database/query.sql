@@ -133,24 +133,6 @@ ORDER BY CreatedAt DESC;
 SELECT InfoHash FROM Download
 WHERE State = 'downloading';
 
--- name: DownloadPlanCountActiveByInfoHash :one
-SELECT COUNT(*) FROM DownloadPlan WHERE InfoHash = ? AND State != 'imported';
-
--- name: DownloadPlanCountByInfoHash :one
-SELECT COUNT(*) FROM DownloadPlan WHERE InfoHash = ?;
-
--- name: DownloadPlanCreate :exec
-INSERT INTO DownloadPlan (InfoHash, Path, EpisodeID, MovieEditionID)
-VALUES (?, ?, ?, ?);
-
--- name: DownloadPlanDeleteByInfoHash :exec
-DELETE FROM DownloadPlan WHERE InfoHash = ?;
-
--- name: DownloadPlanListByInfoHash :many
-SELECT * FROM DownloadPlan WHERE InfoHash = ?;
-
--- name: DownloadPlanUpdateState :exec
-UPDATE DownloadPlan SET State = ? WHERE InfoHash = ? AND Path = ?;
 
 -- name: DownloadUpdateAutoImport :one
 UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING *;
@@ -232,6 +214,10 @@ SELECT * FROM EpisodeVideo
 WHERE EpisodeID IN (
 	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
 );
+
+-- name: EpisodeVideoListByInfoHash :many
+SELECT * FROM EpisodeVideo
+WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?);
 
 -- name: EpisodeVideoListBySeriesID :many
 SELECT * FROM EpisodeVideo
@@ -317,6 +303,10 @@ UPDATE Movie SET Slug = ? WHERE ID = ?;
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)
 RETURNING *;
+
+-- name: MovieVideoListByInfoHash :many
+SELECT * FROM MovieVideo
+WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?);
 
 -- name: MovieVideoListByMovieEditionID :many
 SELECT * FROM MovieVideo
@@ -616,6 +606,9 @@ UPDATE Task SET NextRun = ? WHERE ID = ?;
 -- name: TaskUnlock :exec
 UPDATE Task SET Running = 0 WHERE ID = ?;
 
+-- name: VideoCountByInfoHash :one
+SELECT COUNT(*) FROM Video WHERE InfoHash = ?;
+
 -- name: VideoCreate :one
 INSERT INTO Video
 (
@@ -643,6 +636,9 @@ WHERE ID IN (
 -- name: VideoListByEpisodeID :many
 SELECT * FROM Video
 WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
+
+-- name: VideoListByInfoHash :many
+SELECT * FROM Video WHERE InfoHash = ?;
 
 -- name: VideoListByMovieEditionID :many
 SELECT * FROM Video
@@ -672,3 +668,6 @@ RETURNING *;
 -- name: VideoUpdateOriginalKey :one
 UPDATE Video SET OriginalKey = ? WHERE ID = ?
 RETURNING *;
+
+-- name: VideoUpdateState :exec
+UPDATE Video SET State = ? WHERE ID = ?;

@@ -30,6 +30,9 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	if err != nil {
 		return err
 	}
+	if vid.OriginalKey != "" {
+		return nil
+	}
 
 	// Transmission may still be copying the file to its final
 	// location. If the file doesn't exist yet, re-queue and
@@ -77,6 +80,15 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 // pass1. The caller must have already set vid.OriginalKey and
 // opened progress tracking for vid.ID.
 func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
+	existing, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	if len(existing) > 0 {
+		tx.m.prog.Close(vid.ID, nil)
+		return nil
+	}
+
 	tx.m.prog.UpdateStatus(vid.ID, "Probing")
 	f, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {

@@ -45,14 +45,6 @@ type Download struct {
 	PlanMovieEditionID  *string
 }
 
-type DownloadPlan struct {
-	InfoHash       string
-	Path           string
-	EpisodeID      *string
-	MovieEditionID *string
-	State          string
-}
-
 type Episode struct {
 	ID           string
 	Title        string
@@ -186,6 +178,7 @@ type Video struct {
 	ID          string
 	InfoHash    *string
 	Name        string
+	State       string
 	OriginalKey string
 	MVPlaylist  string
 }

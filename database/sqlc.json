@@ -67,7 +67,7 @@
 						"maxheight": "MaxHeight",
 						"surroundaudio": "SurroundAudio",
 						"videoid": "VideoID",
-						"downloadplan": "DownloadPlan",
+
 						"group": "Group",
 						"kind": "Kind",
 						"target": "Target"

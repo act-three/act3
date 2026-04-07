@@ -13,6 +13,7 @@ func (v *Video) ID() string                 { return v.v.ID }
 func (v *Video) Name() string               { return v.v.Name }
 func (v *Video) OriginalKey() string        { return v.v.OriginalKey }
 func (v *Video) MVPlaylist() string         { return v.v.MVPlaylist }
+func (v *Video) State() string              { return v.v.State }
 func (v *Video) PlaylistPath() string       { return "/-/plr/" + v.ID() + ".m3u8" }
 func (v *Video) AudioTracks() []*AudioTrack { return v.audioTracks }
 

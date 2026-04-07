@@ -209,7 +209,6 @@ func appDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) html.Nod
 	)(
 		expr.IfElse(sn != nil,
 			func() html.Node {
-				// TODO(april): handle movies
 				return html.Div(
 					attr.Class("v-media-file-group-header"),
 				)(

@@ -136,6 +136,7 @@ CREATE TABLE Video
 	ID           TEXT PRIMARY KEY DEFAULT ('vid'||newID()),
 	InfoHash     TEXT REFERENCES Download (InfoHash),
 	Name         TEXT NOT NULL, -- torrent path or file name
+	State        TEXT NOT NULL DEFAULT ('pending') CHECK (State IN ('pending', 'importing')),
 	OriginalKey  TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	UNIQUE (InfoHash, Name)
@@ -213,21 +214,6 @@ WHERE PlanSeriesEditionID IS NOT NULL;
 CREATE INDEX Index_Download_PlanMovieEditionID ON Download (PlanMovieEditionID)
 WHERE PlanMovieEditionID IS NOT NULL;
 
-CREATE TABLE DownloadPlan
-(
-	InfoHash       TEXT NOT NULL REFERENCES Download,
-	Path           TEXT NOT NULL,
-	EpisodeID      TEXT REFERENCES Episode,
-	MovieEditionID TEXT REFERENCES MovieEdition,
-	State          TEXT NOT NULL DEFAULT 'downloading' CHECK (State IN (
-		'downloading',
-		'downloaded',
-		'imported'
-	)),
-	PRIMARY KEY (InfoHash, Path),
-	CHECK (EpisodeID IS NULL OR MovieEditionID IS NULL)
-)
-STRICT, WITHOUT ROWID;
 
 CREATE TABLE Setting
 (
