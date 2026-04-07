@@ -294,42 +294,101 @@ func (tx *TxR) Download(ctx Context, infoHash string) (*Download, error) {
 	return tx.newDownload(ctx, dl)
 }
 
-func (tx *TxRW) DownloadAutoImportSet(ctx Context, infoHash string, auto bool) error {
+func (tx *TxRW) DownloadAutoImportSet(ctx Context, infoHash string, auto bool) (err error) {
+	defer errorfmt.Handlef("DownloadAutoImportSet(%s, %v): %w", infoHash, auto, &err)
 	v := int64(0)
 	if auto {
 		v = 1
 	}
-	_, err := tx.q.DownloadUpdateAutoImport(ctx, schema.DownloadUpdateAutoImportParams{
+	_, err = tx.q.DownloadUpdateAutoImport(ctx, schema.DownloadUpdateAutoImportParams{
 		Autoimport: v,
 		InfoHash:   infoHash,
 	})
 	if err != nil {
 		return err
 	}
-	if auto {
-		return tx.DownloadImport(ctx, infoHash)
-	}
-	return nil
+	return tx.processDownload(ctx, infoHash)
 }
 
-func (tx *TxRW) DownloadImport(ctx Context, infoHash string) (err error) {
-	defer errorfmt.Handlef("DownloadImport(%s): %w", infoHash, &err)
+// DownloadImport is the manual import action: it enables auto-import,
+// which triggers ingest for any already-complete files. Once auto-import
+// is on, future polling cycles also ingest files as they complete.
+func (tx *TxRW) DownloadImport(ctx Context, infoHash string) error {
+	return tx.DownloadAutoImportSet(ctx, infoHash, true)
+}
+
+// processDownload reconciles a download against its current torrent
+// status: queues ingest tasks for any pending videos whose files are
+// complete (when auto-import is enabled), then writes the derived state
+// and progress back to the database.
+//
+// The torrent status is read from an in-memory cache populated by
+// polling. If the cache is empty for this download, processDownload is
+// a no-op: a future polling cycle will repopulate the cache and
+// trigger any imports that have become possible.
+func (tx *TxRW) processDownload(ctx Context, infoHash string) (err error) {
+	defer errorfmt.Handlef("processDownload(%s): %w", infoHash, &err)
+	t := tx.m.getTorrent(infoHash)
+	if t == nil {
+		return nil
+	}
+
 	d, err := tx.Download(ctx, infoHash)
 	if err != nil {
 		return err
 	}
-	tm := tx.m.transmission.Load()
-	if tm == nil {
-		return fmt.Errorf("no transmission client available")
+	done := torrentDone(t)
+
+	if d.AutoImport() {
+		for i := range d.videos {
+			v := &d.videos[i]
+			if v.State != "pending" || !done[v.Name] {
+				continue
+			}
+			err = tx.q.VideoUpdateState(ctx, schema.VideoUpdateStateParams{
+				State: "importing",
+				ID:    v.ID,
+			})
+			if err != nil {
+				return err
+			}
+			if epID, ok := d.epIDByVideoID[v.ID]; ok {
+				tx.m.prog.AddEdge(epID, v.ID)
+			}
+			diskPath, err := tx.transmissionDiskPath(ctx, t, v.Name)
+			if err != nil {
+				return err
+			}
+			err = tx.addTask(ctx, taskIngest, v.ID, diskPath)
+			if err != nil {
+				return err
+			}
+			v.State = "importing"
+		}
 	}
-	ts, err := tm.TorrentGetAllForHashes(ctx, []string{d.d.InfoHash})
+
+	state := d.deriveState(done)
+	progress := 0.0
+	if t.PercentDone != nil {
+		progress = *t.PercentDone
+	}
+	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
+		InfoHash: infoHash,
+		State:    state,
+		Progress: progress,
+	})
 	if err != nil {
 		return err
 	}
-	if len(ts) != 1 {
-		return fmt.Errorf("torrent %s: got %d results, wanted 1", d.d.InfoHash, len(ts))
-	}
-	t := &ts[0]
+	tx.onCommit(func() {
+		tx.m.setInfoHashActive(infoHash, state == "downloading" || state == "downloaded")
+	})
+	return nil
+}
+
+// torrentDone returns a map of relative file paths to completion status
+// for the files in a Transmission torrent.
+func torrentDone(t *transmissionrpc.Torrent) map[string]bool {
 	done := map[string]bool{}
 	for _, tf := range t.Files {
 		p := tf.Name
@@ -340,32 +399,7 @@ func (tx *TxRW) DownloadImport(ctx Context, infoHash string) (err error) {
 			done[p] = true
 		}
 	}
-	for i := range d.videos {
-		v := &d.videos[i]
-		if v.State != "pending" || !done[v.Name] {
-			continue
-		}
-		err = tx.q.VideoUpdateState(ctx, schema.VideoUpdateStateParams{
-			State: "importing",
-			ID:    v.ID,
-		})
-		if err != nil {
-			return err
-		}
-		if epID, ok := d.epIDByVideoID[v.ID]; ok {
-			tx.m.prog.AddEdge(epID, v.ID)
-		}
-		diskPath, err := tx.transmissionDiskPath(ctx, t, v.Name)
-		if err != nil {
-			return err
-		}
-		err = tx.addTask(ctx, taskIngest, v.ID, diskPath)
-		if err != nil {
-			return err
-		}
-		v.State = "importing"
-	}
-	return tx.downloadUpdateState(ctx, d, done)
+	return done
 }
 
 func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err error) {
@@ -428,8 +462,7 @@ func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) error {
 		return fmt.Errorf("%s: got %d torrents, wanted 1", *t.HashString, len(ts))
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		_, err = tx.updateDownload(ctx, &ts[0])
-		return err
+		return tx.updateDownload(ctx, &ts[0])
 	})
 }
 
@@ -547,80 +580,21 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d 
 	return tx.newDownload(ctx, dl)
 }
 
-func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) (schema.Download, error) {
-	slog.InfoContext(ctx, "update-download", "hash", *t.HashString)
-
-	d, err := tx.Download(ctx, *t.HashString)
-	if err != nil {
-		return schema.Download{}, err
-	}
-	ctx = logcontext.With(ctx, "dl", d.InfoHash())
+func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) error {
+	infoHash := *t.HashString
+	ctx = logcontext.With(ctx, "dl", infoHash)
+	slog.InfoContext(ctx, "update-download", "hash", infoHash)
 
 	if t.ErrorString != nil && *t.ErrorString != "" {
-		return tx.q.DownloadUpdateError(ctx, schema.DownloadUpdateErrorParams{
-			InfoHash: d.InfoHash(),
+		_, err := tx.q.DownloadUpdateError(ctx, schema.DownloadUpdateErrorParams{
+			InfoHash: infoHash,
 			Error:    *t.ErrorString,
 		})
+		return err
 	}
 
-	done := map[string]bool{}
-	for _, tf := range t.Files {
-		// Multi-file torrents have paths like "dirname/path";
-		// single-file torrents have just the filename.
-		p := tf.Name
-		if _, after, ok := strings.Cut(tf.Name, "/"); ok {
-			p = after
-		}
-		if tf.BytesCompleted == tf.Length {
-			done[p] = true
-		}
-	}
-
-	if d.AutoImport() {
-		for i := range d.videos {
-			v := &d.videos[i]
-			if v.State != "pending" || !done[v.Name] {
-				continue
-			}
-			err = tx.q.VideoUpdateState(ctx, schema.VideoUpdateStateParams{
-				State: "importing",
-				ID:    v.ID,
-			})
-			if err != nil {
-				return schema.Download{}, err
-			}
-			if epID, ok := d.epIDByVideoID[v.ID]; ok {
-				tx.m.prog.AddEdge(epID, v.ID)
-			}
-			diskPath, err := tx.transmissionDiskPath(ctx, t, v.Name)
-			if err != nil {
-				return schema.Download{}, err
-			}
-			err = tx.addTask(ctx, taskIngest, v.ID, diskPath)
-			if err != nil {
-				return schema.Download{}, err
-			}
-			v.State = "importing"
-		}
-	}
-
-	doneness := 0.0
-	if t.PercentDone != nil {
-		doneness = *t.PercentDone
-	}
-	state := d.deriveState(done)
-	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
-		InfoHash: d.InfoHash(),
-		State:    state,
-		Progress: doneness,
-	})
-	if err != nil {
-		return schema.Download{}, err
-	}
-	tx.onCommit(func() {
-		tx.m.setInfoHashActive(*t.HashString, state == "downloading")
-	})
-	return d.d, nil
+	tx.m.setTorrent(infoHash, t)
+	return tx.processDownload(ctx, infoHash)
 }
 
 func (d *Download) deriveState(done map[string]bool) string {
@@ -646,17 +620,16 @@ func (d *Download) deriveState(done map[string]bool) string {
 	return "imported"
 }
 
-func (tx *TxRW) downloadUpdateState(ctx Context, d *Download, done map[string]bool) error {
-	state := d.deriveState(done)
-	tx.onCommit(func() {
-		tx.m.setInfoHashActive(d.d.InfoHash, state == "downloading")
-	})
-	_, err := tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
-		InfoHash: d.InfoHash(),
-		State:    state,
-		Progress: d.Progress(),
-	})
-	return err
+func (m *Model) getTorrent(infoHash string) *transmissionrpc.Torrent {
+	m.torrentMu.Lock()
+	defer m.torrentMu.Unlock()
+	return m.torrent[infoHash]
+}
+
+func (m *Model) setTorrent(infoHash string, t *transmissionrpc.Torrent) {
+	m.torrentMu.Lock()
+	defer m.torrentMu.Unlock()
+	m.torrent[infoHash] = t
 }
 
 func (m *Model) activeInfoHashes() []string {
@@ -707,7 +680,7 @@ func (m *Model) pollTransmissionOnce() error {
 				return err
 			}
 			m.updateFileProgress(&ts[i], dl)
-			_, err = tx.updateDownload(ctx, &ts[i])
+			err = tx.updateDownload(ctx, &ts[i])
 			if err != nil {
 				return err
 			}

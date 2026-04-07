@@ -643,13 +643,13 @@ func (q *Queries) DownloadListByPlanSeriesEditionID(ctx context.Context, planser
 	return items, nil
 }
 
-const downloadListInfoHashesDownloading = `-- name: DownloadListInfoHashesDownloading :many
+const downloadListInfoHashesActive = `-- name: DownloadListInfoHashesActive :many
 SELECT InfoHash FROM Download
-WHERE State = 'downloading'
+WHERE State IN ('downloading', 'downloaded')
 `
 
-func (q *Queries) DownloadListInfoHashesDownloading(ctx context.Context) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, downloadListInfoHashesDownloading)
+func (q *Queries) DownloadListInfoHashesActive(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, downloadListInfoHashesActive)
 	if err != nil {
 		return nil, err
 	}

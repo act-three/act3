@@ -58,6 +58,9 @@ type Model struct {
 	activeInfoHashMu sync.Mutex
 	activeInfoHash   map[string]bool
 
+	torrentMu sync.Mutex
+	torrent   map[string]*transmissionrpc.Torrent
+
 	subMu sync.Mutex
 	sub   map[chan *Event]struct{}
 }
@@ -76,6 +79,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		dbw:            dbw,
 		tasks:          map[string]*taskQueue{},
 		activeInfoHash: map[string]bool{},
+		torrent:        map[string]*transmissionrpc.Torrent{},
 		sub:            map[chan *Event]struct{}{},
 	}
 	m.prog.SetHook(func(event string, it *progress.Item) {
@@ -98,7 +102,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		}
 		m.tasks[name] = tq
 	}
-	hashes, err := schema.New(dbr).DownloadListInfoHashesDownloading(ctx)
+	hashes, err := schema.New(dbr).DownloadListInfoHashesActive(ctx)
 	if err != nil {
 		return nil, err
 	}

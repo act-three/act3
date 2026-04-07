@@ -129,9 +129,9 @@ SELECT * FROM Download
 WHERE PlanSeriesEditionID = ?
 ORDER BY CreatedAt DESC;
 
--- name: DownloadListInfoHashesDownloading :many
+-- name: DownloadListInfoHashesActive :many
 SELECT InfoHash FROM Download
-WHERE State = 'downloading';
+WHERE State IN ('downloading', 'downloaded');
 
 
 -- name: DownloadUpdateAutoImport :one
