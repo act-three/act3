@@ -88,7 +88,7 @@ RUN mkdir mbedtls-build && cd mbedtls-build && cmake ../mbedtls \
     && make -j$(nproc) && make install
 
 # --- ffmpeg ---
-ARG FFMPEG_VERSION=n8.0
+ARG FFMPEG_VERSION=n8.1
 RUN git clone --depth 1 --branch $FFMPEG_VERSION https://git.ffmpeg.org/ffmpeg.git ffmpeg
 RUN cd ffmpeg && \
     CFLAGS="-static" LDFLAGS="-static" \
