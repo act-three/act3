@@ -386,19 +386,19 @@ func (tx *TxRW) ReImportVideo(ctx Context, videoID string) error {
 	return tx.addTask(ctx, taskReimport, videoID)
 }
 
-// taskReimport deletes all existing renditions and the original
-// CAS blob for a video, re-copies the source from the download
-// path, and restarts the full ingestion pipeline.
-func (tx *TxR) taskReimport(ctx Context, args []string) error {
+// taskReimport copies a fresh source file from Transmission into the
+// store, repoints the video's OriginalKey at it, and queues a reencode.
+// Existing renditions remain playable until taskReencode tears them
+// down, minimizing the window during which the video is unwatchable.
+func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	vid, err := tx.q.VideoGet(ctx, args[0])
 	if err != nil {
 		return err
 	}
-
-	// Look up the download path via Transmission.
 	if vid.InfoHash == nil {
 		return fmt.Errorf("video %s has no info hash", vid.ID)
 	}
+
 	tm := tx.m.transmission.Load()
 	if tm == nil {
 		return fmt.Errorf("no transmission client available")
@@ -415,24 +415,6 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 		return err
 	}
 
-	// Delete existing rendition CAS blobs and pass1 stats.
-	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
-	if err != nil {
-		return err
-	}
-	for _, rfs := range rfsList {
-		if rfs.Key != "" {
-			tx.m.store.Remove(rfs.Key)
-		}
-		tx.m.removePass1Stats(vid.ID, rfs.ID)
-	}
-
-	// Remove old original from CAS.
-	if vid.OriginalKey != "" {
-		tx.m.store.Remove(vid.OriginalKey)
-	}
-
-	// Set up progress tracking.
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
@@ -440,44 +422,26 @@ func (tx *TxR) taskReimport(ctx Context, args []string) error {
 	for _, ev := range evs {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
-
-	// Copy source from download path into CAS.
 	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
-	hash, err := tx.m.store.CopyFile(srcPath)
+	defer func() { tx.m.prog.Close(vid.ID, err) }()
+
+	newKey, err := tx.m.store.CopyFile(srcPath)
 	if err != nil {
-		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
+	oldKey := vid.OriginalKey
 
-	// Write all DB changes in a single transaction.
-	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		err := txw.q.AudioTrackDeleteByVideoID(ctx, vid.ID)
-		if err != nil {
-			return err
-		}
-		err = txw.q.RenditionForStreamingDeleteByVideoID(ctx, vid.ID)
-		if err != nil {
-			return err
-		}
-		_, err = txw.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
-			ID:         vid.ID,
-			MVPlaylist: "",
-		})
-		if err != nil {
-			return err
-		}
-		vid, err = txw.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+	return tx.m.WithTxRW(func(txw *TxRW) error {
+		txw.onCommit(func() { tx.m.store.Remove(oldKey) })
+		_, err := txw.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
 			ID:          vid.ID,
-			OriginalKey: hash,
+			OriginalKey: newKey,
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		return txw.addTask(ctx, taskReencode, vid.ID)
 	})
-	if err != nil {
-		tx.m.prog.Close(vid.ID, err)
-		return err
-	}
-
-	return tx.planAndCreateRenditions(ctx, vid)
 }
 
 // ReencodeVideo queues a reencode task for the given video.
