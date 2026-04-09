@@ -129,6 +129,15 @@ func Handle(mux *http.ServeMux, c *Config) {
 }
 
 func (c *Config) blob(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	// All blobs served through this endpoint are WebP images written
+	// by Model.ImageCreate. Pin the Content-Type so http.ServeFileFS
+	// doesn't fall through to mime sniffing on extensionless keys, and
+	// belt-and-suspenders the response with nosniff + a tight CSP so
+	// even if a non-image blob ever lands here it can't execute as one.
+	w.Header().Set("Content-Type", "image/webp")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy",
+		"default-src 'none'; img-src 'self'; style-src 'none'; sandbox")
 	http.ServeFileFS(w, req, c.Store, req.PathValue("id"))
 	return nil, nil
 }

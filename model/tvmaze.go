@@ -94,11 +94,9 @@ func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) err
 	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad status %d", resp.StatusCode)
-	} else if t := resp.Header.Get("Content-Type"); t != "image/jpeg" {
-		return fmt.Errorf("bad content type %s", t)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	thumbnailID, err := tx.m.store.Copy(body)
+	thumbnailID, err := tx.m.ImageCreate(body, ImageThumbnail)
 	if err != nil {
 		return err
 	}
@@ -117,11 +115,9 @@ func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad status %d", resp.StatusCode)
-	} else if t := resp.Header.Get("Content-Type"); t != "image/jpeg" {
-		return fmt.Errorf("bad content type %s", t)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	posterID, err := tx.m.store.Copy(body)
+	posterID, err := tx.m.ImageCreate(body, ImagePoster)
 	if err != nil {
 		return err
 	}

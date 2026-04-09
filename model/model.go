@@ -19,7 +19,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"io"
 	"sync"
 	"sync/atomic"
 
@@ -111,13 +110,6 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	}
 	go m.pollTransission()
 	return m, nil
-}
-
-// Store writes r to the blob store and returns its ID.
-// It does not open a database transaction,
-// so callers can use the returned ID in their own transactions.
-func (m *Model) Store(r io.Reader) (string, error) {
-	return m.store.Copy(r)
 }
 
 var configLoaders = []func(*TxR, Context) error{

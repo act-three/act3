@@ -15,14 +15,32 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, 
 		return nil, err
 	}
 	defer file.Close()
-	blobID, err := c.Model.Store(file)
-	if err != nil {
-		return nil, err
-	}
+
 	medID := req.FormValue("med-id")
 	sedID := req.FormValue("sed-id")
 	epID := req.FormValue("ep-id")
 	colID := req.FormValue("col-id")
+
+	var kind model.ImageKind
+	switch {
+	case medID != "", sedID != "":
+		kind = model.ImagePoster
+	case epID != "":
+		kind = model.ImageThumbnail
+	case colID != "":
+		kind = model.ImageBanner
+	default:
+		return nil, &model.ValidationError{
+			Op:  "params",
+			Err: fmt.Errorf("missing param med-id, sed-id, ep-id, or col-id"),
+		}
+	}
+
+	blobID, err := c.Model.ImageCreate(file, kind)
+	if err != nil {
+		return nil, err
+	}
+
 	switch {
 	case medID != "":
 		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
@@ -40,11 +58,6 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, 
 		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 			return nil, tx.CollectionBannerKeySet(ctx, colID, blobID)
 		})
-	default:
-		return nil, &model.ValidationError{
-			Op:  "params",
-			Err: fmt.Errorf("missing param med-id, sed-id, ep-id, or col-id"),
-		}
 	}
 	if err != nil {
 		return nil, err

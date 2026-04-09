@@ -37,11 +37,9 @@ func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
 	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad status %d", resp.StatusCode)
-	} else if t := resp.Header.Get("Content-Type"); t != "image/jpeg" {
-		return fmt.Errorf("bad content type %s", t)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	posterID, err := tx.m.store.Copy(body)
+	posterID, err := tx.m.ImageCreate(body, ImagePoster)
 	if err != nil {
 		return err
 	}
