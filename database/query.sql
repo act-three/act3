@@ -231,17 +231,17 @@ SELECT * FROM EpisodeVideo
 WHERE VideoID = ?;
 
 -- name: ImageCreate :one
-INSERT INTO Image (Key, Type)
+INSERT INTO Image (OriginalKey, Type)
 VALUES (?, ?)
 RETURNING *;
 
 -- name: ImageCreateWithID :exec
-INSERT INTO Image (ID, Key, Type)
+INSERT INTO Image (ID, OriginalKey, Type)
 VALUES (?, ?, ?)
 ON CONFLICT (ID) DO NOTHING;
 
 -- name: ImageDelete :one
-DELETE FROM Image WHERE ID = ? RETURNING Key;
+DELETE FROM Image WHERE ID = ? RETURNING OriginalKey;
 
 -- name: ImageGet :one
 SELECT * FROM Image WHERE ID = ?;

@@ -269,8 +269,8 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 		}
 		if explicitID == "" {
 			io_, err := tx.q.ImageCreate(ctx, schema.ImageCreateParams{
-				Key:  originalKey,
-				Type: mime,
+				OriginalKey: originalKey,
+				Type:        mime,
 			})
 			if err != nil {
 				return err
@@ -278,9 +278,9 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 			originalID = io_.ID
 		} else {
 			err := tx.q.ImageCreateWithID(ctx, schema.ImageCreateWithIDParams{
-				ID:   explicitID,
-				Key:  originalKey,
-				Type: mime,
+				ID:          explicitID,
+				OriginalKey: originalKey,
+				Type:        mime,
 			})
 			if err != nil {
 				return err

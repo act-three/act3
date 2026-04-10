@@ -1163,59 +1163,59 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 }
 
 const imageCreate = `-- name: ImageCreate :one
-INSERT INTO Image (Key, Type)
+INSERT INTO Image (OriginalKey, Type)
 VALUES (?, ?)
-RETURNING id, "key", type
+RETURNING id, originalkey, type
 `
 
 type ImageCreateParams struct {
-	Key  string
-	Type string
+	OriginalKey string
+	Type        string
 }
 
 func (q *Queries) ImageCreate(ctx context.Context, arg ImageCreateParams) (Image, error) {
-	row := q.db.QueryRowContext(ctx, imageCreate, arg.Key, arg.Type)
+	row := q.db.QueryRowContext(ctx, imageCreate, arg.OriginalKey, arg.Type)
 	var i Image
-	err := row.Scan(&i.ID, &i.Key, &i.Type)
+	err := row.Scan(&i.ID, &i.OriginalKey, &i.Type)
 	return i, err
 }
 
 const imageCreateWithID = `-- name: ImageCreateWithID :exec
-INSERT INTO Image (ID, Key, Type)
+INSERT INTO Image (ID, OriginalKey, Type)
 VALUES (?, ?, ?)
 ON CONFLICT (ID) DO NOTHING
 `
 
 type ImageCreateWithIDParams struct {
-	ID   string
-	Key  string
-	Type string
+	ID          string
+	OriginalKey string
+	Type        string
 }
 
 func (q *Queries) ImageCreateWithID(ctx context.Context, arg ImageCreateWithIDParams) error {
-	_, err := q.db.ExecContext(ctx, imageCreateWithID, arg.ID, arg.Key, arg.Type)
+	_, err := q.db.ExecContext(ctx, imageCreateWithID, arg.ID, arg.OriginalKey, arg.Type)
 	return err
 }
 
 const imageDelete = `-- name: ImageDelete :one
-DELETE FROM Image WHERE ID = ? RETURNING Key
+DELETE FROM Image WHERE ID = ? RETURNING OriginalKey
 `
 
 func (q *Queries) ImageDelete(ctx context.Context, id string) (string, error) {
 	row := q.db.QueryRowContext(ctx, imageDelete, id)
-	var key string
-	err := row.Scan(&key)
-	return key, err
+	var originalkey string
+	err := row.Scan(&originalkey)
+	return originalkey, err
 }
 
 const imageGet = `-- name: ImageGet :one
-SELECT id, "key", type FROM Image WHERE ID = ?
+SELECT id, originalkey, type FROM Image WHERE ID = ?
 `
 
 func (q *Queries) ImageGet(ctx context.Context, id string) (Image, error) {
 	row := q.db.QueryRowContext(ctx, imageGet, id)
 	var i Image
-	err := row.Scan(&i.ID, &i.Key, &i.Type)
+	err := row.Scan(&i.ID, &i.OriginalKey, &i.Type)
 	return i, err
 }
 

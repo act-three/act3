@@ -17,9 +17,9 @@ STRICT;
 
 CREATE TABLE Image
 (
-	ID   TEXT PRIMARY KEY DEFAULT ('io'||newID()),
-	Key  TEXT NOT NULL UNIQUE, -- blob store key
-	Type TEXT NOT NULL CHECK (Type IN ('image/png', 'image/webp', 'image/jpeg'))
+	ID          TEXT PRIMARY KEY DEFAULT ('io'||newID()),
+	OriginalKey TEXT NOT NULL UNIQUE, -- blob store key for the as-uploaded bytes
+	Type        TEXT NOT NULL CHECK (Type IN ('image/png', 'image/webp', 'image/jpeg'))
 )
 STRICT;
 
