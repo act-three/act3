@@ -1,8 +1,9 @@
 package view
 
 import (
+	"cmp"
+	"path"
 	"slices"
-	"strings"
 
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
@@ -12,7 +13,6 @@ import (
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/xslices"
-	"ily.dev/act3/xstrings"
 )
 
 func AppDownloads(
@@ -148,25 +148,32 @@ func addTorrentButton(inputName, inputValue string) html.Node {
 }
 
 func appDownloadsDetail(dl *model.Download) html.Node {
-	if dl.State() == "error" {
-		return Box()(
-			Text(dl.Title()),
-			Text(dl.Error()),
-		)
-	}
-	return ScrollY()(
-		html.Div(
-			attr.Class("v-media-file-group-body"),
-		)(
-			html.H1(attr.Style("margin-bottom: 0.5rem"))(Text(dl.Title())),
-			html.Div()(
-				appDownloadsImportControl(dl),
-			),
-			FlexCol(Gap2)(
-				html.RangeSeq2(
-					xslices.GroupBy(dl.Files(), (*model.DownloadFile).Season),
-					appDownloadsFileGroup,
+	return FlexCol(Class("v-media-detail"))(
+		ScrollY(Class("v-media-detail-body"))(
+			SettingsPage()(
+				FlexCol(Gap6)(
+					SettingsContent()(
+						TextNode(Size6)(html.Text(dl.Title())),
+						expr.IfElse(dl.State() == "error",
+							func() html.Node {
+								return Label("line/alert-triangle", dl.Error(), Size2)
+							},
+							func() html.Node {
+								return TextNode(Size2)(
+									html.Textf("%d/%d assigned", dl.PlanLen(), dl.FilesLen()),
+								)
+							},
+						),
+					),
+
+					html.If(dl.State() != "error", func() html.Node {
+						return SettingsGroup()(
+							appDownloadsImportControl(dl),
+						)
+					}),
 				),
+
+				appDownloadsFileList(dl.Files()),
 			),
 		),
 	)
@@ -175,96 +182,83 @@ func appDownloadsDetail(dl *model.Download) html.Node {
 func appDownloadsImportControl(dl *model.Download) html.Node {
 	switch dl.State() {
 	case "downloaded":
-		return appDownloadsImportButton(dl.InfoHash())
+		return SettingsItem()(
+			SettingsItemLabel()(
+				SettingsItemLabelTitle("Import"),
+				SettingsItemLabelDescription("Import downloaded files into the library"),
+			),
+			html.Form(
+				attr.Method("POST"),
+				attr.Action("/-/do/download-import"),
+			)(
+				Hidden("id", dl.InfoHash()),
+				Button(ButtonGhost, ButtonSize2)(html.Text("Import")),
+			),
+		)
 	case "queued", "downloading":
-		return appDownloadsAutoImportToggle(dl)
+		return SettingsItem()(
+			SettingsItemLabel()(
+				SettingsItemLabelTitle("Auto-Import"),
+				SettingsItemLabelDescription("Automatically import when download completes"),
+			),
+			SettingsToggle("/-/do/download-auto-import", "auto-import", dl.AutoImport())(
+				Hidden("id", dl.InfoHash()),
+			),
+		)
 	default: // "imported", "error"
 		return html.Group()
 	}
 }
 
-func appDownloadsImportButton(id string) html.Node {
-	return html.Form(
-		attr.Method("POST"),
-		attr.Action("/-/do/download-import"),
-	)(
-		Hidden("id", id),
-		Button()(html.Text("Import")),
+func appDownloadsFileList(files []*model.DownloadFile) html.Node {
+	slices.SortStableFunc(files, func(a, b *model.DownloadFile) int {
+		return cmp.Compare(path.Dir(a.Path()), path.Dir(b.Path()))
+	})
+	return html.RangeSeq2(
+		xslices.GroupBy(files, func(df *model.DownloadFile) string {
+			return path.Dir(df.Path())
+		}),
+		appDownloadsFileGroup,
 	)
 }
 
-func appDownloadsAutoImportToggle(dl *model.Download) html.Node {
-	return html.Label(attr.Class("v-media-auto-import"))(
-		SettingsToggle("/-/do/download-auto-import", "auto-import", dl.AutoImport())(
-			Hidden("id", dl.InfoHash()),
-		),
-		html.Text("Automatically import when download completes"),
-	)
-}
-
-func appDownloadsFileGroup(sn *model.Season, dfs []*model.DownloadFile) html.Node {
-	displayDir, prefix := downloadsDirPrefix(dfs)
-	return html.Div(
-		attr.Class("v-media-file-group"),
-	)(
-		expr.IfElse(sn != nil,
-			func() html.Node {
-				return html.Div(
-					attr.Class("v-media-file-group-header"),
-				)(
-					html.B()(LiveText(sn.Series().TitleField()), html.Text(" — "+sn.Title())),
-				)
-			},
-			func() html.Node {
-				return html.Group()
-			},
-		),
-		html.Div(
-			attr.Class("v-media-file-group-body"),
-		)(
-			html.Text(displayDir),
-		),
-		html.Div(
-			attr.Class("v-media-file-group-body"),
-		)(
-			html.Range(dfs, func(df *model.DownloadFile) html.Node {
-				ep := df.Episode()
-				displayPath := strings.TrimPrefix(df.Path(), prefix)
-				return Card(CardGhost)(
-					CardContent()(
-						expr.IfElse(ep != nil,
-							func() html.Node {
-								return CardTitle()(
-									html.Textf("%s. %s", ep.Label(), ep.Title()),
-								)
-							},
-							func() html.Node {
-								return html.Group()
-							},
-						),
-						CardDescription()(html.Text(displayPath)),
-						expr.IfElse(df.Progress() >= 0,
-							func() html.Node {
-								return Progress(df.Progress(), attr.Style("margin-top: 0.25rem"), ProgressSM)
-							},
-							func() html.Node {
-								return html.Group()
-							},
-						),
+func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
+	return SettingsGroup()(
+		html.If(dir != ".", func() html.Node {
+			return SettingsGroupHead()(
+				SettingsItemLabel()(
+					SettingsItemLabelTitle("/" + dir),
+				),
+			)
+		}),
+		html.Range(dfs, func(df *model.DownloadFile) html.Node {
+			if !df.HasVideoExtension() {
+				return Group()
+			}
+			ep := df.Episode()
+			return SettingsItem()(
+				SettingsItemLabel()(
+					SettingsItemLabelTitle(path.Base(df.Path())),
+					expr.IfElse(ep != nil,
+						func() html.Node {
+							return SettingsItemLabelDescription(
+								ep.SnnEnn() + " " + ep.Title(),
+							)
+						},
+						func() html.Node {
+							return html.Group()
+						},
 					),
-				)
-			}),
-		),
+					expr.IfElse(df.Progress() >= 0,
+						func() html.Node {
+							return Progress(df.Progress(), ProgressSM)
+						},
+						func() html.Node {
+							return Group()
+						},
+					),
+				),
+			)
+		}),
 	)
-}
-
-func downloadsDirPrefix(dfs []*model.DownloadFile) (dir, prefix string) {
-	lcp := xstrings.LongestCommonPrefix(expr.Range(slices.Values(dfs),
-		(*model.DownloadFile).Path,
-	))
-	dir, _, found := xstrings.LastCut(lcp, "/")
-	if !found {
-		return "", ""
-	}
-	return dir, dir + "/"
 }

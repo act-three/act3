@@ -81,6 +81,10 @@ func (df *DownloadFile) Path() string {
 	return fiPath(&df.fi)
 }
 
+func (df *DownloadFile) HasVideoExtension() bool {
+	return hasVideoExtension(df.Path())
+}
+
 // Progress returns the download progress of this file as a fraction (0-1),
 // or -1 if progress data is not available.
 func (df *DownloadFile) Progress() float64 {
