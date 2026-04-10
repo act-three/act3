@@ -229,7 +229,7 @@ func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) html.Node {
 		ImageFrame()(
 			buttonUpload()(
 				Hidden("sed-id", sed.ID()),
-				PosterImg(PosterFill, imgLargestAttrs(sed.PosterField())),
+				PosterImg(PosterFill, imgAttrs(sed.PosterField())),
 			),
 		),
 	)
@@ -754,7 +754,7 @@ func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) html.Node {
 		ImageFrame()(
 			buttonUpload()(
 				Hidden("ep-id", ep.ID()),
-				PosterImg(PosterFill, PosterAspect169, imgLargestAttrs(ep.ThumbnailField())),
+				PosterImg(PosterFill, PosterAspect169, imgAttrs(ep.ThumbnailField())),
 			),
 		),
 	)

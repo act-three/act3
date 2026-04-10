@@ -267,7 +267,7 @@ func AppMoviePosterDialog(med *model.MovieEdition) html.Node {
 		ImageFrame()(
 			buttonUpload()(
 				Hidden("med-id", med.ID()),
-				PosterImg(PosterFill, imgLargestAttrs(med.PosterField())),
+				PosterImg(PosterFill, imgAttrs(med.PosterField())),
 			),
 		),
 	)

@@ -26,7 +26,7 @@ func buttonImageEdit(dialogURL string, im model.Image, addr []string, ratio stri
 	)(
 		html.Form(attr.Method("get"), attr.Action(dialogURL))(
 			html.Button()(
-				PosterImg(PosterFill, imgLargestAttrs(im, addr)),
+				PosterImg(PosterFill, imgAttrs(im, addr)),
 			),
 		),
 		html.Div(Class("v-button-image-edit-overlay"))(

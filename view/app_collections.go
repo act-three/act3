@@ -138,7 +138,7 @@ func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
 			buttonUpload()(
 				Hidden("col-id", col.ID()),
 				html.Img(
-					imgLargestAttrs(col.BannerField()),
+					imgAttrs(col.BannerField()),
 					attr.Style("width: 100%; aspect-ratio: 1000/185; object-fit: cover"),
 				),
 			),
