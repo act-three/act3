@@ -36,6 +36,8 @@ and the environment carries `GOEXPERIMENT=jsonv2`.
 
 Run locally: use act3-mcp server to start, reload, and stop the server.
 These tools will compile and properly run and kill the dev server.
+The dev server is dedicated to Claude and runs on its own port,
+so feel free to start, reload, and stop it without asking.
 
 Playwright and Chrome DevTools MCP servers are configured to connect
 to a local Chrome instance via CDP.
