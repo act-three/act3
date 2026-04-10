@@ -96,12 +96,12 @@ func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) err
 		return fmt.Errorf("bad status %d", resp.StatusCode)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	thumbnailID, err := tx.m.ImageCreate(body, ImageThumbnail)
+	thumbnailID, err := tx.m.ImageCreate(ctx, body, ImageThumbnail)
 	if err != nil {
 		return err
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		return tx.EpisodeThumbnailKeySet(ctx, epID, thumbnailID)
+		return tx.EpisodeThumbnailIDSet(ctx, epID, thumbnailID)
 	})
 }
 
@@ -117,11 +117,11 @@ func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 		return fmt.Errorf("bad status %d", resp.StatusCode)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	posterID, err := tx.m.ImageCreate(body, ImagePoster)
+	posterID, err := tx.m.ImageCreate(ctx, body, ImagePoster)
 	if err != nil {
 		return err
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		return tx.SeriesEditionPosterKeySet(ctx, sedID, posterID)
+		return tx.SeriesEditionPosterIDSet(ctx, sedID, posterID)
 	})
 }

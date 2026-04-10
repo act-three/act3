@@ -16,24 +16,27 @@ type CollectionHead struct {
 	col schema.Collection
 }
 
-func (c *CollectionHead) ID() string        { return c.col.ID }
-func (c *CollectionHead) Slug() string      { return c.col.Slug }
-func (c *CollectionHead) Title() string     { return c.col.Title }
-func (c *CollectionHead) BannerKey() string { return c.col.BannerKey }
+func (c *CollectionHead) ID() string    { return c.col.ID }
+func (c *CollectionHead) Slug() string  { return c.col.Slug }
+func (c *CollectionHead) Title() string { return c.col.Title }
+func (c *CollectionHead) Banner() Image {
+	return Image{OriginalID: c.col.BannerID, Kind: ImageBanner}
+}
 
 func (c *CollectionHead) addr(field string) []string {
 	return []string{"collection", c.ID(), field}
 }
 
-func (c *CollectionHead) TitleAddr() []string { return c.addr("title") }
-func (c *CollectionHead) SlugAddr() []string  { return c.addr("slug") }
+func (c *CollectionHead) TitleAddr() []string  { return c.addr("title") }
+func (c *CollectionHead) SlugAddr() []string   { return c.addr("slug") }
+func (c *CollectionHead) BannerAddr() []string { return c.addr("banner") }
+
+func (c *CollectionHead) BannerField() (Image, []string) {
+	return c.Banner(), c.BannerAddr()
+}
 
 func (c *CollectionHead) TitleField() (string, []string) { return c.Title(), c.TitleAddr() }
 func (c *CollectionHead) SlugField() (string, []string)  { return c.Slug(), c.SlugAddr() }
-
-func (c *CollectionHead) BannerPath() string {
-	return BannerPath(c.col.BannerKey)
-}
 
 func (c *CollectionHead) TheaterPath() string {
 	return path.Join("/", c.col.Slug)
@@ -93,7 +96,7 @@ func (tx *TxR) CollectionHead(ctx Context, id string) (*CollectionHead, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &CollectionHead{colData}, nil
+	return &CollectionHead{col: colData}, nil
 }
 
 func (tx *TxR) CollectionHeadList(ctx Context) ([]*CollectionHead, error) {
@@ -103,7 +106,7 @@ func (tx *TxR) CollectionHeadList(ctx Context) ([]*CollectionHead, error) {
 	}
 	cols := make([]*CollectionHead, len(a))
 	for i := range a {
-		cols[i] = &CollectionHead{a[i]}
+		cols[i] = &CollectionHead{col: a[i]}
 	}
 	return cols, nil
 }
@@ -168,7 +171,7 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 		return cmp.Compare(a.PremieredOn(), b.PremieredOn())
 	})
 	return &Collection{
-		CollectionHead: CollectionHead{colData},
+		CollectionHead: CollectionHead{col: colData},
 		movies:         movies,
 		series:         series,
 	}, nil
@@ -239,7 +242,7 @@ func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, er
 	if err != nil {
 		return nil, err
 	}
-	return &CollectionHead{colData}, nil
+	return &CollectionHead{col: colData}, nil
 }
 
 func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) error {
@@ -298,30 +301,28 @@ func (tx *TxRW) CollectionSeriesRemove(ctx Context, collectionID, seriesID strin
 	})
 }
 
-func (tx *TxRW) CollectionBannerKeySet(ctx Context, id, bannerKey string) error {
+func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 	col, err := tx.q.CollectionGet(ctx, id)
 	if err != nil {
 		return err
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventCollectionChangeBanner,
-			ID:      id,
-			OldText: col.BannerKey,
-			NewText: bannerKey,
+			Type: EventCollectionChangeBanner,
+			ID:   id,
 		})
 	})
-	err = tx.q.CollectionSetBannerKey(ctx, schema.CollectionSetBannerKeyParams{
-		BannerKey: bannerKey,
-		ID:        id,
+	err = tx.q.CollectionBannerIDSet(ctx, schema.CollectionBannerIDSetParams{
+		BannerID: bannerID,
+		ID:       id,
 	})
 	if err != nil {
 		return err
 	}
-	if col.BannerKey != "" {
-		tx.m.store.Remove(col.BannerKey)
+	if isPlaceholderImageOriginalID(col.BannerID) {
+		return nil
 	}
-	return nil
+	return tx.imageOriginalDelete(ctx, col.BannerID)
 }
 
 func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
@@ -339,7 +340,7 @@ func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&CollectionHead{col}).TitleAddr(),
+			Addr:    (&CollectionHead{col: col}).TitleAddr(),
 			NewText: title,
 			OldText: col.Title,
 		})

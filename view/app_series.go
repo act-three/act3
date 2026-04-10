@@ -58,7 +58,7 @@ func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 		ListID(ss.SeriesHead.ID()),
 		ListURL(ss.EditorPath()),
 	)(
-		CardMedia()(html.Img(attr.Src(ss.PosterPath()))),
+		CardMedia()(html.Img(imgAttrs(ss.PosterField()))),
 		CardContent()(
 			CardTitle()(LiveText(ss.SeriesHead.TitleField())),
 			CardDescription(LineClamp2)(
@@ -219,7 +219,7 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 		),
 		buttonPosterEdit(
 			"/-/dialog/series-edition-poster/"+sed.ID(),
-			sed.PosterPath(),
+			sed.Poster(), sed.PosterAddr(),
 		),
 	)
 }
@@ -229,7 +229,7 @@ func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) html.Node {
 		ImageFrame()(
 			buttonUpload()(
 				Hidden("sed-id", sed.ID()),
-				PosterImg(PosterFill, attr.Src(sed.PosterPath())),
+				PosterImg(PosterFill, imgLargestAttrs(sed.PosterField())),
 			),
 		),
 	)
@@ -458,7 +458,7 @@ func AppEpisodeDetail(
 							),
 							buttonThumbnailEdit(
 								"/-/dialog/episode-thumbnail/"+ep.ID(),
-								ep.ThumbnailURL(),
+								ep.Thumbnail(), ep.ThumbnailAddr(),
 							),
 						),
 						SettingsItem()(
@@ -745,9 +745,8 @@ func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
 	)
 }
 
-func SeriesEditionChangePoster(sed *model.SeriesEditionHead, oldPosterKey string) html.Node {
-	oldURL := model.PosterPath(oldPosterKey)
-	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(sed.PosterPath()))())
+func SeriesEditionChangePoster(sed *model.SeriesEditionHead) html.Node {
+	return liveImgUpdate(sed.PosterField())
 }
 
 func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) html.Node {
@@ -755,15 +754,14 @@ func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) html.Node {
 		ImageFrame()(
 			buttonUpload()(
 				Hidden("ep-id", ep.ID()),
-				PosterImg(PosterFill, PosterAspect169, attr.Src(ep.ThumbnailURL())),
+				PosterImg(PosterFill, PosterAspect169, imgLargestAttrs(ep.ThumbnailField())),
 			),
 		),
 	)
 }
 
-func EpisodeChangeThumbnail(ep *model.EpisodeHead, oldThumbnailKey string) html.Node {
-	oldURL := model.ThumbnailPath(oldThumbnailKey)
-	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(ep.ThumbnailURL()))())
+func EpisodeChangeThumbnail(ep *model.EpisodeHead) html.Node {
+	return liveImgUpdate(ep.ThumbnailField())
 }
 
 func truncate(s string, max int) string {

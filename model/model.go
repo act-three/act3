@@ -90,6 +90,10 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	if err != nil {
 		return nil, err
 	}
+	err = m.insertPlaceholderImages(ctx)
+	if err != nil {
+		return nil, err
+	}
 	err = schema.New(dbw).TaskResetRunning(ctx)
 	if err != nil {
 		return nil, err

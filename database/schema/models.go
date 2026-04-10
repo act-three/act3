@@ -16,10 +16,10 @@ type AudioTrack struct {
 }
 
 type Collection struct {
-	ID        string
-	Slug      string
-	Title     string
-	BannerKey string
+	ID       string
+	Slug     string
+	Title    string
+	BannerID string
 }
 
 type CollectionMovie struct {
@@ -46,18 +46,32 @@ type Download struct {
 }
 
 type Episode struct {
-	ID           string
-	Title        string
-	Summary      string
-	Type         string
-	Airdate      string
-	Runtime      int64
-	ThumbnailKey string
+	ID          string
+	Title       string
+	Summary     string
+	Type        string
+	Airdate     string
+	Runtime     int64
+	ThumbnailID string
 }
 
 type EpisodeVideo struct {
 	EpisodeID string
 	VideoID   string
+}
+
+type Image struct {
+	Key        string
+	OriginalID string
+	Type       string
+	Width      int64
+	Height     int64
+}
+
+type ImageOriginal struct {
+	ID   string
+	Key  string
+	Type string
 }
 
 type Movie struct {
@@ -68,15 +82,15 @@ type Movie struct {
 }
 
 type MovieEdition struct {
-	ID        string
-	MovieID   string
-	Slug      string
-	Title     string
-	Label     string
-	Summary   string
-	Year      string
-	Runtime   int64
-	PosterKey string
+	ID       string
+	MovieID  string
+	Slug     string
+	Title    string
+	Label    string
+	Summary  string
+	Year     string
+	Runtime  int64
+	PosterID string
 }
 
 type MovieVideo struct {
@@ -137,12 +151,12 @@ type Series struct {
 }
 
 type SeriesEdition struct {
-	ID        string
-	SeriesID  string
-	Slug      string
-	Label     string
-	Summary   string
-	PosterKey string
+	ID       string
+	SeriesID string
+	Slug     string
+	Label    string
+	Summary  string
+	PosterID string
 }
 
 type Setting struct {

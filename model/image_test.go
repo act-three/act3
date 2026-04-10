@@ -2,30 +2,60 @@ package model
 
 import (
 	"bytes"
+	"context"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
-	"os"
-	"path/filepath"
 	"testing"
 
+	"ily.dev/act3/database"
+	"ily.dev/act3/database/schema"
 	"ily.dev/act3/storage"
 )
+
+// newTestModel returns a minimal in-memory Model suitable for
+// tests that need to call ImageCreate or other methods that touch
+// both the storage and the database. Placeholder images are
+// installed before returning so parent inserts that rely on the
+// per-kind FK DEFAULTs can succeed.
+func newTestModel(t *testing.T) *Model {
+	t.Helper()
+	dbr, dbw, err := database.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		dbr.Close()
+		dbw.Close()
+	})
+	sd, err := storage.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := &Model{store: sd, dbr: dbr, dbw: dbw}
+	if err := m.insertPlaceholderImages(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	return m
+}
 
 // TestImageCreateNRGBARoundTrip is a regression test for a
 // gen2brain/webp encoder bug that produced visibly corrupted output
 // when the input *image.NRGBA had non-zero-origin bounds — which is
 // exactly what centerCrop's old SubImage path produced. The fix
 // copies the cropped region into a fresh zero-origin NRGBA before
-// encoding; this test asserts the round-trip is faithful.
+// encoding; this test asserts the round-trip is faithful by
+// per-pixel comparison against the largest variant.
 func TestImageCreateNRGBARoundTrip(t *testing.T) {
-	dir := t.TempDir()
+	ctx := t.Context()
 
-	// 600x600 NRGBA with four solid-color quadrants. Solid colors are
-	// near-lossless under WebP q=80, so any pixel-shift bug shows up
-	// as a wrong hue and the per-channel error explodes.
-	const W, H = 600, 600
+	// 900x900 NRGBA with four solid-color quadrants. Cropped to 2:3
+	// this gives 600x900, which lets the poster spec generate both
+	// configured variants (300 and 600) without any "native" extra
+	// — the 600 variant is unscaled and we can compare it directly
+	// against the cropped reference.
+	const W, H = 900, 900
 	src := image.NewNRGBA(image.Rect(0, 0, W, H))
 	quads := [4]color.NRGBA{
 		{200, 30, 30, 255},  // top-left red
@@ -47,44 +77,59 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	}
 
 	// Encode src to PNG so ImageCreate exercises the full
-	// decode → centerCrop → webp.Encode path.
+	// decode → centerCrop → resize → webp.Encode path.
 	var pngBuf bytes.Buffer
 	if err := png.Encode(&pngBuf, src); err != nil {
 		t.Fatal(err)
 	}
 
-	storeDir := filepath.Join(dir, "cas")
-	if err := os.Mkdir(storeDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	sd, err := storage.Open(storeDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	m := &Model{store: sd}
-
-	key, err := m.ImageCreate(&pngBuf, ImagePoster)
+	m := newTestModel(t)
+	originalID, err := m.ImageCreate(ctx, &pngBuf, ImagePoster)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Decode the stored WebP back through the same image.Decode path
-	// the rest of the codebase uses.
-	r, err := sd.Open(key)
+	// Confirm two variants were stored at the configured widths
+	// (300 and 600). The 600 variant is unscaled native, which we
+	// then decode and pixel-compare against the centered crop.
+	var stored []schema.Image
+	if err := m.WithTxR(func(tx *TxR) error {
+		stored, err = tx.q.ImageListByOriginalID(ctx, originalID)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(stored) != 2 {
+		t.Fatalf("variant count = %d, want 2", len(stored))
+	}
+	largest := stored[len(stored)-1]
+	if largest.Width != 600 || largest.Height != 900 {
+		t.Fatalf("largest variant = %dx%d, want 600x900", largest.Width, largest.Height)
+	}
+
+	var largestKey string
+	if err := m.WithTxR(func(tx *TxR) error {
+		var err error
+		largestKey, err = tx.ImageVariantKey(ctx, originalID, 600)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f, err := m.store.Open(largestKey)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer r.Close()
-	got, _, err := image.Decode(r)
+	defer f.Close()
+	got, _, err := image.Decode(f)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Build the expected center-cropped reference. With src 600x600
+	// Build the expected center-cropped reference. With src 900x900
 	// and target 2:3, src is wider than target so we keep height
-	// (600) and crop width to 600*2/3 = 400, centered at x=100.
-	const cw, ch = 400, 600
-	const x0, y0 = 100, 0
+	// (900) and crop width to 900*2/3 = 600, centered at x=150.
+	const cw, ch = 600, 900
+	const x0, y0 = 150, 0
 	expected := image.NewNRGBA(image.Rect(0, 0, cw, ch))
 	draw.Draw(expected, expected.Bounds(), src, image.Pt(x0, y0), draw.Src)
 
@@ -97,7 +142,7 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	// across the quadrant seams, so a clean round-trip lands around
 	// MAE ~10 per channel. The pre-fix non-zero-origin bug encoded
 	// the top-left cw×ch region of the parent instead of the centered
-	// crop, swapping a 100-column-wide stripe of red for green and
+	// crop, swapping a 150-column-wide stripe of red for green and
 	// pushing MAE above ~40 on R and G — well clear of the threshold.
 	var sumR, sumG, sumB uint64
 	for y := range ch {
@@ -119,7 +164,9 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 			"(likely the gen2brain/webp non-zero-origin encode bug has regressed)",
 			maeR, maeG, maeB, maxMAE)
 	}
-	t.Logf("round-trip MAE per channel = (%.2f, %.2f, %.2f)", maeR, maeG, maeB)
+	im := Image{OriginalID: originalID, Kind: ImagePoster}
+	t.Logf("round-trip MAE per channel = (%.2f, %.2f, %.2f); srcset=%q",
+		maeR, maeG, maeB, im.Srcset())
 }
 
 func absDiff(a, b uint32) uint64 {

@@ -27,8 +27,8 @@ func (med *MovieEditionHead) Summary() string { return med.med.Summary }
 func (med *MovieEditionHead) Year() string    { return med.med.Year }
 func (med *MovieEditionHead) Runtime() int64  { return med.med.Runtime }
 
-func (med *MovieEditionHead) PosterPath() string {
-	return PosterPath(med.med.PosterKey)
+func (med *MovieEditionHead) Poster() Image {
+	return Image{OriginalID: med.med.PosterID, Kind: ImagePoster}
 }
 
 func (med *MovieEditionHead) addr(field string) []string {
@@ -41,6 +41,11 @@ func (med *MovieEditionHead) YearAddr() []string    { return med.addr("year") }
 func (med *MovieEditionHead) RuntimeAddr() []string { return med.addr("runtime") }
 func (med *MovieEditionHead) SummaryAddr() []string { return med.addr("summary") }
 func (med *MovieEditionHead) SlugAddr() []string    { return med.addr("slug") }
+func (med *MovieEditionHead) PosterAddr() []string  { return med.addr("poster") }
+
+func (med *MovieEditionHead) PosterField() (Image, []string) {
+	return med.Poster(), med.PosterAddr()
+}
 
 func (med *MovieEditionHead) TitleField() (string, []string) { return med.Title(), med.TitleAddr() }
 func (med *MovieEditionHead) LabelField() (string, []string) { return med.Label(), med.LabelAddr() }
@@ -69,7 +74,7 @@ func newMovieEdition(
 	videosByEditionID map[string][]*Video,
 ) *MovieEdition {
 	med := &MovieEdition{
-		MovieEditionHead: MovieEditionHead{medData},
+		MovieEditionHead: MovieEditionHead{med: medData},
 		mo:               mo,
 		videos:           videosByEditionID[medData.ID],
 	}
@@ -94,9 +99,9 @@ func (med *MovieEdition) Info() []string {
 	return nil
 }
 
-func (med *MovieEdition) ImagePath() string       { return med.PosterPath() }
-func (med *MovieEdition) ImageAspect() (n, d int) { return 2, 3 }
-func (med *MovieEdition) ReleaseDate() string     { return med.Year() }
+func (med *MovieEdition) ImageField() (Image, []string) { return med.PosterField() }
+func (med *MovieEdition) ImageAspect() (n, d int)       { return 2, 3 }
+func (med *MovieEdition) ReleaseDate() string           { return med.Year() }
 
 func (med *MovieEdition) Runtime() string {
 	if r := med.MovieEditionHead.Runtime(); r > 0 {
@@ -131,7 +136,7 @@ func (tx *TxR) MovieEditionHead(ctx Context, id string) (*MovieEditionHead, erro
 	if err != nil {
 		return nil, err
 	}
-	return &MovieEditionHead{medData}, nil
+	return &MovieEditionHead{med: medData}, nil
 }
 
 func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
@@ -181,7 +186,7 @@ func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error
 	for i := range meds {
 		works[i] = &MovieWork{
 			MovieHead:        *mo,
-			MovieEditionHead: MovieEditionHead{meds[i]},
+			MovieEditionHead: MovieEditionHead{med: meds[i]},
 		}
 	}
 	return works, nil
@@ -204,7 +209,7 @@ func (tx *TxRW) movieEditionCreate(ctx Context, label, movieID string, p movieEd
 	if err != nil {
 		return nil, err
 	}
-	return &MovieEditionHead{medData}, nil
+	return &MovieEditionHead{med: medData}, nil
 }
 
 // MovieEditionClone creates a new edition by copying metadata
@@ -249,7 +254,7 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{med}).LabelAddr(),
+			Addr:    (&MovieEditionHead{med: med}).LabelAddr(),
 			NewText: label,
 			OldText: med.Label,
 		})
@@ -290,7 +295,7 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{med}).TitleAddr(),
+			Addr:    (&MovieEditionHead{med: med}).TitleAddr(),
 			NewText: title,
 			OldText: med.Title,
 		})
@@ -334,7 +339,7 @@ func (tx *TxRW) MovieEditionYearSet(ctx Context, id, year string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{schema.MovieEdition{ID: id}}).YearAddr(),
+			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).YearAddr(),
 			NewText: year,
 		})
 	})
@@ -348,7 +353,7 @@ func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) er
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{schema.MovieEdition{ID: id}}).RuntimeAddr(),
+			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).RuntimeAddr(),
 			NewText: fmt.Sprintf("%d", runtime),
 		})
 	})
@@ -369,37 +374,35 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{schema.MovieEdition{ID: id}}).SummaryAddr(),
+			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).SummaryAddr(),
 			NewText: summary,
 		})
 	})
 	return nil
 }
 
-func (tx *TxRW) MovieEditionPosterKeySet(ctx Context, id, posterKey string) error {
+func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error {
 	med, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {
 		return err
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventMovieEditionChangePoster,
-			ID:      id,
-			OldText: med.PosterKey,
-			NewText: posterKey,
+			Type: EventMovieEditionChangePoster,
+			ID:   id,
 		})
 	})
-	err = tx.q.MovieEditionPosterKeySet(ctx, schema.MovieEditionPosterKeySetParams{
-		PosterKey: posterKey,
-		ID:        id,
+	err = tx.q.MovieEditionPosterIDSet(ctx, schema.MovieEditionPosterIDSetParams{
+		PosterID: posterID,
+		ID:       id,
 	})
 	if err != nil {
 		return err
 	}
-	if med.PosterKey != "" {
-		tx.m.store.Remove(med.PosterKey)
+	if isPlaceholderImageOriginalID(med.PosterID) {
+		return nil
 	}
-	return nil
+	return tx.imageOriginalDelete(ctx, med.PosterID)
 }
 
 // MovieEditionSetDefault promotes the given edition to be

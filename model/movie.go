@@ -343,7 +343,7 @@ func (tx *TxR) MovieWorkList(ctx Context) ([]*MovieWork, error) {
 		}
 		works = append(works, &MovieWork{
 			MovieHead:        MovieHead{mo},
-			MovieEditionHead: MovieEditionHead{ed},
+			MovieEditionHead: MovieEditionHead{med: ed},
 		})
 	}
 	return works, nil

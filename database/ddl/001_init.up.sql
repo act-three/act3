@@ -15,6 +15,25 @@ CREATE TABLE Slug
 )
 STRICT;
 
+CREATE TABLE ImageOriginal
+(
+	ID   TEXT PRIMARY KEY DEFAULT ('io'||newID()),
+	Key  TEXT NOT NULL UNIQUE, -- blob store key
+	Type TEXT NOT NULL CHECK (Type IN ('image/png', 'image/webp', 'image/jpeg'))
+)
+STRICT;
+
+CREATE TABLE Image
+(
+	Key        TEXT PRIMARY KEY, -- blob store key
+	OriginalID TEXT NOT NULL REFERENCES ImageOriginal ON DELETE CASCADE,
+	Type       TEXT NOT NULL CHECK (Type IN ('image/webp', 'image/avif')),
+	Width      INTEGER NOT NULL, -- physical pixels
+	Height     INTEGER NOT NULL  -- physical pixels
+)
+STRICT;
+CREATE INDEX Index_Image_OriginalID ON Image (OriginalID);
+
 CREATE TABLE Series
 (
 	ID     TEXT PRIMARY KEY,
@@ -43,7 +62,7 @@ CREATE TABLE SeriesEdition
 	Slug           TEXT NOT NULL,
 	Label          TEXT NOT NULL,
 	Summary        TEXT NOT NULL,
-	PosterKey      TEXT NOT NULL DEFAULT (''), -- storage blob ('' means unset)
+	PosterID       TEXT NOT NULL DEFAULT 'ioplaceholderposter' REFERENCES ImageOriginal,
 	UNIQUE (SeriesID, Slug)
 )
 STRICT;
@@ -71,7 +90,7 @@ CREATE TABLE Episode
 	)),
 	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased
 	Runtime        INTEGER NOT NULL, -- minutes
-	ThumbnailKey   TEXT NOT NULL DEFAULT ('')  -- storage blob ('' means unset)
+	ThumbnailID    TEXT NOT NULL DEFAULT 'ioplaceholderthumbnail' REFERENCES ImageOriginal
 )
 STRICT;
 
@@ -110,7 +129,7 @@ CREATE TABLE MovieEdition
 	Summary  TEXT NOT NULL,
 	Year     TEXT NOT NULL,
 	Runtime  INTEGER NOT NULL,    -- minutes
-	PosterKey TEXT NOT NULL DEFAULT (''), -- storage blob ('' means unset)
+	PosterID TEXT NOT NULL DEFAULT 'ioplaceholderposter' REFERENCES ImageOriginal,
 	UNIQUE (MovieID, Slug)
 )
 STRICT;
@@ -229,7 +248,7 @@ CREATE TABLE Collection
 	ID       TEXT PRIMARY KEY DEFAULT ('col'||newID()),
 	Slug     TEXT NOT NULL UNIQUE,
 	Title    TEXT NOT NULL,
-	BannerKey TEXT NOT NULL DEFAULT ('') -- storage blob ('' means unset)
+	BannerID TEXT NOT NULL DEFAULT 'ioplaceholderbanner' REFERENCES ImageOriginal
 )
 STRICT, WITHOUT ROWID;
 

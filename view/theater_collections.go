@@ -12,11 +12,11 @@ import (
 )
 
 func Collections(cols []*model.CollectionHead) html.Node {
-	var washURLs []string
+	var washImages []model.Image
 	for _, c := range cols {
-		washURLs = append(washURLs, c.BannerPath())
+		washImages = append(washImages, c.Banner())
 	}
-	return browse("Collections", washURLs...)(
+	return browse("Collections", washImages...)(
 		FlexCol(attr.Style("padding-top:1rem"))(
 			html.Range(cols, func(c *model.CollectionHead) html.Node {
 				return collectionBannerLink(c)
@@ -26,7 +26,7 @@ func Collections(cols []*model.CollectionHead) html.Node {
 }
 
 func TheaterCollection(c *model.Collection, itemCount, runtimeMinutes int64) html.Node {
-	return browse("Collections", c.BannerPath())(
+	return browse("Collections", c.Banner())(
 		FlexCol(
 			Gap8,
 			attr.Style("padding-top:1rem"),
@@ -104,7 +104,7 @@ func theaterCollectionPlayableImage(p model.Playable, h int) html.Node {
 		Class("v-collection-playlist-row-image"),
 		attr.Stylef("width:%dpx", imageWidth),
 		attr.Stylef("height:%dpx", h),
-		attr.Src(p.ImagePath()),
+		imgAttrs(p.ImageField()),
 	)
 }
 
@@ -162,8 +162,8 @@ func collectionBannerLink(c *model.CollectionHead, attrs ...attr.Node) html.Node
 
 func collectionBanner(c *model.CollectionHead) html.Node {
 	return Box(Class("v-collection-banner"))(
-		PosterImg(PosterFill, PosterAspect1000185, attr.Src(c.BannerPath())),
-		html.If(c.BannerKey() == "", func() html.Node {
+		PosterImg(PosterFill, PosterAspect1000185, imgAttrs(c.BannerField())),
+		html.If(c.Banner().IsPlaceholder(), func() html.Node {
 			return Text(c.Title(), Class("v-collection-title"))
 		}),
 	)

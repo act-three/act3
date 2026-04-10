@@ -36,7 +36,7 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, 
 		}
 	}
 
-	blobID, err := c.Model.ImageCreate(file, kind)
+	originalID, err := c.Model.ImageCreate(ctx, file, kind)
 	if err != nil {
 		return nil, err
 	}
@@ -44,19 +44,19 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, 
 	switch {
 	case medID != "":
 		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-			return nil, tx.MovieEditionPosterKeySet(ctx, medID, blobID)
+			return nil, tx.MovieEditionPosterIDSet(ctx, medID, originalID)
 		})
 	case sedID != "":
 		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-			return nil, tx.SeriesEditionPosterKeySet(ctx, sedID, blobID)
+			return nil, tx.SeriesEditionPosterIDSet(ctx, sedID, originalID)
 		})
 	case epID != "":
 		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-			return nil, tx.EpisodeThumbnailKeySet(ctx, epID, blobID)
+			return nil, tx.EpisodeThumbnailIDSet(ctx, epID, originalID)
 		})
 	case colID != "":
 		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-			return nil, tx.CollectionBannerKeySet(ctx, colID, blobID)
+			return nil, tx.CollectionBannerIDSet(ctx, colID, originalID)
 		})
 	}
 	if err != nil {

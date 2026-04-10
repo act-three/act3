@@ -46,17 +46,25 @@ func LiveText(text string, addr []string) html.Node {
 // Values in addr must match the values given to LiveText,
 // and the contents will be replaced with the new text value.
 func LiveTextUpdate(text string, addr []string) html.Node {
+	return html.Group(
+		turbo.ReplaceTargets(LiveSelector(addr), turbo.Morph)(
+			LiveText(text, addr),
+		),
+		turbo.LiveUpdate(text, addr),
+	)
+}
+
+// LiveSelector returns a CSS selector matching every element
+// rendered with [data-live] and data-addrN attributes that match
+// addr. Use it with turbo.ReplaceTargets / SetTargets to update
+// live-addressable elements in place.
+func LiveSelector(addr []string) string {
 	sel := &strings.Builder{}
 	sel.WriteString("[data-live]")
 	for i, a := range addr {
 		fmt.Fprintf(sel, `[data-addr%d="%s"]`, i, cssEscape(a))
 	}
-	return html.Group(
-		turbo.ReplaceTargets(sel.String(), turbo.Morph)(
-			LiveText(text, addr),
-		),
-		turbo.LiveUpdate(text, addr),
-	)
+	return sel.String()
 }
 
 // cssEscape escapes a string for use inside a CSS double-quoted string.

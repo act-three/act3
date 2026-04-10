@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 
 	"ily.dev/act3/html"
@@ -40,7 +41,7 @@ type Config struct {
 
 func Handle(mux *http.ServeMux, c *Config) {
 	// Keep routes alphabetized (with e.g. `sort`).
-	handle(mux, "GET /-/blob/{id}", c.blob)
+	handle(mux, "GET /-/img/{id}/{width}", c.image)
 	handle(mux, "GET /-/dialog/collection-banner/{id}", c.dialogCollectionBanner)
 	handle(mux, "GET /-/dialog/collection-movie-add/{id}", c.dialogCollectionMovieAdd)
 	handle(mux, "GET /-/dialog/collection-series-add/{id}", c.dialogCollectionSeriesAdd)
@@ -128,18 +129,34 @@ func Handle(mux *http.ServeMux, c *Config) {
 	mux.HandleFunc("GET /-/events", c.events)
 }
 
-func (c *Config) blob(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	// All blobs served through this endpoint are WebP images written
-	// by Model.ImageCreate. Pin the Content-Type so http.ServeFileFS
-	// doesn't fall through to mime sniffing on extensionless keys, and
-	// belt-and-suspenders the response with nosniff + a tight CSP so
-	// even if a non-image blob ever lands here it can't execute as one.
-	w.Header().Set("Content-Type", "image/webp")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.Header().Set("Content-Security-Policy",
-		"default-src 'none'; img-src 'self'; style-src 'none'; sandbox")
-	http.ServeFileFS(w, req, c.Store, req.PathValue("id"))
-	return nil, nil
+func (c *Config) image(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	id := req.PathValue("id")
+	width, err := strconv.Atoi(req.PathValue("width"))
+	if err != nil || width <= 0 {
+		return nil, errNotFound
+	}
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		key, err := tx.ImageVariantKey(ctx, id, width)
+		if err != nil {
+			return nil, errNotFound
+		}
+		// Pin Content-Type so http.ServeFileFS doesn't fall
+		// through to mime sniffing on extensionless keys, and
+		// belt-and-suspenders the response with nosniff + a
+		// tight CSP so even if a non-image blob ever lands here
+		// it can't execute as one. The URL is logically
+		// immutable — replacing an image creates a new
+		// ImageOriginal with a fresh ID — so we can serve it as
+		// permanently cacheable.
+		w.Header().Set("Content-Type", "image/webp")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Cache-Control", "max-age=31536000, immutable")
+		w.Header().Set("Content-Security-Policy",
+			"default-src 'none'; img-src 'self'; style-src 'none'; sandbox")
+		http.ServeFileFS(w, req, c.Store, key)
+		return nil, nil
+	})
 }
 
 func (c *Config) withTxR(f func(*model.TxR) (html.Node, error)) (n html.Node, err error) {

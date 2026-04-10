@@ -15,7 +15,7 @@ func BrowseEpisode(
 	ep *model.Episode,
 	dls []*model.RenditionForDownload,
 ) html.Node {
-	return browse(ep.Title(), ep.ThumbnailURL())(
+	return browse(ep.Title(), ep.Thumbnail())(
 		Grid12(Class("v-detail"))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
 				Link(ep.EditionTheaterPath())(Text(ep.SeriesHead().Title())),
@@ -61,7 +61,7 @@ func BrowseEpisode(
 			Box(),
 			Box(ColSpan4)(
 				ImageFrame()(
-					PosterImg(PosterFill, PosterAspect169, attr.Src(ep.ThumbnailURL())),
+					PosterImg(PosterFill, PosterAspect169, imgAttrs(ep.ThumbnailField())),
 				),
 			),
 		),

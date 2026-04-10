@@ -47,11 +47,22 @@ type EpisodeHead struct {
 	ep schema.Episode
 }
 
-func (ep *EpisodeHead) ID() string           { return ep.ep.ID }
-func (ep *EpisodeHead) ThumbnailURL() string { return ThumbnailPath(ep.ep.ThumbnailKey) }
+func (ep *EpisodeHead) ID() string { return ep.ep.ID }
+func (ep *EpisodeHead) Thumbnail() Image {
+	return Image{OriginalID: ep.ep.ThumbnailID, Kind: ImageThumbnail}
+}
+
+func (ep *EpisodeHead) addr(field string) []string {
+	return []string{"episode", ep.ep.ID, field}
+}
+
+func (ep *EpisodeHead) ThumbnailAddr() []string { return ep.addr("thumbnail") }
+func (ep *EpisodeHead) ThumbnailField() (Image, []string) {
+	return ep.Thumbnail(), ep.ThumbnailAddr()
+}
 
 type Episode struct {
-	ep     schema.Episode
+	EpisodeHead
 	snep   schema.SeasonEpisode
 	type_  EpisodeType
 	sn     *SeasonHead
@@ -70,27 +81,22 @@ func newEpisode(
 	prog []*progress.Item,
 	videos []*Video,
 ) *Episode {
-	ep := &Episode{
-		ep:     epData,
-		snep:   snepData,
-		type_:  episodeTypeByName[epData.Type],
-		sn:     sn,
-		so:     so,
-		sr:     sr,
-		prog:   prog,
-		videos: videos,
+	return &Episode{
+		EpisodeHead: EpisodeHead{ep: epData},
+		snep:        snepData,
+		type_:       episodeTypeByName[epData.Type],
+		sn:          sn,
+		so:          so,
+		sr:          sr,
+		prog:        prog,
+		videos:      videos,
 	}
-	return ep
 }
 
-func (ep *Episode) ID() string      { return ep.ep.ID }
-func (ep *Episode) Slug() string    { return ep.snep.Slug }
-func (ep *Episode) Title() string   { return ep.ep.Title }
-func (ep *Episode) Airdate() string { return ep.ep.Airdate }
-func (ep *Episode) Summary() string { return ep.ep.Summary }
-func (ep *Episode) ThumbnailURL() string {
-	return ThumbnailPath(ep.ep.ThumbnailKey)
-}
+func (ep *Episode) Slug() string               { return ep.snep.Slug }
+func (ep *Episode) Title() string              { return ep.ep.Title }
+func (ep *Episode) Airdate() string            { return ep.ep.Airdate }
+func (ep *Episode) Summary() string            { return ep.ep.Summary }
 func (ep *Episode) Type() string               { return ep.ep.Type }
 func (ep *Episode) Progress() []*progress.Item { return ep.prog }
 func (ep *Episode) Videos() []*Video           { return ep.videos }
@@ -128,17 +134,13 @@ func (ep *Episode) TypeAddr() []string    { return ep.addr("type") }
 func (ep *Episode) TitleField() (string, []string) { return ep.Title(), ep.TitleAddr() }
 func (ep *Episode) TypeField() (string, []string)  { return ep.Type(), ep.TypeAddr() }
 
-func (ep *Episode) addr(field string) []string {
-	return []string{"episode", ep.ep.ID, field}
-}
-
 func (ep *Episode) Info() []string {
 	return []string{ep.SnnEnn(), ep.sr.Title()}
 }
 
-func (ep *Episode) ImagePath() string       { return ep.ThumbnailURL() }
-func (ep *Episode) ImageAspect() (n, d int) { return 16, 9 }
-func (ep *Episode) ReleaseDate() string     { return ep.Airdate() }
+func (ep *Episode) ImageField() (Image, []string) { return ep.ThumbnailField() }
+func (ep *Episode) ImageAspect() (n, d int)       { return 16, 9 }
+func (ep *Episode) ReleaseDate() string           { return ep.Airdate() }
 
 func (ep *Episode) Runtime() string {
 	if ep.ep.Runtime > 0 {
@@ -212,7 +214,7 @@ func (tx *TxR) EpisodeHead(ctx Context, id string) (*EpisodeHead, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &EpisodeHead{ep}, nil
+	return &EpisodeHead{ep: ep}, nil
 }
 
 // EpisodeBySlug looks up an episode by its slug components.
@@ -261,8 +263,8 @@ func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) 
 		videos = append(videos, v)
 	}
 	ep := &Episode{
-		ep:     epRec,
-		videos: videos,
+		EpisodeHead: EpisodeHead{ep: epRec},
+		videos:      videos,
 	}
 	for i, snep := range sneps {
 		sn, err := tx.q.SeasonGet(ctx, snep.SeasonID)
@@ -282,7 +284,7 @@ func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) 
 		}
 		ep.snep = snep
 		ep.sn = &SeasonHead{sn}
-		ep.so = &SeriesEditionHead{seq}
+		ep.so = &SeriesEditionHead{sed: seq}
 		ep.sr = &SeriesHead{sr}
 		return ep, nil
 	}
@@ -314,41 +316,39 @@ func (tx *TxR) EpisodeEditions(ctx Context, episodeID string) ([]*Episode, error
 			return nil, err
 		}
 		eps = append(eps, &Episode{
-			ep:    epRec,
-			snep:  snep,
-			type_: episodeTypeByName[epRec.Type],
-			sn:    &SeasonHead{sn},
-			so:    &SeriesEditionHead{sed},
-			sr:    &SeriesHead{sr},
+			EpisodeHead: EpisodeHead{ep: epRec},
+			snep:        snep,
+			type_:       episodeTypeByName[epRec.Type],
+			sn:          &SeasonHead{sn},
+			so:          &SeriesEditionHead{sed: sed},
+			sr:          &SeriesHead{sr},
 		})
 	}
 	return eps, nil
 }
 
-func (tx *TxRW) EpisodeThumbnailKeySet(ctx Context, id, thumbnailKey string) error {
+func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error {
 	ep, err := tx.q.EpisodeGet(ctx, id)
 	if err != nil {
 		return err
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventEpisodeChangeThumbnail,
-			ID:      id,
-			OldText: ep.ThumbnailKey,
-			NewText: thumbnailKey,
+			Type: EventEpisodeChangeThumbnail,
+			ID:   id,
 		})
 	})
-	err = tx.q.EpisodeThumbnailKeySet(ctx, schema.EpisodeThumbnailKeySetParams{
-		ThumbnailKey: thumbnailKey,
-		ID:           id,
+	err = tx.q.EpisodeThumbnailIDSet(ctx, schema.EpisodeThumbnailIDSetParams{
+		ThumbnailID: thumbnailID,
+		ID:          id,
 	})
 	if err != nil {
 		return err
 	}
-	if ep.ThumbnailKey != "" {
-		tx.m.store.Remove(ep.ThumbnailKey)
+	if isPlaceholderImageOriginalID(ep.ThumbnailID) {
+		return nil
 	}
-	return nil
+	return tx.imageOriginalDelete(ctx, ep.ThumbnailID)
 }
 
 func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {
@@ -359,7 +359,7 @@ func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&Episode{ep: ep}).SummaryAddr(),
+			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).SummaryAddr(),
 			NewText: summary,
 			OldText: ep.Summary,
 		})
@@ -378,7 +378,7 @@ func (tx *TxRW) EpisodeAirdateSet(ctx Context, id, airdate string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&Episode{ep: ep}).AirdateAddr(),
+			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).AirdateAddr(),
 			NewText: airdate,
 			OldText: ep.Airdate,
 		})
@@ -397,7 +397,7 @@ func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&Episode{ep: ep}).TypeAddr(),
+			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).TypeAddr(),
 			NewText: typ,
 			OldText: ep.Type,
 		})
@@ -429,7 +429,7 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&Episode{ep: ep}).TitleAddr(),
+			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).TitleAddr(),
 			NewText: title,
 			OldText: ep.Title,
 		})

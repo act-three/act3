@@ -89,7 +89,7 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							),
 							buttonBannerEdit(
 								"/-/dialog/collection-banner/"+col.ID(),
-								col.BannerPath(),
+								col.Banner(), col.BannerAddr(),
 							),
 						),
 					),
@@ -138,7 +138,7 @@ func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
 			buttonUpload()(
 				Hidden("col-id", col.ID()),
 				html.Img(
-					attr.Src(col.BannerPath()),
+					imgLargestAttrs(col.BannerField()),
 					attr.Style("width: 100%; aspect-ratio: 1000/185; object-fit: cover"),
 				),
 			),
@@ -146,9 +146,8 @@ func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
 	)
 }
 
-func CollectionChangeBanner(col *model.CollectionHead, oldBannerKey string) html.Node {
-	oldURL := model.BannerPath(oldBannerKey)
-	return turbo.SetTargets(`img[src="`+oldURL+`"]`, html.Div(attr.Src(col.BannerPath()))())
+func CollectionChangeBanner(col *model.CollectionHead) html.Node {
+	return liveImgUpdate(col.BannerField())
 }
 
 func AppCollectionMovieAddDialog(colID string) html.Node {
@@ -203,7 +202,7 @@ func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSear
 						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
 							FlexRow(Gap4, attr.Style("height: 100%"))(
 								Inset(InsetSideLeft, Class("v-media-search-poster"))(
-									PosterImg(attr.Style("height: 100%"), attr.Src(mw.PosterPath())),
+									PosterImg(attr.Style("height: 100%"), imgAttrs(mw.PosterField())),
 								),
 								FlexCol(Gap2)(
 									html.If(r.InCollection, func() html.Node {
@@ -313,7 +312,7 @@ func AppCollectionSeriesSearchResults(colID string, results []CollectionSeriesSe
 						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
 							FlexRow(Gap4, attr.Style("height: 100%"))(
 								Inset(InsetSideLeft, Class("v-media-search-poster"))(
-									PosterImg(attr.Style("height: 100%"), attr.Src(sw.PosterPath())),
+									PosterImg(attr.Style("height: 100%"), imgAttrs(sw.PosterField())),
 								),
 								FlexCol(Gap2)(
 									html.If(r.InCollection, func() html.Node {

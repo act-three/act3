@@ -3,36 +3,13 @@ package model
 import (
 	"cmp"
 	"slices"
-
-	"ily.dev/act3/web/static"
 )
-
-func PosterPath(id string) string {
-	if id != "" {
-		return "/-/blob/" + id
-	}
-	return static.Path("/static/poster-fallback.png")
-}
-
-func BannerPath(id string) string {
-	if id != "" {
-		return "/-/blob/" + id
-	}
-	return static.Path("/static/banner-fallback.png")
-}
-
-func ThumbnailPath(id string) string {
-	if id != "" {
-		return "/-/blob/" + id
-	}
-	return static.Path("/static/thumbnail-fallback.png")
-}
 
 // Work represents either a movie or a series — the common
 // fields needed to display both in a unified list.
 type Work interface {
 	Title() string
-	PosterPath() string
+	PosterField() (Image, []string)
 	TheaterPath() string
 	Kind() string // "movie" or "series"
 }
@@ -47,12 +24,12 @@ var (
 // This interface contains the common data needed
 // to display episodes and movies in a unified list.
 type Playable interface {
-	Title() string           // Movie or Episode title
-	Info() []string          // Edtion Title, Series Title, etc
-	ImagePath() string       // poster or thumbnail
-	ImageAspect() (n, d int) // (2, 3) or (16, 9)
-	ReleaseDate() string     // YYYY-MM-DD
-	Runtime() string         // "123" (minutes)
+	Title() string                 // Movie or Episode title
+	Info() []string                // Edtion Title, Series Title, etc
+	ImageField() (Image, []string) // poster or thumbnail
+	ImageAspect() (n, d int)       // (2, 3) or (16, 9)
+	ReleaseDate() string           // YYYY-MM-DD
+	Runtime() string               // "123" (minutes)
 	TheaterPath() string
 	PlayerPath() string // empty if unplayable
 }

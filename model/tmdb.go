@@ -39,11 +39,11 @@ func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
 		return fmt.Errorf("bad status %d", resp.StatusCode)
 	}
 	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	posterID, err := tx.m.ImageCreate(body, ImagePoster)
+	posterID, err := tx.m.ImageCreate(ctx, body, ImagePoster)
 	if err != nil {
 		return err
 	}
 	return tx.m.WithTxRW(func(tx *TxRW) error {
-		return tx.MovieEditionPosterKeySet(ctx, medID, posterID)
+		return tx.MovieEditionPosterIDSet(ctx, medID, posterID)
 	})
 }

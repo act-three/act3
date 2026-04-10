@@ -12,11 +12,12 @@ func Home(
 	works []model.Work,
 	cols []*model.CollectionHead,
 ) html.Node {
-	var washURLs []string
+	var washImages []model.Image
 	for _, w := range works {
-		washURLs = append(washURLs, w.PosterPath())
+		im, _ := w.PosterField()
+		washImages = append(washImages, im)
 	}
-	return browse("Act Three", washURLs...)(
+	return browse("Act Three", washImages...)(
 		Box(
 			Class("v-home"),
 			stimulus.Controller("home"),

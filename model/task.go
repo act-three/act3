@@ -20,8 +20,6 @@ import (
 	"kr.dev/errorfmt"
 )
 
-const maxImageBytes = 100 << 20 // 100 MB
-
 const (
 	taskAddDownloadToTransmission = "add-download-to-transmission"
 	taskFetchEpisodes             = "fetch-episodes"

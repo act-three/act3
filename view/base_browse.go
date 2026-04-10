@@ -2,19 +2,19 @@ package view
 
 import (
 	"math/rand/v2"
-	"slices"
 
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
+	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
 
-func browse(title string, washURL ...string) html.Element {
+func browse(title string, washImages ...model.Image) html.Element {
 	return func(child ...html.Node) html.Node {
 		return base(title)(attr.Style("padding-top:var(--nav-h)"))(
-			browseWash(washURL),
+			browseWash(washImages),
 			browseContainer(child...),
 			browseNavigationMenu(),
 			turbo.Frame("player"),
@@ -28,16 +28,14 @@ func browseContainer(child ...html.Node) html.Node {
 	)
 }
 
-var (
-	bannerFallback    = static.Path("/static/banner-fallback.png")
-	posterFallback    = static.Path("/static/poster-fallback.png")
-	thumbnailFallback = static.Path("/static/thumbnail-fallback.png")
-)
-
-func browseWash(urls []string) html.Node {
-	urls = slices.DeleteFunc(urls, func(s string) bool {
-		return s == "" || s == posterFallback || s == thumbnailFallback || s == bannerFallback
-	})
+func browseWash(images []model.Image) html.Node {
+	var urls []string
+	for _, im := range images {
+		if im.IsPlaceholder() {
+			continue
+		}
+		urls = append(urls, im.SmallestURL())
+	}
 	url := static.Path("/static/cb.jpeg")
 	if len(urls) > 0 {
 		url = urls[rand.IntN(len(urls))]

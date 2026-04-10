@@ -24,7 +24,7 @@ func posterGridLink(w model.Work) html.Node {
 			Class("v-poster-grid-link"),
 			attr.Href(w.TheaterPath()),
 		)(
-			PosterImg(PosterFill, attr.Src(w.PosterPath())),
+			PosterImg(PosterFill, imgAttrs(w.PosterField())),
 		),
 	)
 }

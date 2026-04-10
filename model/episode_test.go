@@ -4,17 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"ily.dev/act3/database"
 	"ily.dev/act3/database/schema"
 )
 
 func TestEpisodeTypeByNameMatchesSchema(t *testing.T) {
-	_, dbw, err := database.Open(":memory:")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer dbw.Close()
-	q := schema.New(dbw)
+	m := newTestModel(t)
+	q := schema.New(m.dbw)
 	ctx := context.Background()
 
 	for name := range episodeTypeByName {
@@ -51,7 +46,7 @@ func TestEpisodeHasType(t *testing.T) {
 		{"insignificant_special", Regular, false},
 	}
 	for _, tt := range tests {
-		ep := &Episode{ep: schema.Episode{Type: tt.dbType}}
+		ep := &Episode{EpisodeHead: EpisodeHead{ep: schema.Episode{Type: tt.dbType}}}
 		ep.type_ = episodeTypeByName[tt.dbType]
 		got := ep.HasType(tt.include)
 		if got != tt.want {

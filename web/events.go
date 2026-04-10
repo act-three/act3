@@ -54,15 +54,15 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 	case model.EventCollectionSeriesRemove:
 		return c.eventCollectionSeriesRemove(ctx, ev.ID, ev.NewText)
 	case model.EventCollectionChangeBanner:
-		return c.eventCollectionChangeBanner(ctx, ev.ID, ev.OldText, ev.NewText)
+		return c.eventCollectionChangeBanner(ctx, ev.ID)
 	case model.EventCollectionSetSlug:
 		return c.eventCollectionSetSlug(ctx, ev.ID, ev.OldText, ev.NewText)
 	case model.EventMovieEditionChangePoster:
-		return c.eventMovieEditionChangePoster(ctx, ev.ID, ev.OldText, ev.NewText)
+		return c.eventMovieEditionChangePoster(ctx, ev.ID)
 	case model.EventSeriesEditionChangePoster:
-		return c.eventSeriesEditionChangePoster(ctx, ev.ID, ev.OldText, ev.NewText)
+		return c.eventSeriesEditionChangePoster(ctx, ev.ID)
 	case model.EventEpisodeChangeThumbnail:
-		return c.eventEpisodeChangeThumbnail(ctx, ev.ID, ev.OldText, ev.NewText)
+		return c.eventEpisodeChangeThumbnail(ctx, ev.ID)
 	case model.EventSeasonAdd:
 		return c.eventSeasonAdd(ctx, ev.ID)
 	case model.EventSeasonRenumber:
@@ -207,46 +207,46 @@ func (c *Config) eventCollectionSetSlug(ctx context.Context, colID, oldSlug, new
 	return n
 }
 
-func (c *Config) eventCollectionChangeBanner(ctx context.Context, colID, oldBannerKey, newBannerKey string) html.Node {
+func (c *Config) eventCollectionChangeBanner(ctx context.Context, colID string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		col, err := tx.CollectionHead(ctx, colID)
 		if err != nil {
 			return nil, err
 		}
-		return view.CollectionChangeBanner(col, oldBannerKey), nil
+		return view.CollectionChangeBanner(col), nil
 	})
 	return n
 }
 
-func (c *Config) eventMovieEditionChangePoster(ctx context.Context, editionID, oldPosterKey, newPosterKey string) html.Node {
+func (c *Config) eventMovieEditionChangePoster(ctx context.Context, editionID string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		med, err := tx.MovieEditionHead(ctx, editionID)
 		if err != nil {
 			return nil, err
 		}
-		return view.MovieEditionChangePoster(med, oldPosterKey), nil
+		return view.MovieEditionChangePoster(med), nil
 	})
 	return n
 }
 
-func (c *Config) eventSeriesEditionChangePoster(ctx context.Context, editionID, oldPosterKey, newPosterKey string) html.Node {
+func (c *Config) eventSeriesEditionChangePoster(ctx context.Context, editionID string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		sed, err := tx.SeriesEditionHead(ctx, editionID)
 		if err != nil {
 			return nil, err
 		}
-		return view.SeriesEditionChangePoster(sed, oldPosterKey), nil
+		return view.SeriesEditionChangePoster(sed), nil
 	})
 	return n
 }
 
-func (c *Config) eventEpisodeChangeThumbnail(ctx context.Context, episodeID, oldThumbnailKey, newThumbnailKey string) html.Node {
+func (c *Config) eventEpisodeChangeThumbnail(ctx context.Context, episodeID string) html.Node {
 	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ep, err := tx.EpisodeHead(ctx, episodeID)
 		if err != nil {
 			return nil, err
 		}
-		return view.EpisodeChangeThumbnail(ep, oldThumbnailKey), nil
+		return view.EpisodeChangeThumbnail(ep), nil
 	})
 	return n
 }

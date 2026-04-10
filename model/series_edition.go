@@ -25,8 +25,8 @@ func (sed *SeriesEditionHead) Label() string    { return sed.sed.Label }
 func (sed *SeriesEditionHead) Summary() string  { return sed.sed.Summary }
 func (sed *SeriesEditionHead) SeriesID() string { return sed.sed.SeriesID }
 
-func (sed *SeriesEditionHead) PosterPath() string {
-	return PosterPath(sed.sed.PosterKey)
+func (sed *SeriesEditionHead) Poster() Image {
+	return Image{OriginalID: sed.sed.PosterID, Kind: ImagePoster}
 }
 
 func (sed *SeriesEditionHead) addr(field string) []string {
@@ -36,6 +36,11 @@ func (sed *SeriesEditionHead) addr(field string) []string {
 func (sed *SeriesEditionHead) LabelAddr() []string   { return sed.addr("label") }
 func (sed *SeriesEditionHead) SummaryAddr() []string { return sed.addr("summary") }
 func (sed *SeriesEditionHead) SlugAddr() []string    { return sed.addr("slug") }
+func (sed *SeriesEditionHead) PosterAddr() []string  { return sed.addr("poster") }
+
+func (sed *SeriesEditionHead) PosterField() (Image, []string) {
+	return sed.Poster(), sed.PosterAddr()
+}
 
 func (sed *SeriesEditionHead) LabelField() (string, []string) { return sed.Label(), sed.LabelAddr() }
 func (sed *SeriesEditionHead) SummaryField() (string, []string) {
@@ -60,7 +65,7 @@ func newSeriesEdition(
 	videosByEpisodeID map[string][]*Video,
 ) *SeriesEdition {
 	sed := &SeriesEdition{
-		SeriesEditionHead: SeriesEditionHead{soData},
+		SeriesEditionHead: SeriesEditionHead{sed: soData},
 		sr:                sr,
 		snByID:            map[string]*Season{},
 	}
@@ -153,7 +158,7 @@ func (tx *TxR) SeriesEditionHead(ctx Context, id string) (*SeriesEditionHead, er
 	if err != nil {
 		return nil, err
 	}
-	return &SeriesEditionHead{sedData}, nil
+	return &SeriesEditionHead{sed: sedData}, nil
 }
 
 func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
@@ -219,7 +224,7 @@ func (tx *TxR) SeriesEditionList(ctx Context, sr *SeriesHead) ([]*SeriesWork, er
 	for i := range seds {
 		works[i] = &SeriesWork{
 			SeriesHead:        *sr,
-			SeriesEditionHead: SeriesEditionHead{seds[i]},
+			SeriesEditionHead: SeriesEditionHead{sed: seds[i]},
 		}
 	}
 	return works, nil
@@ -291,7 +296,7 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesWork, erro
 	}
 	return &SeriesWork{
 		SeriesHead:        SeriesHead{srData},
-		SeriesEditionHead: SeriesEditionHead{newSed},
+		SeriesEditionHead: SeriesEditionHead{sed: newSed},
 	}, nil
 }
 
@@ -310,7 +315,7 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&SeriesEditionHead{sed}).LabelAddr(),
+			Addr:    (&SeriesEditionHead{sed: sed}).LabelAddr(),
 			NewText: label,
 			OldText: sed.Label,
 		})
@@ -336,30 +341,28 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	})
 }
 
-func (tx *TxRW) SeriesEditionPosterKeySet(ctx Context, id, posterKey string) error {
+func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error {
 	sed, err := tx.q.SeriesEditionGet(ctx, id)
 	if err != nil {
 		return err
 	}
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
-			Type:    EventSeriesEditionChangePoster,
-			ID:      id,
-			OldText: sed.PosterKey,
-			NewText: posterKey,
+			Type: EventSeriesEditionChangePoster,
+			ID:   id,
 		})
 	})
-	err = tx.q.SeriesEditionPosterKeySet(ctx, schema.SeriesEditionPosterKeySetParams{
-		PosterKey: posterKey,
-		ID:        id,
+	err = tx.q.SeriesEditionPosterIDSet(ctx, schema.SeriesEditionPosterIDSetParams{
+		PosterID: posterID,
+		ID:       id,
 	})
 	if err != nil {
 		return err
 	}
-	if sed.PosterKey != "" {
-		tx.m.store.Remove(sed.PosterKey)
+	if isPlaceholderImageOriginalID(sed.PosterID) {
+		return nil
 	}
-	return nil
+	return tx.imageOriginalDelete(ctx, sed.PosterID)
 }
 
 func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
@@ -373,7 +376,7 @@ func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&SeriesEditionHead{schema.SeriesEdition{ID: id}}).SummaryAddr(),
+			Addr:    (&SeriesEditionHead{sed: schema.SeriesEdition{ID: id}}).SummaryAddr(),
 			NewText: summary,
 		})
 	})

@@ -32,6 +32,9 @@ LIMIT 1;
 SELECT * FROM User
 ORDER BY Name;
 
+-- name: CollectionBannerIDSet :exec
+UPDATE Collection SET BannerID = ? WHERE ID = ?;
+
 -- name: CollectionCreate :one
 INSERT INTO Collection (Slug, Title)
 VALUES (?, ?)
@@ -91,9 +94,6 @@ SELECT s.* FROM Series s
 JOIN CollectionSeries cs ON cs.SeriesID = s.ID
 WHERE cs.CollectionID = ?
 ORDER BY s.Title;
-
--- name: CollectionSetBannerKey :exec
-UPDATE Collection SET BannerKey = ? WHERE ID = ?;
 
 -- name: CollectionSetSlug :exec
 UPDATE Collection SET Slug = ? WHERE ID = ?;
@@ -195,8 +195,8 @@ ORDER BY ID;
 -- name: EpisodeSummarySet :exec
 UPDATE Episode SET Summary = ? WHERE ID = ?;
 
--- name: EpisodeThumbnailKeySet :exec
-UPDATE Episode SET ThumbnailKey = ? WHERE ID = ?;
+-- name: EpisodeThumbnailIDSet :exec
+UPDATE Episode SET ThumbnailID = ? WHERE ID = ?;
 
 -- name: EpisodeTitleSet :exec
 UPDATE Episode SET Title = ? WHERE ID = ?;
@@ -230,6 +230,32 @@ WHERE EpisodeID IN (
 SELECT * FROM EpisodeVideo
 WHERE VideoID = ?;
 
+-- name: ImageCreate :exec
+INSERT INTO Image (Key, OriginalID, Type, Width, Height)
+VALUES (?, ?, ?, ?, ?);
+
+-- name: ImageDeleteByOriginalID :many
+DELETE FROM Image WHERE OriginalID = ? RETURNING Key;
+
+-- name: ImageListByOriginalID :many
+SELECT * FROM Image WHERE OriginalID = ? ORDER BY Width;
+
+-- name: ImageOriginalCreate :one
+INSERT INTO ImageOriginal (Key, Type)
+VALUES (?, ?)
+RETURNING *;
+
+-- name: ImageOriginalCreateWithID :exec
+INSERT INTO ImageOriginal (ID, Key, Type)
+VALUES (?, ?, ?)
+ON CONFLICT (ID) DO NOTHING;
+
+-- name: ImageOriginalDelete :one
+DELETE FROM ImageOriginal WHERE ID = ? RETURNING Key;
+
+-- name: ImageOriginalGet :one
+SELECT * FROM ImageOriginal WHERE ID = ?;
+
 -- name: MovieCreate :one
 INSERT INTO Movie (ID, Slug, TMDBID, IMDBID)
 VALUES (?, ?, ?, ?)
@@ -255,8 +281,8 @@ SELECT * FROM MovieEdition WHERE MovieID = ?;
 -- name: MovieEditionListDefault :many
 SELECT * FROM MovieEdition WHERE Slug = '';
 
--- name: MovieEditionPosterKeySet :exec
-UPDATE MovieEdition SET PosterKey = ? WHERE ID = ?;
+-- name: MovieEditionPosterIDSet :exec
+UPDATE MovieEdition SET PosterID = ? WHERE ID = ?;
 
 -- name: MovieEditionRuntimeSet :exec
 UPDATE MovieEdition SET Runtime = ? WHERE ID = ?;
@@ -490,8 +516,8 @@ SELECT * FROM SeriesEdition WHERE SeriesID = ?;
 -- name: SeriesEditionListDefault :many
 SELECT * FROM SeriesEdition WHERE Slug = '';
 
--- name: SeriesEditionPosterKeySet :exec
-UPDATE SeriesEdition SET PosterKey = ? WHERE ID = ?;
+-- name: SeriesEditionPosterIDSet :exec
+UPDATE SeriesEdition SET PosterID = ? WHERE ID = ?;
 
 -- name: SeriesEditionSlugExists :one
 SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?;
