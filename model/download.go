@@ -2,6 +2,7 @@ package model
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"database/sql"
@@ -120,7 +121,24 @@ func (df *DownloadFile) Episodes() []*Episode {
 			eps = append(eps, ep)
 		}
 	}
+	slices.SortFunc(eps, func(a, b *Episode) int {
+		return cmp.Or(
+			cmp.Compare(a.sn.sn.SortKey, b.sn.sn.SortKey),
+			cmp.Compare(a.snep.SortKey, b.snep.SortKey),
+		)
+	})
 	return eps
+}
+
+func (df *DownloadFile) InfoHash() string {
+	return df.d.InfoHash()
+}
+
+func (df *DownloadFile) VideoID() string {
+	if df.video == nil {
+		return ""
+	}
+	return df.video.ID
 }
 
 func (df *DownloadFile) SeriesEdition() *SeriesEdition {
@@ -207,6 +225,21 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 
 func (d *Download) PlanSeriesEdition() *SeriesEdition { return d.planEd }
 func (d *Download) PlanMovieEdition() *MovieEdition   { return d.planMovieEd }
+
+func (d *Download) EpisodeIDsByVideoID(videoID string) []string {
+	return d.epIDByVideoID[videoID]
+}
+
+func (tx *TxR) VideoGetByName(ctx Context, infoHash, name string) (*Video, error) {
+	v, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
+		InfoHash: &infoHash,
+		Name:     name,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &Video{v: v}, nil
+}
 
 func (d *Download) PlanFor(path string) []string {
 	v := d.videoByName[path]
@@ -306,6 +339,29 @@ func (tx *TxRW) DownloadAutoImportSet(ctx Context, infoHash string, auto bool) (
 		return err
 	}
 	return tx.processDownload(ctx, infoHash)
+}
+
+// EpisodeVideoSet adds or removes the link between a download file
+// and an episode. The Video record must already exist for the file.
+func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID string, attach bool) (err error) {
+	defer errorfmt.Handlef("EpisodeVideoSet: %w", &err)
+	vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
+		InfoHash: &infoHash,
+		Name:     filePath,
+	})
+	if err != nil {
+		return err
+	}
+	if attach {
+		return tx.q.EpisodeVideoEnsure(ctx, schema.EpisodeVideoEnsureParams{
+			EpisodeID: episodeID,
+			VideoID:   vid.ID,
+		})
+	}
+	return tx.q.EpisodeVideoDelete(ctx, schema.EpisodeVideoDeleteParams{
+		EpisodeID: episodeID,
+		VideoID:   vid.ID,
+	})
 }
 
 // DownloadImport is the manual import action: it enables auto-import,
@@ -428,6 +484,27 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err
 	if err != nil {
 		return nil, err
 	}
+	createVideos := func(path string) error {
+		if !hasVideoExtension(path) {
+			return nil
+		}
+		_, err := tx.q.VideoCreate(ctx, schema.VideoCreateParams{
+			InfoHash: &dl.InfoHash,
+			Name:     path,
+		})
+		return err
+	}
+	if !info.IsDir() {
+		if err := createVideos(info.Name); err != nil {
+			return nil, err
+		}
+	} else {
+		for _, fi := range info.Files {
+			if err := createVideos(fiPath(&fi)); err != nil {
+				return nil, err
+			}
+		}
+	}
 	err = tx.addTask(ctx, taskAddDownloadToTransmission, dl.InfoHash)
 	if err != nil {
 		return nil, err
@@ -509,7 +586,7 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, infoHash, sedID string) (d
 		if ep == nil {
 			continue
 		}
-		vid, err := tx.q.VideoCreate(ctx, schema.VideoCreateParams{
+		vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
 			InfoHash: &dl.InfoHash,
 			Name:     p,
 		})
@@ -540,11 +617,11 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d 
 	if err != nil {
 		return nil, err
 	}
-	createVideo := func(path string) error {
+	linkVideo := func(path string) error {
 		if !hasVideoExtension(path) {
 			return nil
 		}
-		vid, err := tx.q.VideoCreate(ctx, schema.VideoCreateParams{
+		vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
 			InfoHash: &dl.InfoHash,
 			Name:     path,
 		})
@@ -558,12 +635,12 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d 
 		return err
 	}
 	if !info.IsDir() {
-		if err := createVideo(info.Name); err != nil {
+		if err := linkVideo(info.Name); err != nil {
 			return nil, err
 		}
 	} else {
 		for _, fi := range info.Files {
-			if err := createVideo(fiPath(&fi)); err != nil {
+			if err := linkVideo(fiPath(&fi)); err != nil {
 				return nil, err
 			}
 		}

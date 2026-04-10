@@ -210,6 +210,58 @@ func appDownloadsImportControl(dl *model.Download) html.Node {
 	}
 }
 
+func AppDownloadFileAttachDialog(
+	sed *model.SeriesEdition,
+	infoHash, filePath string,
+	linked map[string]bool,
+) html.Node {
+	return DialogStream(
+		FlexCol(Gap2, Class("v-media-dialog"))(
+			html.Div(Class("v-media-dialog-fixed"))(
+				Text("Attach to Episode"),
+			),
+			ScrollY(Class("v-media-dialog-results"))(
+				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
+					return SettingsGroup()(
+						SettingsGroupHead()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle(sn.Title()),
+							),
+						),
+						html.RangeSeq(sn.Episodes(model.AnyEpisode), func(ep *model.Episode) html.Node {
+							attached := linked[ep.ID()]
+							return SettingsItem()(
+								html.Form(
+									attr.Method("POST"),
+									attr.Action("/-/do/episode-video-set"),
+									stimulus.Action("turbo:submit-end->dialog#close"),
+								)(
+									Hidden("infohash", infoHash),
+									Hidden("path", filePath),
+									Hidden("episode-id", ep.ID()),
+									Hidden("attach", "true"),
+									html.Button(
+										attr.Style("all: unset; cursor: pointer"),
+									)(
+										SettingsItemLabel()(
+											SettingsItemLabelTitle(ep.SnnEnn()+" "+ep.Title()),
+										),
+									),
+								),
+								SettingsToggle("/-/do/episode-video-set", "attach", attached)(
+									Hidden("infohash", infoHash),
+									Hidden("path", filePath),
+									Hidden("episode-id", ep.ID()),
+								),
+							)
+						}),
+					)
+				}),
+			),
+		),
+	)
+}
+
 func appDownloadsFileList(files []*model.DownloadFile) html.Node {
 	slices.SortStableFunc(files, func(a, b *model.DownloadFile) int {
 		return cmp.Compare(path.Dir(a.Path()), path.Dir(b.Path()))
@@ -253,6 +305,16 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
 						},
 					),
 				),
+				html.If(df.SeriesEdition() != nil, func() html.Node {
+					return html.Form(
+						attr.Method("get"),
+						attr.Action("/-/dialog/download-file-attach"),
+					)(
+						Hidden("infohash", df.InfoHash()),
+						Hidden("path", df.Path()),
+						Button(SettingsHover, ButtonGhost, ButtonSize2)(Text("Attach")),
+					)
+				}),
 			)
 		}),
 	)

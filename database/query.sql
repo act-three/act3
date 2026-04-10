@@ -209,6 +209,13 @@ INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)
 RETURNING *;
 
+-- name: EpisodeVideoDelete :exec
+DELETE FROM EpisodeVideo WHERE EpisodeID = ? AND VideoID = ?;
+
+-- name: EpisodeVideoEnsure :exec
+INSERT OR IGNORE INTO EpisodeVideo (EpisodeID, VideoID)
+VALUES (?, ?);
+
 -- name: EpisodeVideoListByEditionID :many
 SELECT * FROM EpisodeVideo
 WHERE EpisodeID IN (

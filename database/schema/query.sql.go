@@ -1045,6 +1045,35 @@ func (q *Queries) EpisodeVideoCreate(ctx context.Context, arg EpisodeVideoCreate
 	return i, err
 }
 
+const episodeVideoDelete = `-- name: EpisodeVideoDelete :exec
+DELETE FROM EpisodeVideo WHERE EpisodeID = ? AND VideoID = ?
+`
+
+type EpisodeVideoDeleteParams struct {
+	EpisodeID string
+	VideoID   string
+}
+
+func (q *Queries) EpisodeVideoDelete(ctx context.Context, arg EpisodeVideoDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoDelete, arg.EpisodeID, arg.VideoID)
+	return err
+}
+
+const episodeVideoEnsure = `-- name: EpisodeVideoEnsure :exec
+INSERT OR IGNORE INTO EpisodeVideo (EpisodeID, VideoID)
+VALUES (?, ?)
+`
+
+type EpisodeVideoEnsureParams struct {
+	EpisodeID string
+	VideoID   string
+}
+
+func (q *Queries) EpisodeVideoEnsure(ctx context.Context, arg EpisodeVideoEnsureParams) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoEnsure, arg.EpisodeID, arg.VideoID)
+	return err
+}
+
 const episodeVideoListByEditionID = `-- name: EpisodeVideoListByEditionID :many
 SELECT episodeid, videoid FROM EpisodeVideo
 WHERE EpisodeID IN (
