@@ -13,7 +13,7 @@ import (
 
 func browse(title string, washImages ...model.Image) html.Element {
 	return func(child ...html.Node) html.Node {
-		return base(title)(attr.Style("padding-top:var(--nav-h)"))(
+		return base(title)(attr.Style("padding:var(--nav-h) 0 8rem"))(
 			browseWash(washImages),
 			browseContainer(child...),
 			browseNavigationMenu(),
