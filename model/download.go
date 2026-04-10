@@ -105,28 +105,22 @@ func (df *DownloadFile) State() string {
 	return df.video.State
 }
 
-func (df *DownloadFile) Episode() *Episode {
+func (df *DownloadFile) Episodes() []*Episode {
 	sed := df.SeriesEdition()
 	if sed == nil || df.video == nil {
 		return nil
 	}
-	epID, ok := df.d.epIDByVideoID[df.video.ID]
-	if !ok {
+	epIDs := df.d.epIDByVideoID[df.video.ID]
+	if len(epIDs) == 0 {
 		return nil
 	}
-	return sed.episodeByID(epID)
-}
-
-func (df *DownloadFile) Season() *Season {
-	sed := df.SeriesEdition()
-	if sed == nil || df.video == nil {
-		return nil
+	eps := make([]*Episode, 0, len(epIDs))
+	for _, id := range epIDs {
+		if ep := sed.episodeByID(id); ep != nil {
+			eps = append(eps, ep)
+		}
 	}
-	epID, ok := df.d.epIDByVideoID[df.video.ID]
-	if !ok {
-		return nil
-	}
-	return sed.seasonByEpisodeID(epID)
+	return eps
 }
 
 func (df *DownloadFile) SeriesEdition() *SeriesEdition {
@@ -139,8 +133,8 @@ type Download struct {
 	info           metainfo.Info
 	videos         []schema.Video
 	videoByName    map[string]*schema.Video
-	epIDByVideoID  map[string]string // videoID -> episodeID
-	medIDByVideoID map[string]string // videoID -> movieEditionID
+	epIDByVideoID  map[string][]string // videoID -> episodeIDs
+	medIDByVideoID map[string]string   // videoID -> movieEditionID
 	planEd         *SeriesEdition
 	planMovieEd    *MovieEdition
 	fileProgress   map[string]float64 // path -> fraction [0,1], nil if unknown
@@ -175,9 +169,9 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 	if err != nil {
 		return nil, err
 	}
-	d.epIDByVideoID = make(map[string]string, len(evs))
+	d.epIDByVideoID = make(map[string][]string, len(evs))
 	for _, ev := range evs {
-		d.epIDByVideoID[ev.VideoID] = ev.EpisodeID
+		d.epIDByVideoID[ev.VideoID] = append(d.epIDByVideoID[ev.VideoID], ev.EpisodeID)
 	}
 
 	mvs, err := tx.q.MovieVideoListByInfoHash(ctx, &dl.InfoHash)
@@ -214,18 +208,18 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 func (d *Download) PlanSeriesEdition() *SeriesEdition { return d.planEd }
 func (d *Download) PlanMovieEdition() *MovieEdition   { return d.planMovieEd }
 
-func (d *Download) PlanFor(path string) string {
+func (d *Download) PlanFor(path string) []string {
 	v := d.videoByName[path]
 	if v == nil {
-		return ""
+		return nil
 	}
-	if epID, ok := d.epIDByVideoID[v.ID]; ok {
-		return epID
+	if epIDs := d.epIDByVideoID[v.ID]; len(epIDs) > 0 {
+		return epIDs
 	}
 	if medID, ok := d.medIDByVideoID[v.ID]; ok {
-		return medID
+		return []string{medID}
 	}
-	return ""
+	return nil
 }
 
 func (d *Download) Paths() iter.Seq[string] {
@@ -356,7 +350,7 @@ func (tx *TxRW) processDownload(ctx Context, infoHash string) (err error) {
 			if err != nil {
 				return err
 			}
-			if epID, ok := d.epIDByVideoID[v.ID]; ok {
+			for _, epID := range d.epIDByVideoID[v.ID] {
 				tx.m.prog.AddEdge(epID, v.ID)
 			}
 			diskPath, err := tx.transmissionDiskPath(ctx, t, v.Name)
@@ -698,8 +692,8 @@ func (m *Model) pollTransmissionOnce() error {
 func (m *Model) updateFileProgress(t *transmissionrpc.Torrent, dl *Download) {
 	for _, tf := range t.Files {
 		_, p, _ := strings.Cut(tf.Name, "/")
-		epID := dl.PlanFor(p)
-		if epID == "" {
+		ids := dl.PlanFor(p)
+		if len(ids) == 0 {
 			continue
 		}
 		h := sha256.Sum256([]byte(p))
@@ -707,7 +701,9 @@ func (m *Model) updateFileProgress(t *transmissionrpc.Torrent, dl *Download) {
 		if tf.Length > 0 {
 			frac := float64(tf.BytesCompleted) / float64(tf.Length)
 			m.prog.AddEdge("dl-"+dl.InfoHash(), key)
-			m.prog.AddEdge(epID, key)
+			for _, id := range ids {
+				m.prog.AddEdge(id, key)
+			}
 			m.prog.Open(key, p, "Downloading")
 			m.prog.Update(key, frac)
 			if tf.BytesCompleted == tf.Length {

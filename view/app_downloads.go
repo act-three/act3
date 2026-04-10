@@ -235,20 +235,15 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
 			if !df.HasVideoExtension() {
 				return Group()
 			}
-			ep := df.Episode()
+			eps := df.Episodes()
 			return SettingsItem()(
 				SettingsItemLabel()(
 					SettingsItemLabelTitle(path.Base(df.Path())),
-					expr.IfElse(ep != nil,
-						func() html.Node {
-							return SettingsItemLabelDescription(
-								ep.SnnEnn() + " " + ep.Title(),
-							)
-						},
-						func() html.Node {
-							return html.Group()
-						},
-					),
+					html.Range(eps, func(ep *model.Episode) html.Node {
+						return SettingsItemLabelDescription(
+							ep.SnnEnn() + " " + ep.Title(),
+						)
+					}),
 					expr.IfElse(df.Progress() >= 0,
 						func() html.Node {
 							return Progress(df.Progress(), ProgressSM)
