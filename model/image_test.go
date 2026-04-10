@@ -92,9 +92,9 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	// Confirm two variants were stored at the configured widths
 	// (300 and 600). The 600 variant is unscaled native, which we
 	// then decode and pixel-compare against the centered crop.
-	var stored []schema.Image
+	var stored []schema.ImageRendition
 	if err := m.WithTxR(func(tx *TxR) error {
-		stored, err = tx.q.ImageListByOriginalID(ctx, originalID)
+		stored, err = tx.q.ImageRenditionListByImageID(ctx, originalID)
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -164,7 +164,7 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 			"(likely the gen2brain/webp non-zero-origin encode bug has regressed)",
 			maeR, maeG, maeB, maxMAE)
 	}
-	im := Image{OriginalID: originalID, Kind: ImagePoster}
+	im := Image{ID: originalID, Kind: ImagePoster}
 	t.Logf("round-trip MAE per channel = (%.2f, %.2f, %.2f); srcset=%q",
 		maeR, maeG, maeB, im.Srcset())
 }

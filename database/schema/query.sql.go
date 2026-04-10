@@ -1162,23 +1162,80 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 	return items, nil
 }
 
-const imageCreate = `-- name: ImageCreate :exec
-INSERT INTO Image (Key, OriginalID, Type, Width, Height)
-VALUES (?, ?, ?, ?, ?)
+const imageCreate = `-- name: ImageCreate :one
+INSERT INTO Image (Key, Type)
+VALUES (?, ?)
+RETURNING id, "key", type
 `
 
 type ImageCreateParams struct {
-	Key        string
-	OriginalID string
-	Type       string
-	Width      int64
-	Height     int64
+	Key  string
+	Type string
 }
 
-func (q *Queries) ImageCreate(ctx context.Context, arg ImageCreateParams) error {
-	_, err := q.db.ExecContext(ctx, imageCreate,
+func (q *Queries) ImageCreate(ctx context.Context, arg ImageCreateParams) (Image, error) {
+	row := q.db.QueryRowContext(ctx, imageCreate, arg.Key, arg.Type)
+	var i Image
+	err := row.Scan(&i.ID, &i.Key, &i.Type)
+	return i, err
+}
+
+const imageCreateWithID = `-- name: ImageCreateWithID :exec
+INSERT INTO Image (ID, Key, Type)
+VALUES (?, ?, ?)
+ON CONFLICT (ID) DO NOTHING
+`
+
+type ImageCreateWithIDParams struct {
+	ID   string
+	Key  string
+	Type string
+}
+
+func (q *Queries) ImageCreateWithID(ctx context.Context, arg ImageCreateWithIDParams) error {
+	_, err := q.db.ExecContext(ctx, imageCreateWithID, arg.ID, arg.Key, arg.Type)
+	return err
+}
+
+const imageDelete = `-- name: ImageDelete :one
+DELETE FROM Image WHERE ID = ? RETURNING Key
+`
+
+func (q *Queries) ImageDelete(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRowContext(ctx, imageDelete, id)
+	var key string
+	err := row.Scan(&key)
+	return key, err
+}
+
+const imageGet = `-- name: ImageGet :one
+SELECT id, "key", type FROM Image WHERE ID = ?
+`
+
+func (q *Queries) ImageGet(ctx context.Context, id string) (Image, error) {
+	row := q.db.QueryRowContext(ctx, imageGet, id)
+	var i Image
+	err := row.Scan(&i.ID, &i.Key, &i.Type)
+	return i, err
+}
+
+const imageRenditionCreate = `-- name: ImageRenditionCreate :exec
+INSERT INTO ImageRendition (Key, ImageID, Type, Width, Height)
+VALUES (?, ?, ?, ?, ?)
+`
+
+type ImageRenditionCreateParams struct {
+	Key     string
+	ImageID string
+	Type    string
+	Width   int64
+	Height  int64
+}
+
+func (q *Queries) ImageRenditionCreate(ctx context.Context, arg ImageRenditionCreateParams) error {
+	_, err := q.db.ExecContext(ctx, imageRenditionCreate,
 		arg.Key,
-		arg.OriginalID,
+		arg.ImageID,
 		arg.Type,
 		arg.Width,
 		arg.Height,
@@ -1186,12 +1243,12 @@ func (q *Queries) ImageCreate(ctx context.Context, arg ImageCreateParams) error 
 	return err
 }
 
-const imageDeleteByOriginalID = `-- name: ImageDeleteByOriginalID :many
-DELETE FROM Image WHERE OriginalID = ? RETURNING Key
+const imageRenditionDeleteByImageID = `-- name: ImageRenditionDeleteByImageID :many
+DELETE FROM ImageRendition WHERE ImageID = ? RETURNING Key
 `
 
-func (q *Queries) ImageDeleteByOriginalID(ctx context.Context, originalid string) ([]string, error) {
-	rows, err := q.db.QueryContext(ctx, imageDeleteByOriginalID, originalid)
+func (q *Queries) ImageRenditionDeleteByImageID(ctx context.Context, imageid string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, imageRenditionDeleteByImageID, imageid)
 	if err != nil {
 		return nil, err
 	}
@@ -1213,22 +1270,22 @@ func (q *Queries) ImageDeleteByOriginalID(ctx context.Context, originalid string
 	return items, nil
 }
 
-const imageListByOriginalID = `-- name: ImageListByOriginalID :many
-SELECT "key", originalid, type, width, height FROM Image WHERE OriginalID = ? ORDER BY Width
+const imageRenditionListByImageID = `-- name: ImageRenditionListByImageID :many
+SELECT "key", imageid, type, width, height FROM ImageRendition WHERE ImageID = ? ORDER BY Width
 `
 
-func (q *Queries) ImageListByOriginalID(ctx context.Context, originalid string) ([]Image, error) {
-	rows, err := q.db.QueryContext(ctx, imageListByOriginalID, originalid)
+func (q *Queries) ImageRenditionListByImageID(ctx context.Context, imageid string) ([]ImageRendition, error) {
+	rows, err := q.db.QueryContext(ctx, imageRenditionListByImageID, imageid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Image
+	var items []ImageRendition
 	for rows.Next() {
-		var i Image
+		var i ImageRendition
 		if err := rows.Scan(
 			&i.Key,
-			&i.OriginalID,
+			&i.ImageID,
 			&i.Type,
 			&i.Width,
 			&i.Height,
@@ -1244,63 +1301,6 @@ func (q *Queries) ImageListByOriginalID(ctx context.Context, originalid string) 
 		return nil, err
 	}
 	return items, nil
-}
-
-const imageOriginalCreate = `-- name: ImageOriginalCreate :one
-INSERT INTO ImageOriginal (Key, Type)
-VALUES (?, ?)
-RETURNING id, "key", type
-`
-
-type ImageOriginalCreateParams struct {
-	Key  string
-	Type string
-}
-
-func (q *Queries) ImageOriginalCreate(ctx context.Context, arg ImageOriginalCreateParams) (ImageOriginal, error) {
-	row := q.db.QueryRowContext(ctx, imageOriginalCreate, arg.Key, arg.Type)
-	var i ImageOriginal
-	err := row.Scan(&i.ID, &i.Key, &i.Type)
-	return i, err
-}
-
-const imageOriginalCreateWithID = `-- name: ImageOriginalCreateWithID :exec
-INSERT INTO ImageOriginal (ID, Key, Type)
-VALUES (?, ?, ?)
-ON CONFLICT (ID) DO NOTHING
-`
-
-type ImageOriginalCreateWithIDParams struct {
-	ID   string
-	Key  string
-	Type string
-}
-
-func (q *Queries) ImageOriginalCreateWithID(ctx context.Context, arg ImageOriginalCreateWithIDParams) error {
-	_, err := q.db.ExecContext(ctx, imageOriginalCreateWithID, arg.ID, arg.Key, arg.Type)
-	return err
-}
-
-const imageOriginalDelete = `-- name: ImageOriginalDelete :one
-DELETE FROM ImageOriginal WHERE ID = ? RETURNING Key
-`
-
-func (q *Queries) ImageOriginalDelete(ctx context.Context, id string) (string, error) {
-	row := q.db.QueryRowContext(ctx, imageOriginalDelete, id)
-	var key string
-	err := row.Scan(&key)
-	return key, err
-}
-
-const imageOriginalGet = `-- name: ImageOriginalGet :one
-SELECT id, "key", type FROM ImageOriginal WHERE ID = ?
-`
-
-func (q *Queries) ImageOriginalGet(ctx context.Context, id string) (ImageOriginal, error) {
-	row := q.db.QueryRowContext(ctx, imageOriginalGet, id)
-	var i ImageOriginal
-	err := row.Scan(&i.ID, &i.Key, &i.Type)
-	return i, err
 }
 
 const movieCreate = `-- name: MovieCreate :one

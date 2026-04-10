@@ -20,7 +20,7 @@ func (c *CollectionHead) ID() string    { return c.col.ID }
 func (c *CollectionHead) Slug() string  { return c.col.Slug }
 func (c *CollectionHead) Title() string { return c.col.Title }
 func (c *CollectionHead) Banner() Image {
-	return Image{OriginalID: c.col.BannerID, Kind: ImageBanner}
+	return Image{ID: c.col.BannerID, Kind: ImageBanner}
 }
 
 func (c *CollectionHead) addr(field string) []string {
@@ -319,10 +319,10 @@ func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 	if err != nil {
 		return err
 	}
-	if isPlaceholderImageOriginalID(col.BannerID) {
+	if isPlaceholderImageID(col.BannerID) {
 		return nil
 	}
-	return tx.imageOriginalDelete(ctx, col.BannerID)
+	return tx.imageDelete(ctx, col.BannerID)
 }
 
 func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {

@@ -71,14 +71,14 @@ const webpQuality = 80
 
 // allowedSourceFormats maps the format string returned by
 // image.Decode to the canonical MIME type stored in
-// ImageOriginal.Type. Anything else is a ValidationError.
+// Image.Type. Anything else is a ValidationError.
 var allowedSourceFormats = map[string]string{
 	"png":  "image/png",
 	"jpeg": "image/jpeg",
 	"webp": "image/webp",
 }
 
-// Placeholder ImageOriginal IDs. These rows are created at boot
+// Placeholder Image IDs. These rows are created at boot
 // from embedded fallback PNGs and are referenced by the per-kind
 // DEFAULT clauses on the parent FK columns, so every parent row
 // always has a non-NULL image to render. The IDs intentionally
@@ -90,7 +90,7 @@ const (
 	imageBannerPlaceholderID    = "ioplaceholderbanner"
 )
 
-func isPlaceholderImageOriginalID(id string) bool {
+func isPlaceholderImageID(id string) bool {
 	switch id {
 	case imagePosterPlaceholderID, imageThumbnailPlaceholderID, imageBannerPlaceholderID:
 		return true
@@ -98,8 +98,8 @@ func isPlaceholderImageOriginalID(id string) bool {
 	return false
 }
 
-// Image is the renderable form of an ImageOriginal. It carries
-// only the originating ImageOriginal ID and the kind whose aspect
+// Image is the renderable form of an Image row. It carries only
+// the Image table's primary key and the kind whose aspect
 // ratio and configured widths the variants were generated from.
 // Every URL and dimension a view needs is a pure derivation of
 // those two fields — no DB or storage lookup happens at render
@@ -107,20 +107,20 @@ func isPlaceholderImageOriginalID(id string) bool {
 // requested logical width to the best matching variant blob at
 // request time.
 type Image struct {
-	OriginalID string
-	Kind       ImageKind
+	ID   string
+	Kind ImageKind
 }
 
 // IsPlaceholder reports whether the Image is one of the
 // boot-time placeholder rows shared by every parent that has no
 // user-uploaded image yet.
-func (im Image) IsPlaceholder() bool { return isPlaceholderImageOriginalID(im.OriginalID) }
+func (im Image) IsPlaceholder() bool { return isPlaceholderImageID(im.ID) }
 
 // URL returns the image handler URL for this image at the given
 // logical pixel width. The handler resolves "logical width" to
 // the best matching stored variant when the request lands.
 func (im Image) URL(width int) string {
-	return "/-/img/" + im.OriginalID + "/" + strconv.Itoa(width)
+	return "/-/img/" + im.ID + "/" + strconv.Itoa(width)
 }
 
 // SmallestURL returns the handler URL for the smallest configured
@@ -162,7 +162,7 @@ func (im Image) Srcset() string {
 // originalID.
 func (tx *TxR) ImageVariantKey(ctx Context, originalID string, width int) (key string, err error) {
 	defer errorfmt.Handlef("image variant key: %w", &err)
-	vs, err := tx.q.ImageListByOriginalID(ctx, originalID)
+	vs, err := tx.q.ImageRenditionListByImageID(ctx, originalID)
 	if err != nil {
 		return "", err
 	}
@@ -185,8 +185,8 @@ func (tx *TxR) ImageVariantKey(ctx Context, originalID string, width int) (key s
 // as one of the allowed formats (png/jpeg/webp), center-crops it
 // to the target aspect ratio for kind, and writes both the
 // original bytes and a set of downscaled WebP variants to the
-// blob store and the Image / ImageOriginal tables. Returns the
-// new ImageOriginal ID.
+// blob store and the Image / ImageRendition tables. Returns
+// the new Image ID.
 //
 // Variants are generated at the per-density physical widths
 // declared in imageKindSpecs. Configured widths that would
@@ -197,7 +197,7 @@ func (tx *TxR) ImageVariantKey(ctx Context, originalID string, width int) (key s
 // never includes a width larger than the largest configured
 // width. If even the smallest configured width would upscale, a
 // single fallback variant at the cropped source's native size is
-// generated so every ImageOriginal has at least one Image row.
+// generated so every Image has at least one rendition.
 //
 // The "original" row keeps the bytes byte-for-byte as uploaded
 // so we can re-derive variants in the future without re-fetching
@@ -211,7 +211,7 @@ func (m *Model) ImageCreate(ctx context.Context, r io.Reader, kind ImageKind) (o
 }
 
 // imageCreate is the shared implementation. If explicitID is
-// empty the ImageOriginal row gets a freshly generated ID;
+// empty the Image row gets a freshly generated ID;
 // otherwise it uses explicitID and is a no-op when a row with
 // that ID already exists (used for boot-time placeholder
 // creation).
@@ -222,7 +222,7 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 		// Idempotence for boot-time placeholder creation: if a
 		// row with explicitID already exists, do nothing.
 		err := m.WithTxR(func(tx *TxR) error {
-			_, err := tx.q.ImageOriginalGet(ctx, explicitID)
+			_, err := tx.q.ImageGet(ctx, explicitID)
 			return err
 		})
 		if err == nil {
@@ -268,7 +268,7 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 			return err
 		}
 		if explicitID == "" {
-			io_, err := tx.q.ImageOriginalCreate(ctx, schema.ImageOriginalCreateParams{
+			io_, err := tx.q.ImageCreate(ctx, schema.ImageCreateParams{
 				Key:  originalKey,
 				Type: mime,
 			})
@@ -277,7 +277,7 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 			}
 			originalID = io_.ID
 		} else {
-			err := tx.q.ImageOriginalCreateWithID(ctx, schema.ImageOriginalCreateWithIDParams{
+			err := tx.q.ImageCreateWithID(ctx, schema.ImageCreateWithIDParams{
 				ID:   explicitID,
 				Key:  originalKey,
 				Type: mime,
@@ -292,12 +292,12 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 			if err != nil {
 				return err
 			}
-			err = tx.q.ImageCreate(ctx, schema.ImageCreateParams{
-				Key:        variantKey,
-				OriginalID: originalID,
-				Type:       "image/webp",
-				Width:      int64(v.width),
-				Height:     int64(v.height),
+			err = tx.q.ImageRenditionCreate(ctx, schema.ImageRenditionCreateParams{
+				Key:     variantKey,
+				ImageID: originalID,
+				Type:    "image/webp",
+				Width:   int64(v.width),
+				Height:  int64(v.height),
 			})
 			if err != nil {
 				return err
@@ -371,7 +371,7 @@ func encodeWebP(img image.Image, w, h int) encodedVariant {
 	return encodedVariant{bytes: buf.Bytes(), width: w, height: h}
 }
 
-// insertPlaceholderImages creates the placeholder ImageOriginal
+// insertPlaceholderImages creates the placeholder Image
 // rows (and their variant blobs) from embedded fallback PNGs if
 // they don't already exist. Called once at boot from model.New
 // so the per-kind FK DEFAULTs on parent tables always resolve.
@@ -392,31 +392,31 @@ func (m *Model) insertPlaceholderImages(ctx context.Context) error {
 	return nil
 }
 
-// imageOriginalDelete deletes an ImageOriginal and its variant
-// rows + blobs unconditionally. Callers are responsible for not
-// invoking this on a placeholder. The cleanup is split between
-// SQL (rows deleted in this transaction) and storage (blob keys
-// removed in an onCommit hook so a rolled-back tx doesn't lose
-// the bytes).
+// imageDelete deletes an Image and its rendition rows + blobs
+// unconditionally. Callers are responsible for not invoking this
+// on a placeholder. The cleanup is split between SQL (rows
+// deleted in this transaction) and storage (blob keys removed
+// in an onCommit hook so a rolled-back tx doesn't lose the
+// bytes).
 //
 // Each user-uploaded image has exactly one owner — when a parent
 // row's image FK is updated, the previous image is no longer
 // reachable from anywhere and can be removed without ref
 // counting.
-func (tx *TxRW) imageOriginalDelete(ctx Context, originalID string) error {
-	variantKeys, err := tx.q.ImageDeleteByOriginalID(ctx, originalID)
+func (tx *TxRW) imageDelete(ctx Context, imageID string) error {
+	renditionKeys, err := tx.q.ImageRenditionDeleteByImageID(ctx, imageID)
 	if err != nil {
 		return err
 	}
-	originalKey, err := tx.q.ImageOriginalDelete(ctx, originalID)
+	imageKey, err := tx.q.ImageDelete(ctx, imageID)
 	if err != nil {
 		return err
 	}
 	tx.onCommit(func() {
-		for _, k := range variantKeys {
+		for _, k := range renditionKeys {
 			tx.m.store.Remove(k)
 		}
-		tx.m.store.Remove(originalKey)
+		tx.m.store.Remove(imageKey)
 	})
 	return nil
 }

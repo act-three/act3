@@ -61,17 +61,17 @@ type EpisodeVideo struct {
 }
 
 type Image struct {
-	Key        string
-	OriginalID string
-	Type       string
-	Width      int64
-	Height     int64
-}
-
-type ImageOriginal struct {
 	ID   string
 	Key  string
 	Type string
+}
+
+type ImageRendition struct {
+	Key     string
+	ImageID string
+	Type    string
+	Width   int64
+	Height  int64
 }
 
 type Movie struct {

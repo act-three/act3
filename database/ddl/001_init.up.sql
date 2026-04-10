@@ -15,7 +15,7 @@ CREATE TABLE Slug
 )
 STRICT;
 
-CREATE TABLE ImageOriginal
+CREATE TABLE Image
 (
 	ID   TEXT PRIMARY KEY DEFAULT ('io'||newID()),
 	Key  TEXT NOT NULL UNIQUE, -- blob store key
@@ -23,16 +23,16 @@ CREATE TABLE ImageOriginal
 )
 STRICT;
 
-CREATE TABLE Image
+CREATE TABLE ImageRendition
 (
-	Key        TEXT PRIMARY KEY, -- blob store key
-	OriginalID TEXT NOT NULL REFERENCES ImageOriginal ON DELETE CASCADE,
-	Type       TEXT NOT NULL CHECK (Type IN ('image/webp', 'image/avif')),
-	Width      INTEGER NOT NULL, -- physical pixels
-	Height     INTEGER NOT NULL  -- physical pixels
+	Key     TEXT PRIMARY KEY, -- blob store key
+	ImageID TEXT NOT NULL REFERENCES Image ON DELETE CASCADE,
+	Type    TEXT NOT NULL CHECK (Type IN ('image/webp', 'image/avif')),
+	Width   INTEGER NOT NULL, -- physical pixels
+	Height  INTEGER NOT NULL  -- physical pixels
 )
 STRICT;
-CREATE INDEX Index_Image_OriginalID ON Image (OriginalID);
+CREATE INDEX Index_ImageRendition_ImageID ON ImageRendition (ImageID);
 
 CREATE TABLE Series
 (
@@ -62,7 +62,7 @@ CREATE TABLE SeriesEdition
 	Slug           TEXT NOT NULL,
 	Label          TEXT NOT NULL,
 	Summary        TEXT NOT NULL,
-	PosterID       TEXT NOT NULL DEFAULT 'ioplaceholderposter' REFERENCES ImageOriginal,
+	PosterID       TEXT NOT NULL DEFAULT 'ioplaceholderposter' REFERENCES Image,
 	UNIQUE (SeriesID, Slug)
 )
 STRICT;
@@ -90,7 +90,7 @@ CREATE TABLE Episode
 	)),
 	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased
 	Runtime        INTEGER NOT NULL, -- minutes
-	ThumbnailID    TEXT NOT NULL DEFAULT 'ioplaceholderthumbnail' REFERENCES ImageOriginal
+	ThumbnailID    TEXT NOT NULL DEFAULT 'ioplaceholderthumbnail' REFERENCES Image
 )
 STRICT;
 
@@ -129,7 +129,7 @@ CREATE TABLE MovieEdition
 	Summary  TEXT NOT NULL,
 	Year     TEXT NOT NULL,
 	Runtime  INTEGER NOT NULL,    -- minutes
-	PosterID TEXT NOT NULL DEFAULT 'ioplaceholderposter' REFERENCES ImageOriginal,
+	PosterID TEXT NOT NULL DEFAULT 'ioplaceholderposter' REFERENCES Image,
 	UNIQUE (MovieID, Slug)
 )
 STRICT;
@@ -248,7 +248,7 @@ CREATE TABLE Collection
 	ID       TEXT PRIMARY KEY DEFAULT ('col'||newID()),
 	Slug     TEXT NOT NULL UNIQUE,
 	Title    TEXT NOT NULL,
-	BannerID TEXT NOT NULL DEFAULT 'ioplaceholderbanner' REFERENCES ImageOriginal
+	BannerID TEXT NOT NULL DEFAULT 'ioplaceholderbanner' REFERENCES Image
 )
 STRICT, WITHOUT ROWID;
 

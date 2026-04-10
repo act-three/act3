@@ -49,7 +49,7 @@ type EpisodeHead struct {
 
 func (ep *EpisodeHead) ID() string { return ep.ep.ID }
 func (ep *EpisodeHead) Thumbnail() Image {
-	return Image{OriginalID: ep.ep.ThumbnailID, Kind: ImageThumbnail}
+	return Image{ID: ep.ep.ThumbnailID, Kind: ImageThumbnail}
 }
 
 func (ep *EpisodeHead) addr(field string) []string {
@@ -345,10 +345,10 @@ func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error
 	if err != nil {
 		return err
 	}
-	if isPlaceholderImageOriginalID(ep.ThumbnailID) {
+	if isPlaceholderImageID(ep.ThumbnailID) {
 		return nil
 	}
-	return tx.imageOriginalDelete(ctx, ep.ThumbnailID)
+	return tx.imageDelete(ctx, ep.ThumbnailID)
 }
 
 func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {

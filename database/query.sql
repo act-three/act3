@@ -230,31 +230,31 @@ WHERE EpisodeID IN (
 SELECT * FROM EpisodeVideo
 WHERE VideoID = ?;
 
--- name: ImageCreate :exec
-INSERT INTO Image (Key, OriginalID, Type, Width, Height)
-VALUES (?, ?, ?, ?, ?);
-
--- name: ImageDeleteByOriginalID :many
-DELETE FROM Image WHERE OriginalID = ? RETURNING Key;
-
--- name: ImageListByOriginalID :many
-SELECT * FROM Image WHERE OriginalID = ? ORDER BY Width;
-
--- name: ImageOriginalCreate :one
-INSERT INTO ImageOriginal (Key, Type)
+-- name: ImageCreate :one
+INSERT INTO Image (Key, Type)
 VALUES (?, ?)
 RETURNING *;
 
--- name: ImageOriginalCreateWithID :exec
-INSERT INTO ImageOriginal (ID, Key, Type)
+-- name: ImageCreateWithID :exec
+INSERT INTO Image (ID, Key, Type)
 VALUES (?, ?, ?)
 ON CONFLICT (ID) DO NOTHING;
 
--- name: ImageOriginalDelete :one
-DELETE FROM ImageOriginal WHERE ID = ? RETURNING Key;
+-- name: ImageDelete :one
+DELETE FROM Image WHERE ID = ? RETURNING Key;
 
--- name: ImageOriginalGet :one
-SELECT * FROM ImageOriginal WHERE ID = ?;
+-- name: ImageGet :one
+SELECT * FROM Image WHERE ID = ?;
+
+-- name: ImageRenditionCreate :exec
+INSERT INTO ImageRendition (Key, ImageID, Type, Width, Height)
+VALUES (?, ?, ?, ?, ?);
+
+-- name: ImageRenditionDeleteByImageID :many
+DELETE FROM ImageRendition WHERE ImageID = ? RETURNING Key;
+
+-- name: ImageRenditionListByImageID :many
+SELECT * FROM ImageRendition WHERE ImageID = ? ORDER BY Width;
 
 -- name: MovieCreate :one
 INSERT INTO Movie (ID, Slug, TMDBID, IMDBID)

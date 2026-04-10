@@ -28,7 +28,7 @@ func (med *MovieEditionHead) Year() string    { return med.med.Year }
 func (med *MovieEditionHead) Runtime() int64  { return med.med.Runtime }
 
 func (med *MovieEditionHead) Poster() Image {
-	return Image{OriginalID: med.med.PosterID, Kind: ImagePoster}
+	return Image{ID: med.med.PosterID, Kind: ImagePoster}
 }
 
 func (med *MovieEditionHead) addr(field string) []string {
@@ -399,10 +399,10 @@ func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error 
 	if err != nil {
 		return err
 	}
-	if isPlaceholderImageOriginalID(med.PosterID) {
+	if isPlaceholderImageID(med.PosterID) {
 		return nil
 	}
-	return tx.imageOriginalDelete(ctx, med.PosterID)
+	return tx.imageDelete(ctx, med.PosterID)
 }
 
 // MovieEditionSetDefault promotes the given edition to be

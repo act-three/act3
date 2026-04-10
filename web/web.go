@@ -147,7 +147,7 @@ func (c *Config) image(w http.ResponseWriter, req *http.Request) (html.Node, err
 		// tight CSP so even if a non-image blob ever lands here
 		// it can't execute as one. The URL is logically
 		// immutable — replacing an image creates a new
-		// ImageOriginal with a fresh ID — so we can serve it as
+		// Image with a fresh ID — so we can serve it as
 		// permanently cacheable.
 		w.Header().Set("Content-Type", "image/webp")
 		w.Header().Set("X-Content-Type-Options", "nosniff")

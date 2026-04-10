@@ -26,7 +26,7 @@ func (sed *SeriesEditionHead) Summary() string  { return sed.sed.Summary }
 func (sed *SeriesEditionHead) SeriesID() string { return sed.sed.SeriesID }
 
 func (sed *SeriesEditionHead) Poster() Image {
-	return Image{OriginalID: sed.sed.PosterID, Kind: ImagePoster}
+	return Image{ID: sed.sed.PosterID, Kind: ImagePoster}
 }
 
 func (sed *SeriesEditionHead) addr(field string) []string {
@@ -359,10 +359,10 @@ func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error
 	if err != nil {
 		return err
 	}
-	if isPlaceholderImageOriginalID(sed.PosterID) {
+	if isPlaceholderImageID(sed.PosterID) {
 		return nil
 	}
-	return tx.imageOriginalDelete(ctx, sed.PosterID)
+	return tx.imageDelete(ctx, sed.PosterID)
 }
 
 func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
