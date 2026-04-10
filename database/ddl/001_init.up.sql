@@ -17,7 +17,7 @@ STRICT;
 
 CREATE TABLE Image
 (
-	ID          TEXT PRIMARY KEY DEFAULT ('io'||newID()),
+	ID          TEXT PRIMARY KEY DEFAULT ('i'||newID()),
 	OriginalKey TEXT NOT NULL UNIQUE, -- blob store key for the as-uploaded bytes
 	Type        TEXT NOT NULL CHECK (Type IN ('image/png', 'image/webp', 'image/jpeg'))
 )
@@ -62,7 +62,7 @@ CREATE TABLE SeriesEdition
 	Slug           TEXT NOT NULL,
 	Label          TEXT NOT NULL,
 	Summary        TEXT NOT NULL,
-	PosterID       TEXT NOT NULL DEFAULT 'ioplaceholderposter' REFERENCES Image,
+	PosterID       TEXT NOT NULL DEFAULT 'iplaceholderposter' REFERENCES Image,
 	UNIQUE (SeriesID, Slug)
 )
 STRICT;
@@ -90,7 +90,7 @@ CREATE TABLE Episode
 	)),
 	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased
 	Runtime        INTEGER NOT NULL, -- minutes
-	ThumbnailID    TEXT NOT NULL DEFAULT 'ioplaceholderthumbnail' REFERENCES Image
+	ThumbnailID    TEXT NOT NULL DEFAULT 'iplaceholderthumbnail' REFERENCES Image
 )
 STRICT;
 
@@ -129,7 +129,7 @@ CREATE TABLE MovieEdition
 	Summary  TEXT NOT NULL,
 	Year     TEXT NOT NULL,
 	Runtime  INTEGER NOT NULL,    -- minutes
-	PosterID TEXT NOT NULL DEFAULT 'ioplaceholderposter' REFERENCES Image,
+	PosterID TEXT NOT NULL DEFAULT 'iplaceholderposter' REFERENCES Image,
 	UNIQUE (MovieID, Slug)
 )
 STRICT;
@@ -248,7 +248,7 @@ CREATE TABLE Collection
 	ID       TEXT PRIMARY KEY DEFAULT ('col'||newID()),
 	Slug     TEXT NOT NULL UNIQUE,
 	Title    TEXT NOT NULL,
-	BannerID TEXT NOT NULL DEFAULT 'ioplaceholderbanner' REFERENCES Image
+	BannerID TEXT NOT NULL DEFAULT 'iplaceholderbanner' REFERENCES Image
 )
 STRICT, WITHOUT ROWID;
 

@@ -82,12 +82,12 @@ var allowedSourceFormats = map[string]string{
 // from embedded fallback PNGs and are referenced by the per-kind
 // DEFAULT clauses on the parent FK columns, so every parent row
 // always has a non-NULL image to render. The IDs intentionally
-// avoid the ('io'||newID()) format used for real uploads so they
+// avoid the ('i'||newID()) format used for real uploads so they
 // can never collide.
 const (
-	imagePosterPlaceholderID    = "ioplaceholderposter"
-	imageThumbnailPlaceholderID = "ioplaceholderthumbnail"
-	imageBannerPlaceholderID    = "ioplaceholderbanner"
+	imagePosterPlaceholderID    = "iplaceholderposter"
+	imageThumbnailPlaceholderID = "iplaceholderthumbnail"
+	imageBannerPlaceholderID    = "iplaceholderbanner"
 )
 
 func isPlaceholderImageID(id string) bool {
