@@ -95,8 +95,7 @@ func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) err
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad status %d", resp.StatusCode)
 	}
-	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	thumbnailID, err := tx.m.ImageCreate(ctx, body, ImageThumbnail)
+	thumbnailID, err := tx.m.ImageCreate(ctx, resp.Body, ImageThumbnail)
 	if err != nil {
 		return err
 	}
@@ -116,8 +115,7 @@ func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad status %d", resp.StatusCode)
 	}
-	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	posterID, err := tx.m.ImageCreate(ctx, body, ImagePoster)
+	posterID, err := tx.m.ImageCreate(ctx, resp.Body, ImagePoster)
 	if err != nil {
 		return err
 	}

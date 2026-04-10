@@ -139,7 +139,7 @@ func (ep *Episode) Info() []string {
 }
 
 func (ep *Episode) ImageField() (Image, []string) { return ep.ThumbnailField() }
-func (ep *Episode) ImageAspect() (n, d int)       { return 16, 9 }
+func (ep *Episode) ImageAspect() (n, d int)       { return ImageThumbnail.Aspect() }
 func (ep *Episode) ReleaseDate() string           { return ep.Airdate() }
 
 func (ep *Episode) Runtime() string {

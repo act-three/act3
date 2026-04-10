@@ -26,7 +26,7 @@ import (
 	"ily.dev/act3/web"
 )
 
-//go:generate sh -c "cp -r assets/* web/static/static"
+//go:generate sh -c "cp assets/*.png assets/*.jpeg assets/*.svg web/static/static"
 //go:generate go run web/static/gen.go
 //go:generate go tool esbuild --bundle --outfile=web/static/static/bundle.js main.js
 

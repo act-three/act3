@@ -53,6 +53,12 @@ func (k ImageKind) spec() imageKindSpec {
 	return s
 }
 
+// Aspect returns the target aspect ratio for the kind.
+func (k ImageKind) Aspect() (w, h int) {
+	s := k.spec()
+	return s.aspectW, s.aspectH
+}
+
 // maxImageBytes caps the size of an input image. Tighter than the
 // HTTP-edge MaxBytesHandler so background fetches don't blow up
 // memory either.

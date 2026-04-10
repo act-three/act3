@@ -100,7 +100,7 @@ func (med *MovieEdition) Info() []string {
 }
 
 func (med *MovieEdition) ImageField() (Image, []string) { return med.PosterField() }
-func (med *MovieEdition) ImageAspect() (n, d int)       { return 2, 3 }
+func (med *MovieEdition) ImageAspect() (n, d int)       { return ImagePoster.Aspect() }
 func (med *MovieEdition) ReleaseDate() string           { return med.Year() }
 
 func (med *MovieEdition) Runtime() string {

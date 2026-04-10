@@ -38,8 +38,7 @@ func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("bad status %d", resp.StatusCode)
 	}
-	body := http.MaxBytesReader(nil, resp.Body, maxImageBytes)
-	posterID, err := tx.m.ImageCreate(ctx, body, ImagePoster)
+	posterID, err := tx.m.ImageCreate(ctx, resp.Body, ImagePoster)
 	if err != nil {
 		return err
 	}
