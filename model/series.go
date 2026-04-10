@@ -8,6 +8,7 @@ import (
 
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/priority"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/xstrings"
 )
@@ -246,7 +247,7 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		return nil, err
 	}
 	if show.Image != nil {
-		err = tx.addTask(ctx, taskFetchSeriesPoster, sedData.ID, show.Image.OriginalURL)
+		err = tx.addTaskWithPriority(ctx, priority.FetchPoster, taskFetchSeriesPoster, sedData.ID, show.Image.OriginalURL)
 		if err != nil {
 			return nil, err
 		}

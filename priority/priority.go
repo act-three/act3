@@ -10,6 +10,12 @@ const (
 	// a priority.
 	Default = 0
 
+	// Image fetch priorities. Posters are more visible than
+	// thumbnails, but both are less important than other IO
+	// tasks (metadata fetches, downloads) that run at Default.
+	FetchPoster    = 10
+	FetchThumbnail = 20
+
 	// Encoding priorities control the order renditions are
 	// produced across all videos. Best rendition first, then
 	// pass-1 analysis, then remaining tiers from most to

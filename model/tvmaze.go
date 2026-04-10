@@ -9,6 +9,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/norm"
+	"ily.dev/act3/priority"
 )
 
 func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
@@ -68,7 +69,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 				return err
 			}
 			if ne.ImageURL != "" {
-				err = tx.addTask(ctx, taskFetchEpisodeThumbnail, ep.ID, ne.ImageURL)
+				err = tx.addTaskWithPriority(ctx, priority.FetchThumbnail, taskFetchEpisodeThumbnail, ep.ID, ne.ImageURL)
 				if err != nil {
 					return err
 				}

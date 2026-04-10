@@ -8,6 +8,7 @@ import (
 
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/priority"
 	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/xstrings"
 )
@@ -263,7 +264,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	}
 	if movie.PosterPath != nil {
 		u := tmdb.PosterURL(*movie.PosterPath)
-		err = tx.addTask(ctx, taskFetchMoviePoster, medHead.ID(), u)
+		err = tx.addTaskWithPriority(ctx, priority.FetchPoster, taskFetchMoviePoster, medHead.ID(), u)
 		if err != nil {
 			return nil, err
 		}
