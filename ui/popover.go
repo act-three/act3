@@ -26,6 +26,7 @@ func PopoverButton(url string, label html.Node, attrs ...attr.Node) html.Element
 				Hidden("popover-trigger", id),
 				Button(
 					attr.ID(id),
+					attr.Attr("data-optimistic")(""),
 					stimulus.Action("mousedown->popover-trigger#activate"),
 					stimulus.Action("mouseleave->popover-trigger#deactivate"),
 					attr.Group(attrs...),

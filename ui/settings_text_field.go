@@ -36,6 +36,7 @@ func SettingsTextField(action, name, value string, attrs ...attr.Node) html.Elem
 				InputText(
 					attr.Name(name),
 					attr.Value(value),
+					attr.Attr("data-optimistic")(""),
 					stimulus.Target("settings-text-field", "input"),
 					stimulus.Action("blur->settings-text-field#save"),
 					stimulus.Action("keydown->settings-text-field#keydown"),

@@ -35,6 +35,7 @@ func SettingsToggle(action, name string, checked bool, attrs ...attr.Node) html.
 				attr.Type("button"),
 				attr.Role("switch"),
 				attr.Attr("aria-checked")(aria),
+				attr.Attr("data-optimistic")(""),
 				stimulus.Target("settings-toggle", "track"),
 				stimulus.Action("click->settings-toggle#toggle"),
 			)(

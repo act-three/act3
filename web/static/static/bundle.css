@@ -1730,10 +1730,14 @@
   }
   [disabled] {
     pointer-events: none;
-  }
-  [disabled]:not([data-optimistic]) {
     opacity: 0.5;
     filter: saturate(0.5);
+  }
+  [data-optimistic] {
+    transition: opacity 0s, filter 0s;
+  }
+  [data-optimistic][disabled] {
+    transition: opacity 0s 200ms, filter 0s 200ms;
   }
   [data-accent=hotpink] {
     --accent: var(--hotpink);
@@ -1832,9 +1836,8 @@
     outline: 2px solid var(--accent-bold);
     outline-offset: -1px;
   }
-  .u-settings-text-area-input:disabled:not([data-optimistic]) {
+  .u-settings-text-area-input:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
   }
 }
 

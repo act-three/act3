@@ -17,15 +17,10 @@ export default class extends Controller {
 		track.setAttribute("aria-checked", String(now));
 		input.value = String(now);
 		track.disabled = true;
-		track.dataset.optimistic = "";
 
 		const animated = new Promise((resolve) => {
-			const done = () => {
-				delete track.dataset.optimistic;
-				resolve();
-			};
-			track.addEventListener("transitionend", done, { once: true });
-			setTimeout(done, 200);
+			track.addEventListener("transitionend", resolve, { once: true });
+			setTimeout(resolve, 200);
 		});
 
 		const data = new FormData(this.element);

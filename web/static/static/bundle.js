@@ -7979,8 +7979,6 @@
       const button = this.element.querySelector(".u-button");
       if (!button) return;
       button.style.visibility = "visible";
-      button.dataset.optimistic = "";
-      setTimeout(() => delete button.dataset.optimistic, 200);
     }
   };
 
@@ -8839,8 +8837,6 @@
       this.selectedValue = value;
       this.#syncButtons();
       this.element.setAttribute("disabled", "");
-      this.element.dataset.optimistic = "";
-      setTimeout(() => delete this.element.dataset.optimistic, 150);
       const data = new FormData();
       for (const input of this.element.querySelectorAll("input[type=hidden]")) {
         data.set(input.name, input.value);
@@ -8907,8 +8903,6 @@
       input.value = value;
       const data = new FormData(this.element);
       input.disabled = true;
-      input.dataset.optimistic = "";
-      setTimeout(() => delete input.dataset.optimistic, 150);
       fetch(this.urlValue, { method: "POST", body: data }).then(
         (resp) => {
           if (!resp.ok) {
@@ -8980,8 +8974,6 @@
       this.sync();
       const data = new FormData(this.element);
       input.disabled = true;
-      input.dataset.optimistic = "";
-      setTimeout(() => delete input.dataset.optimistic, 150);
       fetch(this.urlValue, { method: "POST", body: data }).then(
         (resp) => {
           if (!resp.ok) {
@@ -9051,14 +9043,9 @@
       track.setAttribute("aria-checked", String(now));
       input.value = String(now);
       track.disabled = true;
-      track.dataset.optimistic = "";
       const animated = new Promise((resolve) => {
-        const done = () => {
-          delete track.dataset.optimistic;
-          resolve();
-        };
-        track.addEventListener("transitionend", done, { once: true });
-        setTimeout(done, 200);
+        track.addEventListener("transitionend", resolve, { once: true });
+        setTimeout(resolve, 200);
       });
       const data = new FormData(this.element);
       fetch(this.urlValue, { method: "POST", body: data }).then(

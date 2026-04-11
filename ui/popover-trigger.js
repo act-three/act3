@@ -18,7 +18,5 @@ export default class extends Controller {
 		const button = this.element.querySelector(".u-button");
 		if (!button) return;
 		button.style.visibility = "visible";
-		button.dataset.optimistic = "";
-		setTimeout(() => delete button.dataset.optimistic, 200);
 	}
 }

@@ -19,6 +19,7 @@ func SettingsButtonRow(action, name, value string, attrs ...attr.Node) html.Elem
 	return func(nodes ...html.Node) html.Node {
 		return html.Form(
 			attr.Class("u-settings-button-row"),
+			attr.Attr("data-optimistic")(""),
 			stimulus.Controller("settings-button-row"),
 			stimulus.Value("settings-button-row", "url")(action),
 			stimulus.Value("settings-button-row", "name")(name),

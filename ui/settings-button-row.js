@@ -32,8 +32,6 @@ export default class extends Controller {
 		this.selectedValue = value;
 		this.#syncButtons();
 		this.element.setAttribute("disabled", "");
-		this.element.dataset.optimistic = "";
-		setTimeout(() => delete this.element.dataset.optimistic, 150);
 
 		const data = new FormData();
 		// Include hidden inputs from the form.

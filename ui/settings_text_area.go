@@ -27,6 +27,7 @@ func SettingsTextArea(action, name, value string, attrs ...attr.Node) html.Eleme
 			html.Textarea(
 				attr.Class("u-settings-text-area-input"),
 				attr.Name(name),
+				attr.Attr("data-optimistic")(""),
 				stimulus.Target("settings-text-area", "input"),
 				stimulus.Action("blur->settings-text-area#save"),
 				stimulus.Action("keydown->settings-text-area#keydown"),
