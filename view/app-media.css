@@ -16,7 +16,7 @@
 .v-media-muted { color: var(--text-4); }
 
 .v-media-dialog {
-	width: 100%;
+	width: 42rem;
 	height: 100%;
 	padding: 1em;
 }
