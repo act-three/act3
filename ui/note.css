@@ -155,7 +155,7 @@
 
 .u-note-action {
 	grid-column: 2;
-	display: inline-flex;
+	display: flex;
 	align-items: center;
 	justify-self: start;
 	height: 1.5rem;

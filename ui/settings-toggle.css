@@ -1,5 +1,5 @@
 .u-settings-toggle-track {
-	display: inline-flex;
+	display: flex;
 	align-items: center;
 	width: 2.25rem;
 	height: 1.25rem;

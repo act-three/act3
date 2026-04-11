@@ -1,12 +1,12 @@
 .u-select {
-	display: inline-flex;
+	display: flex;
 	color: var(--text);
 	font-size: var(--select-font-size, 0.875rem);
 	line-height: var(--select-line-height, 1.25rem);
 }
 
 .u-select-trigger {
-	display: inline-flex;
+	display: flex;
 	flex-shrink: 0;
 	align-items: center;
 	justify-content: space-between;
