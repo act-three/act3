@@ -8998,17 +8998,25 @@
       track.setAttribute("aria-checked", String(now));
       input.value = String(now);
       track.disabled = true;
-      track.dataset.animating = "";
-      track.addEventListener("transitionend", () => {
-        delete track.dataset.animating;
-      }, { once: true });
+      track.dataset.optimistic = "";
+      const animated = new Promise((resolve) => {
+        const done = () => {
+          delete track.dataset.optimistic;
+          resolve();
+        };
+        track.addEventListener("transitionend", done, { once: true });
+        setTimeout(done, 200);
+      });
       const data = new FormData(this.element);
       fetch(this.urlValue, { method: "POST", body: data }).then(
-        (resp) => {
+        async (resp) => {
           if (!resp.ok) {
             track.setAttribute("aria-checked", String(was));
             input.value = String(was);
             notify("Something went wrong");
+          } else {
+            await animated;
+            this.dispatch("commit");
           }
           track.disabled = false;
         },
@@ -9083,6 +9091,28 @@
         for (const el of this[`${t}Targets`]) {
           el.toggleAttribute("data-selected", t === mode);
         }
+      }
+    }
+  };
+
+  // view/episode-attach.js
+  var episode_attach_default = class extends Controller {
+    #pending = false;
+    attach() {
+      const track = this.element.querySelector("[role=switch]");
+      if (!track || track.getAttribute("aria-checked") === "true") {
+        return;
+      }
+      this.#pending = true;
+      track.click();
+    }
+    commit() {
+      if (!this.#pending) return;
+      this.#pending = false;
+      const dialog = this.element.closest("dialog");
+      if (dialog) {
+        dialog.close();
+        dialog.remove();
       }
     }
   };
@@ -11493,6 +11523,7 @@
   Stimulus.register("settings-text-field", settings_text_field_default);
   Stimulus.register("settings-toggle", settings_toggle_default);
   Stimulus.register("collection", theater_collections_default);
+  Stimulus.register("episode-attach", episode_attach_default);
   Stimulus.register("series", theater_series_default);
   Stimulus.register("home", home_default);
 })();

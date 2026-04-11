@@ -17,19 +17,27 @@ export default class extends Controller {
 		track.setAttribute("aria-checked", String(now));
 		input.value = String(now);
 		track.disabled = true;
-		track.dataset.animating = "";
+		track.dataset.optimistic = "";
 
-		track.addEventListener("transitionend", () => {
-			delete track.dataset.animating;
-		}, { once: true });
+		const animated = new Promise((resolve) => {
+			const done = () => {
+				delete track.dataset.optimistic;
+				resolve();
+			};
+			track.addEventListener("transitionend", done, { once: true });
+			setTimeout(done, 200);
+		});
 
 		const data = new FormData(this.element);
 		fetch(this.urlValue, { method: "POST", body: data }).then(
-			(resp) => {
+			async (resp) => {
 				if (!resp.ok) {
 					track.setAttribute("aria-checked", String(was));
 					input.value = String(was);
 					notify("Something went wrong");
+				} else {
+					await animated;
+					this.dispatch("commit");
 				}
 				track.disabled = false;
 			},

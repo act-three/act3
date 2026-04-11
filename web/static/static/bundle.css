@@ -1845,10 +1845,6 @@
   .u-settings-toggle-track[aria-checked=true] {
     background-color: var(--accent);
   }
-  .u-settings-toggle-track:disabled:not([data-animating]) {
-    opacity: 0.4;
-    cursor: default;
-  }
   .u-settings-toggle-track:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;

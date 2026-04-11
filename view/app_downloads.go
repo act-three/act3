@@ -230,7 +230,11 @@ func AppDownloadFileAttachDialog(
 						),
 						html.RangeSeq(sn.Episodes(model.AnyEpisode), func(ep *model.Episode) html.Node {
 							attached := linked[ep.ID()]
-							return SettingsItem(attr.Style("isolation: isolate"))(
+							return SettingsItem(
+								attr.Style("isolation: isolate"),
+								stimulus.Controller("episode-attach"),
+								stimulus.Action("settings-toggle:commit->episode-attach#commit"),
+							)(
 								SettingsItemLabel()(
 									SettingsItemLabelTitle(ep.SnnEnn()+" "+ep.Title()),
 								),
@@ -241,19 +245,10 @@ func AppDownloadFileAttachDialog(
 									Hidden("path", filePath),
 									Hidden("episode-id", ep.ID()),
 								),
-								html.Form(
-									attr.Method("POST"),
-									attr.Action("/-/do/episode-video-set"),
-									attr.Style("position: absolute; inset: 0"),
-									stimulus.Action("turbo:submit-end->dialog#close"),
-								)(
-									Hidden("infohash", infoHash),
-									Hidden("path", filePath),
-									Hidden("episode-id", ep.ID()),
-									Hidden("attach", "true"),
-									html.Button(
-										attr.Style("all: unset; width: 100%; height: 100%; cursor: pointer"),
-									),
+								html.Button(
+									attr.Type("button"),
+									attr.Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
+									stimulus.Action("click->episode-attach#attach"),
 								),
 							)
 						}),
