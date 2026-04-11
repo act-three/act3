@@ -145,9 +145,6 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption) htm
 }
 
 func playerTitleForEpisode(ep *model.Episode) string {
-	if ep == nil {
-		return "Episode " + ep.ID()
-	}
 	year := ""
 	if d := ep.Airdate(); d != "" {
 		y, _, _ := strings.Cut(d, "-")
