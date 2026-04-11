@@ -352,6 +352,13 @@ func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID strin
 	if err != nil {
 		return err
 	}
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventDownloadFileAttach,
+			ID:      infoHash,
+			NewText: filePath,
+		})
+	})
 	if attach {
 		return tx.q.EpisodeVideoEnsure(ctx, schema.EpisodeVideoEnsureParams{
 			EpisodeID: episodeID,

@@ -63,6 +63,8 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventSeriesEditionChangePoster(ctx, ev.ID)
 	case model.EventEpisodeChangeThumbnail:
 		return c.eventEpisodeChangeThumbnail(ctx, ev.ID)
+	case model.EventDownloadFileAttach:
+		return c.eventDownloadFileAttach(ctx, ev.ID, ev.NewText)
 	case model.EventSeasonAdd:
 		return c.eventSeasonAdd(ctx, ev.ID)
 	case model.EventSeasonRenumber:
@@ -247,6 +249,22 @@ func (c *Config) eventEpisodeChangeThumbnail(ctx context.Context, episodeID stri
 			return nil, err
 		}
 		return view.EpisodeChangeThumbnail(ep), nil
+	})
+	return n
+}
+
+func (c *Config) eventDownloadFileAttach(ctx context.Context, infoHash, filePath string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		dl, err := tx.Download(ctx, infoHash)
+		if err != nil {
+			return nil, err
+		}
+		for _, df := range dl.Files() {
+			if df.Path() == filePath {
+				return view.DownloadFileEpisodesUpdate(df), nil
+			}
+		}
+		return nil, nil
 	})
 	return n
 }

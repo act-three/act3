@@ -287,15 +287,10 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
 			if !df.HasVideoExtension() {
 				return Group()
 			}
-			eps := df.Episodes()
 			return SettingsItem()(
 				SettingsItemLabel()(
 					SettingsItemLabelTitle(path.Base(df.Path())),
-					html.Range(eps, func(ep *model.Episode) html.Node {
-						return SettingsItemLabelDescription(
-							ep.SnnEnn() + " " + ep.Title(),
-						)
-					}),
+					downloadFileEpisodes(df),
 					expr.IfElse(df.Progress() >= 0,
 						func() html.Node {
 							return Progress(df.Progress(), ProgressSM)
@@ -317,5 +312,21 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
 				}),
 			)
 		}),
+	)
+}
+
+func downloadFileEpisodes(df *model.DownloadFile) html.Node {
+	return turbo.StreamTarget("dl-file-episodes-" + df.VideoID())(
+		html.Range(df.Episodes(), func(ep *model.Episode) html.Node {
+			return SettingsItemLabelDescription(
+				ep.SnnEnn() + " " + ep.Title(),
+			)
+		}),
+	)
+}
+
+func DownloadFileEpisodesUpdate(df *model.DownloadFile) html.Node {
+	return turbo.Replace("dl-file-episodes-" + df.VideoID())(
+		downloadFileEpisodes(df),
 	)
 }

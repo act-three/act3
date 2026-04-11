@@ -89,6 +89,14 @@ func AppendTargets(selector string, node ...html.Node) html.Node {
 	)
 }
 
+func Replace(id string, attrs ...attr.Node) html.Element {
+	return func(node ...html.Node) html.Node {
+		return stream(action("replace"), target(id), attr.Group(attrs...))(
+			html.Template()(node...),
+		)
+	}
+}
+
 func ReplaceTargets(selector string, attrs ...attr.Node) html.Element {
 	return func(node ...html.Node) html.Node {
 		return stream(action("replace"), targets(selector), attr.Group(attrs...))(

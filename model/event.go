@@ -23,6 +23,7 @@ var (
 	EventCollectionSetSlug         = "collection-set-slug"
 	EventEpisodeChangeThumbnail    = "episode-change-thumbnail"
 	EventSeasonAdd                 = "season-add"
+	EventDownloadFileAttach        = "download-file-attach"
 	EventTaskStatsChange           = "task-stats-change"
 )
 
