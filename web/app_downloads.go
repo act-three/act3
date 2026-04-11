@@ -72,7 +72,8 @@ func (c *Config) dialogDownloadFileAttach(_ http.ResponseWriter, req *http.Reque
 				linked[epID] = true
 			}
 		}
-		return view.AppDownloadFileAttachDialog(sed, infoHash, filePath, linked), nil
+		triggerID := req.FormValue("popover-trigger")
+		return view.AppDownloadFileAttachDialog(triggerID, sed, infoHash, filePath, linked), nil
 	})
 }
 

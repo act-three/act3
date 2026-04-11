@@ -7931,6 +7931,59 @@
     }
   };
 
+  // ui/popover.js
+  var popover_default = class extends Controller {
+    static values = { trigger: String };
+    connect() {
+      const trigger = document.getElementById(this.triggerValue);
+      this.trigger = trigger;
+      const panel = this.element.querySelector(".u-popover-panel");
+      if (!trigger || !panel) return;
+      const anchor = trigger.getBoundingClientRect();
+      const gap = 4;
+      const pw = panel.offsetWidth, ph = panel.offsetHeight;
+      let left = anchor.left + anchor.width / 2 - pw / 2;
+      let top = anchor.bottom + gap;
+      if (top + ph > window.innerHeight - 8 && anchor.top - gap - ph >= 8) {
+        top = anchor.top - gap - ph;
+      }
+      left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+      top = Math.max(8, Math.min(top, window.innerHeight - ph - 8));
+      panel.style.left = left + "px";
+      panel.style.top = top + "px";
+    }
+    disconnect() {
+      if (this.trigger) {
+        this.trigger.style.visibility = "";
+        this.trigger.removeAttribute("aria-expanded");
+      }
+    }
+    close() {
+      this.element.remove();
+    }
+  };
+
+  // ui/popover-trigger.js
+  var popover_trigger_default = class extends Controller {
+    #submitted = false;
+    activate({ currentTarget }) {
+      this.#submitted = false;
+      currentTarget.setAttribute("aria-expanded", "true");
+    }
+    deactivate({ currentTarget }) {
+      if (this.#submitted) return;
+      currentTarget.removeAttribute("aria-expanded");
+    }
+    open() {
+      this.#submitted = true;
+      const button = this.element.querySelector(".u-button");
+      if (!button) return;
+      button.style.visibility = "visible";
+      button.dataset.optimistic = "";
+      setTimeout(() => delete button.dataset.optimistic, 200);
+    }
+  };
+
   // view/player.js
   var player_default = class extends Controller {
     static targets = [
@@ -9109,11 +9162,8 @@
     commit() {
       if (!this.#pending) return;
       this.#pending = false;
-      const dialog = this.element.closest("dialog");
-      if (dialog) {
-        dialog.close();
-        dialog.remove();
-      }
+      const popover = this.element.closest(".u-popover");
+      if (popover) popover.remove();
     }
   };
 
@@ -11510,6 +11560,8 @@
   // main.js
   window.Stimulus = Application.start();
   Stimulus.register("dialog", dialog_default);
+  Stimulus.register("popover", popover_default);
+  Stimulus.register("popover-trigger", popover_trigger_default);
   Stimulus.register("player", player_default);
   Stimulus.register("list", list_default);
   Stimulus.register("sidebar", sidebar_default);

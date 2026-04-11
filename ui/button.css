@@ -26,10 +26,7 @@
 		outline: 2px solid var(--accent-bold);
 		outline-offset: var(--button-focus-offset, -1px);
 	}
-	&:disabled, &[aria-disabled="true"] {
-		pointer-events: none;
-		opacity: 0.5;
-	}
+	&:disabled, &[aria-disabled="true"] { pointer-events: none; }
 	& svg {
 		pointer-events: none;
 		flex-shrink: 0;
@@ -45,7 +42,7 @@
 			box-shadow: var(--button-shadow-hover, inset 0 0 0 1px var(--border-strong));
 		}
 	}
-	&:active:not(:disabled) {
+	&:active:hover:not(:disabled), &[aria-expanded="true"] {
 		background-color: var(--button-bg-active, var(--bg-hover));
 		box-shadow: var(--button-shadow-active, inset 0 0 0 1px var(--border-strong));
 		filter: var(--button-active-filter, none);

@@ -211,16 +211,14 @@ func appDownloadsImportControl(dl *model.Download) html.Node {
 }
 
 func AppDownloadFileAttachDialog(
+	triggerID string,
 	sed *model.SeriesEdition,
 	infoHash, filePath string,
 	linked map[string]bool,
 ) html.Node {
-	return DialogStream(
-		FlexCol(Gap2, Class("v-media-dialog"))(
-			html.Div(Class("v-media-dialog-fixed"))(
-				Text("Attach to Episode"),
-			),
-			ScrollY(Class("v-media-dialog-results"))(
+	return PopoverStream(triggerID,
+		FlexCol(Gap2, attr.Style("width: 300px; height: 350px"))(
+			ScrollY(Class("u-popover-scroll"))(
 				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
 					return SettingsGroup()(
 						SettingsGroupHead()(
@@ -298,13 +296,12 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
 					),
 				),
 				html.If(df.SeriesEdition() != nil, func() html.Node {
-					return html.Form(
-						attr.Method("get"),
-						attr.Action("/-/dialog/download-file-attach"),
+					return PopoverButton("/-/dialog/download-file-attach",
+						Text("Attach"),
+						SettingsHover, ButtonGhost, ButtonSize2,
 					)(
 						Hidden("infohash", df.InfoHash()),
 						Hidden("path", df.Path()),
-						Button(SettingsHover, ButtonGhost, ButtonSize2)(Text("Attach")),
 					)
 				}),
 			)

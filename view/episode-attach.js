@@ -15,10 +15,7 @@ export default class extends Controller {
 	commit() {
 		if (!this.#pending) return;
 		this.#pending = false;
-		const dialog = this.element.closest("dialog");
-		if (dialog) {
-			dialog.close();
-			dialog.remove();
-		}
+		const popover = this.element.closest(".u-popover");
+		if (popover) popover.remove();
 	}
 }

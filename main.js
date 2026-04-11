@@ -2,6 +2,8 @@ import "./web/turbo.es2017-esm.js";
 import "./ui/turbo/action.js";
 import { Application } from "./web/stimulus.js";
 import DialogController from "./ui/dialog.js";
+import PopoverController from "./ui/popover.js";
+import PopoverTriggerController from "./ui/popover-trigger.js";
 import PlayerController from "./view/player.js";
 import ListController from "./ui/list.js";
 import SidebarController from "./view/sidebar/sidebar.js";
@@ -22,6 +24,8 @@ import "./view/wash.js";
 
 window.Stimulus = Application.start();
 Stimulus.register("dialog", DialogController);
+Stimulus.register("popover", PopoverController);
+Stimulus.register("popover-trigger", PopoverTriggerController);
 Stimulus.register("player", PlayerController);
 Stimulus.register("list", ListController);
 Stimulus.register("sidebar", SidebarController);
