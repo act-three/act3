@@ -220,21 +220,21 @@ func AppDownloadFileAttachDialog(
 		FlexCol(Gap2, attr.Style("width: 300px; height: 350px"))(
 			ScrollY(Class("u-popover-scroll"))(
 				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
-					return SettingsGroup()(
-						SettingsGroupHead()(
-							SettingsItemLabel()(
-								SettingsItemLabelTitle(sn.Title()),
+					return PickerGroup()(
+						PickerGroupHead()(
+							PickerItemLabel()(
+								Text(sn.Title(), Size2),
 							),
 						),
 						html.RangeSeq(sn.Episodes(model.AnyEpisode), func(ep *model.Episode) html.Node {
 							attached := linked[ep.ID()]
-							return SettingsItem(
+							return PickerItem(
 								attr.Style("isolation: isolate"),
 								stimulus.Controller("episode-attach"),
 								stimulus.Action("settings-toggle:commit->episode-attach#commit"),
 							)(
-								SettingsItemLabel()(
-									SettingsItemLabelTitle(ep.SnnEnn()+" "+ep.Title()),
+								PickerItemLabel()(
+									Text(ep.SnnEnn()+" "+ep.Title(), Size2),
 								),
 								SettingsToggle("/-/do/episode-video-set", "attach", attached,
 									attr.Style("position: relative; z-index: 1"),
