@@ -82,15 +82,15 @@ type Movie struct {
 }
 
 type MovieEdition struct {
-	ID       string
-	MovieID  string
-	Slug     string
-	Title    string
-	Label    string
-	Summary  string
-	Year     string
-	Runtime  int64
-	PosterID string
+	ID          string
+	MovieID     string
+	Slug        string
+	Title       string
+	Label       string
+	Summary     string
+	ReleaseDate string
+	Runtime     int64
+	PosterID    string
 }
 
 type MovieVideo struct {

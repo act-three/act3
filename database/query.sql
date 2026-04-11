@@ -269,7 +269,7 @@ VALUES (?, ?, ?, ?)
 RETURNING *;
 
 -- name: MovieEditionCreate :one
-INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, Year, Runtime)
+INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, ReleaseDate, Runtime)
 VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
@@ -291,6 +291,9 @@ SELECT * FROM MovieEdition WHERE Slug = '';
 -- name: MovieEditionPosterIDSet :exec
 UPDATE MovieEdition SET PosterID = ? WHERE ID = ?;
 
+-- name: MovieEditionReleaseDateSet :exec
+UPDATE MovieEdition SET ReleaseDate = ? WHERE ID = ?;
+
 -- name: MovieEditionRuntimeSet :exec
 UPDATE MovieEdition SET Runtime = ? WHERE ID = ?;
 
@@ -305,9 +308,6 @@ UPDATE MovieEdition SET Summary = ? WHERE ID = ?;
 
 -- name: MovieEditionTitleSet :exec
 UPDATE MovieEdition SET Title = ? WHERE ID = ?;
-
--- name: MovieEditionYearSet :exec
-UPDATE MovieEdition SET Year = ? WHERE ID = ?;
 
 -- name: MovieGet :one
 SELECT * FROM Movie WHERE ID = ?;

@@ -112,15 +112,15 @@ func (c *Config) doMovieEditionSetSummary(w http.ResponseWriter, req *http.Reque
 	})
 }
 
-func (c *Config) doMovieEditionSetYear(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doMovieEditionSetReleaseDate(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
 		ctx := req.Context()
 		id := req.FormValue("id")
 		if id == "" {
-			return nil, &model.ValidationError{Op: "set movie edition year", Err: errNotFound}
+			return nil, &model.ValidationError{Op: "set movie edition release date", Err: errNotFound}
 		}
-		year := strings.TrimSpace(req.FormValue("year"))
-		err := tx.MovieEditionYearSet(ctx, id, year)
+		date := strings.TrimSpace(req.FormValue("release-date"))
+		err := tx.MovieEditionReleaseDateSet(ctx, id, date)
 		if err != nil {
 			return nil, err
 		}

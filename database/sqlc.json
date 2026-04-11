@@ -47,6 +47,7 @@
 						"planmovieeditionid": "PlanMovieEditionID",
 						"planserieseditionid": "PlanSeriesEditionID",
 						"posterid": "PosterID",
+						"releasedate": "ReleaseDate",
 						"premieredon": "PremieredOn",
 						"renditionforstreaming": "RenditionForStreaming",
 						"seasonepisode": "SeasonEpisode",

@@ -185,9 +185,9 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 	return rends, nil
 }
 
-func (tx *TxRW) MovieCreate(ctx Context, title, year string) (*MovieWork, error) {
+func (tx *TxRW) MovieCreate(ctx Context, title, releaseDate string) (*MovieWork, error) {
 	moID := "mo" + flurry.NewID()
-	slug, err := tx.movieFindSlug(ctx, title, year, moID)
+	slug, err := tx.movieFindSlug(ctx, title, yearFromReleaseDate(releaseDate), moID)
 	if err != nil {
 		return nil, err
 	}
@@ -207,8 +207,8 @@ func (tx *TxRW) MovieCreate(ctx Context, title, year string) (*MovieWork, error)
 		return nil, err
 	}
 	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
-		Title: title,
-		Year:  year,
+		Title:       title,
+		ReleaseDate: releaseDate,
 	})
 	if err != nil {
 		return nil, err
@@ -224,13 +224,8 @@ func (tx *TxRW) MovieCreateByTMDBID(
 ) (*MovieWork, error) {
 	id64 := int64(movie.ID)
 
-	var year string
-	if len(movie.ReleaseDate) >= 4 {
-		year = movie.ReleaseDate[:4]
-	}
-
 	moID := "mo" + flurry.NewID()
-	slug, err := tx.movieFindSlug(ctx, movie.Title, year, moID)
+	slug, err := tx.movieFindSlug(ctx, movie.Title, yearFromReleaseDate(movie.ReleaseDate), moID)
 	if err != nil {
 		return nil, err
 	}
@@ -254,10 +249,10 @@ func (tx *TxRW) MovieCreateByTMDBID(
 		return nil, err
 	}
 	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
-		Title:   movie.Title,
-		Summary: movie.Overview,
-		Year:    year,
-		Runtime: int64(movie.Runtime),
+		Title:       movie.Title,
+		Summary:     movie.Overview,
+		ReleaseDate: movie.ReleaseDate,
+		Runtime:     int64(movie.Runtime),
 	})
 	if err != nil {
 		return nil, err

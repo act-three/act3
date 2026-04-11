@@ -127,7 +127,7 @@ CREATE TABLE MovieEdition
 	Title    TEXT NOT NULL,
 	Label    TEXT NOT NULL,
 	Summary  TEXT NOT NULL,
-	Year     TEXT NOT NULL,
+	ReleaseDate TEXT NOT NULL, -- YYYY-MM-DD; may be empty
 	Runtime  INTEGER NOT NULL,    -- minutes
 	PosterID TEXT NOT NULL DEFAULT 'iplaceholderposter' REFERENCES Image,
 	UNIQUE (MovieID, Slug)

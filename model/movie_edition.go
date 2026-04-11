@@ -19,13 +19,26 @@ type MovieEditionHead struct {
 	med schema.MovieEdition
 }
 
-func (med *MovieEditionHead) ID() string      { return med.med.ID }
-func (med *MovieEditionHead) Slug() string    { return med.med.Slug }
-func (med *MovieEditionHead) Title() string   { return med.med.Title }
-func (med *MovieEditionHead) Label() string   { return med.med.Label }
-func (med *MovieEditionHead) Summary() string { return med.med.Summary }
-func (med *MovieEditionHead) Year() string    { return med.med.Year }
-func (med *MovieEditionHead) Runtime() int64  { return med.med.Runtime }
+func (med *MovieEditionHead) ID() string          { return med.med.ID }
+func (med *MovieEditionHead) Slug() string        { return med.med.Slug }
+func (med *MovieEditionHead) Title() string       { return med.med.Title }
+func (med *MovieEditionHead) Label() string       { return med.med.Label }
+func (med *MovieEditionHead) Summary() string     { return med.med.Summary }
+func (med *MovieEditionHead) ReleaseDate() string { return med.med.ReleaseDate }
+func (med *MovieEditionHead) Runtime() int64      { return med.med.Runtime }
+
+// Year returns the 4-digit year portion of the release date,
+// or the empty string if the release date is unset or too short.
+func (med *MovieEditionHead) Year() string {
+	return yearFromReleaseDate(med.med.ReleaseDate)
+}
+
+func yearFromReleaseDate(d string) string {
+	if len(d) < 4 {
+		return ""
+	}
+	return d[:4]
+}
 
 func (med *MovieEditionHead) Poster() Image {
 	return Image{ID: med.med.PosterID, Kind: ImagePoster}
@@ -35,13 +48,13 @@ func (med *MovieEditionHead) addr(field string) []string {
 	return []string{"movie-edition", med.ID(), field}
 }
 
-func (med *MovieEditionHead) TitleAddr() []string   { return med.addr("title") }
-func (med *MovieEditionHead) LabelAddr() []string   { return med.addr("label") }
-func (med *MovieEditionHead) YearAddr() []string    { return med.addr("year") }
-func (med *MovieEditionHead) RuntimeAddr() []string { return med.addr("runtime") }
-func (med *MovieEditionHead) SummaryAddr() []string { return med.addr("summary") }
-func (med *MovieEditionHead) SlugAddr() []string    { return med.addr("slug") }
-func (med *MovieEditionHead) PosterAddr() []string  { return med.addr("poster") }
+func (med *MovieEditionHead) TitleAddr() []string       { return med.addr("title") }
+func (med *MovieEditionHead) LabelAddr() []string       { return med.addr("label") }
+func (med *MovieEditionHead) ReleaseDateAddr() []string { return med.addr("release-date") }
+func (med *MovieEditionHead) RuntimeAddr() []string     { return med.addr("runtime") }
+func (med *MovieEditionHead) SummaryAddr() []string     { return med.addr("summary") }
+func (med *MovieEditionHead) SlugAddr() []string        { return med.addr("slug") }
+func (med *MovieEditionHead) PosterAddr() []string      { return med.addr("poster") }
 
 func (med *MovieEditionHead) PosterField() (Image, []string) {
 	return med.Poster(), med.PosterAddr()
@@ -49,7 +62,9 @@ func (med *MovieEditionHead) PosterField() (Image, []string) {
 
 func (med *MovieEditionHead) TitleField() (string, []string) { return med.Title(), med.TitleAddr() }
 func (med *MovieEditionHead) LabelField() (string, []string) { return med.Label(), med.LabelAddr() }
-func (med *MovieEditionHead) YearField() (string, []string)  { return med.Year(), med.YearAddr() }
+func (med *MovieEditionHead) ReleaseDateField() (string, []string) {
+	return med.ReleaseDate(), med.ReleaseDateAddr()
+}
 func (med *MovieEditionHead) RuntimeField() (string, []string) {
 	return med.RuntimeString(), med.RuntimeAddr()
 }
@@ -101,7 +116,6 @@ func (med *MovieEdition) Info() []string {
 
 func (med *MovieEdition) ImageField() (Image, []string) { return med.PosterField() }
 func (med *MovieEdition) ImageAspect() (n, d int)       { return ImagePoster.Aspect() }
-func (med *MovieEdition) ReleaseDate() string           { return med.Year() }
 
 func (med *MovieEdition) Runtime() string {
 	if r := med.MovieEditionHead.Runtime(); r > 0 {
@@ -171,10 +185,10 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 
 // movieEditionParams holds metadata for a new movie edition.
 type movieEditionParams struct {
-	Title   string
-	Summary string
-	Year    string
-	Runtime int64
+	Title       string
+	Summary     string
+	ReleaseDate string
+	Runtime     int64
 }
 
 func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error) {
@@ -198,13 +212,13 @@ func (tx *TxRW) movieEditionCreate(ctx Context, label, movieID string, p movieEd
 		return nil, err
 	}
 	medData, err := tx.q.MovieEditionCreate(ctx, schema.MovieEditionCreateParams{
-		Title:   p.Title,
-		Label:   label,
-		Slug:    slug,
-		MovieID: movieID,
-		Summary: p.Summary,
-		Year:    p.Year,
-		Runtime: p.Runtime,
+		Title:       p.Title,
+		Label:       label,
+		Slug:        slug,
+		MovieID:     movieID,
+		Summary:     p.Summary,
+		ReleaseDate: p.ReleaseDate,
+		Runtime:     p.Runtime,
 	})
 	if err != nil {
 		return nil, err
@@ -221,10 +235,10 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 		return nil, err
 	}
 	med, err := tx.movieEditionCreate(ctx, "Copy of "+src.Label(), src.med.MovieID, movieEditionParams{
-		Title:   src.med.Title,
-		Summary: src.med.Summary,
-		Year:    src.med.Year,
-		Runtime: src.med.Runtime,
+		Title:       src.med.Title,
+		Summary:     src.med.Summary,
+		ReleaseDate: src.med.ReleaseDate,
+		Runtime:     src.med.Runtime,
 	})
 	if err != nil {
 		return nil, err
@@ -307,7 +321,7 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
-	slug, err := tx.movieFindSlug(ctx, title, med.Year, mo.ID, mo.Slug)
+	slug, err := tx.movieFindSlug(ctx, title, yearFromReleaseDate(med.ReleaseDate), mo.ID, mo.Slug)
 	if err != nil {
 		return err
 	}
@@ -335,17 +349,17 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	})
 }
 
-func (tx *TxRW) MovieEditionYearSet(ctx Context, id, year string) error {
+func (tx *TxRW) MovieEditionReleaseDateSet(ctx Context, id, date string) error {
 	tx.onCommit(func() {
 		tx.m.addEvent(&Event{
 			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).YearAddr(),
-			NewText: year,
+			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).ReleaseDateAddr(),
+			NewText: date,
 		})
 	})
-	return tx.q.MovieEditionYearSet(ctx, schema.MovieEditionYearSetParams{
-		Year: year,
-		ID:   id,
+	return tx.q.MovieEditionReleaseDateSet(ctx, schema.MovieEditionReleaseDateSetParams{
+		ReleaseDate: date,
+		ID:          id,
 	})
 }
 
