@@ -21,6 +21,10 @@
 	border-bottom: 0.5px solid var(--border-strong);
 }
 
+@media (hover: hover) {
+	.u-picker-item:hover:not(:has([role="switch"]:hover)) { background-color: oklch(from var(--bg) 0.25 0.02 h); }
+}
+
 .u-input.u-picker-filter {
 	border-width: 0 0 0.5px;
 	border-radius: 0;
