@@ -201,8 +201,8 @@ func appDownloadsImportControl(dl *model.Download) html.Node {
 				SettingsItemLabelTitle("Auto-Import"),
 				SettingsItemLabelDescription("Automatically import when download completes"),
 			),
-			SettingsToggle("/-/do/download-auto-import", "auto-import", dl.AutoImport())(
-				Hidden("id", dl.InfoHash()),
+			SettingsToggle("/-/do/download-auto-import", "auto-import", dl.AutoImport(),
+				map[string]string{"id": dl.InfoHash()},
 			),
 		)
 	default: // "imported", "error"
@@ -237,11 +237,12 @@ func AppDownloadFileAttachDialog(
 									Text(ep.SnnEnn()+" "+ep.Title(), Size2),
 								),
 								SettingsToggle("/-/do/episode-video-set", "attach", attached,
+									map[string]string{
+										"infohash":   infoHash,
+										"path":       filePath,
+										"episode-id": ep.ID(),
+									},
 									attr.Style("position: relative; z-index: 1"),
-								)(
-									Hidden("infohash", infoHash),
-									Hidden("path", filePath),
-									Hidden("episode-id", ep.ID()),
 								),
 								html.Button(
 									attr.Type("button"),

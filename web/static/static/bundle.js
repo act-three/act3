@@ -9032,27 +9032,27 @@
 
   // ui/settings-toggle.js
   var settings_toggle_default = class extends Controller {
-    static targets = ["track", "input"];
-    static values = { url: String };
+    static targets = ["track"];
+    static values = { url: String, name: String, params: Object };
     toggle() {
       const track = this.trackTarget;
       if (track.disabled) return;
-      const input = this.inputTarget;
       const was = track.getAttribute("aria-checked") === "true";
       const now = !was;
       track.setAttribute("aria-checked", String(now));
-      input.value = String(now);
       track.disabled = true;
       const animated = new Promise((resolve) => {
         track.addEventListener("transitionend", resolve, { once: true });
         setTimeout(resolve, 200);
       });
-      const data = new FormData(this.element);
-      fetch(this.urlValue, { method: "POST", body: data }).then(
+      const body = new URLSearchParams({
+        ...this.paramsValue,
+        [this.nameValue]: String(now)
+      });
+      fetch(this.urlValue, { method: "POST", body }).then(
         async (resp) => {
           if (!resp.ok) {
             track.setAttribute("aria-checked", String(was));
-            input.value = String(was);
             notify("Something went wrong");
           } else {
             await animated;
@@ -9062,7 +9062,6 @@
         },
         () => {
           track.setAttribute("aria-checked", String(was));
-          input.value = String(was);
           track.disabled = false;
           notify("Could not reach the server");
         }
