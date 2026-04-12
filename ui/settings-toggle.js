@@ -1,9 +1,31 @@
 import { Controller } from "../web/stimulus.js";
 import { notify } from "./note-port.js";
+import { matchAddr } from "./live.js";
 
 export default class extends Controller {
 	static targets = ["track"];
 	static values = { url: String, name: String, params: Object };
+
+	#onLiveUpdate;
+
+	connect() {
+		this.#onLiveUpdate = (ev) => {
+			if (matchAddr(this.element, ev.detail.addr)) {
+				this.#didUpdate(ev.detail.text);
+			}
+		};
+		document.addEventListener("live:update", this.#onLiveUpdate);
+	}
+
+	disconnect() {
+		document.removeEventListener("live:update", this.#onLiveUpdate);
+	}
+
+	#didUpdate(text) {
+		const track = this.trackTarget;
+		if (track.disabled) return;
+		track.setAttribute("aria-checked", text === "true" ? "true" : "false");
+	}
 
 	toggle() {
 		const track = this.trackTarget;

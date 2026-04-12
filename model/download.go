@@ -341,6 +341,12 @@ func (tx *TxRW) DownloadAutoImportSet(ctx Context, infoHash string, auto bool) (
 	return tx.processDownload(ctx, infoHash)
 }
 
+// EpisodeAttachToggleAddr returns the live-update addr for the
+// SettingsToggle that attaches an episode to a download file.
+func EpisodeAttachToggleAddr(infoHash, filePath, episodeID string) []string {
+	return []string{"episode-attach", infoHash, filePath, episodeID}
+}
+
 // EpisodeVideoSet adds or removes the link between a download file
 // and an episode. The Video record must already exist for the file.
 func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID string, attach bool) (err error) {
@@ -357,6 +363,11 @@ func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID strin
 			Type:    EventDownloadFileAttach,
 			ID:      infoHash,
 			NewText: filePath,
+		})
+		tx.m.addEvent(&Event{
+			Type:    EventLiveUpdate,
+			Addr:    EpisodeAttachToggleAddr(infoHash, filePath, episodeID),
+			NewText: strconv.FormatBool(attach),
 		})
 	})
 	if attach {

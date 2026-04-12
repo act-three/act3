@@ -276,6 +276,7 @@ func downloadAttachPickerEpisodes(
 					"path":       filePath,
 					"episode-id": ep.ID(),
 				},
+				LiveAddr(model.EpisodeAttachToggleAddr(infoHash, filePath, ep.ID())),
 				attr.Style("position: relative; z-index: 1"),
 			),
 			html.Button(
