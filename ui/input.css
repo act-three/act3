@@ -23,7 +23,8 @@
 	outline: 2px solid var(--accent-bold);
 	outline-offset: -1px;
 }
-.u-input:disabled {
+.u-input:disabled,
+.u-input[inert] {
 	cursor: not-allowed;
 	opacity: 0.5;
 }

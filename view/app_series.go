@@ -508,7 +508,7 @@ func AppEpisodeDetail(
 					return appEpisodeDialogRendition(r)
 				}),
 
-				SettingsGroup(Disabled(true /* TODO(april): med.Slug() == "" && len(editions) > 1 */))(
+				SettingsGroup(Inert(true /* TODO(april): med.Slug() == "" && len(editions) > 1 */))(
 					SettingsItem()(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Delete Episode"),

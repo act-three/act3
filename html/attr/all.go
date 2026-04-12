@@ -51,6 +51,7 @@ var (
 	Href                = Attr("href")
 	Hreflang            = Attr("hreflang")
 	ID                  = Attr("id")
+	Inert               = Attr("inert")
 	Inputmode           = Attr("inputmode")
 	Integrity           = Attr("integrity")
 	Is                  = Attr("is")

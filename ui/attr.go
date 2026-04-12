@@ -18,6 +18,14 @@ func Disabled(disabled bool) attr.Node {
 	}
 }
 
+func Inert(inert bool) attr.Node {
+	if inert {
+		return attr.Inert
+	} else {
+		return group()
+	}
+}
+
 var (
 	Gap0 = Class("u-gap-0")
 	Gap1 = Class("u-gap-1")

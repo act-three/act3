@@ -45,6 +45,7 @@ high
 href
 hreflang
 id
+inert
 inputmode
 integrity
 is

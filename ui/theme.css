@@ -11,14 +11,14 @@
 	--accent: var(--warmred);
 }
 
-[disabled] {
-	pointer-events: none;
+[disabled], [inert] {
 	opacity: 0.5;
 	filter: saturate(0.5);
 }
 
 [data-optimistic] { transition: opacity 0s, filter 0s; }
-[data-optimistic][disabled] { transition: opacity 0s 200ms, filter 0s 200ms; }
+[data-optimistic][disabled],
+[data-optimistic][inert] { transition: opacity 0s 200ms, filter 0s 200ms; }
 
 /* accent color: hot pink (default & template for additional accents;
  * to add a new accent, set --accent to a new oklch color) */

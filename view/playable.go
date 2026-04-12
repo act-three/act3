@@ -13,7 +13,7 @@ func playButtonForList(p model.Playable) html.Node {
 		attr.Attr("data-turbo-frame")("player"),
 		ButtonSurface,
 		ButtonCircle,
-		Disabled(p.PlayerPath() == ""),
+		Inert(p.PlayerPath() == ""),
 	)(Icon(playButtonIcon(p)))
 }
 

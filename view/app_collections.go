@@ -192,7 +192,7 @@ func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSear
 					attr.Method("POST"),
 					attr.Action("/-/do/collection-movie-add"),
 					stimulus.Action("turbo:submit-end->dialog#close"),
-					Disabled(r.InCollection),
+					Inert(r.InCollection),
 				)(
 					Hidden("col-id", colID),
 					Hidden("movie-id", mw.MovieHead.ID()),
@@ -302,7 +302,7 @@ func AppCollectionSeriesSearchResults(colID string, results []CollectionSeriesSe
 					attr.Method("POST"),
 					attr.Action("/-/do/collection-series-add"),
 					stimulus.Action("turbo:submit-end->dialog#close"),
-					Disabled(r.InCollection),
+					Inert(r.InCollection),
 				)(
 					Hidden("col-id", colID),
 					Hidden("series-id", sw.SeriesHead.ID()),

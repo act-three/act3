@@ -26,4 +26,5 @@
 	outline: 2px solid var(--accent-bold);
 	outline-offset: -1px;
 }
-.u-settings-text-area-input:disabled { cursor: not-allowed; }
+.u-settings-text-area-input:disabled,
+.u-settings-text-area-input[inert] { cursor: not-allowed; }

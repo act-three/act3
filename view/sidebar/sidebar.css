@@ -95,11 +95,6 @@
 	height: 2rem;
 }
 .v-sidebar-menu-button:focus-visible { box-shadow: 0 0 0 2px var(--accent-border); }
-.v-sidebar-menu-button:disabled,
-.v-sidebar-menu-button[aria-disabled="true"] {
-	pointer-events: none;
-	opacity: 0.5;
-}
 .v-sidebar-menu-button > span:last-child {
 	overflow: hidden;
 	text-overflow: ellipsis;

@@ -74,14 +74,22 @@ Follow these patterns from Radix Themes:
 }
 ```
 
-**Disabled** — cover both `:disabled` and `[aria-disabled]`:
-```css
-.u-foo:disabled,
-.u-foo[aria-disabled="true"] {
-    pointer-events: none;
-    opacity: 0.5;
-}
-```
+**Disabled** — two flavors, `:disabled` for form controls and
+`[inert]` for everything else.
+Use `disabled` on form controls (input, button, textarea, select)
+and `inert` on containers and non-form elements
+(divs, anchors, forms, custom components).
+Component CSS targeting a form control uses `:disabled`;
+component CSS targeting a non-form element uses `[inert]`;
+if a rule could apply to either,
+include both selectors (e.g. `.u-foo:disabled, .u-foo[inert]`).
+Shared cosmetic dimming (opacity, saturation) for both states
+lives in the global `[disabled], [inert]` rule in `ui/theme.css`,
+so component-level rules only need to add what's specific
+(e.g. `cursor: not-allowed`).
+Note that `[inert]` blocks hit-testing entirely
+(per spec it acts like `pointer-events: none`),
+so `:hover` does not fire inside an inert subtree.
 
 **Hover** — wrap in `@media (hover: hover)` so touch devices
 don't get sticky hover:
@@ -95,7 +103,7 @@ don't get sticky hover:
 
 **Active/press** — one step deeper than hover, exclude disabled:
 ```css
-.u-foo\+solid:active:not(:disabled) {
+.u-foo\+solid:active:not(:disabled):not([inert]) {
     background-color: var(--color-accent-10);
     filter: brightness(0.92) saturate(1.1);
 }
