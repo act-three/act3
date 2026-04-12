@@ -9,15 +9,18 @@ import (
 
 const dialogController = "dialog"
 
-// DialogButton returns a form that GETs url as a turbo stream.
+// DialogButton renders a button that GETs url as a turbo stream.
 // The server responds with a turbo stream that appends
 // the dialog to the [Port],
 // keeping it outside any replaceable content regions.
 func DialogButton(url string, attrs ...attr.Node) html.Element {
 	return func(children ...html.Node) html.Node {
-		return html.Form(attr.Method("get"), attr.Action(url))(
-			Button(attrs...)(children...),
-		)
+		return Button(
+			stimulus.Controller("dialog-trigger"),
+			stimulus.Value("dialog-trigger", "url")(url),
+			stimulus.Action("click->dialog-trigger#open"),
+			attr.Group(attrs...),
+		)(children...)
 	}
 }
 

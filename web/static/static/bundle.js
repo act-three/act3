@@ -7931,6 +7931,22 @@
     }
   };
 
+  // ui/dialog-trigger.js
+  var dialog_trigger_default = class extends Controller {
+    static values = { url: String };
+    async open() {
+      try {
+        const resp = await fetch(this.urlValue, {
+          headers: { Accept: "text/vnd.turbo-stream.html" }
+        });
+        if (resp.ok) {
+          Turbo.renderStreamMessage(await resp.text());
+        }
+      } catch {
+      }
+    }
+  };
+
   // ui/popover.js
   var popover_default = class extends Controller {
     static values = { trigger: String };
@@ -11608,6 +11624,7 @@
   // main.js
   window.Stimulus = Application.start();
   Stimulus.register("dialog", dialog_default);
+  Stimulus.register("dialog-trigger", dialog_trigger_default);
   Stimulus.register("popover", popover_default);
   Stimulus.register("popover-trigger", popover_trigger_default);
   Stimulus.register("picker", picker_default);

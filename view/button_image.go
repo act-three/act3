@@ -5,6 +5,7 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 )
 
 func buttonPosterEdit(dialogURL string, im model.Image, addr []string) html.Node {
@@ -24,10 +25,12 @@ func buttonImageEdit(dialogURL string, im model.Image, addr []string, ratio stri
 		Class("v-button-image-edit"),
 		attr.Style("aspect-ratio: "+ratio),
 	)(
-		html.Form(attr.Method("get"), attr.Action(dialogURL))(
-			html.Button()(
-				PosterImg(PosterFill, imgAttrs(im, addr)),
-			),
+		html.Button(
+			stimulus.Controller("dialog-trigger"),
+			stimulus.Value("dialog-trigger", "url")(dialogURL),
+			stimulus.Action("click->dialog-trigger#open"),
+		)(
+			PosterImg(PosterFill, imgAttrs(im, addr)),
 		),
 		html.Div(Class("v-button-image-edit-overlay"))(
 			Icon("line/edit-02"),
