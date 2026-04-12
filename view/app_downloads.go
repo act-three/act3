@@ -2,6 +2,7 @@ package view
 
 import (
 	"cmp"
+	"iter"
 	"path"
 	"slices"
 
@@ -216,6 +217,12 @@ func AppDownloadFileAttachDialog(
 	infoHash, filePath string,
 	linked map[string]bool,
 ) html.Node {
+	var attachedEps []*model.Episode
+	for ep := range sed.Episodes(model.AnyEpisode) {
+		if linked[ep.ID()] {
+			attachedEps = append(attachedEps, ep)
+		}
+	}
 	return PopoverStream(triggerID,
 		FlexCol(
 			attr.Style("width: 300px; height: 350px"),
@@ -228,45 +235,56 @@ func AppDownloadFileAttachDialog(
 				stimulus.Action("input->picker#filter"),
 			),
 			ScrollY()(
+				html.If(len(attachedEps) > 0, func() html.Node {
+					return PickerGroup()(
+						downloadAttachPickerEpisodes(slices.Values(attachedEps), infoHash, filePath, linked),
+					)
+				}),
 				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
 					return PickerGroup()(
 						PickerGroupHead()(
-							PickerItemLabel()(
-								Text(sn.Title(), Size2),
-							),
+							PickerItemLabel()(Text(sn.Title(), Size2)),
 						),
-						html.RangeSeq(sn.Episodes(model.AnyEpisode), func(ep *model.Episode) html.Node {
-							attached := linked[ep.ID()]
-							label := ep.SnnEnn() + " " + ep.Title()
-							return PickerItem(
-								attr.Style("isolation: isolate"),
-								attr.Attr("data-filter-text")(label),
-								stimulus.Controller("episode-attach"),
-								stimulus.Action("settings-toggle:commit->episode-attach#commit"),
-							)(
-								PickerItemLabel()(
-									Text(label, Size2),
-								),
-								SettingsToggle("/-/do/episode-video-set", "attach", attached,
-									map[string]string{
-										"infohash":   infoHash,
-										"path":       filePath,
-										"episode-id": ep.ID(),
-									},
-									attr.Style("position: relative; z-index: 1"),
-								),
-								html.Button(
-									attr.Type("button"),
-									attr.Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
-									stimulus.Action("click->episode-attach#attach"),
-								),
-							)
-						}),
+						downloadAttachPickerEpisodes(sn.Episodes(model.AnyEpisode), infoHash, filePath, linked),
 					)
 				}),
 			),
 		),
 	)
+}
+
+func downloadAttachPickerEpisodes(
+	eps iter.Seq[*model.Episode],
+	infoHash, filePath string,
+	linked map[string]bool,
+) html.Node {
+	return html.RangeSeq(eps, func(ep *model.Episode) html.Node {
+		attached := linked[ep.ID()]
+		label := ep.SnnEnn() + " " + ep.Title()
+		return PickerItem(
+			attr.Style("isolation: isolate"),
+			attr.Attr("data-filter-text")(label),
+			stimulus.Controller("episode-attach"),
+			stimulus.Action("settings-toggle:commit->episode-attach#commit"),
+		)(
+			PickerItemLabel()(
+				Text(label, Size2),
+			),
+			SettingsToggle("/-/do/episode-video-set", "attach", attached,
+				map[string]string{
+					"infohash":   infoHash,
+					"path":       filePath,
+					"episode-id": ep.ID(),
+				},
+				attr.Style("position: relative; z-index: 1"),
+			),
+			html.Button(
+				attr.Type("button"),
+				attr.Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
+				stimulus.Action("click->episode-attach#attach"),
+			),
+		)
+	})
 }
 
 func appDownloadsFileList(files []*model.DownloadFile) html.Node {
