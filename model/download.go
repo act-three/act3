@@ -901,6 +901,7 @@ func fiPath(fi *metainfo.FileInfo) string {
 
 var videoExtensions = map[string]bool{
 	"mkv": true,
+	"mp4": true,
 }
 
 func hasVideoExtension(s string) bool {
