@@ -59,6 +59,13 @@ func TestPlan(t *testing.T) {
 		{"Show.S1E1.mkv", []string{"ep-s1e1"}},
 		{"Show.S2E3.mkv", []string{"ep-s2e3"}},
 
+		// Multi-episode files.
+		{"Show.S01E01E02.720p.mkv", []string{"ep-s1e1", "ep-s1e2"}},
+		{"Show.S02E01E02E03.mkv", []string{"ep-s2e1", "ep-s2e2", "ep-s2e3"}},
+
+		// Multi-episode where some episodes are out of range.
+		{"Show.S01E01E05.mkv", []string{"ep-s1e1"}},
+
 		// No match: season/episode out of range.
 		{"Show.S03E01.mkv", nil},
 		{"Show.S01E05.mkv", nil},

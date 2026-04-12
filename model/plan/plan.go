@@ -50,24 +50,36 @@ func NewPlanner(eps []Episode) *Planner {
 // and returns the corresponding episode IDs.
 // If no episode matches, Plan returns nil.
 func (p *Planner) Plan(name string) []string {
-	ep := p.byAddr[scanSpan(name)]
-	if ep == nil {
-		return nil
+	addrs := scanSpan(name)
+	var ids []string
+	for _, a := range addrs {
+		if ep := p.byAddr[a]; ep != nil {
+			ids = append(ids, ep.ID())
+		}
 	}
-	return []string{ep.ID()}
+	return ids
 }
 
 type addr struct{ snn, enn int }
 
-var reSpan = regexp.MustCompile(`\b[Ss](\d+)[Ee](\d+)\b`)
+var (
+	// reSpan matches patterns like S01E01, S01E01E02, S01E01E02E03, etc.
+	reSpan = regexp.MustCompile(`\b[Ss](\d+)((?:[Ee]\d+)+)\b`)
 
-func scanSpan(s string) addr {
-	// TODO(april): scan more forms, incl range & list.
+	reEpisode = regexp.MustCompile(`[Ee](\d+)`)
+)
+
+func scanSpan(s string) []addr {
+	// TODO(april): scan range form.
 	m := reSpan.FindStringSubmatch(s)
 	if m == nil {
-		return addr{}
+		return nil
 	}
 	sn, _ := strconv.Atoi(m[1])
-	en, _ := strconv.Atoi(m[2])
-	return addr{sn, en}
+	var addrs []addr
+	for _, em := range reEpisode.FindAllStringSubmatch(m[2], -1) {
+		en, _ := strconv.Atoi(em[1])
+		addrs = append(addrs, addr{sn, en})
+	}
+	return addrs
 }
