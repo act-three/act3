@@ -224,8 +224,9 @@ CREATE TABLE Download
 	Torrent             BLOB NOT NULL,
 	Progress            REAL NOT NULL DEFAULT (0.0),
 	AutoImport          INTEGER NOT NULL DEFAULT (0),
+	MovieEditionID  TEXT REFERENCES MovieEdition,
 	SeriesEditionID TEXT REFERENCES SeriesEdition,
-	MovieEditionID  TEXT REFERENCES MovieEdition
+	CHECK ((MovieEditionID IS NULL) != (SeriesEditionID IS NULL))
 )
 STRICT;
 CREATE INDEX Index_Download_SeriesEditionID ON Download (SeriesEditionID)

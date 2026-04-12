@@ -107,9 +107,11 @@ INSERT INTO Download
 	InfoHash,
 	State,
 	Title,
-	Torrent
+	Torrent,
+	SeriesEditionID,
+	MovieEditionID
 )
-VALUES (?, ?, ?, ?)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: DownloadGet :one
@@ -140,24 +142,12 @@ UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING *;
 -- name: DownloadUpdateError :one
 UPDATE Download SET State = 'error', Error = ? WHERE InfoHash = ? RETURNING *;
 
--- name: DownloadUpdateMovieEdition :one
-UPDATE Download SET
-	MovieEditionID = ?
-WHERE InfoHash = ?
-RETURNING *;
-
 -- name: DownloadUpdateProgress :one
 UPDATE Download SET
 	State = ?,
 	Progress = ?,
 	Error = ''
 WHERE InfoHash = ? RETURNING *;
-
--- name: DownloadUpdateSeriesEdition :one
-UPDATE Download SET
-	SeriesEditionID = ?
-WHERE InfoHash = ?
-RETURNING *;
 
 -- name: EpisodeAirdateSet :exec
 UPDATE Episode SET Airdate = ? WHERE ID = ?;
@@ -282,6 +272,9 @@ SELECT * FROM MovieEdition WHERE MovieID = ? AND Slug = '';
 -- name: MovieEditionLabelSet :exec
 UPDATE MovieEdition SET Label = ? WHERE ID = ?;
 
+-- name: MovieEditionListByDownload :many
+SELECT * FROM MovieEdition WHERE ID IN (SELECT MovieEditionID FROM Download);
+
 -- name: MovieEditionListByMovieID :many
 SELECT * FROM MovieEdition WHERE MovieID = ?;
 
@@ -322,6 +315,9 @@ SELECT * FROM Movie WHERE Slug = ?;
 -- name: MovieList :many
 SELECT * FROM Movie
 ORDER BY Slug;
+
+-- name: MovieListByDownload :many
+SELECT * FROM Movie WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID IN (SELECT MovieEditionID FROM Download));
 
 -- name: MovieListByTMDBID :many
 SELECT * FROM Movie WHERE TMDBID IN (sqlc.slice(ids));
@@ -517,6 +513,9 @@ WHERE Series.Slug = sqlc.arg(SeriesSlug) AND SeriesEdition.Slug = sqlc.arg(Editi
 -- name: SeriesEditionLabelSet :exec
 UPDATE SeriesEdition SET Label = ? WHERE ID = ?;
 
+-- name: SeriesEditionListByDownload :many
+SELECT * FROM SeriesEdition WHERE ID IN (SELECT SeriesEditionID FROM Download);
+
 -- name: SeriesEditionListBySeriesID :many
 SELECT * FROM SeriesEdition WHERE SeriesID = ?;
 
@@ -550,6 +549,9 @@ SELECT * FROM Series WHERE TVmazeID = ?;
 
 -- name: SeriesList :many
 SELECT * FROM Series;
+
+-- name: SeriesListByDownload :many
+SELECT * FROM Series WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID IN (SELECT SeriesEditionID FROM Download));
 
 -- name: SeriesListByTVmazeID :many
 SELECT * FROM Series WHERE TVmazeID IN (sqlc.slice(ids));

@@ -466,17 +466,21 @@ INSERT INTO Download
 	InfoHash,
 	State,
 	Title,
-	Torrent
+	Torrent,
+	SeriesEditionID,
+	MovieEditionID
 )
-VALUES (?, ?, ?, ?)
-RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
+VALUES (?, ?, ?, ?, ?, ?)
+RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, movieeditionid, serieseditionid
 `
 
 type DownloadCreateParams struct {
-	InfoHash string
-	State    string
-	Title    string
-	Torrent  []byte
+	InfoHash        string
+	State           string
+	Title           string
+	Torrent         []byte
+	SeriesEditionID *string
+	MovieEditionID  *string
 }
 
 func (q *Queries) DownloadCreate(ctx context.Context, arg DownloadCreateParams) (Download, error) {
@@ -485,6 +489,8 @@ func (q *Queries) DownloadCreate(ctx context.Context, arg DownloadCreateParams) 
 		arg.State,
 		arg.Title,
 		arg.Torrent,
+		arg.SeriesEditionID,
+		arg.MovieEditionID,
 	)
 	var i Download
 	err := row.Scan(
@@ -496,14 +502,14 @@ func (q *Queries) DownloadCreate(ctx context.Context, arg DownloadCreateParams) 
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.SeriesEditionID,
 		&i.MovieEditionID,
+		&i.SeriesEditionID,
 	)
 	return i, err
 }
 
 const downloadGet = `-- name: DownloadGet :one
-SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid FROM Download WHERE InfoHash = ?
+SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, movieeditionid, serieseditionid FROM Download WHERE InfoHash = ?
 `
 
 func (q *Queries) DownloadGet(ctx context.Context, infohash string) (Download, error) {
@@ -518,14 +524,14 @@ func (q *Queries) DownloadGet(ctx context.Context, infohash string) (Download, e
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.SeriesEditionID,
 		&i.MovieEditionID,
+		&i.SeriesEditionID,
 	)
 	return i, err
 }
 
 const downloadList = `-- name: DownloadList :many
-SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid FROM Download
+SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, movieeditionid, serieseditionid FROM Download
 ORDER BY CreatedAt DESC
 `
 
@@ -547,8 +553,8 @@ func (q *Queries) DownloadList(ctx context.Context) ([]Download, error) {
 			&i.Torrent,
 			&i.Progress,
 			&i.Autoimport,
-			&i.SeriesEditionID,
 			&i.MovieEditionID,
+			&i.SeriesEditionID,
 		); err != nil {
 			return nil, err
 		}
@@ -564,7 +570,7 @@ func (q *Queries) DownloadList(ctx context.Context) ([]Download, error) {
 }
 
 const downloadListByMovieEditionID = `-- name: DownloadListByMovieEditionID :many
-SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid FROM Download
+SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, movieeditionid, serieseditionid FROM Download
 WHERE MovieEditionID = ?
 ORDER BY CreatedAt DESC
 `
@@ -587,8 +593,8 @@ func (q *Queries) DownloadListByMovieEditionID(ctx context.Context, movieedition
 			&i.Torrent,
 			&i.Progress,
 			&i.Autoimport,
-			&i.SeriesEditionID,
 			&i.MovieEditionID,
+			&i.SeriesEditionID,
 		); err != nil {
 			return nil, err
 		}
@@ -604,7 +610,7 @@ func (q *Queries) DownloadListByMovieEditionID(ctx context.Context, movieedition
 }
 
 const downloadListBySeriesEditionID = `-- name: DownloadListBySeriesEditionID :many
-SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid FROM Download
+SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, movieeditionid, serieseditionid FROM Download
 WHERE SeriesEditionID = ?
 ORDER BY CreatedAt DESC
 `
@@ -627,8 +633,8 @@ func (q *Queries) DownloadListBySeriesEditionID(ctx context.Context, seriesediti
 			&i.Torrent,
 			&i.Progress,
 			&i.Autoimport,
-			&i.SeriesEditionID,
 			&i.MovieEditionID,
+			&i.SeriesEditionID,
 		); err != nil {
 			return nil, err
 		}
@@ -672,7 +678,7 @@ func (q *Queries) DownloadListInfoHashesActive(ctx context.Context) ([]string, e
 }
 
 const downloadUpdateAutoImport = `-- name: DownloadUpdateAutoImport :one
-UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
+UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, movieeditionid, serieseditionid
 `
 
 type DownloadUpdateAutoImportParams struct {
@@ -692,14 +698,14 @@ func (q *Queries) DownloadUpdateAutoImport(ctx context.Context, arg DownloadUpda
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.SeriesEditionID,
 		&i.MovieEditionID,
+		&i.SeriesEditionID,
 	)
 	return i, err
 }
 
 const downloadUpdateError = `-- name: DownloadUpdateError :one
-UPDATE Download SET State = 'error', Error = ? WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
+UPDATE Download SET State = 'error', Error = ? WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, movieeditionid, serieseditionid
 `
 
 type DownloadUpdateErrorParams struct {
@@ -719,38 +725,8 @@ func (q *Queries) DownloadUpdateError(ctx context.Context, arg DownloadUpdateErr
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.SeriesEditionID,
 		&i.MovieEditionID,
-	)
-	return i, err
-}
-
-const downloadUpdateMovieEdition = `-- name: DownloadUpdateMovieEdition :one
-UPDATE Download SET
-	MovieEditionID = ?
-WHERE InfoHash = ?
-RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
-`
-
-type DownloadUpdateMovieEditionParams struct {
-	MovieEditionID *string
-	InfoHash       string
-}
-
-func (q *Queries) DownloadUpdateMovieEdition(ctx context.Context, arg DownloadUpdateMovieEditionParams) (Download, error) {
-	row := q.db.QueryRowContext(ctx, downloadUpdateMovieEdition, arg.MovieEditionID, arg.InfoHash)
-	var i Download
-	err := row.Scan(
-		&i.InfoHash,
-		&i.Createdat,
-		&i.State,
-		&i.Title,
-		&i.Error,
-		&i.Torrent,
-		&i.Progress,
-		&i.Autoimport,
 		&i.SeriesEditionID,
-		&i.MovieEditionID,
 	)
 	return i, err
 }
@@ -760,7 +736,7 @@ UPDATE Download SET
 	State = ?,
 	Progress = ?,
 	Error = ''
-WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
+WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, movieeditionid, serieseditionid
 `
 
 type DownloadUpdateProgressParams struct {
@@ -781,38 +757,8 @@ func (q *Queries) DownloadUpdateProgress(ctx context.Context, arg DownloadUpdate
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.SeriesEditionID,
 		&i.MovieEditionID,
-	)
-	return i, err
-}
-
-const downloadUpdateSeriesEdition = `-- name: DownloadUpdateSeriesEdition :one
-UPDATE Download SET
-	SeriesEditionID = ?
-WHERE InfoHash = ?
-RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
-`
-
-type DownloadUpdateSeriesEditionParams struct {
-	SeriesEditionID *string
-	InfoHash        string
-}
-
-func (q *Queries) DownloadUpdateSeriesEdition(ctx context.Context, arg DownloadUpdateSeriesEditionParams) (Download, error) {
-	row := q.db.QueryRowContext(ctx, downloadUpdateSeriesEdition, arg.SeriesEditionID, arg.InfoHash)
-	var i Download
-	err := row.Scan(
-		&i.InfoHash,
-		&i.Createdat,
-		&i.State,
-		&i.Title,
-		&i.Error,
-		&i.Torrent,
-		&i.Progress,
-		&i.Autoimport,
 		&i.SeriesEditionID,
-		&i.MovieEditionID,
 	)
 	return i, err
 }
@@ -1459,6 +1405,43 @@ func (q *Queries) MovieEditionLabelSet(ctx context.Context, arg MovieEditionLabe
 	return err
 }
 
+const movieEditionListByDownload = `-- name: MovieEditionListByDownload :many
+SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid FROM MovieEdition WHERE ID IN (SELECT MovieEditionID FROM Download)
+`
+
+func (q *Queries) MovieEditionListByDownload(ctx context.Context) ([]MovieEdition, error) {
+	rows, err := q.db.QueryContext(ctx, movieEditionListByDownload)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MovieEdition
+	for rows.Next() {
+		var i MovieEdition
+		if err := rows.Scan(
+			&i.ID,
+			&i.MovieID,
+			&i.Slug,
+			&i.Title,
+			&i.Label,
+			&i.Summary,
+			&i.ReleaseDate,
+			&i.Runtime,
+			&i.PosterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const movieEditionListByMovieID = `-- name: MovieEditionListByMovieID :many
 SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid FROM MovieEdition WHERE MovieID = ?
 `
@@ -1689,6 +1672,38 @@ ORDER BY Slug
 
 func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
 	rows, err := q.db.QueryContext(ctx, movieList)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Movie
+	for rows.Next() {
+		var i Movie
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.TMDBID,
+			&i.IMDBID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const movieListByDownload = `-- name: MovieListByDownload :many
+SELECT id, slug, tmdbid, imdbid FROM Movie WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID IN (SELECT MovieEditionID FROM Download))
+`
+
+func (q *Queries) MovieListByDownload(ctx context.Context) ([]Movie, error) {
+	rows, err := q.db.QueryContext(ctx, movieListByDownload)
 	if err != nil {
 		return nil, err
 	}
@@ -2870,6 +2885,40 @@ func (q *Queries) SeriesEditionLabelSet(ctx context.Context, arg SeriesEditionLa
 	return err
 }
 
+const seriesEditionListByDownload = `-- name: SeriesEditionListByDownload :many
+SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE ID IN (SELECT SeriesEditionID FROM Download)
+`
+
+func (q *Queries) SeriesEditionListByDownload(ctx context.Context) ([]SeriesEdition, error) {
+	rows, err := q.db.QueryContext(ctx, seriesEditionListByDownload)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SeriesEdition
+	for rows.Next() {
+		var i SeriesEdition
+		if err := rows.Scan(
+			&i.ID,
+			&i.SeriesID,
+			&i.Slug,
+			&i.Label,
+			&i.Summary,
+			&i.PosterID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
 SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE SeriesID = ?
 `
@@ -3091,6 +3140,44 @@ SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, 
 
 func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
 	rows, err := q.db.QueryContext(ctx, seriesList)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Series
+	for rows.Next() {
+		var i Series
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Title,
+			&i.Status,
+			&i.PremieredOn,
+			&i.EndedOn,
+			&i.TVmazeID,
+			&i.IMDBID,
+			&i.TVDBID,
+			&i.TVRageID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const seriesListByDownload = `-- name: SeriesListByDownload :many
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID IN (SELECT SeriesEditionID FROM Download))
+`
+
+func (q *Queries) SeriesListByDownload(ctx context.Context) ([]Series, error) {
+	rows, err := q.db.QueryContext(ctx, seriesListByDownload)
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ import (
 func (c *Config) appDownloads(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		dls, err := tx.DownloadHeadList(ctx)
+		dls, err := tx.DownloadInfoList(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +40,7 @@ func (c *Config) appDownloadsDetail(w http.ResponseWriter, req *http.Request) (h
 			return view.AppDownloadsDetailFrame(dl.Title(), dl), nil
 		}
 
-		dls, err := tx.DownloadHeadList(ctx)
+		dls, err := tx.DownloadInfoList(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -127,20 +127,26 @@ func (c *Config) doTorrentAdd(w http.ResponseWriter, req *http.Request) (html.No
 		if err != nil {
 			return nil, err
 		}
-		dl, err := tx.DownloadCreate(ctx, file)
-		if err != nil {
-			return nil, err
-		}
 
 		// Plan for either a series edition or a movie edition,
 		// depending on which hidden field is present.
+		var sedID, medID *string
 		var edID string
-		if sedID := req.FormValue("sed-id"); sedID != "" {
-			dl, err = tx.DownloadCreatePlanSeries(ctx, dl.InfoHash(), sedID)
-			edID = sedID
-		} else if medID := req.FormValue("med-id"); medID != "" {
-			dl, err = tx.DownloadCreatePlanMovie(ctx, dl.InfoHash(), medID)
-			edID = medID
+		if v := req.FormValue("sed-id"); v != "" {
+			sedID = &v
+			edID = v
+		} else if v := req.FormValue("med-id"); v != "" {
+			medID = &v
+			edID = v
+		}
+		dl, err := tx.DownloadCreate(ctx, file, sedID, medID)
+		if err != nil {
+			return nil, err
+		}
+		if sedID != nil {
+			dl, err = tx.DownloadCreatePlanSeries(ctx, dl.InfoHash(), *sedID)
+		} else if medID != nil {
+			dl, err = tx.DownloadCreatePlanMovie(ctx, dl.InfoHash(), *medID)
 		}
 		if err != nil {
 			return nil, err

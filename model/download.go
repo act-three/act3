@@ -68,6 +68,15 @@ func (d *DownloadHead) FilesLen() int {
 	return d.filesLen
 }
 
+type DownloadInfo struct {
+	DownloadHead
+	sw *SeriesWork
+	mw *MovieWork
+}
+
+func (di *DownloadInfo) SeriesWork() *SeriesWork { return di.sw }
+func (di *DownloadInfo) MovieWork() *MovieWork   { return di.mw }
+
 type DownloadFile struct {
 	d     *Download
 	fi    metainfo.FileInfo
@@ -226,6 +235,22 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 func (d *Download) PlanSeriesEdition() *SeriesEdition { return d.planEd }
 func (d *Download) PlanMovieEdition() *MovieEdition   { return d.planMovieEd }
 
+func (d *Download) Work() Work {
+	if d.planMovieEd != nil {
+		return &MovieWork{
+			MovieHead:        *d.planMovieEd.MovieHead(),
+			MovieEditionHead: d.planMovieEd.MovieEditionHead,
+		}
+	}
+	if d.planEd != nil {
+		return &SeriesWork{
+			SeriesHead:        *d.planEd.SeriesHead(),
+			SeriesEditionHead: d.planEd.SeriesEditionHead,
+		}
+	}
+	return nil
+}
+
 func (d *Download) EpisodeIDsByVideoID(videoID string) []string {
 	return d.epIDByVideoID[videoID]
 }
@@ -307,6 +332,65 @@ func (tx *TxR) newDownloadHeadList(dls []schema.Download, err error) ([]*Downloa
 
 func (tx *TxR) DownloadHeadList(ctx Context) ([]*DownloadHead, error) {
 	return tx.newDownloadHeadList(tx.q.DownloadList(ctx))
+}
+
+func (tx *TxR) DownloadInfoList(ctx Context) ([]*DownloadInfo, error) {
+	heads, err := tx.DownloadHeadList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sedList, err := tx.q.SeriesEditionListByDownload(ctx)
+	if err != nil {
+		return nil, err
+	}
+	srList, err := tx.q.SeriesListByDownload(ctx)
+	if err != nil {
+		return nil, err
+	}
+	srs := make(map[string]*SeriesHead, len(srList))
+	for i := range srList {
+		srs[srList[i].ID] = &SeriesHead{srList[i]}
+	}
+	sws := make(map[string]*SeriesWork, len(sedList))
+	for i := range sedList {
+		sed := &SeriesEditionHead{sed: sedList[i]}
+		sws[sedList[i].ID] = &SeriesWork{
+			SeriesHead:        *srs[sedList[i].SeriesID],
+			SeriesEditionHead: *sed,
+		}
+	}
+	medList, err := tx.q.MovieEditionListByDownload(ctx)
+	if err != nil {
+		return nil, err
+	}
+	moList, err := tx.q.MovieListByDownload(ctx)
+	if err != nil {
+		return nil, err
+	}
+	mos := make(map[string]*MovieHead, len(moList))
+	for i := range moList {
+		mos[moList[i].ID] = &MovieHead{mo: moList[i]}
+	}
+	mws := make(map[string]*MovieWork, len(medList))
+	for i := range medList {
+		med := &MovieEditionHead{med: medList[i]}
+		mws[medList[i].ID] = &MovieWork{
+			MovieHead:        *mos[medList[i].MovieID],
+			MovieEditionHead: *med,
+		}
+	}
+	res := make([]*DownloadInfo, len(heads))
+	for i, h := range heads {
+		di := &DownloadInfo{DownloadHead: *h}
+		if id := h.d.SeriesEditionID; id != nil {
+			di.sw = sws[*id]
+		}
+		if id := h.d.MovieEditionID; id != nil {
+			di.mw = mws[*id]
+		}
+		res[i] = di
+	}
+	return res, nil
 }
 
 func (tx *TxR) DownloadHeadListBySeriesEditionID(ctx Context, id string) ([]*DownloadHead, error) {
@@ -474,7 +558,7 @@ func torrentDone(t *transmissionrpc.Torrent) map[string]bool {
 	return done
 }
 
-func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err error) {
+func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader, sedID, medID *string) (d *Download, err error) {
 	defer errorfmt.Handlef("CreateDownload: %w", &err)
 	b, err := io.ReadAll(torrent)
 	if err != nil {
@@ -494,10 +578,12 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader) (d *Download, err
 		return tx.newDownload(ctx, dl)
 	}
 	dl, err := tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
-		InfoHash: infoHash,
-		State:    "queued",
-		Title:    info.Name,
-		Torrent:  b,
+		InfoHash:        infoHash,
+		State:           "queued",
+		Title:           info.Name,
+		Torrent:         b,
+		SeriesEditionID: sedID,
+		MovieEditionID:  medID,
 	})
 	if err != nil {
 		return nil, err
@@ -619,14 +705,7 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, infoHash, sedID string) (d
 			return nil, err
 		}
 	}
-	dl, err = tx.q.DownloadUpdateSeriesEdition(ctx, schema.DownloadUpdateSeriesEditionParams{
-		InfoHash:        dl.InfoHash,
-		SeriesEditionID: &sedID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return tx.newDownload(ctx, dl)
+	return tx.Download(ctx, dl.InfoHash)
 }
 
 func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d *Download, err error) {
@@ -663,14 +742,7 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d 
 			}
 		}
 	}
-	dl, err = tx.q.DownloadUpdateMovieEdition(ctx, schema.DownloadUpdateMovieEditionParams{
-		InfoHash:       dl.InfoHash,
-		MovieEditionID: &medID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	return tx.newDownload(ctx, dl)
+	return tx.Download(ctx, dl.InfoHash)
 }
 
 func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) error {

@@ -10,6 +10,7 @@ import (
 type Work interface {
 	Title() string
 	PosterField() (Image, []string)
+	EditorPath() string
 	TheaterPath() string
 	Kind() string // "movie" or "series"
 }

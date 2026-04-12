@@ -41,8 +41,8 @@ type Download struct {
 	Torrent         []byte
 	Progress        float64
 	Autoimport      int64
-	SeriesEditionID *string
 	MovieEditionID  *string
+	SeriesEditionID *string
 }
 
 type Episode struct {

@@ -18,7 +18,7 @@ import (
 
 func AppDownloads(
 	title string,
-	items []*model.DownloadHead,
+	items []*model.DownloadInfo,
 	selected *model.Download,
 ) (string, html.Node) {
 	const torrentListID = "torrent-list"
@@ -67,7 +67,7 @@ func appDownloadsSearchBar() html.Node {
 	return Text("Download Searchbar")
 }
 
-func appDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node {
+func appDownloadsListItem(dl *model.DownloadInfo, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
 		attr.Group(attrs...),
 		ListID(dl.InfoHash()),
@@ -85,6 +85,7 @@ func appDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node 
 				},
 				func() html.Node {
 					return html.Group(
+						appDownloadsWorkLabel(dl),
 						CardTitle(TextNormal)(Text(dl.Title())),
 						CardDescription(LineClamp2)(
 							Textf("%d/%d assigned",
@@ -96,6 +97,25 @@ func appDownloadsListItem(dl *model.DownloadHead, attrs ...attr.Node) html.Node 
 				},
 			),
 		),
+	)
+}
+
+func appDownloadsWorkLabel(dl *model.DownloadInfo) html.Node {
+	return expr.IfElse(dl.MovieWork() != nil,
+		func() html.Node {
+			return Label(
+				"line/film-01",
+				dl.MovieWork().Title(),
+				Size3, LineClamp1,
+			)
+		},
+		func() html.Node {
+			return Label(
+				"line/tv-03",
+				dl.SeriesWork().Title(),
+				Size3, LineClamp1,
+			)
+		},
 	)
 }
 
@@ -154,16 +174,25 @@ func appDownloadsDetail(dl *model.Download) html.Node {
 			SettingsPage()(
 				FlexCol(Gap6)(
 					SettingsContent()(
-						TextNode(Size6)(html.Text(dl.Title())),
-						expr.IfElse(dl.State() == "error",
-							func() html.Node {
-								return Label("line/alert-triangle", dl.Error(), Size2)
-							},
-							func() html.Node {
-								return TextNode(Size2)(
-									html.Textf("%d/%d assigned", dl.PlanLen(), dl.FilesLen()),
-								)
-							},
+						FlexCol(Gap6)(
+							FlexCol(Gap1)(
+								TextNode(Size5)(html.Text(dl.Title())),
+								expr.IfElse(dl.State() == "error",
+									func() html.Node {
+										return Label("line/alert-triangle", dl.Error(), Size3)
+									},
+									func() html.Node {
+										return TextNode(Size3)(
+											html.Textf("%d/%d assigned", dl.PlanLen(), dl.FilesLen()),
+										)
+									},
+								),
+							),
+							Link(dl.Work().EditorPath(), Size4,
+								turbo.DataFrame("_top"),
+							)(
+								Text(dl.Work().Title()),
+							),
 						),
 					),
 
