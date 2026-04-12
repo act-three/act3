@@ -139,7 +139,7 @@ case "${1:-}" in
 		dir=$(mktemp -d /tmp/act3.XXXXXX)
 		trap "rm -rf '$dir'" EXIT
 
-		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags prod -o $dir/act3
+		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags prod,nodynamic -o $dir/act3
 
 		## Build static ffmpeg and ffprobe from source via Docker.
 		## See Dockerfile.ffmpeg for the build configuration.
