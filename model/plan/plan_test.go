@@ -28,6 +28,8 @@ func TestPlan(t *testing.T) {
 		testEpisode{"ep-s2e2", 2, 2},
 		testEpisode{"ep-s2e3", 2, 3},
 		testEpisode{"ep-s2sp1", 2, 0},
+		testEpisode{"ep-s2024e1", 2024, 1},
+		testEpisode{"ep-s2024e2", 2024, 2},
 	}
 	p := NewPlanner(eps)
 
@@ -48,6 +50,14 @@ func TestPlan(t *testing.T) {
 		// Specials via season 0 (numbered in input order).
 		{"Show.S00E01.Special.mkv", []string{"ep-s1sp1"}},
 		{"Show.S00E02.Special.mkv", []string{"ep-s2sp1"}},
+
+		// Year-numbered seasons.
+		{"Show.S2024E01.720p.mkv", []string{"ep-s2024e1"}},
+		{"Show.S2024E02.720p.mkv", []string{"ep-s2024e2"}},
+
+		// Single-digit season/episode.
+		{"Show.S1E1.mkv", []string{"ep-s1e1"}},
+		{"Show.S2E3.mkv", []string{"ep-s2e3"}},
 
 		// No match: season/episode out of range.
 		{"Show.S03E01.mkv", nil},

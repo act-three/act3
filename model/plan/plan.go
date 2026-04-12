@@ -59,7 +59,7 @@ func (p *Planner) Plan(name string) []string {
 
 type addr struct{ snn, enn int }
 
-var reSpan = regexp.MustCompile(`\b[Ss](\d\d)[Ee](\d\d)\b`)
+var reSpan = regexp.MustCompile(`\b[Ss](\d+)[Ee](\d+)\b`)
 
 func scanSpan(s string) addr {
 	// TODO(april): scan more forms, incl range & list.
