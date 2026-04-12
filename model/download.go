@@ -15,7 +15,6 @@ import (
 	"log/slog"
 	"maps"
 	"path"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -28,6 +27,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/log/logcontext"
+	"ily.dev/act3/model/plan"
 	"ily.dev/act3/tlog"
 	"ily.dev/act3/xstrings"
 )
@@ -166,8 +166,6 @@ type Download struct {
 	planMovieEd    *MovieEdition
 	fileProgress   map[string]float64 // path -> fraction [0,1], nil if unknown
 }
-
-type addr struct{ Snn, Enn int }
 
 func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 	d := &Download{DownloadHead: DownloadHead{d: dl}}
@@ -679,14 +677,18 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, infoHash, sedID string) (d
 	if err != nil {
 		return nil, err
 	}
+	var planEps []plan.Episode
+	for ep := range sed.Episodes(AnyEpisode) {
+		planEps = append(planEps, ep)
+	}
+	planner := plan.NewPlanner(planEps)
 	for _, fi := range info.Files {
 		p := fiPath(&fi)
-		a, n := scanSpan(p)
-		if n == 0 {
+		if !hasVideoExtension(p) {
 			continue
 		}
-		ep := sed.episodeByNumber(a.Snn, a.Enn)
-		if ep == nil {
+		epIDs := planner.Plan(p)
+		if len(epIDs) == 0 {
 			continue
 		}
 		vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
@@ -696,12 +698,14 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, infoHash, sedID string) (d
 		if err != nil {
 			return nil, err
 		}
-		_, err = tx.q.EpisodeVideoCreate(ctx, schema.EpisodeVideoCreateParams{
-			EpisodeID: ep.ep.ID,
-			VideoID:   vid.ID,
-		})
-		if err != nil {
-			return nil, err
+		for _, epID := range epIDs {
+			_, err = tx.q.EpisodeVideoCreate(ctx, schema.EpisodeVideoCreateParams{
+				EpisodeID: epID,
+				VideoID:   vid.ID,
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return tx.Download(ctx, dl.InfoHash)
@@ -902,30 +906,4 @@ var videoExtensions = map[string]bool{
 func hasVideoExtension(s string) bool {
 	_, ext, found := xstrings.LastCut(s, ".")
 	return found && videoExtensions[ext]
-}
-
-var addrSnnEnn = regexp.MustCompile(`\b[Ss](\d\d)[Ee](\d\d)\b`)
-
-func scanSpan(s string) (addr, int) {
-	if !hasVideoExtension(s) {
-		return addr{}, 0
-	}
-
-	// TODO(april): scan more forms, incl range & list.
-	m := addrSnnEnn.FindStringSubmatch(s)
-	if m == nil {
-		return addr{}, 0
-	}
-	return addr{
-		Snn: mustParseInt(m[1]),
-		Enn: mustParseInt(m[2]),
-	}, 1
-}
-
-func mustParseInt(s string) int {
-	n, err := strconv.ParseInt(s, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	return int(n)
 }
