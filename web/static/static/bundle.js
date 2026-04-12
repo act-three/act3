@@ -8246,6 +8246,7 @@
           headers: { Accept: "text/vnd.turbo-stream.html" }
         });
         if (resp.ok) {
+          document.activeElement?.blur();
           Turbo.renderStreamMessage(await resp.text());
         }
       } catch {
