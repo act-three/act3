@@ -232,14 +232,10 @@ func collectionMovieItems(col *model.Collection) html.Node {
 				SettingsItemLabelIcon()(Icon("line/film-01")),
 				SettingsItemLabelTitle(mo.Title()+" ("+mo.Year()+")"),
 			),
-			html.Form(
-				attr.Method("POST"),
-				attr.Action("/-/do/collection-movie-remove"),
-			)(
-				Hidden("col-id", col.ID()),
-				Hidden("movie-id", mo.MovieHead.ID()),
-				Button(SettingsHover, ButtonGhost)(Text("Remove")),
-			),
+			ActionButton("/-/do/collection-movie-remove",
+				map[string]string{"col-id": col.ID(), "movie-id": mo.MovieHead.ID()},
+				SettingsHover, ButtonGhost,
+			)(Text("Remove")),
 		)
 	})
 }
@@ -340,14 +336,10 @@ func collectionSeriesItems(col *model.Collection) html.Node {
 				SettingsItemLabelIcon()(Icon("line/tv-03")),
 				SettingsItemLabelTitle(sw.Title()),
 			),
-			html.Form(
-				attr.Method("POST"),
-				attr.Action("/-/do/collection-series-remove"),
-			)(
-				Hidden("col-id", col.ID()),
-				Hidden("series-id", sw.SeriesHead.ID()),
-				Button(SettingsHover, ButtonGhost)(Text("Remove")),
-			),
+			ActionButton("/-/do/collection-series-remove",
+				map[string]string{"col-id": col.ID(), "series-id": sw.SeriesHead.ID()},
+				SettingsHover, ButtonGhost,
+			)(Text("Remove")),
 		)
 	})
 }

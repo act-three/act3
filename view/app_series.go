@@ -312,13 +312,10 @@ func appSeriesDetailSeasonItem(sn *model.Season) html.Node {
 					),
 				),
 			),
-			html.Form(
-				attr.Method("POST"),
-				attr.Action("/-/do/series-episode-add"),
-			)(
-				Hidden("season-id", sn.ID()),
-				Button(ButtonGhost, ButtonSize2)(Text("Add Episode")),
-			),
+			ActionButton("/-/do/series-episode-add",
+				map[string]string{"season-id": sn.ID()},
+				ButtonGhost, ButtonSize2,
+			)(Text("Add Episode")),
 		),
 		turbo.StreamTarget("season-episodes-"+sn.ID(),
 			stimulus.Controller("sortable"),
@@ -557,23 +554,13 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 			func() html.Node { return html.Group() },
 		),
 		FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
-			html.Form(
-				attr.Action("/-/do/video-reimport/"+v.ID),
-				attr.Method("POST"),
-			)(
-				Button(Destructive)(
-					html.Text("Re-import"),
-				),
+			ActionButton("/-/do/video-reimport/"+v.ID, nil, Destructive)(
+				html.Text("Re-import"),
 			),
 			expr.IfElse(v.OriginalKey != "",
 				func() html.Node {
-					return html.Form(
-						attr.Action("/-/do/video-reencode/"+v.ID),
-						attr.Method("POST"),
-					)(
-						Button(Destructive)(
-							html.Text("Re-encode"),
-						),
+					return ActionButton("/-/do/video-reencode/"+v.ID, nil, Destructive)(
+						html.Text("Re-encode"),
 					)
 				},
 				func() html.Node { return html.Group() },

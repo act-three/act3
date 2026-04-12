@@ -457,25 +457,13 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 					html.Text(v.Name()),
 				),
 				FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
-					html.Form(
-						attr.Action("/-/do/video-reimport/"+v.ID()),
-						attr.Method("POST"),
-					)(
-						Button(Destructive)(
-							html.Text("Re-import"),
-						),
+					ActionButton("/-/do/video-reimport/"+v.ID(), nil, Destructive)(
+						html.Text("Re-import"),
 					),
 					expr.IfElse(v.OriginalKey() != "",
 						func() html.Node {
-							return html.Form(
-								attr.Action(
-									"/-/do/video-reencode/"+v.ID(),
-								),
-								attr.Method("POST"),
-							)(
-								Button(Destructive)(
-									html.Text("Re-encode"),
-								),
+							return ActionButton("/-/do/video-reencode/"+v.ID(), nil, Destructive)(
+								html.Text("Re-encode"),
 							)
 						},
 						func() html.Node { return html.Group() },

@@ -1,6 +1,7 @@
 import "./web/turbo.es2017-esm.js";
 import "./ui/turbo/action.js";
 import { Application } from "./web/stimulus.js";
+import ActionButtonController from "./ui/action-button.js";
 import DialogController from "./ui/dialog.js";
 import DialogTriggerController from "./ui/dialog-trigger.js";
 import PopoverController from "./ui/popover.js";
@@ -25,6 +26,7 @@ import SortableController from "./ui/sortable.js";
 import "./view/wash.js";
 
 window.Stimulus = Application.start();
+Stimulus.register("action-button", ActionButtonController);
 Stimulus.register("dialog", DialogController);
 Stimulus.register("dialog-trigger", DialogTriggerController);
 Stimulus.register("popover", PopoverController);

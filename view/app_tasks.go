@@ -32,13 +32,8 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) (string, html.
 									TableCell()(html.Text(t.ID())),
 									TableCell()(html.Text(t.Args())),
 									TableCell()(
-										html.Form(
-											attr.Action("/-/do/task-kill/"+t.ID()),
-											attr.Method("POST"),
-										)(
-											Button(Destructive)(
-												html.Text("Kill"),
-											),
+										ActionButton("/-/do/task-kill/"+t.ID(), nil, Destructive)(
+											html.Text("Kill"),
 										),
 									),
 								)
@@ -72,26 +67,16 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) (string, html.
 								TableCell()(html.Text(t.Type())),
 								TableCell()(
 									html.Text(t.ID()),
-									html.Form(
-										attr.Action("/-/do/task-delete/"+t.ID()),
-										attr.Method("POST"),
-									)(
-										Button(ButtonGhost)(
-											html.Text("Delete"),
-										),
+									ActionButton("/-/do/task-delete/"+t.ID(), nil, ButtonGhost)(
+										html.Text("Delete"),
 									),
 								),
 								TableCell()(html.Text(t.Args())),
 								TableCell()(html.Textf("%d", t.Failures())),
 								TableCell()(
 									html.Textf("%v", t.NextRun()),
-									html.Form(
-										attr.Action("/-/do/task-run/"+t.ID()),
-										attr.Method("POST"),
-									)(
-										Button(ButtonGhost)(
-											html.Text("Run Now"),
-										),
+									ActionButton("/-/do/task-run/"+t.ID(), nil, ButtonGhost)(
+										html.Text("Run Now"),
 									),
 								),
 							),

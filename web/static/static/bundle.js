@@ -7920,6 +7920,247 @@
   Controller.outlets = [];
   Controller.values = {};
 
+  // ui/note-port.js
+  var GAP = 14;
+  var DURATION = 5e3;
+  var VISIBLE = 3;
+  var SWIPE_THRESHOLD = 20;
+  var VELOCITY_THRESHOLD = 0.11;
+  function notify(msg, variant = "error") {
+    const port = document.getElementById("note-port");
+    if (!port) return;
+    const title = document.createElement("div");
+    title.className = "u-note-title";
+    title.textContent = msg;
+    const note = document.createElement("div");
+    note.className = "u-note";
+    note.setAttribute("role", "status");
+    note.setAttribute("aria-live", "polite");
+    note.setAttribute("data-variant", variant);
+    note.setAttribute("data-note-port-target", "note");
+    note.setAttribute(
+      "data-action",
+      "pointerdown->note-port#swipeStart pointermove->note-port#swipeMove pointerup->note-port#swipeEnd"
+    );
+    note.appendChild(title);
+    port.appendChild(note);
+  }
+  var note_port_default = class extends Controller {
+    static targets = ["note"];
+    togglePaused() {
+      if (document.hidden) {
+        this.#pauseAllTimers();
+      } else {
+        this.#resumeAllTimers();
+      }
+    }
+    noteTargetConnected(el) {
+      el.style.setProperty(
+        "--initial-height",
+        el.offsetHeight + "px"
+      );
+      requestAnimationFrame(() => {
+        el.setAttribute("data-mounted", "");
+        this.#layout();
+      });
+      this.#startTimer(el);
+      for (const t of this.noteTargets.slice(0, -VISIBLE)) {
+        this.dismiss(t);
+      }
+    }
+    noteTargetDisconnected() {
+      this.#layout();
+    }
+    pause() {
+      this.#hovered = true;
+      this.#pauseAllTimers();
+      this.#layout();
+    }
+    resume() {
+      this.#hovered = false;
+      this.#resumeAllTimers();
+      this.#layout();
+    }
+    dismiss(el) {
+      this.#clearTimer(el);
+      el.removeAttribute("data-swiping");
+      el.style.removeProperty("--swipe");
+      el.setAttribute("data-dismissed", "");
+      el.removeAttribute("data-mounted");
+      el.addEventListener("transitionend", () => {
+        el.remove();
+      }, { once: true });
+      setTimeout(() => {
+        if (el.parentNode) el.remove();
+      }, 600);
+    }
+    // --- swipe to dismiss ---
+    swipeStart(e) {
+      if (e.target.closest("button, a")) {
+        return;
+      }
+      const el = e.target.closest(
+        "[data-note-port-target='note']"
+      );
+      if (!el) return;
+      el.setPointerCapture(e.pointerId);
+      this.#swipe = {
+        el,
+        startY: e.clientY,
+        startTime: Date.now()
+      };
+      el.setAttribute("data-swiping", "");
+    }
+    swipeMove(e) {
+      if (!this.#swipe) return;
+      const { el, startY } = this.#swipe;
+      let dy = e.clientY - startY;
+      if (dy < 0) dy = dy * 0.2;
+      el.style.setProperty("--swipe", dy + "px");
+    }
+    swipeEnd(e) {
+      if (!this.#swipe) return;
+      const { el, startY, startTime } = this.#swipe;
+      this.#swipe = null;
+      const dy = e.clientY - startY;
+      const dt = Date.now() - startTime;
+      const velocity = Math.abs(dy) / dt;
+      if (dy > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
+        this.#clearTimer(el);
+        el.removeAttribute("data-swiping");
+        el.setAttribute("data-swipe-out", "");
+        el.removeAttribute("data-mounted");
+        el.addEventListener("animationend", () => {
+          el.remove();
+        }, { once: true });
+        setTimeout(() => {
+          if (el.parentNode) el.remove();
+        }, 300);
+      } else {
+        el.removeAttribute("data-swiping");
+        el.style.setProperty("--swipe", "0px");
+      }
+    }
+    // --- timers ---
+    #hovered = false;
+    #timers = /* @__PURE__ */ new WeakMap();
+    #swipe = null;
+    #startTimer(el) {
+      this.#clearTimer(el);
+      if (this.#hovered || document.hidden) return;
+      const id = setTimeout(
+        () => this.dismiss(el),
+        DURATION
+      );
+      this.#timers.set(el, id);
+    }
+    #clearTimer(el) {
+      const id = this.#timers.get(el);
+      if (id) {
+        clearTimeout(id);
+        this.#timers.delete(el);
+      }
+    }
+    #pauseAllTimers() {
+      for (const el of this.noteTargets) {
+        this.#clearTimer(el);
+      }
+    }
+    #resumeAllTimers() {
+      if (this.#hovered || document.hidden) return;
+      for (const el of this.noteTargets) {
+        this.#startTimer(el);
+      }
+    }
+    // --- layout ---
+    #layout() {
+      const notes = this.noteTargets.filter(
+        (n) => !n.hasAttribute("data-dismissed") && !n.hasAttribute("data-swipe-out")
+      );
+      const count = notes.length;
+      const expanded = this.#hovered;
+      const frontHeight = count > 0 ? this.#height(notes[count - 1]) : 0;
+      let heightsBefore = 0;
+      for (let i = count - 1; i >= 0; i--) {
+        const note = notes[i];
+        const idx = count - 1 - i;
+        const h = this.#height(note);
+        note.style.zIndex = count - idx;
+        note.style.setProperty("--index", idx);
+        note.style.setProperty(
+          "--front-toast-height",
+          frontHeight + "px"
+        );
+        if (idx === 0) {
+          note.setAttribute("data-front", "");
+        } else {
+          note.removeAttribute("data-front");
+        }
+        if (expanded) {
+          note.style.setProperty(
+            "--offset",
+            heightsBefore + "px"
+          );
+          heightsBefore += h + GAP;
+        } else {
+          note.style.setProperty(
+            "--offset",
+            idx * GAP + "px"
+          );
+        }
+      }
+      if (expanded) {
+        this.element.style.setProperty(
+          "--port-height",
+          heightsBefore + 24 + "px"
+        );
+      } else {
+        this.element.style.setProperty(
+          "--port-height",
+          frontHeight + VISIBLE * GAP + 24 + "px"
+        );
+      }
+    }
+    #height(el) {
+      return parseInt(
+        el.style.getPropertyValue("--initial-height"),
+        10
+      ) || el.offsetHeight;
+    }
+  };
+
+  // ui/action-button.js
+  var action_button_default = class extends Controller {
+    static values = { url: String, params: Object };
+    async call() {
+      this.element.disabled = true;
+      const body = new URLSearchParams(this.paramsValue);
+      try {
+        const resp = await fetch(this.urlValue, {
+          method: "POST",
+          body,
+          headers: { Accept: "text/vnd.turbo-stream.html" }
+        });
+        if (resp.redirected) {
+          Turbo.visit(resp.url);
+          return;
+        }
+        if (!resp.ok) {
+          notify("Something went wrong");
+          this.element.disabled = false;
+          return;
+        }
+        const ct = resp.headers.get("Content-Type") || "";
+        if (ct.includes("turbo-stream")) {
+          Turbo.renderStreamMessage(await resp.text());
+        }
+      } catch {
+        notify("Could not reach the server");
+      }
+      this.element.disabled = false;
+    }
+  };
+
   // ui/dialog.js
   var dialog_default = class extends Controller {
     connect() {
@@ -8532,215 +8773,6 @@
     }
     reset() {
       this.element.reset();
-    }
-  };
-
-  // ui/note-port.js
-  var GAP = 14;
-  var DURATION = 5e3;
-  var VISIBLE = 3;
-  var SWIPE_THRESHOLD = 20;
-  var VELOCITY_THRESHOLD = 0.11;
-  function notify(msg, variant = "error") {
-    const port = document.getElementById("note-port");
-    if (!port) return;
-    const title = document.createElement("div");
-    title.className = "u-note-title";
-    title.textContent = msg;
-    const note = document.createElement("div");
-    note.className = "u-note";
-    note.setAttribute("role", "status");
-    note.setAttribute("aria-live", "polite");
-    note.setAttribute("data-variant", variant);
-    note.setAttribute("data-note-port-target", "note");
-    note.setAttribute(
-      "data-action",
-      "pointerdown->note-port#swipeStart pointermove->note-port#swipeMove pointerup->note-port#swipeEnd"
-    );
-    note.appendChild(title);
-    port.appendChild(note);
-  }
-  var note_port_default = class extends Controller {
-    static targets = ["note"];
-    togglePaused() {
-      if (document.hidden) {
-        this.#pauseAllTimers();
-      } else {
-        this.#resumeAllTimers();
-      }
-    }
-    noteTargetConnected(el) {
-      el.style.setProperty(
-        "--initial-height",
-        el.offsetHeight + "px"
-      );
-      requestAnimationFrame(() => {
-        el.setAttribute("data-mounted", "");
-        this.#layout();
-      });
-      this.#startTimer(el);
-      for (const t of this.noteTargets.slice(0, -VISIBLE)) {
-        this.dismiss(t);
-      }
-    }
-    noteTargetDisconnected() {
-      this.#layout();
-    }
-    pause() {
-      this.#hovered = true;
-      this.#pauseAllTimers();
-      this.#layout();
-    }
-    resume() {
-      this.#hovered = false;
-      this.#resumeAllTimers();
-      this.#layout();
-    }
-    dismiss(el) {
-      this.#clearTimer(el);
-      el.removeAttribute("data-swiping");
-      el.style.removeProperty("--swipe");
-      el.setAttribute("data-dismissed", "");
-      el.removeAttribute("data-mounted");
-      el.addEventListener("transitionend", () => {
-        el.remove();
-      }, { once: true });
-      setTimeout(() => {
-        if (el.parentNode) el.remove();
-      }, 600);
-    }
-    // --- swipe to dismiss ---
-    swipeStart(e) {
-      if (e.target.closest("button, a")) {
-        return;
-      }
-      const el = e.target.closest(
-        "[data-note-port-target='note']"
-      );
-      if (!el) return;
-      el.setPointerCapture(e.pointerId);
-      this.#swipe = {
-        el,
-        startY: e.clientY,
-        startTime: Date.now()
-      };
-      el.setAttribute("data-swiping", "");
-    }
-    swipeMove(e) {
-      if (!this.#swipe) return;
-      const { el, startY } = this.#swipe;
-      let dy = e.clientY - startY;
-      if (dy < 0) dy = dy * 0.2;
-      el.style.setProperty("--swipe", dy + "px");
-    }
-    swipeEnd(e) {
-      if (!this.#swipe) return;
-      const { el, startY, startTime } = this.#swipe;
-      this.#swipe = null;
-      const dy = e.clientY - startY;
-      const dt = Date.now() - startTime;
-      const velocity = Math.abs(dy) / dt;
-      if (dy > SWIPE_THRESHOLD || velocity > VELOCITY_THRESHOLD) {
-        this.#clearTimer(el);
-        el.removeAttribute("data-swiping");
-        el.setAttribute("data-swipe-out", "");
-        el.removeAttribute("data-mounted");
-        el.addEventListener("animationend", () => {
-          el.remove();
-        }, { once: true });
-        setTimeout(() => {
-          if (el.parentNode) el.remove();
-        }, 300);
-      } else {
-        el.removeAttribute("data-swiping");
-        el.style.setProperty("--swipe", "0px");
-      }
-    }
-    // --- timers ---
-    #hovered = false;
-    #timers = /* @__PURE__ */ new WeakMap();
-    #swipe = null;
-    #startTimer(el) {
-      this.#clearTimer(el);
-      if (this.#hovered || document.hidden) return;
-      const id = setTimeout(
-        () => this.dismiss(el),
-        DURATION
-      );
-      this.#timers.set(el, id);
-    }
-    #clearTimer(el) {
-      const id = this.#timers.get(el);
-      if (id) {
-        clearTimeout(id);
-        this.#timers.delete(el);
-      }
-    }
-    #pauseAllTimers() {
-      for (const el of this.noteTargets) {
-        this.#clearTimer(el);
-      }
-    }
-    #resumeAllTimers() {
-      if (this.#hovered || document.hidden) return;
-      for (const el of this.noteTargets) {
-        this.#startTimer(el);
-      }
-    }
-    // --- layout ---
-    #layout() {
-      const notes = this.noteTargets.filter(
-        (n) => !n.hasAttribute("data-dismissed") && !n.hasAttribute("data-swipe-out")
-      );
-      const count = notes.length;
-      const expanded = this.#hovered;
-      const frontHeight = count > 0 ? this.#height(notes[count - 1]) : 0;
-      let heightsBefore = 0;
-      for (let i = count - 1; i >= 0; i--) {
-        const note = notes[i];
-        const idx = count - 1 - i;
-        const h = this.#height(note);
-        note.style.zIndex = count - idx;
-        note.style.setProperty("--index", idx);
-        note.style.setProperty(
-          "--front-toast-height",
-          frontHeight + "px"
-        );
-        if (idx === 0) {
-          note.setAttribute("data-front", "");
-        } else {
-          note.removeAttribute("data-front");
-        }
-        if (expanded) {
-          note.style.setProperty(
-            "--offset",
-            heightsBefore + "px"
-          );
-          heightsBefore += h + GAP;
-        } else {
-          note.style.setProperty(
-            "--offset",
-            idx * GAP + "px"
-          );
-        }
-      }
-      if (expanded) {
-        this.element.style.setProperty(
-          "--port-height",
-          heightsBefore + 24 + "px"
-        );
-      } else {
-        this.element.style.setProperty(
-          "--port-height",
-          frontHeight + VISIBLE * GAP + 24 + "px"
-        );
-      }
-    }
-    #height(el) {
-      return parseInt(
-        el.style.getPropertyValue("--initial-height"),
-        10
-      ) || el.offsetHeight;
     }
   };
 
@@ -11623,6 +11655,7 @@
 
   // main.js
   window.Stimulus = Application.start();
+  Stimulus.register("action-button", action_button_default);
   Stimulus.register("dialog", dialog_default);
   Stimulus.register("dialog-trigger", dialog_trigger_default);
   Stimulus.register("popover", popover_default);
