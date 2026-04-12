@@ -211,7 +211,7 @@ func appDownloadsImportControl(dl *model.Download) html.Node {
 	}
 }
 
-func AppDownloadFileAttachDialog(
+func AppDownloadFileAttachPopover(
 	triggerID string,
 	sed *model.SeriesEdition,
 	infoHash, filePath string,
