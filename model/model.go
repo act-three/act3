@@ -60,6 +60,9 @@ type Model struct {
 	torrentMu sync.Mutex
 	torrent   map[string]*transmissionrpc.Torrent
 
+	downloadDirMu sync.Mutex
+	downloadDir   map[string]string // Transmission DownloadDir → local path
+
 	subMu sync.Mutex
 	sub   map[chan *Event]struct{}
 }
@@ -79,6 +82,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		tasks:          map[string]*taskQueue{},
 		activeInfoHash: map[string]bool{},
 		torrent:        map[string]*transmissionrpc.Torrent{},
+		downloadDir:    map[string]string{},
 		sub:            map[chan *Event]struct{}{},
 	}
 	m.prog.SetHook(func(event string, it *progress.Item) {

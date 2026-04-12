@@ -23,14 +23,6 @@ func AppTransmission(settings model.Settings) (string, html.Node) {
 				),
 			),
 			html.Div(attr.Class("v-system-field"))(
-				html.Div()(html.Text("Download Folder")),
-				InputText(
-					attr.Name("path"),
-					attr.Class("v-system-input"),
-					attr.Value(settings[model.SettingKeyTransmissionPath].String()),
-				),
-			),
-			html.Div(attr.Class("v-system-field"))(
 				InputSubmit(
 					attr.Value("Save"),
 				),

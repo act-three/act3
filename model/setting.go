@@ -11,7 +11,6 @@ import (
 
 // Setting key constants.
 const (
-	SettingKeyTransmissionPath    = "transmission.path"
 	SettingKeyTransmissionBaseURL = "transmission.base-url"
 	SettingKeyTMDBAccessToken     = "tmdb.access-token"
 )
@@ -33,7 +32,6 @@ type settingDef struct {
 
 // settingDefs maps each valid key to its type, group, and default.
 var settingDefs = map[string]settingDef{
-	SettingKeyTransmissionPath:    {Group: "transmission", Type: SettingTypeString},
 	SettingKeyTransmissionBaseURL: {Group: "transmission", Type: SettingTypeString},
 	SettingKeyTMDBAccessToken:     {Group: "tmdb", Type: SettingTypeString},
 }

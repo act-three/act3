@@ -27,10 +27,6 @@ func (c *Config) doTransmissionSettingsUpdate(w http.ResponseWriter, req *http.R
 		if err != nil {
 			return nil, err
 		}
-		err = tx.SettingSetString(ctx, model.SettingKeyTransmissionPath, req.FormValue("path"))
-		if err != nil {
-			return nil, err
-		}
 		http.Redirect(w, req, "/app/transmission", http.StatusSeeOther)
 		return nil, nil
 	})

@@ -34,16 +34,27 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		return nil
 	}
 
+	// Resolve the download directory.
 	// Transmission may still be copying the file to its final
-	// location. If the file doesn't exist yet, re-queue and
-	// check again shortly.
-	diskPath := args[1]
-	if _, err := os.Stat(diskPath); errors.Is(err, os.ErrNotExist) {
+	// location after reporting the download as complete.
+	// If the probe fails or the file doesn't exist yet,
+	// re-queue and check again shortly.
+	remoteDir := args[1]
+	name := args[2]
+	retryIngest := func() error {
 		slog.InfoContext(ctx, "ingest: file not yet available, retrying",
-			"vid", vid.ID, "path", diskPath)
+			"vid", vid.ID, "dir", remoteDir, "name", name)
 		return tx.m.WithTxRW(func(txw *TxRW) error {
 			return txw.addTaskAfter(ctx, 5*time.Second, taskIngest, args...)
 		})
+	}
+	localDir, err := tx.m.resolveDownloadDir(remoteDir, name)
+	if err != nil {
+		return retryIngest()
+	}
+	diskPath := filepath.Join(localDir, name)
+	if _, err := os.Stat(diskPath); errors.Is(err, os.ErrNotExist) {
+		return retryIngest()
 	}
 
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
@@ -410,10 +421,12 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	if len(ts) != 1 {
 		return fmt.Errorf("torrent %s: got %d results, wanted 1", *vid.InfoHash, len(ts))
 	}
-	srcPath, err := tx.transmissionDiskPath(ctx, &ts[0], vid.Name)
+	name := transmissionName(&ts[0], vid.Name)
+	localDir, err := tx.m.resolveDownloadDir(*ts[0].DownloadDir, name)
 	if err != nil {
 		return err
 	}
+	srcPath := filepath.Join(localDir, name)
 
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
 	if err != nil {

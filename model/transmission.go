@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/hekmon/transmissionrpc/v3"
+	"ily.dev/act3/sys/fsinfo"
 	"kr.dev/errorfmt"
 )
 
@@ -44,25 +45,27 @@ func (m *Model) setTransmissionBaseURL(u *urlpkg.URL) {
 	m.transmission.Store(c)
 }
 
-// transmissionDiskPath returns the local disk path for a file within
-// a Transmission torrent.
-// It resolves the download directory using the transmission.path
-// setting (falling back to the dir reported by Transmission),
-// and handles the single-file vs multi-file torrent distinction.
-func (tx *TxR) transmissionDiskPath(ctx Context, t *transmissionrpc.Torrent, relPath string) (string, error) {
-	dir := *t.DownloadDir
-	settings, err := tx.SettingGetByGroup(ctx, "transmission")
+// transmissionName returns the path of relPath relative to the torrent's
+// download directory.
+// For single-file torrents the torrent name is the filename itself.
+// For multi-file torrents, files are in a subdirectory named after the torrent.
+func transmissionName(t *transmissionrpc.Torrent, relPath string) string {
+	if *t.Name == relPath {
+		return relPath
+	}
+	return filepath.Join(*t.Name, relPath)
+}
+
+func (m *Model) resolveDownloadDir(remoteDir, name string) (string, error) {
+	m.downloadDirMu.Lock()
+	defer m.downloadDirMu.Unlock()
+	if local, ok := m.downloadDir[remoteDir]; ok {
+		return local, nil
+	}
+	local, err := fsinfo.Probe(remoteDir, name)
 	if err != nil {
 		return "", err
 	}
-	if p := settings[SettingKeyTransmissionPath].String(); p != "" {
-		dir = p
-	}
-	// For single-file torrents the torrent name is the filename
-	// itself, so the path is just dir/name.
-	// For multi-file torrents it's dir/name/relPath.
-	if *t.Name == relPath {
-		return filepath.Join(dir, relPath), nil
-	}
-	return filepath.Join(dir, *t.Name, relPath), nil
+	m.downloadDir[remoteDir] = local
+	return local, nil
 }

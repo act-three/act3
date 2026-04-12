@@ -508,11 +508,7 @@ func (tx *TxRW) processDownload(ctx Context, infoHash string) (err error) {
 			for _, epID := range d.epIDByVideoID[v.ID] {
 				tx.m.prog.AddEdge(epID, v.ID)
 			}
-			diskPath, err := tx.transmissionDiskPath(ctx, t, v.Name)
-			if err != nil {
-				return err
-			}
-			err = tx.addTask(ctx, taskIngest, v.ID, diskPath)
+			err = tx.addTask(ctx, taskIngest, v.ID, *t.DownloadDir, transmissionName(t, v.Name))
 			if err != nil {
 				return err
 			}
