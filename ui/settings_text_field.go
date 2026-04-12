@@ -26,7 +26,7 @@ var SettingsTextFieldSuffix = stimulus.Value("settings-text-field", "suffix")
 // to update the input and its saved original value.
 func SettingsTextField(action, name, value string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
-		return html.Form(
+		return html.Div(
 			attr.Class("u-settings-text-field"),
 			stimulus.Controller("settings-text-field"),
 			stimulus.Value("settings-text-field", "url")(action),

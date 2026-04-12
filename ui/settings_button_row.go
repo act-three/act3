@@ -17,7 +17,7 @@ import (
 // and updates the selection accordingly.
 func SettingsButtonRow(action, name, value string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
-		return html.Form(
+		return html.Div(
 			attr.Class("u-settings-button-row"),
 			attr.Attr("data-optimistic")(""),
 			stimulus.Controller("settings-button-row"),

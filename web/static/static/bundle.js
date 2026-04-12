@@ -8938,7 +8938,11 @@
       const was = this.#original;
       this.#original = value;
       input.value = value;
-      const data = new FormData(this.element);
+      const data = new FormData();
+      for (const el of this.element.querySelectorAll("input[type=hidden]")) {
+        data.set(el.name, el.value);
+      }
+      data.set(input.name, value);
       input.disabled = true;
       fetch(this.urlValue, { method: "POST", body: data }).then(
         (resp) => {
@@ -9009,7 +9013,11 @@
       this.#original = value;
       input.value = value;
       this.sync();
-      const data = new FormData(this.element);
+      const data = new FormData();
+      for (const el of this.element.querySelectorAll("input[type=hidden]")) {
+        data.set(el.name, el.value);
+      }
+      data.set(input.name, value);
       input.disabled = true;
       fetch(this.urlValue, { method: "POST", body: data }).then(
         (resp) => {

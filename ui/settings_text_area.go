@@ -18,7 +18,7 @@ import (
 // to update the textarea and its saved original value.
 func SettingsTextArea(action, name, value string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
-		return html.Form(
+		return html.Div(
 			attr.Class("u-settings-text-area"),
 			stimulus.Controller("settings-text-area"),
 			stimulus.Value("settings-text-area", "url")(action),
