@@ -330,6 +330,13 @@ func appDownloadsFileList(files []*model.DownloadFile) html.Node {
 }
 
 func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
+	found := false
+	for _, df := range dfs {
+		found = found || df.HasVideoExtension()
+	}
+	if !found {
+		return Group()
+	}
 	return SettingsGroup()(
 		html.If(dir != ".", func() html.Node {
 			return SettingsGroupHead()(
