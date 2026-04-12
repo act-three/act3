@@ -69,7 +69,7 @@ func (d *DownloadHead) FilesLen() int {
 }
 
 type DownloadInfo struct {
-	DownloadHead
+	*DownloadHead
 	sw *SeriesWork
 	mw *MovieWork
 }
@@ -378,7 +378,7 @@ func (tx *TxR) DownloadInfoList(ctx Context) ([]*DownloadInfo, error) {
 	}
 	res := make([]*DownloadInfo, len(heads))
 	for i, h := range heads {
-		di := &DownloadInfo{DownloadHead: *h}
+		di := &DownloadInfo{DownloadHead: h}
 		if id := h.d.SeriesEditionID; id != nil {
 			di.sw = sws[*id]
 		}
