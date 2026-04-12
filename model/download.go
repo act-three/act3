@@ -151,7 +151,7 @@ func (df *DownloadFile) VideoID() string {
 }
 
 func (df *DownloadFile) SeriesEdition() *SeriesEdition {
-	return df.d.PlanSeriesEdition()
+	return df.d.SeriesEdition()
 }
 
 type Download struct {
@@ -232,8 +232,7 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 	return d, nil
 }
 
-func (d *Download) PlanSeriesEdition() *SeriesEdition { return d.planEd }
-func (d *Download) PlanMovieEdition() *MovieEdition   { return d.planMovieEd }
+func (d *Download) SeriesEdition() *SeriesEdition { return d.planEd }
 
 func (d *Download) Work() Work {
 	if d.planMovieEd != nil {

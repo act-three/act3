@@ -58,7 +58,7 @@ func (c *Config) dialogDownloadFileAttach(_ http.ResponseWriter, req *http.Reque
 		if err != nil {
 			return nil, err
 		}
-		sed := dl.PlanSeriesEdition()
+		sed := dl.SeriesEdition()
 		if sed == nil {
 			return nil, fmt.Errorf("download %s is not planned for a series", infoHash)
 		}
