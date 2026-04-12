@@ -217,8 +217,17 @@ func AppDownloadFileAttachDialog(
 	linked map[string]bool,
 ) html.Node {
 	return PopoverStream(triggerID,
-		FlexCol(Gap2, attr.Style("width: 300px; height: 350px"))(
-			ScrollY(Class("u-popover-scroll"))(
+		FlexCol(
+			attr.Style("width: 300px; height: 350px"),
+			stimulus.Controller("picker"),
+		)(
+			InputText(
+				attr.Autofocus,
+				attr.Placeholder("Filter..."),
+				Class("u-picker-filter"),
+				stimulus.Action("input->picker#filter"),
+			),
+			ScrollY()(
 				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
 					return PickerGroup()(
 						PickerGroupHead()(
@@ -228,13 +237,15 @@ func AppDownloadFileAttachDialog(
 						),
 						html.RangeSeq(sn.Episodes(model.AnyEpisode), func(ep *model.Episode) html.Node {
 							attached := linked[ep.ID()]
+							label := ep.SnnEnn() + " " + ep.Title()
 							return PickerItem(
 								attr.Style("isolation: isolate"),
+								attr.Attr("data-filter-text")(label),
 								stimulus.Controller("episode-attach"),
 								stimulus.Action("settings-toggle:commit->episode-attach#commit"),
 							)(
 								PickerItemLabel()(
-									Text(ep.SnnEnn()+" "+ep.Title(), Size2),
+									Text(label, Size2),
 								),
 								SettingsToggle("/-/do/episode-video-set", "attach", attached,
 									map[string]string{

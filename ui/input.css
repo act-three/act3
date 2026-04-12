@@ -4,7 +4,7 @@
 	min-width: 0;
 	text-overflow: ellipsis;
 	border: 1px solid var(--border-strong);
-	background-color: var(--bg-input);
+	background-color: transparent;
 	color: var(--text);
 	outline: none;
 	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
