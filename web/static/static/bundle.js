@@ -7965,6 +7965,7 @@
 
   // ui/popover-trigger.js
   var popover_trigger_default = class extends Controller {
+    static values = { url: String, trigger: String };
     #submitted = false;
     activate({ currentTarget }) {
       this.#submitted = false;
@@ -7974,11 +7975,24 @@
       if (this.#submitted) return;
       currentTarget.removeAttribute("aria-expanded");
     }
-    open() {
+    async open() {
       this.#submitted = true;
       const button = this.element.querySelector(".u-button");
-      if (!button) return;
-      button.style.visibility = "visible";
+      if (button) button.style.visibility = "visible";
+      const params = new URLSearchParams();
+      params.set("popover-trigger", this.triggerValue);
+      for (const input of this.element.querySelectorAll("input[type=hidden]")) {
+        params.set(input.name, input.value);
+      }
+      try {
+        const resp = await fetch(`${this.urlValue}?${params}`, {
+          headers: { Accept: "text/vnd.turbo-stream.html" }
+        });
+        if (resp.ok) {
+          Turbo.renderStreamMessage(await resp.text());
+        }
+      } catch {
+      }
     }
   };
 

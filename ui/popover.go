@@ -9,24 +9,24 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
-// PopoverButton returns a form that GETs url as a turbo stream,
+// PopoverButton renders a button that GETs url as a turbo stream,
 // storing the trigger button's position for the popover to anchor to.
 // The label appears on the button;
-// children are placed in the form alongside it (e.g. hidden inputs).
+// children are placed alongside it (e.g. hidden inputs
+// whose values the controller includes as query parameters).
 func PopoverButton(url string, label html.Node, attrs ...attr.Node) html.Element {
 	id := "pt-" + rand.Text()[:8]
 	return func(children ...html.Node) html.Node {
-		return html.Form(
-			attr.Method("get"),
-			attr.Action(url),
+		return html.Div(
 			stimulus.Controller("popover-trigger"),
-			stimulus.Action("submit->popover-trigger#open"),
+			stimulus.Value("popover-trigger", "url")(url),
+			stimulus.Value("popover-trigger", "trigger")(id),
 		)(
 			append(children,
-				Hidden("popover-trigger", id),
 				Button(
 					attr.ID(id),
 					attr.Attr("data-optimistic")(""),
+					stimulus.Action("click->popover-trigger#open"),
 					stimulus.Action("mousedown->popover-trigger#activate"),
 					stimulus.Action("mouseleave->popover-trigger#deactivate"),
 					attr.Group(attrs...),
