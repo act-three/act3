@@ -119,14 +119,14 @@ SELECT * FROM Download WHERE InfoHash = ?;
 SELECT * FROM Download
 ORDER BY CreatedAt DESC;
 
--- name: DownloadListByPlanMovieEditionID :many
+-- name: DownloadListByMovieEditionID :many
 SELECT * FROM Download
-WHERE PlanMovieEditionID = ?
+WHERE MovieEditionID = ?
 ORDER BY CreatedAt DESC;
 
--- name: DownloadListByPlanSeriesEditionID :many
+-- name: DownloadListBySeriesEditionID :many
 SELECT * FROM Download
-WHERE PlanSeriesEditionID = ?
+WHERE SeriesEditionID = ?
 ORDER BY CreatedAt DESC;
 
 -- name: DownloadListInfoHashesActive :many
@@ -140,15 +140,9 @@ UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING *;
 -- name: DownloadUpdateError :one
 UPDATE Download SET State = 'error', Error = ? WHERE InfoHash = ? RETURNING *;
 
--- name: DownloadUpdatePlanMovie :one
+-- name: DownloadUpdateMovieEdition :one
 UPDATE Download SET
-	PlanMovieEditionID = ?
-WHERE InfoHash = ?
-RETURNING *;
-
--- name: DownloadUpdatePlanSeries :one
-UPDATE Download SET
-	PlanSeriesEditionID = ?
+	MovieEditionID = ?
 WHERE InfoHash = ?
 RETURNING *;
 
@@ -158,6 +152,12 @@ UPDATE Download SET
 	Progress = ?,
 	Error = ''
 WHERE InfoHash = ? RETURNING *;
+
+-- name: DownloadUpdateSeriesEdition :one
+UPDATE Download SET
+	SeriesEditionID = ?
+WHERE InfoHash = ?
+RETURNING *;
 
 -- name: EpisodeAirdateSet :exec
 UPDATE Episode SET Airdate = ? WHERE ID = ?;

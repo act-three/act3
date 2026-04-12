@@ -33,16 +33,16 @@ type CollectionSeries struct {
 }
 
 type Download struct {
-	InfoHash            string
-	Createdat           int64
-	State               string
-	Title               string
-	Error               string
-	Torrent             []byte
-	Progress            float64
-	Autoimport          int64
-	PlanSeriesEditionID *string
-	PlanMovieEditionID  *string
+	InfoHash        string
+	Createdat       int64
+	State           string
+	Title           string
+	Error           string
+	Torrent         []byte
+	Progress        float64
+	Autoimport      int64
+	SeriesEditionID *string
+	MovieEditionID  *string
 }
 
 type Episode struct {

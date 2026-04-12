@@ -469,7 +469,7 @@ INSERT INTO Download
 	Torrent
 )
 VALUES (?, ?, ?, ?)
-RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid
+RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
 `
 
 type DownloadCreateParams struct {
@@ -496,14 +496,14 @@ func (q *Queries) DownloadCreate(ctx context.Context, arg DownloadCreateParams) 
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.PlanSeriesEditionID,
-		&i.PlanMovieEditionID,
+		&i.SeriesEditionID,
+		&i.MovieEditionID,
 	)
 	return i, err
 }
 
 const downloadGet = `-- name: DownloadGet :one
-SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download WHERE InfoHash = ?
+SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid FROM Download WHERE InfoHash = ?
 `
 
 func (q *Queries) DownloadGet(ctx context.Context, infohash string) (Download, error) {
@@ -518,14 +518,14 @@ func (q *Queries) DownloadGet(ctx context.Context, infohash string) (Download, e
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.PlanSeriesEditionID,
-		&i.PlanMovieEditionID,
+		&i.SeriesEditionID,
+		&i.MovieEditionID,
 	)
 	return i, err
 }
 
 const downloadList = `-- name: DownloadList :many
-SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download
+SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid FROM Download
 ORDER BY CreatedAt DESC
 `
 
@@ -547,8 +547,8 @@ func (q *Queries) DownloadList(ctx context.Context) ([]Download, error) {
 			&i.Torrent,
 			&i.Progress,
 			&i.Autoimport,
-			&i.PlanSeriesEditionID,
-			&i.PlanMovieEditionID,
+			&i.SeriesEditionID,
+			&i.MovieEditionID,
 		); err != nil {
 			return nil, err
 		}
@@ -563,14 +563,14 @@ func (q *Queries) DownloadList(ctx context.Context) ([]Download, error) {
 	return items, nil
 }
 
-const downloadListByPlanMovieEditionID = `-- name: DownloadListByPlanMovieEditionID :many
-SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download
-WHERE PlanMovieEditionID = ?
+const downloadListByMovieEditionID = `-- name: DownloadListByMovieEditionID :many
+SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid FROM Download
+WHERE MovieEditionID = ?
 ORDER BY CreatedAt DESC
 `
 
-func (q *Queries) DownloadListByPlanMovieEditionID(ctx context.Context, planmovieeditionid *string) ([]Download, error) {
-	rows, err := q.db.QueryContext(ctx, downloadListByPlanMovieEditionID, planmovieeditionid)
+func (q *Queries) DownloadListByMovieEditionID(ctx context.Context, movieeditionid *string) ([]Download, error) {
+	rows, err := q.db.QueryContext(ctx, downloadListByMovieEditionID, movieeditionid)
 	if err != nil {
 		return nil, err
 	}
@@ -587,8 +587,8 @@ func (q *Queries) DownloadListByPlanMovieEditionID(ctx context.Context, planmovi
 			&i.Torrent,
 			&i.Progress,
 			&i.Autoimport,
-			&i.PlanSeriesEditionID,
-			&i.PlanMovieEditionID,
+			&i.SeriesEditionID,
+			&i.MovieEditionID,
 		); err != nil {
 			return nil, err
 		}
@@ -603,14 +603,14 @@ func (q *Queries) DownloadListByPlanMovieEditionID(ctx context.Context, planmovi
 	return items, nil
 }
 
-const downloadListByPlanSeriesEditionID = `-- name: DownloadListByPlanSeriesEditionID :many
-SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid FROM Download
-WHERE PlanSeriesEditionID = ?
+const downloadListBySeriesEditionID = `-- name: DownloadListBySeriesEditionID :many
+SELECT infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid FROM Download
+WHERE SeriesEditionID = ?
 ORDER BY CreatedAt DESC
 `
 
-func (q *Queries) DownloadListByPlanSeriesEditionID(ctx context.Context, planserieseditionid *string) ([]Download, error) {
-	rows, err := q.db.QueryContext(ctx, downloadListByPlanSeriesEditionID, planserieseditionid)
+func (q *Queries) DownloadListBySeriesEditionID(ctx context.Context, serieseditionid *string) ([]Download, error) {
+	rows, err := q.db.QueryContext(ctx, downloadListBySeriesEditionID, serieseditionid)
 	if err != nil {
 		return nil, err
 	}
@@ -627,8 +627,8 @@ func (q *Queries) DownloadListByPlanSeriesEditionID(ctx context.Context, planser
 			&i.Torrent,
 			&i.Progress,
 			&i.Autoimport,
-			&i.PlanSeriesEditionID,
-			&i.PlanMovieEditionID,
+			&i.SeriesEditionID,
+			&i.MovieEditionID,
 		); err != nil {
 			return nil, err
 		}
@@ -672,7 +672,7 @@ func (q *Queries) DownloadListInfoHashesActive(ctx context.Context) ([]string, e
 }
 
 const downloadUpdateAutoImport = `-- name: DownloadUpdateAutoImport :one
-UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid
+UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
 `
 
 type DownloadUpdateAutoImportParams struct {
@@ -692,14 +692,14 @@ func (q *Queries) DownloadUpdateAutoImport(ctx context.Context, arg DownloadUpda
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.PlanSeriesEditionID,
-		&i.PlanMovieEditionID,
+		&i.SeriesEditionID,
+		&i.MovieEditionID,
 	)
 	return i, err
 }
 
 const downloadUpdateError = `-- name: DownloadUpdateError :one
-UPDATE Download SET State = 'error', Error = ? WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid
+UPDATE Download SET State = 'error', Error = ? WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
 `
 
 type DownloadUpdateErrorParams struct {
@@ -719,26 +719,26 @@ func (q *Queries) DownloadUpdateError(ctx context.Context, arg DownloadUpdateErr
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.PlanSeriesEditionID,
-		&i.PlanMovieEditionID,
+		&i.SeriesEditionID,
+		&i.MovieEditionID,
 	)
 	return i, err
 }
 
-const downloadUpdatePlanMovie = `-- name: DownloadUpdatePlanMovie :one
+const downloadUpdateMovieEdition = `-- name: DownloadUpdateMovieEdition :one
 UPDATE Download SET
-	PlanMovieEditionID = ?
+	MovieEditionID = ?
 WHERE InfoHash = ?
-RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid
+RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
 `
 
-type DownloadUpdatePlanMovieParams struct {
-	PlanMovieEditionID *string
-	InfoHash           string
+type DownloadUpdateMovieEditionParams struct {
+	MovieEditionID *string
+	InfoHash       string
 }
 
-func (q *Queries) DownloadUpdatePlanMovie(ctx context.Context, arg DownloadUpdatePlanMovieParams) (Download, error) {
-	row := q.db.QueryRowContext(ctx, downloadUpdatePlanMovie, arg.PlanMovieEditionID, arg.InfoHash)
+func (q *Queries) DownloadUpdateMovieEdition(ctx context.Context, arg DownloadUpdateMovieEditionParams) (Download, error) {
+	row := q.db.QueryRowContext(ctx, downloadUpdateMovieEdition, arg.MovieEditionID, arg.InfoHash)
 	var i Download
 	err := row.Scan(
 		&i.InfoHash,
@@ -749,38 +749,8 @@ func (q *Queries) DownloadUpdatePlanMovie(ctx context.Context, arg DownloadUpdat
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.PlanSeriesEditionID,
-		&i.PlanMovieEditionID,
-	)
-	return i, err
-}
-
-const downloadUpdatePlanSeries = `-- name: DownloadUpdatePlanSeries :one
-UPDATE Download SET
-	PlanSeriesEditionID = ?
-WHERE InfoHash = ?
-RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid
-`
-
-type DownloadUpdatePlanSeriesParams struct {
-	PlanSeriesEditionID *string
-	InfoHash            string
-}
-
-func (q *Queries) DownloadUpdatePlanSeries(ctx context.Context, arg DownloadUpdatePlanSeriesParams) (Download, error) {
-	row := q.db.QueryRowContext(ctx, downloadUpdatePlanSeries, arg.PlanSeriesEditionID, arg.InfoHash)
-	var i Download
-	err := row.Scan(
-		&i.InfoHash,
-		&i.Createdat,
-		&i.State,
-		&i.Title,
-		&i.Error,
-		&i.Torrent,
-		&i.Progress,
-		&i.Autoimport,
-		&i.PlanSeriesEditionID,
-		&i.PlanMovieEditionID,
+		&i.SeriesEditionID,
+		&i.MovieEditionID,
 	)
 	return i, err
 }
@@ -790,7 +760,7 @@ UPDATE Download SET
 	State = ?,
 	Progress = ?,
 	Error = ''
-WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, planserieseditionid, planmovieeditionid
+WHERE InfoHash = ? RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
 `
 
 type DownloadUpdateProgressParams struct {
@@ -811,8 +781,38 @@ func (q *Queries) DownloadUpdateProgress(ctx context.Context, arg DownloadUpdate
 		&i.Torrent,
 		&i.Progress,
 		&i.Autoimport,
-		&i.PlanSeriesEditionID,
-		&i.PlanMovieEditionID,
+		&i.SeriesEditionID,
+		&i.MovieEditionID,
+	)
+	return i, err
+}
+
+const downloadUpdateSeriesEdition = `-- name: DownloadUpdateSeriesEdition :one
+UPDATE Download SET
+	SeriesEditionID = ?
+WHERE InfoHash = ?
+RETURNING infohash, createdat, state, title, error, torrent, progress, autoimport, serieseditionid, movieeditionid
+`
+
+type DownloadUpdateSeriesEditionParams struct {
+	SeriesEditionID *string
+	InfoHash        string
+}
+
+func (q *Queries) DownloadUpdateSeriesEdition(ctx context.Context, arg DownloadUpdateSeriesEditionParams) (Download, error) {
+	row := q.db.QueryRowContext(ctx, downloadUpdateSeriesEdition, arg.SeriesEditionID, arg.InfoHash)
+	var i Download
+	err := row.Scan(
+		&i.InfoHash,
+		&i.Createdat,
+		&i.State,
+		&i.Title,
+		&i.Error,
+		&i.Torrent,
+		&i.Progress,
+		&i.Autoimport,
+		&i.SeriesEditionID,
+		&i.MovieEditionID,
 	)
 	return i, err
 }

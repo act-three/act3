@@ -201,14 +201,14 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 		d.medIDByVideoID[mv.VideoID] = mv.MovieEditionID
 	}
 
-	if dl.PlanSeriesEditionID != nil {
-		d.planEd, err = tx.SeriesEdition(ctx, *dl.PlanSeriesEditionID)
+	if dl.SeriesEditionID != nil {
+		d.planEd, err = tx.SeriesEdition(ctx, *dl.SeriesEditionID)
 		if err != nil {
 			return nil, err
 		}
 	}
-	if dl.PlanMovieEditionID != nil {
-		d.planMovieEd, err = tx.MovieEdition(ctx, *dl.PlanMovieEditionID)
+	if dl.MovieEditionID != nil {
+		d.planMovieEd, err = tx.MovieEdition(ctx, *dl.MovieEditionID)
 		if err != nil {
 			return nil, err
 		}
@@ -310,11 +310,11 @@ func (tx *TxR) DownloadHeadList(ctx Context) ([]*DownloadHead, error) {
 }
 
 func (tx *TxR) DownloadHeadListBySeriesEditionID(ctx Context, id string) ([]*DownloadHead, error) {
-	return tx.newDownloadHeadList(tx.q.DownloadListByPlanSeriesEditionID(ctx, &id))
+	return tx.newDownloadHeadList(tx.q.DownloadListBySeriesEditionID(ctx, &id))
 }
 
 func (tx *TxR) DownloadHeadListByMovieEditionID(ctx Context, id string) ([]*DownloadHead, error) {
-	return tx.newDownloadHeadList(tx.q.DownloadListByPlanMovieEditionID(ctx, &id))
+	return tx.newDownloadHeadList(tx.q.DownloadListByMovieEditionID(ctx, &id))
 }
 
 func (tx *TxR) Download(ctx Context, infoHash string) (*Download, error) {
@@ -619,9 +619,9 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, infoHash, sedID string) (d
 			return nil, err
 		}
 	}
-	dl, err = tx.q.DownloadUpdatePlanSeries(ctx, schema.DownloadUpdatePlanSeriesParams{
-		InfoHash:            dl.InfoHash,
-		PlanSeriesEditionID: &sedID,
+	dl, err = tx.q.DownloadUpdateSeriesEdition(ctx, schema.DownloadUpdateSeriesEditionParams{
+		InfoHash:        dl.InfoHash,
+		SeriesEditionID: &sedID,
 	})
 	if err != nil {
 		return nil, err
@@ -663,9 +663,9 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d 
 			}
 		}
 	}
-	dl, err = tx.q.DownloadUpdatePlanMovie(ctx, schema.DownloadUpdatePlanMovieParams{
-		InfoHash:           dl.InfoHash,
-		PlanMovieEditionID: &medID,
+	dl, err = tx.q.DownloadUpdateMovieEdition(ctx, schema.DownloadUpdateMovieEditionParams{
+		InfoHash:       dl.InfoHash,
+		MovieEditionID: &medID,
 	})
 	if err != nil {
 		return nil, err
