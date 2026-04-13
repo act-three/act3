@@ -378,7 +378,7 @@ func AppSeriesAddDialog() html.Node {
 	)
 }
 
-// AppEpisodeDetail renders the dialog for inspecting an
+// AppEpisodeDetail renders the page for inspecting an
 // episode's videos, renditions, and metadata.
 func AppEpisodeDetail(
 	ep *model.Episode,
@@ -386,9 +386,15 @@ func AppEpisodeDetail(
 	videos []schema.Video,
 	renditions []schema.Rendition,
 ) html.Node {
+	backLabel := ep.SeriesHead().Title()
+	if ep.SeriesEditionHead().Slug() != "" {
+		backLabel += " — " + ep.SeriesEditionHead().Label()
+	}
 	return ScrollY(attr.Style("padding:0.5rem"))(
-		Button(attr.Href(model.SeriesEditionEditorPath(ep.SeriesHead(), ep.SeriesEditionHead())), ButtonGhost)(
-			Label("line/chevron-left", ep.SeriesHead().Title()),
+		FlexRow()(
+			Button(attr.Href(model.SeriesEditionEditorPath(ep.SeriesHead(), ep.SeriesEditionHead())), ButtonGhost)(
+				Label("line/chevron-left", backLabel),
+			),
 		),
 		SettingsPage()(
 			FlexCol(Gap8)(
