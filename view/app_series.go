@@ -384,7 +384,7 @@ func AppEpisodeDetail(
 	ep *model.Episode,
 	episodeEditions []*model.Episode,
 	videos []schema.Video,
-	renditions []schema.RenditionForStreaming,
+	renditions []schema.Rendition,
 ) html.Node {
 	return ScrollY(attr.Style("padding:0.5rem"))(
 		Button(attr.Href(model.SeriesEditionEditorPath(ep.SeriesHead(), ep.SeriesEditionHead())), ButtonGhost)(
@@ -501,7 +501,7 @@ func AppEpisodeDetail(
 					},
 					func() html.Node { return html.Group() },
 				),
-				html.Range(renditions, func(r schema.RenditionForStreaming) html.Node {
+				html.Range(renditions, func(r schema.Rendition) html.Node {
 					return appEpisodeDialogRendition(r)
 				}),
 
@@ -569,7 +569,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 	)
 }
 
-func appEpisodeDialogRendition(r schema.RenditionForStreaming) html.Node {
+func appEpisodeDialogRendition(r schema.Rendition) html.Node {
 	return html.Div(
 		attr.Class("v-media-indent"),
 	)(

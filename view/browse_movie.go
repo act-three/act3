@@ -54,6 +54,7 @@ func BrowseMovieEdition(
 				),
 				browseMovieAudioTrackSelect(med),
 				TextNode()(html.Safe(med.Summary())),
+				browseDownloads(dls),
 			),
 			Box(),
 			Box(ColSpan4)(

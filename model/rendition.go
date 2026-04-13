@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"fmt"
 	"path"
 	"sort"
@@ -19,7 +20,7 @@ type QualityOption struct {
 // the rest are individual rendition playlists sorted by bitrate
 // (highest first).
 func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
-	rends, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, v.ID())
+	rends, err := tx.q.RenditionListStreamingByVideoID(ctx, v.ID())
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 	return opts, nil
 }
 
-func qualityLabel(r schema.RenditionForStreaming) string {
+func qualityLabel(r schema.Rendition) string {
 	suffix := ""
 	if r.SurroundAudio != 0 {
 		suffix = " 5.1"
@@ -77,6 +78,17 @@ func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionF
 	}
 	var rends []*RenditionForDownload
 	for _, vid := range vids {
+		rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
+		if err != nil && err != sql.ErrNoRows {
+			return nil, err
+		}
+		if err == nil && rfd.Key != "" {
+			rends = append(rends, &RenditionForDownload{
+				path:     path.Join("/-/dl", rfd.Key, "episode.mp4"),
+				filename: "episode.mp4",
+				label:    "MP4",
+			})
+		}
 
 		// TODO(april): make the filename good:
 		// [series title] [year] [edition if not main] s01e01 [episode title] [resolution] [sdr hdr] .mkv
@@ -91,10 +103,10 @@ func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionF
 	return rends, nil
 }
 
-func (tx *TxR) RenditionForStreaming(ctx Context, id string) (schema.RenditionForStreaming, error) {
-	return tx.q.RenditionForStreamingGet(ctx, id)
+func (tx *TxR) Rendition(ctx Context, id string) (schema.Rendition, error) {
+	return tx.q.RenditionGet(ctx, id)
 }
 
-func (tx *TxR) RenditionForStreamingListByEpisodeID(ctx Context, epID string) ([]schema.RenditionForStreaming, error) {
-	return tx.q.RenditionForStreamingListByVideoID(ctx, epID)
+func (tx *TxR) RenditionListStreamingByEpisodeID(ctx Context, epID string) ([]schema.Rendition, error) {
+	return tx.q.RenditionListStreamingByEpisodeID(ctx, epID)
 }

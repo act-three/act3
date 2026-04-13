@@ -91,7 +91,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 // pass1. The caller must have already set vid.OriginalKey and
 // opened progress tracking for vid.ID.
 func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
-	existing, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
+	existing, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
 	}
@@ -121,10 +121,11 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 		return fmt.Errorf("no video stream found in source")
 	}
 
-	var rfsParams []schema.RenditionForStreamingCreateParams
+	var rendParams []schema.RenditionCreateParams
 	for _, r := range planned {
-		rfsParams = append(rfsParams, schema.RenditionForStreamingCreateParams{
+		rendParams = append(rendParams, schema.RenditionCreateParams{
 			VideoID:       vid.ID,
+			Purpose:       "streaming",
 			Remux:         boolToInt64(r.Remux),
 			Codec:         r.Codec,
 			TargetBitrate: r.TargetBitrate,
@@ -135,6 +136,22 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 			Priority:      int64(r.Priority),
 		})
 	}
+
+	// Download rendition uses the same parameters as the best
+	// streaming rendition, packaged as a plain MP4.
+	best := planned[0]
+	rendParams = append(rendParams, schema.RenditionCreateParams{
+		VideoID:       vid.ID,
+		Purpose:       "download",
+		Remux:         boolToInt64(best.Remux),
+		Codec:         best.Codec,
+		TargetBitrate: best.TargetBitrate,
+		MaxHeight:     int64(best.MaxHeight),
+		MaxFPS:        int64(best.MaxFPS),
+		CopyAudio:     boolToInt64(best.CopyAudio),
+		SurroundAudio: boolToInt64(best.SurroundAudio),
+		Priority:      int64(priority.EncodeDownload),
+	})
 
 	var atParams []schema.AudioTrackCreateParams
 	for _, as := range probe.Audio {
@@ -151,14 +168,21 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 
 	tx.m.prog.UpdateStatus(vid.ID, "Queued")
 	return tx.m.WithTxRW(func(txw *TxRW) error {
+		err = txw.q.VideoUpdateDuration(ctx, schema.VideoUpdateDurationParams{
+			ID:       vid.ID,
+			Duration: probe.Duration.Milliseconds(),
+		})
+		if err != nil {
+			return err
+		}
 		for _, at := range atParams {
 			_, err = txw.q.AudioTrackCreate(ctx, at)
 			if err != nil {
 				return err
 			}
 		}
-		for _, rfs := range rfsParams {
-			_, err = txw.q.RenditionForStreamingCreate(ctx, rfs)
+		for _, rp := range rendParams {
+			_, err = txw.q.RenditionCreate(ctx, rp)
 			if err != nil {
 				return err
 			}
@@ -187,18 +211,18 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 	}
 	tx.m.prog.Open(vid.ID, vid.Name, "Starting")
 
-	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
+	renditions, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
 	}
-	if len(rfsList) == 0 {
+	if len(renditions) == 0 {
 		return fmt.Errorf("no renditions planned for video %s", vid.ID)
 	}
 
 	// Classify renditions: collect indices of those needing reencode.
 	var encodeIdxs []int
-	for i, rfs := range rfsList {
-		if rfs.Remux == 0 {
+	for i, r := range renditions {
+		if r.Remux == 0 {
 			encodeIdxs = append(encodeIdxs, i)
 		}
 	}
@@ -222,22 +246,20 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 			return err
 		}
 
-		// Build EncodeParams for the reencode renditions.
-		dsts := make([]ffmpeg.EncodeParams, len(rfsList))
+		dsts := make([]ffmpeg.EncodeParams, len(renditions))
 		for _, i := range encodeIdxs {
-			rfs := rfsList[i]
+			r := renditions[i]
 			dsts[i] = ffmpeg.EncodeParams{
-				Codec:         toFFmpegCodec(rfs.Codec),
-				Bitrate:       rfs.TargetBitrate,
-				MaxHeight:     int(rfs.MaxHeight),
-				MaxFPS:        int(rfs.MaxFPS),
-				Tag:           toVideoTag(rfs.Codec),
-				CopyAudio:     rfs.CopyAudio != 0,
-				SurroundAudio: rfs.SurroundAudio != 0,
+				Codec:         toFFmpegCodec(r.Codec),
+				Bitrate:       r.TargetBitrate,
+				MaxHeight:     int(r.MaxHeight),
+				MaxFPS:        int(r.MaxFPS),
+				Tag:           toVideoTag(r.Codec),
+				CopyAudio:     r.CopyAudio != 0,
+				SurroundAudio: r.SurroundAudio != 0,
 			}
 		}
 
-		// Create stats directory and build passlog paths.
 		statsDir := tx.m.pass1StatsDir(vid.ID)
 		if err := os.MkdirAll(statsDir, 0o777); err != nil {
 			tx.m.prog.Close(vid.ID, err)
@@ -245,7 +267,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		}
 		passlogs := make(map[int]string, len(encodeIdxs))
 		for _, i := range encodeIdxs {
-			passlogs[i] = filepath.Join(statsDir, rfsList[i].ID)
+			passlogs[i] = filepath.Join(statsDir, renditions[i].ID)
 		}
 
 		tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Pass 1 (%d renditions)", len(encodeIdxs)))
@@ -257,7 +279,6 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 			return err
 		}
 
-		// Save preset so pass 2 uses the same one.
 		err = os.WriteFile(filepath.Join(statsDir, "preset"), []byte(preset), 0o666)
 		if err != nil {
 			tx.m.prog.Close(vid.ID, err)
@@ -265,15 +286,17 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		}
 	}
 
-	// Queue one taskIngestEncodeRend per rendition.
-	// Rendition priorities are set by video.PlanRenditions
-	// using constants from the priority package.
+	// Queue one encode task per rendition.
 	tx.m.prog.UpdateStatus(vid.ID, "Queuing renditions")
 	tx.m.prog.Close(vid.ID, nil)
 
 	return tx.m.WithTxRW(func(txw *TxRW) error {
-		for i := range rfsList {
-			txw.addTaskWithPriority(ctx, rfsList[i].Priority, taskIngestEncodeRend, vid.ID)
+		for _, r := range renditions {
+			ttype := taskIngestEncodeRend
+			if r.Purpose == "download" {
+				ttype = taskIngestEncodeDownloadRend
+			}
+			txw.addTaskWithPriority(ctx, r.Priority, ttype, vid.ID)
 		}
 		return nil
 	})
@@ -287,7 +310,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		return err
 	}
 
-	rfs, err := tx.q.RenditionForStreamingNextUnencoded(ctx, vid.ID)
+	rfs, err := tx.q.RenditionNextUnencodedStreaming(ctx, vid.ID)
 	if err == sql.ErrNoRows {
 		// All renditions already encoded (race or duplicate task).
 		return nil
@@ -296,7 +319,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		return err
 	}
 
-	// Progress tracking: use rfs ID as key, link to video.
+	// Progress tracking: use rendition ID as key, link to video.
 	progKey := "rfs-" + rfs.ID
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -368,8 +391,8 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 
 	tx.m.prog.UpdateStatus(progKey, desc+": saving")
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		_, err := txw.q.RenditionForStreamingUpdateEncode(ctx,
-			schema.RenditionForStreamingUpdateEncodeParams{
+		_, err := txw.q.RenditionUpdateEncode(ctx,
+			schema.RenditionUpdateEncodeParams{
 				ID:       rfs.ID,
 				Key:      hash,
 				Playlist: playlist,
@@ -384,6 +407,94 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	})
 	if err == nil && rfs.Remux == 0 {
 		tx.m.removePass1Stats(vid.ID, rfs.ID)
+	}
+	tx.m.prog.Close(progKey, err)
+	return err
+}
+
+// taskIngestEncodeDownloadRend encodes the download rendition for a
+// video as a plain MP4 with faststart.
+func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
+	vid, err := tx.q.VideoGet(ctx, args[0])
+	if err != nil {
+		return err
+	}
+
+	rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if rfd.Key != "" {
+		return nil // already encoded
+	}
+
+	progKey := "rfd-" + rfd.ID
+	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	tx.m.prog.AddEdge(vid.ID, progKey)
+	for _, ev := range evs {
+		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
+	}
+	tx.m.prog.Open(progKey, vid.Name, "download mp4: starting")
+
+	src, err := tx.m.store.Open(vid.OriginalKey)
+	if err != nil {
+		tx.m.prog.Close(progKey, err)
+		return err
+	}
+	defer src.Close()
+
+	duration := time.Duration(vid.Duration) * time.Millisecond
+	dst := ffmpeg.EncodeParams{
+		Remux:         rfd.Remux != 0,
+		Codec:         toFFmpegCodec(rfd.Codec),
+		Bitrate:       rfd.TargetBitrate,
+		MaxHeight:     int(rfd.MaxHeight),
+		MaxFPS:        int(rfd.MaxFPS),
+		Tag:           toVideoTag(rfd.Codec),
+		CopyAudio:     rfd.CopyAudio != 0,
+		SurroundAudio: rfd.SurroundAudio != 0,
+	}
+
+	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
+		dst.File = dstFile
+		onProgress := func(v float64) { tx.m.prog.Update(progKey, v) }
+
+		if rfd.Remux != 0 {
+			tx.m.prog.UpdateStatus(progKey, "download mp4: remuxing")
+			return ffmpeg.RemuxToMP4(ctx, src, dst, duration, onProgress)
+		}
+
+		passlog := tx.m.pass1Passlog(vid.ID, rfd.ID)
+		preset, err := tx.m.loadPass1Preset(vid.ID)
+		if err != nil {
+			return err
+		}
+		tx.m.prog.UpdateStatus(progKey, "download mp4: encoding")
+		return ffmpeg.Pass2ToMP4(ctx, src, dst, passlog, preset, duration, onProgress)
+	})
+	if err != nil {
+		tx.m.prog.Close(progKey, err)
+		return err
+	}
+
+	tx.m.prog.UpdateStatus(progKey, "download mp4: saving")
+	err = tx.m.WithTxRW(func(txw *TxRW) error {
+		_, err := txw.q.RenditionUpdateEncode(ctx,
+			schema.RenditionUpdateEncodeParams{
+				ID:  rfd.ID,
+				Key: hash,
+			},
+		)
+		return err
+	})
+	if err == nil && rfd.Remux == 0 {
+		tx.m.removePass1Stats(vid.ID, rfd.ID)
 	}
 	tx.m.prog.Close(progKey, err)
 	return err
@@ -487,15 +598,15 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	}
 
 	// Delete existing rendition CAS blobs and pass1 stats.
-	rfsList, err := tx.q.RenditionForStreamingListDirectByVideoID(ctx, vid.ID)
+	renditions, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
 	}
-	for _, rfs := range rfsList {
-		if rfs.Key != "" {
-			tx.m.store.Remove(rfs.Key)
+	for _, r := range renditions {
+		if r.Key != "" {
+			tx.m.store.Remove(r.Key)
 		}
-		tx.m.removePass1Stats(vid.ID, rfs.ID)
+		tx.m.removePass1Stats(vid.ID, r.ID)
 	}
 
 	// Delete rendition and audio track DB records, clear MV playlist.
@@ -504,7 +615,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		err = txw.q.RenditionForStreamingDeleteByVideoID(ctx, vid.ID)
+		err = txw.q.RenditionDeleteByVideoID(ctx, vid.ID)
 		if err != nil {
 			return err
 		}
@@ -536,7 +647,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 // non-nil, resolutions are computed from source dimensions;
 // otherwise they are preserved from the existing MV playlist.
 func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video, probe *ffmpeg.ProbeResult) error {
-	encoded, err := tx.q.RenditionForStreamingListEncodedByVideoID(ctx, vid.ID)
+	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
 	}
@@ -586,7 +697,7 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video, probe *ffmpeg.Pr
 
 // rendDesc returns a short human-readable description of a rendition,
 // e.g. "remux 8000k", "hevc 5000k 1080p", "h264 3000k 720p".
-func rendDesc(rfs schema.RenditionForStreaming) string {
+func rendDesc(rfs schema.Rendition) string {
 	if rfs.Remux != 0 {
 		return fmt.Sprintf("remux %dk", rfs.TargetBitrate)
 	}

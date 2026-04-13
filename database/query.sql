@@ -345,62 +345,60 @@ WHERE MovieEditionID = ?;
 SELECT * FROM MovieVideo
 WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?);
 
--- name: RenditionForStreamingCountUnencoded :one
-SELECT COUNT(*) FROM RenditionForStreaming
-WHERE VideoID = ? AND Key = '';
-
--- name: RenditionForStreamingCreate :one
-INSERT INTO RenditionForStreaming (
-	VideoID,
-	Remux,
-	Codec,
-	TargetBitrate,
-	MaxHeight,
-	MaxFPS,
-	CopyAudio,
-	SurroundAudio,
-	Priority
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+-- name: RenditionCreate :one
+INSERT INTO Rendition (
+	VideoID, Purpose, Remux, Codec, TargetBitrate,
+	MaxHeight, MaxFPS, CopyAudio, SurroundAudio, Priority
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
--- name: RenditionForStreamingDeleteByVideoID :exec
-DELETE FROM RenditionForStreaming WHERE VideoID = ?;
+-- name: RenditionDeleteByVideoID :exec
+DELETE FROM Rendition WHERE VideoID = ?;
 
--- name: RenditionForStreamingGet :one
-SELECT * FROM RenditionForStreaming
-WHERE ID = ?;
+-- name: RenditionGet :one
+SELECT * FROM Rendition WHERE ID = ?;
 
--- name: RenditionForStreamingListByMovieEditionID :many
-SELECT * FROM RenditionForStreaming
-WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
+-- name: RenditionGetDownloadByVideoID :one
+SELECT * FROM Rendition
+WHERE VideoID = ? AND Purpose = 'download'
+LIMIT 1;
 
--- name: RenditionForStreamingListByMovieID :many
-SELECT * FROM RenditionForStreaming
-WHERE VideoID IN (
+-- name: RenditionListByVideoID :many
+SELECT * FROM Rendition WHERE VideoID = ?;
+
+-- name: RenditionListEncodedStreamingByVideoID :many
+SELECT * FROM Rendition
+WHERE VideoID = ? AND Purpose = 'streaming' AND Key != '';
+
+-- name: RenditionListStreamingByEpisodeID :many
+SELECT * FROM Rendition
+WHERE Purpose = 'streaming'
+AND VideoID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
+
+-- name: RenditionListStreamingByMovieEditionID :many
+SELECT * FROM Rendition
+WHERE Purpose = 'streaming'
+AND VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
+
+-- name: RenditionListStreamingByMovieID :many
+SELECT * FROM Rendition
+WHERE Purpose = 'streaming'
+AND VideoID IN (
 	SELECT VideoID FROM MovieVideo
 	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
 );
 
--- name: RenditionForStreamingListByVideoID :many
-SELECT * FROM RenditionForStreaming
-WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
+-- name: RenditionListStreamingByVideoID :many
+SELECT * FROM Rendition
+WHERE VideoID = ? AND Purpose = 'streaming';
 
--- name: RenditionForStreamingListDirectByVideoID :many
-SELECT * FROM RenditionForStreaming
-WHERE VideoID = ?;
-
--- name: RenditionForStreamingListEncodedByVideoID :many
-SELECT * FROM RenditionForStreaming
-WHERE VideoID = ? AND Key != '';
-
--- name: RenditionForStreamingNextUnencoded :one
-SELECT * FROM RenditionForStreaming
-WHERE VideoID = ? AND Key = ''
+-- name: RenditionNextUnencodedStreaming :one
+SELECT * FROM Rendition
+WHERE VideoID = ? AND Purpose = 'streaming' AND Key = ''
 ORDER BY Priority ASC LIMIT 1;
 
--- name: RenditionForStreamingUpdateEncode :one
-UPDATE RenditionForStreaming
+-- name: RenditionUpdateEncode :one
+UPDATE Rendition
 SET Key = ?, Playlist = ?
 WHERE ID = ?
 RETURNING *;
@@ -695,6 +693,9 @@ WHERE ID IN (
 		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
 	)
 );
+
+-- name: VideoUpdateDuration :exec
+UPDATE Video SET Duration = ? WHERE ID = ?;
 
 -- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?

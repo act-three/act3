@@ -352,6 +352,102 @@ func RemuxSingle(ctx context.Context, src *os.File, dst EncodeParams,
 	return string(b), nil
 }
 
+// RemuxToMP4 produces a single downloadable MP4 by copying the video stream.
+func RemuxToMP4(ctx context.Context, src *os.File, dst EncodeParams,
+	duration time.Duration, onProgress func(float64),
+) error {
+	tmpDir, err := os.MkdirTemp("", "ffmpeg-remux-mp4-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	total := duration
+	report := func(d time.Duration) {
+		if onProgress != nil {
+			onProgress(float64(d) / float64(total))
+		}
+	}
+
+	outPath := filepath.Join(tmpDir, "output.mp4")
+	args := progressArgs()
+	args = append(args, "-i", src.Name(),
+		"-map", "0:v:0",
+		"-map", "0:a:0?",
+		"-c:v", "copy",
+	)
+	if dst.Tag != "" {
+		args = append(args, "-tag:v", dst.Tag)
+	}
+	if dst.CopyAudio {
+		args = append(args, "-c:a", "copy")
+	} else if dst.SurroundAudio {
+		args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
+	} else {
+		args = append(args, "-c:a", "aac", "-ac", "2")
+	}
+	args = append(args, "-sn", "-movflags", "+faststart", outPath)
+
+	if err := runWithProgress(ctx, args, report); err != nil {
+		return err
+	}
+	return copyFileData(dst.File, outPath)
+}
+
+// Pass2ToMP4 runs second-pass encoding for a single rendition,
+// producing a downloadable MP4 with faststart.
+func Pass2ToMP4(ctx context.Context, src *os.File, dst EncodeParams,
+	passlog string, preset string, duration time.Duration, onProgress func(float64),
+) error {
+	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass2-mp4-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	total := duration
+	report := func(d time.Duration) {
+		if onProgress != nil {
+			onProgress(float64(d) / float64(total))
+		}
+	}
+
+	outPath := filepath.Join(tmpDir, "output.mp4")
+	filterStr, labels := buildFilterComplex([]EncodeParams{dst}, []int{0})
+	args := progressArgs()
+	args = append(args, "-i", src.Name())
+	if filterStr != "" {
+		args = append(args, "-filter_complex", filterStr)
+	}
+
+	if overridePreset != "" {
+		preset = overridePreset
+	}
+
+	args = append(args, "-map", labels[0])
+	args = append(args, fpsPassthrough()...)
+	args = append(args, "-map", "0:a:0?")
+	args = append(args, "-c:v", dst.Codec, "-preset", preset)
+	args = append(args, "-b:v", fmt.Sprintf("%dk", dst.Bitrate))
+	if dst.Tag != "" {
+		args = append(args, "-tag:v", dst.Tag)
+	}
+	args = append(args, twoPassArgs(dst.Codec, 2, passlog)...)
+	if dst.CopyAudio {
+		args = append(args, "-c:a", "copy")
+	} else if dst.SurroundAudio {
+		args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
+	} else {
+		args = append(args, "-c:a", "aac", "-ac", "2")
+	}
+	args = append(args, "-sn", "-movflags", "+faststart", outPath)
+
+	if err := runWithProgress(ctx, args, report); err != nil {
+		return err
+	}
+	return copyFileData(dst.File, outPath)
+}
+
 // -----------------------------------------------------------------------
 // Internal: the three encoding phases
 // -----------------------------------------------------------------------

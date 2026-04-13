@@ -98,9 +98,10 @@ type MovieVideo struct {
 	VideoID        string
 }
 
-type RenditionForStreaming struct {
+type Rendition struct {
 	ID            string
 	VideoID       string
+	Purpose       string
 	Remux         int64
 	Codec         string
 	TargetBitrate int64
@@ -194,5 +195,6 @@ type Video struct {
 	Name        string
 	State       string
 	OriginalKey string
+	Duration    int64
 	MVPlaylist  string
 }

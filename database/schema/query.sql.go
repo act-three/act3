@@ -1899,36 +1899,17 @@ func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) (
 	return items, nil
 }
 
-const renditionForStreamingCountUnencoded = `-- name: RenditionForStreamingCountUnencoded :one
-SELECT COUNT(*) FROM RenditionForStreaming
-WHERE VideoID = ? AND Key = ''
+const renditionCreate = `-- name: RenditionCreate :one
+INSERT INTO Rendition (
+	VideoID, Purpose, Remux, Codec, TargetBitrate,
+	MaxHeight, MaxFPS, CopyAudio, SurroundAudio, Priority
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority
 `
 
-func (q *Queries) RenditionForStreamingCountUnencoded(ctx context.Context, videoid string) (int64, error) {
-	row := q.db.QueryRowContext(ctx, renditionForStreamingCountUnencoded, videoid)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const renditionForStreamingCreate = `-- name: RenditionForStreamingCreate :one
-INSERT INTO RenditionForStreaming (
-	VideoID,
-	Remux,
-	Codec,
-	TargetBitrate,
-	MaxHeight,
-	MaxFPS,
-	CopyAudio,
-	SurroundAudio,
-	Priority
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority
-`
-
-type RenditionForStreamingCreateParams struct {
+type RenditionCreateParams struct {
 	VideoID       string
+	Purpose       string
 	Remux         int64
 	Codec         string
 	TargetBitrate int64
@@ -1939,9 +1920,10 @@ type RenditionForStreamingCreateParams struct {
 	Priority      int64
 }
 
-func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg RenditionForStreamingCreateParams) (RenditionForStreaming, error) {
-	row := q.db.QueryRowContext(ctx, renditionForStreamingCreate,
+func (q *Queries) RenditionCreate(ctx context.Context, arg RenditionCreateParams) (Rendition, error) {
+	row := q.db.QueryRowContext(ctx, renditionCreate,
 		arg.VideoID,
+		arg.Purpose,
 		arg.Remux,
 		arg.Codec,
 		arg.TargetBitrate,
@@ -1951,10 +1933,11 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 		arg.SurroundAudio,
 		arg.Priority,
 	)
-	var i RenditionForStreaming
+	var i Rendition
 	err := row.Scan(
 		&i.ID,
 		&i.VideoID,
+		&i.Purpose,
 		&i.Remux,
 		&i.Codec,
 		&i.TargetBitrate,
@@ -1969,26 +1952,26 @@ func (q *Queries) RenditionForStreamingCreate(ctx context.Context, arg Rendition
 	return i, err
 }
 
-const renditionForStreamingDeleteByVideoID = `-- name: RenditionForStreamingDeleteByVideoID :exec
-DELETE FROM RenditionForStreaming WHERE VideoID = ?
+const renditionDeleteByVideoID = `-- name: RenditionDeleteByVideoID :exec
+DELETE FROM Rendition WHERE VideoID = ?
 `
 
-func (q *Queries) RenditionForStreamingDeleteByVideoID(ctx context.Context, videoid string) error {
-	_, err := q.db.ExecContext(ctx, renditionForStreamingDeleteByVideoID, videoid)
+func (q *Queries) RenditionDeleteByVideoID(ctx context.Context, videoid string) error {
+	_, err := q.db.ExecContext(ctx, renditionDeleteByVideoID, videoid)
 	return err
 }
 
-const renditionForStreamingGet = `-- name: RenditionForStreamingGet :one
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM RenditionForStreaming
-WHERE ID = ?
+const renditionGet = `-- name: RenditionGet :one
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition WHERE ID = ?
 `
 
-func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (RenditionForStreaming, error) {
-	row := q.db.QueryRowContext(ctx, renditionForStreamingGet, id)
-	var i RenditionForStreaming
+func (q *Queries) RenditionGet(ctx context.Context, id string) (Rendition, error) {
+	row := q.db.QueryRowContext(ctx, renditionGet, id)
+	var i Rendition
 	err := row.Scan(
 		&i.ID,
 		&i.VideoID,
+		&i.Purpose,
 		&i.Remux,
 		&i.Codec,
 		&i.TargetBitrate,
@@ -2003,23 +1986,50 @@ func (q *Queries) RenditionForStreamingGet(ctx context.Context, id string) (Rend
 	return i, err
 }
 
-const renditionForStreamingListByMovieEditionID = `-- name: RenditionForStreamingListByMovieEditionID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM RenditionForStreaming
-WHERE VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
+const renditionGetDownloadByVideoID = `-- name: RenditionGetDownloadByVideoID :one
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+WHERE VideoID = ? AND Purpose = 'download'
+LIMIT 1
 `
 
-func (q *Queries) RenditionForStreamingListByMovieEditionID(ctx context.Context, movieeditionid string) ([]RenditionForStreaming, error) {
-	rows, err := q.db.QueryContext(ctx, renditionForStreamingListByMovieEditionID, movieeditionid)
+func (q *Queries) RenditionGetDownloadByVideoID(ctx context.Context, videoid string) (Rendition, error) {
+	row := q.db.QueryRowContext(ctx, renditionGetDownloadByVideoID, videoid)
+	var i Rendition
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.Purpose,
+		&i.Remux,
+		&i.Codec,
+		&i.TargetBitrate,
+		&i.MaxHeight,
+		&i.MaxFPS,
+		&i.CopyAudio,
+		&i.SurroundAudio,
+		&i.Key,
+		&i.Playlist,
+		&i.Priority,
+	)
+	return i, err
+}
+
+const renditionListByVideoID = `-- name: RenditionListByVideoID :many
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition WHERE VideoID = ?
+`
+
+func (q *Queries) RenditionListByVideoID(ctx context.Context, videoid string) ([]Rendition, error) {
+	rows, err := q.db.QueryContext(ctx, renditionListByVideoID, videoid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RenditionForStreaming
+	var items []Rendition
 	for rows.Next() {
-		var i RenditionForStreaming
+		var i Rendition
 		if err := rows.Scan(
 			&i.ID,
 			&i.VideoID,
+			&i.Purpose,
 			&i.Remux,
 			&i.Codec,
 			&i.TargetBitrate,
@@ -2044,26 +2054,156 @@ func (q *Queries) RenditionForStreamingListByMovieEditionID(ctx context.Context,
 	return items, nil
 }
 
-const renditionForStreamingListByMovieID = `-- name: RenditionForStreamingListByMovieID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM RenditionForStreaming
-WHERE VideoID IN (
+const renditionListEncodedStreamingByVideoID = `-- name: RenditionListEncodedStreamingByVideoID :many
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+WHERE VideoID = ? AND Purpose = 'streaming' AND Key != ''
+`
+
+func (q *Queries) RenditionListEncodedStreamingByVideoID(ctx context.Context, videoid string) ([]Rendition, error) {
+	rows, err := q.db.QueryContext(ctx, renditionListEncodedStreamingByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Rendition
+	for rows.Next() {
+		var i Rendition
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.Purpose,
+			&i.Remux,
+			&i.Codec,
+			&i.TargetBitrate,
+			&i.MaxHeight,
+			&i.MaxFPS,
+			&i.CopyAudio,
+			&i.SurroundAudio,
+			&i.Key,
+			&i.Playlist,
+			&i.Priority,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const renditionListStreamingByEpisodeID = `-- name: RenditionListStreamingByEpisodeID :many
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+WHERE Purpose = 'streaming'
+AND VideoID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
+`
+
+func (q *Queries) RenditionListStreamingByEpisodeID(ctx context.Context, episodeid string) ([]Rendition, error) {
+	rows, err := q.db.QueryContext(ctx, renditionListStreamingByEpisodeID, episodeid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Rendition
+	for rows.Next() {
+		var i Rendition
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.Purpose,
+			&i.Remux,
+			&i.Codec,
+			&i.TargetBitrate,
+			&i.MaxHeight,
+			&i.MaxFPS,
+			&i.CopyAudio,
+			&i.SurroundAudio,
+			&i.Key,
+			&i.Playlist,
+			&i.Priority,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const renditionListStreamingByMovieEditionID = `-- name: RenditionListStreamingByMovieEditionID :many
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+WHERE Purpose = 'streaming'
+AND VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
+`
+
+func (q *Queries) RenditionListStreamingByMovieEditionID(ctx context.Context, movieeditionid string) ([]Rendition, error) {
+	rows, err := q.db.QueryContext(ctx, renditionListStreamingByMovieEditionID, movieeditionid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Rendition
+	for rows.Next() {
+		var i Rendition
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.Purpose,
+			&i.Remux,
+			&i.Codec,
+			&i.TargetBitrate,
+			&i.MaxHeight,
+			&i.MaxFPS,
+			&i.CopyAudio,
+			&i.SurroundAudio,
+			&i.Key,
+			&i.Playlist,
+			&i.Priority,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const renditionListStreamingByMovieID = `-- name: RenditionListStreamingByMovieID :many
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+WHERE Purpose = 'streaming'
+AND VideoID IN (
 	SELECT VideoID FROM MovieVideo
 	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
 )
 `
 
-func (q *Queries) RenditionForStreamingListByMovieID(ctx context.Context, movieid string) ([]RenditionForStreaming, error) {
-	rows, err := q.db.QueryContext(ctx, renditionForStreamingListByMovieID, movieid)
+func (q *Queries) RenditionListStreamingByMovieID(ctx context.Context, movieid string) ([]Rendition, error) {
+	rows, err := q.db.QueryContext(ctx, renditionListStreamingByMovieID, movieid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RenditionForStreaming
+	var items []Rendition
 	for rows.Next() {
-		var i RenditionForStreaming
+		var i Rendition
 		if err := rows.Scan(
 			&i.ID,
 			&i.VideoID,
+			&i.Purpose,
 			&i.Remux,
 			&i.Codec,
 			&i.TargetBitrate,
@@ -2088,23 +2228,24 @@ func (q *Queries) RenditionForStreamingListByMovieID(ctx context.Context, moviei
 	return items, nil
 }
 
-const renditionForStreamingListByVideoID = `-- name: RenditionForStreamingListByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM RenditionForStreaming
-WHERE VideoID  IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
+const renditionListStreamingByVideoID = `-- name: RenditionListStreamingByVideoID :many
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+WHERE VideoID = ? AND Purpose = 'streaming'
 `
 
-func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episodeid string) ([]RenditionForStreaming, error) {
-	rows, err := q.db.QueryContext(ctx, renditionForStreamingListByVideoID, episodeid)
+func (q *Queries) RenditionListStreamingByVideoID(ctx context.Context, videoid string) ([]Rendition, error) {
+	rows, err := q.db.QueryContext(ctx, renditionListStreamingByVideoID, videoid)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RenditionForStreaming
+	var items []Rendition
 	for rows.Next() {
-		var i RenditionForStreaming
+		var i Rendition
 		if err := rows.Scan(
 			&i.ID,
 			&i.VideoID,
+			&i.Purpose,
 			&i.Remux,
 			&i.Codec,
 			&i.TargetBitrate,
@@ -2129,100 +2270,19 @@ func (q *Queries) RenditionForStreamingListByVideoID(ctx context.Context, episod
 	return items, nil
 }
 
-const renditionForStreamingListDirectByVideoID = `-- name: RenditionForStreamingListDirectByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM RenditionForStreaming
-WHERE VideoID = ?
-`
-
-func (q *Queries) RenditionForStreamingListDirectByVideoID(ctx context.Context, videoid string) ([]RenditionForStreaming, error) {
-	rows, err := q.db.QueryContext(ctx, renditionForStreamingListDirectByVideoID, videoid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []RenditionForStreaming
-	for rows.Next() {
-		var i RenditionForStreaming
-		if err := rows.Scan(
-			&i.ID,
-			&i.VideoID,
-			&i.Remux,
-			&i.Codec,
-			&i.TargetBitrate,
-			&i.MaxHeight,
-			&i.MaxFPS,
-			&i.CopyAudio,
-			&i.SurroundAudio,
-			&i.Key,
-			&i.Playlist,
-			&i.Priority,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const renditionForStreamingListEncodedByVideoID = `-- name: RenditionForStreamingListEncodedByVideoID :many
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM RenditionForStreaming
-WHERE VideoID = ? AND Key != ''
-`
-
-func (q *Queries) RenditionForStreamingListEncodedByVideoID(ctx context.Context, videoid string) ([]RenditionForStreaming, error) {
-	rows, err := q.db.QueryContext(ctx, renditionForStreamingListEncodedByVideoID, videoid)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []RenditionForStreaming
-	for rows.Next() {
-		var i RenditionForStreaming
-		if err := rows.Scan(
-			&i.ID,
-			&i.VideoID,
-			&i.Remux,
-			&i.Codec,
-			&i.TargetBitrate,
-			&i.MaxHeight,
-			&i.MaxFPS,
-			&i.CopyAudio,
-			&i.SurroundAudio,
-			&i.Key,
-			&i.Playlist,
-			&i.Priority,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const renditionForStreamingNextUnencoded = `-- name: RenditionForStreamingNextUnencoded :one
-SELECT id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM RenditionForStreaming
-WHERE VideoID = ? AND Key = ''
+const renditionNextUnencodedStreaming = `-- name: RenditionNextUnencodedStreaming :one
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+WHERE VideoID = ? AND Purpose = 'streaming' AND Key = ''
 ORDER BY Priority ASC LIMIT 1
 `
 
-func (q *Queries) RenditionForStreamingNextUnencoded(ctx context.Context, videoid string) (RenditionForStreaming, error) {
-	row := q.db.QueryRowContext(ctx, renditionForStreamingNextUnencoded, videoid)
-	var i RenditionForStreaming
+func (q *Queries) RenditionNextUnencodedStreaming(ctx context.Context, videoid string) (Rendition, error) {
+	row := q.db.QueryRowContext(ctx, renditionNextUnencodedStreaming, videoid)
+	var i Rendition
 	err := row.Scan(
 		&i.ID,
 		&i.VideoID,
+		&i.Purpose,
 		&i.Remux,
 		&i.Codec,
 		&i.TargetBitrate,
@@ -2237,25 +2297,26 @@ func (q *Queries) RenditionForStreamingNextUnencoded(ctx context.Context, videoi
 	return i, err
 }
 
-const renditionForStreamingUpdateEncode = `-- name: RenditionForStreamingUpdateEncode :one
-UPDATE RenditionForStreaming
+const renditionUpdateEncode = `-- name: RenditionUpdateEncode :one
+UPDATE Rendition
 SET Key = ?, Playlist = ?
 WHERE ID = ?
-RETURNING id, videoid, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority
+RETURNING id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority
 `
 
-type RenditionForStreamingUpdateEncodeParams struct {
+type RenditionUpdateEncodeParams struct {
 	Key      string
 	Playlist string
 	ID       string
 }
 
-func (q *Queries) RenditionForStreamingUpdateEncode(ctx context.Context, arg RenditionForStreamingUpdateEncodeParams) (RenditionForStreaming, error) {
-	row := q.db.QueryRowContext(ctx, renditionForStreamingUpdateEncode, arg.Key, arg.Playlist, arg.ID)
-	var i RenditionForStreaming
+func (q *Queries) RenditionUpdateEncode(ctx context.Context, arg RenditionUpdateEncodeParams) (Rendition, error) {
+	row := q.db.QueryRowContext(ctx, renditionUpdateEncode, arg.Key, arg.Playlist, arg.ID)
+	var i Rendition
 	err := row.Scan(
 		&i.ID,
 		&i.VideoID,
+		&i.Purpose,
 		&i.Remux,
 		&i.Codec,
 		&i.TargetBitrate,
@@ -3684,7 +3745,7 @@ INSERT INTO Video
 	Name
 )
 VALUES (?, ?)
-RETURNING id, infohash, name, state, originalkey, mvplaylist
+RETURNING id, infohash, name, state, originalkey, duration, mvplaylist
 `
 
 type VideoCreateParams struct {
@@ -3701,13 +3762,14 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.Duration,
 		&i.MVPlaylist,
 	)
 	return i, err
 }
 
 const videoGet = `-- name: VideoGet :one
-SELECT id, infohash, name, state, originalkey, mvplaylist FROM Video WHERE ID = ?
+SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video WHERE ID = ?
 `
 
 func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
@@ -3719,13 +3781,14 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.Duration,
 		&i.MVPlaylist,
 	)
 	return i, err
 }
 
 const videoGetByName = `-- name: VideoGetByName :one
-SELECT id, infohash, name, state, originalkey, mvplaylist FROM Video WHERE InfoHash = ? AND Name = ?
+SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video WHERE InfoHash = ? AND Name = ?
 `
 
 type VideoGetByNameParams struct {
@@ -3742,13 +3805,14 @@ func (q *Queries) VideoGetByName(ctx context.Context, arg VideoGetByNameParams) 
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.Duration,
 		&i.MVPlaylist,
 	)
 	return i, err
 }
 
 const videoListByEditionID = `-- name: VideoListByEditionID :many
-SELECT id, infohash, name, state, originalkey, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
@@ -3772,6 +3836,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
 			return nil, err
@@ -3788,7 +3853,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 }
 
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
-SELECT id, infohash, name, state, originalkey, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
 WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 `
 
@@ -3807,6 +3872,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
 			return nil, err
@@ -3823,7 +3889,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 }
 
 const videoListByInfoHash = `-- name: VideoListByInfoHash :many
-SELECT id, infohash, name, state, originalkey, mvplaylist FROM Video WHERE InfoHash = ?
+SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video WHERE InfoHash = ?
 `
 
 func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]Video, error) {
@@ -3841,6 +3907,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
 			return nil, err
@@ -3857,7 +3924,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 }
 
 const videoListByMovieEditionID = `-- name: VideoListByMovieEditionID :many
-SELECT id, infohash, name, state, originalkey, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
 WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
 `
 
@@ -3876,6 +3943,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
 			return nil, err
@@ -3892,7 +3960,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 }
 
 const videoListByMovieID = `-- name: VideoListByMovieID :many
-SELECT id, infohash, name, state, originalkey, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM MovieVideo
 	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
@@ -3914,6 +3982,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
 			return nil, err
@@ -3930,7 +3999,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 }
 
 const videoListBySeriesID = `-- name: VideoListBySeriesID :many
-SELECT id, infohash, name, state, originalkey, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
@@ -3955,6 +4024,7 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
 			return nil, err
@@ -3970,9 +4040,23 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 	return items, nil
 }
 
+const videoUpdateDuration = `-- name: VideoUpdateDuration :exec
+UPDATE Video SET Duration = ? WHERE ID = ?
+`
+
+type VideoUpdateDurationParams struct {
+	Duration int64
+	ID       string
+}
+
+func (q *Queries) VideoUpdateDuration(ctx context.Context, arg VideoUpdateDurationParams) error {
+	_, err := q.db.ExecContext(ctx, videoUpdateDuration, arg.Duration, arg.ID)
+	return err
+}
+
 const videoUpdateMVPlaylist = `-- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, mvplaylist
+RETURNING id, infohash, name, state, originalkey, duration, mvplaylist
 `
 
 type VideoUpdateMVPlaylistParams struct {
@@ -3989,6 +4073,7 @@ func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPl
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.Duration,
 		&i.MVPlaylist,
 	)
 	return i, err
@@ -3996,7 +4081,7 @@ func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPl
 
 const videoUpdateOriginalKey = `-- name: VideoUpdateOriginalKey :one
 UPDATE Video SET OriginalKey = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, mvplaylist
+RETURNING id, infohash, name, state, originalkey, duration, mvplaylist
 `
 
 type VideoUpdateOriginalKeyParams struct {
@@ -4013,6 +4098,7 @@ func (q *Queries) VideoUpdateOriginalKey(ctx context.Context, arg VideoUpdateOri
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.Duration,
 		&i.MVPlaylist,
 	)
 	return i, err

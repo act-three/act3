@@ -157,6 +157,7 @@ CREATE TABLE Video
 	Name         TEXT NOT NULL, -- torrent path or file name
 	State        TEXT NOT NULL DEFAULT ('pending') CHECK (State IN ('pending', 'importing')),
 	OriginalKey  TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	Duration     INTEGER NOT NULL DEFAULT (0), -- milliseconds; 0 until probed
 	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	UNIQUE (InfoHash, Name)
 )
@@ -176,10 +177,11 @@ CREATE TABLE AudioTrack
 )
 STRICT;
 
-CREATE TABLE RenditionForStreaming
+CREATE TABLE Rendition
 (
-	ID            TEXT PRIMARY KEY DEFAULT ('rfs'||newID()),
+	ID            TEXT PRIMARY KEY DEFAULT ('rend'||newID()),
 	VideoID       TEXT NOT NULL REFERENCES Video,
+	Purpose       TEXT NOT NULL CHECK (Purpose IN ('streaming', 'download')),
 	Remux         INTEGER NOT NULL, -- 1: copy video stream; 0: reencode
 	Codec         TEXT NOT NULL, -- "h264" or "hevc"
 	TargetBitrate INTEGER NOT NULL, -- kbit/s
@@ -188,7 +190,7 @@ CREATE TABLE RenditionForStreaming
 	CopyAudio     INTEGER NOT NULL, -- 1: copy audio; 0: reencode to AAC
 	SurroundAudio INTEGER NOT NULL, -- 1: encode as 5.1(back); 0: stereo downmix
 	Key           TEXT NOT NULL DEFAULT (''), -- empty during ingest
-	Playlist      TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	Playlist      TEXT NOT NULL DEFAULT (''), -- HLS media playlist; empty for download
 	Priority      INTEGER NOT NULL -- 0 = highest priority (best rendition)
 )
 STRICT;

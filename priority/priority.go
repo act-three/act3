@@ -27,4 +27,6 @@ const (
 	Encode4th = 4 // 1080p
 	Encode5th = 5 // 540p30
 	Encode6th = 6 // near-source 20 Mbps
+
+	EncodeDownload = 7 // downloadable MP4 (after all streaming)
 )

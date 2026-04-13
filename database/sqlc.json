@@ -49,7 +49,6 @@
 						"posterid": "PosterID",
 						"premieredon": "PremieredOn",
 						"releasedate": "ReleaseDate",
-						"renditionforstreaming": "RenditionForStreaming",
 						"seasonepisode": "SeasonEpisode",
 						"seasonid": "SeasonID",
 						"seriesedition": "SeriesEdition",

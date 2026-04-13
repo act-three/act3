@@ -85,7 +85,7 @@ func (c *Config) appEpisodeDetail(w http.ResponseWriter, req *http.Request) (htm
 			return nil, err
 		}
 
-		renditions, err := tx.RenditionForStreamingListByEpisodeID(ctx, ep.ID())
+		renditions, err := tx.RenditionListStreamingByEpisodeID(ctx, ep.ID())
 		if err != nil {
 			return nil, err
 		}

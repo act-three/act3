@@ -57,6 +57,7 @@ func BrowseEpisode(
 				browseAudioTrackSelect(ep),
 				Button(ButtonSurface)(Text("Subtitles")),
 				TextNode()(html.Safe(ep.Summary())),
+				browseDownloads(dls),
 			),
 			Box(),
 			Box(ColSpan4)(

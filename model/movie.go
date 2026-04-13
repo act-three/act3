@@ -174,6 +174,18 @@ func (tx *TxR) RenditionForDownloadListForMovie(
 	}
 	var rends []*RenditionForDownload
 	for _, vid := range vids {
+		rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
+		if err != nil && err != sql.ErrNoRows {
+			return nil, err
+		}
+		if err == nil && rfd.Key != "" {
+			rends = append(rends, &RenditionForDownload{
+				path:     "/-/dl/" + rfd.Key + "/movie.mp4",
+				filename: "movie.mp4",
+				label:    "MP4",
+			})
+		}
+
 		filename := "movie.mkv"
 		rends = append(rends, &RenditionForDownload{
 			path:     "/-/dl/" + vid.OriginalKey + "/" + filename,

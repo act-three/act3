@@ -77,7 +77,7 @@ func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request
 		if !found {
 			return nil, errNotFound
 		}
-		rend, err := tx.RenditionForStreaming(ctx, id)
+		rend, err := tx.Rendition(ctx, id)
 		if err != nil {
 			return nil, err
 		}

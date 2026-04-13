@@ -45,6 +45,22 @@ func browseWash(images []model.Image) html.Node {
 	)
 }
 
+func browseDownloads(dls []*model.RenditionForDownload) html.Node {
+	if len(dls) == 0 {
+		return html.Group()
+	}
+	return FlexCol(Gap2, attr.Style("margin-top:1rem"))(
+		Text("Downloads", Size3, Class("v-detail-muted")),
+		html.Range(dls, func(dl *model.RenditionForDownload) html.Node {
+			return html.A(
+				attr.Href(dl.Path()),
+				attr.Attr("download")(dl.Filename()),
+				attr.Class("u-link"),
+			)(Text(dl.Label(), Size3))
+		}),
+	)
+}
+
 func browseNavigationMenu() html.Node {
 	return FlexCol(
 		Class("v-media-nav"),

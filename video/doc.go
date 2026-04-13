@@ -17,7 +17,7 @@ we support only recent versions, up to 2 years old.
 We prioritize higher quality in ideal viewing conditions,
 and we're willing to sacrifice quality in non-ideal conditions
 when those are in conflict.
-For example, HLS requires all renditions in a playlist to use the same coded.
+For example, HLS requires all renditions in a playlist to use the same codec.
 If a source video is encoded in H.264,
 we use H.264 for all renditions,
 which means lower quality per bitrate for non top-tier renditions
@@ -146,20 +146,18 @@ by re-encoding the source video.
 
 # Downloadable Renditions
 
-> Future work:
->
-> We also generate one rendition in a downloadable format.
-> This is the same encode as the top of the bitrate ladder for streaming,
-> just repackaged into a "fast-start" mp4 container.
->
-> We offer two download options:
->   - this generated rendition
->   - the actual original source video file
->
-> (Usually, this rendition is just remuxed from the source video,
-> but it is usually in a different container format.
-> Most source video is mkv;
-> we generate mp4.)
+We generate one rendition per video in a downloadable format.
+This uses the same encoding parameters as the top of the bitrate ladder,
+packaged into a fast-start MP4 container.
+
+We offer two download options:
+  - this generated MP4 rendition
+  - the actual original source video file
+
+Usually the top of the ladder is just a remux from the source video,
+so the download rendition is also a remux — same video and audio,
+just in a different container format.
+Most source video is MKV; we generate MP4.
 
 # Example
 
