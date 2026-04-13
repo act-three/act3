@@ -163,15 +163,12 @@ func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEditi
 	return med, nil
 }
 
-// MovieDownloadList is like
-// RenditionForDownloadList but for a movie.
-func (tx *TxR) MovieDownloadList(
-	ctx Context, moID string,
-) ([]*RenditionForDownload, error) {
-	vids, err := tx.q.VideoListByMovieID(ctx, moID)
+func (tx *TxR) MovieDownloadList(ctx Context, med *MovieEdition) ([]*RenditionForDownload, error) {
+	vids, err := tx.q.VideoListByMovieID(ctx, med.mo.ID())
 	if err != nil {
 		return nil, err
 	}
+	name := med.basename()
 	var rends []*RenditionForDownload
 	for _, vid := range vids {
 		rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
@@ -179,19 +176,20 @@ func (tx *TxR) MovieDownloadList(
 			return nil, err
 		}
 		if err == nil && rfd.Key != "" {
+			filename := name + ".mp4"
 			rends = append(rends, &RenditionForDownload{
-				path:     "/-/dl/" + rfd.Key + "/movie.mp4",
-				filename: "movie.mp4",
-				label:    "MP4",
+				path:     path.Join("/-/dl", rfd.Key, filename),
+				filename: filename,
+				label:    "Best Quality MP4 (Recommended)",
 			})
 		}
 
-		filename := "movie.mkv"
+		ext := videoExtensionForContentType(vid.OriginalType)
+		filename := name + ext
 		rends = append(rends, &RenditionForDownload{
-			path:     "/-/dl/" + vid.OriginalKey + "/" + filename,
+			path:     path.Join("/-/dl", vid.OriginalKey, filename),
 			filename: filename,
-			label: "Original (" +
-				strings.ReplaceAll(vid.Name, "/", " / ") + ")",
+			label:    "Original " + strings.ToUpper(strings.TrimPrefix(ext, ".")),
 		})
 	}
 	return rends, nil

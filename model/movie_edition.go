@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"path"
 	"slices"
+	"strings"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/xstrings"
 )
 
 const (
@@ -94,6 +96,18 @@ func newMovieEdition(
 		videos:           videosByEditionID[medData.ID],
 	}
 	return med
+}
+
+func (med *MovieEdition) basename() string {
+	var p []string
+	p = append(p, med.Title())
+	if y := med.Year(); y != "" {
+		p = append(p, "("+y+")")
+	}
+	if med.Slug() != "" {
+		p = append(p, med.Label())
+	}
+	return xstrings.SanitizeFilename(strings.Join(p, " "))
 }
 
 func (med *MovieEdition) Videos() []*Video      { return med.videos }

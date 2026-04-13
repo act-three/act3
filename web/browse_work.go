@@ -73,7 +73,7 @@ func (c *Config) browseMovie(ctx model.Context, tr *model.TxR, movieSlug, edSlug
 	if err != nil {
 		return nil, err
 	}
-	dls, err := tr.MovieDownloadList(ctx, med.MovieHead().ID())
+	dls, err := tr.MovieDownloadList(ctx, med)
 	if err != nil {
 		return nil, err
 	}
