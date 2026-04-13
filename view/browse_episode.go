@@ -47,9 +47,7 @@ func BrowseEpisode(
 					FlexCol()(
 						Button(ButtonGhost, ButtonSize3)(Icon("solid/check-circle")),
 					),
-					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(Icon("line/download-01")),
-					),
+					browseDownloadButton(dls),
 					FlexCol()(
 						Button(ButtonGhost, ButtonSize3)(Icon("line/info-circle")),
 					),
@@ -57,7 +55,6 @@ func BrowseEpisode(
 				browseAudioTrackSelect(ep),
 				Button(ButtonSurface)(Text("Subtitles")),
 				TextNode()(html.Safe(ep.Summary())),
-				browseDownloads(dls),
 			),
 			Box(),
 			Box(ColSpan4)(

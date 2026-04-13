@@ -1,6 +1,7 @@
 package view
 
 import (
+	crand "crypto/rand"
 	"math/rand/v2"
 
 	"ily.dev/act3/html"
@@ -45,19 +46,32 @@ func browseWash(images []model.Image) html.Node {
 	)
 }
 
-func browseDownloads(dls []*model.RenditionForDownload) html.Node {
-	if len(dls) == 0 {
-		return html.Group()
-	}
-	return FlexCol(Gap2, attr.Style("margin-top:1rem"))(
-		Text("Downloads", Size3, Class("v-detail-muted")),
-		html.Range(dls, func(dl *model.RenditionForDownload) html.Node {
-			return html.A(
-				attr.Href(dl.Path()),
-				attr.Attr("download")(dl.Filename()),
-				attr.Class("u-link"),
-			)(Text(dl.Label(), Size3))
-		}),
+func browseDownloadButton(dls []*model.RenditionForDownload) html.Node {
+	id := "dl-" + crand.Text()[:8]
+	anchor := "--" + id
+	return FlexCol()(
+		Button(ButtonGhost, ButtonSize3,
+			Disabled(len(dls) == 0),
+			attr.Popovertarget(id),
+			attr.Style("anchor-name:"+anchor),
+		)(Icon("line/download-01")),
+		html.Div(
+			attr.ID(id),
+			attr.Popover("auto"),
+			attr.Class("u-menu"),
+			attr.Style("position-anchor:"+anchor),
+			attr.Style("top:anchor(bottom)"),
+			attr.Style("left:anchor(center)"),
+			attr.Style("translate:-50% 0"),
+		)(
+			html.Range(dls, func(dl *model.RenditionForDownload) html.Node {
+				return html.A(
+					attr.Href(dl.Path()),
+					attr.Attr("download")(dl.Filename()),
+					attr.Class("u-menu-item"),
+				)(Text(dl.Label(), Size3))
+			}),
+		),
 	)
 }
 

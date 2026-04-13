@@ -43,10 +43,7 @@ func BrowseMovieEdition(
 						Button(ButtonGhost, ButtonSize3)(
 							Icon("line/check-circle")),
 					),
-					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(
-							Icon("line/download-01")),
-					),
+					browseDownloadButton(dls),
 					FlexCol()(
 						Button(ButtonGhost, ButtonSize3)(
 							Icon("line/info-circle")),
@@ -54,7 +51,6 @@ func BrowseMovieEdition(
 				),
 				browseMovieAudioTrackSelect(med),
 				TextNode()(html.Safe(med.Summary())),
-				browseDownloads(dls),
 			),
 			Box(),
 			Box(ColSpan4)(
