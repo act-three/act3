@@ -163,9 +163,9 @@ func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEditi
 	return med, nil
 }
 
-// RenditionForDownloadListForMovie is like
+// MovieDownloadList is like
 // RenditionForDownloadList but for a movie.
-func (tx *TxR) RenditionForDownloadListForMovie(
+func (tx *TxR) MovieDownloadList(
 	ctx Context, moID string,
 ) ([]*RenditionForDownload, error) {
 	vids, err := tx.q.VideoListByMovieID(ctx, moID)

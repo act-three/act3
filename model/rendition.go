@@ -1,9 +1,7 @@
 package model
 
 import (
-	"database/sql"
 	"fmt"
-	"path"
 	"sort"
 
 	"ily.dev/act3/database/schema"
@@ -71,36 +69,27 @@ func (r *RenditionForDownload) Path() string     { return r.path }
 func (r *RenditionForDownload) Filename() string { return r.filename }
 func (r *RenditionForDownload) Label() string    { return r.label }
 
-func (tx *TxR) RenditionForDownloadList(ctx Context, epID string) ([]*RenditionForDownload, error) {
-	vids, err := tx.q.VideoListByEpisodeID(ctx, epID)
-	if err != nil {
-		return nil, err
+// videoExtensionForContentType returns the file extension (with dot)
+// for a video MIME type.
+func videoExtensionForContentType(ct string) string {
+	switch ct {
+	case "video/x-matroska":
+		return ".mkv"
+	case "video/mp4":
+		return ".mp4"
+	case "video/x-msvideo":
+		return ".avi"
+	case "video/mp2t":
+		return ".ts"
+	case "video/x-flv":
+		return ".flv"
+	case "video/ogg":
+		return ".ogv"
+	case "video/webm":
+		return ".webm"
+	default:
+		return ".bin"
 	}
-	var rends []*RenditionForDownload
-	for _, vid := range vids {
-		rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
-		if err != nil && err != sql.ErrNoRows {
-			return nil, err
-		}
-		if err == nil && rfd.Key != "" {
-			rends = append(rends, &RenditionForDownload{
-				path:     path.Join("/-/dl", rfd.Key, "episode.mp4"),
-				filename: "episode.mp4",
-				label:    "MP4",
-			})
-		}
-
-		// TODO(april): make the filename good:
-		// [series title] [year] [edition if not main] s01e01 [episode title] [resolution] [sdr hdr] .mkv
-		filename := "episode.mkv"
-
-		rends = append(rends, &RenditionForDownload{
-			path:     path.Join("/-/dl", vid.OriginalKey, filename),
-			filename: filename,
-			label:    fmt.Sprintf("Original (%s)", vid.Name),
-		})
-	}
-	return rends, nil
 }
 
 func (tx *TxR) Rendition(ctx Context, id string) (schema.Rendition, error) {

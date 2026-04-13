@@ -3745,7 +3745,7 @@ INSERT INTO Video
 	Name
 )
 VALUES (?, ?)
-RETURNING id, infohash, name, state, originalkey, duration, mvplaylist
+RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist
 `
 
 type VideoCreateParams struct {
@@ -3762,6 +3762,7 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
 	)
@@ -3769,7 +3770,7 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 }
 
 const videoGet = `-- name: VideoGet :one
-SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video WHERE ID = ?
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video WHERE ID = ?
 `
 
 func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
@@ -3781,6 +3782,7 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
 	)
@@ -3788,7 +3790,7 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 }
 
 const videoGetByName = `-- name: VideoGetByName :one
-SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video WHERE InfoHash = ? AND Name = ?
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video WHERE InfoHash = ? AND Name = ?
 `
 
 type VideoGetByNameParams struct {
@@ -3805,6 +3807,7 @@ func (q *Queries) VideoGetByName(ctx context.Context, arg VideoGetByNameParams) 
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
 	)
@@ -3812,7 +3815,7 @@ func (q *Queries) VideoGetByName(ctx context.Context, arg VideoGetByNameParams) 
 }
 
 const videoListByEditionID = `-- name: VideoListByEditionID :many
-SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
@@ -3836,6 +3839,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3853,7 +3857,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 }
 
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
-SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
 WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 `
 
@@ -3872,6 +3876,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3889,7 +3894,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 }
 
 const videoListByInfoHash = `-- name: VideoListByInfoHash :many
-SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video WHERE InfoHash = ?
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video WHERE InfoHash = ?
 `
 
 func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]Video, error) {
@@ -3907,6 +3912,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3924,7 +3930,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 }
 
 const videoListByMovieEditionID = `-- name: VideoListByMovieEditionID :many
-SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
 WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
 `
 
@@ -3943,6 +3949,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3960,7 +3967,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 }
 
 const videoListByMovieID = `-- name: VideoListByMovieID :many
-SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM MovieVideo
 	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
@@ -3982,6 +3989,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
@@ -3999,7 +4007,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 }
 
 const videoListBySeriesID = `-- name: VideoListBySeriesID :many
-SELECT id, infohash, name, state, originalkey, duration, mvplaylist FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
 WHERE ID IN (
 	SELECT VideoID FROM EpisodeVideo
 	WHERE EpisodeID IN (
@@ -4024,6 +4032,7 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 			&i.Name,
 			&i.State,
 			&i.OriginalKey,
+			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
 		); err != nil {
@@ -4040,23 +4049,9 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 	return items, nil
 }
 
-const videoUpdateDuration = `-- name: VideoUpdateDuration :exec
-UPDATE Video SET Duration = ? WHERE ID = ?
-`
-
-type VideoUpdateDurationParams struct {
-	Duration int64
-	ID       string
-}
-
-func (q *Queries) VideoUpdateDuration(ctx context.Context, arg VideoUpdateDurationParams) error {
-	_, err := q.db.ExecContext(ctx, videoUpdateDuration, arg.Duration, arg.ID)
-	return err
-}
-
 const videoUpdateMVPlaylist = `-- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, duration, mvplaylist
+RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist
 `
 
 type VideoUpdateMVPlaylistParams struct {
@@ -4073,6 +4068,7 @@ func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPl
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
 	)
@@ -4081,7 +4077,7 @@ func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPl
 
 const videoUpdateOriginalKey = `-- name: VideoUpdateOriginalKey :one
 UPDATE Video SET OriginalKey = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, duration, mvplaylist
+RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist
 `
 
 type VideoUpdateOriginalKeyParams struct {
@@ -4098,10 +4094,26 @@ func (q *Queries) VideoUpdateOriginalKey(ctx context.Context, arg VideoUpdateOri
 		&i.Name,
 		&i.State,
 		&i.OriginalKey,
+		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
 	)
 	return i, err
+}
+
+const videoUpdateProbe = `-- name: VideoUpdateProbe :exec
+UPDATE Video SET Duration = ?, OriginalType = ? WHERE ID = ?
+`
+
+type VideoUpdateProbeParams struct {
+	Duration     int64
+	OriginalType string
+	ID           string
+}
+
+func (q *Queries) VideoUpdateProbe(ctx context.Context, arg VideoUpdateProbeParams) error {
+	_, err := q.db.ExecContext(ctx, videoUpdateProbe, arg.Duration, arg.OriginalType, arg.ID)
+	return err
 }
 
 const videoUpdateState = `-- name: VideoUpdateState :exec

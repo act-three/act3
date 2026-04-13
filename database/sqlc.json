@@ -45,6 +45,7 @@
 						"nextrun": "NextRun",
 						"orderid": "OrderID",
 						"originalkey": "OriginalKey",
+						"originaltype": "OriginalType",
 						"ownerid": "OwnerID",
 						"posterid": "PosterID",
 						"premieredon": "PremieredOn",

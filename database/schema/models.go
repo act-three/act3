@@ -190,11 +190,12 @@ type User struct {
 }
 
 type Video struct {
-	ID          string
-	InfoHash    *string
-	Name        string
-	State       string
-	OriginalKey string
-	Duration    int64
-	MVPlaylist  string
+	ID           string
+	InfoHash     *string
+	Name         string
+	State        string
+	OriginalKey  string
+	OriginalType string
+	Duration     int64
+	MVPlaylist   string
 }

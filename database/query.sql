@@ -694,9 +694,6 @@ WHERE ID IN (
 	)
 );
 
--- name: VideoUpdateDuration :exec
-UPDATE Video SET Duration = ? WHERE ID = ?;
-
 -- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?
 RETURNING *;
@@ -704,6 +701,9 @@ RETURNING *;
 -- name: VideoUpdateOriginalKey :one
 UPDATE Video SET OriginalKey = ? WHERE ID = ?
 RETURNING *;
+
+-- name: VideoUpdateProbe :exec
+UPDATE Video SET Duration = ?, OriginalType = ? WHERE ID = ?;
 
 -- name: VideoUpdateState :exec
 UPDATE Video SET State = ? WHERE ID = ?;

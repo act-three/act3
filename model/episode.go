@@ -1,10 +1,12 @@
 package model
 
 import (
+	"database/sql"
 	"fmt"
 	"path"
 	"slices"
 	"strconv"
+	"strings"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
@@ -147,6 +149,24 @@ func (ep *Episode) Runtime() string {
 		return fmt.Sprintf("%d", ep.ep.Runtime)
 	}
 	return ""
+}
+
+func (ep *Episode) basename() string {
+	var p []string
+	p = append(p, ep.sr.Title())
+	if y, _, _ := strings.Cut(ep.sr.PremieredOn(), "-"); y != "" {
+		p = append(p, "("+y+")")
+	}
+	if ep.so.Slug() != "" {
+		p = append(p, ep.so.Label())
+	}
+	if n := ep.snep.Number; n != 0 {
+		p = append(p, fmt.Sprintf("S%02dE%02d", ep.sn.sn.Number, n))
+	} else {
+		p = append(p, fmt.Sprintf("S%02d Special", ep.sn.sn.Number))
+	}
+	p = append(p, ep.Title())
+	return xstrings.SanitizeFilename(strings.Join(p, " "))
 }
 
 func (ep *Episode) PlayerPath() string {
@@ -624,6 +644,40 @@ func (tx *TxRW) episodeFindSlug(ctx Context, editionID string, seasonNum, episod
 			return candidate, nil
 		}
 	}
+}
+
+func (tx *TxR) EpisodeDownloadList(ctx Context, ep *Episode) ([]*RenditionForDownload, error) {
+	vids, err := tx.q.VideoListByEpisodeID(ctx, ep.ID())
+	if err != nil {
+		return nil, err
+	}
+
+	name := ep.basename()
+
+	var rends []*RenditionForDownload
+	for _, vid := range vids {
+		rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
+		if err != nil && err != sql.ErrNoRows {
+			return nil, err
+		}
+		if err == nil && rfd.Key != "" {
+			filename := name + ".mp4"
+			rends = append(rends, &RenditionForDownload{
+				path:     path.Join("/-/dl", rfd.Key, filename),
+				filename: filename,
+				label:    "Best Quality MP4 (Recommended)",
+			})
+		}
+
+		ext := videoExtensionForContentType(vid.OriginalType)
+		filename := name + ext
+		rends = append(rends, &RenditionForDownload{
+			path:     path.Join("/-/dl", vid.OriginalKey, filename),
+			filename: filename,
+			label:    "Original " + strings.ToUpper(strings.TrimPrefix(ext, ".")),
+		})
+	}
+	return rends, nil
 }
 
 func epMapByID(eps []schema.Episode) map[string]*schema.Episode {

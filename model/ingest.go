@@ -168,9 +168,10 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 
 	tx.m.prog.UpdateStatus(vid.ID, "Queued")
 	return tx.m.WithTxRW(func(txw *TxRW) error {
-		err = txw.q.VideoUpdateDuration(ctx, schema.VideoUpdateDurationParams{
-			ID:       vid.ID,
-			Duration: probe.Duration.Milliseconds(),
+		err = txw.q.VideoUpdateProbe(ctx, schema.VideoUpdateProbeParams{
+			ID:           vid.ID,
+			Duration:     probe.Duration.Milliseconds(),
+			OriginalType: probe.ContentType(),
 		})
 		if err != nil {
 			return err

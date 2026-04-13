@@ -73,7 +73,7 @@ func (c *Config) browseMovie(ctx model.Context, tr *model.TxR, movieSlug, edSlug
 	if err != nil {
 		return nil, err
 	}
-	dls, err := tr.RenditionForDownloadListForMovie(ctx, med.MovieHead().ID())
+	dls, err := tr.MovieDownloadList(ctx, med.MovieHead().ID())
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (c *Config) browseEpisode(ctx model.Context, tr *model.TxR, seriesSlug, edS
 	if err != nil {
 		return nil, err
 	}
-	dls, err := tr.RenditionForDownloadList(ctx, ep.ID())
+	dls, err := tr.EpisodeDownloadList(ctx, ep)
 	if err != nil {
 		return nil, err
 	}

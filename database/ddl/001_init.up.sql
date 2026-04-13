@@ -157,6 +157,7 @@ CREATE TABLE Video
 	Name         TEXT NOT NULL, -- torrent path or file name
 	State        TEXT NOT NULL DEFAULT ('pending') CHECK (State IN ('pending', 'importing')),
 	OriginalKey  TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	OriginalType TEXT NOT NULL DEFAULT (''), -- MIME type of original; empty until probed
 	Duration     INTEGER NOT NULL DEFAULT (0), -- milliseconds; 0 until probed
 	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	UNIQUE (InfoHash, Name)

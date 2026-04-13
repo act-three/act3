@@ -43,6 +43,24 @@ func ToSlug(s string) string {
 	return s
 }
 
+// SanitizeFilename removes characters that are unsafe in filenames
+// across operating systems and normalizes Unicode to NFC.
+func SanitizeFilename(s string) string {
+	s = norm.NFC.String(s)
+	s = strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7F || unicode.Is(unicode.Cc, r) || unicode.Is(unicode.Cf, r) {
+			return -1
+		}
+		switch r {
+		case '/', '\\', ':', '*', '?', '"', '<', '>', '|':
+			return -1
+		}
+		return r
+	}, s)
+	s = strings.TrimRight(s, ". ")
+	return s
+}
+
 func LongestCommonPrefix(it iter.Seq[string]) string {
 	s := slices.Collect(it)
 	if len(s) == 0 {

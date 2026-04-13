@@ -58,9 +58,34 @@ func (f FrameRate) String() string { return fmt.Sprintf("%d/%d", f.Num, f.Den) }
 
 // ProbeResult holds information about a media file's streams.
 type ProbeResult struct {
-	Duration time.Duration
-	Video    *VideoStream  // first video stream, or nil
-	Audio    []AudioStream // all audio streams
+	FormatName string // container format from ffprobe, e.g. "matroska,webm"
+	Duration   time.Duration
+	Video      *VideoStream  // first video stream, or nil
+	Audio      []AudioStream // all audio streams
+}
+
+// ContentType returns the MIME type for the probed container format.
+func (p *ProbeResult) ContentType() string {
+	// ffprobe format_name is comma-separated; match on the first component.
+	name, _, _ := strings.Cut(p.FormatName, ",")
+	switch name {
+	case "matroska":
+		return "video/x-matroska"
+	case "mov":
+		return "video/mp4"
+	case "avi":
+		return "video/x-msvideo"
+	case "mpegts":
+		return "video/mp2t"
+	case "flv":
+		return "video/x-flv"
+	case "ogg":
+		return "video/ogg"
+	case "webm":
+		return "video/webm"
+	default:
+		return "application/octet-stream"
+	}
 }
 
 // FirstAudio returns the first audio stream, or nil if none.
@@ -124,8 +149,9 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 
 	var raw struct {
 		Format struct {
-			Duration string `json:"duration"`
-			BitRate  string `json:"bit_rate"`
+			FormatName string `json:"format_name"`
+			Duration   string `json:"duration"`
+			BitRate    string `json:"bit_rate"`
 		} `json:"format"`
 		Streams []struct {
 			CodecType     string `json:"codec_type"`
@@ -149,7 +175,8 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 
 	durSec, _ := strconv.ParseFloat(raw.Format.Duration, 64)
 	result := &ProbeResult{
-		Duration: time.Duration(durSec * float64(time.Second)),
+		FormatName: raw.Format.FormatName,
+		Duration:   time.Duration(durSec * float64(time.Second)),
 	}
 
 	audioIdx := 0
