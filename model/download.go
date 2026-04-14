@@ -440,12 +440,12 @@ func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID strin
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventDownloadFileAttach,
 			ID:      infoHash,
 			NewText: filePath,
 		})
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    EpisodeAttachToggleAddr(infoHash, filePath, episodeID),
 			NewText: strconv.FormatBool(attach),

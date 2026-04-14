@@ -39,7 +39,7 @@ type Event struct {
 	OldText string
 }
 
-func (m *Model) addEvent(ev *Event) {
+func (m *Model) emitEvent(ev *Event) {
 	m.subMu.Lock()
 	defer m.subMu.Unlock()
 	for ch := range m.sub {

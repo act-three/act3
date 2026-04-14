@@ -353,7 +353,7 @@ func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type: EventEpisodeChangeThumbnail,
 			ID:   id,
 		})
@@ -377,7 +377,7 @@ func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).SummaryAddr(),
 			NewText: summary,
@@ -396,7 +396,7 @@ func (tx *TxRW) EpisodeAirdateSet(ctx Context, id, airdate string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).AirdateAddr(),
 			NewText: airdate,
@@ -415,7 +415,7 @@ func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).TypeAddr(),
 			NewText: typ,
@@ -447,7 +447,7 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).TitleAddr(),
 			NewText: title,
@@ -626,7 +626,7 @@ func (tx *TxRW) SeasonEpisodeRemove(ctx Context, seasonID, episodeID string) (er
 	}
 
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventSeasonEpisodeRemove,
 			ID:      seasonID,
 			NewText: episodeID,
@@ -664,7 +664,7 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID, episodeID string, sortKe
 	}
 
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventSeasonEpisodeAdd,
 			ID:      seasonID,
 			NewText: episodeID,

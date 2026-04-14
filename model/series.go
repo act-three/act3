@@ -165,7 +165,7 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&SeriesHead{sr}).TitleAddr(),
 			NewText: title,
@@ -180,7 +180,7 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 		return nil
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventSeriesSetSlug,
 			ID:      id,
 			NewText: slug,

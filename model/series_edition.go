@@ -313,7 +313,7 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&SeriesEditionHead{sed: sed}).LabelAddr(),
 			NewText: label,
@@ -328,7 +328,7 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 		return nil
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventSeriesEditionSetSlug,
 			ID:      id,
 			NewText: slug,
@@ -347,7 +347,7 @@ func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type: EventSeriesEditionChangePoster,
 			ID:   id,
 		})
@@ -374,7 +374,7 @@ func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&SeriesEditionHead{sed: schema.SeriesEdition{ID: id}}).SummaryAddr(),
 			NewText: summary,

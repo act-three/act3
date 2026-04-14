@@ -86,7 +86,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		sub:            map[chan *Event]struct{}{},
 	}
 	m.prog.SetHook(func(event string, it *progress.Item) {
-		m.addEvent(&Event{Type: event, Progress: it})
+		m.emitEvent(&Event{Type: event, Progress: it})
 	})
 	m.registerTMDBSettingHooks()
 	m.registerTransmissionSettingHooks()

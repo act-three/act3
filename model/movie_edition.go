@@ -280,7 +280,7 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&MovieEditionHead{med: med}).LabelAddr(),
 			NewText: label,
@@ -295,7 +295,7 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 		return nil
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventMovieEditionSetSlug,
 			ID:      id,
 			NewText: slug,
@@ -321,7 +321,7 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&MovieEditionHead{med: med}).TitleAddr(),
 			NewText: title,
@@ -343,7 +343,7 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 		return nil
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventMovieSetSlug,
 			ID:      mo.ID,
 			NewText: slug,
@@ -365,7 +365,7 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 
 func (tx *TxRW) MovieEditionReleaseDateSet(ctx Context, id, date string) error {
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).ReleaseDateAddr(),
 			NewText: date,
@@ -379,7 +379,7 @@ func (tx *TxRW) MovieEditionReleaseDateSet(ctx Context, id, date string) error {
 
 func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) error {
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).RuntimeAddr(),
 			NewText: fmt.Sprintf("%d", runtime),
@@ -400,7 +400,7 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).SummaryAddr(),
 			NewText: summary,
@@ -415,7 +415,7 @@ func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error 
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type: EventMovieEditionChangePoster,
 			ID:   id,
 		})

@@ -121,7 +121,7 @@ func (tx *TxR) SeasonInEdition(ctx Context, seasonID string) (*Season, error) {
 
 func (tx *TxRW) SeasonTitleSet(ctx Context, id, title string) error {
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&SeasonHead{schema.Season{ID: id}}).TitleAddr(),
 			NewText: title,
@@ -165,7 +165,7 @@ func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type: EventSeasonAdd,
 			ID:   sn.ID,
 		})
@@ -195,7 +195,7 @@ func (tx *TxRW) renumberSeason(ctx Context, seasonID string) error {
 	}
 
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type: EventSeasonRenumber,
 			ID:   sn.ID,
 		})

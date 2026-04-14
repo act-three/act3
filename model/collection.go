@@ -247,7 +247,7 @@ func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, er
 
 func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) error {
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventCollectionMovieAdd,
 			ID:      collectionID,
 			NewText: movieID,
@@ -261,7 +261,7 @@ func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) er
 
 func (tx *TxRW) CollectionMovieRemove(ctx Context, collectionID, movieID string) error {
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventCollectionMovieRemove,
 			ID:      collectionID,
 			NewText: movieID,
@@ -275,7 +275,7 @@ func (tx *TxRW) CollectionMovieRemove(ctx Context, collectionID, movieID string)
 
 func (tx *TxRW) CollectionSeriesAdd(ctx Context, collectionID, seriesID string) error {
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventCollectionSeriesAdd,
 			ID:      collectionID,
 			NewText: seriesID,
@@ -289,7 +289,7 @@ func (tx *TxRW) CollectionSeriesAdd(ctx Context, collectionID, seriesID string) 
 
 func (tx *TxRW) CollectionSeriesRemove(ctx Context, collectionID, seriesID string) error {
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventCollectionSeriesRemove,
 			ID:      collectionID,
 			NewText: seriesID,
@@ -307,7 +307,7 @@ func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type: EventCollectionChangeBanner,
 			ID:   id,
 		})
@@ -338,7 +338,7 @@ func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
 		return err
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventLiveUpdate,
 			Addr:    (&CollectionHead{col: col}).TitleAddr(),
 			NewText: title,
@@ -353,7 +353,7 @@ func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
 		return nil
 	}
 	tx.onCommit(func() {
-		tx.m.addEvent(&Event{
+		tx.m.emitEvent(&Event{
 			Type:    EventCollectionSetSlug,
 			ID:      id,
 			NewText: slug,
