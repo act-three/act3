@@ -2697,6 +2697,20 @@ func (q *Queries) SeasonEpisodeSlugSet(ctx context.Context, arg SeasonEpisodeSlu
 	return err
 }
 
+const seasonEpisodeSortKeyBump = `-- name: SeasonEpisodeSortKeyBump :exec
+UPDATE SeasonEpisode SET SortKey = SortKey + 1 WHERE SeasonID = ? AND SortKey >= ?
+`
+
+type SeasonEpisodeSortKeyBumpParams struct {
+	SeasonID string
+	SortKey  int64
+}
+
+func (q *Queries) SeasonEpisodeSortKeyBump(ctx context.Context, arg SeasonEpisodeSortKeyBumpParams) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeSortKeyBump, arg.SeasonID, arg.SortKey)
+	return err
+}
+
 const seasonGet = `-- name: SeasonGet :one
 SELECT id, editionid, sortkey, title, number FROM Season WHERE ID = ?
 `

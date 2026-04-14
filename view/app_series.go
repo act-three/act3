@@ -418,6 +418,7 @@ func AppEpisodeDetail(
 													html.Text(eped.SnnEnn()),
 												),
 											),
+											AppEpisodeEditionButton(eped.SeasonHead().ID(), eped.ID(), true, 0),
 										)
 									}),
 								),
@@ -529,6 +530,45 @@ func AppEpisodeDetail(
 				),
 			),
 		),
+	)
+}
+
+// AppEpisodeEditionButton renders the per-edition remove/undo control.
+// undoSortKey is only consulted when inEdition is false: it's the
+// SortKey the undo action should reinsert the episode at.
+func AppEpisodeEditionButton(seasonID, episodeID string, inEdition bool, undoSortKey int64) html.Node {
+	return turbo.StreamTarget(appEpisodeEditionButtonID(seasonID, episodeID))(
+		expr.IfElse(inEdition,
+			func() html.Node {
+				return ActionButton(
+					path.Join("/-/do/season-remove-episode/", seasonID, episodeID),
+					nil, Destructive, SettingsHover,
+				)(
+					Text("Remove"),
+				)
+			},
+			func() html.Node {
+				return FlexRow(Gap4, attr.Style("align-items:center"))(
+					ActionButton(
+						path.Join("/-/do/season-add-episode/", seasonID, episodeID, strconv.FormatInt(undoSortKey, 10)),
+						nil, ButtonGhost,
+					)(
+						Text("Undo"),
+					),
+					Text("Removed"),
+				)
+			},
+		),
+	)
+}
+
+func appEpisodeEditionButtonID(seasonID, episodeID string) string {
+	return "episode-edition-button-" + seasonID + "-" + episodeID
+}
+
+func EpisodeEditionButtonUpdate(seasonID, episodeID string, inEdition bool, undoSortKey int64) html.Node {
+	return turbo.Replace(appEpisodeEditionButtonID(seasonID, episodeID))(
+		AppEpisodeEditionButton(seasonID, episodeID, inEdition, undoSortKey),
 	)
 }
 

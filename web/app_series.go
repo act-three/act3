@@ -355,7 +355,43 @@ func (c *Config) doSeriesEpisodeAdd(w http.ResponseWriter, req *http.Request) (h
 		if seasonID == "" {
 			return nil, &model.ValidationError{Op: "add episode", Err: errNotFound}
 		}
-		if err := tx.SeasonEpisodeAdd(ctx, seasonID); err != nil {
+		if err := tx.SeasonEpisodeCreate(ctx, seasonID); err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
+func (c *Config) doSeasonRemoveEpisode(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		seasonID := req.PathValue("seasonID")
+		episodeID := req.PathValue("episodeID")
+		if seasonID == "" || episodeID == "" {
+			return nil, &model.ValidationError{Op: "remove episode from season", Err: errNotFound}
+		}
+		if err := tx.SeasonEpisodeRemove(ctx, seasonID, episodeID); err != nil {
+			return nil, err
+		}
+		w.WriteHeader(http.StatusNoContent)
+		return nil, nil
+	})
+}
+
+func (c *Config) doSeasonAddEpisode(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		ctx := req.Context()
+		seasonID := req.PathValue("seasonID")
+		episodeID := req.PathValue("episodeID")
+		if seasonID == "" || episodeID == "" {
+			return nil, &model.ValidationError{Op: "add episode to season", Err: errNotFound}
+		}
+		sortKey, err := strconv.ParseInt(req.PathValue("sortKey"), 10, 64)
+		if err != nil {
+			return nil, &model.ValidationError{Op: "add episode to season", Err: err}
+		}
+		if err := tx.SeasonEpisodeAdd(ctx, seasonID, episodeID, sortKey); err != nil {
 			return nil, err
 		}
 		w.WriteHeader(http.StatusNoContent)

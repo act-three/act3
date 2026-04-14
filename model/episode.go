@@ -561,9 +561,9 @@ func (tx *TxRW) EpisodeMove(ctx Context, episodeID, fromSeasonID, targetSeasonID
 	return tx.renumberSeason(ctx, targetSeasonID)
 }
 
-// SeasonEpisodeAdd creates a new regular episode at the end of the
+// SeasonEpisodeCreate creates a new regular episode at the end of the
 // given season with reasonable defaults.
-func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID string) error {
+func (tx *TxRW) SeasonEpisodeCreate(ctx Context, seasonID string) error {
 	sn, err := tx.q.SeasonGet(ctx, seasonID)
 	if err != nil {
 		return err
@@ -608,6 +608,84 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID string) error {
 		Number:    num,
 		Slug:      slug,
 	})
+}
+
+// SeasonEpisodeRemove removes an episode from a season,
+// leaving the Episode row intact so other editions are unaffected.
+// The emitted event carries the episode's prior SortKey so a later
+// SeasonEpisodeAdd can restore it to the same position.
+func (tx *TxRW) SeasonEpisodeRemove(ctx Context, seasonID, episodeID string) (err error) {
+	defer errorfmt.Handlef("season episode remove: %w", &err)
+
+	snep, err := tx.q.SeasonEpisodeGet(ctx, schema.SeasonEpisodeGetParams{
+		SeasonID:  seasonID,
+		EpisodeID: episodeID,
+	})
+	if err != nil {
+		return err
+	}
+
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventSeasonEpisodeRemove,
+			ID:      seasonID,
+			NewText: episodeID,
+			OldText: strconv.FormatInt(snep.SortKey, 10),
+		})
+	})
+	if err := tx.q.SeasonEpisodeDelete(ctx, schema.SeasonEpisodeDeleteParams{
+		SeasonID:  seasonID,
+		EpisodeID: episodeID,
+	}); err != nil {
+		return err
+	}
+	return tx.renumberSeason(ctx, seasonID)
+}
+
+// SeasonEpisodeAdd links an existing Episode into a season at the
+// given SortKey, bumping existing episodes at or after that key by 1.
+// Numbering is assigned by renumberSeason.
+func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID, episodeID string, sortKey int64) (err error) {
+	defer errorfmt.Handlef("season episode add: %w", &err)
+
+	sn, err := tx.q.SeasonGet(ctx, seasonID)
+	if err != nil {
+		return err
+	}
+	ep, err := tx.q.EpisodeGet(ctx, episodeID)
+	if err != nil {
+		return err
+	}
+
+	// Placeholder slug; renumberSeason assigns final Number/Label/Slug.
+	slug, err := tx.episodeFindSlug(ctx, sn.EditionID, sn.Number, sortKey+1, ep.Title)
+	if err != nil {
+		return err
+	}
+
+	tx.onCommit(func() {
+		tx.m.addEvent(&Event{
+			Type:    EventSeasonEpisodeAdd,
+			ID:      seasonID,
+			NewText: episodeID,
+		})
+	})
+	if err := tx.q.SeasonEpisodeSortKeyBump(ctx, schema.SeasonEpisodeSortKeyBumpParams{
+		SeasonID: sn.ID,
+		SortKey:  sortKey,
+	}); err != nil {
+		return err
+	}
+	if err := tx.q.SeasonEpisodeCreate(ctx, schema.SeasonEpisodeCreateParams{
+		EditionID: sn.EditionID,
+		SeasonID:  sn.ID,
+		EpisodeID: ep.ID,
+		SortKey:   sortKey,
+		Slug:      slug,
+	}); err != nil {
+		return err
+	}
+	return tx.renumberSeason(ctx, sn.ID)
 }
 
 // episodeFindSlug builds an episode slug from the season number,

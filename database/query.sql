@@ -463,6 +463,9 @@ SELECT COUNT(*) FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?;
 -- name: SeasonEpisodeSlugSet :exec
 UPDATE SeasonEpisode SET Slug = ? WHERE SeasonID = ? AND EpisodeID = ?;
 
+-- name: SeasonEpisodeSortKeyBump :exec
+UPDATE SeasonEpisode SET SortKey = SortKey + 1 WHERE SeasonID = ? AND SortKey >= ?;
+
 -- name: SeasonGet :one
 SELECT * FROM Season WHERE ID = ?;
 

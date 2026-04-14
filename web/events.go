@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
@@ -69,6 +70,11 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return c.eventSeasonAdd(ctx, ev.ID)
 	case model.EventSeasonRenumber:
 		return c.eventSeasonRenumber(ctx, ev.ID)
+	case model.EventSeasonEpisodeAdd:
+		return view.EpisodeEditionButtonUpdate(ev.ID, ev.NewText, true, 0)
+	case model.EventSeasonEpisodeRemove:
+		sortKey, _ := strconv.ParseInt(ev.OldText, 10, 64)
+		return view.EpisodeEditionButtonUpdate(ev.ID, ev.NewText, false, sortKey)
 	case model.EventTaskStatsChange:
 		return c.eventTaskStatsChange(ctx)
 	}

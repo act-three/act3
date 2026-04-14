@@ -110,6 +110,8 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/movie-edition-set-summary", c.doMovieEditionSetSummary)
 	handle(mux, "POST /-/do/movie-edition-set-title", c.doMovieEditionSetTitle)
 	handle(mux, "POST /-/do/season-add", c.doSeasonAdd)
+	handle(mux, "POST /-/do/season-add-episode/{seasonID}/{episodeID}/{sortKey}", c.doSeasonAddEpisode)
+	handle(mux, "POST /-/do/season-remove-episode/{seasonID}/{episodeID}", c.doSeasonRemoveEpisode)
 	handle(mux, "POST /-/do/season-set-title", c.doSeasonSetTitle)
 	handle(mux, "POST /-/do/series-add", c.doSeriesAdd)
 	handle(mux, "POST /-/do/series-edition-add", c.doSeriesEditionAdd)
