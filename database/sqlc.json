@@ -22,6 +22,8 @@
 						"collectionmovie": "CollectionMovie",
 						"collectionseries": "CollectionSeries",
 						"copyaudio": "CopyAudio",
+						"cascadeof": "CascadeOf",
+						"deletedat": "DeletedAt",
 						"editionid": "EditionID",
 						"editionslug": "EditionSlug",
 						"endedon": "EndedOn",

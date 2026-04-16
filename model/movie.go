@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"errors"
 	"path"
 	"slices"
 	"strings"
@@ -288,6 +289,51 @@ func (tx *TxR) MovieHeadListByTMDBID(
 		return nil, err
 	}
 	return newMovieHeadList(a), nil
+}
+
+// movieEnsureSlug aligns the Movie's slug with its current (default
+// edition) title, emitting EventMovieSetSlug if it changes, and keeps
+// the Slug table row in sync. Safe to call on live movies (label-/
+// title-change) or trashed ones (restore).
+func (tx *TxRW) movieEnsureSlug(ctx Context, id string) error {
+	mo, err := tx.q.MovieGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	med, err := tx.q.MovieEditionGetDefault(ctx, id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	var allow []string
+	if mo.DeletedAt == nil {
+		allow = []string{mo.Slug}
+	}
+	slug, err := tx.movieFindSlug(ctx, med.Title, yearFromReleaseDate(med.ReleaseDate), id, allow...)
+	if err != nil {
+		return err
+	}
+	if slug != mo.Slug {
+		tx.onCommit(func() {
+			tx.m.emitEvent(&Event{
+				Type:    EventMovieSetSlug,
+				ID:      id,
+				OldText: mo.Slug,
+				NewText: slug,
+			})
+		})
+		if err := tx.q.MovieSlugSet(ctx, schema.MovieSlugSetParams{Slug: slug, ID: id}); err != nil {
+			return err
+		}
+	}
+	if mo.DeletedAt != nil {
+		return tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+			Slug: slug, Kind: "movie", Target: id,
+		})
+	}
+	if slug != mo.Slug {
+		return tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{Slug: slug, Target: id})
+	}
+	return nil
 }
 
 func (tx *TxRW) movieFindSlug(ctx Context, title, year, id string, allow ...string) (string, error) {

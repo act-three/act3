@@ -112,6 +112,47 @@ func (tx *TxR) SlugResolve(ctx Context, slug string) (SlugKind, error) {
 	return SlugKind(s.Kind), nil
 }
 
+// seriesEnsureSlug aligns the Series' slug with its current title,
+// emitting EventSeriesSetSlug if it changes, and keeps the Slug table
+// row in sync. Safe to call on live series (title-change) or trashed
+// ones (restore).
+func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
+	sr, err := tx.q.SeriesGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	var allow []string
+	if sr.DeletedAt == nil {
+		allow = []string{sr.Slug}
+	}
+	slug, err := tx.generateSeriesSlug(ctx, sr.Title, sr.PremieredOn, id, allow...)
+	if err != nil {
+		return err
+	}
+	if slug != sr.Slug {
+		tx.onCommit(func() {
+			tx.m.emitEvent(&Event{
+				Type:    EventSeriesSetSlug,
+				ID:      id,
+				OldText: sr.Slug,
+				NewText: slug,
+			})
+		})
+		if err := tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{Slug: slug, ID: id}); err != nil {
+			return err
+		}
+	}
+	if sr.DeletedAt != nil {
+		return tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+			Slug: slug, Kind: "series", Target: id,
+		})
+	}
+	if slug != sr.Slug {
+		return tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{Slug: slug, Target: id})
+	}
+	return nil
+}
+
 func (tx *TxRW) generateSeriesSlug(ctx Context, title, premiered, id string, allow ...string) (string, error) {
 	slug := xstrings.ToSlug(title)
 	if slug == "" {
@@ -172,32 +213,7 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 			OldText: sr.Title,
 		})
 	})
-	slug, err := tx.generateSeriesSlug(ctx, title, sr.PremieredOn, id, sr.Slug)
-	if err != nil {
-		return err
-	}
-	if slug == sr.Slug {
-		return nil
-	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventSeriesSetSlug,
-			ID:      id,
-			NewText: slug,
-			OldText: sr.Slug,
-		})
-	})
-	err = tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{
-		Slug:   slug,
-		Target: id,
-	})
-	if err != nil {
-		return err
-	}
-	return tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{
-		Slug: slug,
-		ID:   id,
-	})
+	return tx.seriesEnsureSlug(ctx, id)
 }
 
 func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesWork, error) {

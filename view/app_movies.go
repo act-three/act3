@@ -73,7 +73,6 @@ func AppMoviesDetail(
 	dls []*model.DownloadHead,
 ) html.Node {
 	mo := med.MovieHead()
-	_ = mo
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(
 			Class("v-media-detail-body"),
@@ -194,39 +193,27 @@ func AppMoviesDetail(
 					),
 				),
 
-				FlexCol(Gap2)(
-					html.If(med.Slug() == "" && len(editions) > 1,
-						func() html.Node {
-							return SettingsContent()(
-								Label(
-									"line/x-circle",
-									"The default edition can't be deleted. To delete this edition, first choose another default.",
-									Size2,
-								),
-							)
-						},
-					),
-					SettingsGroup(Inert(true /* TODO(april): med.Slug() == "" && len(editions) > 1 */))(
-						SettingsItem()(
-							SettingsItemLabel()(
-								expr.IfElse(len(editions) > 1,
-									func() html.Node {
-										return SettingsItemLabelTitle("Delete Edition")
-									},
-									func() html.Node {
-										return SettingsItemLabelTitle("Delete Movie")
-									},
-								),
-								SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							expr.IfElse(len(editions) > 1,
+								func() html.Node {
+									return SettingsItemLabelTitle("Delete Edition")
+								},
+								func() html.Node {
+									return SettingsItemLabelTitle("Delete Movie")
+								},
 							),
+							SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
+						),
 
-							html.Form(
-								attr.Method("POST"),
-								attr.Action("/-/do/movie-edition-delete"),
-							)(
-								Hidden("edition-id", med.ID()),
-								Button(Destructive, ButtonGhost, ButtonSize2)(Text("Delete")),
-							),
+						expr.IfElse(len(editions) > 1,
+							func() html.Node {
+								return trashForm(med.ID())
+							},
+							func() html.Node {
+								return trashForm(mo.ID())
+							},
 						),
 					),
 				),
@@ -468,6 +455,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 						},
 						func() html.Node { return html.Group() },
 					),
+					trashForm(v.ID()),
 				),
 			)
 		}),

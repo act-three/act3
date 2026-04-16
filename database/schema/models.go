@@ -16,20 +16,23 @@ type AudioTrack struct {
 }
 
 type Collection struct {
-	ID       string
-	Slug     string
-	Title    string
-	BannerID string
+	ID        string
+	Slug      string
+	Title     string
+	BannerID  string
+	DeletedAt *int64
 }
 
 type CollectionMovie struct {
 	CollectionID string
 	MovieID      string
+	DeletedAt    *int64
 }
 
 type CollectionSeries struct {
 	CollectionID string
 	SeriesID     string
+	DeletedAt    *int64
 }
 
 type Download struct {
@@ -53,11 +56,13 @@ type Episode struct {
 	Airdate     string
 	Runtime     int64
 	ThumbnailID string
+	DeletedAt   *int64
 }
 
 type EpisodeVideo struct {
 	EpisodeID string
 	VideoID   string
+	DeletedAt *int64
 }
 
 type Image struct {
@@ -75,10 +80,11 @@ type ImageRendition struct {
 }
 
 type Movie struct {
-	ID     string
-	Slug   string
-	TMDBID *int64
-	IMDBID *string
+	ID        string
+	Slug      string
+	TMDBID    *int64
+	IMDBID    *string
+	DeletedAt *int64
 }
 
 type MovieEdition struct {
@@ -91,11 +97,13 @@ type MovieEdition struct {
 	ReleaseDate string
 	Runtime     int64
 	PosterID    string
+	DeletedAt   *int64
 }
 
 type MovieVideo struct {
 	MovieEditionID string
 	VideoID        string
+	DeletedAt      *int64
 }
 
 type Rendition struct {
@@ -126,6 +134,7 @@ type Season struct {
 	SortKey   string
 	Title     string
 	Number    int64
+	DeletedAt *int64
 }
 
 type SeasonEpisode struct {
@@ -136,6 +145,7 @@ type SeasonEpisode struct {
 	Label     string
 	Number    int64
 	Slug      string
+	DeletedAt *int64
 }
 
 type Series struct {
@@ -149,15 +159,17 @@ type Series struct {
 	IMDBID      *string
 	TVDBID      *int64
 	TVRageID    *int64
+	DeletedAt   *int64
 }
 
 type SeriesEdition struct {
-	ID       string
-	SeriesID string
-	Slug     string
-	Label    string
-	Summary  string
-	PosterID string
+	ID        string
+	SeriesID  string
+	Slug      string
+	Label     string
+	Summary   string
+	PosterID  string
+	DeletedAt *int64
 }
 
 type Setting struct {
@@ -184,6 +196,14 @@ type Task struct {
 	Running     int64
 }
 
+type Trash struct {
+	ID        string
+	Title     string
+	Subtitle  string
+	DeletedAt int64
+	CascadeOf *string
+}
+
 type User struct {
 	ID   string
 	Name string
@@ -198,4 +218,5 @@ type Video struct {
 	OriginalType string
 	Duration     int64
 	MVPlaylist   string
+	DeletedAt    *int64
 }

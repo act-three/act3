@@ -117,6 +117,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		m.setInfoHashActive(h, true)
 	}
 	go m.pollTransission()
+	go m.purgeTrashLoop()
 	return m, nil
 }
 

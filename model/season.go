@@ -176,6 +176,21 @@ func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
 // renumberSeason derives Number, Label, and Slug for every episode
 // in a season.  Specials get Number 0 / Label "Special"; regular
 // episodes are numbered sequentially starting from 1 in SortKey order.
+// seasonEpisodeSortKeyBump shifts every live SeasonEpisode row in the
+// season with SortKey >= sortKey up by one, making room for a newly-
+// inserted or restored junction at sortKey. Two-phase (negate then
+// un-negate) because SQLite's partial unique index on (SeasonID,
+// SortKey) WHERE DeletedAt IS NULL rejects the transient duplicate a
+// single-statement +1 UPDATE would produce.
+func (tx *TxRW) seasonEpisodeSortKeyBump(ctx Context, seasonID string, sortKey int64) error {
+	if err := tx.q.SeasonEpisodeSortKeyBump(ctx, schema.SeasonEpisodeSortKeyBumpParams{
+		SeasonID: seasonID, SortKey: sortKey,
+	}); err != nil {
+		return err
+	}
+	return tx.q.SeasonEpisodeSortKeyBumpFinish(ctx, seasonID)
+}
+
 func (tx *TxRW) renumberSeason(ctx Context, seasonID string) error {
 	sn, err := tx.q.SeasonGet(ctx, seasonID)
 	if err != nil {

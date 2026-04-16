@@ -63,6 +63,25 @@ func (q *Queries) AudioTrackDeleteByVideoID(ctx context.Context, videoid string)
 	return err
 }
 
+const audioTrackDeleteByVideoIDList = `-- name: AudioTrackDeleteByVideoIDList :exec
+DELETE FROM AudioTrack WHERE VideoID IN (/*SLICE:ids*/?)
+`
+
+func (q *Queries) AudioTrackDeleteByVideoIDList(ctx context.Context, ids []string) error {
+	query := audioTrackDeleteByVideoIDList
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
 const audioTrackListByVideoID = `-- name: AudioTrackListByVideoID :many
 SELECT id, videoid, streamindex, language, title, channels, channellayout, codec FROM AudioTrack
 WHERE VideoID = ?
@@ -181,7 +200,7 @@ func (q *Queries) CollectionBannerIDSet(ctx context.Context, arg CollectionBanne
 const collectionCreate = `-- name: CollectionCreate :one
 INSERT INTO Collection (Slug, Title)
 VALUES (?, ?)
-RETURNING id, slug, title, bannerid
+RETURNING id, slug, title, bannerid, deletedat
 `
 
 type CollectionCreateParams struct {
@@ -197,12 +216,13 @@ func (q *Queries) CollectionCreate(ctx context.Context, arg CollectionCreatePara
 		&i.Slug,
 		&i.Title,
 		&i.BannerID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const collectionGet = `-- name: CollectionGet :one
-SELECT id, slug, title, bannerid FROM Collection WHERE ID = ?
+SELECT id, slug, title, bannerid, deletedat FROM Collection WHERE ID = ?
 `
 
 func (q *Queries) CollectionGet(ctx context.Context, id string) (Collection, error) {
@@ -213,12 +233,13 @@ func (q *Queries) CollectionGet(ctx context.Context, id string) (Collection, err
 		&i.Slug,
 		&i.Title,
 		&i.BannerID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const collectionGetBySlug = `-- name: CollectionGetBySlug :one
-SELECT id, slug, title, bannerid FROM Collection WHERE Slug = ?
+SELECT id, slug, title, bannerid, deletedat FROM Collection WHERE Slug = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) CollectionGetBySlug(ctx context.Context, slug string) (Collection, error) {
@@ -229,6 +250,7 @@ func (q *Queries) CollectionGetBySlug(ctx context.Context, slug string) (Collect
 		&i.Slug,
 		&i.Title,
 		&i.BannerID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -236,16 +258,30 @@ func (q *Queries) CollectionGetBySlug(ctx context.Context, slug string) (Collect
 const collectionGetStats = `-- name: CollectionGetStats :one
 SELECT COUNT(*) AS ItemCount, CAST(COALESCE(SUM(Runtime), 0) AS INTEGER) AS RuntimeMinutes FROM (
 	SELECT MovieEdition.Runtime FROM MovieEdition
-	WHERE MovieEdition.Slug = '' AND MovieEdition.MovieID IN (
-		SELECT CollectionMovie.MovieID FROM CollectionMovie WHERE CollectionMovie.CollectionID = ?1
+	WHERE MovieEdition.DeletedAt IS NULL
+	AND MovieEdition.Slug = '' AND MovieEdition.MovieID IN (
+		SELECT CollectionMovie.MovieID FROM CollectionMovie
+		WHERE CollectionMovie.DeletedAt IS NULL
+		AND CollectionMovie.CollectionID = ?1
+		AND CollectionMovie.MovieID IN (SELECT ID FROM Movie WHERE DeletedAt IS NULL)
 	)
 	UNION ALL
 	SELECT Episode.Runtime FROM Episode
-	WHERE Episode.Type != 'insignificant_special' AND Episode.ID IN (
-		SELECT SeasonEpisode.EpisodeID FROM SeasonEpisode WHERE SeasonEpisode.SeasonID IN (
-			SELECT Season.ID FROM Season WHERE Season.EditionID IN (
-				SELECT SeriesEdition.ID FROM SeriesEdition WHERE SeriesEdition.Slug = '' AND SeriesEdition.SeriesID IN (
-					SELECT CollectionSeries.SeriesID FROM CollectionSeries WHERE CollectionSeries.CollectionID = ?1
+	WHERE Episode.DeletedAt IS NULL
+	AND Episode.Type != 'insignificant_special' AND Episode.ID IN (
+		SELECT SeasonEpisode.EpisodeID FROM SeasonEpisode
+		WHERE SeasonEpisode.DeletedAt IS NULL
+		AND SeasonEpisode.SeasonID IN (
+			SELECT Season.ID FROM Season
+			WHERE Season.DeletedAt IS NULL
+			AND Season.EditionID IN (
+				SELECT SeriesEdition.ID FROM SeriesEdition
+				WHERE SeriesEdition.DeletedAt IS NULL
+				AND SeriesEdition.Slug = '' AND SeriesEdition.SeriesID IN (
+					SELECT CollectionSeries.SeriesID FROM CollectionSeries
+					WHERE CollectionSeries.DeletedAt IS NULL
+					AND CollectionSeries.CollectionID = ?1
+					AND CollectionSeries.SeriesID IN (SELECT ID FROM Series WHERE DeletedAt IS NULL)
 				)
 			)
 		)
@@ -266,7 +302,8 @@ func (q *Queries) CollectionGetStats(ctx context.Context, id string) (Collection
 }
 
 const collectionList = `-- name: CollectionList :many
-SELECT id, slug, title, bannerid FROM Collection
+SELECT id, slug, title, bannerid, deletedat FROM Collection
+WHERE DeletedAt IS NULL
 ORDER BY Title
 `
 
@@ -284,6 +321,7 @@ func (q *Queries) CollectionList(ctx context.Context) ([]Collection, error) {
 			&i.Slug,
 			&i.Title,
 			&i.BannerID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -328,9 +366,11 @@ func (q *Queries) CollectionMovieDelete(ctx context.Context, arg CollectionMovie
 }
 
 const collectionMovieList = `-- name: CollectionMovieList :many
-SELECT m.id, m.slug, m.tmdbid, m.imdbid FROM Movie m
+SELECT m.id, m.slug, m.tmdbid, m.imdbid, m.deletedat FROM Movie m
 JOIN CollectionMovie cm ON cm.MovieID = m.ID
 WHERE cm.CollectionID = ?
+AND cm.DeletedAt IS NULL
+AND m.DeletedAt IS NULL
 ORDER BY m.Slug
 `
 
@@ -348,6 +388,7 @@ func (q *Queries) CollectionMovieList(ctx context.Context, collectionid string) 
 			&i.Slug,
 			&i.TMDBID,
 			&i.IMDBID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -360,6 +401,110 @@ func (q *Queries) CollectionMovieList(ctx context.Context, collectionid string) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const collectionMoviePurgeByCascade = `-- name: CollectionMoviePurgeByCascade :exec
+DELETE FROM CollectionMovie
+WHERE CollectionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+   OR MovieID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) CollectionMoviePurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, collectionMoviePurgeByCascade, rootid)
+	return err
+}
+
+const collectionMovieRestoreByCascade = `-- name: CollectionMovieRestoreByCascade :exec
+UPDATE CollectionMovie SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (CollectionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+  OR MovieID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1))
+AND CollectionID IN (SELECT ID FROM Collection WHERE DeletedAt IS NULL)
+AND MovieID IN (SELECT ID FROM Movie WHERE DeletedAt IS NULL)
+`
+
+func (q *Queries) CollectionMovieRestoreByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, collectionMovieRestoreByCascade, rootid)
+	return err
+}
+
+const collectionMovieSoftDelete = `-- name: CollectionMovieSoftDelete :exec
+UPDATE CollectionMovie
+SET DeletedAt = ?1
+WHERE CollectionID = ?2 AND MovieID = ?3 AND DeletedAt IS NULL
+`
+
+type CollectionMovieSoftDeleteParams struct {
+	DeletedAt    *int64
+	CollectionID string
+	MovieID      string
+}
+
+func (q *Queries) CollectionMovieSoftDelete(ctx context.Context, arg CollectionMovieSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, collectionMovieSoftDelete, arg.DeletedAt, arg.CollectionID, arg.MovieID)
+	return err
+}
+
+const collectionMovieSoftDeleteByCollectionID = `-- name: CollectionMovieSoftDeleteByCollectionID :exec
+UPDATE CollectionMovie
+SET DeletedAt = ?1
+WHERE CollectionID = ?2 AND DeletedAt IS NULL
+`
+
+type CollectionMovieSoftDeleteByCollectionIDParams struct {
+	DeletedAt    *int64
+	CollectionID string
+}
+
+func (q *Queries) CollectionMovieSoftDeleteByCollectionID(ctx context.Context, arg CollectionMovieSoftDeleteByCollectionIDParams) error {
+	_, err := q.db.ExecContext(ctx, collectionMovieSoftDeleteByCollectionID, arg.DeletedAt, arg.CollectionID)
+	return err
+}
+
+const collectionMovieSoftDeleteByMovieID = `-- name: CollectionMovieSoftDeleteByMovieID :exec
+UPDATE CollectionMovie
+SET DeletedAt = ?1
+WHERE MovieID = ?2 AND DeletedAt IS NULL
+`
+
+type CollectionMovieSoftDeleteByMovieIDParams struct {
+	DeletedAt *int64
+	MovieID   string
+}
+
+func (q *Queries) CollectionMovieSoftDeleteByMovieID(ctx context.Context, arg CollectionMovieSoftDeleteByMovieIDParams) error {
+	_, err := q.db.ExecContext(ctx, collectionMovieSoftDeleteByMovieID, arg.DeletedAt, arg.MovieID)
+	return err
+}
+
+const collectionPurgeByCascade = `-- name: CollectionPurgeByCascade :exec
+DELETE FROM Collection
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) CollectionPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, collectionPurgeByCascade, rootid)
+	return err
+}
+
+const collectionRestore = `-- name: CollectionRestore :exec
+UPDATE Collection SET DeletedAt = NULL
+WHERE ID = ?
+`
+
+func (q *Queries) CollectionRestore(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, collectionRestore, id)
+	return err
+}
+
+const collectionRestoreByCascade = `-- name: CollectionRestoreByCascade :exec
+UPDATE Collection SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?)
+`
+
+func (q *Queries) CollectionRestoreByCascade(ctx context.Context, cascadeof *string) error {
+	_, err := q.db.ExecContext(ctx, collectionRestoreByCascade, cascadeof)
+	return err
 }
 
 const collectionSeriesAdd = `-- name: CollectionSeriesAdd :exec
@@ -392,9 +537,11 @@ func (q *Queries) CollectionSeriesDelete(ctx context.Context, arg CollectionSeri
 }
 
 const collectionSeriesList = `-- name: CollectionSeriesList :many
-SELECT s.id, s.slug, s.title, s.status, s.premieredon, s.endedon, s.tvmazeid, s.imdbid, s.tvdbid, s.tvrageid FROM Series s
+SELECT s.id, s.slug, s.title, s.status, s.premieredon, s.endedon, s.tvmazeid, s.imdbid, s.tvdbid, s.tvrageid, s.deletedat FROM Series s
 JOIN CollectionSeries cs ON cs.SeriesID = s.ID
 WHERE cs.CollectionID = ?
+AND cs.DeletedAt IS NULL
+AND s.DeletedAt IS NULL
 ORDER BY s.Title
 `
 
@@ -418,6 +565,7 @@ func (q *Queries) CollectionSeriesList(ctx context.Context, collectionid string)
 			&i.IMDBID,
 			&i.TVDBID,
 			&i.TVRageID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -430,6 +578,80 @@ func (q *Queries) CollectionSeriesList(ctx context.Context, collectionid string)
 		return nil, err
 	}
 	return items, nil
+}
+
+const collectionSeriesPurgeByCascade = `-- name: CollectionSeriesPurgeByCascade :exec
+DELETE FROM CollectionSeries
+WHERE CollectionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+   OR SeriesID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) CollectionSeriesPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, collectionSeriesPurgeByCascade, rootid)
+	return err
+}
+
+const collectionSeriesRestoreByCascade = `-- name: CollectionSeriesRestoreByCascade :exec
+UPDATE CollectionSeries SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (CollectionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+  OR SeriesID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1))
+AND CollectionID IN (SELECT ID FROM Collection WHERE DeletedAt IS NULL)
+AND SeriesID IN (SELECT ID FROM Series WHERE DeletedAt IS NULL)
+`
+
+func (q *Queries) CollectionSeriesRestoreByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, collectionSeriesRestoreByCascade, rootid)
+	return err
+}
+
+const collectionSeriesSoftDelete = `-- name: CollectionSeriesSoftDelete :exec
+UPDATE CollectionSeries
+SET DeletedAt = ?1
+WHERE CollectionID = ?2 AND SeriesID = ?3 AND DeletedAt IS NULL
+`
+
+type CollectionSeriesSoftDeleteParams struct {
+	DeletedAt    *int64
+	CollectionID string
+	SeriesID     string
+}
+
+func (q *Queries) CollectionSeriesSoftDelete(ctx context.Context, arg CollectionSeriesSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSeriesSoftDelete, arg.DeletedAt, arg.CollectionID, arg.SeriesID)
+	return err
+}
+
+const collectionSeriesSoftDeleteByCollectionID = `-- name: CollectionSeriesSoftDeleteByCollectionID :exec
+UPDATE CollectionSeries
+SET DeletedAt = ?1
+WHERE CollectionID = ?2 AND DeletedAt IS NULL
+`
+
+type CollectionSeriesSoftDeleteByCollectionIDParams struct {
+	DeletedAt    *int64
+	CollectionID string
+}
+
+func (q *Queries) CollectionSeriesSoftDeleteByCollectionID(ctx context.Context, arg CollectionSeriesSoftDeleteByCollectionIDParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSeriesSoftDeleteByCollectionID, arg.DeletedAt, arg.CollectionID)
+	return err
+}
+
+const collectionSeriesSoftDeleteBySeriesID = `-- name: CollectionSeriesSoftDeleteBySeriesID :exec
+UPDATE CollectionSeries
+SET DeletedAt = ?1
+WHERE SeriesID = ?2 AND DeletedAt IS NULL
+`
+
+type CollectionSeriesSoftDeleteBySeriesIDParams struct {
+	DeletedAt *int64
+	SeriesID  string
+}
+
+func (q *Queries) CollectionSeriesSoftDeleteBySeriesID(ctx context.Context, arg CollectionSeriesSoftDeleteBySeriesIDParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSeriesSoftDeleteBySeriesID, arg.DeletedAt, arg.SeriesID)
+	return err
 }
 
 const collectionSetSlug = `-- name: CollectionSetSlug :exec
@@ -457,6 +679,22 @@ type CollectionSetTitleParams struct {
 
 func (q *Queries) CollectionSetTitle(ctx context.Context, arg CollectionSetTitleParams) error {
 	_, err := q.db.ExecContext(ctx, collectionSetTitle, arg.Title, arg.ID)
+	return err
+}
+
+const collectionSoftDelete = `-- name: CollectionSoftDelete :exec
+UPDATE Collection
+SET DeletedAt = ?1
+WHERE ID = ?2 AND DeletedAt IS NULL
+`
+
+type CollectionSoftDeleteParams struct {
+	DeletedAt *int64
+	ID        string
+}
+
+func (q *Queries) CollectionSoftDelete(ctx context.Context, arg CollectionSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, collectionSoftDelete, arg.DeletedAt, arg.ID)
 	return err
 }
 
@@ -787,7 +1025,7 @@ INSERT INTO Episode
 	Runtime
 )
 VALUES (?, ?, ?, ?, ?)
-RETURNING id, title, summary, type, airdate, runtime, thumbnailid
+RETURNING id, title, summary, type, airdate, runtime, thumbnailid, deletedat
 `
 
 type EpisodeCreateParams struct {
@@ -815,12 +1053,13 @@ func (q *Queries) EpisodeCreate(ctx context.Context, arg EpisodeCreateParams) (E
 		&i.Airdate,
 		&i.Runtime,
 		&i.ThumbnailID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const episodeGet = `-- name: EpisodeGet :one
-SELECT id, title, summary, type, airdate, runtime, thumbnailid FROM Episode WHERE ID = ?
+SELECT id, title, summary, type, airdate, runtime, thumbnailid, deletedat FROM Episode WHERE ID = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
@@ -834,14 +1073,39 @@ func (q *Queries) EpisodeGet(ctx context.Context, id string) (Episode, error) {
 		&i.Airdate,
 		&i.Runtime,
 		&i.ThumbnailID,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const episodeGetAny = `-- name: EpisodeGetAny :one
+SELECT id, title, summary, type, airdate, runtime, thumbnailid, deletedat FROM Episode WHERE ID = ?
+`
+
+// EpisodeGetAny returns an Episode regardless of trash state.
+// Used by the trash/restore code to inspect rows that may be soft-deleted.
+func (q *Queries) EpisodeGetAny(ctx context.Context, id string) (Episode, error) {
+	row := q.db.QueryRowContext(ctx, episodeGetAny, id)
+	var i Episode
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Summary,
+		&i.Type,
+		&i.Airdate,
+		&i.Runtime,
+		&i.ThumbnailID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const episodeListByEditionID = `-- name: EpisodeListByEditionID :many
-SELECT id, title, summary, type, airdate, runtime, thumbnailid FROM Episode
-WHERE ID IN (
-	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
+SELECT id, title, summary, type, airdate, runtime, thumbnailid, deletedat FROM Episode
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE DeletedAt IS NULL AND EditionID = ?
 )
 ORDER BY ID
 `
@@ -863,6 +1127,7 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 			&i.Airdate,
 			&i.Runtime,
 			&i.ThumbnailID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -878,10 +1143,12 @@ func (q *Queries) EpisodeListByEditionID(ctx context.Context, editionid string) 
 }
 
 const episodeListBySeriesID = `-- name: EpisodeListBySeriesID :many
-SELECT id, title, summary, type, airdate, runtime, thumbnailid FROM Episode
-WHERE ID IN (
+SELECT id, title, summary, type, airdate, runtime, thumbnailid, deletedat FROM Episode
+WHERE DeletedAt IS NULL
+AND ID IN (
 	SELECT EpisodeID FROM SeasonEpisode
-	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+	WHERE DeletedAt IS NULL
+	AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 )
 ORDER BY ID
 `
@@ -903,6 +1170,7 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 			&i.Airdate,
 			&i.Runtime,
 			&i.ThumbnailID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -915,6 +1183,87 @@ func (q *Queries) EpisodeListBySeriesID(ctx context.Context, seriesid string) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const episodeListOrphans = `-- name: EpisodeListOrphans :many
+SELECT ep.ID FROM Episode ep
+WHERE ep.DeletedAt IS NULL
+AND NOT EXISTS (
+	SELECT 1 FROM SeasonEpisode se
+	WHERE se.EpisodeID = ep.ID AND se.DeletedAt IS NULL
+)
+`
+
+// EpisodeListOrphans returns live Episode IDs with no live
+// SeasonEpisode junctions. Called after soft-deleting a cascade's
+// junctions to reap episodes the cascade just stranded.
+func (q *Queries) EpisodeListOrphans(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, episodeListOrphans)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const episodePurgeByCascade = `-- name: EpisodePurgeByCascade :exec
+DELETE FROM Episode
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) EpisodePurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, episodePurgeByCascade, rootid)
+	return err
+}
+
+const episodeRestore = `-- name: EpisodeRestore :exec
+UPDATE Episode SET DeletedAt = NULL
+WHERE ID = ?
+`
+
+func (q *Queries) EpisodeRestore(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, episodeRestore, id)
+	return err
+}
+
+const episodeRestoreByCascade = `-- name: EpisodeRestoreByCascade :exec
+UPDATE Episode SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?)
+`
+
+func (q *Queries) EpisodeRestoreByCascade(ctx context.Context, cascadeof *string) error {
+	_, err := q.db.ExecContext(ctx, episodeRestoreByCascade, cascadeof)
+	return err
+}
+
+const episodeSoftDelete = `-- name: EpisodeSoftDelete :exec
+UPDATE Episode
+SET DeletedAt = ?1
+WHERE ID = ?2 AND DeletedAt IS NULL
+`
+
+type EpisodeSoftDeleteParams struct {
+	DeletedAt *int64
+	ID        string
+}
+
+func (q *Queries) EpisodeSoftDelete(ctx context.Context, arg EpisodeSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, episodeSoftDelete, arg.DeletedAt, arg.ID)
+	return err
 }
 
 const episodeSummarySet = `-- name: EpisodeSummarySet :exec
@@ -976,7 +1325,7 @@ func (q *Queries) EpisodeTypeSet(ctx context.Context, arg EpisodeTypeSetParams) 
 const episodeVideoCreate = `-- name: EpisodeVideoCreate :one
 INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)
-RETURNING episodeid, videoid
+RETURNING episodeid, videoid, deletedat
 `
 
 type EpisodeVideoCreateParams struct {
@@ -987,7 +1336,7 @@ type EpisodeVideoCreateParams struct {
 func (q *Queries) EpisodeVideoCreate(ctx context.Context, arg EpisodeVideoCreateParams) (EpisodeVideo, error) {
 	row := q.db.QueryRowContext(ctx, episodeVideoCreate, arg.EpisodeID, arg.VideoID)
 	var i EpisodeVideo
-	err := row.Scan(&i.EpisodeID, &i.VideoID)
+	err := row.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt)
 	return i, err
 }
 
@@ -1003,6 +1352,33 @@ type EpisodeVideoDeleteParams struct {
 func (q *Queries) EpisodeVideoDelete(ctx context.Context, arg EpisodeVideoDeleteParams) error {
 	_, err := q.db.ExecContext(ctx, episodeVideoDelete, arg.EpisodeID, arg.VideoID)
 	return err
+}
+
+const episodeVideoDistinctEpisodesByVideo = `-- name: EpisodeVideoDistinctEpisodesByVideo :many
+SELECT DISTINCT EpisodeID FROM EpisodeVideo WHERE VideoID = ?
+`
+
+func (q *Queries) EpisodeVideoDistinctEpisodesByVideo(ctx context.Context, videoid string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, episodeVideoDistinctEpisodesByVideo, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var episodeid string
+		if err := rows.Scan(&episodeid); err != nil {
+			return nil, err
+		}
+		items = append(items, episodeid)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const episodeVideoEnsure = `-- name: EpisodeVideoEnsure :exec
@@ -1021,9 +1397,11 @@ func (q *Queries) EpisodeVideoEnsure(ctx context.Context, arg EpisodeVideoEnsure
 }
 
 const episodeVideoListByEditionID = `-- name: EpisodeVideoListByEditionID :many
-SELECT episodeid, videoid FROM EpisodeVideo
-WHERE EpisodeID IN (
-	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
+SELECT episodeid, videoid, deletedat FROM EpisodeVideo
+WHERE DeletedAt IS NULL
+AND EpisodeID IN (
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE DeletedAt IS NULL AND EditionID = ?
 )
 `
 
@@ -1036,7 +1414,7 @@ func (q *Queries) EpisodeVideoListByEditionID(ctx context.Context, editionid str
 	var items []EpisodeVideo
 	for rows.Next() {
 		var i EpisodeVideo
-		if err := rows.Scan(&i.EpisodeID, &i.VideoID); err != nil {
+		if err := rows.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1051,7 +1429,7 @@ func (q *Queries) EpisodeVideoListByEditionID(ctx context.Context, editionid str
 }
 
 const episodeVideoListByInfoHash = `-- name: EpisodeVideoListByInfoHash :many
-SELECT episodeid, videoid FROM EpisodeVideo
+SELECT episodeid, videoid, deletedat FROM EpisodeVideo
 WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?)
 `
 
@@ -1064,7 +1442,7 @@ func (q *Queries) EpisodeVideoListByInfoHash(ctx context.Context, infohash *stri
 	var items []EpisodeVideo
 	for rows.Next() {
 		var i EpisodeVideo
-		if err := rows.Scan(&i.EpisodeID, &i.VideoID); err != nil {
+		if err := rows.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1079,10 +1457,12 @@ func (q *Queries) EpisodeVideoListByInfoHash(ctx context.Context, infohash *stri
 }
 
 const episodeVideoListBySeriesID = `-- name: EpisodeVideoListBySeriesID :many
-SELECT episodeid, videoid FROM EpisodeVideo
-WHERE EpisodeID IN (
+SELECT episodeid, videoid, deletedat FROM EpisodeVideo
+WHERE DeletedAt IS NULL
+AND EpisodeID IN (
 	SELECT EpisodeID FROM SeasonEpisode
-	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+	WHERE DeletedAt IS NULL
+	AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 )
 `
 
@@ -1095,7 +1475,7 @@ func (q *Queries) EpisodeVideoListBySeriesID(ctx context.Context, seriesid strin
 	var items []EpisodeVideo
 	for rows.Next() {
 		var i EpisodeVideo
-		if err := rows.Scan(&i.EpisodeID, &i.VideoID); err != nil {
+		if err := rows.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1110,7 +1490,7 @@ func (q *Queries) EpisodeVideoListBySeriesID(ctx context.Context, seriesid strin
 }
 
 const episodeVideoListByVideoID = `-- name: EpisodeVideoListByVideoID :many
-SELECT episodeid, videoid FROM EpisodeVideo
+SELECT episodeid, videoid, deletedat FROM EpisodeVideo
 WHERE VideoID = ?
 `
 
@@ -1123,7 +1503,7 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 	var items []EpisodeVideo
 	for rows.Next() {
 		var i EpisodeVideo
-		if err := rows.Scan(&i.EpisodeID, &i.VideoID); err != nil {
+		if err := rows.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1135,6 +1515,80 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 		return nil, err
 	}
 	return items, nil
+}
+
+const episodeVideoPurgeByCascade = `-- name: EpisodeVideoPurgeByCascade :exec
+DELETE FROM EpisodeVideo
+WHERE EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+   OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) EpisodeVideoPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoPurgeByCascade, rootid)
+	return err
+}
+
+const episodeVideoRestoreByCascade = `-- name: EpisodeVideoRestoreByCascade :exec
+UPDATE EpisodeVideo SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+  OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1))
+AND EpisodeID IN (SELECT ID FROM Episode WHERE DeletedAt IS NULL)
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL)
+`
+
+func (q *Queries) EpisodeVideoRestoreByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoRestoreByCascade, rootid)
+	return err
+}
+
+const episodeVideoSoftDelete = `-- name: EpisodeVideoSoftDelete :exec
+UPDATE EpisodeVideo
+SET DeletedAt = ?1
+WHERE EpisodeID = ?2 AND VideoID = ?3 AND DeletedAt IS NULL
+`
+
+type EpisodeVideoSoftDeleteParams struct {
+	DeletedAt *int64
+	EpisodeID string
+	VideoID   string
+}
+
+func (q *Queries) EpisodeVideoSoftDelete(ctx context.Context, arg EpisodeVideoSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoSoftDelete, arg.DeletedAt, arg.EpisodeID, arg.VideoID)
+	return err
+}
+
+const episodeVideoSoftDeleteByEpisodeID = `-- name: EpisodeVideoSoftDeleteByEpisodeID :exec
+UPDATE EpisodeVideo
+SET DeletedAt = ?1
+WHERE EpisodeID = ?2 AND DeletedAt IS NULL
+`
+
+type EpisodeVideoSoftDeleteByEpisodeIDParams struct {
+	DeletedAt *int64
+	EpisodeID string
+}
+
+func (q *Queries) EpisodeVideoSoftDeleteByEpisodeID(ctx context.Context, arg EpisodeVideoSoftDeleteByEpisodeIDParams) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoSoftDeleteByEpisodeID, arg.DeletedAt, arg.EpisodeID)
+	return err
+}
+
+const episodeVideoSoftDeleteByVideoID = `-- name: EpisodeVideoSoftDeleteByVideoID :exec
+UPDATE EpisodeVideo
+SET DeletedAt = ?1
+WHERE VideoID = ?2 AND DeletedAt IS NULL
+`
+
+type EpisodeVideoSoftDeleteByVideoIDParams struct {
+	DeletedAt *int64
+	VideoID   string
+}
+
+func (q *Queries) EpisodeVideoSoftDeleteByVideoID(ctx context.Context, arg EpisodeVideoSoftDeleteByVideoIDParams) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoSoftDeleteByVideoID, arg.DeletedAt, arg.VideoID)
+	return err
 }
 
 const imageCreate = `-- name: ImageCreate :one
@@ -1281,7 +1735,7 @@ func (q *Queries) ImageRenditionListByImageID(ctx context.Context, imageid strin
 const movieCreate = `-- name: MovieCreate :one
 INSERT INTO Movie (ID, Slug, TMDBID, IMDBID)
 VALUES (?, ?, ?, ?)
-RETURNING id, slug, tmdbid, imdbid
+RETURNING id, slug, tmdbid, imdbid, deletedat
 `
 
 type MovieCreateParams struct {
@@ -1304,6 +1758,7 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 		&i.Slug,
 		&i.TMDBID,
 		&i.IMDBID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -1311,7 +1766,7 @@ func (q *Queries) MovieCreate(ctx context.Context, arg MovieCreateParams) (Movie
 const movieEditionCreate = `-- name: MovieEditionCreate :one
 INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, ReleaseDate, Runtime)
 VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, movieid, slug, title, label, summary, releasedate, runtime, posterid
+RETURNING id, movieid, slug, title, label, summary, releasedate, runtime, posterid, deletedat
 `
 
 type MovieEditionCreateParams struct {
@@ -1345,12 +1800,41 @@ func (q *Queries) MovieEditionCreate(ctx context.Context, arg MovieEditionCreate
 		&i.ReleaseDate,
 		&i.Runtime,
 		&i.PosterID,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const movieEditionDefaultSuccessor = `-- name: MovieEditionDefaultSuccessor :one
+SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid, deletedat FROM MovieEdition
+WHERE MovieID = ? AND DeletedAt IS NULL AND Slug != ''
+ORDER BY ID
+LIMIT 1
+`
+
+// MovieEditionDefaultSuccessor returns the lex-smallest live non-default
+// edition of the given movie, for promotion when the current default is
+// trashed. Errors with sql.ErrNoRows if none exists.
+func (q *Queries) MovieEditionDefaultSuccessor(ctx context.Context, movieid string) (MovieEdition, error) {
+	row := q.db.QueryRowContext(ctx, movieEditionDefaultSuccessor, movieid)
+	var i MovieEdition
+	err := row.Scan(
+		&i.ID,
+		&i.MovieID,
+		&i.Slug,
+		&i.Title,
+		&i.Label,
+		&i.Summary,
+		&i.ReleaseDate,
+		&i.Runtime,
+		&i.PosterID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const movieEditionGet = `-- name: MovieEditionGet :one
-SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid FROM MovieEdition WHERE ID = ?
+SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid, deletedat FROM MovieEdition WHERE ID = ?
 `
 
 func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition, error) {
@@ -1366,12 +1850,13 @@ func (q *Queries) MovieEditionGet(ctx context.Context, id string) (MovieEdition,
 		&i.ReleaseDate,
 		&i.Runtime,
 		&i.PosterID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const movieEditionGetDefault = `-- name: MovieEditionGetDefault :one
-SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid FROM MovieEdition WHERE MovieID = ? AND Slug = ''
+SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid, deletedat FROM MovieEdition WHERE MovieID = ? AND Slug = ''
 `
 
 func (q *Queries) MovieEditionGetDefault(ctx context.Context, movieid string) (MovieEdition, error) {
@@ -1387,6 +1872,7 @@ func (q *Queries) MovieEditionGetDefault(ctx context.Context, movieid string) (M
 		&i.ReleaseDate,
 		&i.Runtime,
 		&i.PosterID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -1406,7 +1892,9 @@ func (q *Queries) MovieEditionLabelSet(ctx context.Context, arg MovieEditionLabe
 }
 
 const movieEditionListByDownload = `-- name: MovieEditionListByDownload :many
-SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid FROM MovieEdition WHERE ID IN (SELECT MovieEditionID FROM Download)
+SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid, deletedat FROM MovieEdition
+WHERE DeletedAt IS NULL
+AND ID IN (SELECT MovieEditionID FROM Download)
 `
 
 func (q *Queries) MovieEditionListByDownload(ctx context.Context) ([]MovieEdition, error) {
@@ -1428,6 +1916,7 @@ func (q *Queries) MovieEditionListByDownload(ctx context.Context) ([]MovieEditio
 			&i.ReleaseDate,
 			&i.Runtime,
 			&i.PosterID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1443,7 +1932,7 @@ func (q *Queries) MovieEditionListByDownload(ctx context.Context) ([]MovieEditio
 }
 
 const movieEditionListByMovieID = `-- name: MovieEditionListByMovieID :many
-SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid FROM MovieEdition WHERE MovieID = ?
+SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid, deletedat FROM MovieEdition WHERE MovieID = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string) ([]MovieEdition, error) {
@@ -1465,6 +1954,7 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 			&i.ReleaseDate,
 			&i.Runtime,
 			&i.PosterID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1480,7 +1970,7 @@ func (q *Queries) MovieEditionListByMovieID(ctx context.Context, movieid string)
 }
 
 const movieEditionListDefault = `-- name: MovieEditionListDefault :many
-SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid FROM MovieEdition WHERE Slug = ''
+SELECT id, movieid, slug, title, label, summary, releasedate, runtime, posterid, deletedat FROM MovieEdition WHERE Slug = '' AND DeletedAt IS NULL
 `
 
 func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, error) {
@@ -1502,6 +1992,7 @@ func (q *Queries) MovieEditionListDefault(ctx context.Context) ([]MovieEdition, 
 			&i.ReleaseDate,
 			&i.Runtime,
 			&i.PosterID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1530,6 +2021,16 @@ func (q *Queries) MovieEditionPosterIDSet(ctx context.Context, arg MovieEditionP
 	return err
 }
 
+const movieEditionPurgeByCascade = `-- name: MovieEditionPurgeByCascade :exec
+DELETE FROM MovieEdition
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) MovieEditionPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, movieEditionPurgeByCascade, rootid)
+	return err
+}
+
 const movieEditionReleaseDateSet = `-- name: MovieEditionReleaseDateSet :exec
 UPDATE MovieEdition SET ReleaseDate = ? WHERE ID = ?
 `
@@ -1541,6 +2042,26 @@ type MovieEditionReleaseDateSetParams struct {
 
 func (q *Queries) MovieEditionReleaseDateSet(ctx context.Context, arg MovieEditionReleaseDateSetParams) error {
 	_, err := q.db.ExecContext(ctx, movieEditionReleaseDateSet, arg.ReleaseDate, arg.ID)
+	return err
+}
+
+const movieEditionRestore = `-- name: MovieEditionRestore :exec
+UPDATE MovieEdition SET DeletedAt = NULL
+WHERE ID = ?
+`
+
+func (q *Queries) MovieEditionRestore(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, movieEditionRestore, id)
+	return err
+}
+
+const movieEditionRestoreByCascade = `-- name: MovieEditionRestoreByCascade :exec
+UPDATE MovieEdition SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?)
+`
+
+func (q *Queries) MovieEditionRestoreByCascade(ctx context.Context, cascadeof *string) error {
+	_, err := q.db.ExecContext(ctx, movieEditionRestoreByCascade, cascadeof)
 	return err
 }
 
@@ -1559,7 +2080,8 @@ func (q *Queries) MovieEditionRuntimeSet(ctx context.Context, arg MovieEditionRu
 }
 
 const movieEditionSlugExists = `-- name: MovieEditionSlugExists :one
-SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?
+SELECT COUNT(*) FROM MovieEdition
+WHERE MovieID = ? AND Slug = ? AND DeletedAt IS NULL
 `
 
 type MovieEditionSlugExistsParams struct {
@@ -1585,6 +2107,22 @@ type MovieEditionSlugSetParams struct {
 
 func (q *Queries) MovieEditionSlugSet(ctx context.Context, arg MovieEditionSlugSetParams) error {
 	_, err := q.db.ExecContext(ctx, movieEditionSlugSet, arg.Slug, arg.ID)
+	return err
+}
+
+const movieEditionSoftDelete = `-- name: MovieEditionSoftDelete :exec
+UPDATE MovieEdition
+SET DeletedAt = ?1
+WHERE ID = ?2 AND DeletedAt IS NULL
+`
+
+type MovieEditionSoftDeleteParams struct {
+	DeletedAt *int64
+	ID        string
+}
+
+func (q *Queries) MovieEditionSoftDelete(ctx context.Context, arg MovieEditionSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, movieEditionSoftDelete, arg.DeletedAt, arg.ID)
 	return err
 }
 
@@ -1617,7 +2155,7 @@ func (q *Queries) MovieEditionTitleSet(ctx context.Context, arg MovieEditionTitl
 }
 
 const movieGet = `-- name: MovieGet :one
-SELECT id, slug, tmdbid, imdbid FROM Movie WHERE ID = ?
+SELECT id, slug, tmdbid, imdbid, deletedat FROM Movie WHERE ID = ?
 `
 
 func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
@@ -1628,12 +2166,13 @@ func (q *Queries) MovieGet(ctx context.Context, id string) (Movie, error) {
 		&i.Slug,
 		&i.TMDBID,
 		&i.IMDBID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const movieGetByEditionID = `-- name: MovieGetByEditionID :one
-SELECT id, slug, tmdbid, imdbid FROM Movie
+SELECT id, slug, tmdbid, imdbid, deletedat FROM Movie
 WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID = ?)
 `
 
@@ -1645,12 +2184,13 @@ func (q *Queries) MovieGetByEditionID(ctx context.Context, id string) (Movie, er
 		&i.Slug,
 		&i.TMDBID,
 		&i.IMDBID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const movieGetBySlug = `-- name: MovieGetBySlug :one
-SELECT id, slug, tmdbid, imdbid FROM Movie WHERE Slug = ?
+SELECT id, slug, tmdbid, imdbid, deletedat FROM Movie WHERE Slug = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error) {
@@ -1661,12 +2201,14 @@ func (q *Queries) MovieGetBySlug(ctx context.Context, slug string) (Movie, error
 		&i.Slug,
 		&i.TMDBID,
 		&i.IMDBID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const movieList = `-- name: MovieList :many
-SELECT id, slug, tmdbid, imdbid FROM Movie
+SELECT id, slug, tmdbid, imdbid, deletedat FROM Movie
+WHERE DeletedAt IS NULL
 ORDER BY Slug
 `
 
@@ -1684,6 +2226,7 @@ func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
 			&i.Slug,
 			&i.TMDBID,
 			&i.IMDBID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1699,7 +2242,13 @@ func (q *Queries) MovieList(ctx context.Context) ([]Movie, error) {
 }
 
 const movieListByDownload = `-- name: MovieListByDownload :many
-SELECT id, slug, tmdbid, imdbid FROM Movie WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID IN (SELECT MovieEditionID FROM Download))
+SELECT id, slug, tmdbid, imdbid, deletedat FROM Movie
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT MovieID FROM MovieEdition
+	WHERE DeletedAt IS NULL
+	AND MovieEdition.ID IN (SELECT MovieEditionID FROM Download)
+)
 `
 
 func (q *Queries) MovieListByDownload(ctx context.Context) ([]Movie, error) {
@@ -1716,6 +2265,7 @@ func (q *Queries) MovieListByDownload(ctx context.Context) ([]Movie, error) {
 			&i.Slug,
 			&i.TMDBID,
 			&i.IMDBID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1731,7 +2281,7 @@ func (q *Queries) MovieListByDownload(ctx context.Context) ([]Movie, error) {
 }
 
 const movieListByTMDBID = `-- name: MovieListByTMDBID :many
-SELECT id, slug, tmdbid, imdbid FROM Movie WHERE TMDBID IN (/*SLICE:ids*/?)
+SELECT id, slug, tmdbid, imdbid, deletedat FROM Movie WHERE DeletedAt IS NULL AND TMDBID IN (/*SLICE:ids*/?)
 `
 
 func (q *Queries) MovieListByTMDBID(ctx context.Context, ids []*int64) ([]Movie, error) {
@@ -1758,6 +2308,7 @@ func (q *Queries) MovieListByTMDBID(ctx context.Context, ids []*int64) ([]Movie,
 			&i.Slug,
 			&i.TMDBID,
 			&i.IMDBID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -1772,8 +2323,38 @@ func (q *Queries) MovieListByTMDBID(ctx context.Context, ids []*int64) ([]Movie,
 	return items, nil
 }
 
+const moviePurgeByCascade = `-- name: MoviePurgeByCascade :exec
+DELETE FROM Movie
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) MoviePurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, moviePurgeByCascade, rootid)
+	return err
+}
+
+const movieRestore = `-- name: MovieRestore :exec
+UPDATE Movie SET DeletedAt = NULL
+WHERE ID = ?
+`
+
+func (q *Queries) MovieRestore(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, movieRestore, id)
+	return err
+}
+
+const movieRestoreByCascade = `-- name: MovieRestoreByCascade :exec
+UPDATE Movie SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?)
+`
+
+func (q *Queries) MovieRestoreByCascade(ctx context.Context, cascadeof *string) error {
+	_, err := q.db.ExecContext(ctx, movieRestoreByCascade, cascadeof)
+	return err
+}
+
 const movieSlugExists = `-- name: MovieSlugExists :one
-SELECT COUNT(*) FROM Movie WHERE Slug = ?
+SELECT COUNT(*) FROM Movie WHERE Slug = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) MovieSlugExists(ctx context.Context, slug string) (int64, error) {
@@ -1797,10 +2378,26 @@ func (q *Queries) MovieSlugSet(ctx context.Context, arg MovieSlugSetParams) erro
 	return err
 }
 
+const movieSoftDelete = `-- name: MovieSoftDelete :exec
+UPDATE Movie
+SET DeletedAt = ?1
+WHERE ID = ?2 AND DeletedAt IS NULL
+`
+
+type MovieSoftDeleteParams struct {
+	DeletedAt *int64
+	ID        string
+}
+
+func (q *Queries) MovieSoftDelete(ctx context.Context, arg MovieSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, movieSoftDelete, arg.DeletedAt, arg.ID)
+	return err
+}
+
 const movieVideoCreate = `-- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)
-RETURNING movieeditionid, videoid
+RETURNING movieeditionid, videoid, deletedat
 `
 
 type MovieVideoCreateParams struct {
@@ -1811,12 +2408,39 @@ type MovieVideoCreateParams struct {
 func (q *Queries) MovieVideoCreate(ctx context.Context, arg MovieVideoCreateParams) (MovieVideo, error) {
 	row := q.db.QueryRowContext(ctx, movieVideoCreate, arg.MovieEditionID, arg.VideoID)
 	var i MovieVideo
-	err := row.Scan(&i.MovieEditionID, &i.VideoID)
+	err := row.Scan(&i.MovieEditionID, &i.VideoID, &i.DeletedAt)
 	return i, err
 }
 
+const movieVideoDistinctEditionsByVideo = `-- name: MovieVideoDistinctEditionsByVideo :many
+SELECT DISTINCT MovieEditionID FROM MovieVideo WHERE VideoID = ?
+`
+
+func (q *Queries) MovieVideoDistinctEditionsByVideo(ctx context.Context, videoid string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, movieVideoDistinctEditionsByVideo, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var movieeditionid string
+		if err := rows.Scan(&movieeditionid); err != nil {
+			return nil, err
+		}
+		items = append(items, movieeditionid)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const movieVideoListByInfoHash = `-- name: MovieVideoListByInfoHash :many
-SELECT movieeditionid, videoid FROM MovieVideo
+SELECT movieeditionid, videoid, deletedat FROM MovieVideo
 WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?)
 `
 
@@ -1829,7 +2453,7 @@ func (q *Queries) MovieVideoListByInfoHash(ctx context.Context, infohash *string
 	var items []MovieVideo
 	for rows.Next() {
 		var i MovieVideo
-		if err := rows.Scan(&i.MovieEditionID, &i.VideoID); err != nil {
+		if err := rows.Scan(&i.MovieEditionID, &i.VideoID, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1844,8 +2468,8 @@ func (q *Queries) MovieVideoListByInfoHash(ctx context.Context, infohash *string
 }
 
 const movieVideoListByMovieEditionID = `-- name: MovieVideoListByMovieEditionID :many
-SELECT movieeditionid, videoid FROM MovieVideo
-WHERE MovieEditionID = ?
+SELECT movieeditionid, videoid, deletedat FROM MovieVideo
+WHERE DeletedAt IS NULL AND MovieEditionID = ?
 `
 
 func (q *Queries) MovieVideoListByMovieEditionID(ctx context.Context, movieeditionid string) ([]MovieVideo, error) {
@@ -1857,7 +2481,7 @@ func (q *Queries) MovieVideoListByMovieEditionID(ctx context.Context, movieediti
 	var items []MovieVideo
 	for rows.Next() {
 		var i MovieVideo
-		if err := rows.Scan(&i.MovieEditionID, &i.VideoID); err != nil {
+		if err := rows.Scan(&i.MovieEditionID, &i.VideoID, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1872,8 +2496,9 @@ func (q *Queries) MovieVideoListByMovieEditionID(ctx context.Context, movieediti
 }
 
 const movieVideoListByMovieID = `-- name: MovieVideoListByMovieID :many
-SELECT movieeditionid, videoid FROM MovieVideo
-WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
+SELECT movieeditionid, videoid, deletedat FROM MovieVideo
+WHERE DeletedAt IS NULL
+AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL AND MovieID = ?)
 `
 
 func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) ([]MovieVideo, error) {
@@ -1885,7 +2510,7 @@ func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) (
 	var items []MovieVideo
 	for rows.Next() {
 		var i MovieVideo
-		if err := rows.Scan(&i.MovieEditionID, &i.VideoID); err != nil {
+		if err := rows.Scan(&i.MovieEditionID, &i.VideoID, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1897,6 +2522,80 @@ func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const movieVideoPurgeByCascade = `-- name: MovieVideoPurgeByCascade :exec
+DELETE FROM MovieVideo
+WHERE MovieEditionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+   OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) MovieVideoPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, movieVideoPurgeByCascade, rootid)
+	return err
+}
+
+const movieVideoRestoreByCascade = `-- name: MovieVideoRestoreByCascade :exec
+UPDATE MovieVideo SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (MovieEditionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+  OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1))
+AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL)
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL)
+`
+
+func (q *Queries) MovieVideoRestoreByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, movieVideoRestoreByCascade, rootid)
+	return err
+}
+
+const movieVideoSoftDelete = `-- name: MovieVideoSoftDelete :exec
+UPDATE MovieVideo
+SET DeletedAt = ?1
+WHERE MovieEditionID = ?2 AND VideoID = ?3 AND DeletedAt IS NULL
+`
+
+type MovieVideoSoftDeleteParams struct {
+	DeletedAt      *int64
+	MovieEditionID string
+	VideoID        string
+}
+
+func (q *Queries) MovieVideoSoftDelete(ctx context.Context, arg MovieVideoSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, movieVideoSoftDelete, arg.DeletedAt, arg.MovieEditionID, arg.VideoID)
+	return err
+}
+
+const movieVideoSoftDeleteByMovieEditionID = `-- name: MovieVideoSoftDeleteByMovieEditionID :exec
+UPDATE MovieVideo
+SET DeletedAt = ?1
+WHERE MovieEditionID = ?2 AND DeletedAt IS NULL
+`
+
+type MovieVideoSoftDeleteByMovieEditionIDParams struct {
+	DeletedAt      *int64
+	MovieEditionID string
+}
+
+func (q *Queries) MovieVideoSoftDeleteByMovieEditionID(ctx context.Context, arg MovieVideoSoftDeleteByMovieEditionIDParams) error {
+	_, err := q.db.ExecContext(ctx, movieVideoSoftDeleteByMovieEditionID, arg.DeletedAt, arg.MovieEditionID)
+	return err
+}
+
+const movieVideoSoftDeleteByVideoID = `-- name: MovieVideoSoftDeleteByVideoID :exec
+UPDATE MovieVideo
+SET DeletedAt = ?1
+WHERE VideoID = ?2 AND DeletedAt IS NULL
+`
+
+type MovieVideoSoftDeleteByVideoIDParams struct {
+	DeletedAt *int64
+	VideoID   string
+}
+
+func (q *Queries) MovieVideoSoftDeleteByVideoID(ctx context.Context, arg MovieVideoSoftDeleteByVideoIDParams) error {
+	_, err := q.db.ExecContext(ctx, movieVideoSoftDeleteByVideoID, arg.DeletedAt, arg.VideoID)
+	return err
 }
 
 const renditionCreate = `-- name: RenditionCreate :one
@@ -1958,6 +2657,25 @@ DELETE FROM Rendition WHERE VideoID = ?
 
 func (q *Queries) RenditionDeleteByVideoID(ctx context.Context, videoid string) error {
 	_, err := q.db.ExecContext(ctx, renditionDeleteByVideoID, videoid)
+	return err
+}
+
+const renditionDeleteByVideoIDList = `-- name: RenditionDeleteByVideoIDList :exec
+DELETE FROM Rendition WHERE VideoID IN (/*SLICE:ids*/?)
+`
+
+func (q *Queries) RenditionDeleteByVideoIDList(ctx context.Context, ids []string) error {
+	query := renditionDeleteByVideoIDList
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
 	return err
 }
 
@@ -2086,6 +2804,44 @@ func (q *Queries) RenditionListEncodedStreamingByVideoID(ctx context.Context, vi
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const renditionListKeysByVideoIDs = `-- name: RenditionListKeysByVideoIDs :many
+SELECT Key FROM Rendition
+WHERE VideoID IN (/*SLICE:ids*/?) AND Key != ''
+`
+
+func (q *Queries) RenditionListKeysByVideoIDs(ctx context.Context, ids []string) ([]string, error) {
+	query := renditionListKeysByVideoIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, err
+		}
+		items = append(items, key)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err
@@ -2370,7 +3126,7 @@ INSERT INTO Season
 	Number
 )
 VALUES (?, ?, ?, ?)
-RETURNING id, editionid, sortkey, title, number
+RETURNING id, editionid, sortkey, title, number, deletedat
 `
 
 type SeasonCreateParams struct {
@@ -2394,6 +3150,7 @@ func (q *Queries) SeasonCreate(ctx context.Context, arg SeasonCreateParams) (Sea
 		&i.SortKey,
 		&i.Title,
 		&i.Number,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -2449,8 +3206,36 @@ func (q *Queries) SeasonEpisodeDeleteBySeasonID(ctx context.Context, seasonid st
 	return err
 }
 
+const seasonEpisodeDistinctSeasonsByEpisode = `-- name: SeasonEpisodeDistinctSeasonsByEpisode :many
+SELECT DISTINCT SeasonID FROM SeasonEpisode WHERE EpisodeID = ?
+`
+
+func (q *Queries) SeasonEpisodeDistinctSeasonsByEpisode(ctx context.Context, episodeid string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, seasonEpisodeDistinctSeasonsByEpisode, episodeid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var seasonid string
+		if err := rows.Scan(&seasonid); err != nil {
+			return nil, err
+		}
+		items = append(items, seasonid)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const seasonEpisodeGet = `-- name: SeasonEpisodeGet :one
-SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE SeasonID = ? AND EpisodeID = ?
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug, deletedat FROM SeasonEpisode
+WHERE SeasonID = ? AND EpisodeID = ? AND DeletedAt IS NULL
 `
 
 type SeasonEpisodeGetParams struct {
@@ -2469,12 +3254,14 @@ func (q *Queries) SeasonEpisodeGet(ctx context.Context, arg SeasonEpisodeGetPara
 		&i.Label,
 		&i.Number,
 		&i.Slug,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seasonEpisodeGetBySlug = `-- name: SeasonEpisodeGetBySlug :one
-SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug, deletedat FROM SeasonEpisode
+WHERE EditionID = ? AND Slug = ? AND DeletedAt IS NULL
 `
 
 type SeasonEpisodeGetBySlugParams struct {
@@ -2493,13 +3280,14 @@ func (q *Queries) SeasonEpisodeGetBySlug(ctx context.Context, arg SeasonEpisodeG
 		&i.Label,
 		&i.Number,
 		&i.Slug,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seasonEpisodeListByEditionID = `-- name: SeasonEpisodeListByEditionID :many
-SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode
-WHERE EditionID = ?
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug, deletedat FROM SeasonEpisode
+WHERE EditionID = ? AND DeletedAt IS NULL
 ORDER BY SortKey
 `
 
@@ -2520,6 +3308,7 @@ func (q *Queries) SeasonEpisodeListByEditionID(ctx context.Context, editionid st
 			&i.Label,
 			&i.Number,
 			&i.Slug,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2535,7 +3324,7 @@ func (q *Queries) SeasonEpisodeListByEditionID(ctx context.Context, editionid st
 }
 
 const seasonEpisodeListByEpisodeID = `-- name: SeasonEpisodeListByEpisodeID :many
-SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode WHERE EpisodeID = ?
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug, deletedat FROM SeasonEpisode WHERE EpisodeID = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid string) ([]SeasonEpisode, error) {
@@ -2555,6 +3344,7 @@ func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid st
 			&i.Label,
 			&i.Number,
 			&i.Slug,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2570,8 +3360,8 @@ func (q *Queries) SeasonEpisodeListByEpisodeID(ctx context.Context, episodeid st
 }
 
 const seasonEpisodeListBySeasonID = `-- name: SeasonEpisodeListBySeasonID :many
-SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode
-WHERE SeasonID = ?
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug, deletedat FROM SeasonEpisode
+WHERE SeasonID = ? AND DeletedAt IS NULL
 ORDER BY SortKey
 `
 
@@ -2592,6 +3382,7 @@ func (q *Queries) SeasonEpisodeListBySeasonID(ctx context.Context, seasonid stri
 			&i.Label,
 			&i.Number,
 			&i.Slug,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2607,8 +3398,9 @@ func (q *Queries) SeasonEpisodeListBySeasonID(ctx context.Context, seasonid stri
 }
 
 const seasonEpisodeListBySeriesID = `-- name: SeasonEpisodeListBySeriesID :many
-SELECT editionid, seasonid, episodeid, sortkey, label, number, slug FROM SeasonEpisode
-WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug, deletedat FROM SeasonEpisode
+WHERE DeletedAt IS NULL
+AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 ORDER BY SortKey
 `
 
@@ -2629,6 +3421,49 @@ func (q *Queries) SeasonEpisodeListBySeriesID(ctx context.Context, seriesid stri
 			&i.Label,
 			&i.Number,
 			&i.Slug,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const seasonEpisodeListRestorableByEpisode = `-- name: SeasonEpisodeListRestorableByEpisode :many
+SELECT editionid, seasonid, episodeid, sortkey, label, number, slug, deletedat FROM SeasonEpisode
+WHERE EpisodeID = ? AND DeletedAt IS NOT NULL
+AND SeasonID IN (SELECT ID FROM Season WHERE DeletedAt IS NULL)
+`
+
+// SeasonEpisodeListRestorableByEpisode returns soft-deleted junctions
+// for the given episode where the season side is live, i.e. junctions
+// that will be restored. Used to read SortKey positions for bumping
+// before the generic junction restore runs.
+func (q *Queries) SeasonEpisodeListRestorableByEpisode(ctx context.Context, episodeid string) ([]SeasonEpisode, error) {
+	rows, err := q.db.QueryContext(ctx, seasonEpisodeListRestorableByEpisode, episodeid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SeasonEpisode
+	for rows.Next() {
+		var i SeasonEpisode
+		if err := rows.Scan(
+			&i.EditionID,
+			&i.SeasonID,
+			&i.EpisodeID,
+			&i.SortKey,
+			&i.Label,
+			&i.Number,
+			&i.Slug,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2666,8 +3501,49 @@ func (q *Queries) SeasonEpisodeNumberingSet(ctx context.Context, arg SeasonEpiso
 	return err
 }
 
+const seasonEpisodePurgeByCascade = `-- name: SeasonEpisodePurgeByCascade :exec
+DELETE FROM SeasonEpisode
+WHERE SeasonID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+   OR EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) SeasonEpisodePurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodePurgeByCascade, rootid)
+	return err
+}
+
+const seasonEpisodeRestore = `-- name: SeasonEpisodeRestore :exec
+UPDATE SeasonEpisode SET DeletedAt = NULL
+WHERE SeasonID = ? AND EpisodeID = ?
+`
+
+type SeasonEpisodeRestoreParams struct {
+	SeasonID  string
+	EpisodeID string
+}
+
+func (q *Queries) SeasonEpisodeRestore(ctx context.Context, arg SeasonEpisodeRestoreParams) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeRestore, arg.SeasonID, arg.EpisodeID)
+	return err
+}
+
+const seasonEpisodeRestoreByCascade = `-- name: SeasonEpisodeRestoreByCascade :exec
+UPDATE SeasonEpisode SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (SeasonID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+  OR EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1))
+AND SeasonID IN (SELECT ID FROM Season WHERE DeletedAt IS NULL)
+AND EpisodeID IN (SELECT ID FROM Episode WHERE DeletedAt IS NULL)
+`
+
+func (q *Queries) SeasonEpisodeRestoreByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeRestoreByCascade, rootid)
+	return err
+}
+
 const seasonEpisodeSlugExists = `-- name: SeasonEpisodeSlugExists :one
-SELECT COUNT(*) FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?
+SELECT COUNT(*) FROM SeasonEpisode
+WHERE EditionID = ? AND Slug = ? AND DeletedAt IS NULL
 `
 
 type SeasonEpisodeSlugExistsParams struct {
@@ -2697,8 +3573,85 @@ func (q *Queries) SeasonEpisodeSlugSet(ctx context.Context, arg SeasonEpisodeSlu
 	return err
 }
 
+const seasonEpisodeSoftDelete = `-- name: SeasonEpisodeSoftDelete :exec
+UPDATE SeasonEpisode
+SET DeletedAt = ?1
+WHERE SeasonID = ?2 AND EpisodeID = ?3 AND DeletedAt IS NULL
+`
+
+type SeasonEpisodeSoftDeleteParams struct {
+	DeletedAt *int64
+	SeasonID  string
+	EpisodeID string
+}
+
+func (q *Queries) SeasonEpisodeSoftDelete(ctx context.Context, arg SeasonEpisodeSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeSoftDelete, arg.DeletedAt, arg.SeasonID, arg.EpisodeID)
+	return err
+}
+
+const seasonEpisodeSoftDeleteByEpisodeID = `-- name: SeasonEpisodeSoftDeleteByEpisodeID :exec
+UPDATE SeasonEpisode
+SET DeletedAt = ?1
+WHERE EpisodeID = ?2 AND DeletedAt IS NULL
+`
+
+type SeasonEpisodeSoftDeleteByEpisodeIDParams struct {
+	DeletedAt *int64
+	EpisodeID string
+}
+
+func (q *Queries) SeasonEpisodeSoftDeleteByEpisodeID(ctx context.Context, arg SeasonEpisodeSoftDeleteByEpisodeIDParams) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeSoftDeleteByEpisodeID, arg.DeletedAt, arg.EpisodeID)
+	return err
+}
+
+const seasonEpisodeSoftDeleteByEpisodeIDList = `-- name: SeasonEpisodeSoftDeleteByEpisodeIDList :exec
+UPDATE SeasonEpisode
+SET DeletedAt = ?1
+WHERE EpisodeID IN (/*SLICE:ids*/?) AND DeletedAt IS NULL
+`
+
+type SeasonEpisodeSoftDeleteByEpisodeIDListParams struct {
+	DeletedAt *int64
+	Ids       []string
+}
+
+func (q *Queries) SeasonEpisodeSoftDeleteByEpisodeIDList(ctx context.Context, arg SeasonEpisodeSoftDeleteByEpisodeIDListParams) error {
+	query := seasonEpisodeSoftDeleteByEpisodeIDList
+	var queryParams []interface{}
+	queryParams = append(queryParams, arg.DeletedAt)
+	if len(arg.Ids) > 0 {
+		for _, v := range arg.Ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(arg.Ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
+const seasonEpisodeSoftDeleteBySeasonID = `-- name: SeasonEpisodeSoftDeleteBySeasonID :exec
+UPDATE SeasonEpisode
+SET DeletedAt = ?1
+WHERE SeasonID = ?2 AND DeletedAt IS NULL
+`
+
+type SeasonEpisodeSoftDeleteBySeasonIDParams struct {
+	DeletedAt *int64
+	SeasonID  string
+}
+
+func (q *Queries) SeasonEpisodeSoftDeleteBySeasonID(ctx context.Context, arg SeasonEpisodeSoftDeleteBySeasonIDParams) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeSoftDeleteBySeasonID, arg.DeletedAt, arg.SeasonID)
+	return err
+}
+
 const seasonEpisodeSortKeyBump = `-- name: SeasonEpisodeSortKeyBump :exec
-UPDATE SeasonEpisode SET SortKey = SortKey + 1 WHERE SeasonID = ? AND SortKey >= ?
+UPDATE SeasonEpisode SET SortKey = -(SortKey + 1)
+WHERE SeasonID = ?1 AND SortKey >= ?2 AND DeletedAt IS NULL
 `
 
 type SeasonEpisodeSortKeyBumpParams struct {
@@ -2706,13 +3659,28 @@ type SeasonEpisodeSortKeyBumpParams struct {
 	SortKey  int64
 }
 
+// SeasonEpisodeSortKeyBump shifts live rows up by one to make room
+// at the given SortKey. Done in two phases so the partial unique
+// index on (SeasonID, SortKey) doesn't see a transient collision:
+// first negate+offset the affected rows (guaranteed-unique interim
+// values), then negate back to get the final +1.
 func (q *Queries) SeasonEpisodeSortKeyBump(ctx context.Context, arg SeasonEpisodeSortKeyBumpParams) error {
 	_, err := q.db.ExecContext(ctx, seasonEpisodeSortKeyBump, arg.SeasonID, arg.SortKey)
 	return err
 }
 
+const seasonEpisodeSortKeyBumpFinish = `-- name: SeasonEpisodeSortKeyBumpFinish :exec
+UPDATE SeasonEpisode SET SortKey = -SortKey
+WHERE SeasonID = ? AND SortKey < 0
+`
+
+func (q *Queries) SeasonEpisodeSortKeyBumpFinish(ctx context.Context, seasonid string) error {
+	_, err := q.db.ExecContext(ctx, seasonEpisodeSortKeyBumpFinish, seasonid)
+	return err
+}
+
 const seasonGet = `-- name: SeasonGet :one
-SELECT id, editionid, sortkey, title, number FROM Season WHERE ID = ?
+SELECT id, editionid, sortkey, title, number, deletedat FROM Season WHERE ID = ?
 `
 
 func (q *Queries) SeasonGet(ctx context.Context, id string) (Season, error) {
@@ -2724,12 +3692,14 @@ func (q *Queries) SeasonGet(ctx context.Context, id string) (Season, error) {
 		&i.SortKey,
 		&i.Title,
 		&i.Number,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seasonListByEditionID = `-- name: SeasonListByEditionID :many
-SELECT id, editionid, sortkey, title, number FROM Season WHERE EditionID = ?
+SELECT id, editionid, sortkey, title, number, deletedat FROM Season
+WHERE EditionID = ? AND DeletedAt IS NULL
 ORDER BY SortKey
 `
 
@@ -2748,6 +3718,7 @@ func (q *Queries) SeasonListByEditionID(ctx context.Context, editionid string) (
 			&i.SortKey,
 			&i.Title,
 			&i.Number,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2763,8 +3734,9 @@ func (q *Queries) SeasonListByEditionID(ctx context.Context, editionid string) (
 }
 
 const seasonListBySeriesID = `-- name: SeasonListBySeriesID :many
-SELECT id, editionid, sortkey, title, number FROM Season
-WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+SELECT id, editionid, sortkey, title, number, deletedat FROM Season
+WHERE DeletedAt IS NULL
+AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 ORDER BY SortKey
 `
 
@@ -2783,6 +3755,7 @@ func (q *Queries) SeasonListBySeriesID(ctx context.Context, seriesid string) ([]
 			&i.SortKey,
 			&i.Title,
 			&i.Number,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2795,6 +3768,52 @@ func (q *Queries) SeasonListBySeriesID(ctx context.Context, seriesid string) ([]
 		return nil, err
 	}
 	return items, nil
+}
+
+const seasonPurgeByCascade = `-- name: SeasonPurgeByCascade :exec
+DELETE FROM Season
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) SeasonPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, seasonPurgeByCascade, rootid)
+	return err
+}
+
+const seasonRestore = `-- name: SeasonRestore :exec
+UPDATE Season SET DeletedAt = NULL
+WHERE ID = ?
+`
+
+func (q *Queries) SeasonRestore(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, seasonRestore, id)
+	return err
+}
+
+const seasonRestoreByCascade = `-- name: SeasonRestoreByCascade :exec
+UPDATE Season SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?)
+`
+
+func (q *Queries) SeasonRestoreByCascade(ctx context.Context, cascadeof *string) error {
+	_, err := q.db.ExecContext(ctx, seasonRestoreByCascade, cascadeof)
+	return err
+}
+
+const seasonSoftDelete = `-- name: SeasonSoftDelete :exec
+UPDATE Season
+SET DeletedAt = ?1
+WHERE ID = ?2 AND DeletedAt IS NULL
+`
+
+type SeasonSoftDeleteParams struct {
+	DeletedAt *int64
+	ID        string
+}
+
+func (q *Queries) SeasonSoftDelete(ctx context.Context, arg SeasonSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, seasonSoftDelete, arg.DeletedAt, arg.ID)
+	return err
 }
 
 const seasonTitleSet = `-- name: SeasonTitleSet :exec
@@ -2826,7 +3845,7 @@ INSERT INTO Series
 	TVRageID
 )
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid
+RETURNING id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat
 `
 
 type SeriesCreateParams struct {
@@ -2867,6 +3886,7 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -2874,7 +3894,7 @@ func (q *Queries) SeriesCreate(ctx context.Context, arg SeriesCreateParams) (Ser
 const seriesEditionCreate = `-- name: SeriesEditionCreate :one
 INSERT INTO SeriesEdition (Label, Slug, SeriesID, Summary)
 VALUES (?, ?, ?, ?)
-RETURNING id, seriesid, slug, label, summary, posterid
+RETURNING id, seriesid, slug, label, summary, posterid, deletedat
 `
 
 type SeriesEditionCreateParams struct {
@@ -2899,12 +3919,38 @@ func (q *Queries) SeriesEditionCreate(ctx context.Context, arg SeriesEditionCrea
 		&i.Label,
 		&i.Summary,
 		&i.PosterID,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const seriesEditionDefaultSuccessor = `-- name: SeriesEditionDefaultSuccessor :one
+SELECT id, seriesid, slug, label, summary, posterid, deletedat FROM SeriesEdition
+WHERE SeriesID = ? AND DeletedAt IS NULL AND Slug != ''
+ORDER BY ID
+LIMIT 1
+`
+
+// SeriesEditionDefaultSuccessor returns the lex-smallest live non-default
+// edition of the given series, for promotion when the current default is
+// trashed. Errors with sql.ErrNoRows if none exists.
+func (q *Queries) SeriesEditionDefaultSuccessor(ctx context.Context, seriesid string) (SeriesEdition, error) {
+	row := q.db.QueryRowContext(ctx, seriesEditionDefaultSuccessor, seriesid)
+	var i SeriesEdition
+	err := row.Scan(
+		&i.ID,
+		&i.SeriesID,
+		&i.Slug,
+		&i.Label,
+		&i.Summary,
+		&i.PosterID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seriesEditionGet = `-- name: SeriesEditionGet :one
-SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE ID = ?
+SELECT id, seriesid, slug, label, summary, posterid, deletedat FROM SeriesEdition WHERE ID = ?
 `
 
 func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEdition, error) {
@@ -2917,14 +3963,16 @@ func (q *Queries) SeriesEditionGet(ctx context.Context, id string) (SeriesEditio
 		&i.Label,
 		&i.Summary,
 		&i.PosterID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seriesEditionGetBySlug = `-- name: SeriesEditionGetBySlug :one
-SELECT seriesedition.id, seriesedition.seriesid, seriesedition.slug, seriesedition.label, seriesedition.summary, seriesedition.posterid FROM SeriesEdition
+SELECT seriesedition.id, seriesedition.seriesid, seriesedition.slug, seriesedition.label, seriesedition.summary, seriesedition.posterid, seriesedition.deletedat FROM SeriesEdition
 JOIN Series ON Series.ID = SeriesEdition.SeriesID
 WHERE Series.Slug = ?1 AND SeriesEdition.Slug = ?2
+AND SeriesEdition.DeletedAt IS NULL AND Series.DeletedAt IS NULL
 `
 
 type SeriesEditionGetBySlugParams struct {
@@ -2942,6 +3990,26 @@ func (q *Queries) SeriesEditionGetBySlug(ctx context.Context, arg SeriesEditionG
 		&i.Label,
 		&i.Summary,
 		&i.PosterID,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const seriesEditionGetDefault = `-- name: SeriesEditionGetDefault :one
+SELECT id, seriesid, slug, label, summary, posterid, deletedat FROM SeriesEdition WHERE SeriesID = ? AND Slug = ''
+`
+
+func (q *Queries) SeriesEditionGetDefault(ctx context.Context, seriesid string) (SeriesEdition, error) {
+	row := q.db.QueryRowContext(ctx, seriesEditionGetDefault, seriesid)
+	var i SeriesEdition
+	err := row.Scan(
+		&i.ID,
+		&i.SeriesID,
+		&i.Slug,
+		&i.Label,
+		&i.Summary,
+		&i.PosterID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -2961,7 +4029,9 @@ func (q *Queries) SeriesEditionLabelSet(ctx context.Context, arg SeriesEditionLa
 }
 
 const seriesEditionListByDownload = `-- name: SeriesEditionListByDownload :many
-SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE ID IN (SELECT SeriesEditionID FROM Download)
+SELECT id, seriesid, slug, label, summary, posterid, deletedat FROM SeriesEdition
+WHERE DeletedAt IS NULL
+AND ID IN (SELECT SeriesEditionID FROM Download)
 `
 
 func (q *Queries) SeriesEditionListByDownload(ctx context.Context) ([]SeriesEdition, error) {
@@ -2980,6 +4050,7 @@ func (q *Queries) SeriesEditionListByDownload(ctx context.Context) ([]SeriesEdit
 			&i.Label,
 			&i.Summary,
 			&i.PosterID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -2995,7 +4066,7 @@ func (q *Queries) SeriesEditionListByDownload(ctx context.Context) ([]SeriesEdit
 }
 
 const seriesEditionListBySeriesID = `-- name: SeriesEditionListBySeriesID :many
-SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE SeriesID = ?
+SELECT id, seriesid, slug, label, summary, posterid, deletedat FROM SeriesEdition WHERE SeriesID = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid string) ([]SeriesEdition, error) {
@@ -3014,6 +4085,7 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 			&i.Label,
 			&i.Summary,
 			&i.PosterID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3029,7 +4101,7 @@ func (q *Queries) SeriesEditionListBySeriesID(ctx context.Context, seriesid stri
 }
 
 const seriesEditionListDefault = `-- name: SeriesEditionListDefault :many
-SELECT id, seriesid, slug, label, summary, posterid FROM SeriesEdition WHERE Slug = ''
+SELECT id, seriesid, slug, label, summary, posterid, deletedat FROM SeriesEdition WHERE Slug = '' AND DeletedAt IS NULL
 `
 
 func (q *Queries) SeriesEditionListDefault(ctx context.Context) ([]SeriesEdition, error) {
@@ -3048,6 +4120,7 @@ func (q *Queries) SeriesEditionListDefault(ctx context.Context) ([]SeriesEdition
 			&i.Label,
 			&i.Summary,
 			&i.PosterID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3076,8 +4149,39 @@ func (q *Queries) SeriesEditionPosterIDSet(ctx context.Context, arg SeriesEditio
 	return err
 }
 
+const seriesEditionPurgeByCascade = `-- name: SeriesEditionPurgeByCascade :exec
+DELETE FROM SeriesEdition
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) SeriesEditionPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, seriesEditionPurgeByCascade, rootid)
+	return err
+}
+
+const seriesEditionRestore = `-- name: SeriesEditionRestore :exec
+UPDATE SeriesEdition SET DeletedAt = NULL
+WHERE ID = ?
+`
+
+func (q *Queries) SeriesEditionRestore(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, seriesEditionRestore, id)
+	return err
+}
+
+const seriesEditionRestoreByCascade = `-- name: SeriesEditionRestoreByCascade :exec
+UPDATE SeriesEdition SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?)
+`
+
+func (q *Queries) SeriesEditionRestoreByCascade(ctx context.Context, cascadeof *string) error {
+	_, err := q.db.ExecContext(ctx, seriesEditionRestoreByCascade, cascadeof)
+	return err
+}
+
 const seriesEditionSlugExists = `-- name: SeriesEditionSlugExists :one
-SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?
+SELECT COUNT(*) FROM SeriesEdition
+WHERE SeriesID = ? AND Slug = ? AND DeletedAt IS NULL
 `
 
 type SeriesEditionSlugExistsParams struct {
@@ -3106,6 +4210,22 @@ func (q *Queries) SeriesEditionSlugSet(ctx context.Context, arg SeriesEditionSlu
 	return err
 }
 
+const seriesEditionSoftDelete = `-- name: SeriesEditionSoftDelete :exec
+UPDATE SeriesEdition
+SET DeletedAt = ?1
+WHERE ID = ?2 AND DeletedAt IS NULL
+`
+
+type SeriesEditionSoftDeleteParams struct {
+	DeletedAt *int64
+	ID        string
+}
+
+func (q *Queries) SeriesEditionSoftDelete(ctx context.Context, arg SeriesEditionSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, seriesEditionSoftDelete, arg.DeletedAt, arg.ID)
+	return err
+}
+
 const seriesEditionSummarySet = `-- name: SeriesEditionSummarySet :exec
 UPDATE SeriesEdition SET Summary = ? WHERE ID = ?
 `
@@ -3121,7 +4241,7 @@ func (q *Queries) SeriesEditionSummarySet(ctx context.Context, arg SeriesEdition
 }
 
 const seriesGet = `-- name: SeriesGet :one
-SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE ID = ?
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series WHERE ID = ?
 `
 
 func (q *Queries) SeriesGet(ctx context.Context, id string) (Series, error) {
@@ -3138,12 +4258,13 @@ func (q *Queries) SeriesGet(ctx context.Context, id string) (Series, error) {
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seriesGetByEditionID = `-- name: SeriesGetByEditionID :one
-SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series
 WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID = ?)
 `
 
@@ -3161,12 +4282,13 @@ func (q *Queries) SeriesGetByEditionID(ctx context.Context, id string) (Series, 
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seriesGetBySlug = `-- name: SeriesGetBySlug :one
-SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE Slug = ?
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series WHERE Slug = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) SeriesGetBySlug(ctx context.Context, slug string) (Series, error) {
@@ -3183,12 +4305,13 @@ func (q *Queries) SeriesGetBySlug(ctx context.Context, slug string) (Series, err
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seriesGetByTVmazeID = `-- name: SeriesGetByTVmazeID :one
-SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE TVmazeID = ?
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series WHERE TVmazeID = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) SeriesGetByTVmazeID(ctx context.Context, tvmazeid *int64) (Series, error) {
@@ -3205,12 +4328,14 @@ func (q *Queries) SeriesGetByTVmazeID(ctx context.Context, tvmazeid *int64) (Ser
 		&i.IMDBID,
 		&i.TVDBID,
 		&i.TVRageID,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const seriesList = `-- name: SeriesList :many
-SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series
+WHERE DeletedAt IS NULL
 `
 
 func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
@@ -3233,6 +4358,7 @@ func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
 			&i.IMDBID,
 			&i.TVDBID,
 			&i.TVRageID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3248,7 +4374,13 @@ func (q *Queries) SeriesList(ctx context.Context) ([]Series, error) {
 }
 
 const seriesListByDownload = `-- name: SeriesListByDownload :many
-SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID IN (SELECT SeriesEditionID FROM Download))
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT SeriesID FROM SeriesEdition
+	WHERE DeletedAt IS NULL
+	AND SeriesEdition.ID IN (SELECT SeriesEditionID FROM Download)
+)
 `
 
 func (q *Queries) SeriesListByDownload(ctx context.Context) ([]Series, error) {
@@ -3271,6 +4403,7 @@ func (q *Queries) SeriesListByDownload(ctx context.Context) ([]Series, error) {
 			&i.IMDBID,
 			&i.TVDBID,
 			&i.TVRageID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3286,7 +4419,7 @@ func (q *Queries) SeriesListByDownload(ctx context.Context) ([]Series, error) {
 }
 
 const seriesListByTVmazeID = `-- name: SeriesListByTVmazeID :many
-SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid FROM Series WHERE TVmazeID IN (/*SLICE:ids*/?)
+SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series WHERE DeletedAt IS NULL AND TVmazeID IN (/*SLICE:ids*/?)
 `
 
 func (q *Queries) SeriesListByTVmazeID(ctx context.Context, ids []*int64) ([]Series, error) {
@@ -3319,6 +4452,7 @@ func (q *Queries) SeriesListByTVmazeID(ctx context.Context, ids []*int64) ([]Ser
 			&i.IMDBID,
 			&i.TVDBID,
 			&i.TVRageID,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3333,8 +4467,38 @@ func (q *Queries) SeriesListByTVmazeID(ctx context.Context, ids []*int64) ([]Ser
 	return items, nil
 }
 
+const seriesPurgeByCascade = `-- name: SeriesPurgeByCascade :exec
+DELETE FROM Series
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) SeriesPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, seriesPurgeByCascade, rootid)
+	return err
+}
+
+const seriesRestore = `-- name: SeriesRestore :exec
+UPDATE Series SET DeletedAt = NULL
+WHERE ID = ?
+`
+
+func (q *Queries) SeriesRestore(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, seriesRestore, id)
+	return err
+}
+
+const seriesRestoreByCascade = `-- name: SeriesRestoreByCascade :exec
+UPDATE Series SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?)
+`
+
+func (q *Queries) SeriesRestoreByCascade(ctx context.Context, cascadeof *string) error {
+	_, err := q.db.ExecContext(ctx, seriesRestoreByCascade, cascadeof)
+	return err
+}
+
 const seriesSlugExists = `-- name: SeriesSlugExists :one
-SELECT COUNT(*) FROM Series WHERE Slug = ?
+SELECT COUNT(*) FROM Series WHERE Slug = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) SeriesSlugExists(ctx context.Context, slug string) (int64, error) {
@@ -3355,6 +4519,22 @@ type SeriesSlugSetParams struct {
 
 func (q *Queries) SeriesSlugSet(ctx context.Context, arg SeriesSlugSetParams) error {
 	_, err := q.db.ExecContext(ctx, seriesSlugSet, arg.Slug, arg.ID)
+	return err
+}
+
+const seriesSoftDelete = `-- name: SeriesSoftDelete :exec
+UPDATE Series
+SET DeletedAt = ?1
+WHERE ID = ?2 AND DeletedAt IS NULL
+`
+
+type SeriesSoftDeleteParams struct {
+	DeletedAt *int64
+	ID        string
+}
+
+func (q *Queries) SeriesSoftDelete(ctx context.Context, arg SeriesSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, seriesSoftDelete, arg.DeletedAt, arg.ID)
 	return err
 }
 
@@ -3741,6 +4921,148 @@ func (q *Queries) TaskUnlock(ctx context.Context, id string) error {
 	return err
 }
 
+const trashDelete = `-- name: TrashDelete :exec
+DELETE FROM Trash WHERE ID = ?
+`
+
+func (q *Queries) TrashDelete(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, trashDelete, id)
+	return err
+}
+
+const trashGet = `-- name: TrashGet :one
+SELECT id, title, subtitle, deletedat, cascadeof FROM Trash WHERE ID = ?
+`
+
+func (q *Queries) TrashGet(ctx context.Context, id string) (Trash, error) {
+	row := q.db.QueryRowContext(ctx, trashGet, id)
+	var i Trash
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Subtitle,
+		&i.DeletedAt,
+		&i.CascadeOf,
+	)
+	return i, err
+}
+
+const trashInsert = `-- name: TrashInsert :exec
+INSERT INTO Trash (ID, Title, Subtitle, DeletedAt, CascadeOf) VALUES (?, ?, ?, ?, ?)
+`
+
+type TrashInsertParams struct {
+	ID        string
+	Title     string
+	Subtitle  string
+	DeletedAt int64
+	CascadeOf *string
+}
+
+func (q *Queries) TrashInsert(ctx context.Context, arg TrashInsertParams) error {
+	_, err := q.db.ExecContext(ctx, trashInsert,
+		arg.ID,
+		arg.Title,
+		arg.Subtitle,
+		arg.DeletedAt,
+		arg.CascadeOf,
+	)
+	return err
+}
+
+const trashList = `-- name: TrashList :many
+SELECT id, title, subtitle, deletedat, cascadeof FROM Trash WHERE CascadeOf IS NULL ORDER BY DeletedAt DESC
+`
+
+func (q *Queries) TrashList(ctx context.Context) ([]Trash, error) {
+	rows, err := q.db.QueryContext(ctx, trashList)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Trash
+	for rows.Next() {
+		var i Trash
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Subtitle,
+			&i.DeletedAt,
+			&i.CascadeOf,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const trashListByRoot = `-- name: TrashListByRoot :many
+SELECT id, title, subtitle, deletedat, cascadeof FROM Trash WHERE CascadeOf = ? ORDER BY DeletedAt
+`
+
+func (q *Queries) TrashListByRoot(ctx context.Context, cascadeof *string) ([]Trash, error) {
+	rows, err := q.db.QueryContext(ctx, trashListByRoot, cascadeof)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Trash
+	for rows.Next() {
+		var i Trash
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Subtitle,
+			&i.DeletedAt,
+			&i.CascadeOf,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const trashRootsBefore = `-- name: TrashRootsBefore :many
+SELECT ID FROM Trash WHERE CascadeOf IS NULL AND DeletedAt < ?
+`
+
+func (q *Queries) TrashRootsBefore(ctx context.Context, deletedat int64) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, trashRootsBefore, deletedat)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const videoCountByInfoHash = `-- name: VideoCountByInfoHash :one
 SELECT COUNT(*) FROM Video WHERE InfoHash = ?
 `
@@ -3759,7 +5081,7 @@ INSERT INTO Video
 	Name
 )
 VALUES (?, ?)
-RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist
+RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat
 `
 
 type VideoCreateParams struct {
@@ -3779,12 +5101,13 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const videoGet = `-- name: VideoGet :one
-SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video WHERE ID = ?
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat FROM Video WHERE ID = ?
 `
 
 func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
@@ -3799,12 +5122,13 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const videoGetByName = `-- name: VideoGetByName :one
-SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video WHERE InfoHash = ? AND Name = ?
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat FROM Video WHERE InfoHash = ? AND Name = ?
 `
 
 type VideoGetByNameParams struct {
@@ -3824,16 +5148,20 @@ func (q *Queries) VideoGetByName(ctx context.Context, arg VideoGetByNameParams) 
 		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const videoListByEditionID = `-- name: VideoListByEditionID :many
-SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
-WHERE ID IN (
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat FROM Video
+WHERE DeletedAt IS NULL
+AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
-	WHERE EpisodeID IN (
-		SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
+	WHERE DeletedAt IS NULL
+	AND EpisodeID IN (
+		SELECT EpisodeID FROM SeasonEpisode
+		WHERE DeletedAt IS NULL AND EditionID = ?
 	)
 )
 `
@@ -3856,6 +5184,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3871,8 +5200,12 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 }
 
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
-SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
-WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat FROM Video
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT VideoID FROM EpisodeVideo
+	WHERE DeletedAt IS NULL AND EpisodeID = ?
+)
 `
 
 func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([]Video, error) {
@@ -3893,6 +5226,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3908,7 +5242,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 }
 
 const videoListByInfoHash = `-- name: VideoListByInfoHash :many
-SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video WHERE InfoHash = ?
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat FROM Video WHERE InfoHash = ?
 `
 
 func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]Video, error) {
@@ -3929,6 +5263,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3944,8 +5279,12 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 }
 
 const videoListByMovieEditionID = `-- name: VideoListByMovieEditionID :many
-SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
-WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat FROM Video
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT VideoID FROM MovieVideo
+	WHERE DeletedAt IS NULL AND MovieEditionID = ?
+)
 `
 
 func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid string) ([]Video, error) {
@@ -3966,6 +5305,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3981,10 +5321,12 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 }
 
 const videoListByMovieID = `-- name: VideoListByMovieID :many
-SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
-WHERE ID IN (
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat FROM Video
+WHERE DeletedAt IS NULL
+AND ID IN (
 	SELECT VideoID FROM MovieVideo
-	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
+	WHERE DeletedAt IS NULL
+	AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL AND MovieID = ?)
 )
 `
 
@@ -4006,6 +5348,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -4021,12 +5364,15 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 }
 
 const videoListBySeriesID = `-- name: VideoListBySeriesID :many
-SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist FROM Video
-WHERE ID IN (
+SELECT id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat FROM Video
+WHERE DeletedAt IS NULL
+AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
-	WHERE EpisodeID IN (
+	WHERE DeletedAt IS NULL
+	AND EpisodeID IN (
 		SELECT EpisodeID FROM SeasonEpisode
-		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+		WHERE DeletedAt IS NULL
+		AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 	)
 )
 `
@@ -4049,6 +5395,7 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 			&i.OriginalType,
 			&i.Duration,
 			&i.MVPlaylist,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -4063,9 +5410,127 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 	return items, nil
 }
 
+const videoListOrphans = `-- name: VideoListOrphans :many
+SELECT v.ID FROM Video v
+WHERE v.DeletedAt IS NULL
+AND NOT EXISTS (
+	SELECT 1 FROM EpisodeVideo ev
+	WHERE ev.VideoID = v.ID AND ev.DeletedAt IS NULL
+)
+AND NOT EXISTS (
+	SELECT 1 FROM MovieVideo mv
+	WHERE mv.VideoID = v.ID AND mv.DeletedAt IS NULL
+)
+`
+
+// VideoListOrphans returns live Video IDs with no live EpisodeVideo
+// or MovieVideo junctions. Called after soft-deleting a cascade's
+// junctions to reap videos the cascade just stranded.
+func (q *Queries) VideoListOrphans(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, videoListOrphans)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const videoListPurgeByCascade = `-- name: VideoListPurgeByCascade :many
+SELECT ID, OriginalKey FROM Video
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+type VideoListPurgeByCascadeRow struct {
+	ID          string
+	OriginalKey string
+}
+
+func (q *Queries) VideoListPurgeByCascade(ctx context.Context, rootid *string) ([]VideoListPurgeByCascadeRow, error) {
+	rows, err := q.db.QueryContext(ctx, videoListPurgeByCascade, rootid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []VideoListPurgeByCascadeRow
+	for rows.Next() {
+		var i VideoListPurgeByCascadeRow
+		if err := rows.Scan(&i.ID, &i.OriginalKey); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const videoPurgeByCascade = `-- name: VideoPurgeByCascade :exec
+DELETE FROM Video
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?1 OR Trash.ID = ?1)
+`
+
+func (q *Queries) VideoPurgeByCascade(ctx context.Context, rootid *string) error {
+	_, err := q.db.ExecContext(ctx, videoPurgeByCascade, rootid)
+	return err
+}
+
+const videoRestore = `-- name: VideoRestore :exec
+UPDATE Video SET DeletedAt = NULL
+WHERE ID = ?
+`
+
+func (q *Queries) VideoRestore(ctx context.Context, id string) error {
+	_, err := q.db.ExecContext(ctx, videoRestore, id)
+	return err
+}
+
+const videoRestoreByCascade = `-- name: VideoRestoreByCascade :exec
+UPDATE Video SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?)
+`
+
+func (q *Queries) VideoRestoreByCascade(ctx context.Context, cascadeof *string) error {
+	_, err := q.db.ExecContext(ctx, videoRestoreByCascade, cascadeof)
+	return err
+}
+
+const videoSoftDelete = `-- name: VideoSoftDelete :exec
+UPDATE Video
+SET DeletedAt = ?1
+WHERE ID = ?2 AND DeletedAt IS NULL
+`
+
+type VideoSoftDeleteParams struct {
+	DeletedAt *int64
+	ID        string
+}
+
+func (q *Queries) VideoSoftDelete(ctx context.Context, arg VideoSoftDeleteParams) error {
+	_, err := q.db.ExecContext(ctx, videoSoftDelete, arg.DeletedAt, arg.ID)
+	return err
+}
+
 const videoUpdateMVPlaylist = `-- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist
+RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat
 `
 
 type VideoUpdateMVPlaylistParams struct {
@@ -4085,13 +5550,14 @@ func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPl
 		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const videoUpdateOriginalKey = `-- name: VideoUpdateOriginalKey :one
 UPDATE Video SET OriginalKey = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist
+RETURNING id, infohash, name, state, originalkey, originaltype, duration, mvplaylist, deletedat
 `
 
 type VideoUpdateOriginalKeyParams struct {
@@ -4111,6 +5577,7 @@ func (q *Queries) VideoUpdateOriginalKey(ctx context.Context, arg VideoUpdateOri
 		&i.OriginalType,
 		&i.Duration,
 		&i.MVPlaylist,
+		&i.DeletedAt,
 	)
 	return i, err
 }

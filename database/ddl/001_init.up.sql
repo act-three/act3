@@ -37,7 +37,7 @@ CREATE INDEX Index_ImageRendition_ImageID ON ImageRendition (ImageID);
 CREATE TABLE Series
 (
 	ID     TEXT PRIMARY KEY,
-	Slug   TEXT NOT NULL UNIQUE,
+	Slug   TEXT NOT NULL,
 	Title  TEXT NOT NULL,
 	Status TEXT NOT NULL CHECK (Status IN (
 		'In Development',
@@ -48,12 +48,20 @@ CREATE TABLE Series
 	PremieredOn TEXT NOT NULL DEFAULT (''),
 	EndedOn     TEXT NOT NULL DEFAULT (''),
 
-	TVmazeID INTEGER UNIQUE,
-	IMDBID   TEXT UNIQUE,
-	TVDBID   INTEGER UNIQUE,
-	TVRageID INTEGER UNIQUE
+	TVmazeID INTEGER,
+	IMDBID   TEXT,
+	TVDBID   INTEGER,
+	TVRageID INTEGER,
+
+	DeletedAt INTEGER
 )
 STRICT;
+CREATE UNIQUE INDEX UQ_Series_Slug     ON Series (Slug)     WHERE DeletedAt IS NULL;
+CREATE UNIQUE INDEX UQ_Series_TVmazeID ON Series (TVmazeID) WHERE DeletedAt IS NULL AND TVmazeID IS NOT NULL;
+CREATE UNIQUE INDEX UQ_Series_IMDBID   ON Series (IMDBID)   WHERE DeletedAt IS NULL AND IMDBID   IS NOT NULL;
+CREATE UNIQUE INDEX UQ_Series_TVDBID   ON Series (TVDBID)   WHERE DeletedAt IS NULL AND TVDBID   IS NOT NULL;
+CREATE UNIQUE INDEX UQ_Series_TVRageID ON Series (TVRageID) WHERE DeletedAt IS NULL AND TVRageID IS NOT NULL;
+CREATE INDEX Idx_Series_Trash          ON Series (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE SeriesEdition
 (
@@ -63,9 +71,12 @@ CREATE TABLE SeriesEdition
 	Label          TEXT NOT NULL,
 	Summary        TEXT NOT NULL,
 	PosterID       TEXT NOT NULL DEFAULT 'iplaceholderposter' REFERENCES Image,
-	UNIQUE (SeriesID, Slug)
+
+	DeletedAt INTEGER
 )
 STRICT;
+CREATE UNIQUE INDEX UQ_SeriesEdition_SeriesID_Slug ON SeriesEdition (SeriesID, Slug) WHERE DeletedAt IS NULL;
+CREATE INDEX Idx_SeriesEdition_Trash ON SeriesEdition (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE Season
 (
@@ -74,9 +85,12 @@ CREATE TABLE Season
 	SortKey   TEXT NOT NULL,
 	Title     TEXT NOT NULL, -- for display eg "Season 5"
 	Number    INTEGER NOT NULL, -- for episode codes eg "s05e02"
-	UNIQUE (EditionID, SortKey)
+
+	DeletedAt INTEGER
 )
 STRICT;
+CREATE UNIQUE INDEX UQ_Season_EditionID_SortKey ON Season (EditionID, SortKey) WHERE DeletedAt IS NULL;
+CREATE INDEX Idx_Season_Trash ON Season (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE Episode
 (
@@ -90,9 +104,12 @@ CREATE TABLE Episode
 	)),
 	Airdate        TEXT NOT NULL, -- can be empty if unaired/unreleased
 	Runtime        INTEGER NOT NULL, -- minutes
-	ThumbnailID    TEXT NOT NULL DEFAULT 'iplaceholderthumbnail' REFERENCES Image
+	ThumbnailID    TEXT NOT NULL DEFAULT 'iplaceholderthumbnail' REFERENCES Image,
+
+	DeletedAt INTEGER
 )
 STRICT;
+CREATE INDEX Idx_Episode_Trash ON Episode (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE SeasonEpisode
 (
@@ -103,21 +120,30 @@ CREATE TABLE SeasonEpisode
 	Label     TEXT NOT NULL, -- episode number e.g. "5", or "Special"
 	Number    INTEGER NOT NULL, -- 0 for specials
 	Slug      TEXT NOT NULL,
-	UNIQUE (SeasonID, SortKey),
-	UNIQUE (EditionID, Slug),
+
+	DeletedAt INTEGER,
+
 	PRIMARY KEY (SeasonID, EpisodeID)
 )
 STRICT, WITHOUT ROWID;
 CREATE INDEX Index_SeasonEpisode_EpisodeID ON SeasonEpisode (EpisodeID);
+CREATE UNIQUE INDEX UQ_SeasonEpisode_SeasonID_SortKey ON SeasonEpisode (SeasonID, SortKey) WHERE DeletedAt IS NULL;
+CREATE UNIQUE INDEX UQ_SeasonEpisode_EditionID_Slug  ON SeasonEpisode (EditionID, Slug)   WHERE DeletedAt IS NULL;
 
 CREATE TABLE Movie
 (
 	ID     TEXT PRIMARY KEY,
-	Slug   TEXT NOT NULL UNIQUE,
-	TMDBID INTEGER UNIQUE,
-	IMDBID TEXT UNIQUE
+	Slug   TEXT NOT NULL,
+	TMDBID INTEGER,
+	IMDBID TEXT,
+
+	DeletedAt INTEGER
 )
 STRICT;
+CREATE UNIQUE INDEX UQ_Movie_Slug   ON Movie (Slug)   WHERE DeletedAt IS NULL;
+CREATE UNIQUE INDEX UQ_Movie_TMDBID ON Movie (TMDBID) WHERE DeletedAt IS NULL AND TMDBID IS NOT NULL;
+CREATE UNIQUE INDEX UQ_Movie_IMDBID ON Movie (IMDBID) WHERE DeletedAt IS NULL AND IMDBID IS NOT NULL;
+CREATE INDEX Idx_Movie_Trash        ON Movie (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE MovieEdition
 (
@@ -130,14 +156,20 @@ CREATE TABLE MovieEdition
 	ReleaseDate TEXT NOT NULL, -- YYYY-MM-DD; may be empty
 	Runtime  INTEGER NOT NULL,    -- minutes
 	PosterID TEXT NOT NULL DEFAULT 'iplaceholderposter' REFERENCES Image,
-	UNIQUE (MovieID, Slug)
+
+	DeletedAt INTEGER
 )
 STRICT;
+CREATE UNIQUE INDEX UQ_MovieEdition_MovieID_Slug ON MovieEdition (MovieID, Slug) WHERE DeletedAt IS NULL;
+CREATE INDEX Idx_MovieEdition_Trash ON MovieEdition (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE EpisodeVideo
 (
 	EpisodeID TEXT NOT NULL REFERENCES Episode,
 	VideoID   TEXT NOT NULL REFERENCES Video,
+
+	DeletedAt INTEGER,
+
 	PRIMARY KEY (EpisodeID, VideoID)
 )
 STRICT;
@@ -146,6 +178,9 @@ CREATE TABLE MovieVideo
 (
 	MovieEditionID TEXT NOT NULL REFERENCES MovieEdition,
 	VideoID        TEXT NOT NULL REFERENCES Video,
+
+	DeletedAt INTEGER,
+
 	PRIMARY KEY (MovieEditionID, VideoID)
 )
 STRICT, WITHOUT ROWID;
@@ -160,9 +195,12 @@ CREATE TABLE Video
 	OriginalType TEXT NOT NULL DEFAULT (''), -- MIME type of original; empty until probed
 	Duration     INTEGER NOT NULL DEFAULT (0), -- milliseconds; 0 until probed
 	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
-	UNIQUE (InfoHash, Name)
+
+	DeletedAt INTEGER
 )
 STRICT;
+CREATE UNIQUE INDEX UQ_Video_InfoHash_Name ON Video (InfoHash, Name) WHERE DeletedAt IS NULL;
+CREATE INDEX Idx_Video_Trash ON Video (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE AudioTrack
 (
@@ -250,16 +288,23 @@ CREATE INDEX Index_Setting_Group ON Setting ("Group");
 CREATE TABLE Collection
 (
 	ID       TEXT PRIMARY KEY DEFAULT ('col'||newID()),
-	Slug     TEXT NOT NULL UNIQUE,
+	Slug     TEXT NOT NULL,
 	Title    TEXT NOT NULL,
-	BannerID TEXT NOT NULL DEFAULT 'iplaceholderbanner' REFERENCES Image
+	BannerID TEXT NOT NULL DEFAULT 'iplaceholderbanner' REFERENCES Image,
+
+	DeletedAt INTEGER
 )
 STRICT, WITHOUT ROWID;
+CREATE UNIQUE INDEX UQ_Collection_Slug ON Collection (Slug) WHERE DeletedAt IS NULL;
+CREATE INDEX Idx_Collection_Trash ON Collection (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE CollectionMovie
 (
 	CollectionID TEXT NOT NULL REFERENCES Collection,
 	MovieID      TEXT NOT NULL REFERENCES Movie,
+
+	DeletedAt INTEGER,
+
 	PRIMARY KEY (CollectionID, MovieID)
 )
 STRICT, WITHOUT ROWID;
@@ -268,6 +313,24 @@ CREATE TABLE CollectionSeries
 (
 	CollectionID TEXT NOT NULL REFERENCES Collection,
 	SeriesID      TEXT NOT NULL REFERENCES Series,
+
+	DeletedAt INTEGER,
+
 	PRIMARY KEY (CollectionID, SeriesID)
 )
 STRICT, WITHOUT ROWID;
+
+-- Trash table: centralized cascade-origin tracking for soft-deleted entities.
+-- Junctions only carry DeletedAt; the Trash table tracks which root
+-- caused the cascade and stores frozen title/subtitle for display.
+CREATE TABLE Trash
+(
+	ID        TEXT PRIMARY KEY,
+	Title     TEXT NOT NULL,
+	Subtitle  TEXT NOT NULL,
+	DeletedAt INTEGER NOT NULL,
+	CascadeOf TEXT REFERENCES Trash(ID) ON DELETE CASCADE
+)
+STRICT;
+CREATE INDEX Idx_Trash_DirectDeletedAt ON Trash (DeletedAt DESC) WHERE CascadeOf IS NULL;
+CREATE INDEX Idx_Trash_CascadeOf       ON Trash (CascadeOf)     WHERE CascadeOf IS NOT NULL;

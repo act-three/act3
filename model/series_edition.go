@@ -320,7 +320,21 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 			OldText: sed.Label,
 		})
 	})
-	slug, err := tx.generateSeriesEditionSlug(ctx, label, sed.SeriesID, sed.Slug)
+	return tx.seriesEditionEnsureSlug(ctx, id)
+}
+
+// seriesEditionEnsureSlug is the SeriesEdition analog of
+// movieEditionEnsureSlug.
+func (tx *TxRW) seriesEditionEnsureSlug(ctx Context, id string) error {
+	sed, err := tx.q.SeriesEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	var allow []string
+	if sed.DeletedAt == nil {
+		allow = []string{sed.Slug}
+	}
+	slug, err := tx.generateSeriesEditionSlug(ctx, sed.Label, sed.SeriesID, allow...)
 	if err != nil {
 		return err
 	}
@@ -329,15 +343,11 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 	}
 	tx.onCommit(func() {
 		tx.m.emitEvent(&Event{
-			Type:    EventSeriesEditionSetSlug,
-			ID:      id,
-			NewText: slug,
-			OldText: sed.Slug,
+			Type: EventSeriesEditionSetSlug, ID: id, OldText: sed.Slug, NewText: slug,
 		})
 	})
 	return tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
-		Slug: slug,
-		ID:   id,
+		Slug: slug, ID: id,
 	})
 }
 
@@ -381,6 +391,43 @@ func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
 		})
 	})
 	return nil
+}
+
+// SeriesEditionSetDefault promotes the given edition to be
+// the default (Slug="") for its series.
+// The previous default gets a slug generated from its label.
+func (tx *TxRW) SeriesEditionSetDefault(ctx Context, id string) error {
+	sed, err := tx.q.SeriesEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	if sed.Slug == "" {
+		return nil // already default
+	}
+	old, err := tx.q.SeriesEditionGetDefault(ctx, sed.SeriesID)
+	if err != nil {
+		return err
+	}
+	oldSlug, err := tx.generateSeriesEditionSlug(ctx, old.Label, sed.SeriesID)
+	if err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		tx.m.emitEvent(&Event{
+			Type: EventSeriesEditionSetSlug, ID: old.ID, OldText: "", NewText: oldSlug,
+		})
+		tx.m.emitEvent(&Event{
+			Type: EventSeriesEditionSetSlug, ID: sed.ID, OldText: sed.Slug, NewText: "",
+		})
+	})
+	if err := tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
+		Slug: oldSlug, ID: old.ID,
+	}); err != nil {
+		return err
+	}
+	return tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
+		Slug: "", ID: sed.ID,
+	})
 }
 
 func (tx *TxRW) generateSeriesEditionSlug(ctx Context, label, seriesID string, allow ...string) (string, error) {

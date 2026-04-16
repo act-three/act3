@@ -345,32 +345,48 @@ func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
 			OldText: col.Title,
 		})
 	})
-	slug, err := tx.collectionFindSlug(ctx, title, col.Slug)
+	return tx.collectionEnsureSlug(ctx, id)
+}
+
+// collectionEnsureSlug aligns the Collection's slug with its current
+// title, emitting EventCollectionSetSlug if it changes, and keeps the
+// Slug table row in sync. Safe to call on live collections (title-
+// change) or trashed ones (restore).
+func (tx *TxRW) collectionEnsureSlug(ctx Context, id string) error {
+	col, err := tx.q.CollectionGet(ctx, id)
 	if err != nil {
 		return err
 	}
-	if slug == col.Slug {
-		return nil
+	var allow []string
+	if col.DeletedAt == nil {
+		allow = []string{col.Slug}
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventCollectionSetSlug,
-			ID:      id,
-			NewText: slug,
-			OldText: col.Slug,
+	slug, err := tx.collectionFindSlug(ctx, col.Title, allow...)
+	if err != nil {
+		return err
+	}
+	if slug != col.Slug {
+		tx.onCommit(func() {
+			tx.m.emitEvent(&Event{
+				Type:    EventCollectionSetSlug,
+				ID:      id,
+				OldText: col.Slug,
+				NewText: slug,
+			})
 		})
-	})
-	err = tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{
-		Slug:   slug,
-		Target: id,
-	})
-	if err != nil {
-		return err
+		if err := tx.q.CollectionSetSlug(ctx, schema.CollectionSetSlugParams{Slug: slug, ID: id}); err != nil {
+			return err
+		}
 	}
-	return tx.q.CollectionSetSlug(ctx, schema.CollectionSetSlugParams{
-		Slug: slug,
-		ID:   id,
-	})
+	if col.DeletedAt != nil {
+		return tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+			Slug: slug, Kind: "collection", Target: id,
+		})
+	}
+	if slug != col.Slug {
+		return tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{Slug: slug, Target: id})
+	}
+	return nil
 }
 
 func (tx *TxRW) collectionFindSlug(ctx Context, title string, allow ...string) (string, error) {

@@ -670,10 +670,7 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID, episodeID string, sortKe
 			NewText: episodeID,
 		})
 	})
-	if err := tx.q.SeasonEpisodeSortKeyBump(ctx, schema.SeasonEpisodeSortKeyBumpParams{
-		SeasonID: sn.ID,
-		SortKey:  sortKey,
-	}); err != nil {
+	if err := tx.seasonEpisodeSortKeyBump(ctx, sn.ID, sortKey); err != nil {
 		return err
 	}
 	if err := tx.q.SeasonEpisodeCreate(ctx, schema.SeasonEpisodeCreateParams{

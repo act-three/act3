@@ -77,8 +77,103 @@ func (c *Config) eventView(ctx context.Context, ev *model.Event) html.Node {
 		return view.EpisodeEditionButtonUpdate(ev.ID, ev.NewText, false, sortKey)
 	case model.EventTaskStatsChange:
 		return c.eventTaskStatsChange(ctx)
+	case model.EventTrash:
+		return c.eventTrash(ctx, ev.TrashKind, ev.ID)
+	case model.EventTrashCascade:
+		return c.eventTrashCascade(ev.TrashItems)
+	case model.EventRestore:
+		return c.eventRestore(ctx, ev.TrashKind, ev.ID, ev.TrashItems)
+	case model.EventPurge:
+		return c.eventPurge(ev.ID)
 	}
 	return nil
+}
+
+func (c *Config) eventTrash(ctx context.Context, kind model.TrashKind, id string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		it, err := tx.TrashItem(ctx, id)
+		if err != nil {
+			return view.MediaListRemove(kind, id), nil
+		}
+		return html.Group(
+			view.MediaListRemove(kind, id),
+			view.TrashListAppend(&it),
+		), nil
+	})
+	return n
+}
+
+func (c *Config) eventTrashCascade(items []model.TrashItem) html.Node {
+	var nodes []html.Node
+	for _, it := range items {
+		if n := view.MediaListRemove(it.Kind, it.ID); n != nil {
+			nodes = append(nodes, n)
+		}
+	}
+	if len(nodes) == 0 {
+		return nil
+	}
+	return html.Group(nodes...)
+}
+
+func (c *Config) eventRestore(ctx context.Context, kind model.TrashKind, id string, ancestors []model.TrashItem) html.Node {
+	nodes := []html.Node{view.TrashListRemove(id)}
+	for _, it := range ancestors {
+		nodes = append(nodes, view.TrashListRemove(it.ID))
+	}
+	if n := c.mediaListAppend(ctx, kind, id); n != nil {
+		nodes = append(nodes, n)
+	}
+	return html.Group(nodes...)
+}
+
+func (c *Config) mediaListAppend(ctx context.Context, kind model.TrashKind, id string) html.Node {
+	n, _ := c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		switch kind {
+		case model.TrashKindMovie:
+			mo, err := tx.MovieHead(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			meds, err := tx.MovieEditionList(ctx, mo)
+			if err != nil {
+				return nil, err
+			}
+			for _, mw := range meds {
+				if mw.MovieEditionHead.Slug() == "" {
+					return view.MoviesListAppend(mw), nil
+				}
+			}
+			return nil, nil
+		case model.TrashKindSeries:
+			sr, err := tx.SeriesHead(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			sws, err := tx.SeriesEditionList(ctx, sr)
+			if err != nil {
+				return nil, err
+			}
+			for _, sw := range sws {
+				if sw.SeriesEditionHead.Slug() == "" {
+					return view.SeriesListAppend(sw), nil
+				}
+			}
+			return nil, nil
+		case model.TrashKindCollection:
+			col, err := tx.CollectionHead(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			return view.CollectionsListAppend(col), nil
+		}
+		return nil, nil
+	})
+	return n
+}
+
+func (c *Config) eventPurge(id string) html.Node {
+	return view.TrashListRemove(id)
 }
 
 func (c *Config) eventTaskStatsChange(ctx context.Context) html.Node {

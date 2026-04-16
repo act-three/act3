@@ -27,16 +27,22 @@ var (
 	EventSeasonEpisodeRemove       = "season-episode-remove"
 	EventDownloadFileAttach        = "download-file-attach"
 	EventTaskStatsChange           = "task-stats-change"
+	EventTrash                     = "trash"
+	EventTrashCascade              = "trash-cascade"
+	EventRestore                   = "restore"
+	EventPurge                     = "purge"
 )
 
 type Event struct {
 	Type     string
 	Progress *progress.Item
 
-	ID      string
-	Addr    []string
-	NewText string
-	OldText string
+	ID         string
+	Addr       []string
+	NewText    string
+	OldText    string
+	TrashKind  TrashKind
+	TrashItems []TrashItem
 }
 
 func (m *Model) emitEvent(ev *Event) {

@@ -126,6 +126,16 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							collectionSeriesItems(col),
 						),
 					),
+
+					SettingsGroup()(
+						SettingsItem()(
+							SettingsItemLabel()(
+								SettingsItemLabelTitle("Delete Collection"),
+								SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
+							),
+							trashForm(col.ID()),
+						),
+					),
 				),
 			),
 		),

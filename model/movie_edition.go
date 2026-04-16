@@ -287,7 +287,24 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 			OldText: med.Label,
 		})
 	})
-	slug, err := tx.movieEditionFindSlug(ctx, label, med.MovieID, med.Slug)
+	return tx.movieEditionEnsureSlug(ctx, id)
+}
+
+// movieEditionEnsureSlug aligns the edition's slug with its current
+// label, emitting EventMovieEditionSetSlug if it changes. Safe to call
+// when the edition is live (e.g. after a label change) or trashed
+// (during restore); when live, the current slug is held in reserve so
+// findSlug doesn't reject it as self-collision.
+func (tx *TxRW) movieEditionEnsureSlug(ctx Context, id string) error {
+	med, err := tx.q.MovieEditionGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	var allow []string
+	if med.DeletedAt == nil {
+		allow = []string{med.Slug}
+	}
+	slug, err := tx.movieEditionFindSlug(ctx, med.Label, med.MovieID, allow...)
 	if err != nil {
 		return err
 	}
@@ -335,32 +352,7 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
-	slug, err := tx.movieFindSlug(ctx, title, yearFromReleaseDate(med.ReleaseDate), mo.ID, mo.Slug)
-	if err != nil {
-		return err
-	}
-	if slug == mo.Slug {
-		return nil
-	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventMovieSetSlug,
-			ID:      mo.ID,
-			NewText: slug,
-			OldText: mo.Slug,
-		})
-	})
-	err = tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{
-		Slug:   slug,
-		Target: mo.ID,
-	})
-	if err != nil {
-		return err
-	}
-	return tx.q.MovieSlugSet(ctx, schema.MovieSlugSetParams{
-		Slug: slug,
-		ID:   mo.ID,
-	})
+	return tx.movieEnsureSlug(ctx, mo.ID)
 }
 
 func (tx *TxRW) MovieEditionReleaseDateSet(ctx Context, id, date string) error {
@@ -448,12 +440,18 @@ func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
 	if err != nil {
 		return err
 	}
-	// Generate a slug for the old default based on its label.
 	oldSlug, err := tx.movieEditionFindSlug(ctx, old.Label, med.MovieID)
 	if err != nil {
 		return err
 	}
-	// Assign the old default a real slug, freeing up "".
+	tx.onCommit(func() {
+		tx.m.emitEvent(&Event{
+			Type: EventMovieEditionSetSlug, ID: old.ID, NewText: oldSlug,
+		})
+		tx.m.emitEvent(&Event{
+			Type: EventMovieEditionSetSlug, ID: med.ID, OldText: med.Slug,
+		})
+	})
 	err = tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
 		Slug: oldSlug,
 		ID:   old.ID,
@@ -461,7 +459,6 @@ func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
 	if err != nil {
 		return err
 	}
-	// Promote the new edition to default.
 	return tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
 		Slug: "",
 		ID:   med.ID,

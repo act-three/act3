@@ -10,6 +10,9 @@ RETURNING *;
 -- name: AudioTrackDeleteByVideoID :exec
 DELETE FROM AudioTrack WHERE VideoID = ?;
 
+-- name: AudioTrackDeleteByVideoIDList :exec
+DELETE FROM AudioTrack WHERE VideoID IN (sqlc.slice(ids));
+
 -- name: AudioTrackListByVideoID :many
 SELECT * FROM AudioTrack
 WHERE VideoID = ?
@@ -44,21 +47,35 @@ RETURNING *;
 SELECT * FROM Collection WHERE ID = ?;
 
 -- name: CollectionGetBySlug :one
-SELECT * FROM Collection WHERE Slug = ?;
+SELECT * FROM Collection WHERE Slug = ? AND DeletedAt IS NULL;
 
 -- name: CollectionGetStats :one
 SELECT COUNT(*) AS ItemCount, CAST(COALESCE(SUM(Runtime), 0) AS INTEGER) AS RuntimeMinutes FROM (
 	SELECT MovieEdition.Runtime FROM MovieEdition
-	WHERE MovieEdition.Slug = '' AND MovieEdition.MovieID IN (
-		SELECT CollectionMovie.MovieID FROM CollectionMovie WHERE CollectionMovie.CollectionID = sqlc.arg(ID)
+	WHERE MovieEdition.DeletedAt IS NULL
+	AND MovieEdition.Slug = '' AND MovieEdition.MovieID IN (
+		SELECT CollectionMovie.MovieID FROM CollectionMovie
+		WHERE CollectionMovie.DeletedAt IS NULL
+		AND CollectionMovie.CollectionID = sqlc.arg(ID)
+		AND CollectionMovie.MovieID IN (SELECT ID FROM Movie WHERE DeletedAt IS NULL)
 	)
 	UNION ALL
 	SELECT Episode.Runtime FROM Episode
-	WHERE Episode.Type != 'insignificant_special' AND Episode.ID IN (
-		SELECT SeasonEpisode.EpisodeID FROM SeasonEpisode WHERE SeasonEpisode.SeasonID IN (
-			SELECT Season.ID FROM Season WHERE Season.EditionID IN (
-				SELECT SeriesEdition.ID FROM SeriesEdition WHERE SeriesEdition.Slug = '' AND SeriesEdition.SeriesID IN (
-					SELECT CollectionSeries.SeriesID FROM CollectionSeries WHERE CollectionSeries.CollectionID = sqlc.arg(ID)
+	WHERE Episode.DeletedAt IS NULL
+	AND Episode.Type != 'insignificant_special' AND Episode.ID IN (
+		SELECT SeasonEpisode.EpisodeID FROM SeasonEpisode
+		WHERE SeasonEpisode.DeletedAt IS NULL
+		AND SeasonEpisode.SeasonID IN (
+			SELECT Season.ID FROM Season
+			WHERE Season.DeletedAt IS NULL
+			AND Season.EditionID IN (
+				SELECT SeriesEdition.ID FROM SeriesEdition
+				WHERE SeriesEdition.DeletedAt IS NULL
+				AND SeriesEdition.Slug = '' AND SeriesEdition.SeriesID IN (
+					SELECT CollectionSeries.SeriesID FROM CollectionSeries
+					WHERE CollectionSeries.DeletedAt IS NULL
+					AND CollectionSeries.CollectionID = sqlc.arg(ID)
+					AND CollectionSeries.SeriesID IN (SELECT ID FROM Series WHERE DeletedAt IS NULL)
 				)
 			)
 		)
@@ -67,6 +84,7 @@ SELECT COUNT(*) AS ItemCount, CAST(COALESCE(SUM(Runtime), 0) AS INTEGER) AS Runt
 
 -- name: CollectionList :many
 SELECT * FROM Collection
+WHERE DeletedAt IS NULL
 ORDER BY Title;
 
 -- name: CollectionMovieAdd :exec
@@ -80,7 +98,49 @@ DELETE FROM CollectionMovie WHERE CollectionID = ? AND MovieID = ?;
 SELECT m.* FROM Movie m
 JOIN CollectionMovie cm ON cm.MovieID = m.ID
 WHERE cm.CollectionID = ?
+AND cm.DeletedAt IS NULL
+AND m.DeletedAt IS NULL
 ORDER BY m.Slug;
+
+-- name: CollectionMoviePurgeByCascade :exec
+DELETE FROM CollectionMovie
+WHERE CollectionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+   OR MovieID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: CollectionMovieRestoreByCascade :exec
+UPDATE CollectionMovie SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (CollectionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+  OR MovieID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID)))
+AND CollectionID IN (SELECT ID FROM Collection WHERE DeletedAt IS NULL)
+AND MovieID IN (SELECT ID FROM Movie WHERE DeletedAt IS NULL);
+
+-- name: CollectionMovieSoftDelete :exec
+UPDATE CollectionMovie
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE CollectionID = sqlc.arg(CollectionID) AND MovieID = sqlc.arg(MovieID) AND DeletedAt IS NULL;
+
+-- name: CollectionMovieSoftDeleteByCollectionID :exec
+UPDATE CollectionMovie
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE CollectionID = sqlc.arg(CollectionID) AND DeletedAt IS NULL;
+
+-- name: CollectionMovieSoftDeleteByMovieID :exec
+UPDATE CollectionMovie
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE MovieID = sqlc.arg(MovieID) AND DeletedAt IS NULL;
+
+-- name: CollectionPurgeByCascade :exec
+DELETE FROM Collection
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: CollectionRestore :exec
+UPDATE Collection SET DeletedAt = NULL
+WHERE ID = ?;
+
+-- name: CollectionRestoreByCascade :exec
+UPDATE Collection SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
 
 -- name: CollectionSeriesAdd :exec
 INSERT INTO CollectionSeries (CollectionID, SeriesID)
@@ -93,13 +153,48 @@ DELETE FROM CollectionSeries WHERE CollectionID = ? AND SeriesID = ?;
 SELECT s.* FROM Series s
 JOIN CollectionSeries cs ON cs.SeriesID = s.ID
 WHERE cs.CollectionID = ?
+AND cs.DeletedAt IS NULL
+AND s.DeletedAt IS NULL
 ORDER BY s.Title;
+
+-- name: CollectionSeriesPurgeByCascade :exec
+DELETE FROM CollectionSeries
+WHERE CollectionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+   OR SeriesID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: CollectionSeriesRestoreByCascade :exec
+UPDATE CollectionSeries SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (CollectionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+  OR SeriesID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID)))
+AND CollectionID IN (SELECT ID FROM Collection WHERE DeletedAt IS NULL)
+AND SeriesID IN (SELECT ID FROM Series WHERE DeletedAt IS NULL);
+
+-- name: CollectionSeriesSoftDelete :exec
+UPDATE CollectionSeries
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE CollectionID = sqlc.arg(CollectionID) AND SeriesID = sqlc.arg(SeriesID) AND DeletedAt IS NULL;
+
+-- name: CollectionSeriesSoftDeleteByCollectionID :exec
+UPDATE CollectionSeries
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE CollectionID = sqlc.arg(CollectionID) AND DeletedAt IS NULL;
+
+-- name: CollectionSeriesSoftDeleteBySeriesID :exec
+UPDATE CollectionSeries
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE SeriesID = sqlc.arg(SeriesID) AND DeletedAt IS NULL;
 
 -- name: CollectionSetSlug :exec
 UPDATE Collection SET Slug = ? WHERE ID = ?;
 
 -- name: CollectionSetTitle :exec
 UPDATE Collection SET Title = ? WHERE ID = ?;
+
+-- name: CollectionSoftDelete :exec
+UPDATE Collection
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
 -- name: DownloadCreate :one
 INSERT INTO Download
@@ -165,22 +260,59 @@ VALUES (?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: EpisodeGet :one
+SELECT * FROM Episode WHERE ID = ? AND DeletedAt IS NULL;
+
+-- EpisodeGetAny returns an Episode regardless of trash state.
+-- Used by the trash/restore code to inspect rows that may be soft-deleted.
+-- name: EpisodeGetAny :one
 SELECT * FROM Episode WHERE ID = ?;
 
 -- name: EpisodeListByEditionID :many
 SELECT * FROM Episode
-WHERE ID IN (
-	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE DeletedAt IS NULL AND EditionID = ?
 )
 ORDER BY ID;
 
 -- name: EpisodeListBySeriesID :many
 SELECT * FROM Episode
-WHERE ID IN (
+WHERE DeletedAt IS NULL
+AND ID IN (
 	SELECT EpisodeID FROM SeasonEpisode
-	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+	WHERE DeletedAt IS NULL
+	AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 )
 ORDER BY ID;
+
+-- EpisodeListOrphans returns live Episode IDs with no live
+-- SeasonEpisode junctions. Called after soft-deleting a cascade's
+-- junctions to reap episodes the cascade just stranded.
+-- name: EpisodeListOrphans :many
+SELECT ep.ID FROM Episode ep
+WHERE ep.DeletedAt IS NULL
+AND NOT EXISTS (
+	SELECT 1 FROM SeasonEpisode se
+	WHERE se.EpisodeID = ep.ID AND se.DeletedAt IS NULL
+);
+
+-- name: EpisodePurgeByCascade :exec
+DELETE FROM Episode
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: EpisodeRestore :exec
+UPDATE Episode SET DeletedAt = NULL
+WHERE ID = ?;
+
+-- name: EpisodeRestoreByCascade :exec
+UPDATE Episode SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
+
+-- name: EpisodeSoftDelete :exec
+UPDATE Episode
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
 -- name: EpisodeSummarySet :exec
 UPDATE Episode SET Summary = ? WHERE ID = ?;
@@ -202,14 +334,19 @@ RETURNING *;
 -- name: EpisodeVideoDelete :exec
 DELETE FROM EpisodeVideo WHERE EpisodeID = ? AND VideoID = ?;
 
+-- name: EpisodeVideoDistinctEpisodesByVideo :many
+SELECT DISTINCT EpisodeID FROM EpisodeVideo WHERE VideoID = ?;
+
 -- name: EpisodeVideoEnsure :exec
 INSERT OR IGNORE INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?);
 
 -- name: EpisodeVideoListByEditionID :many
 SELECT * FROM EpisodeVideo
-WHERE EpisodeID IN (
-	SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
+WHERE DeletedAt IS NULL
+AND EpisodeID IN (
+	SELECT EpisodeID FROM SeasonEpisode
+	WHERE DeletedAt IS NULL AND EditionID = ?
 );
 
 -- name: EpisodeVideoListByInfoHash :many
@@ -218,14 +355,44 @@ WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?);
 
 -- name: EpisodeVideoListBySeriesID :many
 SELECT * FROM EpisodeVideo
-WHERE EpisodeID IN (
+WHERE DeletedAt IS NULL
+AND EpisodeID IN (
 	SELECT EpisodeID FROM SeasonEpisode
-	WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+	WHERE DeletedAt IS NULL
+	AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 );
 
 -- name: EpisodeVideoListByVideoID :many
 SELECT * FROM EpisodeVideo
 WHERE VideoID = ?;
+
+-- name: EpisodeVideoPurgeByCascade :exec
+DELETE FROM EpisodeVideo
+WHERE EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+   OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: EpisodeVideoRestoreByCascade :exec
+UPDATE EpisodeVideo SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+  OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID)))
+AND EpisodeID IN (SELECT ID FROM Episode WHERE DeletedAt IS NULL)
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL);
+
+-- name: EpisodeVideoSoftDelete :exec
+UPDATE EpisodeVideo
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE EpisodeID = sqlc.arg(EpisodeID) AND VideoID = sqlc.arg(VideoID) AND DeletedAt IS NULL;
+
+-- name: EpisodeVideoSoftDeleteByEpisodeID :exec
+UPDATE EpisodeVideo
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE EpisodeID = sqlc.arg(EpisodeID) AND DeletedAt IS NULL;
+
+-- name: EpisodeVideoSoftDeleteByVideoID :exec
+UPDATE EpisodeVideo
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE VideoID = sqlc.arg(VideoID) AND DeletedAt IS NULL;
 
 -- name: ImageCreate :one
 INSERT INTO Image (OriginalKey, Type)
@@ -263,6 +430,15 @@ INSERT INTO MovieEdition (Title, Label, Slug, MovieID, Summary, ReleaseDate, Run
 VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
+-- MovieEditionDefaultSuccessor returns the lex-smallest live non-default
+-- edition of the given movie, for promotion when the current default is
+-- trashed. Errors with sql.ErrNoRows if none exists.
+-- name: MovieEditionDefaultSuccessor :one
+SELECT * FROM MovieEdition
+WHERE MovieID = ? AND DeletedAt IS NULL AND Slug != ''
+ORDER BY ID
+LIMIT 1;
+
 -- name: MovieEditionGet :one
 SELECT * FROM MovieEdition WHERE ID = ?;
 
@@ -273,28 +449,48 @@ SELECT * FROM MovieEdition WHERE MovieID = ? AND Slug = '';
 UPDATE MovieEdition SET Label = ? WHERE ID = ?;
 
 -- name: MovieEditionListByDownload :many
-SELECT * FROM MovieEdition WHERE ID IN (SELECT MovieEditionID FROM Download);
+SELECT * FROM MovieEdition
+WHERE DeletedAt IS NULL
+AND ID IN (SELECT MovieEditionID FROM Download);
 
 -- name: MovieEditionListByMovieID :many
-SELECT * FROM MovieEdition WHERE MovieID = ?;
+SELECT * FROM MovieEdition WHERE MovieID = ? AND DeletedAt IS NULL;
 
 -- name: MovieEditionListDefault :many
-SELECT * FROM MovieEdition WHERE Slug = '';
+SELECT * FROM MovieEdition WHERE Slug = '' AND DeletedAt IS NULL;
 
 -- name: MovieEditionPosterIDSet :exec
 UPDATE MovieEdition SET PosterID = ? WHERE ID = ?;
 
+-- name: MovieEditionPurgeByCascade :exec
+DELETE FROM MovieEdition
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
 -- name: MovieEditionReleaseDateSet :exec
 UPDATE MovieEdition SET ReleaseDate = ? WHERE ID = ?;
+
+-- name: MovieEditionRestore :exec
+UPDATE MovieEdition SET DeletedAt = NULL
+WHERE ID = ?;
+
+-- name: MovieEditionRestoreByCascade :exec
+UPDATE MovieEdition SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
 
 -- name: MovieEditionRuntimeSet :exec
 UPDATE MovieEdition SET Runtime = ? WHERE ID = ?;
 
 -- name: MovieEditionSlugExists :one
-SELECT COUNT(*) FROM MovieEdition WHERE MovieID = ? AND Slug = ?;
+SELECT COUNT(*) FROM MovieEdition
+WHERE MovieID = ? AND Slug = ? AND DeletedAt IS NULL;
 
 -- name: MovieEditionSlugSet :exec
 UPDATE MovieEdition SET Slug = ? WHERE ID = ?;
+
+-- name: MovieEditionSoftDelete :exec
+UPDATE MovieEdition
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
 -- name: MovieEditionSummarySet :exec
 UPDATE MovieEdition SET Summary = ? WHERE ID = ?;
@@ -310,28 +506,55 @@ SELECT * FROM Movie
 WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID = ?);
 
 -- name: MovieGetBySlug :one
-SELECT * FROM Movie WHERE Slug = ?;
+SELECT * FROM Movie WHERE Slug = ? AND DeletedAt IS NULL;
 
 -- name: MovieList :many
 SELECT * FROM Movie
+WHERE DeletedAt IS NULL
 ORDER BY Slug;
 
 -- name: MovieListByDownload :many
-SELECT * FROM Movie WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID IN (SELECT MovieEditionID FROM Download));
+SELECT * FROM Movie
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT MovieID FROM MovieEdition
+	WHERE DeletedAt IS NULL
+	AND MovieEdition.ID IN (SELECT MovieEditionID FROM Download)
+);
 
 -- name: MovieListByTMDBID :many
-SELECT * FROM Movie WHERE TMDBID IN (sqlc.slice(ids));
+SELECT * FROM Movie WHERE DeletedAt IS NULL AND TMDBID IN (sqlc.slice(ids));
+
+-- name: MoviePurgeByCascade :exec
+DELETE FROM Movie
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: MovieRestore :exec
+UPDATE Movie SET DeletedAt = NULL
+WHERE ID = ?;
+
+-- name: MovieRestoreByCascade :exec
+UPDATE Movie SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
 
 -- name: MovieSlugExists :one
-SELECT COUNT(*) FROM Movie WHERE Slug = ?;
+SELECT COUNT(*) FROM Movie WHERE Slug = ? AND DeletedAt IS NULL;
 
 -- name: MovieSlugSet :exec
 UPDATE Movie SET Slug = ? WHERE ID = ?;
+
+-- name: MovieSoftDelete :exec
+UPDATE Movie
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
 -- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)
 RETURNING *;
+
+-- name: MovieVideoDistinctEditionsByVideo :many
+SELECT DISTINCT MovieEditionID FROM MovieVideo WHERE VideoID = ?;
 
 -- name: MovieVideoListByInfoHash :many
 SELECT * FROM MovieVideo
@@ -339,11 +562,40 @@ WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?);
 
 -- name: MovieVideoListByMovieEditionID :many
 SELECT * FROM MovieVideo
-WHERE MovieEditionID = ?;
+WHERE DeletedAt IS NULL AND MovieEditionID = ?;
 
 -- name: MovieVideoListByMovieID :many
 SELECT * FROM MovieVideo
-WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?);
+WHERE DeletedAt IS NULL
+AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL AND MovieID = ?);
+
+-- name: MovieVideoPurgeByCascade :exec
+DELETE FROM MovieVideo
+WHERE MovieEditionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+   OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: MovieVideoRestoreByCascade :exec
+UPDATE MovieVideo SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (MovieEditionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+  OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID)))
+AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL)
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL);
+
+-- name: MovieVideoSoftDelete :exec
+UPDATE MovieVideo
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE MovieEditionID = sqlc.arg(MovieEditionID) AND VideoID = sqlc.arg(VideoID) AND DeletedAt IS NULL;
+
+-- name: MovieVideoSoftDeleteByMovieEditionID :exec
+UPDATE MovieVideo
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE MovieEditionID = sqlc.arg(MovieEditionID) AND DeletedAt IS NULL;
+
+-- name: MovieVideoSoftDeleteByVideoID :exec
+UPDATE MovieVideo
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE VideoID = sqlc.arg(VideoID) AND DeletedAt IS NULL;
 
 -- name: RenditionCreate :one
 INSERT INTO Rendition (
@@ -354,6 +606,9 @@ RETURNING *;
 
 -- name: RenditionDeleteByVideoID :exec
 DELETE FROM Rendition WHERE VideoID = ?;
+
+-- name: RenditionDeleteByVideoIDList :exec
+DELETE FROM Rendition WHERE VideoID IN (sqlc.slice(ids));
 
 -- name: RenditionGet :one
 SELECT * FROM Rendition WHERE ID = ?;
@@ -369,6 +624,10 @@ SELECT * FROM Rendition WHERE VideoID = ?;
 -- name: RenditionListEncodedStreamingByVideoID :many
 SELECT * FROM Rendition
 WHERE VideoID = ? AND Purpose = 'streaming' AND Key != '';
+
+-- name: RenditionListKeysByVideoIDs :many
+SELECT Key FROM Rendition
+WHERE VideoID IN (sqlc.slice(ids)) AND Key != '';
 
 -- name: RenditionListStreamingByEpisodeID :many
 SELECT * FROM Rendition
@@ -430,53 +689,135 @@ DELETE FROM SeasonEpisode WHERE SeasonID = ? AND EpisodeID = ?;
 -- name: SeasonEpisodeDeleteBySeasonID :exec
 DELETE FROM SeasonEpisode WHERE SeasonID = ?;
 
+-- name: SeasonEpisodeDistinctSeasonsByEpisode :many
+SELECT DISTINCT SeasonID FROM SeasonEpisode WHERE EpisodeID = ?;
+
 -- name: SeasonEpisodeGet :one
-SELECT * FROM SeasonEpisode WHERE SeasonID = ? AND EpisodeID = ?;
+SELECT * FROM SeasonEpisode
+WHERE SeasonID = ? AND EpisodeID = ? AND DeletedAt IS NULL;
 
 -- name: SeasonEpisodeGetBySlug :one
-SELECT * FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?;
+SELECT * FROM SeasonEpisode
+WHERE EditionID = ? AND Slug = ? AND DeletedAt IS NULL;
 
 -- name: SeasonEpisodeListByEditionID :many
 SELECT * FROM SeasonEpisode
-WHERE EditionID = ?
+WHERE EditionID = ? AND DeletedAt IS NULL
 ORDER BY SortKey;
 
 -- name: SeasonEpisodeListByEpisodeID :many
-SELECT * FROM SeasonEpisode WHERE EpisodeID = ?;
+SELECT * FROM SeasonEpisode WHERE EpisodeID = ? AND DeletedAt IS NULL;
 
 -- name: SeasonEpisodeListBySeasonID :many
 SELECT * FROM SeasonEpisode
-WHERE SeasonID = ?
+WHERE SeasonID = ? AND DeletedAt IS NULL
 ORDER BY SortKey;
 
 -- name: SeasonEpisodeListBySeriesID :many
 SELECT * FROM SeasonEpisode
-WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+WHERE DeletedAt IS NULL
+AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 ORDER BY SortKey;
+
+-- SeasonEpisodeListRestorableByEpisode returns soft-deleted junctions
+-- for the given episode where the season side is live, i.e. junctions
+-- that will be restored. Used to read SortKey positions for bumping
+-- before the generic junction restore runs.
+-- name: SeasonEpisodeListRestorableByEpisode :many
+SELECT * FROM SeasonEpisode
+WHERE EpisodeID = ? AND DeletedAt IS NOT NULL
+AND SeasonID IN (SELECT ID FROM Season WHERE DeletedAt IS NULL);
 
 -- name: SeasonEpisodeNumberingSet :exec
 UPDATE SeasonEpisode SET Number = ?, Label = ?, Slug = ? WHERE SeasonID = ? AND EpisodeID = ?;
 
+-- name: SeasonEpisodePurgeByCascade :exec
+DELETE FROM SeasonEpisode
+WHERE SeasonID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+   OR EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: SeasonEpisodeRestore :exec
+UPDATE SeasonEpisode SET DeletedAt = NULL
+WHERE SeasonID = ? AND EpisodeID = ?;
+
+-- name: SeasonEpisodeRestoreByCascade :exec
+UPDATE SeasonEpisode SET DeletedAt = NULL
+WHERE DeletedAt IS NOT NULL
+AND (SeasonID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
+  OR EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID)))
+AND SeasonID IN (SELECT ID FROM Season WHERE DeletedAt IS NULL)
+AND EpisodeID IN (SELECT ID FROM Episode WHERE DeletedAt IS NULL);
+
 -- name: SeasonEpisodeSlugExists :one
-SELECT COUNT(*) FROM SeasonEpisode WHERE EditionID = ? AND Slug = ?;
+SELECT COUNT(*) FROM SeasonEpisode
+WHERE EditionID = ? AND Slug = ? AND DeletedAt IS NULL;
 
 -- name: SeasonEpisodeSlugSet :exec
 UPDATE SeasonEpisode SET Slug = ? WHERE SeasonID = ? AND EpisodeID = ?;
 
+-- name: SeasonEpisodeSoftDelete :exec
+UPDATE SeasonEpisode
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE SeasonID = sqlc.arg(SeasonID) AND EpisodeID = sqlc.arg(EpisodeID) AND DeletedAt IS NULL;
+
+-- name: SeasonEpisodeSoftDeleteByEpisodeID :exec
+UPDATE SeasonEpisode
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE EpisodeID = sqlc.arg(EpisodeID) AND DeletedAt IS NULL;
+
+-- name: SeasonEpisodeSoftDeleteByEpisodeIDList :exec
+UPDATE SeasonEpisode
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE EpisodeID IN (sqlc.slice(ids)) AND DeletedAt IS NULL;
+
+-- name: SeasonEpisodeSoftDeleteBySeasonID :exec
+UPDATE SeasonEpisode
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE SeasonID = sqlc.arg(SeasonID) AND DeletedAt IS NULL;
+
+-- SeasonEpisodeSortKeyBump shifts live rows up by one to make room
+-- at the given SortKey. Done in two phases so the partial unique
+-- index on (SeasonID, SortKey) doesn't see a transient collision:
+-- first negate+offset the affected rows (guaranteed-unique interim
+-- values), then negate back to get the final +1.
 -- name: SeasonEpisodeSortKeyBump :exec
-UPDATE SeasonEpisode SET SortKey = SortKey + 1 WHERE SeasonID = ? AND SortKey >= ?;
+UPDATE SeasonEpisode SET SortKey = -(SortKey + 1)
+WHERE SeasonID = sqlc.arg(SeasonID) AND SortKey >= sqlc.arg(SortKey) AND DeletedAt IS NULL;
+
+-- name: SeasonEpisodeSortKeyBumpFinish :exec
+UPDATE SeasonEpisode SET SortKey = -SortKey
+WHERE SeasonID = ? AND SortKey < 0;
 
 -- name: SeasonGet :one
 SELECT * FROM Season WHERE ID = ?;
 
 -- name: SeasonListByEditionID :many
-SELECT * FROM Season WHERE EditionID = ?
+SELECT * FROM Season
+WHERE EditionID = ? AND DeletedAt IS NULL
 ORDER BY SortKey;
 
 -- name: SeasonListBySeriesID :many
 SELECT * FROM Season
-WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+WHERE DeletedAt IS NULL
+AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 ORDER BY SortKey;
+
+-- name: SeasonPurgeByCascade :exec
+DELETE FROM Season
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: SeasonRestore :exec
+UPDATE Season SET DeletedAt = NULL
+WHERE ID = ?;
+
+-- name: SeasonRestoreByCascade :exec
+UPDATE Season SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
+
+-- name: SeasonSoftDelete :exec
+UPDATE Season
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
 -- name: SeasonTitleSet :exec
 UPDATE Season SET Title = ? WHERE ID = ?;
@@ -503,34 +844,67 @@ INSERT INTO SeriesEdition (Label, Slug, SeriesID, Summary)
 VALUES (?, ?, ?, ?)
 RETURNING *;
 
+-- SeriesEditionDefaultSuccessor returns the lex-smallest live non-default
+-- edition of the given series, for promotion when the current default is
+-- trashed. Errors with sql.ErrNoRows if none exists.
+-- name: SeriesEditionDefaultSuccessor :one
+SELECT * FROM SeriesEdition
+WHERE SeriesID = ? AND DeletedAt IS NULL AND Slug != ''
+ORDER BY ID
+LIMIT 1;
+
 -- name: SeriesEditionGet :one
 SELECT * FROM SeriesEdition WHERE ID = ?;
 
 -- name: SeriesEditionGetBySlug :one
 SELECT SeriesEdition.* FROM SeriesEdition
 JOIN Series ON Series.ID = SeriesEdition.SeriesID
-WHERE Series.Slug = sqlc.arg(SeriesSlug) AND SeriesEdition.Slug = sqlc.arg(EditionSlug);
+WHERE Series.Slug = sqlc.arg(SeriesSlug) AND SeriesEdition.Slug = sqlc.arg(EditionSlug)
+AND SeriesEdition.DeletedAt IS NULL AND Series.DeletedAt IS NULL;
+
+-- name: SeriesEditionGetDefault :one
+SELECT * FROM SeriesEdition WHERE SeriesID = ? AND Slug = '';
 
 -- name: SeriesEditionLabelSet :exec
 UPDATE SeriesEdition SET Label = ? WHERE ID = ?;
 
 -- name: SeriesEditionListByDownload :many
-SELECT * FROM SeriesEdition WHERE ID IN (SELECT SeriesEditionID FROM Download);
+SELECT * FROM SeriesEdition
+WHERE DeletedAt IS NULL
+AND ID IN (SELECT SeriesEditionID FROM Download);
 
 -- name: SeriesEditionListBySeriesID :many
-SELECT * FROM SeriesEdition WHERE SeriesID = ?;
+SELECT * FROM SeriesEdition WHERE SeriesID = ? AND DeletedAt IS NULL;
 
 -- name: SeriesEditionListDefault :many
-SELECT * FROM SeriesEdition WHERE Slug = '';
+SELECT * FROM SeriesEdition WHERE Slug = '' AND DeletedAt IS NULL;
 
 -- name: SeriesEditionPosterIDSet :exec
 UPDATE SeriesEdition SET PosterID = ? WHERE ID = ?;
 
+-- name: SeriesEditionPurgeByCascade :exec
+DELETE FROM SeriesEdition
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: SeriesEditionRestore :exec
+UPDATE SeriesEdition SET DeletedAt = NULL
+WHERE ID = ?;
+
+-- name: SeriesEditionRestoreByCascade :exec
+UPDATE SeriesEdition SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
+
 -- name: SeriesEditionSlugExists :one
-SELECT COUNT(*) FROM SeriesEdition WHERE SeriesID = ? AND Slug = ?;
+SELECT COUNT(*) FROM SeriesEdition
+WHERE SeriesID = ? AND Slug = ? AND DeletedAt IS NULL;
 
 -- name: SeriesEditionSlugSet :exec
 UPDATE SeriesEdition SET Slug = ? WHERE ID = ?;
+
+-- name: SeriesEditionSoftDelete :exec
+UPDATE SeriesEdition
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
 -- name: SeriesEditionSummarySet :exec
 UPDATE SeriesEdition SET Summary = ? WHERE ID = ?;
@@ -543,25 +917,49 @@ SELECT * FROM Series
 WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID = ?);
 
 -- name: SeriesGetBySlug :one
-SELECT * FROM Series WHERE Slug = ?;
+SELECT * FROM Series WHERE Slug = ? AND DeletedAt IS NULL;
 
 -- name: SeriesGetByTVmazeID :one
-SELECT * FROM Series WHERE TVmazeID = ?;
+SELECT * FROM Series WHERE TVmazeID = ? AND DeletedAt IS NULL;
 
 -- name: SeriesList :many
-SELECT * FROM Series;
+SELECT * FROM Series
+WHERE DeletedAt IS NULL;
 
 -- name: SeriesListByDownload :many
-SELECT * FROM Series WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID IN (SELECT SeriesEditionID FROM Download));
+SELECT * FROM Series
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT SeriesID FROM SeriesEdition
+	WHERE DeletedAt IS NULL
+	AND SeriesEdition.ID IN (SELECT SeriesEditionID FROM Download)
+);
 
 -- name: SeriesListByTVmazeID :many
-SELECT * FROM Series WHERE TVmazeID IN (sqlc.slice(ids));
+SELECT * FROM Series WHERE DeletedAt IS NULL AND TVmazeID IN (sqlc.slice(ids));
+
+-- name: SeriesPurgeByCascade :exec
+DELETE FROM Series
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: SeriesRestore :exec
+UPDATE Series SET DeletedAt = NULL
+WHERE ID = ?;
+
+-- name: SeriesRestoreByCascade :exec
+UPDATE Series SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
 
 -- name: SeriesSlugExists :one
-SELECT COUNT(*) FROM Series WHERE Slug = ?;
+SELECT COUNT(*) FROM Series WHERE Slug = ? AND DeletedAt IS NULL;
 
 -- name: SeriesSlugSet :exec
 UPDATE Series SET Slug = ? WHERE ID = ?;
+
+-- name: SeriesSoftDelete :exec
+UPDATE Series
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
 -- name: SeriesTitleSet :exec
 UPDATE Series SET Title = ? WHERE ID = ?;
@@ -642,6 +1040,24 @@ UPDATE Task SET NextRun = ? WHERE ID = ?;
 -- name: TaskUnlock :exec
 UPDATE Task SET Running = 0 WHERE ID = ?;
 
+-- name: TrashDelete :exec
+DELETE FROM Trash WHERE ID = ?;
+
+-- name: TrashGet :one
+SELECT * FROM Trash WHERE ID = ?;
+
+-- name: TrashInsert :exec
+INSERT INTO Trash (ID, Title, Subtitle, DeletedAt, CascadeOf) VALUES (?, ?, ?, ?, ?);
+
+-- name: TrashList :many
+SELECT * FROM Trash WHERE CascadeOf IS NULL ORDER BY DeletedAt DESC;
+
+-- name: TrashListByRoot :many
+SELECT * FROM Trash WHERE CascadeOf = ? ORDER BY DeletedAt;
+
+-- name: TrashRootsBefore :many
+SELECT ID FROM Trash WHERE CascadeOf IS NULL AND DeletedAt < ?;
+
 -- name: VideoCountByInfoHash :one
 SELECT COUNT(*) FROM Video WHERE InfoHash = ?;
 
@@ -662,40 +1078,92 @@ SELECT * FROM Video WHERE InfoHash = ? AND Name = ?;
 
 -- name: VideoListByEditionID :many
 SELECT * FROM Video
-WHERE ID IN (
+WHERE DeletedAt IS NULL
+AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
-	WHERE EpisodeID IN (
-		SELECT EpisodeID FROM SeasonEpisode WHERE EditionID = ?
+	WHERE DeletedAt IS NULL
+	AND EpisodeID IN (
+		SELECT EpisodeID FROM SeasonEpisode
+		WHERE DeletedAt IS NULL AND EditionID = ?
 	)
 );
 
 -- name: VideoListByEpisodeID :many
 SELECT * FROM Video
-WHERE ID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?);
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT VideoID FROM EpisodeVideo
+	WHERE DeletedAt IS NULL AND EpisodeID = ?
+);
 
 -- name: VideoListByInfoHash :many
 SELECT * FROM Video WHERE InfoHash = ?;
 
 -- name: VideoListByMovieEditionID :many
 SELECT * FROM Video
-WHERE ID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?);
+WHERE DeletedAt IS NULL
+AND ID IN (
+	SELECT VideoID FROM MovieVideo
+	WHERE DeletedAt IS NULL AND MovieEditionID = ?
+);
 
 -- name: VideoListByMovieID :many
 SELECT * FROM Video
-WHERE ID IN (
+WHERE DeletedAt IS NULL
+AND ID IN (
 	SELECT VideoID FROM MovieVideo
-	WHERE MovieEditionID IN (SELECT ID FROM MovieEdition WHERE MovieID = ?)
+	WHERE DeletedAt IS NULL
+	AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL AND MovieID = ?)
 );
 
 -- name: VideoListBySeriesID :many
 SELECT * FROM Video
-WHERE ID IN (
+WHERE DeletedAt IS NULL
+AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
-	WHERE EpisodeID IN (
+	WHERE DeletedAt IS NULL
+	AND EpisodeID IN (
 		SELECT EpisodeID FROM SeasonEpisode
-		WHERE EditionID IN (SELECT ID FROM SeriesEdition WHERE SeriesID = ?)
+		WHERE DeletedAt IS NULL
+		AND EditionID IN (SELECT ID FROM SeriesEdition WHERE DeletedAt IS NULL AND SeriesID = ?)
 	)
 );
+
+-- VideoListOrphans returns live Video IDs with no live EpisodeVideo
+-- or MovieVideo junctions. Called after soft-deleting a cascade's
+-- junctions to reap videos the cascade just stranded.
+-- name: VideoListOrphans :many
+SELECT v.ID FROM Video v
+WHERE v.DeletedAt IS NULL
+AND NOT EXISTS (
+	SELECT 1 FROM EpisodeVideo ev
+	WHERE ev.VideoID = v.ID AND ev.DeletedAt IS NULL
+)
+AND NOT EXISTS (
+	SELECT 1 FROM MovieVideo mv
+	WHERE mv.VideoID = v.ID AND mv.DeletedAt IS NULL
+);
+
+-- name: VideoListPurgeByCascade :many
+SELECT ID, OriginalKey FROM Video
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: VideoPurgeByCascade :exec
+DELETE FROM Video
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: VideoRestore :exec
+UPDATE Video SET DeletedAt = NULL
+WHERE ID = ?;
+
+-- name: VideoRestoreByCascade :exec
+UPDATE Video SET DeletedAt = NULL
+WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
+
+-- name: VideoSoftDelete :exec
+UPDATE Video
+SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
 -- name: VideoUpdateMVPlaylist :one
 UPDATE Video SET MVPlaylist = ? WHERE ID = ?

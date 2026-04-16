@@ -196,6 +196,30 @@ func AppSeriesDetail(
 						),
 					),
 				),
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							expr.IfElse(len(editions) > 1,
+								func() html.Node {
+									return SettingsItemLabelTitle("Delete Edition")
+								},
+								func() html.Node {
+									return SettingsItemLabelTitle("Delete Series")
+								},
+							),
+							SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
+						),
+						expr.IfElse(len(editions) > 1,
+							func() html.Node {
+								return trashForm(sed.ID())
+							},
+							func() html.Node {
+								return trashForm(sr.ID())
+							},
+						),
+					),
+				),
 			),
 		),
 	)
@@ -312,10 +336,13 @@ func appSeriesDetailSeasonItem(sn *model.Season) html.Node {
 					),
 				),
 			),
-			ActionButton("/-/do/series-episode-add",
-				map[string]string{"season-id": sn.ID()},
-				ButtonGhost, ButtonSize2,
-			)(Text("Add Episode")),
+			FlexRow(Gap2)(
+				ActionButton("/-/do/series-episode-add",
+					map[string]string{"season-id": sn.ID()},
+					ButtonGhost, ButtonSize2,
+				)(Text("Add Episode")),
+				trashForm(sn.ID()),
+			),
 		),
 		turbo.StreamTarget("season-episodes-"+sn.ID(),
 			stimulus.Controller("sortable"),
@@ -512,20 +539,13 @@ func AppEpisodeDetail(
 					return appEpisodeDialogRendition(r)
 				}),
 
-				SettingsGroup(Inert(true /* TODO(april): med.Slug() == "" && len(editions) > 1 */))(
+				SettingsGroup()(
 					SettingsItem()(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Delete Episode"),
 							SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
 						),
-
-						html.Form(
-							attr.Method("POST"),
-							attr.Action("/-/do/episode-delete"),
-						)(
-							Hidden("id", ep.ID()),
-							Button(Destructive, ButtonGhost, ButtonSize2)(Text("Delete")),
-						),
+						trashForm(ep.ID()),
 					),
 				),
 			),
@@ -611,6 +631,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 				},
 				func() html.Node { return html.Group() },
 			),
+			trashForm(v.ID),
 		),
 	)
 }
