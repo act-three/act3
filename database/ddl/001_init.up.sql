@@ -188,7 +188,7 @@ STRICT, WITHOUT ROWID;
 CREATE TABLE Video
 (
 	ID           TEXT PRIMARY KEY DEFAULT ('vid'||newID()),
-	InfoHash     TEXT REFERENCES Download (InfoHash),
+	InfoHash     TEXT REFERENCES Download (InfoHash) ON DELETE SET NULL,
 	Name         TEXT NOT NULL, -- torrent path or file name
 	State        TEXT NOT NULL DEFAULT ('pending') CHECK (State IN ('pending', 'importing')),
 	OriginalKey  TEXT NOT NULL DEFAULT (''), -- empty during ingest
@@ -253,6 +253,7 @@ CREATE TABLE Download
 (
 	InfoHash            TEXT PRIMARY KEY,
 	CreatedAt           INTEGER NOT NULL DEFAULT (unixepoch()),
+	LastActivityAt      INTEGER NOT NULL DEFAULT (0),
 	State               TEXT NOT NULL CHECK (State IN (
 		'queued',
 		'downloading',
@@ -267,6 +268,7 @@ CREATE TABLE Download
 	AutoImport          INTEGER NOT NULL DEFAULT (0),
 	MovieEditionID  TEXT REFERENCES MovieEdition,
 	SeriesEditionID TEXT REFERENCES SeriesEdition,
+	DeletedAt           INTEGER,
 	CHECK ((MovieEditionID IS NULL) != (SeriesEditionID IS NULL))
 )
 STRICT;
@@ -274,6 +276,10 @@ CREATE INDEX Index_Download_SeriesEditionID ON Download (SeriesEditionID)
 WHERE SeriesEditionID IS NOT NULL;
 CREATE INDEX Index_Download_MovieEditionID ON Download (MovieEditionID)
 WHERE MovieEditionID IS NOT NULL;
+CREATE INDEX Idx_Download_Trash            ON Download (DeletedAt)
+	WHERE DeletedAt IS NOT NULL;
+CREATE INDEX Idx_Download_LastActivity     ON Download (State, LastActivityAt)
+	WHERE DeletedAt IS NULL;
 
 
 CREATE TABLE Setting

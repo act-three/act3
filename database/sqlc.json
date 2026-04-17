@@ -37,6 +37,7 @@
 						"imagerendition": "ImageRendition",
 						"imdbid": "IMDBID",
 						"infohash": "InfoHash",
+						"lastactivityat": "LastActivityAt",
 						"maxfps": "MaxFPS",
 						"maxheight": "MaxHeight",
 						"movieedition": "MovieEdition",

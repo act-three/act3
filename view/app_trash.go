@@ -209,6 +209,8 @@ func trashKindIcon(k model.TrashKind) string {
 		return "line/video-recorder"
 	case model.TrashKindCollection:
 		return "line/layers-three-01"
+	case model.TrashKindDownload:
+		return "line/download-01"
 	}
 	return "line/trash-01"
 }
@@ -239,6 +241,8 @@ func trashKindLabel(k model.TrashKind) string {
 		return "Video"
 	case model.TrashKindCollection:
 		return "Collection"
+	case model.TrashKindDownload:
+		return "Download"
 	}
 	return "Unknown"
 }

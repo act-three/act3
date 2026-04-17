@@ -413,8 +413,9 @@ func (tx *TxRW) DownloadAutoImportSet(ctx Context, infoHash string, auto bool) (
 		v = 1
 	}
 	_, err = tx.q.DownloadUpdateAutoImport(ctx, schema.DownloadUpdateAutoImportParams{
-		Autoimport: v,
-		InfoHash:   infoHash,
+		Autoimport:     v,
+		LastActivityAt: time.Now().UnixMilli(),
+		InfoHash:       infoHash,
 	})
 	if err != nil {
 		return err
@@ -522,9 +523,10 @@ func (tx *TxRW) processDownload(ctx Context, infoHash string) (err error) {
 		progress = *t.PercentDone
 	}
 	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
-		InfoHash: infoHash,
-		State:    state,
-		Progress: progress,
+		State:          state,
+		Progress:       progress,
+		LastActivityAt: time.Now().UnixMilli(),
+		InfoHash:       infoHash,
 	})
 	if err != nil {
 		return err
@@ -565,12 +567,36 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader, sedID, medID *str
 		}
 	}
 	infoHash := mi.HashInfoBytes().HexString()
-	if dl, err := tx.q.DownloadGet(ctx, infoHash); err != nil && err != sql.ErrNoRows {
+	dl, err := tx.q.DownloadGet(ctx, infoHash)
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
-	} else if err == nil {
+	}
+	if err == nil && dl.DeletedAt == nil {
+		// Already live: nothing to do.
+		return tx.newDownload(ctx, dl)
+	} else if err == nil && dl.DeletedAt != nil {
+		// Re-add of a trashed Download: restore rather than fail on the
+		// unique InfoHash PK. Restore rehydrates any orphan-reaped Videos
+		// under this Download's cascade, so we don't need to create new
+		// Video rows. Overwrite the edition targeting unconditionally to
+		// match the new caller's intent.
+		if err := tx.Restore(ctx, infoHash); err != nil {
+			return nil, err
+		}
+		if err := tx.q.DownloadUpdateTargeting(ctx, schema.DownloadUpdateTargetingParams{
+			SeriesEditionID: sedID,
+			MovieEditionID:  medID,
+			InfoHash:        infoHash,
+		}); err != nil {
+			return nil, err
+		}
+		dl, err = tx.q.DownloadGet(ctx, infoHash)
+		if err != nil {
+			return nil, err
+		}
 		return tx.newDownload(ctx, dl)
 	}
-	dl, err := tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
+	dl, err = tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
 		InfoHash:        infoHash,
 		State:           "queued",
 		Title:           info.Name,
@@ -751,8 +777,9 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) error {
 
 	if t.ErrorString != nil && *t.ErrorString != "" {
 		_, err := tx.q.DownloadUpdateError(ctx, schema.DownloadUpdateErrorParams{
-			InfoHash: infoHash,
-			Error:    *t.ErrorString,
+			Error:          *t.ErrorString,
+			LastActivityAt: time.Now().UnixMilli(),
+			InfoHash:       infoHash,
 		})
 		return err
 	}
@@ -820,6 +847,35 @@ func (m *Model) pollTransission() {
 			slog.Error("error", "error", err)
 		}
 	}
+}
+
+// downloadIdleTimeout is how long a terminal-state Download stays live
+// before being auto-trashed.
+const downloadIdleTimeout = 7 * 24 * time.Hour
+
+func (m *Model) autoTrashDownloadsLoop() {
+	for {
+		time.Sleep(time.Hour)
+		if err := m.autoTrashDownloadsOnce(context.Background()); err != nil {
+			slog.Error("auto-trash downloads", "error", err)
+		}
+	}
+}
+
+func (m *Model) autoTrashDownloadsOnce(ctx Context) error {
+	threshold := time.Now().Add(-downloadIdleTimeout).UnixMilli()
+	return m.WithTxRW(func(tx *TxRW) error {
+		infoHashes, err := tx.q.DownloadListAutoTrashCandidates(ctx, threshold)
+		if err != nil {
+			return err
+		}
+		for _, ih := range infoHashes {
+			if err := tx.Trash(ctx, ih); err != nil && !errors.Is(err, ErrAlreadyTrashed) {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (m *Model) pollTransmissionOnce() error {

@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -26,6 +27,7 @@ const (
 	TrashKindEpisode
 	TrashKindVideo
 	TrashKindCollection
+	TrashKindDownload
 )
 
 // trashRetention is how long a trashed entity stays in the trash
@@ -45,6 +47,12 @@ var ErrNotTrashed = errors.New("not trashed")
 // the trash page and aren't individually restorable; restore the
 // cascade root instead.
 var ErrCascadeTrashed = errors.New("cascade-trashed; restore the root instead")
+
+// ErrDownloadActive is returned by Trash when a Download is in a
+// non-terminal state. Only 'imported' and 'error' Downloads can be
+// trashed; active ones must settle first (either the polling loop
+// completes them or the user cancels from Transmission).
+var ErrDownloadActive = errors.New("download not in a terminal state")
 
 type TrashItem struct {
 	Kind      TrashKind
@@ -169,6 +177,12 @@ func (tx *TxRW) computeTrashTitle(ctx Context, id string, kind TrashKind) (title
 			return "", "", err
 		}
 		return r.Title, "", nil
+	case TrashKindDownload:
+		r, err := tx.q.DownloadGet(ctx, id)
+		if err != nil {
+			return "", "", err
+		}
+		return r.Title, "", nil
 	}
 	return "", "", fmt.Errorf("no trashable kind for ID %q", id)
 }
@@ -219,6 +233,8 @@ func (tx *TxRW) Trash(ctx Context, id string) (err error) {
 		err = tx.trashVideo(ctx, id, id, now)
 	case TrashKindCollection:
 		err = tx.trashCollection(ctx, id, id, now)
+	case TrashKindDownload:
+		err = tx.trashDownload(ctx, id, id, now)
 	default:
 		return fmt.Errorf("no trashable kind for ID %q", id)
 	}
@@ -447,6 +463,25 @@ func (tx *TxRW) trashCollection(ctx Context, id, root string, now time.Time) err
 	return tx.q.SlugDelete(ctx, id)
 }
 
+func (tx *TxRW) trashDownload(ctx Context, id, root string, now time.Time) error {
+	dl, err := tx.q.DownloadGet(ctx, id)
+	if err != nil {
+		return err
+	}
+	if dl.State != "imported" && dl.State != "error" {
+		return ErrDownloadActive
+	}
+	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+		return err
+	}
+	if err := tx.q.DownloadSoftDelete(ctx, schema.DownloadSoftDeleteParams{
+		DeletedAt: new(now.UnixMilli()), InfoHash: id,
+	}); err != nil {
+		return err
+	}
+	return tx.reapOrphanVideos(ctx, root, now)
+}
+
 // reapOrphanEpisodes trashes every live Episode with no live
 // SeasonEpisode junction, under the given cascade root. Called after
 // a cascade soft-deletes its SeasonEpisode junctions.
@@ -652,6 +687,13 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 		if err := tx.q.CollectionRestore(ctx, id); err != nil {
 			return err
 		}
+	case TrashKindDownload:
+		if err := tx.q.DownloadRestore(ctx, schema.DownloadRestoreParams{
+			LastActivityAt: time.Now().UnixMilli(),
+			InfoHash:       id,
+		}); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("no trashable kind for ID %q", id)
 	}
@@ -659,6 +701,7 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 	cascadeOf := &id
 	for _, f := range []func(context.Context, *string) error{
 		tx.q.CollectionRestoreByCascade,
+		tx.q.DownloadRestoreByCascade,
 		tx.q.EpisodeRestoreByCascade,
 		tx.q.MovieRestoreByCascade,
 		tx.q.MovieEditionRestoreByCascade,
@@ -776,6 +819,7 @@ func (tx *TxRW) Purge(ctx Context, id string) (err error) {
 		tx.q.SeriesPurgeByCascade,
 		tx.q.MoviePurgeByCascade,
 		tx.q.CollectionPurgeByCascade,
+		tx.q.DownloadPurgeByCascade,
 	} {
 		if err := f(ctx, cascadeOf); err != nil {
 			return err
@@ -946,6 +990,13 @@ func kindOf(id string) TrashKind {
 		return TrashKindVideo
 	case strings.HasPrefix(id, "col"):
 		return TrashKindCollection
+	}
+	// Downloads have no flurry prefix; their ID is a 40-char hex SHA-1
+	// info hash, which can't collide with any of the prefixes above.
+	if len(id) == 40 {
+		if _, err := hex.DecodeString(id); err == nil {
+			return TrashKindDownload
+		}
 	}
 	return TrashKindInvalid
 }

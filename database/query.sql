@@ -209,40 +209,74 @@ INSERT INTO Download
 VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
+-- DownloadGet returns a Download row regardless of DeletedAt state.
+-- DownloadCreate uses this to spot trashed duplicates for restore; other
+-- callers (polling, planning) only reach here for live Downloads via the
+-- Transmission-synchronised active-InfoHash set.
 -- name: DownloadGet :one
 SELECT * FROM Download WHERE InfoHash = ?;
 
 -- name: DownloadList :many
 SELECT * FROM Download
+WHERE DeletedAt IS NULL
 ORDER BY CreatedAt DESC;
+
+-- DownloadListAutoTrashCandidates returns InfoHashes of live Downloads
+-- in terminal states whose last activity is older than the threshold.
+-- Active-state Downloads (queued/downloading/downloaded) are never
+-- candidates, so Trash() won't race with polling.
+-- name: DownloadListAutoTrashCandidates :many
+SELECT InfoHash FROM Download
+WHERE DeletedAt IS NULL
+AND State IN ('imported', 'error')
+AND LastActivityAt < ?;
 
 -- name: DownloadListByMovieEditionID :many
 SELECT * FROM Download
-WHERE MovieEditionID = ?
+WHERE MovieEditionID = ? AND DeletedAt IS NULL
 ORDER BY CreatedAt DESC;
 
 -- name: DownloadListBySeriesEditionID :many
 SELECT * FROM Download
-WHERE SeriesEditionID = ?
+WHERE SeriesEditionID = ? AND DeletedAt IS NULL
 ORDER BY CreatedAt DESC;
 
 -- name: DownloadListInfoHashesActive :many
 SELECT InfoHash FROM Download
-WHERE State IN ('downloading', 'downloaded');
+WHERE State IN ('downloading', 'downloaded') AND DeletedAt IS NULL;
 
+-- name: DownloadPurgeByCascade :exec
+DELETE FROM Download
+WHERE InfoHash IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
+
+-- name: DownloadRestore :exec
+UPDATE Download SET DeletedAt = NULL, LastActivityAt = sqlc.arg(LastActivityAt)
+WHERE InfoHash = sqlc.arg(InfoHash);
+
+-- name: DownloadRestoreByCascade :exec
+UPDATE Download SET DeletedAt = NULL
+WHERE InfoHash IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
+
+-- name: DownloadSoftDelete :exec
+UPDATE Download SET DeletedAt = sqlc.arg(DeletedAt)
+WHERE InfoHash = sqlc.arg(InfoHash) AND DeletedAt IS NULL;
 
 -- name: DownloadUpdateAutoImport :one
-UPDATE Download SET AutoImport = ? WHERE InfoHash = ? RETURNING *;
+UPDATE Download SET AutoImport = ?, LastActivityAt = sqlc.arg(LastActivityAt) WHERE InfoHash = sqlc.arg(InfoHash) RETURNING *;
 
 -- name: DownloadUpdateError :one
-UPDATE Download SET State = 'error', Error = ? WHERE InfoHash = ? RETURNING *;
+UPDATE Download SET State = 'error', Error = ?, LastActivityAt = sqlc.arg(LastActivityAt) WHERE InfoHash = sqlc.arg(InfoHash) RETURNING *;
 
 -- name: DownloadUpdateProgress :one
 UPDATE Download SET
 	State = ?,
 	Progress = ?,
-	Error = ''
-WHERE InfoHash = ? RETURNING *;
+	Error = '',
+	LastActivityAt = sqlc.arg(LastActivityAt)
+WHERE InfoHash = sqlc.arg(InfoHash) RETURNING *;
+
+-- name: DownloadUpdateTargeting :exec
+UPDATE Download SET SeriesEditionID = ?, MovieEditionID = ? WHERE InfoHash = ?;
 
 -- name: EpisodeAirdateSet :exec
 UPDATE Episode SET Airdate = ? WHERE ID = ?;
@@ -1142,6 +1176,10 @@ AND NOT EXISTS (
 AND NOT EXISTS (
 	SELECT 1 FROM MovieVideo mv
 	WHERE mv.VideoID = v.ID AND mv.DeletedAt IS NULL
+)
+AND NOT EXISTS (
+	SELECT 1 FROM Download d
+	WHERE d.InfoHash = v.InfoHash AND d.DeletedAt IS NULL
 );
 
 -- name: VideoListPurgeByCascade :many

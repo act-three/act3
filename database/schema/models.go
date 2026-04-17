@@ -38,6 +38,7 @@ type CollectionSeries struct {
 type Download struct {
 	InfoHash        string
 	Createdat       int64
+	LastActivityAt  int64
 	State           string
 	Title           string
 	Error           string
@@ -46,6 +47,7 @@ type Download struct {
 	Autoimport      int64
 	MovieEditionID  *string
 	SeriesEditionID *string
+	DeletedAt       *int64
 }
 
 type Episode struct {

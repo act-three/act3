@@ -118,6 +118,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	}
 	go m.pollTransission()
 	go m.purgeTrashLoop()
+	go m.autoTrashDownloadsLoop()
 	return m, nil
 }
 
