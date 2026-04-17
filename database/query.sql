@@ -196,6 +196,14 @@ UPDATE Collection
 SET DeletedAt = sqlc.arg(DeletedAt)
 WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
+-- DownloadBumpActivity bumps LastActivityAt on the live Download with
+-- the given InfoHash. Callers use it after mutating an EpisodeVideo or
+-- MovieVideo junction owned by the Download, to reset its auto-trash
+-- timer while the user is actively curating the download's videos.
+-- name: DownloadBumpActivity :exec
+UPDATE Download SET LastActivityAt = sqlc.arg(LastActivityAt)
+WHERE InfoHash = sqlc.arg(InfoHash) AND DeletedAt IS NULL;
+
 -- name: DownloadCreate :one
 INSERT INTO Download
 (

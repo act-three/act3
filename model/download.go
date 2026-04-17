@@ -453,14 +453,35 @@ func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID strin
 		})
 	})
 	if attach {
-		return tx.q.EpisodeVideoEnsure(ctx, schema.EpisodeVideoEnsureParams{
+		if err := tx.q.EpisodeVideoEnsure(ctx, schema.EpisodeVideoEnsureParams{
 			EpisodeID: episodeID,
 			VideoID:   vid.ID,
-		})
+		}); err != nil {
+			return err
+		}
+	} else {
+		if err := tx.q.EpisodeVideoDelete(ctx, schema.EpisodeVideoDeleteParams{
+			EpisodeID: episodeID,
+			VideoID:   vid.ID,
+		}); err != nil {
+			return err
+		}
 	}
-	return tx.q.EpisodeVideoDelete(ctx, schema.EpisodeVideoDeleteParams{
-		EpisodeID: episodeID,
-		VideoID:   vid.ID,
+	return tx.bumpDownloadActivity(ctx, infoHash)
+}
+
+// bumpDownloadActivity updates LastActivityAt on the live Download
+// with the given InfoHash to time.Now(). No-op when infoHash is empty
+// or the Download has been trashed. Call after any mutation of an
+// EpisodeVideo or MovieVideo junction owned by a Download, so that
+// user curation counts as activity against the 7-day auto-trash timer.
+func (tx *TxRW) bumpDownloadActivity(ctx Context, infoHash string) error {
+	if infoHash == "" {
+		return nil
+	}
+	return tx.q.DownloadBumpActivity(ctx, schema.DownloadBumpActivityParams{
+		LastActivityAt: time.Now().UnixMilli(),
+		InfoHash:       infoHash,
 	})
 }
 
@@ -730,6 +751,9 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, infoHash, sedID string) (d
 			}
 		}
 	}
+	if err := tx.bumpDownloadActivity(ctx, dl.InfoHash); err != nil {
+		return nil, err
+	}
 	return tx.Download(ctx, dl.InfoHash)
 }
 
@@ -766,6 +790,9 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d 
 				return nil, err
 			}
 		}
+	}
+	if err := tx.bumpDownloadActivity(ctx, dl.InfoHash); err != nil {
+		return nil, err
 	}
 	return tx.Download(ctx, dl.InfoHash)
 }

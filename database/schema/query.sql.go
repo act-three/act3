@@ -698,6 +698,25 @@ func (q *Queries) CollectionSoftDelete(ctx context.Context, arg CollectionSoftDe
 	return err
 }
 
+const downloadBumpActivity = `-- name: DownloadBumpActivity :exec
+UPDATE Download SET LastActivityAt = ?1
+WHERE InfoHash = ?2 AND DeletedAt IS NULL
+`
+
+type DownloadBumpActivityParams struct {
+	LastActivityAt int64
+	InfoHash       string
+}
+
+// DownloadBumpActivity bumps LastActivityAt on the live Download with
+// the given InfoHash. Callers use it after mutating an EpisodeVideo or
+// MovieVideo junction owned by the Download, to reset its auto-trash
+// timer while the user is actively curating the download's videos.
+func (q *Queries) DownloadBumpActivity(ctx context.Context, arg DownloadBumpActivityParams) error {
+	_, err := q.db.ExecContext(ctx, downloadBumpActivity, arg.LastActivityAt, arg.InfoHash)
+	return err
+}
+
 const downloadCreate = `-- name: DownloadCreate :one
 INSERT INTO Download
 (

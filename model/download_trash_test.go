@@ -272,6 +272,48 @@ func TestDownloadUpdateProgressBumpsActivity(t *testing.T) {
 	}
 }
 
+func TestEpisodeVideoSetBumpsDownloadActivity(t *testing.T) {
+	ctx := context.Background()
+	m := newTestModel(t)
+	_, _, sedID, _, epID, vidID := createSeriesRow(t, m, "ev-bump", "EVBump")
+	infoHash := fortyCharHex(11)
+	createTrashableDownload(t, m, infoHash, "imported", sedID)
+	// Seed the Video so VideoGetByName finds it under this Download.
+	if _, err := m.dbw.ExecContext(ctx,
+		"UPDATE Video SET InfoHash = ?, Name = ? WHERE ID = ?",
+		infoHash, "ev-bump.mkv", vidID,
+	); err != nil {
+		t.Fatal(err)
+	}
+	// Backdate the Download's LastActivityAt so the bump is observable.
+	stale := time.Now().Add(-2 * time.Hour).UnixMilli()
+	if _, err := m.dbw.ExecContext(ctx,
+		"UPDATE Download SET LastActivityAt = ? WHERE InfoHash = ?",
+		stale, infoHash,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	// Detach from the episode: should bump LastActivityAt.
+	if err := m.WithTxRW(func(tx *TxRW) error {
+		return tx.EpisodeVideoSet(ctx, infoHash, "ev-bump.mkv", epID, false)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.WithTxR(func(tx *TxR) error {
+		dl, err := tx.q.DownloadGet(ctx, infoHash)
+		if err != nil {
+			return err
+		}
+		if dl.LastActivityAt <= stale {
+			t.Errorf("LastActivityAt not bumped after EV detach; got %d, want > %d", dl.LastActivityAt, stale)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDownloadRestoreBumpsActivity(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
