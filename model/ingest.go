@@ -11,12 +11,30 @@ import (
 	"time"
 
 	"kr.dev/errorfmt"
+	"lukechampine.com/blake3"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/priority"
 	"ily.dev/act3/video"
 	"ily.dev/act3/video/ffmpeg"
 )
+
+// copyFileHashed streams the file at path into the CAS store and
+// returns the storage key alongside a blake3-256 digest of the bytes.
+// Used by ingest-style paths to enable duplicate-content detection.
+func (m *Model) copyFileHashed(path string) (key string, sum []byte, err error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", nil, err
+	}
+	defer f.Close()
+	h := blake3.New(32, nil)
+	key, err = m.store.Copy(io.TeeReader(f, h))
+	if err != nil {
+		return "", nil, err
+	}
+	return key, h.Sum(nil), nil
+}
 
 func boolToInt64(b bool) int64 {
 	if b {
@@ -65,16 +83,32 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
-	hash, err := tx.m.store.CopyFile(diskPath)
+	key, sum, err := tx.m.copyFileHashed(diskPath)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
 
+	merged := false
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
+		// If another live Video already has these exact bytes, merge
+		// the current (freshly-copied) Video into it: re-point the
+		// junctions, drop the duplicate bytes, hard-delete our row.
+		dups, err := txw.q.VideoListByContentHash(ctx, sum)
+		if err != nil {
+			return err
+		}
+		for _, winner := range dups {
+			if winner.ID == vid.ID {
+				continue
+			}
+			merged = true
+			return txw.mergeDuplicateVideo(ctx, vid, winner, key)
+		}
 		vid, err = txw.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
 			ID:          vid.ID,
-			OriginalKey: hash,
+			OriginalKey: key,
+			ContentHash: sum,
 		})
 		return err
 	})
@@ -82,8 +116,74 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
+	if merged {
+		tx.m.prog.Close(vid.ID, nil)
+		return nil
+	}
 
 	return tx.planAndCreateRenditions(ctx, vid)
+}
+
+// mergeDuplicateVideo is called when a freshly-copied video's content
+// hash matches an already-live `winner` Video. It re-points all live
+// junctions from `loser` to `winner`, hard-deletes the loser row, and
+// schedules the newly-copied bytes (`loserKey`) for removal on commit.
+func (tx *TxRW) mergeDuplicateVideo(ctx Context, loser schema.Video, winner schema.Video, loserKey string) (err error) {
+	defer errorfmt.Handlef("merge %s into %s: %w", loser.ID, winner.ID, &err)
+	// Revive any soft-deleted winner junctions that would otherwise
+	// collide with live loser junctions on reassign. The loser's
+	// live junction represents current user intent and supersedes
+	// the older detach.
+	if err := tx.q.EpisodeVideoRestoreForReassign(ctx, schema.EpisodeVideoRestoreForReassignParams{
+		FromVideoID: loser.ID,
+		ToVideoID:   winner.ID,
+	}); err != nil {
+		return err
+	}
+	if err := tx.q.EpisodeVideoReassign(ctx, schema.EpisodeVideoReassignParams{
+		FromVideoID: loser.ID,
+		ToVideoID:   winner.ID,
+	}); err != nil {
+		return err
+	}
+	if err := tx.q.EpisodeVideoDeleteByVideoID(ctx, loser.ID); err != nil {
+		return err
+	}
+	if err := tx.q.MovieVideoRestoreForReassign(ctx, schema.MovieVideoRestoreForReassignParams{
+		FromVideoID: loser.ID,
+		ToVideoID:   winner.ID,
+	}); err != nil {
+		return err
+	}
+	if err := tx.q.MovieVideoReassign(ctx, schema.MovieVideoReassignParams{
+		FromVideoID: loser.ID,
+		ToVideoID:   winner.ID,
+	}); err != nil {
+		return err
+	}
+	if err := tx.q.MovieVideoDeleteByVideoID(ctx, loser.ID); err != nil {
+		return err
+	}
+	if loser.InfoHash != nil {
+		if err := tx.bumpDownloadActivity(ctx, *loser.InfoHash); err != nil {
+			return err
+		}
+	}
+	if winner.InfoHash != nil && (loser.InfoHash == nil || *winner.InfoHash != *loser.InfoHash) {
+		if err := tx.bumpDownloadActivity(ctx, *winner.InfoHash); err != nil {
+			return err
+		}
+	}
+	if err := tx.q.VideoHardDelete(ctx, loser.ID); err != nil {
+		return err
+	}
+	tx.onCommit(func() {
+		if err := tx.m.store.Remove(loserKey); err != nil {
+			slog.Error("remove merged duplicate bytes",
+				"key", loserKey, "err", err)
+		}
+	})
+	return nil
 }
 
 // planAndCreateRenditions probes the source in CAS, plans a
@@ -550,7 +650,7 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
 	defer func() { tx.m.prog.Close(vid.ID, err) }()
 
-	newKey, err := tx.m.store.CopyFile(srcPath)
+	newKey, newSum, err := tx.m.copyFileHashed(srcPath)
 	if err != nil {
 		return err
 	}
@@ -561,6 +661,7 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 		_, err := txw.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
 			ID:          vid.ID,
 			OriginalKey: newKey,
+			ContentHash: newSum,
 		})
 		if err != nil {
 			return err

@@ -430,13 +430,19 @@ func EpisodeAttachToggleAddr(infoHash, filePath, episodeID string) []string {
 }
 
 // EpisodeVideoSet adds or removes the link between a download file
-// and an episode. The Video record must already exist for the file.
+// and an episode. Returns a clear error if the Video row no longer
+// exists — typically because duplicate-content ingest merged it into
+// another Video — so a stale UI click surfaces as a user-facing
+// message rather than a raw sqlite miss.
 func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID string, attach bool) (err error) {
 	defer errorfmt.Handlef("EpisodeVideoSet: %w", &err)
 	vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
 		InfoHash: &infoHash,
 		Name:     filePath,
 	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("no video for %s/%s (merged into another duplicate?)", infoHash, filePath)
+	}
 	if err != nil {
 		return err
 	}
