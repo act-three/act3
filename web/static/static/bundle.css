@@ -1799,6 +1799,9 @@
 
 /* ui/theme.css */
 @layer components {
+  .u-theme {
+    display: contents;
+  }
   [data-role=destructive] {
     --bg: var(--warmred);
     --text: oklch(from var(--warmred) 0.764 0.149 h);

@@ -243,7 +243,7 @@ func appDownloadsImportControl(dl *model.Download) html.Node {
 func AppDownloadFileAttachPopover(
 	triggerID string,
 	sed *model.SeriesEdition,
-	infoHash, filePath string,
+	infoHash, filePath, currentVideoID string,
 	linked map[string]bool,
 ) html.Node {
 	var attachedEps []*model.Episode
@@ -266,7 +266,7 @@ func AppDownloadFileAttachPopover(
 			ScrollY()(
 				html.If(len(attachedEps) > 0, func() html.Node {
 					return PickerGroup()(
-						downloadAttachPickerEpisodes(slices.Values(attachedEps), infoHash, filePath, linked),
+						downloadAttachPickerEpisodes(slices.Values(attachedEps), infoHash, filePath, currentVideoID, linked),
 					)
 				}),
 				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
@@ -274,7 +274,7 @@ func AppDownloadFileAttachPopover(
 						PickerGroupHead()(
 							PickerItemLabel()(Text(sn.Title(), Size2)),
 						),
-						downloadAttachPickerEpisodes(sn.Episodes(model.AnyEpisode), infoHash, filePath, linked),
+						downloadAttachPickerEpisodes(sn.Episodes(model.AnyEpisode), infoHash, filePath, currentVideoID, linked),
 					)
 				}),
 			),
@@ -284,12 +284,15 @@ func AppDownloadFileAttachPopover(
 
 func downloadAttachPickerEpisodes(
 	eps iter.Seq[*model.Episode],
-	infoHash, filePath string,
+	infoHash, filePath, currentVideoID string,
 	linked map[string]bool,
 ) html.Node {
 	return html.RangeSeq(eps, func(ep *model.Episode) html.Node {
 		attached := linked[ep.ID()]
 		label := ep.SnnEnn() + " " + ep.Title()
+		imported := slices.ContainsFunc(ep.Videos(), func(v *model.Video) bool {
+			return v.ID() != currentVideoID
+		})
 		return PickerItem(
 			attr.Style("isolation: isolate"),
 			attr.Attr("data-filter-text")(label),
@@ -299,19 +302,24 @@ func downloadAttachPickerEpisodes(
 			PickerItemLabel()(
 				Text(label, Size2),
 			),
-			SettingsToggle("/-/do/episode-video-set", "attach", attached,
-				map[string]string{
-					"infohash":   infoHash,
-					"path":       filePath,
-					"episode-id": ep.ID(),
-				},
-				LiveAddr(model.EpisodeAttachToggleAddr(infoHash, filePath, ep.ID())),
-				attr.Style("position: relative; z-index: 1"),
-			),
-			html.Button(
-				attr.Type("button"),
-				attr.Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
-				stimulus.Action("click->episode-attach#attach"),
+			FlexRow(Gap2, attr.Style("align-items:center"))(
+				html.If(imported, func() html.Node {
+					return Theme(attr.Style("color:var(--text-3)"))(Icon("line/check-circle"))
+				}),
+				SettingsToggle("/-/do/episode-video-set", "attach", attached,
+					map[string]string{
+						"infohash":   infoHash,
+						"path":       filePath,
+						"episode-id": ep.ID(),
+					},
+					LiveAddr(model.EpisodeAttachToggleAddr(infoHash, filePath, ep.ID())),
+					attr.Style("position: relative; z-index: 1"),
+				),
+				html.Button(
+					attr.Type("button"),
+					attr.Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
+					stimulus.Action("click->episode-attach#attach"),
+				),
 			),
 		)
 	})

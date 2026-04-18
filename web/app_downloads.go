@@ -62,18 +62,16 @@ func (c *Config) dialogDownloadFileAttach(_ http.ResponseWriter, req *http.Reque
 		if sed == nil {
 			return nil, fmt.Errorf("download %s is not planned for a series", infoHash)
 		}
-		linked := map[string]bool{}
 		vid, err := tx.VideoGetByName(ctx, infoHash, filePath)
-		if err != nil && err != sql.ErrNoRows {
+		if err != nil {
 			return nil, err
 		}
-		if err == nil {
-			for _, epID := range dl.EpisodeIDsByVideoID(vid.ID()) {
-				linked[epID] = true
-			}
+		linked := map[string]bool{}
+		for _, epID := range dl.EpisodeIDsByVideoID(vid.ID()) {
+			linked[epID] = true
 		}
 		triggerID := req.FormValue("popover-trigger")
-		return view.AppDownloadFileAttachPopover(triggerID, sed, infoHash, filePath, linked), nil
+		return view.AppDownloadFileAttachPopover(triggerID, sed, infoHash, filePath, vid.ID(), linked), nil
 	})
 }
 

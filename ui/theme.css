@@ -4,6 +4,8 @@
  * Derivatives recompute on [data-role] and [data-accent] elements
  * (see theme-layer.css), so overrides only need to set the base. */
 
+.u-theme { display: contents; }
+
 /* destructive — swap base colors to warm red */
 [data-role="destructive"] {
 	--bg: var(--warmred);
