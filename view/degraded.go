@@ -84,13 +84,13 @@ func degradedAction(hasData bool) html.Node {
 			html.Form(
 				attr.Method("POST"),
 				attr.Action("/-/do/database-reset"),
-				attr.Attr("data-turbo")("false"),
+				Attr("data-turbo")("false"),
 			)(
 				Button(
 					Destructive,
 					ButtonSize3,
-					attr.Attr("type")("submit"),
-					attr.Attr("onclick")(
+					Attr("type")("submit"),
+					Attr("onclick")(
 						"return confirm("+
 							"'Delete all data and "+
 							"reinitialize the database?')",
@@ -102,12 +102,12 @@ func degradedAction(hasData bool) html.Node {
 	return html.Form(
 		attr.Method("POST"),
 		attr.Action("/-/do/database-reset"),
-		attr.Attr("data-turbo")("false"),
+		Attr("data-turbo")("false"),
 	)(
 		Button(
 			ButtonSolid,
 			ButtonSize3,
-			attr.Attr("type")("submit"),
+			Attr("type")("submit"),
 		)(html.Text("Reinitialize Database")),
 	)
 }

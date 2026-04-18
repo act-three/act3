@@ -8,10 +8,10 @@ import (
 func Split(attrs ...attr.Node) func(list, detail html.Node) html.Node {
 	return func(list, detail html.Node) html.Node {
 		return html.Div(
-			attr.Class("u-split"),
-			attr.Group(attrs...),
+			Class("u-split"),
+			group(attrs...),
 		)(
-			html.Div(attr.Class("u-split-list"))(list),
+			html.Div(Class("u-split-list"))(list),
 			detail,
 		)
 	}

@@ -7,14 +7,14 @@ import (
 
 func ToolbarPrimary(attrs ...attr.Node) html.Element {
 	return html.Header(
-		attr.Class("u-toolbar-primary"),
-		attr.Group(attrs...),
+		Class("u-toolbar-primary"),
+		group(attrs...),
 	)
 }
 
 func ToolbarSecondary(attrs ...attr.Node) html.Element {
 	return html.Header(
-		attr.Class("u-toolbar-secondary"),
-		attr.Group(attrs...),
+		Class("u-toolbar-secondary"),
+		group(attrs...),
 	)
 }

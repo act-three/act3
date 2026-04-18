@@ -57,7 +57,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption) htm
 			html.Div(Class("v-player-video-layer"))(
 				html.Video(
 					Class("v-player-video"),
-					attr.Attr("playsinline"),
+					Attr("playsinline"),
 					stimulus.Target("player", "video"),
 
 					stimulus.Action("playing->player#handlePlaying"),
@@ -121,19 +121,19 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption) htm
 						Box(stimulus.Target("player", "duration"))(Text("0:00")),
 					),
 					html.Div(Class("v-player-button-row"))(
-						html.Div(Class("v-player-button-group"), attr.Attr("data-align")("start"))(
+						html.Div(Class("v-player-button-group"), Attr("data-align")("start"))(
 							Button(stimulus.Action("click->player#toggleCaptions"), ButtonSurface, ButtonCircle)(Icon("line/message-text-square-02")),
 							Button(stimulus.Action("click->player#toggleAudioDesc"), ButtonSurface, ButtonCircle)(Icon("line/recording-01")),
 							playerVolumeBar(),
 						),
 
-						html.Div(Class("v-player-button-group"), attr.Attr("data-align")("center"))(
+						html.Div(Class("v-player-button-group"), Attr("data-align")("center"))(
 							Button(stimulus.Action("click->player#skipBackward"), ButtonSurface, ButtonCircle)(Icon("line/refresh-ccw-01")),
 							Button(stimulus.Action("click->player#togglePlay"), ButtonSurface, ButtonCircle)(Icon("solid/play")),
 							Button(stimulus.Action("click->player#skipForward"), ButtonSurface, ButtonCircle)(Icon("line/refresh-cw-01")),
 						),
 
-						html.Div(Class("v-player-button-group"), attr.Attr("data-align")("end"))(
+						html.Div(Class("v-player-button-group"), Attr("data-align")("end"))(
 							playerQualityMenu(qualityOpts),
 							Button(stimulus.Action("click->player#toggleFullscreen"), ButtonSurface, ButtonCircle)(Icon("line/maximize-02")),
 						),
@@ -165,8 +165,8 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 			html.Button(
 				attr.Type("button"),
 				stimulus.Action("click->player#setQuality"),
-				attr.Attr("data-player-url-param")(opt.Path),
-				attr.Attr("data-player-label-param")(opt.Label),
+				Attr("data-player-url-param")(opt.Path),
+				Attr("data-player-label-param")(opt.Label),
 				Class("v-player-quality-option"),
 			)(Text(opt.Label)),
 		)
@@ -193,13 +193,13 @@ func playerSeekBar() html.Node {
 		)(
 			html.Input(
 				attr.Type("range"),
-				attr.Attr("min")("0"),
-				attr.Attr("max")("100"),
-				attr.Attr("step")("0.01"),
-				attr.Attr("value")("0"),
-				attr.Attr("autocomplete")("off"),
-				attr.Attr("aria-label")("Seek"),
-				attr.Attr("style")("--value: 0%"),
+				Attr("min")("0"),
+				Attr("max")("100"),
+				Attr("step")("0.01"),
+				Attr("value")("0"),
+				Attr("autocomplete")("off"),
+				Attr("aria-label")("Seek"),
+				Attr("style")("--value: 0%"),
 				stimulus.Target("player", "seek"),
 				stimulus.Action("input->player#handleSeek"),
 
@@ -217,9 +217,9 @@ func playerSeekBar() html.Node {
 				Class("v-player-seek-input"),
 			),
 			html.Progress(
-				attr.Attr("min")("0"),
-				attr.Attr("max")("100"),
-				attr.Attr("value")("0"),
+				Attr("min")("0"),
+				Attr("max")("100"),
+				Attr("value")("0"),
 				stimulus.Target("player", "buffer"),
 				Class("v-player-buffer"),
 			)(
@@ -241,13 +241,13 @@ func playerVolumeBar() html.Node {
 		html.Div(Class("v-player-volume"))(
 			html.Input(
 				attr.Type("range"),
-				attr.Attr("min")("0"),
-				attr.Attr("max")("1"),
-				attr.Attr("step")("0.05"),
-				attr.Attr("value")("1"),
-				attr.Attr("autocomplete")("off"),
-				attr.Attr("aria-label")("Volume"),
-				attr.Attr("style")("--value: 100%"),
+				Attr("min")("0"),
+				Attr("max")("1"),
+				Attr("step")("0.05"),
+				Attr("value")("1"),
+				Attr("autocomplete")("off"),
+				Attr("aria-label")("Volume"),
+				Attr("style")("--value: 100%"),
 				stimulus.Target("player", "volume"),
 
 				// Volume input.

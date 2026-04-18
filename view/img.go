@@ -14,8 +14,8 @@ import (
 // for live-update targeting. Layout dimensions come from CSS
 // (the u-poster aspect-ratio rules), not HTML width/height.
 func imgAttrs(im model.Image, addr []string) attr.Node {
-	return attr.Group(
-		attr.Attr("data-live"),
+	return group(
+		Attr("data-live"),
 		LiveAddr(addr),
 		attr.Src(im.SmallestURL()),
 		attr.Srcset(im.Srcset()),

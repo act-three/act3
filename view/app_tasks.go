@@ -9,14 +9,14 @@ import (
 )
 
 func AppTasks(running []*model.RunningTask, queued []*model.Task) (string, html.Node) {
-	return "Tasks", ScrollY(attr.Class("v-system"))(
+	return "Tasks", ScrollY(Class("v-system"))(
 		html.Div()(html.Text("Scheduled Tasks")),
 
-		html.Div(attr.Class("v-system-field"))(
+		html.Div(Class("v-system-field"))(
 			html.Div()(html.Text("Running")),
 			expr.IfElse(len(running) > 0,
 				func() html.Node {
-					return TableRoot(attr.Class("v-system-input-wide"))(
+					return TableRoot(Class("v-system-input-wide"))(
 						TableHeader()(
 							TableRow()(
 								TableHead()(html.Text("Task")),
@@ -47,9 +47,9 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) (string, html.
 			),
 		),
 
-		html.Div(attr.Class("v-system-field"))(
+		html.Div(Class("v-system-field"))(
 			html.Div()(html.Text("Queued")),
-			TableRoot(attr.Class("v-system-input-wide"))(
+			TableRoot(Class("v-system-input-wide"))(
 				TableHeader()(
 					TableRow()(
 						TableHead()(html.Text("Task")),
@@ -62,7 +62,7 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) (string, html.
 				TableBody()(
 					html.Range(queued, func(t *model.Task) html.Node {
 						s := t.FailureDesc()
-						return html.Group(
+						return Group(
 							html.Tr()(
 								TableCell()(html.Text(t.Type())),
 								TableCell()(

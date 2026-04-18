@@ -7,19 +7,19 @@ import (
 
 func Code(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-code"),
+		Class("u-code"),
 		group(attrs...),
 	)
 }
 
 var (
-	CodeSize1 = attr.Attr("data-code-size")("1")
-	CodeSize2 = attr.Attr("data-code-size")("2")
-	CodeSize3 = attr.Attr("data-code-size")("3")
-	CodeSize4 = attr.Attr("data-code-size")("4")
+	CodeSize1 = Attr("data-code-size")("1")
+	CodeSize2 = Attr("data-code-size")("2")
+	CodeSize3 = Attr("data-code-size")("3")
+	CodeSize4 = Attr("data-code-size")("4")
 )
 
 var (
-	CodeWrap   = attr.Attr("data-code-wrap")("wrap")
-	CodeNowrap = attr.Attr("data-code-wrap")("nowrap")
+	CodeWrap   = Attr("data-code-wrap")("wrap")
+	CodeNowrap = Attr("data-code-wrap")("nowrap")
 )

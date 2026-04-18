@@ -18,13 +18,13 @@ import (
 func SettingsButtonRow(action, name, value string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(
-			attr.Class("u-settings-button-row"),
-			attr.Attr("data-optimistic")(""),
+			Class("u-settings-button-row"),
+			Attr("data-optimistic")(""),
 			stimulus.Controller("settings-button-row"),
 			stimulus.Value("settings-button-row", "url")(action),
 			stimulus.Value("settings-button-row", "name")(name),
 			stimulus.Value("settings-button-row", "selected")(value),
-			attr.Group(attrs...),
+			group(attrs...),
 		)(nodes...)
 	}
 }
@@ -37,6 +37,6 @@ func SettingsButtonRowItem(value string, nodes ...html.Node) html.Node {
 		attr.Type("button"),
 		stimulus.Target("settings-button-row", "button"),
 		stimulus.Action("click->settings-button-row#select"),
-		attr.Attr("data-value")(value),
+		Attr("data-value")(value),
 	)(nodes...)
 }

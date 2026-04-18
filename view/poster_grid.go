@@ -2,7 +2,6 @@ package view
 
 import (
 	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 )
@@ -17,12 +16,12 @@ func posterGridLink(w model.Work) html.Node {
 	return Box(
 		HoverOverlay,
 		Class("v-poster-grid-poster"),
-		attr.Attr("data-kind")(w.Kind()),
-		attr.Attr("data-title")(w.Title()),
+		Attr("data-kind")(w.Kind()),
+		Attr("data-title")(w.Title()),
 	)(
 		html.A(
 			Class("v-poster-grid-link"),
-			attr.Href(w.TheaterPath()),
+			Href(w.TheaterPath()),
 		)(
 			PosterImg(PosterFill, imgAttrs(w.PosterField())),
 		),

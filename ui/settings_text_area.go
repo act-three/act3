@@ -19,15 +19,15 @@ import (
 func SettingsTextArea(action, name, value string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(
-			attr.Class("u-settings-text-area"),
+			Class("u-settings-text-area"),
 			stimulus.Controller("settings-text-area"),
 			stimulus.Value("settings-text-area", "url")(action),
-			attr.Group(attrs...),
+			group(attrs...),
 		)(append(nodes,
 			html.Textarea(
-				attr.Class("u-settings-text-area-input"),
+				Class("u-settings-text-area-input"),
 				attr.Name(name),
-				attr.Attr("data-optimistic")(""),
+				Attr("data-optimistic")(""),
 				stimulus.Target("settings-text-area", "input"),
 				stimulus.Action("blur->settings-text-area#save"),
 				stimulus.Action("keydown->settings-text-area#keydown"),

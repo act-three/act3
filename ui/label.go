@@ -7,7 +7,7 @@ import (
 
 func Label(icon, text string, attrs ...attr.Node) html.Node {
 	return html.Div(
-		attr.Class("u-label"),
+		Class("u-label"),
 		group(attrs...),
 	)(
 		Icon(icon),

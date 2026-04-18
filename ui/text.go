@@ -18,7 +18,7 @@ func Text(s string, attrs ...attr.Node) html.Node {
 func TextNode(attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(
-			attr.Class("u-text"),
+			Class("u-text"),
 			group(attrs...),
 		)(
 			nodes...,
@@ -27,15 +27,15 @@ func TextNode(attrs ...attr.Node) html.Element {
 }
 
 var (
-	LineClamp1 = attr.Attr("data-clamp")("1")
-	LineClamp2 = attr.Attr("data-clamp")("2")
-	LineClamp3 = attr.Attr("data-clamp")("3")
-	LineClamp4 = attr.Attr("data-clamp")("4")
-	LineClamp5 = attr.Attr("data-clamp")("5")
+	LineClamp1 = Attr("data-clamp")("1")
+	LineClamp2 = Attr("data-clamp")("2")
+	LineClamp3 = Attr("data-clamp")("3")
+	LineClamp4 = Attr("data-clamp")("4")
+	LineClamp5 = Attr("data-clamp")("5")
 )
 
 var (
-	TextTrimStart = attr.Attr("data-trim")("start")
-	TextTrimEnd   = attr.Attr("data-trim")("end")
-	TextTrimBoth  = attr.Attr("data-trim")("both")
+	TextTrimStart = Attr("data-trim")("start")
+	TextTrimEnd   = Attr("data-trim")("end")
+	TextTrimBoth  = Attr("data-trim")("both")
 )

@@ -66,23 +66,23 @@ func sidebarData(c Config) []MenuSection {
 
 func Sidebar(c Config) html.Node {
 	return html.Div(
-		attr.Class("v-sidebar"),
-		attr.Attr("data-state")(""),
-		attr.Attr("data-collapsible")(""),
-		attr.Attr("data-variant")("inset"),
-		attr.Attr("data-side")("left"),
-		attr.Attr("data-slot")("sidebar"),
+		Class("v-sidebar"),
+		Attr("data-state")(""),
+		Attr("data-collapsible")(""),
+		Attr("data-variant")("inset"),
+		Attr("data-side")("left"),
+		Attr("data-slot")("sidebar"),
 		turbo.DataFrame("main"),
 		stimulus.Controller("sidebar"),
 		stimulus.Action("turbo:visit@document->sidebar#visit"),
 	)(
 		html.Div(
-			attr.Attr("data-slot")("sidebar-gap"),
-			attr.Class("v-sidebar-gap"),
+			Attr("data-slot")("sidebar-gap"),
+			Class("v-sidebar-gap"),
 		),
 		html.Div(
-			attr.Attr("data-slot")("sidebar-container"),
-			attr.Class("v-sidebar-container"),
+			Attr("data-slot")("sidebar-container"),
+			Class("v-sidebar-container"),
 		)(
 			sidebarContent(c),
 		),
@@ -91,11 +91,11 @@ func Sidebar(c Config) html.Node {
 
 func sidebarContent(c Config) html.Node {
 	return html.Div(
-		attr.Attr("data-slot")("sidebar-content"),
-		attr.Attr("data-sidebar")("content"),
-		attr.Class("v-sidebar-content"),
+		Attr("data-slot")("sidebar-content"),
+		Attr("data-sidebar")("content"),
+		Class("v-sidebar-content"),
 	)(
-		html.Div(attr.Class("v-sidebar-heading"))(
+		html.Div(Class("v-sidebar-heading"))(
 			Link("/")(Box(Class("v-wordmark"))),
 		),
 		html.Range(sidebarData(c), sidebarGroup),
@@ -104,9 +104,9 @@ func sidebarContent(c Config) html.Node {
 
 func sidebarGroup(v MenuSection) html.Node {
 	return html.Div(
-		attr.Attr("data-slot")("sidebar-group"),
-		attr.Attr("data-sidebar")("group"),
-		attr.Class("v-sidebar-group"),
+		Attr("data-slot")("sidebar-group"),
+		Attr("data-sidebar")("group"),
+		Class("v-sidebar-group"),
 	)(
 		html.If(v.Label != "", func() html.Node {
 			return sidebarGroupLabel(v.Label)
@@ -117,9 +117,9 @@ func sidebarGroup(v MenuSection) html.Node {
 
 func sidebarGroupLabel(s string) html.Node {
 	return html.Div(
-		attr.Attr("data-slot")("sidebar-group-label"),
-		attr.Attr("data-sidebar")("group-label"),
-		attr.Class("v-sidebar-group-label"),
+		Attr("data-slot")("sidebar-group-label"),
+		Attr("data-sidebar")("group-label"),
+		Class("v-sidebar-group-label"),
 	)(
 		html.Text(s),
 	)
@@ -131,9 +131,9 @@ func sidebarGroupContent(items []MenuItem) html.Node {
 
 func sidebarMenu(items []MenuItem) html.Node {
 	return html.Ul(
-		attr.Attr("data-slot")("sidebar-menu"),
-		attr.Attr("data-sidebar")("menu"),
-		attr.Class("v-sidebar-menu"),
+		Attr("data-slot")("sidebar-menu"),
+		Attr("data-sidebar")("menu"),
+		Class("v-sidebar-menu"),
 	)(
 		html.Range(items, sidebarMenuItem),
 	)
@@ -141,9 +141,9 @@ func sidebarMenu(items []MenuItem) html.Node {
 
 func sidebarMenuItem(it MenuItem) html.Node {
 	return html.Li(
-		attr.Attr("data-slot")("sidebar-menu-item"),
-		attr.Attr("data-sidebar")("menu-item"),
-		attr.Class("v-sidebar-menu-item"),
+		Attr("data-slot")("sidebar-menu-item"),
+		Attr("data-sidebar")("menu-item"),
+		Class("v-sidebar-menu-item"),
 	)(
 		sidebarMenuButton(it),
 	)
@@ -151,13 +151,13 @@ func sidebarMenuItem(it MenuItem) html.Node {
 
 func sidebarMenuButton(it MenuItem) html.Node {
 	return html.A(
-		attr.Class("v-sidebar-menu-button"),
+		Class("v-sidebar-menu-button"),
 		it.Attr,
-		attr.Href(it.Path),
+		Href(it.Path),
 		stimulus.Target("sidebar", "link"),
-		attr.Attr("data-slot")("sidebar-menu-button"),
-		attr.Attr("data-sidebar")("menu-button"),
-		attr.Attr("data-size")("default"),
+		Attr("data-slot")("sidebar-menu-button"),
+		Attr("data-sidebar")("menu-button"),
+		Attr("data-size")("default"),
 	)(
 		Label(it.Icon, it.Label),
 		menuStats(it),

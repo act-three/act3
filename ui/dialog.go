@@ -19,7 +19,7 @@ func DialogButton(url string, attrs ...attr.Node) html.Element {
 			stimulus.Controller("dialog-trigger"),
 			stimulus.Value("dialog-trigger", "url")(url),
 			stimulus.Action("click->dialog-trigger#open"),
-			attr.Group(attrs...),
+			group(attrs...),
 		)(children...)
 	}
 }
@@ -29,17 +29,17 @@ func DialogButton(url string, attrs ...attr.Node) html.Element {
 func DialogStream(children ...html.Node) html.Node {
 	return turbo.Append("port",
 		html.Dialog(
-			attr.Class("u-dialog"),
+			Class("u-dialog"),
 			stimulus.Controller(dialogController),
 			stimulus.Action("click->dialog#close:self"),
 			stimulus.Action("keydown.esc@document->dialog#close"),
 			stimulus.Action("turbo:before-visit@document->dialog#close"),
 		)(
-			html.Div(attr.Class("u-dialog-positioner"))(
-				html.Div(attr.Class("u-dialog-panel"))(
-					html.Group(children...),
+			html.Div(Class("u-dialog-positioner"))(
+				html.Div(Class("u-dialog-panel"))(
+					Group(children...),
 					html.Div(
-						attr.Class("u-dialog-close"),
+						Class("u-dialog-close"),
 						stimulus.Action("click->dialog#close"),
 					)(
 						Icon("line/x-close"),

@@ -19,7 +19,7 @@ func AppCollections(
 	s []*model.CollectionHead,
 	detail ...html.Node,
 ) (string, html.Node) {
-	return title, FlexCol(attr.Class("v-media-page"))(
+	return title, FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
 			html.Form(
 				attr.Method("POST"),
@@ -54,7 +54,7 @@ func AppCollectionsListItem(
 	c *model.CollectionHead, attrs ...attr.Node,
 ) html.Node {
 	return Card(CardGhost,
-		attr.Group(attrs...),
+		group(attrs...),
 		ListID(c.ID()),
 		ListURL(c.EditorPath()),
 	)(
@@ -149,7 +149,7 @@ func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
 				Hidden("col-id", col.ID()),
 				html.Img(
 					imgAttrs(col.BannerField()),
-					attr.Style("width: 100%; aspect-ratio: 1000/185; object-fit: cover"),
+					Style("width: 100%; aspect-ratio: 1000/185; object-fit: cover"),
 				),
 			),
 		),
@@ -164,23 +164,23 @@ func AppCollectionMovieAddDialog(colID string) html.Node {
 	return DialogStream(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
-				attr.Class("v-media-dialog-fixed"),
+				Class("v-media-dialog-fixed"),
 			)(
 				html.Text("Add Movie to Collection"),
 			),
 			html.Form(
 				attr.Action("/-/part/collection-movie-search"),
-				attr.Attr("data-turbo-frame")("results"),
+				Attr("data-turbo-frame")("results"),
 			)(
 				Hidden("col-id", colID),
 				InputText(
-					attr.Attr("autofocus"),
-					attr.Class("v-media-dialog-fixed"),
+					Attr("autofocus"),
+					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 				),
 			),
 			html.Div(
-				attr.Class("v-media-dialog-results"),
+				Class("v-media-dialog-results"),
 			)(
 				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
 			),
@@ -207,12 +207,12 @@ func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSear
 					Hidden("col-id", colID),
 					Hidden("movie-id", mw.MovieHead.ID()),
 					html.Button(
-						attr.Style("all: unset; cursor: pointer; width: 100%"),
+						Style("all: unset; cursor: pointer; width: 100%"),
 					)(
 						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
-							FlexRow(Gap4, attr.Style("height: 100%"))(
+							FlexRow(Gap4, Style("height: 100%"))(
 								Inset(InsetSideLeft, Class("v-media-search-poster"))(
-									PosterImg(attr.Style("height: 100%"), imgAttrs(mw.PosterField())),
+									PosterImg(Style("height: 100%"), imgAttrs(mw.PosterField())),
 								),
 								FlexCol(Gap2)(
 									html.If(r.InCollection, func() html.Node {
@@ -238,7 +238,7 @@ func collectionMovieItemID(colID, movieID string) string {
 func collectionMovieItems(col *model.Collection) html.Node {
 	return html.Range(col.Movies(), func(mo *model.MovieWork) html.Node {
 		return SettingsItem(attr.ID(collectionMovieItemID(col.ID(), mo.MovieHead.ID())))(
-			FlexRow(attr.Style("align-items:center"), Gap4)(
+			FlexRow(Style("align-items:center"), Gap4)(
 				SettingsItemLabelIcon()(Icon("line/film-01")),
 				SettingsItemLabelTitle(mo.Title()+" ("+mo.Year()+")"),
 			),
@@ -270,23 +270,23 @@ func AppCollectionSeriesAddDialog(colID string) html.Node {
 	return DialogStream(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
-				attr.Class("v-media-dialog-fixed"),
+				Class("v-media-dialog-fixed"),
 			)(
 				html.Text("Add Series to Collection"),
 			),
 			html.Form(
 				attr.Action("/-/part/collection-series-search"),
-				attr.Attr("data-turbo-frame")("results"),
+				Attr("data-turbo-frame")("results"),
 			)(
 				Hidden("col-id", colID),
 				InputText(
-					attr.Attr("autofocus"),
-					attr.Class("v-media-dialog-fixed"),
+					Attr("autofocus"),
+					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 				),
 			),
 			html.Div(
-				attr.Class("v-media-dialog-results"),
+				Class("v-media-dialog-results"),
 			)(
 				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
 			),
@@ -313,12 +313,12 @@ func AppCollectionSeriesSearchResults(colID string, results []CollectionSeriesSe
 					Hidden("col-id", colID),
 					Hidden("series-id", sw.SeriesHead.ID()),
 					html.Button(
-						attr.Style("all: unset; cursor: pointer; width: 100%"),
+						Style("all: unset; cursor: pointer; width: 100%"),
 					)(
 						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
-							FlexRow(Gap4, attr.Style("height: 100%"))(
+							FlexRow(Gap4, Style("height: 100%"))(
 								Inset(InsetSideLeft, Class("v-media-search-poster"))(
-									PosterImg(attr.Style("height: 100%"), imgAttrs(sw.PosterField())),
+									PosterImg(Style("height: 100%"), imgAttrs(sw.PosterField())),
 								),
 								FlexCol(Gap2)(
 									html.If(r.InCollection, func() html.Node {
@@ -342,7 +342,7 @@ func collectionSeriesItemID(colID, seriesID string) string {
 func collectionSeriesItems(col *model.Collection) html.Node {
 	return html.Range(col.Series(), func(sw *model.SeriesWork) html.Node {
 		return SettingsItem(attr.ID(collectionSeriesItemID(col.ID(), sw.SeriesHead.ID())))(
-			FlexRow(attr.Style("align-items:center"), Gap4)(
+			FlexRow(Style("align-items:center"), Gap4)(
 				SettingsItemLabelIcon()(Icon("line/tv-03")),
 				SettingsItemLabelTitle(sw.Title()),
 			),

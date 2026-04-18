@@ -23,7 +23,7 @@ func ActionButton(action string, params map[string]string, attrs ...attr.Node) h
 			paramsJSON, _ := json.Marshal(params)
 			as = append(as, stimulus.Value("action-button", "params")(string(paramsJSON)))
 		}
-		as = append(as, attr.Group(attrs...))
+		as = append(as, group(attrs...))
 		return Button(as...)(children...)
 	}
 }

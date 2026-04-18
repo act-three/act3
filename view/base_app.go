@@ -17,9 +17,9 @@ func App(title string, body html.Node, cfg AppConfig) html.Node {
 	return base(title)()(
 		turbo.StreamSource("/-/events"),
 		html.Div(
-			attr.Attr("data-slot")("sidebar-wrapper"),
-			attr.Class("v-app"),
-			attr.Style("--sidebar-width: 200px; --sidebar-width-mobile: 20rem;"),
+			Attr("data-slot")("sidebar-wrapper"),
+			Class("v-app"),
+			Style("--sidebar-width: 200px; --sidebar-width-mobile: 20rem;"),
 		)(
 			sidebar.Sidebar(sidebar.Config{
 				TaskCount:      cfg.TaskCount,
@@ -27,8 +27,8 @@ func App(title string, body html.Node, cfg AppConfig) html.Node {
 			}),
 			html.Div(
 				attr.Role("main"),
-				attr.Attr("data-slot")("sidebar-inset"),
-				attr.Class("v-app-main"),
+				Attr("data-slot")("sidebar-inset"),
+				Class("v-app-main"),
 			)(
 				turbo.Frame("main",
 					turbo.Advance(),

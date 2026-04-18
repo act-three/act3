@@ -24,7 +24,7 @@ func AppSeries(
 	s []*model.SeriesWork,
 	detail ...html.Node,
 ) (string, html.Node) {
-	return title, FlexCol(attr.Class("v-media-page"))(
+	return title, FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
 			DialogButton("/-/dialog/series-add", ButtonSurface)(
 				Text("Add Series"),
@@ -54,7 +54,7 @@ func AppSeries(
 
 func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
-		attr.Group(attrs...),
+		group(attrs...),
 		ListID(ss.SeriesHead.ID()),
 		ListURL(ss.EditorPath()),
 	)(
@@ -93,7 +93,7 @@ func AppSeriesDetail(
 											sr.TheaterPath(),
 											turbo.DataFrame("_top"),
 										)(Text("View in Theater", Size3,
-											attr.Style("display: inline-block"),
+											Style("display: inline-block"),
 										)),
 									),
 								),
@@ -128,7 +128,7 @@ func AppSeriesDetail(
 											turbo.DataFrame("_top"),
 										)(Text("View in Theater", Size2,
 											// TODO(april): maybe make this the default for Text
-											attr.Style("display: inline-block"),
+											Style("display: inline-block"),
 										)),
 									),
 								),
@@ -271,12 +271,12 @@ func seriesSummarySection(sed *model.SeriesEdition) html.Node {
 func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
 	return FlexCol(Gap2)(
 		html.Range(editions, func(ed *model.SeriesWork) html.Node {
-			selected := attr.Group()
-			href := attr.Group()
+			selected := group()
+			href := group()
 			if ed.SeriesEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			} else {
-				href = attr.Href(ed.EditorPath())
+				href = Href(ed.EditorPath())
 			}
 			return Card(
 				CardSurface,
@@ -347,7 +347,7 @@ func appSeriesDetailSeasonItem(sn *model.Season) html.Node {
 		turbo.StreamTarget("season-episodes-"+sn.ID(),
 			stimulus.Controller("sortable"),
 			stimulus.Action("keydown.esc@document->sortable#cancel"),
-			attr.Attr("data-season-id")(sn.ID()),
+			Attr("data-season-id")(sn.ID()),
 		)(
 			html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
 		),
@@ -365,15 +365,15 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 	case model.EpIsPlayable:
 		icon = Icon("solid/check-circle")
 	}
-	return SettingsItem(attr.Attr("data-episode-id")(ep.ID()))(
-		FlexRow(attr.Style("align-items:center"), Gap4)(
+	return SettingsItem(Attr("data-episode-id")(ep.ID()))(
+		FlexRow(Style("align-items:center"), Gap4)(
 			SettingsItemLabelIcon()(icon),
 			SettingsItemLabel()(
 				SettingsItemLabelTitle(ep.Label()),
 				progressContainer(ep.ID(), ep.Progress()),
 			),
 		),
-		Button(attr.Href(ep.EditorPath()), ButtonGhost)(Icon("line/info-circle")),
+		Button(Href(ep.EditorPath()), ButtonGhost)(Icon("line/info-circle")),
 		Grip(),
 	)
 }
@@ -382,22 +382,22 @@ func AppSeriesAddDialog() html.Node {
 	return DialogStream(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
-				attr.Class("v-media-dialog-fixed"),
+				Class("v-media-dialog-fixed"),
 			)(
 				html.Text("Add Series"),
 			),
 			html.Form(
 				attr.Action("/-/part/series-search"),
-				attr.Attr("data-turbo-frame")("results"),
+				Attr("data-turbo-frame")("results"),
 			)(
 				InputText(
-					attr.Attr("autofocus"),
-					attr.Class("v-media-dialog-fixed"),
+					Attr("autofocus"),
+					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 				),
 			),
 			html.Div(
-				attr.Class("v-media-dialog-results"),
+				Class("v-media-dialog-results"),
 			)(
 				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
 			),
@@ -417,9 +417,9 @@ func AppEpisodeDetail(
 	if ep.SeriesEditionHead().Slug() != "" {
 		backLabel += " — " + ep.SeriesEditionHead().Label()
 	}
-	return ScrollY(attr.Style("padding:0.5rem"))(
+	return ScrollY(Style("padding:0.5rem"))(
 		FlexRow()(
-			Button(attr.Href(model.SeriesEditionEditorPath(ep.SeriesHead(), ep.SeriesEditionHead())), ButtonGhost)(
+			Button(Href(model.SeriesEditionEditorPath(ep.SeriesHead(), ep.SeriesEditionHead())), ButtonGhost)(
 				Label("line/chevron-left", backLabel),
 			),
 		),
@@ -513,27 +513,27 @@ func AppEpisodeDetail(
 					),
 				),
 
-				TextNode(TextBold, attr.Style("margin-top: 1rem"))(html.Text("Videos")),
+				TextNode(TextBold, Style("margin-top: 1rem"))(html.Text("Videos")),
 				expr.IfElse(len(videos) == 0,
 					func() html.Node {
 						return html.Div(
-							attr.Class("v-media-muted"),
+							Class("v-media-muted"),
 						)(html.Text("No videos found"))
 					},
-					func() html.Node { return html.Group() },
+					func() html.Node { return Group() },
 				),
 				html.Range(videos, func(v schema.Video) html.Node {
 					return appEpisodeDialogVideo(v)
 				}),
 
-				TextNode(TextBold, attr.Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
+				TextNode(TextBold, Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
 				expr.IfElse(len(renditions) == 0,
 					func() html.Node {
 						return html.Div(
-							attr.Class("v-media-muted"),
+							Class("v-media-muted"),
 						)(html.Text("No renditions found"))
 					},
-					func() html.Node { return html.Group() },
+					func() html.Node { return Group() },
 				),
 				html.Range(renditions, func(r schema.Rendition) html.Node {
 					return appEpisodeDialogRendition(r)
@@ -568,7 +568,7 @@ func AppEpisodeEditionButton(seasonID, episodeID string, inEdition bool, undoSor
 				)
 			},
 			func() html.Node {
-				return FlexRow(Gap4, attr.Style("align-items:center"))(
+				return FlexRow(Gap4, Style("align-items:center"))(
 					ActionButton(
 						path.Join("/-/do/season-add-episode/", seasonID, episodeID, strconv.FormatInt(undoSortKey, 10)),
 						nil, ButtonGhost,
@@ -594,7 +594,7 @@ func EpisodeEditionButtonUpdate(seasonID, episodeID string, inEdition bool, undo
 
 func appEpisodeDialogVideo(v schema.Video) html.Node {
 	return html.Div(
-		attr.Class("v-media-indent"),
+		Class("v-media-indent"),
 	)(
 		html.Div()(
 			html.Text("ID: "),
@@ -617,9 +617,9 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 					),
 				)
 			},
-			func() html.Node { return html.Group() },
+			func() html.Node { return Group() },
 		),
-		FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
+		FlexRow(Gap2, Style("margin-top: 0.5rem"))(
 			ActionButton("/-/do/video-reimport/"+v.ID, nil, Destructive)(
 				html.Text("Re-import"),
 			),
@@ -629,7 +629,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 						html.Text("Re-encode"),
 					)
 				},
-				func() html.Node { return html.Group() },
+				func() html.Node { return Group() },
 			),
 			trashForm(v.ID),
 		),
@@ -638,7 +638,7 @@ func appEpisodeDialogVideo(v schema.Video) html.Node {
 
 func appEpisodeDialogRendition(r schema.Rendition) html.Node {
 	return html.Div(
-		attr.Class("v-media-indent"),
+		Class("v-media-indent"),
 	)(
 		html.Div()(
 			html.Text("ID: "),
@@ -667,7 +667,7 @@ func appEpisodeDialogRendition(r schema.Rendition) html.Node {
 					html.Textf("Max Height: %d", r.MaxHeight),
 				)
 			},
-			func() html.Node { return html.Group() },
+			func() html.Node { return Group() },
 		),
 		expr.IfElse(r.MaxFPS != 0,
 			func() html.Node {
@@ -675,7 +675,7 @@ func appEpisodeDialogRendition(r schema.Rendition) html.Node {
 					html.Textf("Max FPS: %d", r.MaxFPS),
 				)
 			},
-			func() html.Node { return html.Group() },
+			func() html.Node { return Group() },
 		),
 		expr.IfElse(r.Key != "",
 			func() html.Node {
@@ -684,7 +684,7 @@ func appEpisodeDialogRendition(r schema.Rendition) html.Node {
 					html.Text(r.Key),
 				)
 			},
-			func() html.Node { return html.Group() },
+			func() html.Node { return Group() },
 		),
 	)
 }
@@ -704,9 +704,9 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 			html.Range(results, func(t SeriesSearchResult) html.Node {
 				frameID := "tvmaze-" + strconv.Itoa(t.TVmaze.ID)
 				return Card(CardSurface, CardSize3, Class("v-media-search-card"))(
-					FlexRow(Gap4, attr.Style("height: 100%"))(
+					FlexRow(Gap4, Style("height: 100%"))(
 						Inset(InsetSideLeft, Class("v-media-search-poster"))(
-							PosterImg(attr.Style("height: 100%"), attr.Src(t.TVmaze.Image.Medium())),
+							PosterImg(Style("height: 100%"), attr.Src(t.TVmaze.Image.Medium())),
 						),
 						FlexCol(Gap2)(
 							html.Text(t.TVmaze.Name),

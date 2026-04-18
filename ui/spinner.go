@@ -7,7 +7,7 @@ import (
 
 func Spinner(attrs ...attr.Node) html.Node {
 	return html.Div(
-		attr.Class("u-spinner"),
+		Class("u-spinner"),
 		group(attrs...),
 	)(spinnerLeaves...)
 }
@@ -20,7 +20,7 @@ var spinnerLeaves = func() (a []html.Node) {
 }()
 
 var (
-	SpinnerSM = attr.Attr("data-spinner-size")("sm")
-	SpinnerMD = attr.Attr("data-spinner-size")("md")
-	SpinnerLG = attr.Attr("data-spinner-size")("lg")
+	SpinnerSM = Attr("data-spinner-size")("sm")
+	SpinnerMD = Attr("data-spinner-size")("md")
+	SpinnerLG = Attr("data-spinner-size")("lg")
 )

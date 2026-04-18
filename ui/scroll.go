@@ -13,8 +13,8 @@ import (
 // this relies on the browser's default scrollbar rendering.
 func ScrollX(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-scroll u-scroll+x"),
-		attr.Group(attrs...),
+		Class("u-scroll u-scroll+x"),
+		group(attrs...),
 	)
 }
 
@@ -26,8 +26,8 @@ func ScrollX(attrs ...attr.Node) html.Element {
 // this relies on the browser's default scrollbar rendering.
 func ScrollY(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-scroll u-scroll+y"),
-		attr.Group(attrs...),
+		Class("u-scroll u-scroll+y"),
+		group(attrs...),
 	)
 }
 
@@ -39,7 +39,7 @@ func ScrollY(attrs ...attr.Node) html.Element {
 // this relies on the browser's default scrollbar rendering.
 func ScrollXY(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-scroll u-scroll+xy"),
-		attr.Group(attrs...),
+		Class("u-scroll u-scroll+xy"),
+		group(attrs...),
 	)
 }

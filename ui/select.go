@@ -12,10 +12,10 @@ var SelectValue = stimulus.Value("select", "current")
 func Select(attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(
-			attr.Class("u-select"),
+			Class("u-select"),
 			stimulus.Controller("select"),
 			stimulus.Action("keydown->select#keydown"),
-			attr.Group(attrs...),
+			group(attrs...),
 		)(nodes...)
 	}
 }
@@ -23,9 +23,9 @@ func Select(attrs ...attr.Node) html.Element {
 func SelectTrigger(attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Button(
-			attr.Class("u-select-trigger"),
+			Class("u-select-trigger"),
 			stimulus.Target("select", "trigger"),
-			attr.Group(attrs...),
+			group(attrs...),
 		)(append(nodes, Icon("line/chevron-selector-vertical"))...)
 	}
 }
@@ -33,11 +33,11 @@ func SelectTrigger(attrs ...attr.Node) html.Element {
 func SelectContent(attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(
-			attr.Class("u-select-content"),
+			Class("u-select-content"),
 			stimulus.Target("select", "content"),
 			stimulus.Action("toggle->select#toggled"),
 			attr.Popover("auto"),
-			attr.Group(attrs...),
+			group(attrs...),
 		)(nodes...)
 	}
 }
@@ -45,12 +45,12 @@ func SelectContent(attrs ...attr.Node) html.Element {
 func SelectItem(value string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(
-			attr.Class("u-select-item"),
+			Class("u-select-item"),
 			stimulus.Target("select", "item"),
 			stimulus.Action("click->select#selectItem"),
-			attr.Attr("data-select-value-param")(value),
-			attr.Attr("tabindex")("-1"),
-			attr.Group(attrs...),
+			Attr("data-select-value-param")(value),
+			Attr("tabindex")("-1"),
+			group(attrs...),
 		)(nodes...)
 	}
 }
@@ -60,16 +60,16 @@ func SelectItem(value string, attrs ...attr.Node) html.Element {
 // in sync with the selected item.
 func SelectLabel(label string) html.Node {
 	return html.Span(
-		attr.Class("u-select-label"),
+		Class("u-select-label"),
 		stimulus.Target("select", "label"),
 	)(html.Text(label))
 }
 
 // SelectItemSelected marks an item as initially selected.
-var SelectItemSelected = attr.Attr("data-selected")
+var SelectItemSelected = Attr("data-selected")
 
 var (
-	SelectSize1 = attr.Attr("data-select-size")("1")
-	SelectSize2 = attr.Attr("data-select-size")("2")
-	SelectSize3 = attr.Attr("data-select-size")("3")
+	SelectSize1 = Attr("data-select-size")("1")
+	SelectSize2 = Attr("data-select-size")("2")
+	SelectSize3 = Attr("data-select-size")("3")
 )

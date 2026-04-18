@@ -6,21 +6,21 @@ import (
 )
 
 var (
-	InputSize1 = attr.Attr("data-input-size")("1")
-	InputSize2 = attr.Attr("data-input-size")("2")
-	InputSize3 = attr.Attr("data-input-size")("3")
+	InputSize1 = Attr("data-input-size")("1")
+	InputSize2 = Attr("data-input-size")("2")
+	InputSize3 = Attr("data-input-size")("3")
 )
 
 func InputText(attrs ...attr.Node) html.Element {
 	return html.Input(
-		attr.Class("u-input"),
-		attr.Group(attrs...),
+		Class("u-input"),
+		group(attrs...),
 	)
 }
 
 func InputSubmit(attrs ...attr.Node) html.Element {
 	return html.Input(
-		attr.Group(attrs...),
+		group(attrs...),
 		attr.Type("submit"),
 	)
 }

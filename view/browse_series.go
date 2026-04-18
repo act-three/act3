@@ -35,7 +35,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 								sr.EditorPath(),
 								turbo.DataFrame("_top"),
 							)(Text("View in Editor", Size3,
-								attr.Style("display: inline-block"),
+								Style("display: inline-block"),
 							)),
 						)
 					}),
@@ -70,7 +70,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 					}),
 					TextNode(Size3, LineClamp5)(html.Safe(sed.Summary())),
 				),
-				FlexCol(attr.Style("gap:5rem"))(
+				FlexCol(Style("gap:5rem"))(
 					html.RangeSeq(seasons, browseSeriesSeason),
 				),
 			),
@@ -79,15 +79,15 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 }
 
 func browseSeriesEditionSelect(editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
-	return FlexRow(Gap2, attr.Style("flex-wrap:wrap"))(
+	return FlexRow(Gap2, Style("flex-wrap:wrap"))(
 		html.Range(editions, func(ed *model.SeriesWork) html.Node {
-			selected := attr.Group()
+			selected := group()
 			if ed.SeriesEditionHead.ID() == current.ID() {
-				selected = attr.Attr("data-selected")
+				selected = Attr("data-selected")
 			}
 			return Button(
 				ButtonSurface, ButtonSize3,
-				attr.Href(ed.TheaterPath()),
+				Href(ed.TheaterPath()),
 				selected,
 			)(Text(ed.Label()))
 		}),
@@ -113,7 +113,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 	playable := slices.IndexFunc(vids, func(v *model.Video) bool {
 		return v.MVPlaylist() != ""
 	})
-	typ := attr.Attr("data-type")(ep.CoarseType())
+	typ := Attr("data-type")(ep.CoarseType())
 	return Grid8(Class("v-series-episode"), typ, spoiler)(
 		FlexCol(Class("v-series-episode-info"))(
 			FlexRow(Class("v-series-episode-header"))(
@@ -121,8 +121,8 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 					expr.IfElse(playable >= 0,
 						func() html.Node {
 							return Button(
-								attr.Href(ep.VideoPlayerPath(vids[playable])),
-								attr.Attr("data-turbo-frame")("player"),
+								Href(ep.VideoPlayerPath(vids[playable])),
+								Attr("data-turbo-frame")("player"),
 								ButtonSurface,
 								ButtonCircle,
 							)(Icon("solid/play"))
@@ -147,7 +147,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 			),
 		),
 		Box(HoverOverlay, Class("v-series-episode-thumb"))(
-			html.A(attr.Href(ep.TheaterPath()))(
+			html.A(Href(ep.TheaterPath()))(
 				PosterImg(PosterFill, PosterAspect169, Class("v-series-episode-thumb"), imgAttrs(ep.ThumbnailField())),
 			),
 			Box(Class("v-series-spoiler-overlay")),

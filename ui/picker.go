@@ -18,5 +18,5 @@ func PickerItem(attrs ...attr.Node) html.Element {
 }
 
 func PickerItemLabel(attrs ...attr.Node) html.Element {
-	return FlexCol(attr.Style("gap:3px"), group(attrs...))
+	return FlexCol(Style("gap:3px"), group(attrs...))
 }

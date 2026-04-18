@@ -9,14 +9,14 @@ import (
 const listController = "list"
 
 var (
-	ListID  = attr.Attr("data-list-id-param")
-	ListURL = attr.Attr("data-list-url-param")
+	ListID  = Attr("data-list-id-param")
+	ListURL = Attr("data-list-url-param")
 )
 
 func List(prefix, target string, attrs ...attr.Node) html.Element {
 	return ScrollY(
-		attr.Class("u-list"),
-		attr.Group(attrs...),
+		Class("u-list"),
+		group(attrs...),
 		stimulus.Controller(listController),
 		stimulus.Value(listController, "prefix")(prefix),
 		stimulus.Value(listController, "target")(target),

@@ -14,7 +14,7 @@ import (
 
 func browse(title string, washImages ...model.Image) html.Element {
 	return func(child ...html.Node) html.Node {
-		return base(title)(attr.Style("padding:var(--nav-h) 0 8rem"))(
+		return base(title)(Style("padding:var(--nav-h) 0 8rem"))(
 			browseWash(washImages),
 			browseContainer(child...),
 			browseNavigationMenu(),
@@ -53,22 +53,22 @@ func browseDownloadButton(dls []*model.RenditionForDownload) html.Node {
 		Button(ButtonGhost, ButtonSize3,
 			Disabled(len(dls) == 0),
 			attr.Popovertarget(id),
-			attr.Style("anchor-name:"+anchor),
+			Style("anchor-name:"+anchor),
 		)(Icon("line/download-01")),
 		html.Div(
 			attr.ID(id),
 			attr.Popover("auto"),
-			attr.Class("u-menu"),
-			attr.Style("position-anchor:"+anchor),
-			attr.Style("top:anchor(bottom)"),
-			attr.Style("left:anchor(center)"),
-			attr.Style("translate:-50% 0"),
+			Class("u-menu"),
+			Style("position-anchor:"+anchor),
+			Style("top:anchor(bottom)"),
+			Style("left:anchor(center)"),
+			Style("translate:-50% 0"),
 		)(
 			html.Range(dls, func(dl *model.RenditionForDownload) html.Node {
 				return html.A(
-					attr.Href(dl.Path()),
-					attr.Attr("download")(dl.Filename()),
-					attr.Class("u-menu-item"),
+					Href(dl.Path()),
+					Attr("download")(dl.Filename()),
+					Class("u-menu-item"),
 				)(Text(dl.Label(), Size3))
 			}),
 		),
@@ -87,9 +87,9 @@ func browseNavigationMenu() html.Node {
 					Class("v-media-nav-row"),
 				)(
 					Link("/")(wordmark()),
-					Button(attr.Href("/collections"), ButtonGhost)(Text("Collections")),
+					Button(Href("/collections"), ButtonGhost)(Text("Collections")),
 					Box(Class("v-media-nav-spacer")),
-					Button(attr.Href("/app/profile"), ButtonGhost)(Icon("line/settings-01")),
+					Button(Href("/app/profile"), ButtonGhost)(Icon("line/settings-01")),
 				),
 			),
 		),

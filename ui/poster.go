@@ -6,10 +6,10 @@ import (
 )
 
 var (
-	PosterFill          = attr.Attr("data-fill")
-	PosterAspect23      = attr.Attr("data-aspect")("2-3")
-	PosterAspect169     = attr.Attr("data-aspect")("16-9")
-	PosterAspect1000185 = attr.Attr("data-aspect")("1000-185")
+	PosterFill          = Attr("data-fill")
+	PosterAspect23      = Attr("data-aspect")("2-3")
+	PosterAspect169     = Attr("data-aspect")("16-9")
+	PosterAspect1000185 = Attr("data-aspect")("1000-185")
 )
 
 // PosterImg renders an <img> styled for poster display.

@@ -5,7 +5,6 @@ import (
 
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
@@ -31,7 +30,7 @@ func BrowseEpisode(
 						ep.EditorPath(),
 						turbo.DataFrame("_top"),
 					)(Text("View in Editor", Size3,
-						attr.Style("display: inline-block"),
+						Style("display: inline-block"),
 					))
 				}),
 				FlexRow(Gap3)(
@@ -72,11 +71,11 @@ func browseAudioTrackSelect(ep *model.Episode) html.Node {
 		return v.MVPlaylist() != ""
 	})
 	if playable < 0 {
-		return html.Group()
+		return Group()
 	}
 	tracks := v[playable].AudioTracks()
 	if len(tracks) == 0 {
-		return html.Group()
+		return Group()
 	}
 	return Select(SelectSize3, SelectValue(tracks[0].ID()))(
 		SelectTrigger()(
@@ -100,8 +99,8 @@ func browsePlayButton(ep *model.Episode) html.Node {
 	return expr.IfElse(playable >= 0,
 		func() html.Node {
 			return Button(
-				attr.Href(ep.VideoPlayerPath(v[playable])),
-				attr.Attr("data-turbo-frame")("player"),
+				Href(ep.VideoPlayerPath(v[playable])),
+				Attr("data-turbo-frame")("player"),
 				ButtonSize3)(Icon("solid/play"), Text("Start"))
 		},
 		func() html.Node {

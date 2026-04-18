@@ -8,7 +8,7 @@ import (
 func grid(n int, attrs []attr.Node) html.Element {
 	return Box(
 		Class("u-grid"),
-		attr.Stylef("--cols:%d", n),
+		Stylef("--cols:%d", n),
 		group(attrs...),
 	)
 }

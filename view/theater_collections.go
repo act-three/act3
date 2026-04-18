@@ -17,7 +17,7 @@ func Collections(cols []*model.CollectionHead) html.Node {
 		washImages = append(washImages, c.Banner())
 	}
 	return browse("Collections", washImages...)(
-		FlexCol(attr.Style("padding-top:1rem"))(
+		FlexCol(Style("padding-top:1rem"))(
 			html.Range(cols, func(c *model.CollectionHead) html.Node {
 				return collectionBannerLink(c)
 			}),
@@ -29,19 +29,19 @@ func TheaterCollection(c *model.Collection, itemCount, runtimeMinutes int64) htm
 	return browse("Collections", c.Banner())(
 		FlexCol(
 			Gap8,
-			attr.Style("padding-top:1rem"),
+			Style("padding-top:1rem"),
 			stimulus.Controller("collection"),
 			stimulus.Value("collection", "mode")("overview"),
 		)(
 			collectionBanner(&c.CollectionHead),
-			FlexRow(attr.Style("justify-content:space-between;align-items:baseline"))(
+			FlexRow(Style("justify-content:space-between;align-items:baseline"))(
 				FlexRow(Gap4, ButtonSize3)(
 					collectionTabButton(
 						"/-/part/collection-overview/"+c.ID(),
 						"Overview",
 						stimulus.Action("click->collection#setOverview"),
 						stimulus.Target("collection", "overview"),
-						attr.Attr("data-selected"),
+						Attr("data-selected"),
 					),
 					collectionTabButton(
 						"/-/part/collection-playlist/"+c.ID(),
@@ -54,7 +54,7 @@ func TheaterCollection(c *model.Collection, itemCount, runtimeMinutes int64) htm
 			),
 			turbo.Frame("collection-content",
 				stimulus.Target("collection", "frame"),
-				turbo.FrameOption(attr.Attr("target")("_top")),
+				turbo.FrameOption(Attr("target")("_top")),
 			)(
 				TheaterCollectionOverview(c),
 			),
@@ -80,9 +80,9 @@ func theaterCollectionPlayable(p model.Playable) html.Node {
 	return FlexRow(
 		Gap4,
 		Class("v-collection-playlist-row"),
-		attr.Stylef("height:%dpx", h),
+		Stylef("height:%dpx", h),
 	)(
-		html.A(attr.Href(p.TheaterPath()), Class("v-collection-playlist-row-link")),
+		html.A(Href(p.TheaterPath()), Class("v-collection-playlist-row-link")),
 		theaterCollectionPlayableImage(p, h),
 		playButtonForList(p),
 		FlexCol(Class("v-collection-playlist-text"), Size3)(
@@ -102,8 +102,8 @@ func theaterCollectionPlayable(p model.Playable) html.Node {
 func theaterCollectionPlayableImage(p model.Playable, h int) html.Node {
 	return html.Img(
 		Class("v-collection-playlist-row-image"),
-		attr.Stylef("width:%dpx", imageWidth),
-		attr.Stylef("height:%dpx", h),
+		Stylef("width:%dpx", imageWidth),
+		Stylef("height:%dpx", h),
 		imgAttrs(p.ImageField()),
 	)
 }
@@ -123,23 +123,23 @@ func collectionStatus(c *model.Collection, itemCount, runtimeMinutes int64) html
 		kind = "episodes or movies"
 	}
 	s := fmt.Sprintf("%d %s, %dm", itemCount, kind, runtimeMinutes)
-	return Text(s, attr.Style("padding-right:0.25rem"))
+	return Text(s, Style("padding-right:0.25rem"))
 }
 
 func collectionTabButton(url, label string, attrs ...attr.Node) html.Node {
 	return Group(
 		Button(
-			attr.Attr("data-url")(url),
+			Attr("data-url")(url),
 			stimulus.Action("mouseenter->collection#prefetch"),
-			attr.Group(attrs...),
+			group(attrs...),
 		)(Text(label)),
 		// This exists only so that we can dispatch a synthetic mouseenter
 		// event to cause Turbo to prefetch the correct URL on hover.
 		html.A(
-			attr.Href(url),
+			Href(url),
 			turbo.DataFrame("collection-content"),
 			stimulus.Target("collection", "prefetch"),
-			attr.Style("display:none"),
+			Style("display:none"),
 		),
 	)
 }
@@ -148,12 +148,12 @@ func collectionBannerLink(c *model.CollectionHead, attrs ...attr.Node) html.Node
 	return Box(
 		HoverOverlay,
 		Class("v-collection-banner-x"),
-		attr.Attr("data-title")(c.Title()),
-		attr.Group(attrs...),
+		Attr("data-title")(c.Title()),
+		group(attrs...),
 	)(
 		html.A(
 			Class("v-collection-banner-link"),
-			attr.Href(c.TheaterPath()),
+			Href(c.TheaterPath()),
 		)(
 			collectionBanner(c),
 		),

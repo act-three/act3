@@ -2,7 +2,6 @@ package view
 
 import (
 	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
@@ -23,7 +22,7 @@ func buttonThumbnailEdit(dialogURL string, im model.Image, addr []string) html.N
 func buttonImageEdit(dialogURL string, im model.Image, addr []string, ratio string) html.Node {
 	return html.Div(
 		Class("v-button-image-edit"),
-		attr.Style("aspect-ratio: "+ratio),
+		Style("aspect-ratio: "+ratio),
 	)(
 		html.Button(
 			stimulus.Controller("dialog-trigger"),

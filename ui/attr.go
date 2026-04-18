@@ -4,9 +4,15 @@ import "ily.dev/act3/html/attr"
 
 var (
 	Class = attr.Class
+	Style = attr.Style
 	Href  = attr.Href
 	group = attr.Group
 )
+
+// Stylef returns a style attribute with a formatted value.
+func Stylef(format string, a ...any) attr.Node {
+	return attr.Stylef(format, a...)
+}
 
 func Attr(name string) attr.AttrName { return attr.Attr(name) }
 

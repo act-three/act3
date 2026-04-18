@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model/progress"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
@@ -75,6 +74,6 @@ func progressItem(pi *progress.Item) html.Node {
 			),
 			etaNode,
 		),
-		Progress(pi.Progress(), attr.Class("v-progress-bar"), ProgressSM),
+		Progress(pi.Progress(), Class("v-progress-bar"), ProgressSM),
 	)
 }

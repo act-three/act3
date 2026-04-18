@@ -25,11 +25,11 @@ func PopoverButton(url string, label html.Node, attrs ...attr.Node) html.Element
 			append(children,
 				Button(
 					attr.ID(id),
-					attr.Attr("data-optimistic")(""),
+					Attr("data-optimistic")(""),
 					stimulus.Action("click->popover-trigger#open"),
 					stimulus.Action("mousedown->popover-trigger#activate"),
 					stimulus.Action("mouseleave->popover-trigger#deactivate"),
-					attr.Group(attrs...),
+					group(attrs...),
 				)(label),
 			)...,
 		)
@@ -43,14 +43,14 @@ func PopoverButton(url string, label html.Node, attrs ...attr.Node) html.Element
 func PopoverStream(triggerID string, children ...html.Node) html.Node {
 	return turbo.Append("port",
 		html.Div(
-			attr.Class("u-popover"),
+			Class("u-popover"),
 			stimulus.Controller("popover"),
 			stimulus.Value("popover", "trigger")(triggerID),
 			stimulus.Action("click->popover#close:self"),
 			stimulus.Action("keydown.esc@document->popover#close"),
 			stimulus.Action("turbo:before-visit@document->popover#close"),
 		)(
-			html.Div(attr.Class("u-popover-panel"))(
+			html.Div(Class("u-popover-panel"))(
 				children...,
 			),
 		),

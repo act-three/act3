@@ -6,57 +6,57 @@ import (
 )
 
 var (
-	CardSurface = attr.Attr("data-card")("surface")
-	CardGhost   = attr.Attr("data-card")("ghost")
-	CardClassic = attr.Attr("data-card")("classic")
+	CardSurface = Attr("data-card")("surface")
+	CardGhost   = Attr("data-card")("ghost")
+	CardClassic = Attr("data-card")("classic")
 )
 
-var CardSelected = attr.Attr("data-selected")
+var CardSelected = Attr("data-selected")
 
 var (
-	CardSize1 = attr.Attr("data-card-size")("1")
-	CardSize2 = attr.Attr("data-card-size")("2")
-	CardSize3 = attr.Attr("data-card-size")("3")
-	CardSize4 = attr.Attr("data-card-size")("4")
-	CardSize5 = attr.Attr("data-card-size")("5")
+	CardSize1 = Attr("data-card-size")("1")
+	CardSize2 = Attr("data-card-size")("2")
+	CardSize3 = Attr("data-card-size")("3")
+	CardSize4 = Attr("data-card-size")("4")
+	CardSize5 = Attr("data-card-size")("5")
 )
 
 func Card(attrs ...attr.Node) html.Element {
-	a := attr.Group(attrs...)
+	a := group(attrs...)
 	tag := "div"
 	if a.Has("href") {
 		tag = "a"
 	}
 	return html.Tag(tag)(
-		attr.Class("u-card"),
+		Class("u-card"),
 		a,
 	)
 }
 
 func CardMedia(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-card-media"),
-		attr.Group(attrs...),
+		Class("u-card-media"),
+		group(attrs...),
 	)
 }
 
 func CardContent(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-card-content"),
-		attr.Group(attrs...),
+		Class("u-card-content"),
+		group(attrs...),
 	)
 }
 
 func CardTitle(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-card-title"),
-		attr.Group(attrs...),
+		Class("u-card-title"),
+		group(attrs...),
 	)
 }
 
 func CardDescription(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-card-description"),
-		attr.Group(attrs...),
+		Class("u-card-description"),
+		group(attrs...),
 	)
 }

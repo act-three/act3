@@ -17,9 +17,9 @@ import (
 func LiveAddr(addr []string) attr.Node {
 	attrs := make([]attr.Node, len(addr))
 	for i, a := range addr {
-		attrs[i] = attr.Attr(fmt.Sprintf("data-addr%d", i))(a)
+		attrs[i] = Attr(fmt.Sprintf("data-addr%d", i))(a)
 	}
-	return attr.Group(attrs...)
+	return group(attrs...)
 }
 
 // LiveText renders an inline element containing text.
@@ -38,7 +38,7 @@ func LiveAddr(addr []string) attr.Node {
 // The text can be derived or synthesized,
 // as long as addr is used consistently and is unambiguous.
 func LiveText(text string, addr []string) html.Node {
-	return html.Span(attr.Attr("data-live"), LiveAddr(addr))(html.Text(text))
+	return html.Span(Attr("data-live"), LiveAddr(addr))(html.Text(text))
 }
 
 // LiveTextUpdate renders a turbo streams item that updates
@@ -46,7 +46,7 @@ func LiveText(text string, addr []string) html.Node {
 // Values in addr must match the values given to LiveText,
 // and the contents will be replaced with the new text value.
 func LiveTextUpdate(text string, addr []string) html.Node {
-	return html.Group(
+	return Group(
 		turbo.ReplaceTargets(LiveSelector(addr), turbo.Morph)(
 			LiveText(text, addr),
 		),

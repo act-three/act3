@@ -33,7 +33,7 @@ func AppDownloads(
 		Split()(
 			List("/app/downloads/", "detail",
 				attr.ID(torrentListID),
-				attr.Style("flex: 1"),
+				Style("flex: 1"),
 			)(
 				ListItems(items, appDownloadsListItem),
 			),
@@ -69,14 +69,14 @@ func appDownloadsSearchBar() html.Node {
 
 func appDownloadsListItem(dl *model.DownloadInfo, attrs ...attr.Node) html.Node {
 	return Card(CardGhost,
-		attr.Group(attrs...),
+		group(attrs...),
 		ListID(dl.InfoHash()),
 		ListURL(dl.EditorPath()),
 	)(
 		CardContent()(
 			expr.IfElse(dl.State() == "error",
 				func() html.Node {
-					return html.Group(
+					return Group(
 						CardTitle()(Text(dl.Title())),
 						CardDescription(LineClamp2)(
 							Text(dl.Error()),
@@ -84,7 +84,7 @@ func appDownloadsListItem(dl *model.DownloadInfo, attrs ...attr.Node) html.Node 
 					)
 				},
 				func() html.Node {
-					return html.Group(
+					return Group(
 						appDownloadsWorkLabel(dl),
 						CardTitle(TextNormal)(Text(dl.Title())),
 						CardDescription(LineClamp2)(
@@ -129,7 +129,7 @@ func downloadListItem(dl *model.DownloadHead) html.Node {
 	return SettingsItem()(
 		SettingsItemLabel()(
 			html.A(
-				attr.Href(dl.EditorPath()),
+				Href(dl.EditorPath()),
 				turbo.DataFrame("main"),
 			)(
 				Text(dl.Title(), Size2),
@@ -143,7 +143,7 @@ func downloadListItem(dl *model.DownloadHead) html.Node {
 // Shared by the series and movie edit views.
 func addTorrentButton(inputName, inputValue string) html.Node {
 	return html.Form(
-		attr.Class("v-media-torrent-form"),
+		Class("v-media-torrent-form"),
 		attr.Method("POST"),
 		attr.Enctype("multipart/form-data"),
 		attr.Action("/-/do/torrent-add"),
@@ -152,7 +152,7 @@ func addTorrentButton(inputName, inputValue string) html.Node {
 	)(
 		Hidden(inputName, inputValue),
 		html.Input(
-			attr.Class("v-media-torrent-picker"),
+			Class("v-media-torrent-picker"),
 			attr.Type("file"),
 			attr.Name("torrent"),
 			stimulus.Target("upload", "picker"),
@@ -236,7 +236,7 @@ func appDownloadsImportControl(dl *model.Download) html.Node {
 			),
 		)
 	default: // "imported", "error"
-		return html.Group()
+		return Group()
 	}
 }
 
@@ -254,7 +254,7 @@ func AppDownloadFileAttachPopover(
 	}
 	return PopoverStream(triggerID,
 		FlexCol(
-			attr.Style("width: 300px; height: 350px"),
+			Style("width: 300px; height: 350px"),
 			stimulus.Controller("picker"),
 		)(
 			InputText(
@@ -294,17 +294,17 @@ func downloadAttachPickerEpisodes(
 			return v.ID() != currentVideoID
 		})
 		return PickerItem(
-			attr.Style("isolation: isolate"),
-			attr.Attr("data-filter-text")(label),
+			Style("isolation: isolate"),
+			Attr("data-filter-text")(label),
 			stimulus.Controller("episode-attach"),
 			stimulus.Action("settings-toggle:commit->episode-attach#commit"),
 		)(
 			PickerItemLabel()(
 				Text(label, Size2),
 			),
-			FlexRow(Gap2, attr.Style("align-items:center"))(
+			FlexRow(Gap2, Style("align-items:center"))(
 				html.If(imported, func() html.Node {
-					return Theme(attr.Style("color:var(--text-3)"))(Icon("line/check-circle"))
+					return Theme(Style("color:var(--text-3)"))(Icon("line/check-circle"))
 				}),
 				SettingsToggle("/-/do/episode-video-set", "attach", attached,
 					map[string]string{
@@ -313,11 +313,11 @@ func downloadAttachPickerEpisodes(
 						"episode-id": ep.ID(),
 					},
 					LiveAddr(model.EpisodeAttachToggleAddr(infoHash, filePath, ep.ID())),
-					attr.Style("position: relative; z-index: 1"),
+					Style("position: relative; z-index: 1"),
 				),
 				html.Button(
 					attr.Type("button"),
-					attr.Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
+					Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
 					stimulus.Action("click->episode-attach#attach"),
 				),
 			),

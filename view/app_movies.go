@@ -21,7 +21,7 @@ func AppMovies(
 	s []*model.MovieWork,
 	detail ...html.Node,
 ) (string, html.Node) {
-	return title, FlexCol(attr.Class("v-media-page"))(
+	return title, FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
 			DialogButton("/-/dialog/movie-add", ButtonSurface)(
 				Text("Add Movie"),
@@ -53,7 +53,7 @@ func AppMoviesListItem(
 	mo *model.MovieWork, attrs ...attr.Node,
 ) html.Node {
 	return Card(CardGhost,
-		attr.Group(attrs...),
+		group(attrs...),
 		ListID(mo.MovieHead.ID()),
 		ListURL(mo.EditorPath()),
 	)(
@@ -93,7 +93,7 @@ func AppMoviesDetail(
 								turbo.DataFrame("_top"),
 							)(Text("View in Theater", Size3,
 								// TODO(april): maybe make this the default for Text
-								attr.Style("display: inline-block"),
+								Style("display: inline-block"),
 							)),
 						),
 					),
@@ -226,22 +226,22 @@ func AppMovieAddDialog() html.Node {
 	return DialogStream(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
-				attr.Class("v-media-dialog-fixed"),
+				Class("v-media-dialog-fixed"),
 			)(
 				html.Text("Add Movie"),
 			),
 			html.Form(
 				attr.Action("/-/part/movie-search"),
-				attr.Attr("data-turbo-frame")("results"),
+				Attr("data-turbo-frame")("results"),
 			)(
 				InputText(
-					attr.Attr("autofocus"),
-					attr.Class("v-media-dialog-fixed"),
+					Attr("autofocus"),
+					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 				),
 			),
 			html.Div(
-				attr.Class("v-media-dialog-results"),
+				Class("v-media-dialog-results"),
 			)(
 				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
 			),
@@ -284,9 +284,9 @@ func AppMovieSearchResults(results []MovieSearchResult) html.Node {
 				return Card(CardSurface, CardSize3,
 					Class("v-media-search-card"),
 				)(
-					FlexRow(Gap4, attr.Style("height: 100%"))(
+					FlexRow(Gap4, Style("height: 100%"))(
 						Inset(InsetSideLeft, Class("v-media-search-poster"))(
-							PosterImg(attr.Style("height: 100%"), attr.Src(posterURL(t.TMDB.PosterPath))),
+							PosterImg(Style("height: 100%"), attr.Src(posterURL(t.TMDB.PosterPath))),
 						),
 						FlexCol(Gap2)(
 							movieSearchTitle(t.TMDB),
@@ -341,12 +341,12 @@ func MovieResultLink(editorURL string) html.Node {
 func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEdition) html.Node {
 	return FlexCol(Gap2)(
 		html.Range(editions, func(ed *model.MovieWork) html.Node {
-			selected := attr.Group()
-			href := attr.Group()
+			selected := group()
+			href := group()
 			if ed.MovieEditionHead.ID() == current.ID() {
 				selected = CardSelected
 			} else {
-				href = attr.Href(ed.EditorPath())
+				href = Href(ed.EditorPath())
 			}
 			return Card(
 				CardSurface,
@@ -428,7 +428,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 	vids := med.Videos()
 	if len(vids) == 0 {
 		return html.Div(
-			attr.Class("v-media-muted"),
+			Class("v-media-muted"),
 		)(html.Text("No videos"))
 	}
 	return FlexCol(Gap2)(
@@ -443,7 +443,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 					html.Text("Name: "),
 					html.Text(v.Name()),
 				),
-				FlexRow(Gap2, attr.Style("margin-top: 0.5rem"))(
+				FlexRow(Gap2, Style("margin-top: 0.5rem"))(
 					ActionButton("/-/do/video-reimport/"+v.ID(), nil, Destructive)(
 						html.Text("Re-import"),
 					),
@@ -453,7 +453,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 								html.Text("Re-encode"),
 							)
 						},
-						func() html.Node { return html.Group() },
+						func() html.Node { return Group() },
 					),
 					trashForm(v.ID()),
 				),

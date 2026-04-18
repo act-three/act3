@@ -23,18 +23,18 @@ func SettingsToggle(action, name string, checked bool, params map[string]string,
 		stimulus.Value("settings-toggle", "url")(action),
 		stimulus.Value("settings-toggle", "name")(name),
 		stimulus.Value("settings-toggle", "params")(string(paramsJSON)),
-		attr.Group(attrs...),
+		group(attrs...),
 	)(
 		html.Button(
-			attr.Class("u-settings-toggle-track"),
+			Class("u-settings-toggle-track"),
 			attr.Type("button"),
 			attr.Role("switch"),
-			attr.Attr("aria-checked")(aria),
-			attr.Attr("data-optimistic")(""),
+			Attr("aria-checked")(aria),
+			Attr("data-optimistic")(""),
 			stimulus.Target("settings-toggle", "track"),
 			stimulus.Action("click->settings-toggle#toggle"),
 		)(
-			html.Span(attr.Class("u-settings-toggle-thumb")),
+			html.Span(Class("u-settings-toggle-thumb")),
 		),
 	)
 }

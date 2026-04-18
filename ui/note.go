@@ -11,9 +11,9 @@ const notePortController = "note-port"
 
 // Variants
 var (
-	NoteInfo    = attr.Attr("data-variant")("info") // default
-	NoteSuccess = attr.Attr("data-variant")("success")
-	NoteWarning = attr.Attr("data-variant")("warning")
+	NoteInfo    = Attr("data-variant")("info") // default
+	NoteSuccess = Attr("data-variant")("success")
+	NoteWarning = Attr("data-variant")("warning")
 )
 
 // NotePort is the fixed-position container where notes
@@ -21,9 +21,9 @@ var (
 func NotePort(attrs ...attr.Node) html.Node {
 	return html.Div(
 		attr.ID("note-port"),
-		attr.Class("u-note-port"),
+		Class("u-note-port"),
 		attr.Role("region"),
-		attr.Attr("aria-label")("Notifications"),
+		Attr("aria-label")("Notifications"),
 		stimulus.Controller(notePortController),
 		stimulus.Action("mouseenter->note-port#pause"),
 		stimulus.Action("mouseleave->note-port#resume"),
@@ -39,9 +39,9 @@ func Note(attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return turbo.Append("note-port",
 			html.Div(
-				attr.Class("u-note"),
+				Class("u-note"),
 				attr.Role("status"),
-				attr.Attr("aria-live")("polite"),
+				Attr("aria-live")("polite"),
 				stimulus.Target(notePortController, "note"),
 				stimulus.Action("pointerdown->note-port#swipeStart"),
 				stimulus.Action("pointermove->note-port#swipeMove"),
@@ -55,7 +55,7 @@ func Note(attrs ...attr.Node) html.Element {
 // NoteTitle renders the title line of a note.
 func NoteTitle(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-note-title"),
+		Class("u-note-title"),
 		group(attrs...),
 	)
 }
@@ -63,7 +63,7 @@ func NoteTitle(attrs ...attr.Node) html.Element {
 // NoteDescription renders the body text of a note.
 func NoteDescription(attrs ...attr.Node) html.Element {
 	return html.Div(
-		attr.Class("u-note-description"),
+		Class("u-note-description"),
 		group(attrs...),
 	)
 }
@@ -72,7 +72,7 @@ func NoteDescription(attrs ...attr.Node) html.Element {
 // height matches the text line-height for alignment.
 func NoteIcon(children ...html.Node) html.Node {
 	return html.Div(
-		attr.Class("u-note-icon"),
+		Class("u-note-icon"),
 	)(children...)
 }
 
@@ -85,7 +85,7 @@ func NoteAction(attrs ...attr.Node) html.Element {
 		tag = "a"
 	}
 	return html.Tag(tag)(
-		attr.Class("u-note-action"),
+		Class("u-note-action"),
 		a,
 	)
 }

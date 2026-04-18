@@ -9,7 +9,7 @@ var SettingsHover = Class("u-settings-item-hover")
 
 func SettingsPage() html.Element {
 	return func(nodes ...html.Node) html.Node {
-		return html.Div(attr.Class("u-settings-page"))(
+		return html.Div(Class("u-settings-page"))(
 			FlexCol()(
 				Group(nodes...),
 			),
@@ -34,7 +34,7 @@ func SettingsItem(attrs ...attr.Node) html.Element {
 }
 
 func SettingsItemLabel(attrs ...attr.Node) html.Element {
-	return FlexCol(attr.Style("gap:3px"), group(attrs...))
+	return FlexCol(Style("gap:3px"), group(attrs...))
 }
 
 func SettingsItemLabelTitle(s string) html.Node {

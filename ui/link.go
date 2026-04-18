@@ -7,14 +7,14 @@ import (
 
 func Link(url string, attrs ...attr.Node) html.Element {
 	return html.A(
-		attr.Href(url),
-		attr.Class("u-link"),
+		Href(url),
+		Class("u-link"),
 		group(attrs...),
 	)
 }
 
 var (
-	LinkUnderlineAuto   = attr.Attr("data-underline")("auto")
-	LinkUnderlineAlways = attr.Attr("data-underline")("always")
-	LinkUnderlineHover  = attr.Attr("data-underline")("hover")
+	LinkUnderlineAuto   = Attr("data-underline")("auto")
+	LinkUnderlineAlways = Attr("data-underline")("always")
+	LinkUnderlineHover  = Attr("data-underline")("hover")
 )

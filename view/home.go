@@ -2,7 +2,6 @@ package view
 
 import (
 	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
@@ -51,7 +50,7 @@ func Home(
 			),
 			FlexCol(Class("v-home-collections"))(
 				html.Range(cols, func(c *model.CollectionHead) html.Node {
-					return collectionBannerLink(c, attr.Attr("data-search-hidden"))
+					return collectionBannerLink(c, Attr("data-search-hidden"))
 				}),
 			),
 			posterGrid(works),

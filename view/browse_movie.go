@@ -3,7 +3,6 @@ package view
 import (
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/turbo"
@@ -27,7 +26,7 @@ func BrowseMovieEdition(
 							med.EditorPath(),
 							turbo.DataFrame("_top"),
 						)(Text("View in Editor", Size3,
-							attr.Style("display: inline-block"),
+							Style("display: inline-block"),
 						)),
 					)
 				}),
@@ -67,8 +66,8 @@ func browseMoviePlayButton(med *model.MovieEdition) html.Node {
 	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
-				attr.Href(med.VideoPlayerPath(v)),
-				attr.Attr("data-turbo-frame")("player"),
+				Href(med.VideoPlayerPath(v)),
+				Attr("data-turbo-frame")("player"),
 				ButtonSize3,
 			)(Icon("solid/play"), Text("Play"))
 		},
@@ -82,11 +81,11 @@ func browseMoviePlayButton(med *model.MovieEdition) html.Node {
 func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
 	v := med.PlayableVideo()
 	if v == nil {
-		return html.Group()
+		return Group()
 	}
 	tracks := v.AudioTracks()
 	if len(tracks) == 0 {
-		return html.Group()
+		return Group()
 	}
 	return Select(SelectSize3,
 		SelectValue(tracks[0].ID()),
@@ -104,15 +103,15 @@ func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
 }
 
 func browseMovieEditionSelect(editions []*model.MovieWork, current *model.MovieEdition) html.Node {
-	return FlexRow(Gap2, attr.Style("flex-wrap:wrap"))(
+	return FlexRow(Gap2, Style("flex-wrap:wrap"))(
 		html.Range(editions, func(ed *model.MovieWork) html.Node {
-			selected := attr.Group()
+			selected := group()
 			if ed.MovieEditionHead.ID() == current.ID() {
-				selected = attr.Attr("data-selected")
+				selected = Attr("data-selected")
 			}
 			return Button(
 				ButtonSurface, ButtonSize3,
-				attr.Href(ed.TheaterPath()),
+				Href(ed.TheaterPath()),
 				selected,
 			)(Text(ed.Label()))
 		}),

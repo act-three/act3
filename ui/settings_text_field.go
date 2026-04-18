@@ -27,22 +27,22 @@ var SettingsTextFieldSuffix = stimulus.Value("settings-text-field", "suffix")
 func SettingsTextField(action, name, value string, attrs ...attr.Node) html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Div(
-			attr.Class("u-settings-text-field"),
+			Class("u-settings-text-field"),
 			stimulus.Controller("settings-text-field"),
 			stimulus.Value("settings-text-field", "url")(action),
-			attr.Group(attrs...),
+			group(attrs...),
 		)(append(nodes,
-			html.Div(attr.Class("u-settings-text-field-inner"))(
+			html.Div(Class("u-settings-text-field-inner"))(
 				InputText(
 					attr.Name(name),
 					attr.Value(value),
-					attr.Attr("data-optimistic")(""),
+					Attr("data-optimistic")(""),
 					stimulus.Target("settings-text-field", "input"),
 					stimulus.Action("blur->settings-text-field#save"),
 					stimulus.Action("keydown->settings-text-field#keydown"),
 					stimulus.Action("input->settings-text-field#sync"),
 				),
-				html.Div(attr.Class("u-settings-text-field-overlay"))(
+				html.Div(Class("u-settings-text-field-overlay"))(
 					InputText(
 						attr.Tabindex("-1"),
 						attr.Disabled,

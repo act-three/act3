@@ -19,15 +19,15 @@ func AppTrash(
 	items []model.TrashItem,
 	detail ...html.Node,
 ) (string, html.Node) {
-	return title, FlexCol(attr.Class("v-media-page"))(
+	return title, FlexCol(Class("v-media-page"))(
 		Split()(
 			List("/app/trash/", "detail")(
 				Box(
 					Size2,
-					attr.Style("background: var(--bg-surface)"),
-					attr.Style("border-bottom: 0.5px solid var(--border-strong)"),
-					attr.Style("margin: -0.5rem -0.5rem 1rem"),
-					attr.Style("padding: 1rem"),
+					Style("background: var(--bg-surface)"),
+					Style("border-bottom: 0.5px solid var(--border-strong)"),
+					Style("margin: -0.5rem -0.5rem 1rem"),
+					Style("padding: 1rem"),
 				)(
 					Label("line/info-circle", "Items in Trash are permanently deleted after 30 days.",
 						TextBalance,
@@ -56,13 +56,13 @@ func AppTrash(
 func AppTrashListItem(it model.TrashItem, attrs ...attr.Node) html.Node {
 	i2 := trashKindIcon2(it.Kind)
 	return Card(CardGhost,
-		attr.Group(attrs...),
+		group(attrs...),
 		ListID(it.ID),
 		ListURL(appTrashDetailPath(it.ID)),
 	)(
 		CardContent()(
-			FlexRow(Gap2, attr.Style("align-items:baseline"))(
-				FlexCol(Gap1, attr.Style("flex-shrink:0"))(
+			FlexRow(Gap2, Style("align-items:baseline"))(
+				FlexCol(Gap1, Style("flex-shrink:0"))(
 					Icon(trashKindIcon(it.Kind)),
 					html.If(i2 != "", func() html.Node {
 						return Icon(i2)
@@ -135,7 +135,7 @@ func appTrashDetailPath(id string) string { return "/app/trash/" + id }
 // trashed item at the top of the trash list.
 func TrashListAppend(item *model.TrashItem) html.Node {
 	if item == nil {
-		return html.Group()
+		return Group()
 	}
 	return turbo.Prepend(AppTrashListItems,
 		ListItems([]model.TrashItem{*item}, AppTrashListItem),
@@ -168,7 +168,7 @@ func MediaListRemove(kind model.TrashKind, id string) html.Node {
 	case model.TrashKindMovie, model.TrashKindSeries, model.TrashKindCollection:
 		return turbo.RemoveTargets(`[data-list-id-param="` + id + `"]`)
 	}
-	return html.Group()
+	return Group()
 }
 
 // MoviesListAppend emits a Turbo stream that re-appends a restored

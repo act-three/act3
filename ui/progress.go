@@ -18,21 +18,21 @@ func Progress(value float64, attrs ...attr.Node) html.Node {
 
 	return html.Div(
 		attr.Role("progressbar"),
-		attr.Attr("aria-valuenow")(fmt.Sprintf("%.1f", value*100)),
-		attr.Attr("data-state")(state),
-		attr.Attr("data-value")(fmt.Sprintf("%.1f", value*100)),
-		attr.Class("u-progress"),
-		attr.Group(attrs...),
+		Attr("aria-valuenow")(fmt.Sprintf("%.1f", value*100)),
+		Attr("data-state")(state),
+		Attr("data-value")(fmt.Sprintf("%.1f", value*100)),
+		Class("u-progress"),
+		group(attrs...),
 	)(
 		html.Div(
-			attr.Class("u-progress-fill"),
-			attr.Stylef("width: %.2f%%", 100*value),
+			Class("u-progress-fill"),
+			Stylef("width: %.2f%%", 100*value),
 		),
 	)
 }
 
 var (
-	ProgressSM = attr.Attr("data-progress-size")("sm")
-	ProgressMD = attr.Attr("data-progress-size")("md")
-	ProgressLG = attr.Attr("data-progress-size")("lg")
+	ProgressSM = Attr("data-progress-size")("sm")
+	ProgressMD = Attr("data-progress-size")("md")
+	ProgressLG = Attr("data-progress-size")("lg")
 )

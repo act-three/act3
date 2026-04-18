@@ -11,7 +11,7 @@ import (
 func buttonUpload() html.Element {
 	return func(nodes ...html.Node) html.Node {
 		return html.Form(
-			attr.Class("v-button-upload"),
+			Class("v-button-upload"),
 			attr.Method("POST"),
 			attr.Enctype("multipart/form-data"),
 			attr.Action("/-/do/upload"),
@@ -19,7 +19,7 @@ func buttonUpload() html.Element {
 			stimulus.Action("turbo:submit-end->upload#reset"),
 		)(
 			html.Input(
-				attr.Class("v-button-upload-picker"),
+				Class("v-button-upload-picker"),
 				attr.Type("file"),
 				attr.Name("file"),
 				stimulus.Target("upload", "picker"),
