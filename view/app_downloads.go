@@ -371,8 +371,11 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
 					),
 				),
 				html.If(df.SeriesEdition() != nil, func() html.Node {
+					// Disabled when the Video is gone — e.g. merged
+					// away into a duplicate during ingest.
 					return PopoverButton("/-/dialog/download-file-attach",
 						Text("Attach"),
+						Disabled(df.VideoID() == ""),
 						SettingsHover, ButtonGhost, ButtonSize2,
 					)(
 						Hidden("infohash", df.InfoHash()),

@@ -376,6 +376,9 @@ RETURNING *;
 -- name: EpisodeVideoDelete :exec
 DELETE FROM EpisodeVideo WHERE EpisodeID = ? AND VideoID = ?;
 
+-- name: EpisodeVideoDeleteByVideoID :exec
+DELETE FROM EpisodeVideo WHERE VideoID = ?;
+
 -- name: EpisodeVideoDistinctEpisodesByVideo :many
 SELECT DISTINCT EpisodeID FROM EpisodeVideo WHERE VideoID = ?;
 
@@ -413,6 +416,18 @@ DELETE FROM EpisodeVideo
 WHERE EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
    OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
 
+-- EpisodeVideoReassign re-points live junctions from one Video to
+-- another, used during duplicate-content merge. Existing (EpisodeID,
+-- ToVideoID) junctions are kept via INSERT OR IGNORE; callers should
+-- precede with EpisodeVideoRestoreForReassign so that any soft-
+-- deleted winner junctions at conflict points are revived first, and
+-- follow with EpisodeVideoDeleteByVideoID on the from-side to remove
+-- stale rows.
+-- name: EpisodeVideoReassign :exec
+INSERT OR IGNORE INTO EpisodeVideo (EpisodeID, VideoID)
+SELECT src.EpisodeID, sqlc.arg(ToVideoID) FROM EpisodeVideo AS src
+WHERE src.VideoID = sqlc.arg(FromVideoID) AND src.DeletedAt IS NULL;
+
 -- name: EpisodeVideoRestoreByCascade :exec
 UPDATE EpisodeVideo SET DeletedAt = NULL
 WHERE DeletedAt IS NOT NULL
@@ -420,6 +435,21 @@ AND (EpisodeID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(R
   OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID)))
 AND EpisodeID IN (SELECT ID FROM Episode WHERE DeletedAt IS NULL)
 AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL);
+
+-- EpisodeVideoRestoreForReassign clears DeletedAt on any ToVideoID
+-- junctions that collide with live FromVideoID junctions. Run
+-- immediately before EpisodeVideoReassign during duplicate-content
+-- merge so that a loser's live junction revives a previously
+-- soft-deleted winner junction for the same episode. The loser's
+-- live junction represents current user intent, overriding the
+-- older detach.
+-- name: EpisodeVideoRestoreForReassign :exec
+UPDATE EpisodeVideo SET DeletedAt = NULL
+WHERE EpisodeVideo.VideoID = sqlc.arg(ToVideoID) AND EpisodeVideo.DeletedAt IS NOT NULL
+AND EpisodeVideo.EpisodeID IN (
+	SELECT src.EpisodeID FROM EpisodeVideo AS src
+	WHERE src.VideoID = sqlc.arg(FromVideoID) AND src.DeletedAt IS NULL
+);
 
 -- name: EpisodeVideoSoftDelete :exec
 UPDATE EpisodeVideo
@@ -595,6 +625,9 @@ INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)
 RETURNING *;
 
+-- name: MovieVideoDeleteByVideoID :exec
+DELETE FROM MovieVideo WHERE VideoID = ?;
+
 -- name: MovieVideoDistinctEditionsByVideo :many
 SELECT DISTINCT MovieEditionID FROM MovieVideo WHERE VideoID = ?;
 
@@ -616,6 +649,11 @@ DELETE FROM MovieVideo
 WHERE MovieEditionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID))
    OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID));
 
+-- name: MovieVideoReassign :exec
+INSERT OR IGNORE INTO MovieVideo (MovieEditionID, VideoID)
+SELECT src.MovieEditionID, sqlc.arg(ToVideoID) FROM MovieVideo AS src
+WHERE src.VideoID = sqlc.arg(FromVideoID) AND src.DeletedAt IS NULL;
+
 -- name: MovieVideoRestoreByCascade :exec
 UPDATE MovieVideo SET DeletedAt = NULL
 WHERE DeletedAt IS NOT NULL
@@ -623,6 +661,17 @@ AND (MovieEditionID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.
   OR VideoID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = sqlc.arg(RootID) OR Trash.ID = sqlc.arg(RootID)))
 AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL)
 AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL);
+
+-- MovieVideoRestoreForReassign clears DeletedAt on any ToVideoID
+-- junctions that collide with live FromVideoID junctions. See
+-- EpisodeVideoRestoreForReassign for context.
+-- name: MovieVideoRestoreForReassign :exec
+UPDATE MovieVideo SET DeletedAt = NULL
+WHERE MovieVideo.VideoID = sqlc.arg(ToVideoID) AND MovieVideo.DeletedAt IS NOT NULL
+AND MovieVideo.MovieEditionID IN (
+	SELECT src.MovieEditionID FROM MovieVideo AS src
+	WHERE src.VideoID = sqlc.arg(FromVideoID) AND src.DeletedAt IS NULL
+);
 
 -- name: MovieVideoSoftDelete :exec
 UPDATE MovieVideo
@@ -1118,6 +1167,14 @@ SELECT * FROM Video WHERE ID = ?;
 -- name: VideoGetByName :one
 SELECT * FROM Video WHERE InfoHash = ? AND Name = ?;
 
+-- VideoHardDelete removes a Video row outright. Used during
+-- duplicate-content merge after its junctions have been re-pointed.
+-- name: VideoHardDelete :exec
+DELETE FROM Video WHERE ID = ?;
+
+-- name: VideoListByContentHash :many
+SELECT * FROM Video WHERE ContentHash = ? AND DeletedAt IS NULL;
+
 -- name: VideoListByEditionID :many
 SELECT * FROM Video
 WHERE DeletedAt IS NULL
@@ -1216,7 +1273,7 @@ UPDATE Video SET MVPlaylist = ? WHERE ID = ?
 RETURNING *;
 
 -- name: VideoUpdateOriginalKey :one
-UPDATE Video SET OriginalKey = ? WHERE ID = ?
+UPDATE Video SET OriginalKey = ?, ContentHash = ? WHERE ID = ?
 RETURNING *;
 
 -- name: VideoUpdateProbe :exec

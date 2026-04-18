@@ -195,11 +195,13 @@ CREATE TABLE Video
 	OriginalType TEXT NOT NULL DEFAULT (''), -- MIME type of original; empty until probed
 	Duration     INTEGER NOT NULL DEFAULT (0), -- milliseconds; 0 until probed
 	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	ContentHash  BLOB, -- blake3 of the original bytes; null until copied
 
 	DeletedAt INTEGER
 )
 STRICT;
 CREATE UNIQUE INDEX UQ_Video_InfoHash_Name ON Video (InfoHash, Name) WHERE DeletedAt IS NULL;
+CREATE UNIQUE INDEX UQ_Video_ContentHash ON Video (ContentHash) WHERE ContentHash IS NOT NULL AND DeletedAt IS NULL;
 CREATE INDEX Idx_Video_Trash ON Video (DeletedAt) WHERE DeletedAt IS NOT NULL;
 
 CREATE TABLE AudioTrack
