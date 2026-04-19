@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	_ "image/jpeg"
-	_ "image/png"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"slices"
 	"strconv"
@@ -16,7 +16,7 @@ import (
 
 	"github.com/gen2brain/webp"
 	"golang.org/x/image/draw"
-	_ "golang.org/x/image/webp"
+	xwebp "golang.org/x/image/webp"
 	"kr.dev/errorfmt"
 
 	"ily.dev/act3/assets"
@@ -69,13 +69,28 @@ const maxImageBytes = 10 << 20
 // ~600 KB; downscaled variants are proportionally smaller.
 const webpQuality = 80
 
-// allowedSourceFormats maps the format string returned by
-// image.Decode to the canonical MIME type stored in
-// Image.Type. Anything else is a ValidationError.
-var allowedSourceFormats = map[string]string{
-	"png":  "image/png",
-	"jpeg": "image/jpeg",
-	"webp": "image/webp",
+// decodeAllowedImage tries each allowed decoder in turn and
+// returns the decoded image with its canonical MIME type. Going
+// through image.Decode would instead consult the process-wide
+// format registry, which any imported package can extend — we
+// don't want a direct or transitive dependency to silently
+// broaden the set of accepted formats. WebP decode goes through
+// golang.org/x/image/webp because gen2brain/webp's decoder has
+// known bugs; gen2brain is kept for encoding only.
+func decodeAllowedImage(raw []byte) (image.Image, string, error) {
+	for _, d := range []struct {
+		decode func(io.Reader) (image.Image, error)
+		mime   string
+	}{
+		{png.Decode, "image/png"},
+		{jpeg.Decode, "image/jpeg"},
+		{xwebp.Decode, "image/webp"},
+	} {
+		if img, err := d.decode(bytes.NewReader(raw)); err == nil {
+			return img, d.mime, nil
+		}
+	}
+	return nil, "", errors.New("unsupported format")
 }
 
 // Placeholder Image IDs. These rows are created at boot
@@ -234,7 +249,7 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 	}
 
 	// Buffer the input so we can both store it byte-for-byte and
-	// hand it to image.Decode. We read maxImageBytes+1 to detect
+	// hand it to the decoder. We read maxImageBytes+1 to detect
 	// (and reject) inputs that exceed the cap.
 	raw, err := io.ReadAll(io.LimitReader(r, maxImageBytes+1))
 	if err != nil {
@@ -247,16 +262,9 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 		}
 	}
 
-	src, format, err := image.Decode(bytes.NewReader(raw))
+	src, mime, err := decodeAllowedImage(raw)
 	if err != nil {
 		return "", &ValidationError{Op: "decode image", Err: err}
-	}
-	mime, ok := allowedSourceFormats[format]
-	if !ok {
-		return "", &ValidationError{
-			Op:  "decode image",
-			Err: fmt.Errorf("unsupported format %q", format),
-		}
 	}
 
 	cropped := centerCrop(src, kind)

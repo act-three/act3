@@ -9,6 +9,8 @@ import (
 	"image/png"
 	"testing"
 
+	"golang.org/x/image/webp"
+
 	"ily.dev/act3/database"
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/storage"
@@ -120,7 +122,7 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer f.Close()
-	got, _, err := image.Decode(f)
+	got, err := webp.Decode(f)
 	if err != nil {
 		t.Fatal(err)
 	}
