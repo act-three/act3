@@ -185,7 +185,7 @@ func (tx *TxR) MovieDownloadList(ctx Context, med *MovieEdition) ([]*RenditionFo
 		ext := videoExtensionForContentType(vid.OriginalType)
 		rends = append(rends, &RenditionForDownload{
 			path:  path.Join("/-/dl", vid.ID, med.ID()),
-			label: "Original " + strings.ToUpper(strings.TrimPrefix(ext, ".")),
+			label: "Original " + strings.ToUpper(ext),
 		})
 	}
 	return rends, nil
