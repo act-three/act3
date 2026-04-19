@@ -79,6 +79,18 @@ func (med *MovieEditionHead) RuntimeString() string {
 	return fmt.Sprintf("%d", med.med.Runtime)
 }
 
+func (med *MovieEditionHead) basename() string {
+	var p []string
+	p = append(p, med.Title())
+	if y := med.Year(); y != "" {
+		p = append(p, "("+y+")")
+	}
+	if med.Slug() != "" {
+		p = append(p, med.Label())
+	}
+	return xstrings.SanitizeFilename(strings.Join(p, " "))
+}
+
 type MovieEdition struct {
 	MovieEditionHead
 	videos []*Video
@@ -96,18 +108,6 @@ func newMovieEdition(
 		videos:           videosByEditionID[medData.ID],
 	}
 	return med
-}
-
-func (med *MovieEdition) basename() string {
-	var p []string
-	p = append(p, med.Title())
-	if y := med.Year(); y != "" {
-		p = append(p, "("+y+")")
-	}
-	if med.Slug() != "" {
-		p = append(p, med.Label())
-	}
-	return xstrings.SanitizeFilename(strings.Join(p, " "))
 }
 
 func (med *MovieEdition) Videos() []*Video      { return med.videos }
