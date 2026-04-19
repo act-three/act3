@@ -8,60 +8,89 @@ compatibility: This skill works best on macOS with mediastreamvalidator and avme
 
 Note that current Chrome DOES support native HLS playback.
 
+## How to use subagents in this workflow
+
+Playback debugging burns context fast: Playwright snapshots, curl
+bodies, ffmpeg logs, mediastreamvalidator output, and downloaded
+segment data all pile up. To keep the main conversation coherent and
+to enforce the phase boundaries, **delegate each investigative phase
+to its own subagent**, then **spawn a separate auditor subagent** to
+independently verify the previous phase's conclusions before
+proceeding.
+
+Rules for using subagents here:
+
+- **One phase, one subagent.** Don't combine phases — the point is
+  that Phase 2 can't start fixing, Phase 3 can't skip reproduction,
+  etc. A narrow brief enforces the boundary.
+- **Audit independently.** An auditor must re-run the key check
+  itself, not just read the prior agent's notes. Treat the earlier
+  subagent's claims as unverified until the auditor confirms them.
+- **Ask for concise reports.** Each subagent should return a short
+  findings summary (what it observed, what it concluded, what
+  artifacts it left on disk), not a transcript. The main agent
+  synthesizes across phases.
+- **Pass artifacts by path, not by content.** Have subagents write
+  downloaded segments, playlists, logs, and test inputs to disk and
+  report the paths. The next subagent reads from disk.
+- Use `subagent_type: "general-purpose"` unless another type fits
+  better (e.g. `Explore` for pure code reading in Phase 5 prep).
+
 ## Instructions
 
-### Phase 1. Clarify
+### Phase 1. Clarify (main agent)
 
 Clarify if necessary. What is the playback problem? Black screen,
 glitchy audio, glitchy video, buffering, etc.
 
-### Phase 2. Investigate
+Do this in the main conversation — it needs the user in the loop.
 
-Use the Playwright MCP to navigate to the episode page in Chrome and
-observe the actual playback behavior (black screen, buffering, etc.).
-Check the browser console for errors.
+### Phase 2. Investigate (subagent)
 
-Also use curl, mediastreamvalidator, and avmediainfo at your
-discretion to figure out what is going wrong.
+Spawn an **investigation subagent**. Brief it with:
 
-Do not attempt to implement a fix until Phase 5.
+- The episode/playlist URL and the user's description of the symptom.
+- Permission to use Playwright MCP and Chrome Devtools MCP to load
+  the page and observe playback, to check the browser console, and
+  to run curl, mediastreamvalidator, and avmediainfo.
+- Explicit instruction: **do not attempt a fix, do not modify source
+  code.** Its only job is to identify the likely cause.
+- Guidance that when the issue looks like it's in the encoded output,
+  it should distinguish encoding *args* vs encoding *environment*:
+  - Download the production fMP4 + playlist and validate locally
+    (`mediastreamvalidator` accepts `file://`, no HTTP needed).
+  - If the production file fails locally too, the issue is in the
+    encoded file itself, not in how we serve it.
+  - Check whether encoding the same source with the *local* ffmpeg
+    produces valid output. If local works but production doesn't,
+    the bug might be in the Docker ffmpeg version, not our code.
+- Instruction to note any incidental findings but stay focused on
+  the reported playback problem.
 
-When the issue is in the encoded output (e.g. mediastreamvalidator
-reports errors on the fMP4 segments), check whether the problem is
-in our encoding *args* or the encoding *environment*:
+Ask the subagent to return: the suspected cause, the evidence for it,
+and paths to any saved artifacts (playlists, segments, logs).
 
-- Download the production fMP4 + playlist and validate locally
-  (`mediastreamvalidator` works with `file://` paths, no HTTP
-  server needed).
-- If the production file fails locally too, the issue is in the
-  encoded file itself, not in how we serve it.
-- Check whether encoding the same source with the *local* ffmpeg
-  produces valid output. If local works but production doesn't,
-  the bug might be in the Docker ffmpeg version, not our code.
+Then spawn an **audit subagent**. Brief it with the original symptom,
+the investigator's suspected cause, and the artifact paths. Its job:
+independently re-run the decisive check (e.g. re-validate the saved
+segment, re-fetch the playlist) and confirm or refute the
+investigator's conclusion. If the audit refutes it, loop back.
 
-Sometimes these tools will reveal other problems that aren't
-expected to break playback. Document those but stay focused on
-fixing playback.
+### Phase 3. Build Small Test Case (subagent)
 
-### Phase 3. Build Small Test Case
+Spawn a **reproduction subagent**. Brief it with the confirmed cause
+from Phase 2 and the relevant artifact paths. Explicit instruction:
+**do not attempt a fix.** Its job is to produce a failing unit test.
 
-Once a cause is found, fetch the relevant assets and write a unit test
-to reliably reproduce the failure. We won't necessarily keep all this
-video data around long term, but it's useful to have it on hand during
-debugging.
+Useful assets it can fetch:
 
-Do not attempt to implement a fix until Phase 5.
-
-Useful assets:
-
-1. Source video. Available to download from the episode details page.
+1. Source video (from the episode details page).
 2. Playlists.
 3. HLS segment data.
 
 Process the source video locally:
 
-1. Extract a short clip (about 4 segments worth) from the source
-   video.
+1. Extract a short clip (about 4 segments worth) from the source.
 2. Process the clip using package `video/ffmpeg` to produce a
    valid HLS package like what we generate for production.
 3. Verify that this output yields the same error as the generated
@@ -74,32 +103,53 @@ If these steps don't yield the same error, try variations:
 - Try longer clips, the full video, or different encode settings.
 - Try 2-pass encoding (Pass1Combined + Pass2Single) vs 1-pass.
 
-Verify that the test reproduces the same problem that was
-originally reported or observed in production.
+Ask the subagent to return: the test path, how to run it, and the
+exact failure output — which must match the symptom from Phase 1.
 
-### Phase 4. Minimize Test Case
+Then spawn an **audit subagent** with the test path and the original
+symptom. Its job: run the test itself and confirm the failure mode
+matches what the user originally reported. A test that fails for a
+*different* reason is not a valid reproduction — send it back.
 
-Try to minimize the size of the test data.
+### Phase 4. Minimize Test Case (subagent)
 
-Do not attempt to implement a fix until Phase 5.
+Spawn a **minimization subagent** with the Phase 3 test as input.
+Explicit instruction: **do not attempt a fix.**
 
 Prefer generating synthetic sources over checking in large files.
 A good pattern:
 
 1. Use `docker run act3-ffmpeg /out/ffmpeg` to generate a tiny
    synthetic source (e.g. `testsrc2` + `sine`, AV1+EAC3, ~2s).
-2. Encode it through the HLS pipeline in the same Docker
-   container.
+2. Encode it through the HLS pipeline in the same Docker container.
 3. Validate with `mediastreamvalidator` on the host.
 
 This keeps the test self-contained (no fixtures to check in, no
 server dependency) while using the exact production ffmpeg.
 
-Verify that the minimized testcase still reproduces the same
-problem originally reported or observed in production.
-
 See `video/ffmpeg/ffmpeg_test.go` for an example.
 
-### Phase 5. Fix
+Ask the subagent to return: the minimized test path, its size vs the
+Phase 3 test, and the failure output.
 
-Write a fix and verify that the unit test passes.
+Then spawn an **audit subagent** with the minimized test and the
+original symptom. Its job: run the minimized test and confirm the
+failure still matches the original reported problem — not a
+degenerate failure introduced by over-minimization.
+
+### Phase 5. Fix (main agent, optionally with a subagent)
+
+Now the main agent has a small, audited, reproducing test and a
+confirmed root cause. Write the fix and verify the test passes.
+
+For fixes that require broad code reading (tracing call graphs,
+finding all usages), spawn an `Explore` subagent to gather context,
+then apply the fix in the main agent so the edits are visible in the
+conversation.
+
+After the fix compiles and the new test passes, spawn a **final audit
+subagent** with: the original symptom, the fix diff, and the test
+path. Its job: run `go test ./...`, re-run the minimized test, and
+(if feasible) reload the dev server and re-check the original
+episode in Playwright/Devtools to confirm the user-visible symptom
+is gone.
