@@ -105,8 +105,13 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (html.Nod
 		}
 		// Every streaming rendition is fMP4; pin the Content-Type
 		// so http.ServeFileFS can't fall through to mime sniffing
-		// on our extensionless blob keys.
+		// on our extensionless blob keys. nosniff + a tight CSP
+		// close the hole as defense in depth even if a non-video
+		// blob ever lands here.
 		w.Header().Set("Content-Type", "video/mp4")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Content-Security-Policy",
+			"default-src 'none'; media-src 'self'; sandbox")
 		http.ServeFileFS(w, req, c.Store, rend.Key)
 		return nil, nil
 	})
