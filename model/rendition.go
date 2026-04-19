@@ -1,6 +1,8 @@
 package model
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 
@@ -60,14 +62,12 @@ func qualityLabel(r schema.Rendition) string {
 }
 
 type RenditionForDownload struct {
-	path     string
-	filename string
-	label    string
+	path  string
+	label string
 }
 
-func (r *RenditionForDownload) Path() string     { return r.path }
-func (r *RenditionForDownload) Filename() string { return r.filename }
-func (r *RenditionForDownload) Label() string    { return r.label }
+func (r *RenditionForDownload) Path() string  { return r.path }
+func (r *RenditionForDownload) Label() string { return r.label }
 
 // videoExtensionForContentType returns the file extension (with dot)
 // for a video MIME type.
@@ -98,4 +98,67 @@ func (tx *TxR) Rendition(ctx Context, id string) (schema.Rendition, error) {
 
 func (tx *TxR) RenditionListStreamingByEpisodeID(ctx Context, epID string) ([]schema.Rendition, error) {
 	return tx.q.RenditionListStreamingByEpisodeID(ctx, epID)
+}
+
+// VideoDownload bundles everything the download handler needs to
+// serve a response: the CAS blob key, the Content-Type to pin, and
+// the server-generated filename for Content-Disposition.
+type VideoDownload struct {
+	Key         string
+	ContentType string
+	Filename    string
+}
+
+// VideoDownloadForEpisode resolves the download response for id
+// (a Rendition ID or a Video ID) in the context of the episode
+// identified by epID within the series edition identified by sedID.
+// The filename is derived from the episode's basename in that
+// edition, matching the browse-page download listing.
+func (tx *TxR) VideoDownloadForEpisode(ctx Context, id, epID, sedID string) (VideoDownload, error) {
+	ep, err := tx.EpisodeInEdition(ctx, epID, sedID)
+	if err != nil {
+		return VideoDownload{}, err
+	}
+	return tx.videoDownloadFor(ctx, id, ep.basename())
+}
+
+// VideoDownloadForMovieEdition is the movie-edition counterpart to
+// VideoDownloadForEpisode.
+func (tx *TxR) VideoDownloadForMovieEdition(ctx Context, id, medID string) (VideoDownload, error) {
+	med, err := tx.MovieEditionHead(ctx, medID)
+	if err != nil {
+		return VideoDownload{}, err
+	}
+	return tx.videoDownloadFor(ctx, id, med.basename())
+}
+
+// videoDownloadFor tries the given id as a Rendition first, then as
+// a Video, and assembles the download response using the caller's
+// owner-derived basename. Returns sql.ErrNoRows if neither table
+// has a matching row, or if a matching Rendition exists but has not
+// yet been encoded.
+func (tx *TxR) videoDownloadFor(ctx Context, id, basename string) (VideoDownload, error) {
+	rend, err := tx.q.RenditionGet(ctx, id)
+	if err == nil {
+		if rend.Key == "" {
+			return VideoDownload{}, sql.ErrNoRows
+		}
+		return VideoDownload{
+			Key:         rend.Key,
+			ContentType: "video/mp4",
+			Filename:    basename + ".mp4",
+		}, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return VideoDownload{}, err
+	}
+	vid, err := tx.q.VideoGet(ctx, id)
+	if err != nil {
+		return VideoDownload{}, err
+	}
+	return VideoDownload{
+		Key:         vid.OriginalKey,
+		ContentType: vid.OriginalType,
+		Filename:    basename + videoExtensionForContentType(vid.OriginalType),
+	}, nil
 }

@@ -117,12 +117,42 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (html.Nod
 	})
 }
 
-func (c *Config) videoDownload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	hash := req.PathValue("hash")
-	disposition := mime.FormatMediaType("attachment", map[string]string{
-		"filename": req.PathValue("name"),
+func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		dl, err := tx.VideoDownloadForEpisode(req.Context(),
+			req.PathValue("id"),
+			req.PathValue("epID"),
+			req.PathValue("sedID"),
+		)
+		if err != nil {
+			return nil, errNotFound
+		}
+		c.serveDownload(w, req, dl)
+		return nil, nil
 	})
-	w.Header().Set("Content-Disposition", disposition)
-	http.ServeFileFS(w, req, c.Store, hash)
-	return nil, nil
+}
+
+func (c *Config) videoDownloadForMovie(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		dl, err := tx.VideoDownloadForMovieEdition(req.Context(),
+			req.PathValue("id"),
+			req.PathValue("medID"),
+		)
+		if err != nil {
+			return nil, errNotFound
+		}
+		c.serveDownload(w, req, dl)
+		return nil, nil
+	})
+}
+
+// serveDownload pins the Content-Type from the DB record and sets a
+// server-generated Content-Disposition so the browser never sees an
+// attacker-controlled filename or sniffs the response body.
+func (c *Config) serveDownload(w http.ResponseWriter, req *http.Request, dl model.VideoDownload) {
+	w.Header().Set("Content-Type", dl.ContentType)
+	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment",
+		map[string]string{"filename": dl.Filename},
+	))
+	http.ServeFileFS(w, req, c.Store, dl.Key)
 }

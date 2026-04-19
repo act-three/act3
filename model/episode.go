@@ -727,7 +727,7 @@ func (tx *TxR) EpisodeDownloadList(ctx Context, ep *Episode) ([]*RenditionForDow
 		return nil, err
 	}
 
-	name := ep.basename()
+	sedID := ep.SeriesEditionHead().ID()
 
 	var rends []*RenditionForDownload
 	for _, vid := range vids {
@@ -736,20 +736,16 @@ func (tx *TxR) EpisodeDownloadList(ctx Context, ep *Episode) ([]*RenditionForDow
 			return nil, err
 		}
 		if err == nil && rfd.Key != "" {
-			filename := name + ".mp4"
 			rends = append(rends, &RenditionForDownload{
-				path:     path.Join("/-/dl", rfd.Key, filename),
-				filename: filename,
-				label:    "Best Quality MP4 (Recommended)",
+				path:  path.Join("/-/dl", rfd.ID, ep.ID(), sedID),
+				label: "Best Quality MP4 (Recommended)",
 			})
 		}
 
 		ext := videoExtensionForContentType(vid.OriginalType)
-		filename := name + ext
 		rends = append(rends, &RenditionForDownload{
-			path:     path.Join("/-/dl", vid.OriginalKey, filename),
-			filename: filename,
-			label:    "Original " + strings.ToUpper(strings.TrimPrefix(ext, ".")),
+			path:  path.Join("/-/dl", vid.ID, ep.ID(), sedID),
+			label: "Original " + strings.ToUpper(strings.TrimPrefix(ext, ".")),
 		})
 	}
 	return rends, nil

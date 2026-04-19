@@ -67,7 +67,6 @@ func browseDownloadButton(dls []*model.RenditionForDownload) html.Node {
 			html.Range(dls, func(dl *model.RenditionForDownload) html.Node {
 				return html.A(
 					Href(dl.Path()),
-					Attr("download")(dl.Filename()),
 					Class("u-menu-item"),
 				)(Text(dl.Label(), Size3))
 			}),

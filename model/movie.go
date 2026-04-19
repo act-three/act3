@@ -169,7 +169,6 @@ func (tx *TxR) MovieDownloadList(ctx Context, med *MovieEdition) ([]*RenditionFo
 	if err != nil {
 		return nil, err
 	}
-	name := med.basename()
 	var rends []*RenditionForDownload
 	for _, vid := range vids {
 		rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
@@ -177,20 +176,16 @@ func (tx *TxR) MovieDownloadList(ctx Context, med *MovieEdition) ([]*RenditionFo
 			return nil, err
 		}
 		if err == nil && rfd.Key != "" {
-			filename := name + ".mp4"
 			rends = append(rends, &RenditionForDownload{
-				path:     path.Join("/-/dl", rfd.Key, filename),
-				filename: filename,
-				label:    "Best Quality MP4 (Recommended)",
+				path:  path.Join("/-/dl", rfd.ID, med.ID()),
+				label: "Best Quality MP4 (Recommended)",
 			})
 		}
 
 		ext := videoExtensionForContentType(vid.OriginalType)
-		filename := name + ext
 		rends = append(rends, &RenditionForDownload{
-			path:     path.Join("/-/dl", vid.OriginalKey, filename),
-			filename: filename,
-			label:    "Original " + strings.ToUpper(strings.TrimPrefix(ext, ".")),
+			path:  path.Join("/-/dl", vid.ID, med.ID()),
+			label: "Original " + strings.ToUpper(strings.TrimPrefix(ext, ".")),
 		})
 	}
 	return rends, nil
