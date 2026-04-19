@@ -304,7 +304,7 @@ func downloadAttachPickerEpisodes(
 			),
 			FlexRow(Gap2, Style("align-items:center"))(
 				html.If(imported, func() html.Node {
-					return Theme(Style("color:var(--text-3)"))(Icon("line/check-circle"))
+					return Theme(Style("color:var(--text-3)"))(Icon("line/paperclip"))
 				}),
 				SettingsToggle("/-/do/episode-video-set", "attach", attached,
 					map[string]string{
