@@ -69,26 +69,26 @@ type RenditionForDownload struct {
 func (r *RenditionForDownload) Path() string  { return r.path }
 func (r *RenditionForDownload) Label() string { return r.label }
 
-// videoExtensionForContentType returns the file extension (with dot)
-// for a video MIME type.
+// videoExtensionForContentType returns the file extension
+// (without leading dot) for a video MIME type.
 func videoExtensionForContentType(ct string) string {
 	switch ct {
 	case "video/x-matroska":
-		return ".mkv"
+		return "mkv"
 	case "video/mp4":
-		return ".mp4"
+		return "mp4"
 	case "video/x-msvideo":
-		return ".avi"
+		return "avi"
 	case "video/mp2t":
-		return ".ts"
+		return "ts"
 	case "video/x-flv":
-		return ".flv"
+		return "flv"
 	case "video/ogg":
-		return ".ogv"
+		return "ogv"
 	case "video/webm":
-		return ".webm"
+		return "webm"
 	default:
-		return ".bin"
+		return "bin"
 	}
 }
 
@@ -159,6 +159,6 @@ func (tx *TxR) videoDownloadFor(ctx Context, id, basename string) (VideoDownload
 	return VideoDownload{
 		Key:         vid.OriginalKey,
 		ContentType: vid.OriginalType,
-		Filename:    basename + videoExtensionForContentType(vid.OriginalType),
+		Filename:    basename + "." + videoExtensionForContentType(vid.OriginalType),
 	}, nil
 }
