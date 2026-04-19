@@ -90,9 +90,26 @@ func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request
 }
 
 func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	hash, _ := strings.CutSuffix(req.PathValue("hash"), ".mp4")
-	http.ServeFileFS(w, req, c.Store, hash)
-	return nil, nil
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		id, found := strings.CutSuffix(req.PathValue("id"), ".mp4")
+		if !found {
+			return nil, errNotFound
+		}
+		rend, err := tx.Rendition(ctx, id)
+		if err != nil {
+			return nil, errNotFound
+		}
+		if rend.Key == "" {
+			return nil, errNotFound
+		}
+		// Every streaming rendition is fMP4; pin the Content-Type
+		// so http.ServeFileFS can't fall through to mime sniffing
+		// on our extensionless blob keys.
+		w.Header().Set("Content-Type", "video/mp4")
+		http.ServeFileFS(w, req, c.Store, rend.Key)
+		return nil, nil
+	})
 }
 
 func (c *Config) videoDownload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
