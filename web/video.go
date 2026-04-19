@@ -148,11 +148,16 @@ func (c *Config) videoDownloadForMovie(w http.ResponseWriter, req *http.Request)
 
 // serveDownload pins the Content-Type from the DB record and sets a
 // server-generated Content-Disposition so the browser never sees an
-// attacker-controlled filename or sniffs the response body.
+// attacker-controlled filename or sniffs the response body. nosniff
+// and a tight CSP back Content-Disposition as defense in depth: if
+// the attachment handling ever regresses, nothing in the response
+// can still load as active content.
 func (c *Config) serveDownload(w http.ResponseWriter, req *http.Request, dl model.VideoDownload) {
 	w.Header().Set("Content-Type", dl.ContentType)
 	w.Header().Set("Content-Disposition", mime.FormatMediaType("attachment",
 		map[string]string{"filename": dl.Filename},
 	))
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 	http.ServeFileFS(w, req, c.Store, dl.Key)
 }
