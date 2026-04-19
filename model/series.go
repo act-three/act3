@@ -142,13 +142,10 @@ func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
 			return err
 		}
 	}
-	if sr.DeletedAt != nil {
-		return tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+	if sr.DeletedAt != nil || slug != sr.Slug {
+		return tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: slug, Kind: "series", Target: id,
 		})
-	}
-	if slug != sr.Slug {
-		return tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{Slug: slug, Target: id})
 	}
 	return nil
 }
@@ -249,7 +246,7 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+	err = tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 		Slug:   slug,
 		Kind:   "series",
 		Target: srID,

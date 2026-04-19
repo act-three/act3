@@ -234,7 +234,7 @@ func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, er
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+	err = tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 		Slug:   slug,
 		Kind:   "collection",
 		Target: colData.ID,
@@ -378,13 +378,10 @@ func (tx *TxRW) collectionEnsureSlug(ctx Context, id string) error {
 			return err
 		}
 	}
-	if col.DeletedAt != nil {
-		return tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+	if col.DeletedAt != nil || slug != col.Slug {
+		return tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: slug, Kind: "collection", Target: id,
 		})
-	}
-	if slug != col.Slug {
-		return tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{Slug: slug, Target: id})
 	}
 	return nil
 }
