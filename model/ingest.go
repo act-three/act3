@@ -487,8 +487,11 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		return err
 	}
 
-	// Fixup media playlist: replace temp media filename with storage hash.
-	playlist = video.FixupMediaPlaylist(playlist, ffmpeg.MediaName(0), "/-/vid/"+hash+".mp4")
+	// Fixup media playlist: point segment references at the
+	// rendition's stream URL. The URL carries the rendition ID
+	// rather than the storage key so the handler can do a DB
+	// lookup and serve with a pinned Content-Type.
+	playlist = video.FixupMediaPlaylist(playlist, ffmpeg.MediaName(0), "/-/vid/"+rfs.ID+".mp4")
 
 	tx.m.prog.UpdateStatus(progKey, desc+": saving")
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
