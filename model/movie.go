@@ -204,7 +204,7 @@ func (tx *TxRW) MovieCreate(ctx Context, title, releaseDate string) (*MovieWork,
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+	err = tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 		Slug:   slug,
 		Kind:   "movie",
 		Target: moID,
@@ -246,7 +246,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+	err = tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 		Slug:   slug,
 		Kind:   "movie",
 		Target: moID,
@@ -320,13 +320,10 @@ func (tx *TxRW) movieEnsureSlug(ctx Context, id string) error {
 			return err
 		}
 	}
-	if mo.DeletedAt != nil {
-		return tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+	if mo.DeletedAt != nil || slug != mo.Slug {
+		return tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: slug, Kind: "movie", Target: id,
 		})
-	}
-	if slug != mo.Slug {
-		return tx.q.SlugUpdate(ctx, schema.SlugUpdateParams{Slug: slug, Target: id})
 	}
 	return nil
 }

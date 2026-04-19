@@ -1062,9 +1062,6 @@ SELECT * FROM Setting WHERE "Group" = ?;
 INSERT INTO Setting (Key, "Group", Value) VALUES (?, ?, ?)
 ON CONFLICT (Key) DO UPDATE SET Value = ?3;
 
--- name: SlugCreate :exec
-INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?);
-
 -- name: SlugDelete :exec
 DELETE FROM Slug WHERE Target = ?;
 
@@ -1074,8 +1071,9 @@ SELECT COUNT(*) FROM Slug WHERE Slug = ?;
 -- name: SlugGet :one
 SELECT * FROM Slug WHERE Slug = ?;
 
--- name: SlugUpdate :exec
-UPDATE Slug SET Slug = ? WHERE Target = ?;
+-- name: SlugUpsert :exec
+INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
+ON CONFLICT (Target) DO UPDATE SET Slug = ?1;
 
 -- name: TaskCountError :one
 SELECT COUNT(*) FROM Task WHERE Failures > 0;

@@ -4848,21 +4848,6 @@ func (q *Queries) SettingSet(ctx context.Context, arg SettingSetParams) error {
 	return err
 }
 
-const slugCreate = `-- name: SlugCreate :exec
-INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
-`
-
-type SlugCreateParams struct {
-	Slug   string
-	Kind   string
-	Target string
-}
-
-func (q *Queries) SlugCreate(ctx context.Context, arg SlugCreateParams) error {
-	_, err := q.db.ExecContext(ctx, slugCreate, arg.Slug, arg.Kind, arg.Target)
-	return err
-}
-
 const slugDelete = `-- name: SlugDelete :exec
 DELETE FROM Slug WHERE Target = ?
 `
@@ -4894,17 +4879,19 @@ func (q *Queries) SlugGet(ctx context.Context, slug string) (Slug, error) {
 	return i, err
 }
 
-const slugUpdate = `-- name: SlugUpdate :exec
-UPDATE Slug SET Slug = ? WHERE Target = ?
+const slugUpsert = `-- name: SlugUpsert :exec
+INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
+ON CONFLICT (Target) DO UPDATE SET Slug = ?1
 `
 
-type SlugUpdateParams struct {
+type SlugUpsertParams struct {
 	Slug   string
+	Kind   string
 	Target string
 }
 
-func (q *Queries) SlugUpdate(ctx context.Context, arg SlugUpdateParams) error {
-	_, err := q.db.ExecContext(ctx, slugUpdate, arg.Slug, arg.Target)
+func (q *Queries) SlugUpsert(ctx context.Context, arg SlugUpsertParams) error {
+	_, err := q.db.ExecContext(ctx, slugUpsert, arg.Slug, arg.Kind, arg.Target)
 	return err
 }
 

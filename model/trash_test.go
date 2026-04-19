@@ -44,7 +44,7 @@ func newTrashTestFixture(t *testing.T, m *Model) trashTestFixture {
 			return err
 		}
 		fx.seriesID = sr.ID
-		if err := tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		if err := tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: sr.Slug, Kind: "series", Target: sr.ID,
 		}); err != nil {
 			return err
@@ -240,7 +240,7 @@ func TestTrashAlreadyTrashedReturnsError(t *testing.T) {
 			return err
 		}
 		movieID = mo.ID
-		if err := tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		if err := tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: mo.Slug, Kind: "movie", Target: mo.ID,
 		}); err != nil {
 			return err
@@ -284,7 +284,7 @@ func createMovieRow(
 			return err
 		}
 		movieID = mo.ID
-		if err := tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		if err := tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: slug, Kind: "movie", Target: moID,
 		}); err != nil {
 			return err
@@ -460,7 +460,7 @@ func TestTrashPurgeOrdering(t *testing.T) {
 			return err
 		}
 		seriesID = sr.ID
-		if err := tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		if err := tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: sr.Slug, Kind: "series", Target: sr.ID,
 		}); err != nil {
 			return err
@@ -778,7 +778,7 @@ func TestTrashCascadeDepthFullSeries(t *testing.T) {
 			return err
 		}
 		seriesID = sr.ID
-		if err := tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		if err := tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: sr.Slug, Kind: "series", Target: sr.ID,
 		}); err != nil {
 			return err
@@ -2428,7 +2428,7 @@ func TestTrashOrphanReapAcrossSeries(t *testing.T) {
 			}); err != nil {
 				return err
 			}
-			if err := tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+			if err := tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 				Slug: slug, Kind: "series", Target: id,
 			}); err != nil {
 				return err
@@ -3760,7 +3760,7 @@ func createSeriesRow(t *testing.T, m *Model, slug, title string) (
 			return err
 		}
 		srID = sr.ID
-		if err := tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		if err := tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: slug, Kind: "series", Target: srID,
 		}); err != nil {
 			return err
@@ -3829,7 +3829,7 @@ func createCollectionRow(t *testing.T, m *Model, slug, title string) string {
 			return err
 		}
 		colID = col.ID
-		return tx.q.SlugCreate(ctx, schema.SlugCreateParams{
+		return tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
 			Slug: slug, Kind: "collection", Target: colID,
 		})
 	})
