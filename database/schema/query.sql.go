@@ -847,7 +847,8 @@ AND LastActivityAt < ?
 // DownloadListAutoTrashCandidates returns InfoHashes of live Downloads
 // in terminal states whose last activity is older than the threshold.
 // Active-state Downloads (queued/downloading/downloaded) are never
-// candidates, so Trash() won't race with polling.
+// auto-trashed: those are still in flight and belong to the user until
+// they explicitly delete them.
 func (q *Queries) DownloadListAutoTrashCandidates(ctx context.Context, lastactivityat int64) ([]string, error) {
 	rows, err := q.db.QueryContext(ctx, downloadListAutoTrashCandidates, lastactivityat)
 	if err != nil {
