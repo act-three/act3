@@ -45,15 +45,15 @@ func (m *Model) setTransmissionBaseURL(u *urlpkg.URL) {
 	m.transmission.Store(c)
 }
 
-// transmissionName returns the path of relPath relative to the torrent's
-// download directory.
-// For single-file torrents the torrent name is the filename itself.
-// For multi-file torrents, files are in a subdirectory named after the torrent.
-func transmissionName(t *transmissionrpc.Torrent, relPath string) string {
-	if *t.Name == relPath {
+// torrentRelPath returns the path of relPath relative to the torrent's
+// download directory. For single-file torrents torrentName == relPath,
+// so the file sits directly in the download dir. Both inputs must have
+// already been accepted by checkTorrentPaths.
+func torrentRelPath(torrentName, relPath string) string {
+	if torrentName == relPath {
 		return relPath
 	}
-	return filepath.Join(*t.Name, relPath)
+	return filepath.Join(torrentName, relPath)
 }
 
 func (m *Model) resolveDownloadDir(remoteDir, name string) (string, error) {

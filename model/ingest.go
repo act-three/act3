@@ -59,6 +59,9 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	// re-queue and check again shortly.
 	remoteDir := args[1]
 	name := args[2]
+	if !filepath.IsLocal(name) {
+		return fmt.Errorf("refusing ingest of non-local path %q", name)
+	}
 	retryIngest := func() error {
 		slog.InfoContext(ctx, "ingest: file not yet available, retrying",
 			"vid", vid.ID, "dir", remoteDir, "name", name)
@@ -636,7 +639,14 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	if len(ts) != 1 {
 		return fmt.Errorf("torrent %s: got %d results, wanted 1", *vid.InfoHash, len(ts))
 	}
-	name := transmissionName(&ts[0], vid.Name)
+	dl, err := tx.q.DownloadGet(ctx, *vid.InfoHash)
+	if err != nil {
+		return err
+	}
+	name := torrentRelPath(dl.Title, vid.Name)
+	if !filepath.IsLocal(name) {
+		return fmt.Errorf("refusing reimport of non-local path %q", name)
+	}
 	localDir, err := tx.m.resolveDownloadDir(*ts[0].DownloadDir, name)
 	if err != nil {
 		return err
