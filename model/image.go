@@ -10,9 +10,11 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gen2brain/webp"
 	"golang.org/x/image/draw"
@@ -317,6 +319,27 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 		return "", err
 	}
 	return originalID, nil
+}
+
+// imageFetch GETs url and hands the body to ImageCreate. The ctx
+// timeout bounds the whole fetch so a slow or unresponsive upstream
+// cannot wedge the worker.
+func (m *Model) imageFetch(ctx context.Context, url string, kind ImageKind) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return "", fmt.Errorf("bad status %d", resp.StatusCode)
+	}
+	return m.ImageCreate(ctx, resp.Body, kind)
 }
 
 // encodedVariant holds an encoded WebP variant in memory before

@@ -2,8 +2,6 @@ package model
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 
 	"kr.dev/errorfmt"
 )
@@ -30,15 +28,7 @@ func (tx *TxR) loadTMDBConfig(ctx Context) (err error) {
 func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
 	medID := args[0]
 	url := args[1]
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("bad status %d", resp.StatusCode)
-	}
-	posterID, err := tx.m.ImageCreate(ctx, resp.Body, ImagePoster)
+	posterID, err := tx.m.imageFetch(ctx, url, ImagePoster)
 	if err != nil {
 		return err
 	}
