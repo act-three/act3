@@ -32,10 +32,18 @@ func Probe(remote, name string) (local string, err error) {
 
 	// For each mount point, try each suffix of remote's path components,
 	// from longest (most specific) to the empty suffix (mount point itself).
+	// The lstat is performed through os.Root so a name containing ".." or
+	// an intermediate symlink out of the candidate cannot make a mismatched
+	// candidate appear to match.
 	for _, mount := range mounts {
 		for i := range len(parts) + 1 {
 			candidate := filepath.Join(mount, filepath.Join(parts[i:]...))
-			_, err := os.Lstat(filepath.Join(candidate, name))
+			root, err := os.OpenRoot(candidate)
+			if err != nil {
+				continue
+			}
+			_, err = root.Lstat(name)
+			root.Close()
 			if err == nil {
 				return candidate, nil
 			}
