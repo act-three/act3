@@ -314,10 +314,10 @@ func TestVideoListByContentHashFiltersDeleted(t *testing.T) {
 	}
 }
 
-// TestCopyFileHashedRoundTrip confirms that copyFileHashed returns a
-// key that opens back to the original bytes and a matching blake3
-// digest.
-func TestCopyFileHashedRoundTrip(t *testing.T) {
+// TestCopyToStoreHashedRoundTrip confirms that copyToStoreHashed
+// returns a key that opens back to the original bytes and a matching
+// blake3 digest.
+func TestCopyToStoreHashedRoundTrip(t *testing.T) {
 	m := newTestModel(t)
 
 	content := bytes.Repeat([]byte("abc"), 10_000)
@@ -325,8 +325,13 @@ func TestCopyFileHashedRoundTrip(t *testing.T) {
 	if err := os.WriteFile(tmp, content, 0644); err != nil {
 		t.Fatal(err)
 	}
+	src, err := os.Open(tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer src.Close()
 
-	key, sum, err := m.copyFileHashed(tmp)
+	key, sum, err := m.copyToStoreHashed(src)
 	if err != nil {
 		t.Fatal(err)
 	}
