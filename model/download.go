@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"iter"
 	"log/slog"
 	"path"
 	"slices"
@@ -54,7 +53,7 @@ func (d *DownloadHead) PlanLen() int { return d.planLen }
 
 func (d *DownloadHead) FilesLen() int {
 	d.filesLenOnce.Do(func() {
-		_, info, err := ParseTorrent(d.d.Torrent)
+		_, info, err := parseTorrent(d.d.Torrent)
 		if err != nil {
 			panic(err)
 		}
@@ -274,20 +273,6 @@ func (d *Download) PlanFor(path string) []string {
 		return []string{medID}
 	}
 	return nil
-}
-
-func (d *Download) Paths() iter.Seq[string] {
-	return func(yield func(string) bool) {
-		if !d.info.IsDir() {
-			yield(d.info.Name)
-			return
-		}
-		for i := range d.info.Files {
-			if !yield(fiPath(&d.info.Files[i])) {
-				return
-			}
-		}
-	}
 }
 
 func (d *Download) Files() []*DownloadFile {
@@ -600,7 +585,7 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader, sedID, medID *str
 	if err != nil {
 		return nil, err
 	}
-	mi, info, err := ParseTorrent(b)
+	mi, info, err := parseTorrent(b)
 	if err != nil {
 		return nil, &ValidationError{
 			Op:  "parse torrent",
@@ -720,7 +705,7 @@ func (tx *TxRW) downloadForPlanning(ctx Context, infoHash string) (schema.Downlo
 			Err: errors.New("already imported"),
 		}
 	}
-	_, info, err := ParseTorrent(dl.Torrent)
+	_, info, err := parseTorrent(dl.Torrent)
 	if err != nil {
 		return dl, nil, &ValidationError{
 			Op:  "parse torrent",
@@ -976,7 +961,7 @@ func (m *Model) updateFileProgress(t *transmissionrpc.Torrent, dl *Download) {
 	}
 }
 
-func ParseTorrent(p []byte) (*metainfo.MetaInfo, *metainfo.Info, error) {
+func parseTorrent(p []byte) (*metainfo.MetaInfo, *metainfo.Info, error) {
 	mi, err := metainfo.Load(bytes.NewReader(p))
 	if err != nil {
 		return nil, nil, err

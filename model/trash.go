@@ -868,39 +868,6 @@ func (tx *TxR) TrashList(ctx Context) ([]TrashItem, error) {
 	return items, nil
 }
 
-// TrashAncestorChain returns trashed ancestors of the given item,
-// bottom-up. Empty if all ancestors are live.
-func (tx *TxR) TrashAncestorChain(ctx Context, id string) ([]TrashItem, error) {
-	var chain []TrashItem
-	seen := map[string]bool{id: true}
-	for {
-		row, err := tx.q.TrashGet(ctx, id)
-		if errors.Is(err, sql.ErrNoRows) {
-			return chain, nil
-		}
-		if err != nil {
-			return nil, err
-		}
-		if row.CascadeOf == nil || seen[*row.CascadeOf] {
-			return chain, nil
-		}
-		ancestor := *row.CascadeOf
-		ancRow, err := tx.q.TrashGet(ctx, ancestor)
-		if err != nil {
-			return nil, err
-		}
-		chain = append(chain, TrashItem{
-			Kind:      kindOf(ancRow.ID),
-			ID:        ancRow.ID,
-			Title:     ancRow.Title,
-			Subtitle:  ancRow.Subtitle,
-			DeletedAt: time.UnixMilli(ancRow.DeletedAt),
-		})
-		seen[ancestor] = true
-		id = ancestor
-	}
-}
-
 func (tx *TxR) trashListByRoot(ctx Context, rootID string) ([]TrashItem, error) {
 	rows, err := tx.q.TrashListByRoot(ctx, &rootID)
 	if err != nil {

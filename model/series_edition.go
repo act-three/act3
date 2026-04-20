@@ -9,12 +9,6 @@ import (
 	"ily.dev/act3/model/progress"
 )
 
-const (
-	// AirDate is the primary edition, present in every series.
-	// Other editions are optional.
-	AirDate = "Air Date"
-)
-
 type SeriesEditionHead struct {
 	sed schema.SeriesEdition
 }
