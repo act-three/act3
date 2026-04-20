@@ -54,9 +54,6 @@ type Model struct {
 
 	transmission atomic.Pointer[transmissionrpc.Client]
 
-	activeInfoHashMu sync.Mutex
-	activeInfoHash   map[string]bool
-
 	torrentMu sync.Mutex
 	torrent   map[string]*transmissionrpc.Torrent
 
@@ -73,17 +70,16 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	ctx := context.Background()
 	defer errorfmt.Handlef("model init: %w", &err)
 	m = &Model{
-		store:          c.Store,
-		persistentTmp:  c.PersistentTmp,
-		tmdb:           c.TMDB,
-		tvmaze:         c.TVmaze,
-		dbr:            dbr,
-		dbw:            dbw,
-		tasks:          map[string]*taskQueue{},
-		activeInfoHash: map[string]bool{},
-		torrent:        map[string]*transmissionrpc.Torrent{},
-		downloadDir:    map[string]string{},
-		sub:            map[chan *Event]struct{}{},
+		store:         c.Store,
+		persistentTmp: c.PersistentTmp,
+		tmdb:          c.TMDB,
+		tvmaze:        c.TVmaze,
+		dbr:           dbr,
+		dbw:           dbw,
+		tasks:         map[string]*taskQueue{},
+		torrent:       map[string]*transmissionrpc.Torrent{},
+		downloadDir:   map[string]string{},
+		sub:           map[chan *Event]struct{}{},
 	}
 	m.prog.SetHook(func(event string, it *progress.Item) {
 		m.emitEvent(&Event{Type: event, Progress: it})
@@ -108,13 +104,6 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 			go tq.runTasks()
 		}
 		m.tasks[name] = tq
-	}
-	hashes, err := schema.New(dbr).DownloadListInfoHashesActive(ctx)
-	if err != nil {
-		return nil, err
-	}
-	for _, h := range hashes {
-		m.setInfoHashActive(h, true)
 	}
 	go m.pollTransission()
 	go m.purgeTrashLoop()

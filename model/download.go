@@ -13,7 +13,6 @@ import (
 	"io"
 	"iter"
 	"log/slog"
-	"maps"
 	"path"
 	"slices"
 	"strconv"
@@ -555,13 +554,7 @@ func (tx *TxRW) processDownload(ctx Context, infoHash string) (err error) {
 		LastActivityAt: time.Now().UnixMilli(),
 		InfoHash:       infoHash,
 	})
-	if err != nil {
-		return err
-	}
-	tx.onCommit(func() {
-		tx.m.setInfoHashActive(infoHash, state == "downloading" || state == "downloaded")
-	})
-	return nil
+	return err
 }
 
 // torrentDone returns a map of relative file paths to completion status
@@ -856,22 +849,6 @@ func (m *Model) setTorrent(infoHash string, t *transmissionrpc.Torrent) {
 	m.torrent[infoHash] = t
 }
 
-func (m *Model) activeInfoHashes() []string {
-	m.activeInfoHashMu.Lock()
-	defer m.activeInfoHashMu.Unlock()
-	return slices.Collect(maps.Keys(m.activeInfoHash))
-}
-
-func (m *Model) setInfoHashActive(hash string, active bool) {
-	m.activeInfoHashMu.Lock()
-	defer m.activeInfoHashMu.Unlock()
-	if active {
-		m.activeInfoHash[hash] = true
-	} else {
-		delete(m.activeInfoHash, hash)
-	}
-}
-
 func (m *Model) pollTransission() {
 	for {
 		time.Sleep(time.Minute)
@@ -913,9 +890,19 @@ func (m *Model) autoTrashDownloadsOnce(ctx Context) error {
 
 func (m *Model) pollTransmissionOnce() error {
 	ctx := context.Background()
-	active := m.activeInfoHashes()
 	tm := m.transmission.Load()
-	if len(active) == 0 || tm == nil {
+	if tm == nil {
+		return nil
+	}
+	var active []string
+	if err := m.WithTxR(func(tx *TxR) error {
+		var err error
+		active, err = tx.q.DownloadListInfoHashesActive(ctx)
+		return err
+	}); err != nil {
+		return err
+	}
+	if len(active) == 0 {
 		return nil
 	}
 	defer tlog.Elapsed(ctx, "poll-transmission", "active", len(active))()
