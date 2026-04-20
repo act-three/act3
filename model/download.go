@@ -12,11 +12,10 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"path"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/anacrolix/torrent/metainfo"
@@ -31,11 +30,9 @@ import (
 )
 
 type DownloadHead struct {
-	d       schema.Download
-	planLen int
-
-	filesLenOnce sync.Once
-	filesLen     int
+	d        schema.Download
+	planLen  int
+	filesLen int
 }
 
 func (d *DownloadHead) InfoHash() string  { return d.d.InfoHash }
@@ -49,22 +46,8 @@ func (d *DownloadHead) EditorPath() string {
 	return "/app/downloads/" + d.d.InfoHash
 }
 
-func (d *DownloadHead) PlanLen() int { return d.planLen }
-
-func (d *DownloadHead) FilesLen() int {
-	d.filesLenOnce.Do(func() {
-		_, info, err := parseTorrent(d.d.Torrent)
-		if err != nil {
-			panic(err)
-		}
-		if info.IsDir() {
-			d.filesLen = len(info.Files)
-		} else {
-			d.filesLen = 1
-		}
-	})
-	return d.filesLen
-}
+func (d *DownloadHead) PlanLen() int  { return d.planLen }
+func (d *DownloadHead) FilesLen() int { return d.filesLen }
 
 type DownloadInfo struct {
 	*DownloadHead
@@ -169,14 +152,13 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 	d := &Download{DownloadHead: DownloadHead{d: dl}}
 
 	var err error
-	d.metaInfo, err = metainfo.Load(bytes.NewReader(dl.Torrent))
+	mi, info, err := parseTorrent(dl.Torrent)
 	if err != nil {
 		return nil, err
 	}
-	d.info, err = d.metaInfo.UnmarshalInfo()
-	if err != nil {
-		return nil, err
-	}
+	d.metaInfo = mi
+	d.info = *info
+	d.filesLen = filesLen(info)
 
 	d.videos, err = tx.q.VideoListByInfoHash(ctx, &dl.InfoHash)
 	if err != nil {
@@ -306,7 +288,11 @@ func (tx *TxR) newDownloadHeadList(dls []schema.Download, err error) ([]*Downloa
 		if err != nil {
 			return nil, err
 		}
-		res[i] = &DownloadHead{d: dls[i], planLen: int(n)}
+		_, info, err := parseTorrent(dls[i].Torrent)
+		if err != nil {
+			return nil, err
+		}
+		res[i] = &DownloadHead{d: dls[i], planLen: int(n), filesLen: filesLen(info)}
 	}
 	return res, nil
 }
@@ -541,7 +527,7 @@ func (tx *TxRW) processDownload(ctx Context, infoHash string) (err error) {
 			for _, epID := range d.epIDByVideoID[v.ID] {
 				tx.m.prog.AddEdge(epID, v.ID)
 			}
-			err = tx.addTask(ctx, taskIngest, v.ID, *t.DownloadDir, transmissionName(t, v.Name))
+			err = tx.addTask(ctx, taskIngest, v.ID, *t.DownloadDir, torrentRelPath(d.d.Title, v.Name))
 			if err != nil {
 				return err
 			}
@@ -970,11 +956,47 @@ func parseTorrent(p []byte) (*metainfo.MetaInfo, *metainfo.Info, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := checkTorrentPaths(&info); err != nil {
+		return nil, nil, err
+	}
 	return mi, &info, nil
 }
 
+// checkTorrentPaths rejects torrents whose declared paths are not
+// local-relative. We consult fi.Path rather than fi.BestPath because
+// Transmission uses Path for on-disk layout; a Path/PathUtf8 divergence
+// would otherwise be a covert channel for presenting us a different
+// filename than Transmission wrote to disk.
+func checkTorrentPaths(info *metainfo.Info) error {
+	if !isLocalPathParts([]string{info.Name}) {
+		return fmt.Errorf("torrent info.Name %q is not a safe local path", info.Name)
+	}
+	for i, fi := range info.Files {
+		if !isLocalPathParts(fi.Path) {
+			return fmt.Errorf("torrent file %d path %q is not a safe local path", i, fi.Path)
+		}
+	}
+	return nil
+}
+
+func isLocalPathParts(parts []string) bool {
+	if len(parts) == 0 {
+		return false
+	}
+	return filepath.IsLocal(filepath.Join(parts...))
+}
+
+func filesLen(info *metainfo.Info) int {
+	if info.IsDir() {
+		return len(info.Files)
+	}
+	return 1
+}
+
+// fiPath is safe to feed to filesystem ops because parseTorrent rejects
+// non-local fi.Path.
 func fiPath(fi *metainfo.FileInfo) string {
-	return path.Join(fi.BestPath()...)
+	return filepath.Join(fi.Path...)
 }
 
 var videoExtensions = map[string]bool{
