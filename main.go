@@ -171,6 +171,7 @@ func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {
 	h = panicstack.Handler(h)
 	h = timing.Handler(h)
 	h = requestid.Handler(h)
+	h = (&http.CrossOriginProtection{}).Handler(h)
 	srv.Handler = h
 	slog.Info("degraded mode", "listen", listen)
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
