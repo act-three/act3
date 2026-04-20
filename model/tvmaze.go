@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"strconv"
 
 	"ily.dev/act3/database/schema"
@@ -88,15 +87,7 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) error {
 	epID := args[0]
 	url := args[1]
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("bad status %d", resp.StatusCode)
-	}
-	thumbnailID, err := tx.m.ImageCreate(ctx, resp.Body, ImageThumbnail)
+	thumbnailID, err := tx.m.imageFetch(ctx, url, ImageThumbnail)
 	if err != nil {
 		return err
 	}
@@ -108,15 +99,7 @@ func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) err
 func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 	sedID := args[0]
 	url := args[1]
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode/100 != 2 {
-		return fmt.Errorf("bad status %d", resp.StatusCode)
-	}
-	posterID, err := tx.m.ImageCreate(ctx, resp.Body, ImagePoster)
+	posterID, err := tx.m.imageFetch(ctx, url, ImagePoster)
 	if err != nil {
 		return err
 	}
