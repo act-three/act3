@@ -98,14 +98,6 @@ func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
 	return nil
 }
 
-func (tx *TxR) MovieHeadList(ctx Context) ([]*MovieHead, error) {
-	a, err := tx.q.MovieList(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return newMovieHeadList(a), nil
-}
-
 func (tx *TxR) MovieHead(ctx Context, id string) (*MovieHead, error) {
 	moData, err := tx.q.MovieGet(ctx, id)
 	if err != nil {
