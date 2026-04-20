@@ -160,12 +160,13 @@ func trashParams(id string) map[string]string {
 
 // MediaListRemove is a Turbo Stream fragment that removes a newly
 // trashed entity from its parent list page (All Movies, All Series,
-// All Collections). Sub-containers (editions, seasons, episodes,
-// videos) don't have their own top-level list page; callers relying
-// on them to refresh a detail frame should emit their own updates.
+// All Collections, Downloads). Sub-containers (editions, seasons,
+// episodes, videos) don't have their own top-level list page; callers
+// relying on them to refresh a detail frame should emit their own
+// updates.
 func MediaListRemove(kind model.TrashKind, id string) html.Node {
 	switch kind {
-	case model.TrashKindMovie, model.TrashKindSeries, model.TrashKindCollection:
+	case model.TrashKindMovie, model.TrashKindSeries, model.TrashKindCollection, model.TrashKindDownload:
 		return turbo.RemoveTargets(`[data-list-id-param="` + id + `"]`)
 	}
 	return Group()
@@ -192,6 +193,14 @@ func SeriesListAppend(sw *model.SeriesWork) html.Node {
 func CollectionsListAppend(col *model.CollectionHead) html.Node {
 	return turbo.Append(AppCollectionsListItems,
 		ListItems([]*model.CollectionHead{col}, AppCollectionsListItem),
+	)
+}
+
+// DownloadsListAppend emits a Turbo stream that re-appends a restored
+// download to the Downloads list page.
+func DownloadsListAppend(di *model.DownloadInfo) html.Node {
+	return turbo.Append(AppDownloadsListItems,
+		ListItems([]*model.DownloadInfo{di}, appDownloadsListItem),
 	)
 }
 

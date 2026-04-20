@@ -83,16 +83,15 @@ func TestKindOfInfoHash(t *testing.T) {
 	}
 }
 
-func TestDownloadTrashRejectsActive(t *testing.T) {
+func TestDownloadTrashAnyState(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
-	_, _, sedID, _, _, _ := createSeriesRow(t, m, "dl-active", "Active")
-	for _, state := range []string{"queued", "downloading", "downloaded"} {
+	for _, state := range []string{"queued", "downloading", "downloaded", "imported", "error"} {
+		_, _, sedID, _, _, _ := createSeriesRow(t, m, "dl-"+state, state)
 		infoHash := fortyCharHex(byte(len(state)))
 		createTrashableDownload(t, m, infoHash, state, sedID)
-		err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) })
-		if !errors.Is(err, ErrDownloadActive) {
-			t.Errorf("Trash(%s) state=%s: got %v, want ErrDownloadActive", infoHash, state, err)
+		if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
+			t.Errorf("Trash(%s) state=%s: %v", infoHash, state, err)
 		}
 	}
 }

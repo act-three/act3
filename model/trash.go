@@ -48,12 +48,6 @@ var ErrNotTrashed = errors.New("not trashed")
 // cascade root instead.
 var ErrCascadeTrashed = errors.New("cascade-trashed; restore the root instead")
 
-// ErrDownloadActive is returned by Trash when a Download is in a
-// non-terminal state. Only 'imported' and 'error' Downloads can be
-// trashed; active ones must settle first (either the polling loop
-// completes them or the user cancels from Transmission).
-var ErrDownloadActive = errors.New("download not in a terminal state")
-
 type TrashItem struct {
 	Kind      TrashKind
 	ID        string
@@ -464,13 +458,6 @@ func (tx *TxRW) trashCollection(ctx Context, id, root string, now time.Time) err
 }
 
 func (tx *TxRW) trashDownload(ctx Context, id, root string, now time.Time) error {
-	dl, err := tx.q.DownloadGet(ctx, id)
-	if err != nil {
-		return err
-	}
-	if dl.State != "imported" && dl.State != "error" {
-		return ErrDownloadActive
-	}
 	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
 		return err
 	}

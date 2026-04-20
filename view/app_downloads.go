@@ -16,12 +16,13 @@ import (
 	"ily.dev/act3/xslices"
 )
 
+const AppDownloadsListItems = "download-list-items"
+
 func AppDownloads(
 	title string,
 	items []*model.DownloadInfo,
 	selected *model.Download,
 ) (string, html.Node) {
-	const torrentListID = "torrent-list"
 	return title, FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
 			Box(),
@@ -32,10 +33,11 @@ func AppDownloads(
 		),
 		Split()(
 			List("/app/downloads/", "detail",
-				attr.ID(torrentListID),
 				Style("flex: 1"),
 			)(
-				ListItems(items, appDownloadsListItem),
+				turbo.StreamTarget(AppDownloadsListItems)(
+					ListItems(items, appDownloadsListItem),
+				),
 			),
 			turbo.Frame("detail", turbo.Advance())(
 				expr.IfElse(selected != nil,
@@ -204,6 +206,16 @@ func appDownloadsDetail(dl *model.Download) html.Node {
 				),
 
 				appDownloadsFileList(dl.Files()),
+
+				SettingsGroup()(
+					SettingsItem()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Delete"),
+							SettingsItemLabelDescription("Deleted torrents remain in Transmission"),
+						),
+						trashForm(dl.InfoHash()),
+					),
+				),
 			),
 		),
 	)

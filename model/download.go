@@ -405,6 +405,27 @@ func (tx *TxR) Download(ctx Context, infoHash string) (*Download, error) {
 	return tx.newDownload(ctx, dl)
 }
 
+func (tx *TxR) DownloadInfo(ctx Context, infoHash string) (*DownloadInfo, error) {
+	dl, err := tx.Download(ctx, infoHash)
+	if err != nil {
+		return nil, err
+	}
+	di := &DownloadInfo{DownloadHead: &dl.DownloadHead}
+	if dl.planMovieEd != nil {
+		di.mw = &MovieWork{
+			MovieHead:        *dl.planMovieEd.MovieHead(),
+			MovieEditionHead: dl.planMovieEd.MovieEditionHead,
+		}
+	}
+	if dl.planEd != nil {
+		di.sw = &SeriesWork{
+			SeriesHead:        *dl.planEd.SeriesHead(),
+			SeriesEditionHead: dl.planEd.SeriesEditionHead,
+		}
+	}
+	return di, nil
+}
+
 func (tx *TxRW) DownloadAutoImportSet(ctx Context, infoHash string, auto bool) (err error) {
 	defer errorfmt.Handlef("DownloadAutoImportSet(%s, %v): %w", infoHash, auto, &err)
 	v := int64(0)

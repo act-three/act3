@@ -166,6 +166,12 @@ func (c *Config) mediaListAppend(ctx context.Context, kind model.TrashKind, id s
 				return nil, err
 			}
 			return view.CollectionsListAppend(col), nil
+		case model.TrashKindDownload:
+			di, err := tx.DownloadInfo(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			return view.DownloadsListAppend(di), nil
 		}
 		return nil, nil
 	})
