@@ -19,21 +19,38 @@ import (
 	"ily.dev/act3/video/ffmpeg"
 )
 
-// copyFileHashed streams the file at path into the CAS store and
-// returns the storage key alongside a blake3-256 digest of the bytes.
-// Used by ingest-style paths to enable duplicate-content detection.
-func (m *Model) copyFileHashed(path string) (key string, sum []byte, err error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", nil, err
-	}
-	defer f.Close()
+// copyToStoreHashed streams r into the CAS store and returns the
+// storage key alongside a blake3-256 digest of the bytes. Used by
+// ingest-style paths to enable duplicate-content detection.
+func (m *Model) copyToStoreHashed(r io.Reader) (key string, sum []byte, err error) {
 	h := blake3.New(32, nil)
-	key, err = m.store.Copy(io.TeeReader(f, h))
+	key, err = m.store.Copy(io.TeeReader(r, h))
 	if err != nil {
 		return "", nil, err
 	}
 	return key, h.Sum(nil), nil
+}
+
+// openIngestSource opens name inside localDir for reading, rejecting
+// symlinks that escape the root, absolute or ".." paths, and any
+// source that is not a regular file. The returned file's Stat and
+// read operations refer to the same inode, so there is no Stat/Open
+// TOCTOU. Callers are responsible for Close.
+func openIngestSource(localDir, name string) (*os.File, error) {
+	f, err := os.OpenInRoot(localDir, name)
+	if err != nil {
+		return nil, err
+	}
+	fi, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+	if !fi.Mode().IsRegular() {
+		f.Close()
+		return nil, fmt.Errorf("ingest: %q is not a regular file (mode %s)", name, fi.Mode())
+	}
+	return f, nil
 }
 
 func boolToInt64(b bool) int64 {
@@ -73,10 +90,14 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	if err != nil {
 		return retryIngest()
 	}
-	diskPath := filepath.Join(localDir, name)
-	if _, err := os.Stat(diskPath); errors.Is(err, os.ErrNotExist) {
+	src, err := openIngestSource(localDir, name)
+	if errors.Is(err, os.ErrNotExist) {
 		return retryIngest()
 	}
+	if err != nil {
+		return err
+	}
+	defer src.Close()
 
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -86,7 +107,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
-	key, sum, err := tx.m.copyFileHashed(diskPath)
+	key, sum, err := tx.m.copyToStoreHashed(src)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
 		return err
@@ -651,7 +672,11 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	srcPath := filepath.Join(localDir, name)
+	src, err := openIngestSource(localDir, name)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
 
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -663,7 +688,7 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
 	defer func() { tx.m.prog.Close(vid.ID, err) }()
 
-	newKey, newSum, err := tx.m.copyFileHashed(srcPath)
+	newKey, newSum, err := tx.m.copyToStoreHashed(src)
 	if err != nil {
 		return err
 	}
