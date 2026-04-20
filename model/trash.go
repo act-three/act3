@@ -287,6 +287,15 @@ func (tx *TxRW) trashMovieEdition(ctx Context, id, root string, now time.Time) e
 	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
 		return err
 	}
+	dls, err := tx.q.DownloadListByMovieEditionID(ctx, &id)
+	if err != nil {
+		return err
+	}
+	for _, dl := range dls {
+		if err := tx.trashDownload(ctx, dl.InfoHash, root, now); err != nil {
+			return err
+		}
+	}
 	if err := tx.q.MovieVideoSoftDeleteByMovieEditionID(ctx, schema.MovieVideoSoftDeleteByMovieEditionIDParams{
 		DeletedAt: new(now.UnixMilli()), MovieEditionID: id,
 	}); err != nil {
@@ -344,6 +353,15 @@ func (tx *TxRW) trashSeriesEdition(ctx Context, id, root string, now time.Time) 
 	}
 	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
 		return err
+	}
+	dls, err := tx.q.DownloadListBySeriesEditionID(ctx, &id)
+	if err != nil {
+		return err
+	}
+	for _, dl := range dls {
+		if err := tx.trashDownload(ctx, dl.InfoHash, root, now); err != nil {
+			return err
+		}
 	}
 	sns, err := tx.q.SeasonListByEditionID(ctx, id)
 	if err != nil {

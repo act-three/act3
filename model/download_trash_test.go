@@ -45,6 +45,52 @@ func createTrashableDownload(
 	}
 }
 
+// createTrashableMovieDownload is the movie counterpart to
+// createTrashableDownload: inserts a Download targeting a MovieEdition.
+func createTrashableMovieDownload(
+	t *testing.T, m *Model, infoHash, state, medID string,
+) {
+	t.Helper()
+	ctx := context.Background()
+	if err := m.WithTxRW(func(tx *TxRW) error {
+		_, err := tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
+			InfoHash:       infoHash,
+			State:          state,
+			Title:          "Test Torrent",
+			Torrent:        []byte("stub"),
+			MovieEditionID: &medID,
+		})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.dbw.ExecContext(ctx,
+		"UPDATE Download SET LastActivityAt = ? WHERE InfoHash = ?",
+		time.Now().UnixMilli(), infoHash,
+	); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// downloadLive reports whether a Download row is live (DeletedAt IS NULL).
+func downloadLive(t *testing.T, m *Model, infoHash string) bool {
+	t.Helper()
+	ctx := context.Background()
+	var live bool
+	err := m.WithTxR(func(tx *TxR) error {
+		dl, err := tx.q.DownloadGet(ctx, infoHash)
+		if err != nil {
+			return err
+		}
+		live = dl.DeletedAt == nil
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return live
+}
+
 // attachVideoToDownload sets Video.InfoHash to pin it to the given
 // Download. Video must already exist.
 func attachVideoToDownload(t *testing.T, m *Model, vidID, infoHash string) {
@@ -428,5 +474,36 @@ func TestVideoListOrphansExcludesDownloadPinned(t *testing.T) {
 		return nil
 	}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestTrashMovieCascadesToDownload(t *testing.T) {
+	ctx := context.Background()
+	m := newTestModel(t)
+	movieID, medID := createMovieRow(t, m, "cascade-movie", nil)
+	infoHash := fortyCharHex(12)
+	createTrashableMovieDownload(t, m, infoHash, "downloading", medID)
+
+	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, movieID) }); err != nil {
+		t.Fatal(err)
+	}
+	if downloadLive(t, m, infoHash) {
+		t.Errorf("download should be cascade-trashed when its movie is trashed")
+	}
+}
+
+func TestTrashSeriesEditionCascadesToDownload(t *testing.T) {
+	ctx := context.Background()
+	m := newTestModel(t)
+	srID, _, sedID, _, _, _ := createSeriesRow(t, m, "cascade-series", "Cascade")
+	_ = srID
+	infoHash := fortyCharHex(13)
+	createTrashableDownload(t, m, infoHash, "downloading", sedID)
+
+	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, sedID) }); err != nil {
+		t.Fatal(err)
+	}
+	if downloadLive(t, m, infoHash) {
+		t.Errorf("download should be cascade-trashed when its series edition is trashed")
 	}
 }
