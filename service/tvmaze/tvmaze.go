@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json/v2"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -102,7 +101,7 @@ func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (e
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("bad status %d: %s", resp.StatusCode, resp.Status)
 	}
-	err = json.UnmarshalRead(io.LimitReader(resp.Body, 1<<20), v)
+	err = json.UnmarshalRead(http.MaxBytesReader(nil, resp.Body, 1<<20), v)
 	if err != nil {
 		return err
 	}

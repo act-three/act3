@@ -223,7 +223,7 @@ func (tx *TxR) ImageVariantKey(ctx Context, originalID string, width int) (key s
 //
 // Decode failures are returned as ValidationError so callers at
 // the HTTP edge can return 400.
-func (m *Model) ImageCreate(ctx context.Context, r io.Reader, kind ImageKind) (originalID string, err error) {
+func (m *Model) ImageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind) (originalID string, err error) {
 	return m.imageCreate(ctx, r, kind, "")
 }
 
@@ -232,7 +232,7 @@ func (m *Model) ImageCreate(ctx context.Context, r io.Reader, kind ImageKind) (o
 // otherwise it uses explicitID and is a no-op when a row with
 // that ID already exists (used for boot-time placeholder
 // creation).
-func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, explicitID string) (originalID string, err error) {
+func (m *Model) imageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind, explicitID string) (originalID string, err error) {
 	defer errorfmt.Handlef("image create: %w", &err)
 
 	if explicitID != "" {
@@ -251,17 +251,18 @@ func (m *Model) imageCreate(ctx context.Context, r io.Reader, kind ImageKind, ex
 	}
 
 	// Buffer the input so we can both store it byte-for-byte and
-	// hand it to the decoder. We read maxImageBytes+1 to detect
-	// (and reject) inputs that exceed the cap.
-	raw, err := io.ReadAll(io.LimitReader(r, maxImageBytes+1))
+	// hand it to the decoder. MaxBytesReader makes the cap
+	// overflow distinguishable from a generic read error.
+	raw, err := io.ReadAll(http.MaxBytesReader(nil, r, maxImageBytes))
 	if err != nil {
-		return "", err
-	}
-	if len(raw) > maxImageBytes {
-		return "", &ValidationError{
-			Op:  "image too large",
-			Err: fmt.Errorf("max %d bytes", maxImageBytes),
+		var mbe *http.MaxBytesError
+		if errors.As(err, &mbe) {
+			return "", &ValidationError{
+				Op:  "image too large",
+				Err: fmt.Errorf("max %d bytes", maxImageBytes),
+			}
 		}
+		return "", err
 	}
 
 	src, mime, err := decodeAllowedImage(raw)
@@ -416,7 +417,7 @@ func (m *Model) insertPlaceholderImages(ctx context.Context) error {
 		{imageThumbnailPlaceholderID, ImageThumbnail, assets.ThumbnailFallbackPNG},
 		{imageBannerPlaceholderID, ImageBanner, assets.BannerFallbackPNG},
 	} {
-		if _, err := m.imageCreate(ctx, bytes.NewReader(e.bytes), e.kind, e.id); err != nil {
+		if _, err := m.imageCreate(ctx, io.NopCloser(bytes.NewReader(e.bytes)), e.kind, e.id); err != nil {
 			return fmt.Errorf("placeholder %s: %w", e.id, err)
 		}
 	}
