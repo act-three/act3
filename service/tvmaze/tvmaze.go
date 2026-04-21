@@ -1,11 +1,10 @@
 package tvmaze
 
 import (
-	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json/v2"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -29,20 +28,18 @@ var taskTypes = []string{
 var baseURL = *must1(url.Parse("https://api.tvmaze.com/"))
 
 type Client struct {
-	db     *sql.DB
 	client http.Client
 
 	cacheMu   sync.Mutex
 	cacheShow map[int]*Show
 }
 
-func New(db *sql.DB) (*Client, error) {
+func New() *Client {
 	c := &Client{
-		db:        db,
 		cacheShow: map[int]*Show{},
 	}
 	c.client.Transport = timing.Transport("tvmaze", nil)
-	return c, nil
+	return c
 }
 
 func (c *Client) setCacheShow(s *Show) {
@@ -74,7 +71,6 @@ func (c *Client) GetShow(ctx context.Context, id int) (*Show, error) {
 	if s != nil {
 		return s, nil
 	}
-	println("miss!")
 	var v *Show
 	err := c.getf(ctx, &v, "/shows/%d", id)
 	if err != nil {
@@ -87,6 +83,8 @@ func (c *Client) GetShow(ctx context.Context, id int) (*Show, error) {
 func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (err error) {
 	defer errorfmt.Handlef("getf %s %v: %w", format, args, &err)
 	slog.InfoContext(ctx, "getf", "format", format, "args", args)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "GET", "", nil)
 	if err != nil {
 		return err
@@ -104,36 +102,7 @@ func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (e
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("bad status %d: %s", resp.StatusCode, resp.Status)
 	}
-	err = json.UnmarshalRead(resp.Body, v)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Client) post(ctx context.Context, path string, reqBody, respBody any) (err error) {
-	defer errorfmt.Handlef("post %s: %w", path, &err)
-	body, err := json.Marshal(reqBody)
-	if err != nil {
-		return err
-	}
-	r := bytes.NewReader(body)
-	req, err := http.NewRequestWithContext(ctx, "POST", "", r)
-	if err != nil {
-		return err
-	}
-	req.URL = c.urlf("/login")
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "act3-prototype/0.0")
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("bad status %d: %s", resp.StatusCode, resp.Status)
-	}
-	err = json.UnmarshalRead(resp.Body, respBody)
+	err = json.UnmarshalRead(io.LimitReader(resp.Body, 1<<20), v)
 	if err != nil {
 		return err
 	}
