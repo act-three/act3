@@ -100,11 +100,13 @@ func (c *Client) GetMovie(ctx context.Context, id int) (*Movie, error) {
 
 func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (err error) {
 	defer errorfmt.Handlef("tmdb getf %s %v: %w", format, args, &err)
-	slog.InfoContext(ctx, "tmdb getf", "format", format, "args", args)
+	slog.DebugContext(ctx, "tmdb getf", "format", format, "args", args)
 	token := c.getToken()
 	if token == "" {
 		return fmt.Errorf("TMDB access token not configured")
 	}
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "GET", "", nil)
 	if err != nil {
 		return err
@@ -123,7 +125,7 @@ func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (e
 	if resp.StatusCode != 200 {
 		return fmt.Errorf("bad status %d: %s", resp.StatusCode, resp.Status)
 	}
-	err = json.UnmarshalRead(resp.Body, v)
+	err = json.UnmarshalRead(http.MaxBytesReader(nil, resp.Body, 4<<20), v)
 	if err != nil {
 		return err
 	}
