@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"time"
 )
 
 // ---------------------------------------------------------------
@@ -315,4 +316,28 @@ func splitLines(s string) []string {
 		s = s[i:]
 	}
 	return lines
+}
+
+// TestTrunTotalDuration_SampleCountCap verifies that a crafted trun
+// with an enormous sample_count and no per-sample record fields
+// (recordSize == 0) is rejected quickly.  Without the cap the loop
+// would run up to 2^32 iterations, burning ~3–5 CPU seconds per
+// fragment — a CPU-DoS vector through the ingest path.
+func TestTrunTotalDuration_SampleCountCap(t *testing.T) {
+	// trun payload: sample_count(4).  flags=0 so no data_offset,
+	// no first_sample_flags, no per-sample fields → recordSize==0.
+	payload := put32(0xFFFFFFFF)
+	trun := fullbox("trun", 0, 0, payload)
+
+	start := time.Now()
+	_, err := trunTotalDuration(trun[8:], 1)
+	elapsed := time.Since(start)
+
+	if err == nil {
+		t.Fatalf("trunTotalDuration accepted 0xFFFFFFFF sample_count")
+	}
+	if elapsed > 100*time.Millisecond {
+		t.Errorf("trunTotalDuration took %v on crafted trun; "+
+			"want <100ms", elapsed)
+	}
 }

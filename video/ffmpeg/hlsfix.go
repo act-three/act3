@@ -66,7 +66,11 @@ func fixEXTINF(playlist string, media []byte) string {
 	// video track's total sample duration (DTS span).
 	var maxDur float64
 	for _, seg := range segs {
-		if seg.offset < 0 || seg.offset+seg.size > int64(len(media)) {
+		// Written as subtraction so seg.offset+seg.size cannot
+		// overflow int64 for near-2^63 values from a crafted
+		// EXT-X-BYTERANGE line.
+		if seg.offset < 0 || seg.size < 0 ||
+			seg.offset > int64(len(media))-seg.size {
 			if seg.origDur > maxDur {
 				maxDur = seg.origDur
 			}
@@ -74,7 +78,7 @@ func fixEXTINF(playlist string, media []byte) string {
 		}
 		chunk := media[seg.offset : seg.offset+seg.size]
 		dur, err := fmp4VideoDuration(chunk)
-		if err != nil {
+		if err != nil || math.IsNaN(dur) || math.IsInf(dur, 0) {
 			if seg.origDur > maxDur {
 				maxDur = seg.origDur
 			}
@@ -259,6 +263,12 @@ func parseSIDXTimescale(data []byte) (uint32, bool) {
 		if boxType == "sidx" && size >= 20 {
 			// version(1) + flags(3) + reference_ID(4) + timescale(4)
 			ts := binary.BigEndian.Uint32(data[offset+16 : offset+20])
+			if ts == 0 {
+				// Zero timescale would yield +Inf durations; treat
+				// as unparseable and let fixEXTINF fall back to the
+				// original EXTINF.
+				return 0, false
+			}
 			return ts, true
 		}
 		// Stop if we hit moof — sidx comes before moof.
@@ -371,6 +381,18 @@ func trunTotalDuration(data []byte, defaultDur uint32) (int64, error) {
 
 	if sampleCount == 0 {
 		return 0, fmt.Errorf("trun has 0 samples")
+	}
+
+	// Cap sampleCount to protect against crafted truns that omit
+	// all per-sample fields (recordSize == 0) but rely on
+	// tfhd.default_sample_duration — in that case the needed-bytes
+	// check below collapses to a tautology and the loop would
+	// otherwise run up to 2^32 iterations.  A real HLS segment has
+	// at most a few thousand samples.
+	const maxSampleCount = 1 << 20
+	if sampleCount > maxSampleCount {
+		return 0, fmt.Errorf("trun sample_count %d exceeds cap %d",
+			sampleCount, maxSampleCount)
 	}
 
 	hasDuration := flags&0x100 != 0
