@@ -723,7 +723,7 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 	}
 
 	t.Log("running pass 1...")
-	preset, err := Pass1Combined(ctx, srcFile,
+	preset, err := Pass1Combined(ctx, srcFile, probe.FormatName,
 		[]EncodeParams{params}, []int{0}, passlogs,
 		probe.Duration, nil)
 	if err != nil {
@@ -731,7 +731,7 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 	}
 
 	t.Log("running pass 2...")
-	playlist, err := Pass2Single(ctx, srcFile, params,
+	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
 		passlogs[0], preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)

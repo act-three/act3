@@ -296,6 +296,7 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 			ID:           vid.ID,
 			Duration:     probe.Duration.Milliseconds(),
 			OriginalType: probe.ContentType(),
+			Format:       probe.FormatName,
 		})
 		if err != nil {
 			return err
@@ -396,7 +397,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		}
 
 		tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Pass 1 (%d renditions)", len(encodeIdxs)))
-		preset, err := ffmpeg.Pass1Combined(ctx, src, dsts, encodeIdxs, passlogs, probe.Duration,
+		preset, err := ffmpeg.Pass1Combined(ctx, src, probe.FormatName, dsts, encodeIdxs, passlogs, probe.Duration,
 			func(v float64) { tx.m.prog.Update(vid.ID, v) },
 		)
 		if err != nil {
@@ -493,7 +494,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		if rfs.Remux != 0 {
 			tx.m.prog.UpdateStatus(progKey, desc+": remuxing")
 			var err error
-			playlist, err = ffmpeg.RemuxSingle(ctx, src, dst, probe.Duration, onProgress)
+			playlist, err = ffmpeg.RemuxSingle(ctx, src, probe.FormatName, dst, probe.Duration, onProgress)
 			return err
 		}
 
@@ -503,7 +504,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 			return err
 		}
 		tx.m.prog.UpdateStatus(progKey, desc+": encoding")
-		playlist, err = ffmpeg.Pass2Single(ctx, src, dst, passlog, preset, probe.Duration, onProgress)
+		playlist, err = ffmpeg.Pass2Single(ctx, src, probe.FormatName, dst, passlog, preset, probe.Duration, onProgress)
 		return err
 	})
 	if err != nil {
@@ -595,7 +596,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 
 		if rfd.Remux != 0 {
 			tx.m.prog.UpdateStatus(progKey, "download mp4: remuxing")
-			return ffmpeg.RemuxToMP4(ctx, src, dst, duration, onProgress)
+			return ffmpeg.RemuxToMP4(ctx, src, vid.Format, dst, duration, onProgress)
 		}
 
 		passlog := tx.m.pass1Passlog(vid.ID, rfd.ID)
@@ -604,7 +605,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 			return err
 		}
 		tx.m.prog.UpdateStatus(progKey, "download mp4: encoding")
-		return ffmpeg.Pass2ToMP4(ctx, src, dst, passlog, preset, duration, onProgress)
+		return ffmpeg.Pass2ToMP4(ctx, src, vid.Format, dst, passlog, preset, duration, onProgress)
 	})
 	if err != nil {
 		tx.m.prog.Close(progKey, err)

@@ -1276,7 +1276,7 @@ UPDATE Video SET OriginalKey = ?, ContentHash = ? WHERE ID = ?
 RETURNING *;
 
 -- name: VideoUpdateProbe :exec
-UPDATE Video SET Duration = ?, OriginalType = ? WHERE ID = ?;
+UPDATE Video SET Duration = ?, OriginalType = ?, Format = ? WHERE ID = ?;
 
 -- name: VideoUpdateState :exec
 UPDATE Video SET State = ? WHERE ID = ?;

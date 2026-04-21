@@ -129,11 +129,37 @@ type EncodeParams struct {
 	SurroundAudio bool     // true: encode audio as 5.1(back); false: stereo downmix
 }
 
+// allowedDemuxers is the comma-separated list of libavformat demuxer
+// short names we accept. It expands to the MKV/WebM, MP4/M4V, and AVI
+// container families — all self-contained formats that don't open
+// nested URLs. Used as both the -format_whitelist for stage-1 probing
+// and the acceptance gate for the -f value forced into subsequent
+// ffprobe/ffmpeg invocations, so demuxers like concat, HLS, and
+// QuickTime reference movies never auto-detect on attacker bytes.
+const allowedDemuxers = "matroska,webm,avi,mov,mp4,m4a,3gp,3g2,mj2"
+
 // Probe runs ffprobe and returns stream information for the media in r.
+//
+// It probes in two stages. Stage 1 reads from pipe:0 with
+// -protocol_whitelist pipe and -format_whitelist allowedDemuxers, so
+// ffprobe can't open any filesystem paths during demuxer auto-detection
+// and can't accept a container not on our list. Stage 2 re-probes with
+// seekable /dev/stdin so duration scanning works, but forces the
+// demuxer via -f using the format learned in stage 1 — so demuxer
+// auto-detection never runs on attacker-controlled bytes.
 func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
+	format, err := probeFormat(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
 	var stdout, stderr bytes.Buffer
 	c := newCmd(ctx, "ffprobe",
 		"-v", "quiet",
+		"-protocol_whitelist", "file",
+		"-f", format,
 		"-print_format", "json",
 		"-show_format",
 		"-show_streams",
@@ -142,7 +168,7 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	c.Stdin = r
 	c.Stdout = &stdout
 	c.Stderr = &stderr
-	err := c.Run()
+	err = c.Run()
 	if err != nil {
 		return nil, errors.Join(err, errors.New(stderr.String()))
 	}
@@ -224,6 +250,109 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	return result, nil
 }
 
+// probeFormat runs a constrained ffprobe to detect the container
+// format. Input is piped as pipe:0 (non-seekable) under a
+// -protocol_whitelist of pipe only, so ffprobe has no protocol-level
+// way to touch the filesystem, and restricted via -format_whitelist to
+// allowedDemuxers so auto-detection itself will fail for containers
+// we don't accept.
+//
+// When the detected format is the libavformat mov/mp4 demuxer
+// (shared between MP4 and QuickTime), the ftyp box's major_brand is
+// additionally checked against an mp4-family allowlist so QuickTime
+// reference movies — which carry a "qt  " major brand and can embed
+// external-file references — are rejected at the probe stage.
+//
+// Returns the ffprobe format_name string, suitable for passing back
+// as -f on subsequent invocations.
+func probeFormat(ctx context.Context, r *os.File) (string, error) {
+	var stdout, stderr bytes.Buffer
+	c := newCmd(ctx, "ffprobe",
+		"-v", "error",
+		"-protocol_whitelist", "pipe",
+		"-format_whitelist", allowedDemuxers,
+		"-print_format", "json",
+		"-show_format",
+		"pipe:0",
+	)
+	c.Stdin = r
+	c.Stdout = &stdout
+	c.Stderr = &stderr
+	if err := c.Run(); err != nil {
+		return "", errors.Join(err, errors.New(stderr.String()))
+	}
+	var raw struct {
+		Format struct {
+			FormatName string `json:"format_name"`
+			Tags       struct {
+				MajorBrand       string `json:"major_brand"`
+				CompatibleBrands string `json:"compatible_brands"`
+			} `json:"tags"`
+		} `json:"format"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &raw); err != nil {
+		return "", err
+	}
+	if raw.Format.FormatName == "" {
+		return "", errors.New("probe: unrecognized container format")
+	}
+	if isISOBMFF(raw.Format.FormatName) {
+		if err := checkMP4Brand(raw.Format.Tags.MajorBrand, raw.Format.Tags.CompatibleBrands); err != nil {
+			return "", err
+		}
+	}
+	return raw.Format.FormatName, nil
+}
+
+// allowedMP4Brands lists the ISO BMFF major brands we treat as
+// mp4-family. Files whose ftyp major_brand falls outside this set —
+// most importantly QuickTime's "qt  " — are rejected before ffmpeg
+// ever sees them, closing the rmra/external-dref attack surface that
+// the shared mov/mp4 demuxer would otherwise expose.
+var allowedMP4Brands = map[string]bool{
+	"isom": true, // ISO base media (generic MP4)
+	"iso2": true,
+	"iso4": true,
+	"iso5": true,
+	"iso6": true,
+	"mp41": true, // MP4 v1
+	"mp42": true, // MP4 v2 (what ffmpeg emits)
+	"avc1": true, // H.264-branded MP4
+	"M4V ": true, // iTunes video (trailing space is literal)
+	"dash": true, // DASH-compatible MP4
+}
+
+// isISOBMFF reports whether formatName is the libavformat demuxer
+// shared between MP4/M4V/3GP and QuickTime. The two variants cannot
+// be told apart at the demuxer level but differ in the ftyp box's
+// major_brand, which the caller gates on via checkMP4Brand.
+func isISOBMFF(formatName string) bool {
+	for _, tok := range strings.Split(formatName, ",") {
+		if tok == "mov" || tok == "mp4" {
+			return true
+		}
+	}
+	return false
+}
+
+// checkMP4Brand validates an ISO BMFF file's ftyp brands. It returns
+// an error if major_brand isn't on the mp4-family allowlist, or if
+// compatible_brands advertises QuickTime — which catches files that
+// try to sneak through by mislabeling their major brand.
+func checkMP4Brand(majorBrand, compatibleBrands string) error {
+	if !allowedMP4Brands[majorBrand] {
+		return fmt.Errorf("probe: major_brand %q not on mp4 allowlist", majorBrand)
+	}
+	// compatible_brands is a concatenation of 4-byte brand codes
+	// with no separator; the QuickTime brand is exactly "qt  ".
+	for i := 0; i+4 <= len(compatibleBrands); i += 4 {
+		if compatibleBrands[i:i+4] == "qt  " {
+			return errors.New("probe: compatible_brands advertises QuickTime")
+		}
+	}
+	return nil
+}
+
 // MediaName returns the media file name for rendition i.
 // The caller uses this to fix up playlist references after hashing.
 func MediaName(i int) string {
@@ -244,8 +373,8 @@ func passlogPath(tmpDir string, i int) string {
 // rendition index, matching idxs). The caller must ensure the
 // parent directories exist. Returns the preset that must be passed
 // to [Pass2Single].
-func Pass1Combined(ctx context.Context, src *os.File, dsts []EncodeParams,
-	idxs []int, passlogs map[int]string, duration time.Duration,
+func Pass1Combined(ctx context.Context, src *os.File, format string,
+	dsts []EncodeParams, idxs []int, passlogs map[int]string, duration time.Duration,
 	onProgress func(float64),
 ) (string, error) {
 	total := duration
@@ -255,7 +384,7 @@ func Pass1Combined(ctx context.Context, src *os.File, dsts []EncodeParams,
 		}
 	}
 
-	if err := pass1Combined(ctx, src, dsts, idxs, passlogs, report); err != nil {
+	if err := pass1Combined(ctx, src, format, dsts, idxs, passlogs, report); err != nil {
 		return "", err
 	}
 
@@ -270,7 +399,7 @@ func Pass1Combined(ctx context.Context, src *os.File, dsts []EncodeParams,
 // producing one HLS fMP4 output. The passlog path must point to
 // stats written by a prior [Pass1Combined] call for the same
 // rendition parameters.
-func Pass2Single(ctx context.Context, src *os.File, dst EncodeParams,
+func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodeParams,
 	passlog string, preset string, duration time.Duration, onProgress func(float64),
 ) (playlist string, err error) {
 	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass2-*")
@@ -291,7 +420,7 @@ func Pass2Single(ctx context.Context, src *os.File, dst EncodeParams,
 
 	// Build single-rendition pass-2 args.
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst}, []int{0})
-	args := progressArgs()
+	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
@@ -346,7 +475,7 @@ func Pass2Single(ctx context.Context, src *os.File, dst EncodeParams,
 }
 
 // RemuxSingle produces one HLS rendition by copying the video stream.
-func RemuxSingle(ctx context.Context, src *os.File, dst EncodeParams,
+func RemuxSingle(ctx context.Context, src *os.File, format string, dst EncodeParams,
 	duration time.Duration, onProgress func(float64),
 ) (playlist string, err error) {
 	tmpDir, err := os.MkdirTemp("", "ffmpeg-remux-*")
@@ -362,7 +491,7 @@ func RemuxSingle(ctx context.Context, src *os.File, dst EncodeParams,
 		}
 	}
 
-	if err := doRemux(ctx, src, tmpDir, dst, 0, report); err != nil {
+	if err := doRemux(ctx, src, format, tmpDir, dst, 0, report); err != nil {
 		return "", err
 	}
 
@@ -380,7 +509,7 @@ func RemuxSingle(ctx context.Context, src *os.File, dst EncodeParams,
 }
 
 // RemuxToMP4 produces a single downloadable MP4 by copying the video stream.
-func RemuxToMP4(ctx context.Context, src *os.File, dst EncodeParams,
+func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodeParams,
 	duration time.Duration, onProgress func(float64),
 ) error {
 	tmpDir, err := os.MkdirTemp("", "ffmpeg-remux-mp4-*")
@@ -397,7 +526,7 @@ func RemuxToMP4(ctx context.Context, src *os.File, dst EncodeParams,
 	}
 
 	outPath := filepath.Join(tmpDir, "output.mp4")
-	args := progressArgs()
+	args := inputArgs(format)
 	args = append(args, "-i", src.Name(),
 		"-map", "0:v:0",
 		"-map", "0:a:0?",
@@ -423,7 +552,7 @@ func RemuxToMP4(ctx context.Context, src *os.File, dst EncodeParams,
 
 // Pass2ToMP4 runs second-pass encoding for a single rendition,
 // producing a downloadable MP4 with faststart.
-func Pass2ToMP4(ctx context.Context, src *os.File, dst EncodeParams,
+func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodeParams,
 	passlog string, preset string, duration time.Duration, onProgress func(float64),
 ) error {
 	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass2-mp4-*")
@@ -441,7 +570,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, dst EncodeParams,
 
 	outPath := filepath.Join(tmpDir, "output.mp4")
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst}, []int{0})
-	args := progressArgs()
+	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
@@ -480,13 +609,13 @@ func Pass2ToMP4(ctx context.Context, src *os.File, dst EncodeParams,
 // -----------------------------------------------------------------------
 
 // doRemux produces one HLS rendition by copying the video stream.
-func doRemux(ctx context.Context, src *os.File, tmpDir string,
+func doRemux(ctx context.Context, src *os.File, format, tmpDir string,
 	p EncodeParams, idx int, onProgress func(time.Duration),
 ) error {
 	mediaPath := filepath.Join(tmpDir, MediaName(idx))
 	plsPath := filepath.Join(tmpDir, playlistName(idx))
 
-	args := progressArgs()
+	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
 	args = append(args,
 		"-map", "0:v:0",
@@ -512,13 +641,13 @@ func doRemux(ctx context.Context, src *os.File, tmpDir string,
 // pass1Combined runs a single ffmpeg command that performs first-pass
 // analysis for every reencode rendition, reading the source once.
 // Different resolution/fps targets are handled via filter_complex+split.
-func pass1Combined(ctx context.Context, src *os.File,
+func pass1Combined(ctx context.Context, src *os.File, format string,
 	dsts []EncodeParams, idxs []int, passlogs map[int]string,
 	onProgress func(time.Duration),
 ) error {
 	filterStr, labels := buildFilterComplex(dsts, idxs)
 
-	args := progressArgs()
+	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
@@ -547,13 +676,13 @@ func pass1Combined(ctx context.Context, src *os.File,
 // encoding for every reencode rendition, producing HLS fMP4 output
 // for each. The source is read once and split via filter_complex when
 // different resolutions or frame rates are needed.
-func pass2Combined(ctx context.Context, src *os.File,
+func pass2Combined(ctx context.Context, src *os.File, format string,
 	dsts []EncodeParams, idxs []int, passlogs map[int]string,
 	tmpDir string, onProgress func(time.Duration),
 ) error {
 	filterStr, labels := buildFilterComplex(dsts, idxs)
 
-	args := progressArgs()
+	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
@@ -668,10 +797,25 @@ func buildFilterComplex(dsts []EncodeParams, idxs []int) (string, map[int]string
 // Internal: ffmpeg argument helpers
 // -----------------------------------------------------------------------
 
-func progressArgs() []string {
-	// -hwaccel none: force software decoding so ffmpeg doesn't fail
-	// on codecs without hardware decoder support (e.g. AV1).
-	return []string{"-y", "-hwaccel", "none", "-progress", "pipe:3", "-nostats"}
+// inputArgs returns the flags ffmpeg needs before -i <input>. It
+// bundles progress-reporting wiring, the shared security flags, and
+// the forced input demuxer.
+//
+// -protocol_whitelist file,pipe: restrict every protocol open (main
+// input and any nested opens a demuxer might attempt) to real files
+// and our progress pipe. -f format: skip demuxer auto-detection so
+// attacker bytes can't coerce ffmpeg into running concat, HLS, or
+// similar multi-URL demuxers. -hwaccel none: force software decoding
+// so ffmpeg doesn't fail on codecs without a hardware decoder (e.g.
+// AV1). -nostdin / -hide_banner: standard unattended-run hygiene.
+func inputArgs(format string) []string {
+	return []string{
+		"-y", "-nostdin", "-hide_banner",
+		"-hwaccel", "none",
+		"-protocol_whitelist", "file,pipe",
+		"-progress", "pipe:3", "-nostats",
+		"-f", format,
+	}
 }
 
 func hlsOutputArgs(mediaPath string) []string {

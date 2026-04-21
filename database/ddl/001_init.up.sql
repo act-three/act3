@@ -193,6 +193,7 @@ CREATE TABLE Video
 	State        TEXT NOT NULL DEFAULT ('pending') CHECK (State IN ('pending', 'importing')),
 	OriginalKey  TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	OriginalType TEXT NOT NULL DEFAULT (''), -- MIME type of original; empty until probed
+	Format       TEXT NOT NULL DEFAULT (''), -- ffprobe format_name; empty until probed
 	Duration     INTEGER NOT NULL DEFAULT (0), -- milliseconds; 0 until probed
 	MVPlaylist   TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	ContentHash  BLOB, -- blake3 of the original bytes; null until copied
