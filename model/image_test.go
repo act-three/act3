@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"io"
 	"testing"
 
 	"golang.org/x/image/webp"
@@ -86,7 +87,7 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	}
 
 	m := newTestModel(t)
-	originalID, err := m.ImageCreate(ctx, &pngBuf, ImagePoster)
+	originalID, err := m.ImageCreate(ctx, io.NopCloser(&pngBuf), ImagePoster)
 	if err != nil {
 		t.Fatal(err)
 	}
