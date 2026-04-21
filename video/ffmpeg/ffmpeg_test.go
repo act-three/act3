@@ -141,7 +141,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 
 	// Pass 1: analysis.
 	t.Log("running pass 1...")
-	preset, err := Pass1Combined(ctx, srcFile,
+	preset, err := Pass1Combined(ctx, srcFile, probe.FormatName,
 		[]EncodeParams{params}, []int{0}, passlogs,
 		probe.Duration, nil)
 	if err != nil {
@@ -150,7 +150,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 
 	// Pass 2: encode to HLS fMP4.
 	t.Log("running pass 2...")
-	playlist, err := Pass2Single(ctx, srcFile, params,
+	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
 		passlogs[0], preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
@@ -236,7 +236,7 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 	}
 
 	t.Log("running pass 1...")
-	preset, err := Pass1Combined(ctx, srcFile,
+	preset, err := Pass1Combined(ctx, srcFile, probe.FormatName,
 		[]EncodeParams{params}, []int{0}, passlogs,
 		probe.Duration, nil)
 	if err != nil {
@@ -244,7 +244,7 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 	}
 
 	t.Log("running pass 2...")
-	playlist, err := Pass2Single(ctx, srcFile, params,
+	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
 		passlogs[0], preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
@@ -387,7 +387,7 @@ func TestMPEG2TelecineTwoPass(t *testing.T) {
 	}
 
 	t.Log("running pass 1...")
-	preset, err := Pass1Combined(ctx, srcFile,
+	preset, err := Pass1Combined(ctx, srcFile, probe.FormatName,
 		[]EncodeParams{params}, []int{0}, passlogs,
 		probe.Duration, nil)
 	if err != nil {
@@ -395,7 +395,7 @@ func TestMPEG2TelecineTwoPass(t *testing.T) {
 	}
 
 	t.Log("running pass 2...")
-	playlist, err := Pass2Single(ctx, srcFile, params,
+	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
 		passlogs[0], preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
@@ -458,7 +458,7 @@ func TestX264MbtreePass2(t *testing.T) {
 
 	// Pass 1: x264 analysis writes stats + .mbtree directly.
 	t.Log("running pass 1...")
-	preset, err := Pass1Combined(ctx, srcFile,
+	preset, err := Pass1Combined(ctx, srcFile, probe.FormatName,
 		[]EncodeParams{params}, []int{0}, passlogs,
 		probe.Duration, nil)
 	if err != nil {
@@ -478,7 +478,7 @@ func TestX264MbtreePass2(t *testing.T) {
 
 	// Pass 2: encode reading stats from the same dir.
 	t.Log("running pass 2...")
-	playlist, err := Pass2Single(ctx, srcFile, params,
+	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
 		passlogs[0], preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)

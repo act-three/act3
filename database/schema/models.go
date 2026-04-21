@@ -218,6 +218,7 @@ type Video struct {
 	State        string
 	OriginalKey  string
 	OriginalType string
+	Format       string
 	Duration     int64
 	MVPlaylist   string
 	ContentHash  []byte
