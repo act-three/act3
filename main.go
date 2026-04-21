@@ -127,7 +127,7 @@ func main() {
 
 	store := must(storage.Open(datDir))
 	tmdbClient := tmdb.New()
-	tvmazeClient := must(tvmaze.New(dbw))
+	tvmazeClient := tvmaze.New()
 	m := must(model.New(dbr, dbw, model.Config{
 		Store:         store,
 		PersistentTmp: tmpDir,
