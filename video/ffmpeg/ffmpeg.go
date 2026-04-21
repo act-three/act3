@@ -848,7 +848,16 @@ func fpsPassthrough() []string {
 // This avoids ffmpeg's -passlogfile suffix-appending logic, which
 // bases the suffix on a global output stream index that differs
 // between pass 1 (video only) and pass 2 (video + audio).
+//
+// Panics if passlog contains ':', '\\', or '\n': those characters
+// would be reinterpreted as additional options inside the
+// colon-separated -x264-params / -x265-params lists. The passlog
+// path is built from operator config ($A3STORAGE), so this
+// represents misconfiguration, not user input.
 func twoPassArgs(codec string, pass int, passlog string) []string {
+	if strings.ContainsAny(passlog, ":\\\n") {
+		panic(fmt.Sprintf("ffmpeg: passlog path %q contains forbidden character (:, \\, or \\n)", passlog))
+	}
 	switch codec {
 	case "libx265":
 		return []string{

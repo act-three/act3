@@ -86,6 +86,23 @@ func generate(t *testing.T, args ...string) {
 	}
 }
 
+func TestTwoPassArgsRejectsInjection(t *testing.T) {
+	for _, passlog := range []string{
+		"/foo/bar:crf=0",
+		"/foo\\bar",
+		"/foo\nbar",
+	} {
+		t.Run(passlog, func(t *testing.T) {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("twoPassArgs(%q) did not panic", passlog)
+				}
+			}()
+			twoPassArgs("libx265", 1, passlog)
+		})
+	}
+}
+
 func TestEncodeAV1ToHEVC(t *testing.T) {
 	if _, err := exec.LookPath("mediastreamvalidator"); err != nil {
 		t.Skip("mediastreamvalidator not in PATH")
