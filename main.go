@@ -16,6 +16,7 @@ import (
 	"ily.dev/act3/database"
 	"ily.dev/act3/http/panicstack"
 	"ily.dev/act3/http/requestid"
+	"ily.dev/act3/http/secureheader"
 	"ily.dev/act3/http/timing"
 	"ily.dev/act3/log/logcontext"
 	"ily.dev/act3/model"
@@ -146,6 +147,7 @@ func main() {
 	h = timing.Handler(h)
 	h = requestid.Handler(h)
 	h = (&http.CrossOriginProtection{}).Handler(h)
+	h = secureheader.Handler(h)
 	slog.Info("listen", "listen", listen)
 	panic(http.ListenAndServe(listen, h))
 }
@@ -172,6 +174,7 @@ func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {
 	h = timing.Handler(h)
 	h = requestid.Handler(h)
 	h = (&http.CrossOriginProtection{}).Handler(h)
+	h = secureheader.Handler(h)
 	srv.Handler = h
 	slog.Info("degraded mode", "listen", listen)
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {

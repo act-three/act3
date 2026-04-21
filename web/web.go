@@ -153,14 +153,12 @@ func (c *Config) image(w http.ResponseWriter, req *http.Request) (html.Node, err
 		}
 		// Pin Content-Type so http.ServeFileFS doesn't fall
 		// through to mime sniffing on extensionless keys, and
-		// belt-and-suspenders the response with nosniff + a
-		// tight CSP so even if a non-image blob ever lands here
-		// it can't execute as one. The URL is logically
-		// immutable — replacing an image creates a new
-		// Image with a fresh ID — so we can serve it as
-		// permanently cacheable.
+		// override the middleware CSP with a tighter one so even
+		// if a non-image blob ever lands here it can't execute
+		// as one. The URL is logically immutable — replacing an
+		// image creates a new Image with a fresh ID — so we can
+		// serve it as permanently cacheable.
 		w.Header().Set("Content-Type", "image/webp")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Cache-Control", "max-age=31536000, immutable")
 		w.Header().Set("Content-Security-Policy",
 			"default-src 'none'; img-src 'self'; style-src 'none'; sandbox")
