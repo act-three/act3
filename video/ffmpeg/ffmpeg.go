@@ -201,7 +201,13 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 		return nil, err
 	}
 
-	durSec, _ := strconv.ParseFloat(raw.Format.Duration, 64)
+	durSec, err := strconv.ParseFloat(raw.Format.Duration, 64)
+	if err != nil {
+		return nil, fmt.Errorf("probe: parse duration %q: %w", raw.Format.Duration, err)
+	}
+	if durSec <= 0 {
+		return nil, fmt.Errorf("probe: non-positive duration %v", durSec)
+	}
 	result := &ProbeResult{
 		FormatName: raw.Format.FormatName,
 		Duration:   time.Duration(durSec * float64(time.Second)),
