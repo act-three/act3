@@ -945,7 +945,7 @@ func runWithProgress(ctx context.Context, args []string, onProgress func(time.Du
 
 	var wg sync.WaitGroup
 	wg.Go(func() {
-		readProgress(pr, onProgress)
+		readProgress(ctx, pr, onProgress)
 		pr.Close()
 	})
 
@@ -959,8 +959,11 @@ func runWithProgress(ctx context.Context, args []string, onProgress func(time.Du
 
 // readProgress reads ffmpeg -progress output from r and calls update
 // with the current position in the output timeline.
-func readProgress(r io.Reader, update func(time.Duration)) {
+func readProgress(ctx context.Context, r io.Reader, update func(time.Duration)) {
 	scanner := bufio.NewScanner(r)
+	// ffmpeg -progress lines are short key=value pairs (well under
+	// 100 bytes). 4 KB is ample; anything bigger is a bug worth surfacing.
+	scanner.Buffer(make([]byte, 1024), 4*1024)
 	for scanner.Scan() {
 		line := scanner.Text()
 		after, ok := strings.CutPrefix(line, "out_time_us=")
@@ -974,6 +977,9 @@ func readProgress(r io.Reader, update func(time.Duration)) {
 		if update != nil {
 			update(time.Microsecond * time.Duration(us))
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		slog.WarnContext(ctx, "ffmpeg-progress-read", "err", err)
 	}
 }
 
