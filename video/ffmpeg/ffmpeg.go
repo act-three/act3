@@ -403,7 +403,7 @@ func Pass1Combined(ctx context.Context, src *os.File, format string,
 		return err
 	}
 
-	preset := pass1DefaultPreset
+	preset := presetDefault
 	if overridePreset != "" {
 		preset = overridePreset
 	}
@@ -710,7 +710,7 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
 		args = append(args, "-filter_complex", filterStr)
 	}
 
-	preset := pass1DefaultPreset
+	preset := presetDefault
 	if overridePreset != "" {
 		preset = overridePreset
 	}
@@ -1000,31 +1000,9 @@ func copyFileData(dst *os.File, srcPath string) error {
 	return err
 }
 
-// totalWork returns the total encoding work for the given renditions,
-// expressed in the same units as the source duration. This accounts
-// for the three encoding phases (pass-1 + remux + pass-2) and can be
-// used as the denominator for progress tracking.
-func totalWork(dsts []EncodeParams, duration time.Duration) time.Duration {
-	var total time.Duration
-	nRemux := 0
-	hasEncode := false
-	for _, dst := range dsts {
-		if dst.Remux {
-			nRemux++
-		} else {
-			hasEncode = true
-		}
-	}
-	total += time.Duration(nRemux) * duration // remux phases
-	if hasEncode {
-		total += 2 * duration // pass 1 + pass 2
-	}
-	return total
-}
-
-// pass1DefaultPreset is the preset Pass1Combined records when no
+// presetDefault is the preset Pass1Combined records when no
 // override is set. Pass2Single / Pass2ToMP4 read it back so both
 // passes agree: x265 makes identical B/P frame decisions only when
 // the preset matches, otherwise it errors with "Incomplete CU-tree
 // stats file" or "slice=P but 2pass stats say B".
-const pass1DefaultPreset = "medium"
+const presetDefault = "medium"
