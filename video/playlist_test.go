@@ -105,7 +105,7 @@ func TestFixupMediaPlaylist(t *testing.T) {
 	}
 }
 
-func TestGenerateAndParseMVPlaylist(t *testing.T) {
+func TestGenerateMVPlaylist(t *testing.T) {
 	entries := []MVEntry{
 		{URI: "best.m3u8", Bandwidth: 5_000_000, Resolution: "1920x1080", Codecs: "avc1.640028,mp4a.40.2"},
 		{URI: "low.m3u8", Bandwidth: 500_000, Resolution: "640x360"},
@@ -117,31 +117,5 @@ func TestGenerateAndParseMVPlaylist(t *testing.T) {
 	}
 	if !strings.Contains(playlist, "best.m3u8") {
 		t.Error("missing best.m3u8 URI")
-	}
-
-	// Round-trip through parse.
-	parsed := ParseMVPlaylist(playlist)
-	if len(parsed) != 3 {
-		t.Fatalf("expected 3 entries, got %d", len(parsed))
-	}
-	best, ok := parsed["best.m3u8"]
-	if !ok {
-		t.Fatal("missing best.m3u8 in parsed result")
-	}
-	if best.Bandwidth != 5_000_000 {
-		t.Errorf("bandwidth = %d, want 5000000", best.Bandwidth)
-	}
-	if best.Resolution != "1920x1080" {
-		t.Errorf("resolution = %q, want 1920x1080", best.Resolution)
-	}
-	if best.Codecs != "avc1.640028,mp4a.40.2" {
-		t.Errorf("codecs = %q", best.Codecs)
-	}
-}
-
-func TestParseMVPlaylist_invalid(t *testing.T) {
-	m := ParseMVPlaylist("not a playlist")
-	if len(m) != 0 {
-		t.Errorf("expected empty map for invalid playlist, got %d entries", len(m))
 	}
 }

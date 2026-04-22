@@ -297,6 +297,8 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 			Duration:     probe.Duration.Milliseconds(),
 			OriginalType: probe.ContentType(),
 			Format:       probe.FormatName,
+			Width:        int64(probe.Video.Width),
+			Height:       int64(probe.Video.Height),
 		})
 		if err != nil {
 			return err
@@ -360,17 +362,6 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		}
 		defer src.Close()
 
-		tx.m.prog.UpdateStatus(vid.ID, "Probing")
-		probe, err := ffmpeg.Probe(ctx, src)
-		if err != nil {
-			tx.m.prog.Close(vid.ID, err)
-			return err
-		}
-		if _, err := src.Seek(0, io.SeekStart); err != nil {
-			tx.m.prog.Close(vid.ID, err)
-			return err
-		}
-
 		dsts := make([]ffmpeg.EncodeParams, len(renditions))
 		for i, r := range renditions {
 			dsts[i] = ffmpeg.EncodeParams{
@@ -393,7 +384,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		}
 
 		tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Pass 1 (%d renditions)", numReencode))
-		err = ffmpeg.Pass1Combined(ctx, src, probe.FormatName, dsts, statsDir, probe.Duration,
+		err = ffmpeg.Pass1Combined(ctx, src, vid.Format, dsts, statsDir, time.Duration(vid.Duration)*time.Millisecond,
 			func(v float64) { tx.m.prog.Update(vid.ID, v) },
 		)
 		if err != nil {
@@ -454,16 +445,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	}
 	defer src.Close()
 
-	tx.m.prog.UpdateStatus(progKey, desc+": probing")
-	probe, err := ffmpeg.Probe(ctx, src)
-	if err != nil {
-		tx.m.prog.Close(progKey, err)
-		return err
-	}
-	if _, err := src.Seek(0, io.SeekStart); err != nil {
-		tx.m.prog.Close(progKey, err)
-		return err
-	}
+	duration := time.Duration(vid.Duration) * time.Millisecond
 
 	dst := ffmpeg.EncodeParams{
 		Remux:         rfs.Remux != 0,
@@ -485,14 +467,14 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		if rfs.Remux != 0 {
 			tx.m.prog.UpdateStatus(progKey, desc+": remuxing")
 			var err error
-			playlist, err = ffmpeg.RemuxSingle(ctx, src, probe.FormatName, dst, probe.Duration, onProgress)
+			playlist, err = ffmpeg.RemuxSingle(ctx, src, vid.Format, dst, duration, onProgress)
 			return err
 		}
 
 		tx.m.prog.UpdateStatus(progKey, desc+": encoding")
 		var err error
-		playlist, err = ffmpeg.Pass2Single(ctx, src, probe.FormatName, dst,
-			tx.m.pass1Dir(vid.ID), probe.Duration, onProgress)
+		playlist, err = ffmpeg.Pass2Single(ctx, src, vid.Format, dst,
+			tx.m.pass1Dir(vid.ID), duration, onProgress)
 		return err
 	})
 	if err != nil {
@@ -525,7 +507,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		}
 
 		// Rebuild MV playlist from all completed renditions.
-		return rebuildMVPlaylist(ctx, txw, vid, probe)
+		return rebuildMVPlaylist(ctx, txw, vid)
 	})
 	if err == nil && allDone {
 		os.RemoveAll(tx.m.pass1Dir(vid.ID))
@@ -780,10 +762,8 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 }
 
 // rebuildMVPlaylist regenerates the multivariant HLS playlist from
-// all currently encoded renditions for the video. If probe is
-// non-nil, resolutions are computed from source dimensions;
-// otherwise they are preserved from the existing MV playlist.
-func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video, probe *ffmpeg.ProbeResult) error {
+// all currently encoded renditions for the video.
+func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
@@ -792,10 +772,6 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video, probe *ffmpeg.Pr
 		return nil
 	}
 
-	// Parse existing MV playlist so we can preserve resolution
-	// when probe data isn't available.
-	existing := video.ParseMVPlaylist(vid.MVPlaylist)
-
 	var mvEntries []video.MVEntry
 	for _, rfs := range encoded {
 		bandwidth := video.PeakBitrate(rfs.Playlist)
@@ -803,23 +779,14 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video, probe *ffmpeg.Pr
 			bandwidth = rfs.TargetBitrate * 1000
 		}
 
-		uri := "/-/pls/" + rfs.ID + ".m3u8"
-
-		var resolution string
-		if probe != nil && probe.Video != nil {
-			w, h := video.ScaleResolution(
-				probe.Video.Width, probe.Video.Height, int(rfs.MaxHeight),
-			)
-			resolution = video.ResolutionString(w, h)
-		} else if prev, ok := existing[uri]; ok {
-			resolution = prev.Resolution
-		}
-
+		w, h := video.ScaleResolution(
+			int(vid.Width), int(vid.Height), int(rfs.MaxHeight),
+		)
 		r := video.Rendition{Codec: rfs.Codec}
 		mvEntries = append(mvEntries, video.MVEntry{
-			URI:        uri,
+			URI:        "/-/pls/" + rfs.ID + ".m3u8",
 			Bandwidth:  bandwidth,
-			Resolution: resolution,
+			Resolution: video.ResolutionString(w, h),
 			Codecs:     r.HLSCodecs(),
 		})
 	}

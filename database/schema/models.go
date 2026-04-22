@@ -220,6 +220,8 @@ type Video struct {
 	OriginalType string
 	Format       string
 	Duration     int64
+	Width        int64
+	Height       int64
 	MVPlaylist   string
 	ContentHash  []byte
 	DeletedAt    *int64

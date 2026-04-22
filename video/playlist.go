@@ -74,28 +74,6 @@ func PeakBitrate(playlist string) int64 {
 	return peak
 }
 
-// ParseMVPlaylist extracts variant entries from a multivariant
-// playlist string, returning a map from URI to the entry.
-func ParseMVPlaylist(playlist string) map[string]MVEntry {
-	m := make(map[string]MVEntry)
-	mp := m3u8.NewMasterPlaylist()
-	if err := mp.DecodeFrom(strings.NewReader(playlist), false); err != nil {
-		return m
-	}
-	for _, v := range mp.Variants {
-		if v == nil {
-			continue
-		}
-		m[v.URI] = MVEntry{
-			URI:        v.URI,
-			Bandwidth:  int64(v.Bandwidth),
-			Resolution: v.Resolution,
-			Codecs:     v.Codecs,
-		}
-	}
-	return m
-}
-
 // ResolutionString formats a width and height as "WxH".
 func ResolutionString(w, h int) string {
 	return fmt.Sprintf("%dx%d", w, h)
