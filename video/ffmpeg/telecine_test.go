@@ -718,22 +718,19 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 		Codec:   "libx265",
 		Bitrate: 1500,
 		Tag:     "hvc1",
-	}
-	passlogs := map[int]string{
-		0: filepath.Join(dir, "passlog0"),
+		StatsID: "r0",
 	}
 
 	t.Log("running pass 1...")
-	preset, err := Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, []int{0}, passlogs,
-		probe.Duration, nil)
+	err = Pass1Combined(ctx, srcFile, probe.FormatName,
+		[]EncodeParams{params}, dir, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		passlogs[0], preset, probe.Duration, nil)
+		dir, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}

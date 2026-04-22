@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -127,6 +128,7 @@ type EncodeParams struct {
 	Tag           string   // video tag, e.g. "hvc1" for HEVC in fMP4
 	CopyAudio     bool     // true: copy audio stream; false: reencode to AAC
 	SurroundAudio bool     // true: encode audio as 5.1(back); false: stereo downmix
+	StatsID       string   // stable filename for pass-1 stats inside statsDir; required when !Remux, ignored otherwise
 }
 
 // allowedDemuxers is the comma-separated list of libavformat demuxer
@@ -368,15 +370,28 @@ func passlogPath(tmpDir string, i int) string {
 }
 
 // Pass1Combined runs a single ffmpeg command that performs first-pass
-// analysis for every reencode rendition, reading the source once.
-// Stats files are written to the paths in passlogs (keyed by
-// rendition index, matching idxs). The caller must ensure the
-// parent directories exist. Returns the preset that must be passed
-// to [Pass2Single].
+// analysis for every reencode rendition in dsts (those with Remux
+// false), reading the source once. For each such rendition, stats
+// are stored inside statsDir under its StatsID, and the preset
+// chosen for the batch is persisted alongside them so that
+// [Pass2Single] and [Pass2ToMP4] can recover everything they need
+// from statsDir and the rendition's EncodeParams alone.
+//
+// The caller must ensure statsDir exists, and must treat its contents
+// as opaque: files inside belong to the ffmpeg package.
 func Pass1Combined(ctx context.Context, src *os.File, format string,
-	dsts []EncodeParams, idxs []int, passlogs map[int]string, duration time.Duration,
-	onProgress func(float64),
-) (string, error) {
+	dsts []EncodeParams, statsDir string,
+	duration time.Duration, onProgress func(float64),
+) error {
+	if i := slices.IndexFunc(dsts, func(p EncodeParams) bool {
+		return !p.Remux && p.StatsID == ""
+	}); i >= 0 {
+		return fmt.Errorf("ffmpeg.Pass1Combined: dsts[%d] missing StatsID", i)
+	}
+	if !slices.ContainsFunc(dsts, func(p EncodeParams) bool { return !p.Remux }) {
+		return nil
+	}
+
 	total := duration
 	report := func(d time.Duration) {
 		if onProgress != nil {
@@ -384,24 +399,47 @@ func Pass1Combined(ctx context.Context, src *os.File, format string,
 		}
 	}
 
-	if err := pass1Combined(ctx, src, format, dsts, idxs, passlogs, report); err != nil {
-		return "", err
+	if err := pass1Combined(ctx, src, format, statsDir, dsts, report); err != nil {
+		return err
 	}
 
 	preset := pass1DefaultPreset
 	if overridePreset != "" {
 		preset = overridePreset
 	}
-	return preset, nil
+	return os.WriteFile(filepath.Join(statsDir, pass1PresetFile), []byte(preset), 0o666)
 }
 
+// pass1PresetFile is the filename inside a pass-1 stats directory
+// where [Pass1Combined] persists the preset for [Pass2Single] /
+// [Pass2ToMP4] to read back.
+const pass1PresetFile = "preset"
+
 // Pass2Single runs second-pass encoding for a single rendition,
-// producing one HLS fMP4 output. The passlog path must point to
-// stats written by a prior [Pass1Combined] call for the same
-// rendition parameters.
+// producing one HLS fMP4 output. dst.StatsID and statsDir must refer
+// to a rendition that was included in a prior [Pass1Combined] call.
+// On success, Pass2Single removes its own per-rendition stats from
+// statsDir; the caller is responsible for removing statsDir itself
+// once every rendition for the batch has been processed.
 func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodeParams,
-	passlog string, preset string, duration time.Duration, onProgress func(float64),
+	statsDir string, duration time.Duration, onProgress func(float64),
 ) (playlist string, err error) {
+	if dst.StatsID == "" {
+		return "", fmt.Errorf("ffmpeg.Pass2Single: dst.StatsID is empty")
+	}
+	passlog := filepath.Join(statsDir, dst.StatsID)
+	presetBytes, err := os.ReadFile(filepath.Join(statsDir, pass1PresetFile))
+	if err != nil {
+		return "", fmt.Errorf("read pass1 preset: %w", err)
+	}
+	preset := string(presetBytes)
+
+	defer func() {
+		if err == nil {
+			removePass1StatsFor(passlog)
+		}
+	}()
+
 	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass2-*")
 	if err != nil {
 		return "", err
@@ -419,7 +457,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	plsPath := filepath.Join(tmpDir, playlistName(0))
 
 	// Build single-rendition pass-2 args.
-	filterStr, labels := buildFilterComplex([]EncodeParams{dst}, []int{0})
+	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
 	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
@@ -551,10 +589,29 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 }
 
 // Pass2ToMP4 runs second-pass encoding for a single rendition,
-// producing a downloadable MP4 with faststart.
+// producing a downloadable MP4 with faststart. dst.StatsID and
+// statsDir must refer to a rendition that was included in a prior
+// [Pass1Combined] call. On success, Pass2ToMP4 removes its own
+// per-rendition stats from statsDir.
 func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodeParams,
-	passlog string, preset string, duration time.Duration, onProgress func(float64),
-) error {
+	statsDir string, duration time.Duration, onProgress func(float64),
+) (err error) {
+	if dst.StatsID == "" {
+		return fmt.Errorf("ffmpeg.Pass2ToMP4: dst.StatsID is empty")
+	}
+	passlog := filepath.Join(statsDir, dst.StatsID)
+	presetBytes, err := os.ReadFile(filepath.Join(statsDir, pass1PresetFile))
+	if err != nil {
+		return fmt.Errorf("read pass1 preset: %w", err)
+	}
+	preset := string(presetBytes)
+
+	defer func() {
+		if err == nil {
+			removePass1StatsFor(passlog)
+		}
+	}()
+
 	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass2-mp4-*")
 	if err != nil {
 		return err
@@ -569,7 +626,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	}
 
 	outPath := filepath.Join(tmpDir, "output.mp4")
-	filterStr, labels := buildFilterComplex([]EncodeParams{dst}, []int{0})
+	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
 	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
@@ -639,13 +696,13 @@ func doRemux(ctx context.Context, src *os.File, format, tmpDir string,
 }
 
 // pass1Combined runs a single ffmpeg command that performs first-pass
-// analysis for every reencode rendition, reading the source once.
-// Different resolution/fps targets are handled via filter_complex+split.
-func pass1Combined(ctx context.Context, src *os.File, format string,
-	dsts []EncodeParams, idxs []int, passlogs map[int]string,
-	onProgress func(time.Duration),
+// analysis for every reencode rendition in dsts (those with Remux
+// false), reading the source once. Different resolution/fps targets
+// are handled via filter_complex+split.
+func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
+	dsts []EncodeParams, onProgress func(time.Duration),
 ) error {
-	filterStr, labels := buildFilterComplex(dsts, idxs)
+	filterStr, labels := buildFilterComplex(dsts)
 
 	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
@@ -658,65 +715,17 @@ func pass1Combined(ctx context.Context, src *os.File, format string,
 		preset = overridePreset
 	}
 
-	for _, i := range idxs {
-		p := dsts[i]
+	for i, p := range dsts {
+		if p.Remux {
+			continue
+		}
 		args = append(args, "-map", labels[i])
 		args = append(args, fpsPassthrough()...)
 		args = append(args, "-c:v", p.Codec, "-preset", preset)
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
-		args = append(args, twoPassArgs(p.Codec, 1, passlogs[i])...)
+		args = append(args, twoPassArgs(p.Codec, 1, filepath.Join(statsDir, p.StatsID))...)
 		args = append(args, "-an", "-sn")
 		args = append(args, "-f", "null", "/dev/null")
-	}
-
-	return runWithProgress(ctx, args, onProgress)
-}
-
-// pass2Combined runs a single ffmpeg command that performs second-pass
-// encoding for every reencode rendition, producing HLS fMP4 output
-// for each. The source is read once and split via filter_complex when
-// different resolutions or frame rates are needed.
-func pass2Combined(ctx context.Context, src *os.File, format string,
-	dsts []EncodeParams, idxs []int, passlogs map[int]string,
-	tmpDir string, onProgress func(time.Duration),
-) error {
-	filterStr, labels := buildFilterComplex(dsts, idxs)
-
-	args := inputArgs(format)
-	args = append(args, "-i", src.Name())
-	if filterStr != "" {
-		args = append(args, "-filter_complex", filterStr)
-	}
-
-	preset := pass2DefaultPreset
-	if overridePreset != "" {
-		preset = overridePreset
-	}
-
-	for _, i := range idxs {
-		p := dsts[i]
-		mediaPath := filepath.Join(tmpDir, MediaName(i))
-		plsPath := filepath.Join(tmpDir, playlistName(i))
-
-		args = append(args, "-map", labels[i])
-		args = append(args, fpsPassthrough()...)
-		args = append(args, "-map", "0:a:0?") // optional audio
-		args = append(args, "-c:v", p.Codec, "-preset", preset)
-		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
-		if p.Tag != "" {
-			args = append(args, "-tag:v", p.Tag)
-		}
-		args = append(args, twoPassArgs(p.Codec, 2, passlogs[i])...)
-		if p.CopyAudio {
-			args = append(args, "-c:a", "copy")
-		} else if p.SurroundAudio {
-			args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
-		} else {
-			args = append(args, "-c:a", "aac", "-ac", "2")
-		}
-		args = append(args, "-sn")
-		args = append(args, hlsOutputArgs(mediaPath)...)
-		args = append(args, plsPath)
 	}
 
 	return runWithProgress(ctx, args, onProgress)
@@ -727,17 +736,21 @@ func pass2Combined(ctx context.Context, src *os.File, format string,
 // -----------------------------------------------------------------------
 
 // buildFilterComplex produces a filter_complex string that splits the
-// input video into one branch per rendition index, applying per-branch
-// scale and fps filters as needed. It returns the filter string (empty
-// if no filtering is required) and a map from rendition index to the
-// label or stream specifier to use in -map.
-func buildFilterComplex(dsts []EncodeParams, idxs []int) (string, map[int]string) {
-	labels := make(map[int]string, len(idxs))
+// input video into one branch per reencode rendition (those with Remux
+// false), applying per-branch scale and fps filters as needed. It
+// returns the filter string (empty if no filtering is required) and a
+// map from rendition index in dsts to the label or stream specifier
+// to use in -map. Remux entries are absent from the returned map.
+func buildFilterComplex(dsts []EncodeParams) (string, map[int]string) {
+	labels := make(map[int]string)
 
-	// Check whether any rendition needs video filtering.
+	// Check whether any reencode rendition needs video filtering.
 	anyFilter := false
-	for _, i := range idxs {
-		if dsts[i].MaxHeight > 0 || dsts[i].MaxFPS > 0 {
+	for _, p := range dsts {
+		if p.Remux {
+			continue
+		}
+		if p.MaxHeight > 0 || p.MaxFPS > 0 {
 			anyFilter = true
 			break
 		}
@@ -746,7 +759,10 @@ func buildFilterComplex(dsts []EncodeParams, idxs []int) (string, map[int]string
 	if !anyFilter {
 		// Every rendition uses source resolution and frame rate.
 		// No filter_complex needed; each output maps 0:v:0 directly.
-		for _, i := range idxs {
+		for i, p := range dsts {
+			if p.Remux {
+				continue
+			}
 			labels[i] = "0:v:0"
 		}
 		return "", labels
@@ -755,6 +771,13 @@ func buildFilterComplex(dsts []EncodeParams, idxs []int) (string, map[int]string
 	// At least one rendition needs filtering, so we route all
 	// reencode renditions through a split. Branches that need no
 	// filtering are identity pass-throughs (virtually free).
+	var idxs []int
+	for i, p := range dsts {
+		if p.Remux {
+			continue
+		}
+		idxs = append(idxs, i)
+	}
 	n := len(idxs)
 	var parts []string
 
@@ -840,6 +863,17 @@ func hlsOutputArgs(mediaPath string) []string {
 // stats file".
 func fpsPassthrough() []string {
 	return []string{"-fps_mode:v", "passthrough"}
+}
+
+// removePass1StatsFor removes the pass-1 stats files for a single
+// rendition: the base stats file plus the .mbtree / .cutree sidecars
+// that x264 / x265 deposit next to it. Best effort: missing files are
+// not errors, and failures are silently ignored since the caller's
+// eventual statsDir RemoveAll will sweep anything left behind.
+func removePass1StatsFor(passlog string) {
+	os.Remove(passlog)
+	os.Remove(passlog + ".mbtree")
+	os.Remove(passlog + ".cutree")
 }
 
 // twoPassArgs returns encoder-specific flags for 2-pass encoding.
@@ -988,12 +1022,9 @@ func totalWork(dsts []EncodeParams, duration time.Duration) time.Duration {
 	return total
 }
 
-const (
-	// Both passes must use the same preset so that x265 makes
-	// identical frame-type decisions (B vs P). A preset mismatch
-	// causes "Incomplete CU-tree stats file" / "slice=P but
-	// 2pass stats say B" errors because the stats written in
-	// pass 1 no longer match the frame structure in pass 2.
-	pass1DefaultPreset = "medium"
-	pass2DefaultPreset = "medium"
-)
+// pass1DefaultPreset is the preset Pass1Combined records when no
+// override is set. Pass2Single / Pass2ToMP4 read it back so both
+// passes agree: x265 makes identical B/P frame decisions only when
+// the preset matches, otherwise it errors with "Incomplete CU-tree
+// stats file" or "slice=P but 2pass stats say B".
+const pass1DefaultPreset = "medium"
