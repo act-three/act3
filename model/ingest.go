@@ -345,16 +345,15 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		return fmt.Errorf("no renditions planned for video %s", vid.ID)
 	}
 
-	// Classify renditions: collect indices of those needing reencode.
-	var encodeIdxs []int
-	for i, r := range renditions {
+	// Count renditions needing reencode to decide whether to run pass 1.
+	var numReencode int
+	for _, r := range renditions {
 		if r.Remux == 0 {
-			encodeIdxs = append(encodeIdxs, i)
+			numReencode++
 		}
 	}
 
-	// If there are reencode renditions, run pass 1.
-	if len(encodeIdxs) > 0 {
+	if numReencode > 0 {
 		src, err := tx.m.store.Open(vid.OriginalKey)
 		if err != nil {
 			return err
@@ -373,9 +372,9 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		}
 
 		dsts := make([]ffmpeg.EncodeParams, len(renditions))
-		for _, i := range encodeIdxs {
-			r := renditions[i]
+		for i, r := range renditions {
 			dsts[i] = ffmpeg.EncodeParams{
+				Remux:         r.Remux != 0,
 				Codec:         toFFmpegCodec(r.Codec),
 				Bitrate:       r.TargetBitrate,
 				MaxHeight:     int(r.MaxHeight),
@@ -383,29 +382,20 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 				Tag:           toVideoTag(r.Codec),
 				CopyAudio:     r.CopyAudio != 0,
 				SurroundAudio: r.SurroundAudio != 0,
+				StatsID:       r.ID,
 			}
 		}
 
-		statsDir := tx.m.pass1StatsDir(vid.ID)
+		statsDir := tx.m.pass1Dir(vid.ID)
 		if err := os.MkdirAll(statsDir, 0o777); err != nil {
 			tx.m.prog.Close(vid.ID, err)
 			return err
 		}
-		passlogs := make(map[int]string, len(encodeIdxs))
-		for _, i := range encodeIdxs {
-			passlogs[i] = filepath.Join(statsDir, renditions[i].ID)
-		}
 
-		tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Pass 1 (%d renditions)", len(encodeIdxs)))
-		preset, err := ffmpeg.Pass1Combined(ctx, src, probe.FormatName, dsts, encodeIdxs, passlogs, probe.Duration,
+		tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Pass 1 (%d renditions)", numReencode))
+		err = ffmpeg.Pass1Combined(ctx, src, probe.FormatName, dsts, statsDir, probe.Duration,
 			func(v float64) { tx.m.prog.Update(vid.ID, v) },
 		)
-		if err != nil {
-			tx.m.prog.Close(vid.ID, err)
-			return err
-		}
-
-		err = os.WriteFile(filepath.Join(statsDir, "preset"), []byte(preset), 0o666)
 		if err != nil {
 			tx.m.prog.Close(vid.ID, err)
 			return err
@@ -484,6 +474,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		Tag:           toVideoTag(rfs.Codec),
 		CopyAudio:     rfs.CopyAudio != 0,
 		SurroundAudio: rfs.SurroundAudio != 0,
+		StatsID:       rfs.ID,
 	}
 
 	var playlist string
@@ -498,13 +489,10 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 			return err
 		}
 
-		passlog := tx.m.pass1Passlog(vid.ID, rfs.ID)
-		preset, err := tx.m.loadPass1Preset(vid.ID)
-		if err != nil {
-			return err
-		}
 		tx.m.prog.UpdateStatus(progKey, desc+": encoding")
-		playlist, err = ffmpeg.Pass2Single(ctx, src, probe.FormatName, dst, passlog, preset, probe.Duration, onProgress)
+		var err error
+		playlist, err = ffmpeg.Pass2Single(ctx, src, probe.FormatName, dst,
+			tx.m.pass1Dir(vid.ID), probe.Duration, onProgress)
 		return err
 	})
 	if err != nil {
@@ -519,6 +507,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	playlist = video.FixupMediaPlaylist(playlist, ffmpeg.MediaName(0), "/-/vid/"+rfs.ID+".mp4")
 
 	tx.m.prog.UpdateStatus(progKey, desc+": saving")
+	var allDone bool
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
 		_, err := txw.q.RenditionUpdateEncode(ctx,
 			schema.RenditionUpdateEncodeParams{
@@ -530,12 +519,16 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		if err != nil {
 			return err
 		}
+		allDone, err = allRenditionsEncoded(ctx, txw, vid.ID)
+		if err != nil {
+			return err
+		}
 
 		// Rebuild MV playlist from all completed renditions.
 		return rebuildMVPlaylist(ctx, txw, vid, probe)
 	})
-	if err == nil && rfs.Remux == 0 {
-		tx.m.removePass1Stats(vid.ID, rfs.ID)
+	if err == nil && allDone {
+		os.RemoveAll(tx.m.pass1Dir(vid.ID))
 	}
 	tx.m.prog.Close(progKey, err)
 	return err
@@ -588,6 +581,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 		Tag:           toVideoTag(rfd.Codec),
 		CopyAudio:     rfd.CopyAudio != 0,
 		SurroundAudio: rfd.SurroundAudio != 0,
+		StatsID:       rfd.ID,
 	}
 
 	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
@@ -599,13 +593,9 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 			return ffmpeg.RemuxToMP4(ctx, src, vid.Format, dst, duration, onProgress)
 		}
 
-		passlog := tx.m.pass1Passlog(vid.ID, rfd.ID)
-		preset, err := tx.m.loadPass1Preset(vid.ID)
-		if err != nil {
-			return err
-		}
 		tx.m.prog.UpdateStatus(progKey, "download mp4: encoding")
-		return ffmpeg.Pass2ToMP4(ctx, src, vid.Format, dst, passlog, preset, duration, onProgress)
+		return ffmpeg.Pass2ToMP4(ctx, src, vid.Format, dst,
+			tx.m.pass1Dir(vid.ID), duration, onProgress)
 	})
 	if err != nil {
 		tx.m.prog.Close(progKey, err)
@@ -613,6 +603,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 	}
 
 	tx.m.prog.UpdateStatus(progKey, "download mp4: saving")
+	var allDone bool
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
 		_, err := txw.q.RenditionUpdateEncode(ctx,
 			schema.RenditionUpdateEncodeParams{
@@ -620,10 +611,14 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 				Key: hash,
 			},
 		)
+		if err != nil {
+			return err
+		}
+		allDone, err = allRenditionsEncoded(ctx, txw, vid.ID)
 		return err
 	})
-	if err == nil && rfd.Remux == 0 {
-		tx.m.removePass1Stats(vid.ID, rfd.ID)
+	if err == nil && allDone {
+		os.RemoveAll(tx.m.pass1Dir(vid.ID))
 	}
 	tx.m.prog.Close(progKey, err)
 	return err
@@ -738,7 +733,8 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 		return fmt.Errorf("video %s has no original hash", vid.ID)
 	}
 
-	// Delete existing rendition CAS blobs and pass1 stats.
+	// Delete existing rendition CAS blobs and any stale pass1 data
+	// left behind by a prior cycle.
 	renditions, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
@@ -747,8 +743,8 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 		if r.Key != "" {
 			tx.m.store.Remove(r.Key)
 		}
-		tx.m.removePass1Stats(vid.ID, r.ID)
 	}
+	os.RemoveAll(tx.m.pass1Dir(vid.ID))
 
 	// Delete rendition and audio track DB records, clear MV playlist.
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
@@ -865,29 +861,26 @@ func toVideoTag(codec string) string {
 	return ""
 }
 
-func (m *Model) pass1Dir() string {
-	return filepath.Join(m.persistentTmp, "pass1")
+// pass1Dir is the directory ffmpeg owns for storing pass-1 stats for
+// every rendition of a video. Callers treat its contents as opaque:
+// creation and removal are this package's responsibility, but the
+// files inside belong to video/ffmpeg.
+func (m *Model) pass1Dir(vidID string) string {
+	return filepath.Join(m.persistentTmp, "pass1", vidID)
 }
 
-func (m *Model) pass1StatsDir(vidID string) string {
-	return filepath.Join(m.pass1Dir(), vidID)
-}
-
-func (m *Model) pass1Passlog(vidID, rfsID string) string {
-	return filepath.Join(m.pass1StatsDir(vidID), rfsID)
-}
-
-func (m *Model) loadPass1Preset(vidID string) (string, error) {
-	b, err := os.ReadFile(filepath.Join(m.pass1StatsDir(vidID), "preset"))
+// allRenditionsEncoded reports whether every rendition for videoID
+// has a storage key, meaning no further encode task will need the
+// pass-1 stats directory.
+func allRenditionsEncoded(ctx Context, tx *TxRW, videoID string) (bool, error) {
+	rends, err := tx.q.RenditionListByVideoID(ctx, videoID)
 	if err != nil {
-		return "", err
+		return false, err
 	}
-	return string(b), nil
-}
-
-func (m *Model) removePass1Stats(vidID, rfsID string) {
-	passlog := m.pass1Passlog(vidID, rfsID)
-	os.Remove(passlog)
-	os.Remove(passlog + ".mbtree")
-	os.Remove(passlog + ".cutree")
+	for _, r := range rends {
+		if r.Key == "" {
+			return false, nil
+		}
+	}
+	return true, nil
 }
