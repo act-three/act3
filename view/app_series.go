@@ -278,19 +278,21 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 			} else {
 				href = Href(ed.EditorPath())
 			}
-			return Card(
-				CardSurface,
-				CardSize1,
-				href,
-				selected,
-			)(
-				FlexRow()(
-					CardContent()(
-						CardTitle()(
-							LiveText(ed.SeriesEditionHead.LabelField()),
-						),
-						CardDescription()(
-							seriesTheaterPathText(&ed.SeriesHead, &ed.SeriesEditionHead),
+			return turbo.StreamTarget("edition-tab-" + ed.SeriesEditionHead.ID())(
+				Card(
+					CardSurface,
+					CardSize1,
+					href,
+					selected,
+				)(
+					FlexRow()(
+						CardContent()(
+							CardTitle()(
+								LiveText(ed.SeriesEditionHead.LabelField()),
+							),
+							CardDescription()(
+								seriesTheaterPathText(&ed.SeriesHead, &ed.SeriesEditionHead),
+							),
 						),
 					),
 				),
@@ -310,46 +312,48 @@ func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
 }
 
 func appSeriesDetailSeasonItem(sn *model.Season) html.Node {
-	return SettingsGroup()(
-		SettingsGroupHead(Class("v-season-group-head"))(
-			SettingsItemLabel(Class("v-season-label"),
-				stimulus.Controller("season-title"),
-				stimulus.Value("season-title", "mode")("display"),
-			)(
-				html.Div(Class("v-season-display"))(
-					FlexRow(Class("v-season-title-row"))(
-						TextNode(Size2)(LiveText(sn.TitleField())),
-						Button(ButtonCircle, ButtonGhost, ButtonSize1,
-							Class("v-season-title-edit-button"),
-							stimulus.Action("click->season-title#edit"),
-						)(Icon("line/edit-02")),
-					),
-					SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
-				),
-				html.Div(Class("v-season-edit"),
-					stimulus.Action("settings-text-field:commit->season-title#display"),
-					stimulus.Action("settings-text-field:error->season-title#display"),
-					stimulus.Action("settings-text-field:cancel->season-title#display"),
+	return turbo.StreamTarget("season-" + sn.ID())(
+		SettingsGroup()(
+			SettingsGroupHead(Class("v-season-group-head"))(
+				SettingsItemLabel(Class("v-season-label"),
+					stimulus.Controller("season-title"),
+					stimulus.Value("season-title", "mode")("display"),
 				)(
-					SettingsTextField("/-/do/season-set-title", "title", sn.Title(), LiveAddr(sn.TitleAddr()))(
-						html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sn.ID())),
+					html.Div(Class("v-season-display"))(
+						FlexRow(Class("v-season-title-row"))(
+							TextNode(Size2)(LiveText(sn.TitleField())),
+							Button(ButtonCircle, ButtonGhost, ButtonSize1,
+								Class("v-season-title-edit-button"),
+								stimulus.Action("click->season-title#edit"),
+							)(Icon("line/edit-02")),
+						),
+						SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
+					),
+					html.Div(Class("v-season-edit"),
+						stimulus.Action("settings-text-field:commit->season-title#display"),
+						stimulus.Action("settings-text-field:error->season-title#display"),
+						stimulus.Action("settings-text-field:cancel->season-title#display"),
+					)(
+						SettingsTextField("/-/do/season-set-title", "title", sn.Title(), LiveAddr(sn.TitleAddr()))(
+							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sn.ID())),
+						),
 					),
 				),
+				FlexRow(Gap2)(
+					ActionButton("/-/do/series-episode-add",
+						map[string]string{"season-id": sn.ID()},
+						ButtonGhost, ButtonSize2,
+					)(Text("Add Episode")),
+					trashForm(sn.ID()),
+				),
 			),
-			FlexRow(Gap2)(
-				ActionButton("/-/do/series-episode-add",
-					map[string]string{"season-id": sn.ID()},
-					ButtonGhost, ButtonSize2,
-				)(Text("Add Episode")),
-				trashForm(sn.ID()),
+			turbo.StreamTarget("season-episodes-"+sn.ID(),
+				stimulus.Controller("sortable"),
+				stimulus.Action("keydown.esc@document->sortable#cancel"),
+				Attr("data-season-id")(sn.ID()),
+			)(
+				html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
 			),
-		),
-		turbo.StreamTarget("season-episodes-"+sn.ID(),
-			stimulus.Controller("sortable"),
-			stimulus.Action("keydown.esc@document->sortable#cancel"),
-			Attr("data-season-id")(sn.ID()),
-		)(
-			html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
 		),
 	)
 }
