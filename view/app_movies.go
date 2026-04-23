@@ -348,31 +348,33 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 			} else {
 				href = Href(ed.EditorPath())
 			}
-			return Card(
-				CardSurface,
-				CardSize1,
-				href,
-				selected,
-			)(
-				FlexRow()(
-					CardContent()(
-						CardTitle()(
-							LiveText(ed.MovieEditionHead.LabelField()),
+			return turbo.StreamTarget("edition-tab-" + ed.MovieEditionHead.ID())(
+				Card(
+					CardSurface,
+					CardSize1,
+					href,
+					selected,
+				)(
+					FlexRow()(
+						CardContent()(
+							CardTitle()(
+								LiveText(ed.MovieEditionHead.LabelField()),
+							),
+							CardDescription()(
+								movieTheaterPathText(&ed.MovieHead, &ed.MovieEditionHead),
+							),
 						),
-						CardDescription()(
-							movieTheaterPathText(&ed.MovieHead, &ed.MovieEditionHead),
-						),
-					),
 
-					html.If(ed.MovieEditionHead.ID() == current.ID() && ed.MovieEditionHead.Slug() != "", func() html.Node {
-						return html.Form(
-							attr.Method("POST"),
-							attr.Action("/-/do/movie-edition-set-default"),
-						)(
-							Hidden("edition-id", ed.MovieEditionHead.ID()),
-							Button(ButtonGhost, ButtonSize2)(Text("Make Default")),
-						)
-					}),
+						html.If(ed.MovieEditionHead.ID() == current.ID() && ed.MovieEditionHead.Slug() != "", func() html.Node {
+							return html.Form(
+								attr.Method("POST"),
+								attr.Action("/-/do/movie-edition-set-default"),
+							)(
+								Hidden("edition-id", ed.MovieEditionHead.ID()),
+								Button(ButtonGhost, ButtonSize2)(Text("Make Default")),
+							)
+						}),
+					),
 				),
 			)
 		}),

@@ -159,15 +159,20 @@ func trashParams(id string) map[string]string {
 }
 
 // MediaListRemove is a Turbo Stream fragment that removes a newly
-// trashed entity from its parent list page (All Movies, All Series,
-// All Collections, Downloads). Sub-containers (editions, seasons,
-// episodes, videos) don't have their own top-level list page; callers
-// relying on them to refresh a detail frame should emit their own
-// updates.
+// trashed entity from whichever list/editor page currently shows it:
+// the top-level All Movies / All Series / All Collections / Downloads
+// pages for the root kinds, the series-edition editor's season list
+// for seasons, and the edition tab strip for editions. Episode trash
+// is covered by the season renumber event, and Video trash has no
+// standalone list item.
 func MediaListRemove(kind model.TrashKind, id string) html.Node {
 	switch kind {
 	case model.TrashKindMovie, model.TrashKindSeries, model.TrashKindCollection, model.TrashKindDownload:
 		return turbo.RemoveTargets(`[data-list-id-param="` + id + `"]`)
+	case model.TrashKindSeason:
+		return turbo.Remove("season-" + id)
+	case model.TrashKindMovieEdition, model.TrashKindSeriesEdition:
+		return turbo.Remove("edition-tab-" + id)
 	}
 	return Group()
 }
