@@ -79,7 +79,7 @@ func (tx *TxR) trashState(ctx Context, id string) (trashState, error) {
 }
 
 func (tx *TxRW) insertTrashRow(ctx Context, id, root string, now time.Time) error {
-	kind := kindOf(id)
+	kind := KindOf(id)
 	title, subtitle, err := tx.computeTrashTitle(ctx, id, kind)
 	if err != nil {
 		return err
@@ -185,7 +185,7 @@ func (tx *TxRW) computeTrashTitle(ctx Context, id string, kind TrashKind) (title
 // sub-tree, orphan-reaping shared Episode/Video rows that lose their
 // last live reference.
 func (tx *TxRW) Trash(ctx Context, id string) (err error) {
-	kind := kindOf(id)
+	kind := KindOf(id)
 	defer errorfmt.Handlef("trash %s: %w", id, &err)
 
 	state, err := tx.trashState(ctx, id)
@@ -545,7 +545,7 @@ func (tx *TxRW) Restore(ctx Context, id string) (err error) {
 // was separately trashed after the episode itself, this walks the
 // junctions up to the Seasons and ensureLive pulls the rest back.
 func (tx *TxRW) ensureParentsLive(ctx Context, id string) error {
-	switch kindOf(id) {
+	switch KindOf(id) {
 	case TrashKindMovieEdition:
 		med, err := tx.q.MovieEditionGet(ctx, id)
 		if err != nil {
@@ -620,7 +620,7 @@ func (tx *TxRW) ensureLive(ctx Context, id string) error {
 }
 
 func (tx *TxRW) restoreRoot(ctx Context, id string) error {
-	kind := kindOf(id)
+	kind := KindOf(id)
 	cascaded, err := tx.trashListByRoot(ctx, id)
 	if err != nil {
 		return err
@@ -747,7 +747,7 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 // helper, which handles both the live (title/label-change) and
 // trashed (restore) cases via the entity's DeletedAt.
 func (tx *TxRW) restoreSlug(ctx Context, id string) error {
-	switch kindOf(id) {
+	switch KindOf(id) {
 	case TrashKindMovie:
 		return tx.movieEnsureSlug(ctx, id)
 	case TrashKindSeries:
@@ -765,7 +765,7 @@ func (tx *TxRW) restoreSlug(ctx Context, id string) error {
 // Purge hard-deletes a trashed item and all rows in its cascade
 // subtree. Returns ErrNotTrashed if the target is currently live.
 func (tx *TxRW) Purge(ctx Context, id string) (err error) {
-	kind := kindOf(id)
+	kind := KindOf(id)
 	defer errorfmt.Handlef("purge %s: %w", id, &err)
 
 	state, err := tx.trashState(ctx, id)
@@ -840,7 +840,7 @@ func (tx *TxR) TrashItem(ctx Context, id string) (TrashItem, error) {
 		return TrashItem{}, err
 	}
 	return TrashItem{
-		Kind:      kindOf(row.ID),
+		Kind:      KindOf(row.ID),
 		ID:        row.ID,
 		Title:     row.Title,
 		Subtitle:  row.Subtitle,
@@ -858,7 +858,7 @@ func (tx *TxR) TrashList(ctx Context) ([]TrashItem, error) {
 	items := make([]TrashItem, len(rows))
 	for i, r := range rows {
 		items[i] = TrashItem{
-			Kind:      kindOf(r.ID),
+			Kind:      KindOf(r.ID),
 			ID:        r.ID,
 			Title:     r.Title,
 			Subtitle:  r.Subtitle,
@@ -876,7 +876,7 @@ func (tx *TxR) trashListByRoot(ctx Context, rootID string) ([]TrashItem, error) 
 	items := make([]TrashItem, len(rows))
 	for i, r := range rows {
 		items[i] = TrashItem{
-			Kind:      kindOf(r.ID),
+			Kind:      KindOf(r.ID),
 			ID:        r.ID,
 			Title:     r.Title,
 			Subtitle:  r.Subtitle,
@@ -940,11 +940,11 @@ func (m *Model) purgeTrashLoop() {
 	}
 }
 
-// kindOf returns the TrashKind implied by a flurry ID prefix, or
+// KindOf returns the TrashKind implied by a flurry ID prefix, or
 // TrashKindInvalid if the ID doesn't match a known prefix. Longer
 // prefixes are checked first so "med" and "sed" don't collide with
 // "mo" and "sr".
-func kindOf(id string) TrashKind {
+func KindOf(id string) TrashKind {
 	switch {
 	case strings.HasPrefix(id, "med"):
 		return TrashKindMovieEdition
