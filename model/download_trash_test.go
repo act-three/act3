@@ -111,21 +111,21 @@ func fortyCharHex(seed byte) string {
 }
 
 func TestKindOfInfoHash(t *testing.T) {
-	if got := kindOf(fortyCharHex(0)); got != TrashKindDownload {
-		t.Errorf("kindOf(40-char hex) = %v, want TrashKindDownload", got)
+	if got := KindOf(fortyCharHex(0)); got != TrashKindDownload {
+		t.Errorf("KindOf(40-char hex) = %v, want TrashKindDownload", got)
 	}
 	// Wrong length.
-	if got := kindOf("abcdef1234"); got == TrashKindDownload {
-		t.Errorf("kindOf(10-char hex) = %v; should not be TrashKindDownload", got)
+	if got := KindOf("abcdef1234"); got == TrashKindDownload {
+		t.Errorf("KindOf(10-char hex) = %v; should not be TrashKindDownload", got)
 	}
 	// Right length, non-hex.
 	notHex := strings.Repeat("z", 40)
-	if got := kindOf(notHex); got == TrashKindDownload {
-		t.Errorf("kindOf(40 z's) = %v; should not be TrashKindDownload", got)
+	if got := KindOf(notHex); got == TrashKindDownload {
+		t.Errorf("KindOf(40 z's) = %v; should not be TrashKindDownload", got)
 	}
 	// Flurry prefixes still win.
-	if got := kindOf("mo" + strings.Repeat("a", 38)); got != TrashKindMovie {
-		t.Errorf("kindOf(mo... 40 chars) = %v; want TrashKindMovie", got)
+	if got := KindOf("mo" + strings.Repeat("a", 38)); got != TrashKindMovie {
+		t.Errorf("KindOf(mo... 40 chars) = %v; want TrashKindMovie", got)
 	}
 }
 
