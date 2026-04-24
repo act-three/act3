@@ -214,26 +214,24 @@ func (tx *TxRW) mergeDuplicateVideo(ctx Context, loser schema.Video, winner sche
 // rendition ladder, creates the rendition DB records, and queues
 // pass1. The caller must have already set vid.OriginalKey and
 // opened progress tracking for vid.ID.
-func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
+func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error) {
+	defer func() { tx.m.prog.Close(vid.ID, err) }()
 	existing, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
 	}
 	if len(existing) > 0 {
-		tx.m.prog.Close(vid.ID, nil)
 		return nil
 	}
 
 	tx.m.prog.UpdateStatus(vid.ID, "Probing")
 	f, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {
-		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
 	defer f.Close()
 	probe, err := ffmpeg.Probe(ctx, f)
 	if err != nil {
-		tx.m.prog.Close(vid.ID, err)
 		return err
 	}
 
@@ -323,7 +321,7 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) error {
 // taskIngestPass1 runs combined first-pass analysis for all reencode
 // renditions of a video, saves the stats blobs to the DB, then queues
 // per-rendition encode tasks.
-func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
+func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 	vid, err := tx.q.VideoGet(ctx, args[0])
 	if err != nil {
 		return err
@@ -338,6 +336,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 	tx.m.prog.Open(vid.ID, vid.Name, "Starting")
+	defer func() { tx.m.prog.Close(vid.ID, err) }()
 
 	renditions, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -379,7 +378,6 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 
 		statsDir := tx.m.pass1Dir(vid.ID)
 		if err := os.MkdirAll(statsDir, 0o777); err != nil {
-			tx.m.prog.Close(vid.ID, err)
 			return err
 		}
 
@@ -388,15 +386,12 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) error {
 			func(v float64) { tx.m.prog.Update(vid.ID, v) },
 		)
 		if err != nil {
-			tx.m.prog.Close(vid.ID, err)
 			return err
 		}
 	}
 
 	// Queue one encode task per rendition.
 	tx.m.prog.UpdateStatus(vid.ID, "Queuing renditions")
-	tx.m.prog.Close(vid.ID, nil)
-
 	return tx.m.WithTxRW(func(txw *TxRW) error {
 		for _, r := range renditions {
 			ttype := taskIngestEncodeRend
