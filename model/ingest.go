@@ -377,7 +377,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 		}
 
 		statsDir := tx.m.pass1Dir(vid.ID)
-		if err := os.MkdirAll(statsDir, 0o777); err != nil {
+		if err := os.MkdirAll(statsDir, 0o755); err != nil {
 			return err
 		}
 
