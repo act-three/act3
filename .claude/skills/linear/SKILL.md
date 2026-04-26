@@ -49,6 +49,25 @@ as you go. This holds even when the work is non-code
 Don't update Linear for work that didn't originate from a Linear issue.
 Not every commit needs a ticket.
 
+## Reference the issue in commits
+
+When a commit implements (or partially implements) a Linear issue,
+reference the issue ID in the commit message so the link is discoverable
+from `git log`. Use a trailer on its own line at the end of the body:
+
+```
+model: create pass1 statsDir with 0o755 mode
+
+Matches the rest of the codebase; the directory holds ffmpeg first-pass
+log files and has no reason to be group- or world-writable.
+
+Fixes: ACT-123
+```
+
+Use `Fixes:` for the commit that closes the issue, `Refs:` for partial
+work or follow-ups. Use the full identifier as Linear returns it
+(e.g. `ACT-123`), not the shorthand.
+
 ## Attribution
 
 Anything you write into Linear on the user's behalf
