@@ -44,7 +44,6 @@ func HandleDegraded(
 
 	mux.HandleFunc("POST /-/do/database-reset",
 		func(w http.ResponseWriter, req *http.Request) {
-			db.Close()
 			for _, suffix := range []string{"", "-wal", "-shm"} {
 				os.Remove(dbPath + suffix)
 			}
