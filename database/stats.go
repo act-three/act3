@@ -21,12 +21,11 @@ func TableStats(dbPath string) ([]TableStat, error) {
 		return nil, err
 	}
 	defer db.Close()
-	rows, err := db.Query(
-		`SELECT name FROM sqlite_master
-		 WHERE type = 'table'
-		   AND name NOT LIKE 'sqlite_%'
-		 ORDER BY name`,
-	)
+	rows, err := db.Query(`
+		SELECT name FROM sqlite_master
+		WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
+		ORDER BY name
+	`)
 	if err != nil {
 		return nil, err
 	}
