@@ -1,7 +1,10 @@
-// Command commit-msg is a git commit-msg hook that validates
-// the commit subject prefix conventions.
+// Command commit-msg validates commit subject prefix conventions
+// for one or more commits.
 //
-// Usage: commit-msg <message-file>
+// It is intended to be invoked from a pre-push hook, with the SHAs of
+// the commits being pushed passed as arguments.
+//
+// Usage: commit-msg <sha>...
 package main
 
 import (
@@ -13,33 +16,66 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "usage: commit-msg <sha>...")
+		os.Exit(2)
+	}
+	fail := false
+	for _, sha := range os.Args[1:] {
+		if err := checkCommit(sha); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			fail = true
+		}
+	}
+	if fail {
 		os.Exit(1)
 	}
 }
 
-func run() error {
-	if len(os.Args) < 2 {
-		return fmt.Errorf("usage: commit-msg <message-file>")
-	}
-	data, err := os.ReadFile(os.Args[1])
+func checkCommit(sha string) error {
+	subject, err := commitSubject(sha)
 	if err != nil {
 		return err
 	}
-	subject, _, _ := strings.Cut(string(data), "\n")
-	subject = strings.TrimSpace(subject)
-
-	changed, err := stagedFiles()
+	files, err := commitFiles(sha)
 	if err != nil {
 		return err
 	}
+	if err := check(subject, files); err != nil {
+		return fmt.Errorf("%s: %w", short(sha), err)
+	}
+	return nil
+}
 
-	return check(subject, changed)
+func short(sha string) string {
+	if len(sha) > 12 {
+		return sha[:12]
+	}
+	return sha
+}
+
+func commitSubject(sha string) (string, error) {
+	out, err := exec.Command("git", "log", "-1", "--format=%s", sha).Output()
+	if err != nil {
+		return "", fmt.Errorf("git log %s: %w", short(sha), err)
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func commitFiles(sha string) ([]string, error) {
+	out, err := exec.Command("git", "diff-tree", "--no-commit-id", "--name-only", "-r", sha).Output()
+	if err != nil {
+		return nil, fmt.Errorf("git diff-tree %s: %w", short(sha), err)
+	}
+	s := strings.TrimSpace(string(out))
+	if s == "" {
+		return nil, nil
+	}
+	return strings.Split(s, "\n"), nil
 }
 
 // check validates a commit subject line.
-// changed is the list of staged file paths (may be nil).
+// changed is the list of files modified in the commit (may be nil).
 func check(subject string, changed []string) error {
 	// Extract prefix (everything before the first colon).
 	prefixPart, _, ok := strings.Cut(subject, ":")
@@ -92,26 +128,6 @@ func check(subject string, changed []string) error {
 func exists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
-}
-
-func stagedFiles() ([]string, error) {
-	// Diff against HEAD^ to capture all files in the resulting commit.
-	// This works for both normal commits (HEAD^ is the previous commit)
-	// and --amend (HEAD^ is the parent of the commit being replaced).
-	// Fall back to the empty tree for initial commits.
-	base := "HEAD^"
-	if exec.Command("git", "rev-parse", "--verify", "-q", "HEAD^").Run() != nil {
-		base = "4b825dc642cb6eb9a060e54bf899d69f82cf7258" // empty tree
-	}
-	out, err := exec.Command("git", "diff", "--cached", "--name-only", base).Output()
-	if err != nil {
-		return nil, err
-	}
-	s := strings.TrimSpace(string(out))
-	if s == "" {
-		return nil, nil
-	}
-	return strings.Split(s, "\n"), nil
 }
 
 func commonDir(files []string) string {
