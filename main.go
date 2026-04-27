@@ -160,14 +160,10 @@ func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {
 	}
 	defer db.Close()
 
-	shutdown := make(chan bool)
 	srv := &http.Server{Addr: listen}
 	mux := &http.ServeMux{}
 	web.HandleDegraded(mux, sme, db, dbPath, func() {
-		go func() {
-			srv.Shutdown(context.Background())
-			close(shutdown)
-		}()
+		go srv.Shutdown(context.Background())
 	})
 	var h http.Handler = mux
 	h = panicstack.Handler(h)
@@ -181,7 +177,6 @@ func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	<-shutdown
 }
 
 func must[T any](v T, err error) T {

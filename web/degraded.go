@@ -48,6 +48,7 @@ func HandleDegraded(
 			for _, suffix := range []string{"", "-wal", "-shm"} {
 				os.Remove(dbPath + suffix)
 			}
+			shutdown()
 			rc := http.NewResponseController(w)
 			// Reload the same URL after a delay; by then the
 			// degraded server has shut down and the normal server
@@ -63,6 +64,5 @@ font-family:system-ui;padding:2rem">
 <p>Reinitializing database…</p>
 </body></html>`)
 			rc.Flush()
-			shutdown()
 		})
 }
