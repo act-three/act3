@@ -20,7 +20,6 @@ func HandleDegraded(mux *http.ServeMux, page html.Node, reset func()) {
 	mux.HandleFunc("POST /-/do/database-reset",
 		func(w http.ResponseWriter, req *http.Request) {
 			reset()
-			rc := http.NewResponseController(w)
 			// Reload the same URL after a delay; by then the
 			// degraded server has shut down and the normal server
 			// is (hopefully) up. Its GET handler for this path
@@ -34,6 +33,6 @@ func HandleDegraded(mux *http.ServeMux, page html.Node, reset func()) {
 font-family:system-ui;padding:2rem">
 <p>Reinitializing database…</p>
 </body></html>`)
-			rc.Flush()
+			http.NewResponseController(w).Flush()
 		})
 }
