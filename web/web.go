@@ -137,6 +137,12 @@ func Handle(mux *http.ServeMux, c *Config) {
 	mux.Handle("GET /-/icon/{type}/{name}", http.StripPrefix("/-/icon", icon.Handler()))
 	mux.Handle("GET /-/static/{name}", static.Handler())
 	mux.HandleFunc("GET /-/events", c.events)
+	// Landing point after the degraded server resets the DB and
+	// hands control back to the normal server. The browser arrives
+	// here via a Refresh-header reload of the original POST URL.
+	mux.HandleFunc("GET /-/do/database-reset", func(w http.ResponseWriter, req *http.Request) {
+		http.Redirect(w, req, "/", http.StatusSeeOther)
+	})
 }
 
 func (c *Config) image(w http.ResponseWriter, req *http.Request) (html.Node, error) {
