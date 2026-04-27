@@ -1,53 +1,25 @@
 package web
 
 import (
-	"database/sql"
 	"io"
-	"log/slog"
 	"net/http"
-	"os"
 
-	"ily.dev/act3/database"
-	"ily.dev/act3/view"
+	"ily.dev/act3/html"
 	"ily.dev/act3/web/static"
 )
 
 // HandleDegraded registers routes for the degraded mode UI
-// shown when the database schema does not match. The shutdown
-// callback is called after the database files are removed so
-// the caller can stop the degraded server.
-func HandleDegraded(
-	mux *http.ServeMux,
-	sme *database.SchemaMismatchError,
-	db *sql.DB,
-	dbPath string,
-	shutdown func(),
-) {
+// shown when the database schema does not match. The reset
+// callback must remove the database files and stop the
+// degraded server.
+func HandleDegraded(mux *http.ServeMux, page html.Node, reset func()) {
 	mux.Handle("GET /-/static/", static.Handler())
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, req *http.Request) {
-		stats, err := database.TableStats(db)
-		if err != nil {
-			slog.Error("table stats", "error", err)
-			http.Error(w, "internal error", 500)
-			return
-		}
-		var dbFileSize int64
-		for _, suffix := range []string{"", "-wal", "-shm"} {
-			if info, err := os.Stat(dbPath + suffix); err == nil {
-				dbFileSize += info.Size()
-			}
-		}
-		node := view.Degraded(sme, stats, fmtSize(dbFileSize))
-		rawHandler(200, node).ServeHTTP(w, req)
-	})
+	mux.Handle("GET /", rawHandler(200, page))
 
 	mux.HandleFunc("POST /-/do/database-reset",
 		func(w http.ResponseWriter, req *http.Request) {
-			for _, suffix := range []string{"", "-wal", "-shm"} {
-				os.Remove(dbPath + suffix)
-			}
-			shutdown()
+			reset()
 			rc := http.NewResponseController(w)
 			// Reload the same URL after a delay; by then the
 			// degraded server has shut down and the normal server

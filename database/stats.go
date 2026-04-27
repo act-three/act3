@@ -11,10 +11,16 @@ type TableStat struct {
 	RowCount int64
 }
 
-// TableStats returns the row count for each user table in the
-// database. It queries sqlite_master directly and does not
-// depend on sqlc-generated code.
-func TableStats(db *sql.DB) ([]TableStat, error) {
+// TableStats opens the database at dbPath read-only and
+// returns the row count for each user table. It queries
+// sqlite_master directly and does not depend on sqlc-generated
+// code.
+func TableStats(dbPath string) ([]TableStat, error) {
+	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
 	rows, err := db.Query(
 		`SELECT name FROM sqlite_master
 		 WHERE type = 'table'

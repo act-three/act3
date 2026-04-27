@@ -24,6 +24,7 @@ import (
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/storage"
 	"ily.dev/act3/video/ffmpeg"
+	"ily.dev/act3/view"
 	"ily.dev/act3/web"
 )
 
@@ -153,16 +154,26 @@ func main() {
 }
 
 func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {
-	db, err := sql.Open("sqlite", dbPath+"?mode=ro")
+	stats, err := database.TableStats(dbPath)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	defer db.Close()
+
+	var dbFileSize int64
+	for _, suffix := range []string{"", "-wal", "-shm"} {
+		if info, err := os.Stat(dbPath + suffix); err == nil {
+			dbFileSize += info.Size()
+		}
+	}
+	page := view.Degraded(sme, stats, dbFileSize)
 
 	srv := &http.Server{Addr: listen}
 	mux := &http.ServeMux{}
-	web.HandleDegraded(mux, sme, db, dbPath, func() {
+	web.HandleDegraded(mux, page, func() {
+		for _, suffix := range []string{"", "-wal", "-shm"} {
+			os.Remove(dbPath + suffix)
+		}
 		go srv.Shutdown(context.Background())
 	})
 	var h http.Handler = mux
