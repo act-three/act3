@@ -183,10 +183,17 @@ case "${1:-}" in
 		;;
 	git-setup)
 		go build -o .git/hooks/act3vet ./cmd/act3vet
-		go build -o .git/hooks/commit-msg ./cmd/commit-msg
-		cp lib/pre-commit.sh .git/hooks/pre-commit
-		chmod +x .git/hooks/pre-commit
+		go build -o .git/hooks/commit-msg-check ./cmd/commit-msg
+		cp lib/pre-push.sh .git/hooks/pre-push
+		chmod +x .git/hooks/pre-push
 		echo "Installed git hooks"
+		if [ -d .jj ]; then
+			jj config set --repo fix.tools.gofmt.command '["gofmt"]'
+			jj config set --repo fix.tools.gofmt.patterns "[\"glob:'**/*.go'\"]"
+			jj config set --repo fix.tools.dprint.command '["dprint", "fmt", "--stdin", "$path"]'
+			jj config set --repo fix.tools.dprint.patterns "[\"glob:'**/*.js'\", \"glob:'**/*.css'\", \"glob:'**/*.json'\", \"glob:'**/*.sh'\", \"glob:'mk'\"]"
+			echo "Installed jj fix config"
+		fi
 		;;
 	"")
 		echo "Usage: $0 [command]"
