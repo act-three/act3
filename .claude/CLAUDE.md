@@ -127,8 +127,5 @@ main.go
   Don't insert needless line breaks.
 - Use [semantic linebreaks] in Godoc comments and Markdown.
   Hard wrap other code comments and preformatted documentation to 72 columns.
-- Commit message prefix should name the package or directory that is
-  semantically central to the change (e.g. `model:`, `view:`, `database:`).
-  Use `all:` only when there truly isn't a single motivating location.
 
 [semantic linebreaks]: https://rhodesmill.org/brandon/2012/one-sentence-per-line/
