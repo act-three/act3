@@ -29,10 +29,11 @@ func HandleDegraded(mux *http.ServeMux, page html.Node, reset func()) {
 			w.Header().Set("Refresh", "2")
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
 			io.WriteString(w, `<!doctype html>
-<html><head></head><body style="background:#111;color:#eee;
-font-family:system-ui;padding:2rem">
-<p>Reinitializing database…</p>
-</body></html>`)
+				<html><head></head>
+				<body style="background:#111;color:#eee;font-family:system-ui;padding:2rem">
+				<p>Reinitializing database…</p>
+				</body></html>
+			`)
 			http.NewResponseController(w).Flush()
 		})
 }
