@@ -33,9 +33,11 @@ fi
 rm go.mod.tmp go.sum.tmp
 
 # Check that generated files are up to date.
+before=$(git status --porcelain)
 go generate ./...
-if ! git diff --quiet; then
+after=$(git status --porcelain)
+if [ "$before" != "$after" ]; then
 	echo "go generate: generated files are out of date, please stage them"
-	git diff --stat
+	git status --short
 	exit 1
 fi
