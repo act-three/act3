@@ -197,6 +197,21 @@ case "${1:-}" in
 			echo "Installed jj fix config"
 		fi
 		;;
+	regen)
+		# Run go generate on each commit in the revset, so any drift in
+		# generated files (bundles, sqlc output, html/tag.go) lands on the
+		# commit that introduced the source change. Useful after rewriting
+		# history with jj, since the post-write Edit/Write hook doesn't
+		# fire on jj operations.
+		revset="${2:-$(jj config get revsets.fix 2>/dev/null || echo 'reachable(@, mutable())')}"
+		here=$(jj log -r '@' --no-graph -T 'change_id')
+		trap 'jj edit "$here" >/dev/null 2>&1 || true' EXIT
+		for cid in $(jj log --reversed -r "$revset" --no-graph -T 'change_id ++ "\n"'); do
+			echo "regen $cid"
+			jj edit "$cid"
+			go generate ./...
+		done
+		;;
 	"")
 		echo "Usage: $0 [command]"
 		echo
@@ -205,6 +220,7 @@ case "${1:-}" in
 		echo "    container  Build & run container for dev"
 		echo "    deploy     Deploy the image to the USB stick"
 		echo "    git-setup  Install git hooks"
+		echo "    regen      Run go generate on each commit in revset (default: same as jj fix)"
 		echo
 		echo "Last deployed: $(latest_deployed_image)"
 		echo "Latest image:  $(latest_image)"
