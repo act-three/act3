@@ -224,6 +224,9 @@ func (tx *TxRW) Trash(ctx Context, id string) (err error) {
 	case TrashKindEpisode:
 		err = tx.trashEpisode(ctx, id, id, now)
 	case TrashKindVideo:
+		if err := tx.guardActiveVideo(ctx, id); err != nil {
+			return err
+		}
 		err = tx.trashVideo(ctx, id, id, now)
 	case TrashKindCollection:
 		err = tx.trashCollection(ctx, id, id, now)

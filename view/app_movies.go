@@ -446,6 +446,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) html.Node {
 					html.Text(v.Name()),
 				),
 				FlexRow(Gap2, Style("margin-top: 0.5rem"))(
+					activeVideoControl(v, "/-/do/movie-video-set-active/"+med.ID()+"/"+v.ID()),
 					ActionButton("/-/do/video-reimport/"+v.ID(), nil, Destructive)(
 						html.Text("Re-import"),
 					),

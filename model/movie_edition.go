@@ -139,7 +139,7 @@ func (med *MovieEdition) Runtime() string {
 }
 
 func (med *MovieEdition) PlayerPath() string {
-	if v := med.PlayableVideo(); v != nil {
+	if v := med.ActiveVideo(); v != nil {
 		return med.VideoPlayerPath(v)
 	}
 	return ""
@@ -149,10 +149,12 @@ func (med *MovieEdition) VideoPlayerPath(v *Video) string {
 	return "/-/player/" + v.ID() + "/" + med.med.ID
 }
 
-// PlayableVideo returns the first video with a playlist, or nil.
-func (med *MovieEdition) PlayableVideo() *Video {
+// ActiveVideo returns the video marked Active for this edition, or
+// nil if none is set. Theater contexts use this to pick the canonical
+// playable video.
+func (med *MovieEdition) ActiveVideo() *Video {
 	for _, v := range med.videos {
-		if v.MVPlaylist() != "" {
+		if v.active {
 			return v
 		}
 	}
@@ -180,11 +182,21 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 	if err != nil {
 		return nil, err
 	}
+	mvs, err := tx.q.MovieVideoListByMovieEditionID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	activeByVID := map[string]bool{}
+	for _, mv := range mvs {
+		if mv.Active != 0 {
+			activeByVID[mv.VideoID] = true
+		}
+	}
 
 	mo := &MovieHead{moData}
 	var videos []*Video
 	for i := range vids {
-		v := &Video{v: vids[i]}
+		v := &Video{v: vids[i], active: activeByVID[vids[i].ID]}
 		ats, err := tx.q.AudioTrackListByVideoID(ctx, vids[i].ID)
 		if err != nil {
 			return nil, err
@@ -488,9 +500,13 @@ func (tx *TxRW) movieEditionFindSlug(ctx Context, label, movieID string, allow .
 func vidMapByMovieEditionID(mvs []schema.MovieVideo, vidByID map[string]*Video) map[string][]*Video {
 	m := map[string][]*Video{}
 	for _, mv := range mvs {
-		if v := vidByID[mv.VideoID]; v != nil {
-			m[mv.MovieEditionID] = append(m[mv.MovieEditionID], v)
+		v := vidByID[mv.VideoID]
+		if v == nil {
+			continue
 		}
+		clone := *v
+		clone.active = mv.Active != 0
+		m[mv.MovieEditionID] = append(m[mv.MovieEditionID], &clone)
 	}
 	return m
 }

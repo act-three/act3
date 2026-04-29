@@ -80,11 +80,6 @@ func (c *Config) appEpisodeDetail(w http.ResponseWriter, req *http.Request) (htm
 			return nil, err
 		}
 
-		videos, err := tx.VideoListByEpisodeID(ctx, ep.ID())
-		if err != nil {
-			return nil, err
-		}
-
 		renditions, err := tx.RenditionListStreamingByEpisodeID(ctx, ep.ID())
 		if err != nil {
 			return nil, err
@@ -95,7 +90,7 @@ func (c *Config) appEpisodeDetail(w http.ResponseWriter, req *http.Request) (htm
 			return nil, err
 		}
 
-		detail := view.AppEpisodeDetail(ep, episodeEditions, videos, renditions)
+		detail := view.AppEpisodeDetail(ep, episodeEditions, renditions)
 		if req.Header.Get("turbo-frame") == "detail" {
 			return view.PageFrame(ep.Title(), "detail", detail), nil
 		}
@@ -271,6 +266,21 @@ func (c *Config) dialogEpisodeThumbnail(_ http.ResponseWriter, req *http.Request
 		}
 		return view.AppEpisodeThumbnailDialog(ep), nil
 	})
+}
+
+func (c *Config) doEpisodeVideoSetActive(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	_, err := c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		return nil, tx.EpisodeVideoSetActive(ctx,
+			req.PathValue("episodeID"),
+			req.PathValue("videoID"),
+		)
+	})
+	if err != nil {
+		return nil, err
+	}
+	w.WriteHeader(http.StatusNoContent)
+	return nil, nil
 }
 
 func (c *Config) doVideoReimport(w http.ResponseWriter, req *http.Request) (html.Node, error) {
