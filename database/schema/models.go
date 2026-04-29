@@ -195,7 +195,7 @@ type Task struct {
 	FailureDesc *string
 	Priority    int64
 	Queue       string
-	Running     int64
+	State       string
 }
 
 type Trash struct {

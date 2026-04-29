@@ -1077,10 +1077,10 @@ INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
 ON CONFLICT (Target) DO UPDATE SET Slug = ?1;
 
 -- name: TaskCountError :one
-SELECT COUNT(*) FROM Task WHERE Failures > 0;
+SELECT COUNT(*) FROM Task WHERE State = 'failed';
 
 -- name: TaskCountQueued :one
-SELECT COUNT(*) FROM Task WHERE Running = 0;
+SELECT COUNT(*) FROM Task WHERE State = 'queued';
 
 -- name: TaskCreate :one
 INSERT INTO Task (Type, Args, Priority, Queue, NextRun) VALUES (?, ?, ?, ?, ?)
@@ -1094,21 +1094,28 @@ SELECT * FROM Task WHERE ID = ?;
 
 -- name: TaskList :many
 SELECT * FROM Task
-WHERE Running = 0;
+WHERE State <> 'running';
 
 -- name: TaskLock :one
-UPDATE Task SET Running = 1
-WHERE ID = ? AND Running = 0
+UPDATE Task SET State = 'running'
+WHERE ID = ? AND State = 'queued'
 RETURNING *;
+
+-- name: TaskMarkFailed :exec
+UPDATE Task SET
+	State = 'failed',
+	FailureDesc = ?
+WHERE ID = ?;
 
 -- name: TaskNext :one
 SELECT * FROM Task
-WHERE Queue = ? AND Running = 0 AND NextRun <= ?
+WHERE Queue = ? AND State = 'queued' AND NextRun <= ?
 ORDER BY Priority, ID
 LIMIT 1;
 
 -- name: TaskReschedule :one
 UPDATE Task SET
+	State = 'queued',
 	Failures = ?,
 	NextRun = ?,
 	FailureDesc = ?
@@ -1116,7 +1123,15 @@ WHERE ID = ?
 RETURNING *;
 
 -- name: TaskResetRunning :exec
-UPDATE Task SET Running = 0 WHERE Running = 1;
+UPDATE Task SET State = 'queued' WHERE State = 'running';
+
+-- name: TaskRunNow :exec
+UPDATE Task SET
+	State = 'queued',
+	Failures = 0,
+	FailureDesc = NULL,
+	NextRun = ?
+WHERE ID = ?;
 
 -- name: TaskSaveOneOff :exec
 UPDATE Task SET
@@ -1124,11 +1139,8 @@ UPDATE Task SET
 	FailureDesc = ?
 WHERE ID = ?;
 
--- name: TaskSetNextRun :exec
-UPDATE Task SET NextRun = ? WHERE ID = ?;
-
 -- name: TaskUnlock :exec
-UPDATE Task SET Running = 0 WHERE ID = ?;
+UPDATE Task SET State = 'queued' WHERE ID = ?;
 
 -- name: TrashDelete :exec
 DELETE FROM Trash WHERE ID = ?;

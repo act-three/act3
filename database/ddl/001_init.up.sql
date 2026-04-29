@@ -249,10 +249,11 @@ CREATE TABLE Task
 	FailureDesc TEXT,
 	Priority    INTEGER NOT NULL,
 	Queue       TEXT NOT NULL,
-	Running     INTEGER NOT NULL DEFAULT (0)
+	State       TEXT NOT NULL DEFAULT ('queued')
+		CHECK (State IN ('queued', 'running', 'failed'))
 )
 STRICT;
-CREATE INDEX Index_Task_Queue ON Task (Queue, Running, NextRun, Priority, ID);
+CREATE INDEX Index_Task_Queue ON Task (Queue, State, NextRun, Priority, ID);
 
 CREATE TABLE Download
 (
