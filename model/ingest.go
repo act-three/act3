@@ -606,6 +606,9 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 // CAS blob, re-copy the source from the download path, and
 // restart the full ingestion pipeline.
 func (tx *TxRW) ReImportVideo(ctx Context, videoID string) error {
+	if err := tx.guardActiveVideo(ctx, videoID); err != nil {
+		return err
+	}
 	return tx.addTask(ctx, taskReimport, videoID)
 }
 
@@ -695,6 +698,9 @@ func (m *Model) ReencodeVideo(ctx Context, videoID string) (err error) {
 		return fmt.Errorf("video has no original hash")
 	}
 	return m.WithTxRW(func(tx *TxRW) error {
+		if err := tx.guardActiveVideo(ctx, videoID); err != nil {
+			return err
+		}
 		return tx.addTask(ctx, taskReencode, videoID)
 	})
 }
@@ -791,7 +797,10 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 		ID:         vid.ID,
 		MVPlaylist: mvPlaylist,
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	return tx.ensureActiveVideoForVideoID(ctx, vid.ID)
 }
 
 // rendDesc returns a short human-readable description of a rendition,

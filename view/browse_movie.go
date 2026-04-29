@@ -62,7 +62,7 @@ func BrowseMovieEdition(
 }
 
 func browseMoviePlayButton(med *model.MovieEdition) html.Node {
-	v := med.PlayableVideo()
+	v := med.ActiveVideo()
 	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
@@ -79,7 +79,7 @@ func browseMoviePlayButton(med *model.MovieEdition) html.Node {
 }
 
 func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
-	v := med.PlayableVideo()
+	v := med.ActiveVideo()
 	if v == nil {
 		return Group()
 	}

@@ -369,6 +369,36 @@ UPDATE Episode SET Title = ? WHERE ID = ?;
 -- name: EpisodeTypeSet :exec
 UPDATE Episode SET Type = ? WHERE ID = ?;
 
+-- EpisodeVideoActivePromote marks the lowest-VideoID live, playable
+-- junction Active for the episode, but only if no Active live junction
+-- already exists. No-op when an Active junction is already present or
+-- when no playable candidate exists.
+-- name: EpisodeVideoActivePromote :exec
+UPDATE EpisodeVideo SET Active = 1
+WHERE EpisodeVideo.EpisodeID = ? AND EpisodeVideo.DeletedAt IS NULL
+AND EpisodeVideo.VideoID IN (
+	SELECT ev.VideoID FROM EpisodeVideo AS ev
+	JOIN Video ON Video.ID = ev.VideoID
+	WHERE ev.EpisodeID = EpisodeVideo.EpisodeID
+	  AND ev.DeletedAt IS NULL
+	  AND Video.DeletedAt IS NULL
+	  AND Video.MVPlaylist != ''
+	  AND NOT EXISTS (
+		SELECT 1 FROM EpisodeVideo AS ev2
+		WHERE ev2.EpisodeID = ev.EpisodeID
+		  AND ev2.Active = 1 AND ev2.DeletedAt IS NULL
+	  )
+	ORDER BY ev.VideoID LIMIT 1
+);
+
+-- EpisodeVideoCountPlayable counts live junctions for an episode whose
+-- video is playable (MVPlaylist non-empty and live).
+-- name: EpisodeVideoCountPlayable :one
+SELECT COUNT(*) FROM EpisodeVideo AS ev
+JOIN Video ON Video.ID = ev.VideoID
+WHERE ev.EpisodeID = ? AND ev.DeletedAt IS NULL
+  AND Video.DeletedAt IS NULL AND Video.MVPlaylist != '';
+
 -- name: EpisodeVideoCreate :one
 INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)
@@ -395,6 +425,10 @@ AND EpisodeID IN (
 	WHERE DeletedAt IS NULL AND EditionID = ?
 );
 
+-- name: EpisodeVideoListByEpisodeID :many
+SELECT * FROM EpisodeVideo
+WHERE DeletedAt IS NULL AND EpisodeID = ?;
+
 -- name: EpisodeVideoListByInfoHash :many
 SELECT * FROM EpisodeVideo
 WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?);
@@ -411,6 +445,15 @@ AND EpisodeID IN (
 -- name: EpisodeVideoListByVideoID :many
 SELECT * FROM EpisodeVideo
 WHERE VideoID = ?;
+
+-- name: EpisodeVideoMarkActive :execrows
+-- Sets Active=1 on a specific live junction. Only succeeds when the
+-- target video is playable. Caller is expected to have cleared any
+-- existing Active for the episode first; use within TxRW.
+UPDATE EpisodeVideo SET Active = 1
+WHERE EpisodeID = sqlc.arg(EpisodeID) AND VideoID = sqlc.arg(VideoID)
+AND DeletedAt IS NULL
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND MVPlaylist != '');
 
 -- name: EpisodeVideoPurgeByCascade :exec
 DELETE FROM EpisodeVideo
@@ -451,6 +494,13 @@ AND EpisodeVideo.EpisodeID IN (
 	SELECT src.EpisodeID FROM EpisodeVideo AS src
 	WHERE src.VideoID = sqlc.arg(FromVideoID) AND src.DeletedAt IS NULL
 );
+
+-- EpisodeVideoSetInactiveByEpisodeID clears Active on every live
+-- junction for the episode. Run before EpisodeVideoMarkActive so the
+-- partial unique index never sees two Active=1 rows for the episode.
+-- name: EpisodeVideoSetInactiveByEpisodeID :exec
+UPDATE EpisodeVideo SET Active = 0
+WHERE EpisodeID = ? AND DeletedAt IS NULL AND Active = 1;
 
 -- name: EpisodeVideoSoftDelete :exec
 UPDATE EpisodeVideo
@@ -621,6 +671,35 @@ UPDATE Movie
 SET DeletedAt = sqlc.arg(DeletedAt)
 WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
+-- MovieVideoActivePromote marks the lowest-VideoID live, playable
+-- junction Active for the movie edition, but only if no Active live
+-- junction already exists.
+-- name: MovieVideoActivePromote :exec
+UPDATE MovieVideo SET Active = 1
+WHERE MovieVideo.MovieEditionID = ? AND MovieVideo.DeletedAt IS NULL
+AND MovieVideo.VideoID IN (
+	SELECT mv.VideoID FROM MovieVideo AS mv
+	JOIN Video ON Video.ID = mv.VideoID
+	WHERE mv.MovieEditionID = MovieVideo.MovieEditionID
+	  AND mv.DeletedAt IS NULL
+	  AND Video.DeletedAt IS NULL
+	  AND Video.MVPlaylist != ''
+	  AND NOT EXISTS (
+		SELECT 1 FROM MovieVideo AS mv2
+		WHERE mv2.MovieEditionID = mv.MovieEditionID
+		  AND mv2.Active = 1 AND mv2.DeletedAt IS NULL
+	  )
+	ORDER BY mv.VideoID LIMIT 1
+);
+
+-- MovieVideoCountPlayable counts live junctions for a movie edition
+-- whose video is playable.
+-- name: MovieVideoCountPlayable :one
+SELECT COUNT(*) FROM MovieVideo AS mv
+JOIN Video ON Video.ID = mv.VideoID
+WHERE mv.MovieEditionID = ? AND mv.DeletedAt IS NULL
+  AND Video.DeletedAt IS NULL AND Video.MVPlaylist != '';
+
 -- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)
@@ -644,6 +723,19 @@ WHERE DeletedAt IS NULL AND MovieEditionID = ?;
 SELECT * FROM MovieVideo
 WHERE DeletedAt IS NULL
 AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL AND MovieID = ?);
+
+-- name: MovieVideoListByVideoID :many
+SELECT * FROM MovieVideo
+WHERE VideoID = ?;
+
+-- name: MovieVideoMarkActive :execrows
+-- Sets Active=1 on a specific live junction. Only succeeds when the
+-- target video is playable. Caller is expected to have cleared any
+-- existing Active for the edition first; use within TxRW.
+UPDATE MovieVideo SET Active = 1
+WHERE MovieEditionID = sqlc.arg(MovieEditionID) AND VideoID = sqlc.arg(VideoID)
+AND DeletedAt IS NULL
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND MVPlaylist != '');
 
 -- name: MovieVideoPurgeByCascade :exec
 DELETE FROM MovieVideo
@@ -673,6 +765,13 @@ AND MovieVideo.MovieEditionID IN (
 	SELECT src.MovieEditionID FROM MovieVideo AS src
 	WHERE src.VideoID = sqlc.arg(FromVideoID) AND src.DeletedAt IS NULL
 );
+
+-- MovieVideoSetInactiveByMovieEditionID clears Active on every live
+-- junction for the edition. Run before MovieVideoMarkActive so the
+-- partial unique index never sees two Active=1 rows.
+-- name: MovieVideoSetInactiveByMovieEditionID :exec
+UPDATE MovieVideo SET Active = 0
+WHERE MovieEditionID = ? AND DeletedAt IS NULL AND Active = 1;
 
 -- name: MovieVideoSoftDelete :exec
 UPDATE MovieVideo

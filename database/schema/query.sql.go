@@ -1471,10 +1471,54 @@ func (q *Queries) EpisodeTypeSet(ctx context.Context, arg EpisodeTypeSetParams) 
 	return err
 }
 
+const episodeVideoActivePromote = `-- name: EpisodeVideoActivePromote :exec
+UPDATE EpisodeVideo SET Active = 1
+WHERE EpisodeVideo.EpisodeID = ? AND EpisodeVideo.DeletedAt IS NULL
+AND EpisodeVideo.VideoID IN (
+	SELECT ev.VideoID FROM EpisodeVideo AS ev
+	JOIN Video ON Video.ID = ev.VideoID
+	WHERE ev.EpisodeID = EpisodeVideo.EpisodeID
+	  AND ev.DeletedAt IS NULL
+	  AND Video.DeletedAt IS NULL
+	  AND Video.MVPlaylist != ''
+	  AND NOT EXISTS (
+		SELECT 1 FROM EpisodeVideo AS ev2
+		WHERE ev2.EpisodeID = ev.EpisodeID
+		  AND ev2.Active = 1 AND ev2.DeletedAt IS NULL
+	  )
+	ORDER BY ev.VideoID LIMIT 1
+)
+`
+
+// EpisodeVideoActivePromote marks the lowest-VideoID live, playable
+// junction Active for the episode, but only if no Active live junction
+// already exists. No-op when an Active junction is already present or
+// when no playable candidate exists.
+func (q *Queries) EpisodeVideoActivePromote(ctx context.Context, episodeid string) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoActivePromote, episodeid)
+	return err
+}
+
+const episodeVideoCountPlayable = `-- name: EpisodeVideoCountPlayable :one
+SELECT COUNT(*) FROM EpisodeVideo AS ev
+JOIN Video ON Video.ID = ev.VideoID
+WHERE ev.EpisodeID = ? AND ev.DeletedAt IS NULL
+  AND Video.DeletedAt IS NULL AND Video.MVPlaylist != ''
+`
+
+// EpisodeVideoCountPlayable counts live junctions for an episode whose
+// video is playable (MVPlaylist non-empty and live).
+func (q *Queries) EpisodeVideoCountPlayable(ctx context.Context, episodeid string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, episodeVideoCountPlayable, episodeid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const episodeVideoCreate = `-- name: EpisodeVideoCreate :one
 INSERT INTO EpisodeVideo (EpisodeID, VideoID)
 VALUES (?, ?)
-RETURNING episodeid, videoid, deletedat
+RETURNING episodeid, videoid, active, deletedat
 `
 
 type EpisodeVideoCreateParams struct {
@@ -1485,7 +1529,12 @@ type EpisodeVideoCreateParams struct {
 func (q *Queries) EpisodeVideoCreate(ctx context.Context, arg EpisodeVideoCreateParams) (EpisodeVideo, error) {
 	row := q.db.QueryRowContext(ctx, episodeVideoCreate, arg.EpisodeID, arg.VideoID)
 	var i EpisodeVideo
-	err := row.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt)
+	err := row.Scan(
+		&i.EpisodeID,
+		&i.VideoID,
+		&i.Active,
+		&i.DeletedAt,
+	)
 	return i, err
 }
 
@@ -1555,7 +1604,7 @@ func (q *Queries) EpisodeVideoEnsure(ctx context.Context, arg EpisodeVideoEnsure
 }
 
 const episodeVideoListByEditionID = `-- name: EpisodeVideoListByEditionID :many
-SELECT episodeid, videoid, deletedat FROM EpisodeVideo
+SELECT episodeid, videoid, active, deletedat FROM EpisodeVideo
 WHERE DeletedAt IS NULL
 AND EpisodeID IN (
 	SELECT EpisodeID FROM SeasonEpisode
@@ -1572,7 +1621,45 @@ func (q *Queries) EpisodeVideoListByEditionID(ctx context.Context, editionid str
 	var items []EpisodeVideo
 	for rows.Next() {
 		var i EpisodeVideo
-		if err := rows.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&i.EpisodeID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const episodeVideoListByEpisodeID = `-- name: EpisodeVideoListByEpisodeID :many
+SELECT episodeid, videoid, active, deletedat FROM EpisodeVideo
+WHERE DeletedAt IS NULL AND EpisodeID = ?
+`
+
+func (q *Queries) EpisodeVideoListByEpisodeID(ctx context.Context, episodeid string) ([]EpisodeVideo, error) {
+	rows, err := q.db.QueryContext(ctx, episodeVideoListByEpisodeID, episodeid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []EpisodeVideo
+	for rows.Next() {
+		var i EpisodeVideo
+		if err := rows.Scan(
+			&i.EpisodeID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1587,7 +1674,7 @@ func (q *Queries) EpisodeVideoListByEditionID(ctx context.Context, editionid str
 }
 
 const episodeVideoListByInfoHash = `-- name: EpisodeVideoListByInfoHash :many
-SELECT episodeid, videoid, deletedat FROM EpisodeVideo
+SELECT episodeid, videoid, active, deletedat FROM EpisodeVideo
 WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?)
 `
 
@@ -1600,7 +1687,12 @@ func (q *Queries) EpisodeVideoListByInfoHash(ctx context.Context, infohash *stri
 	var items []EpisodeVideo
 	for rows.Next() {
 		var i EpisodeVideo
-		if err := rows.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&i.EpisodeID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1615,7 +1707,7 @@ func (q *Queries) EpisodeVideoListByInfoHash(ctx context.Context, infohash *stri
 }
 
 const episodeVideoListBySeriesID = `-- name: EpisodeVideoListBySeriesID :many
-SELECT episodeid, videoid, deletedat FROM EpisodeVideo
+SELECT episodeid, videoid, active, deletedat FROM EpisodeVideo
 WHERE DeletedAt IS NULL
 AND EpisodeID IN (
 	SELECT EpisodeID FROM SeasonEpisode
@@ -1633,7 +1725,12 @@ func (q *Queries) EpisodeVideoListBySeriesID(ctx context.Context, seriesid strin
 	var items []EpisodeVideo
 	for rows.Next() {
 		var i EpisodeVideo
-		if err := rows.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&i.EpisodeID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1648,7 +1745,7 @@ func (q *Queries) EpisodeVideoListBySeriesID(ctx context.Context, seriesid strin
 }
 
 const episodeVideoListByVideoID = `-- name: EpisodeVideoListByVideoID :many
-SELECT episodeid, videoid, deletedat FROM EpisodeVideo
+SELECT episodeid, videoid, active, deletedat FROM EpisodeVideo
 WHERE VideoID = ?
 `
 
@@ -1661,7 +1758,12 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 	var items []EpisodeVideo
 	for rows.Next() {
 		var i EpisodeVideo
-		if err := rows.Scan(&i.EpisodeID, &i.VideoID, &i.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&i.EpisodeID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -1673,6 +1775,29 @@ func (q *Queries) EpisodeVideoListByVideoID(ctx context.Context, videoid string)
 		return nil, err
 	}
 	return items, nil
+}
+
+const episodeVideoMarkActive = `-- name: EpisodeVideoMarkActive :execrows
+UPDATE EpisodeVideo SET Active = 1
+WHERE EpisodeID = ?1 AND VideoID = ?2
+AND DeletedAt IS NULL
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND MVPlaylist != '')
+`
+
+type EpisodeVideoMarkActiveParams struct {
+	EpisodeID string
+	VideoID   string
+}
+
+// Sets Active=1 on a specific live junction. Only succeeds when the
+// target video is playable. Caller is expected to have cleared any
+// existing Active for the episode first; use within TxRW.
+func (q *Queries) EpisodeVideoMarkActive(ctx context.Context, arg EpisodeVideoMarkActiveParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, episodeVideoMarkActive, arg.EpisodeID, arg.VideoID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const episodeVideoPurgeByCascade = `-- name: EpisodeVideoPurgeByCascade :exec
@@ -1746,6 +1871,19 @@ type EpisodeVideoRestoreForReassignParams struct {
 // older detach.
 func (q *Queries) EpisodeVideoRestoreForReassign(ctx context.Context, arg EpisodeVideoRestoreForReassignParams) error {
 	_, err := q.db.ExecContext(ctx, episodeVideoRestoreForReassign, arg.ToVideoID, arg.FromVideoID)
+	return err
+}
+
+const episodeVideoSetInactiveByEpisodeID = `-- name: EpisodeVideoSetInactiveByEpisodeID :exec
+UPDATE EpisodeVideo SET Active = 0
+WHERE EpisodeID = ? AND DeletedAt IS NULL AND Active = 1
+`
+
+// EpisodeVideoSetInactiveByEpisodeID clears Active on every live
+// junction for the episode. Run before EpisodeVideoMarkActive so the
+// partial unique index never sees two Active=1 rows for the episode.
+func (q *Queries) EpisodeVideoSetInactiveByEpisodeID(ctx context.Context, episodeid string) error {
+	_, err := q.db.ExecContext(ctx, episodeVideoSetInactiveByEpisodeID, episodeid)
 	return err
 }
 
@@ -2601,10 +2739,53 @@ func (q *Queries) MovieSoftDelete(ctx context.Context, arg MovieSoftDeleteParams
 	return err
 }
 
+const movieVideoActivePromote = `-- name: MovieVideoActivePromote :exec
+UPDATE MovieVideo SET Active = 1
+WHERE MovieVideo.MovieEditionID = ? AND MovieVideo.DeletedAt IS NULL
+AND MovieVideo.VideoID IN (
+	SELECT mv.VideoID FROM MovieVideo AS mv
+	JOIN Video ON Video.ID = mv.VideoID
+	WHERE mv.MovieEditionID = MovieVideo.MovieEditionID
+	  AND mv.DeletedAt IS NULL
+	  AND Video.DeletedAt IS NULL
+	  AND Video.MVPlaylist != ''
+	  AND NOT EXISTS (
+		SELECT 1 FROM MovieVideo AS mv2
+		WHERE mv2.MovieEditionID = mv.MovieEditionID
+		  AND mv2.Active = 1 AND mv2.DeletedAt IS NULL
+	  )
+	ORDER BY mv.VideoID LIMIT 1
+)
+`
+
+// MovieVideoActivePromote marks the lowest-VideoID live, playable
+// junction Active for the movie edition, but only if no Active live
+// junction already exists.
+func (q *Queries) MovieVideoActivePromote(ctx context.Context, movieeditionid string) error {
+	_, err := q.db.ExecContext(ctx, movieVideoActivePromote, movieeditionid)
+	return err
+}
+
+const movieVideoCountPlayable = `-- name: MovieVideoCountPlayable :one
+SELECT COUNT(*) FROM MovieVideo AS mv
+JOIN Video ON Video.ID = mv.VideoID
+WHERE mv.MovieEditionID = ? AND mv.DeletedAt IS NULL
+  AND Video.DeletedAt IS NULL AND Video.MVPlaylist != ''
+`
+
+// MovieVideoCountPlayable counts live junctions for a movie edition
+// whose video is playable.
+func (q *Queries) MovieVideoCountPlayable(ctx context.Context, movieeditionid string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, movieVideoCountPlayable, movieeditionid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const movieVideoCreate = `-- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
 VALUES (?, ?)
-RETURNING movieeditionid, videoid, deletedat
+RETURNING movieeditionid, videoid, active, deletedat
 `
 
 type MovieVideoCreateParams struct {
@@ -2615,7 +2796,12 @@ type MovieVideoCreateParams struct {
 func (q *Queries) MovieVideoCreate(ctx context.Context, arg MovieVideoCreateParams) (MovieVideo, error) {
 	row := q.db.QueryRowContext(ctx, movieVideoCreate, arg.MovieEditionID, arg.VideoID)
 	var i MovieVideo
-	err := row.Scan(&i.MovieEditionID, &i.VideoID, &i.DeletedAt)
+	err := row.Scan(
+		&i.MovieEditionID,
+		&i.VideoID,
+		&i.Active,
+		&i.DeletedAt,
+	)
 	return i, err
 }
 
@@ -2656,7 +2842,7 @@ func (q *Queries) MovieVideoDistinctEditionsByVideo(ctx context.Context, videoid
 }
 
 const movieVideoListByInfoHash = `-- name: MovieVideoListByInfoHash :many
-SELECT movieeditionid, videoid, deletedat FROM MovieVideo
+SELECT movieeditionid, videoid, active, deletedat FROM MovieVideo
 WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?)
 `
 
@@ -2669,7 +2855,12 @@ func (q *Queries) MovieVideoListByInfoHash(ctx context.Context, infohash *string
 	var items []MovieVideo
 	for rows.Next() {
 		var i MovieVideo
-		if err := rows.Scan(&i.MovieEditionID, &i.VideoID, &i.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&i.MovieEditionID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2684,7 +2875,7 @@ func (q *Queries) MovieVideoListByInfoHash(ctx context.Context, infohash *string
 }
 
 const movieVideoListByMovieEditionID = `-- name: MovieVideoListByMovieEditionID :many
-SELECT movieeditionid, videoid, deletedat FROM MovieVideo
+SELECT movieeditionid, videoid, active, deletedat FROM MovieVideo
 WHERE DeletedAt IS NULL AND MovieEditionID = ?
 `
 
@@ -2697,7 +2888,12 @@ func (q *Queries) MovieVideoListByMovieEditionID(ctx context.Context, movieediti
 	var items []MovieVideo
 	for rows.Next() {
 		var i MovieVideo
-		if err := rows.Scan(&i.MovieEditionID, &i.VideoID, &i.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&i.MovieEditionID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2712,7 +2908,7 @@ func (q *Queries) MovieVideoListByMovieEditionID(ctx context.Context, movieediti
 }
 
 const movieVideoListByMovieID = `-- name: MovieVideoListByMovieID :many
-SELECT movieeditionid, videoid, deletedat FROM MovieVideo
+SELECT movieeditionid, videoid, active, deletedat FROM MovieVideo
 WHERE DeletedAt IS NULL
 AND MovieEditionID IN (SELECT ID FROM MovieEdition WHERE DeletedAt IS NULL AND MovieID = ?)
 `
@@ -2726,7 +2922,12 @@ func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) (
 	var items []MovieVideo
 	for rows.Next() {
 		var i MovieVideo
-		if err := rows.Scan(&i.MovieEditionID, &i.VideoID, &i.DeletedAt); err != nil {
+		if err := rows.Scan(
+			&i.MovieEditionID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -2738,6 +2939,62 @@ func (q *Queries) MovieVideoListByMovieID(ctx context.Context, movieid string) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const movieVideoListByVideoID = `-- name: MovieVideoListByVideoID :many
+SELECT movieeditionid, videoid, active, deletedat FROM MovieVideo
+WHERE VideoID = ?
+`
+
+func (q *Queries) MovieVideoListByVideoID(ctx context.Context, videoid string) ([]MovieVideo, error) {
+	rows, err := q.db.QueryContext(ctx, movieVideoListByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MovieVideo
+	for rows.Next() {
+		var i MovieVideo
+		if err := rows.Scan(
+			&i.MovieEditionID,
+			&i.VideoID,
+			&i.Active,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const movieVideoMarkActive = `-- name: MovieVideoMarkActive :execrows
+UPDATE MovieVideo SET Active = 1
+WHERE MovieEditionID = ?1 AND VideoID = ?2
+AND DeletedAt IS NULL
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND MVPlaylist != '')
+`
+
+type MovieVideoMarkActiveParams struct {
+	MovieEditionID string
+	VideoID        string
+}
+
+// Sets Active=1 on a specific live junction. Only succeeds when the
+// target video is playable. Caller is expected to have cleared any
+// existing Active for the edition first; use within TxRW.
+func (q *Queries) MovieVideoMarkActive(ctx context.Context, arg MovieVideoMarkActiveParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, movieVideoMarkActive, arg.MovieEditionID, arg.VideoID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const movieVideoPurgeByCascade = `-- name: MovieVideoPurgeByCascade :exec
@@ -2800,6 +3057,19 @@ type MovieVideoRestoreForReassignParams struct {
 // EpisodeVideoRestoreForReassign for context.
 func (q *Queries) MovieVideoRestoreForReassign(ctx context.Context, arg MovieVideoRestoreForReassignParams) error {
 	_, err := q.db.ExecContext(ctx, movieVideoRestoreForReassign, arg.ToVideoID, arg.FromVideoID)
+	return err
+}
+
+const movieVideoSetInactiveByMovieEditionID = `-- name: MovieVideoSetInactiveByMovieEditionID :exec
+UPDATE MovieVideo SET Active = 0
+WHERE MovieEditionID = ? AND DeletedAt IS NULL AND Active = 1
+`
+
+// MovieVideoSetInactiveByMovieEditionID clears Active on every live
+// junction for the edition. Run before MovieVideoMarkActive so the
+// partial unique index never sees two Active=1 rows.
+func (q *Queries) MovieVideoSetInactiveByMovieEditionID(ctx context.Context, movieeditionid string) error {
+	_, err := q.db.ExecContext(ctx, movieVideoSetInactiveByMovieEditionID, movieeditionid)
 	return err
 }
 

@@ -102,6 +102,18 @@ func (ep *Episode) Summary() string            { return ep.ep.Summary }
 func (ep *Episode) Type() string               { return ep.ep.Type }
 func (ep *Episode) Progress() []*progress.Item { return ep.prog }
 func (ep *Episode) Videos() []*Video           { return ep.videos }
+
+// ActiveVideo returns the video marked Active for this episode, or
+// nil if none is set. Callers in theater contexts should use this
+// rather than picking from Videos().
+func (ep *Episode) ActiveVideo() *Video {
+	for _, v := range ep.videos {
+		if v.active {
+			return v
+		}
+	}
+	return nil
+}
 func (ep *Episode) SnnEnn() string {
 	if eNN := ep.snep.Number; eNN != 0 {
 		return fmt.Sprintf("S%dE%d", ep.sn.sn.Number, eNN)
@@ -117,13 +129,11 @@ func (ep *Episode) CoarseType() string {
 }
 
 func (ep *Episode) State() EpisodeState {
-	for _, v := range ep.Videos() {
-		if v.MVPlaylist() == "" {
-			return EpIsDownloading
-		}
+	if ep.ActiveVideo() != nil {
+		return EpIsPlayable
 	}
 	if len(ep.Videos()) > 0 {
-		return EpIsPlayable
+		return EpIsDownloading
 	}
 	return EpIsEmpty
 }
@@ -170,10 +180,8 @@ func (ep *Episode) basename() string {
 }
 
 func (ep *Episode) PlayerPath() string {
-	for _, v := range ep.videos {
-		if v.MVPlaylist() != "" {
-			return ep.VideoPlayerPath(v)
-		}
+	if v := ep.ActiveVideo(); v != nil {
+		return ep.VideoPlayerPath(v)
 	}
 	return ""
 }
@@ -270,9 +278,19 @@ func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) 
 	if err != nil {
 		return nil, err
 	}
+	evs, err := tx.q.EpisodeVideoListByEpisodeID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	activeByVID := map[string]bool{}
+	for _, ev := range evs {
+		if ev.Active != 0 {
+			activeByVID[ev.VideoID] = true
+		}
+	}
 	var videos []*Video
 	for i := range vids {
-		v := &Video{v: vids[i]}
+		v := &Video{v: vids[i], active: activeByVID[vids[i].ID]}
 		ats, err := tx.q.AudioTrackListByVideoID(ctx, vids[i].ID)
 		if err != nil {
 			return nil, err
@@ -722,32 +740,29 @@ func (tx *TxRW) episodeFindSlug(ctx Context, editionID string, seasonNum, episod
 }
 
 func (tx *TxR) EpisodeDownloadList(ctx Context, ep *Episode) ([]*RenditionForDownload, error) {
-	vids, err := tx.q.VideoListByEpisodeID(ctx, ep.ID())
-	if err != nil {
-		return nil, err
+	active := ep.ActiveVideo()
+	if active == nil {
+		return nil, nil
 	}
-
 	sedID := ep.SeriesEditionHead().ID()
 
 	var rends []*RenditionForDownload
-	for _, vid := range vids {
-		rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
-		if err != nil && err != sql.ErrNoRows {
-			return nil, err
-		}
-		if err == nil && rfd.Key != "" {
-			rends = append(rends, &RenditionForDownload{
-				path:  path.Join("/-/dl", rfd.ID, ep.ID(), sedID),
-				label: "Best Quality MP4 (Recommended)",
-			})
-		}
-
-		ext := videoExtensionForContentType(vid.OriginalType)
+	rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, active.ID())
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if err == nil && rfd.Key != "" {
 		rends = append(rends, &RenditionForDownload{
-			path:  path.Join("/-/dl", vid.ID, ep.ID(), sedID),
-			label: "Original " + strings.ToUpper(ext),
+			path:  path.Join("/-/dl", rfd.ID, ep.ID(), sedID),
+			label: "Best Quality MP4 (Recommended)",
 		})
 	}
+
+	ext := videoExtensionForContentType(active.v.OriginalType)
+	rends = append(rends, &RenditionForDownload{
+		path:  path.Join("/-/dl", active.ID(), ep.ID(), sedID),
+		label: "Original " + strings.ToUpper(ext),
+	})
 	return rends, nil
 }
 

@@ -414,9 +414,9 @@ func AppSeriesAddDialog() html.Node {
 func AppEpisodeDetail(
 	ep *model.Episode,
 	episodeEditions []*model.Episode,
-	videos []schema.Video,
 	renditions []schema.Rendition,
 ) html.Node {
+	videos := ep.Videos()
 	backLabel := ep.SeriesHead().Title()
 	if ep.SeriesEditionHead().Slug() != "" {
 		backLabel += " — " + ep.SeriesEditionHead().Label()
@@ -526,8 +526,8 @@ func AppEpisodeDetail(
 					},
 					func() html.Node { return Group() },
 				),
-				html.Range(videos, func(v schema.Video) html.Node {
-					return appEpisodeDialogVideo(v)
+				html.Range(videos, func(v *model.Video) html.Node {
+					return appEpisodeDialogVideo(ep, v)
 				}),
 
 				TextNode(TextBold, Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
@@ -596,48 +596,64 @@ func EpisodeEditionButtonUpdate(seasonID, episodeID string, inEdition bool, undo
 	)
 }
 
-func appEpisodeDialogVideo(v schema.Video) html.Node {
+func appEpisodeDialogVideo(ep *model.Episode, v *model.Video) html.Node {
 	return html.Div(
 		Class("v-media-indent"),
 	)(
 		html.Div()(
 			html.Text("ID: "),
-			html.Text(v.ID),
+			html.Text(v.ID()),
 		),
 		html.Div()(
 			html.Text("Name: "),
-			html.Text(v.Name),
+			html.Text(v.Name()),
 		),
 		html.Div()(
 			html.Text("Original Key: "),
-			html.Text(v.OriginalKey),
+			html.Text(v.OriginalKey()),
 		),
-		expr.IfElse(v.MVPlaylist != "",
+		expr.IfElse(v.MVPlaylist() != "",
 			func() html.Node {
 				return html.Div()(
 					html.Text("Playlist: "),
 					Code()(
-						html.Text(v.MVPlaylist),
+						html.Text(v.MVPlaylist()),
 					),
 				)
 			},
 			func() html.Node { return Group() },
 		),
 		FlexRow(Gap2, Style("margin-top: 0.5rem"))(
-			ActionButton("/-/do/video-reimport/"+v.ID, nil, Destructive)(
+			activeVideoControl(v, "/-/do/episode-video-set-active/"+ep.ID()+"/"+v.ID()),
+			ActionButton("/-/do/video-reimport/"+v.ID(), nil, Destructive)(
 				html.Text("Re-import"),
 			),
-			expr.IfElse(v.OriginalKey != "",
+			expr.IfElse(v.OriginalKey() != "",
 				func() html.Node {
-					return ActionButton("/-/do/video-reencode/"+v.ID, nil, Destructive)(
+					return ActionButton("/-/do/video-reencode/"+v.ID(), nil, Destructive)(
 						html.Text("Re-encode"),
 					)
 				},
 				func() html.Node { return Group() },
 			),
-			trashForm(v.ID),
+			trashForm(v.ID()),
 		),
 	)
+}
+
+// activeVideoControl renders either an "Active" badge (when v is the
+// active video) or a "Set active" button (when v is playable and not
+// active). Unplayable videos render nothing — they cannot be made
+// active.
+func activeVideoControl(v *model.Video, setActivePath string) html.Node {
+	switch {
+	case v.Active():
+		return TextNode(TextBold)(html.Text("Active"))
+	case v.Playable():
+		return ActionButton(setActivePath, nil)(html.Text("Set active"))
+	default:
+		return Group()
+	}
 }
 
 func appEpisodeDialogRendition(r schema.Rendition) html.Node {

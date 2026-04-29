@@ -1,8 +1,6 @@
 package view
 
 import (
-	"slices"
-
 	"ily.dev/act3/expr"
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
@@ -66,14 +64,11 @@ func BrowseEpisode(
 }
 
 func browseAudioTrackSelect(ep *model.Episode) html.Node {
-	v := ep.Videos()
-	playable := slices.IndexFunc(v, func(v *model.Video) bool {
-		return v.MVPlaylist() != ""
-	})
-	if playable < 0 {
+	v := ep.ActiveVideo()
+	if v == nil {
 		return Group()
 	}
-	tracks := v[playable].AudioTracks()
+	tracks := v.AudioTracks()
 	if len(tracks) == 0 {
 		return Group()
 	}
@@ -91,15 +86,11 @@ func browseAudioTrackSelect(ep *model.Episode) html.Node {
 }
 
 func browsePlayButton(ep *model.Episode) html.Node {
-	v := ep.Videos()
-	// TODO(april): provide user-select if there are multiple videos.
-	playable := slices.IndexFunc(v, func(v *model.Video) bool {
-		return v.MVPlaylist() != ""
-	})
-	return expr.IfElse(playable >= 0,
+	v := ep.ActiveVideo()
+	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
-				Href(ep.VideoPlayerPath(v[playable])),
+				Href(ep.VideoPlayerPath(v)),
 				Attr("data-turbo-frame")("player"),
 				ButtonSize3)(Icon("solid/play"), Text("Start"))
 		},

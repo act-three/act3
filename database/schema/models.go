@@ -64,6 +64,7 @@ type Episode struct {
 type EpisodeVideo struct {
 	EpisodeID string
 	VideoID   string
+	Active    int64
 	DeletedAt *int64
 }
 
@@ -105,6 +106,7 @@ type MovieEdition struct {
 type MovieVideo struct {
 	MovieEditionID string
 	VideoID        string
+	Active         int64
 	DeletedAt      *int64
 }
 

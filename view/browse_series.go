@@ -109,19 +109,16 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 	if doHideSpoilers {
 		spoiler = Attr("data-spoiler")
 	}
-	vids := ep.Videos()
-	playable := slices.IndexFunc(vids, func(v *model.Video) bool {
-		return v.MVPlaylist() != ""
-	})
+	active := ep.ActiveVideo()
 	typ := Attr("data-type")(ep.CoarseType())
 	return Grid8(Class("v-series-episode"), typ, spoiler)(
 		FlexCol(Class("v-series-episode-info"))(
 			FlexRow(Class("v-series-episode-header"))(
 				Box()(
-					expr.IfElse(playable >= 0,
+					expr.IfElse(active != nil,
 						func() html.Node {
 							return Button(
-								Href(ep.VideoPlayerPath(vids[playable])),
+								Href(ep.VideoPlayerPath(active)),
 								Attr("data-turbo-frame")("player"),
 								ButtonSurface,
 								ButtonCircle,

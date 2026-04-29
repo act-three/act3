@@ -167,23 +167,29 @@ CREATE TABLE EpisodeVideo
 (
 	EpisodeID TEXT NOT NULL REFERENCES Episode,
 	VideoID   TEXT NOT NULL REFERENCES Video,
+	Active    INTEGER NOT NULL DEFAULT 0 CHECK (Active IN (0, 1)),
 
 	DeletedAt INTEGER,
 
 	PRIMARY KEY (EpisodeID, VideoID)
 )
 STRICT;
+CREATE UNIQUE INDEX UQ_EpisodeVideo_Active ON EpisodeVideo (EpisodeID)
+WHERE Active = 1 AND DeletedAt IS NULL;
 
 CREATE TABLE MovieVideo
 (
 	MovieEditionID TEXT NOT NULL REFERENCES MovieEdition,
 	VideoID        TEXT NOT NULL REFERENCES Video,
+	Active         INTEGER NOT NULL DEFAULT 0 CHECK (Active IN (0, 1)),
 
 	DeletedAt INTEGER,
 
 	PRIMARY KEY (MovieEditionID, VideoID)
 )
 STRICT, WITHOUT ROWID;
+CREATE UNIQUE INDEX UQ_MovieVideo_Active ON MovieVideo (MovieEditionID)
+WHERE Active = 1 AND DeletedAt IS NULL;
 
 CREATE TABLE Video
 (
