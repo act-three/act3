@@ -237,9 +237,7 @@ func (tq *taskQueue) run(task schema.Task) {
 	err := tq.run1(ctx, task)
 	if err != nil {
 		slog.ErrorContext(ctx, "error", "error", err)
-		// run1's only ctx-cancel source is tq.kill, so context.Canceled
-		// here means the user explicitly stopped the task.
-		if errors.Is(err, ErrPermanent) || errors.Is(err, context.Canceled) {
+		if errors.Is(err, ErrPermanent) {
 			err = tq.markFailed(ctx, task, err.Error())
 		} else {
 			err = tq.reschedule(ctx, task, err.Error())
@@ -260,6 +258,11 @@ func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 	} else {
 		defer tq.unlock(task.ID, key)
 	}
+	defer func() {
+		// run1's only ctx-cancel source is tq.kill, so if ctx.Err() is
+		// non-nil here the user explicitly killed the task.
+		err = errors.Join(err, Permanent(ctx.Err()))
+	}()
 
 	defer tlog.Elapsed(ctx, "task", "type", task.Type, "args", task.Args)()
 
