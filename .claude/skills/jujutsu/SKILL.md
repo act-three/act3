@@ -81,6 +81,9 @@ shuts down — which is the right moment, since closing inside the
 handler would race with a concurrent GET / hitting TableStats.
 ```
 
+The first line should be kept very short: about 50 columns at most.
+Subsequent paragraphs should be hard-wrapped to about 70 columns.
+
 ## Recovery
 
 `jj undo` reverses the last operation. For anything deeper, use the op
