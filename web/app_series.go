@@ -281,7 +281,7 @@ func (c *Config) doVideoReimport(w http.ResponseWriter, req *http.Request) (html
 	if err != nil {
 		return nil, err
 	}
-	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
+	w.WriteHeader(http.StatusNoContent)
 	return nil, nil
 }
 
@@ -291,7 +291,7 @@ func (c *Config) doVideoReencode(w http.ResponseWriter, req *http.Request) (html
 	if err != nil {
 		return nil, err
 	}
-	http.Redirect(w, req, "/app/tasks", http.StatusSeeOther)
+	w.WriteHeader(http.StatusNoContent)
 	return nil, nil
 }
 
