@@ -74,6 +74,20 @@ var taskQueues = map[string]int{
 	queueCPU: 1,
 }
 
+// ErrPermanent marks a task error as not retriable.
+// Task functions wrap an error with [Permanent] to signal this;
+// the task framework records the failure and stops scheduling retries.
+var ErrPermanent = errors.New("permanent failure")
+
+// Permanent wraps err so the task framework treats it as a permanent
+// failure rather than rescheduling for retry.
+func Permanent(err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("%w: %w", ErrPermanent, err)
+}
+
 type Task struct {
 	t schema.Task
 }
@@ -83,6 +97,8 @@ func (t *Task) Type() string       { return t.t.Type }
 func (t *Task) Args() string       { return t.t.Args }
 func (t *Task) Failures() int64    { return t.t.Failures }
 func (t *Task) NextRun() time.Time { return time.UnixMilli(t.t.NextRun) }
+func (t *Task) State() string      { return t.t.State }
+func (t *Task) Failed() bool       { return t.t.State == "failed" }
 
 type RunningTask struct {
 	id    string
@@ -221,7 +237,13 @@ func (tq *taskQueue) run(task schema.Task) {
 	err := tq.run1(ctx, task)
 	if err != nil {
 		slog.ErrorContext(ctx, "error", "error", err)
-		err = tq.reschedule(ctx, task, err.Error())
+		// run1's only ctx-cancel source is tq.kill, so context.Canceled
+		// here means the user explicitly stopped the task.
+		if errors.Is(err, ErrPermanent) || errors.Is(err, context.Canceled) {
+			err = tq.markFailed(ctx, task, err.Error())
+		} else {
+			err = tq.reschedule(ctx, task, err.Error())
+		}
 		if err != nil {
 			slog.ErrorContext(ctx, "error", "error", err)
 		}
@@ -294,9 +316,16 @@ func (tq *taskQueue) reschedule(ctx Context, task schema.Task, failure string) e
 	return err
 }
 
+func (tq *taskQueue) markFailed(ctx Context, task schema.Task, failure string) error {
+	return schema.New(tq.m.dbw).TaskMarkFailed(ctx, schema.TaskMarkFailedParams{
+		ID:          task.ID,
+		FailureDesc: &failure,
+	})
+}
+
 func (m *Model) RunTaskNow(ctx Context, id string) (err error) {
 	defer errorfmt.Handlef("run task %s now: %w", id, &err)
-	err = schema.New(m.dbw).TaskSetNextRun(ctx, schema.TaskSetNextRunParams{
+	err = schema.New(m.dbw).TaskRunNow(ctx, schema.TaskRunNowParams{
 		NextRun: time.Now().UnixMilli(),
 		ID:      id,
 	})

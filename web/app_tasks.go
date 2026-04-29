@@ -12,11 +12,19 @@ func (c *Config) appTasks(_ http.ResponseWriter, req *http.Request) (html.Node, 
 	running := c.Model.RunningTasks()
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		queued, err := tx.TaskList(ctx)
+		tasks, err := tx.TaskList(ctx)
 		if err != nil {
 			return nil, err
 		}
-		title, body := view.AppTasks(running, queued)
+		var queued, failed []*model.Task
+		for _, t := range tasks {
+			if t.Failed() {
+				failed = append(failed, t)
+			} else {
+				queued = append(queued, t)
+			}
+		}
+		title, body := view.AppTasks(running, queued, failed)
 		return c.app(ctx, tx, title, body)
 	})
 }

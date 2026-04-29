@@ -8,7 +8,7 @@ import (
 	. "ily.dev/act3/ui"
 )
 
-func AppTasks(running []*model.RunningTask, queued []*model.Task) (string, html.Node) {
+func AppTasks(running []*model.RunningTask, queued, failed []*model.Task) (string, html.Node) {
 	return "Tasks", ScrollY(Class("v-system"))(
 		html.Div()(html.Text("Scheduled Tasks")),
 
@@ -48,6 +48,33 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) (string, html.
 		),
 
 		html.Div(Class("v-system-field"))(
+			html.Div()(html.Text("Failed")),
+			expr.IfElse(len(failed) > 0,
+				func() html.Node {
+					return TableRoot(Class("v-system-input-wide"))(
+						TableHeader()(
+							TableRow()(
+								TableHead()(html.Text("Task")),
+								TableHead()(html.Text("ID")),
+								TableHead()(html.Text("Args")),
+								TableHead()(html.Text("Failures")),
+								TableHead()(),
+							),
+						),
+						TableBody()(
+							html.Range(failed, func(t *model.Task) html.Node {
+								return taskRow(t, "Retry")
+							}),
+						),
+					)
+				},
+				func() html.Node {
+					return Text("No failed tasks")
+				},
+			),
+		),
+
+		html.Div(Class("v-system-field"))(
 			html.Div()(html.Text("Queued")),
 			TableRoot(Class("v-system-input-wide"))(
 				TableHeader()(
@@ -61,40 +88,46 @@ func AppTasks(running []*model.RunningTask, queued []*model.Task) (string, html.
 				),
 				TableBody()(
 					html.Range(queued, func(t *model.Task) html.Node {
-						s := t.FailureDesc()
-						return Group(
-							html.Tr()(
-								TableCell()(html.Text(t.Type())),
-								TableCell()(
-									html.Text(t.ID()),
-									ActionButton("/-/do/task-delete/"+t.ID(), nil, ButtonGhost)(
-										html.Text("Delete"),
-									),
-								),
-								TableCell()(html.Text(t.Args())),
-								TableCell()(html.Textf("%d", t.Failures())),
-								TableCell()(
-									html.Textf("%v", t.NextRun()),
-									ActionButton("/-/do/task-run/"+t.ID(), nil, ButtonGhost)(
-										html.Text("Run Now"),
-									),
-								),
-							),
-							html.If(s != "", func() html.Node {
-								return html.Tr()(
-									TableCell(
-										attr.Colspan("5"),
-									)(
-										Code()(
-											html.Text(s),
-										),
-									),
-								)
-							}),
-						)
+						return taskRow(t, "Run Now")
 					}),
 				),
 			),
 		),
+	)
+}
+
+func taskRow(t *model.Task, runLabel string) html.Node {
+	s := t.FailureDesc()
+	return Group(
+		html.Tr()(
+			TableCell()(html.Text(t.Type())),
+			TableCell()(
+				html.Text(t.ID()),
+				ActionButton("/-/do/task-delete/"+t.ID(), nil, ButtonGhost)(
+					html.Text("Delete"),
+				),
+			),
+			TableCell()(html.Text(t.Args())),
+			TableCell()(html.Textf("%d", t.Failures())),
+			TableCell()(
+				html.If(!t.Failed(), func() html.Node {
+					return html.Textf("%v", t.NextRun())
+				}),
+				ActionButton("/-/do/task-run/"+t.ID(), nil, ButtonGhost)(
+					html.Text(runLabel),
+				),
+			),
+		),
+		html.If(s != "", func() html.Node {
+			return html.Tr()(
+				TableCell(
+					attr.Colspan("5"),
+				)(
+					Code()(
+						html.Text(s),
+					),
+				),
+			)
+		}),
 	)
 }
