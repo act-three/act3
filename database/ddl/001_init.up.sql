@@ -227,6 +227,21 @@ CREATE TABLE AudioTrack
 )
 STRICT;
 
+CREATE TABLE SubtitleTrack
+(
+	ID            TEXT PRIMARY KEY DEFAULT ('sub'||newID()),
+	VideoID       TEXT NOT NULL REFERENCES Video,
+	StreamIndex   INTEGER NOT NULL,
+	Language      TEXT NOT NULL,
+	Title         TEXT NOT NULL,
+	OriginalCodec TEXT NOT NULL,
+	OriginalKey   TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	WebVTTKey     TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	Forced        INTEGER NOT NULL DEFAULT 0 CHECK (Forced IN (0, 1)),
+	UNIQUE (VideoID, StreamIndex)
+)
+STRICT;
+
 CREATE TABLE Rendition
 (
 	ID            TEXT PRIMARY KEY DEFAULT ('rend'||newID()),
