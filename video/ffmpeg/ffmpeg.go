@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"ily.dev/act3/xbufio"
+	"kr.dev/errorfmt"
 )
 
 var overridePreset string
@@ -61,8 +62,9 @@ func (f FrameRate) String() string { return fmt.Sprintf("%d/%d", f.Num, f.Den) }
 type ProbeResult struct {
 	FormatName string // container format from ffprobe, e.g. "matroska,webm"
 	Duration   time.Duration
-	Video      *VideoStream  // first video stream, or nil
-	Audio      []AudioStream // all audio streams
+	Video      *VideoStream     // first video stream, or nil
+	Audio      []AudioStream    // all audio streams
+	Subtitles  []SubtitleStream // text subtitle streams (bitmap formats are filtered out)
 }
 
 // ContentType returns the MIME type for the probed container format.
@@ -117,6 +119,17 @@ type AudioStream struct {
 	Title         string // e.g. "English", "Commentary" (empty if unknown)
 }
 
+// SubtitleStream describes a text-based subtitle stream.
+// Bitmap formats (PGS, VOBSUB, DVB) are filtered out before
+// they reach this type — see Probe.
+type SubtitleStream struct {
+	Index     int    // 0-based index among all source subtitle streams (including bitmap ones we don't surface), suitable for `-map 0:s:N`
+	CodecName string // e.g. "ass", "subrip", "webvtt", "mov_text"
+	Language  string // e.g. "eng", "jpn" (empty if unknown)
+	Title     string // e.g. "English (Forced)" (empty if unknown)
+	Forced    bool   // ffprobe disposition.forced
+}
+
 // EncodeParams describes how to produce one rendition.
 type EncodeParams struct {
 	File          *os.File // output file; media data is written here
@@ -139,6 +152,17 @@ type EncodeParams struct {
 // ffprobe/ffmpeg invocations, so demuxers like concat, HLS, and
 // QuickTime reference movies never auto-detect on attacker bytes.
 const allowedDemuxers = "matroska,webm,avi,mov,mp4,m4a,3gp,3g2,mj2"
+
+// subtitleTextCodecs lists the text-based subtitle codecs we surface
+// from Probe. Bitmap formats (PGS, VOBSUB, DVB) are intentionally
+// absent: rendering them would require OCR, which we don't do.
+var subtitleTextCodecs = map[string]bool{
+	"ass":      true,
+	"ssa":      true,
+	"subrip":   true,
+	"webvtt":   true,
+	"mov_text": true,
+}
 
 // Probe runs ffprobe and returns stream information for the media in r.
 //
@@ -194,6 +218,9 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 				Language string `json:"language"`
 				Title    string `json:"title"`
 			} `json:"tags"`
+			Disposition struct {
+				Forced int `json:"forced"`
+			} `json:"disposition"`
 		} `json:"streams"`
 	}
 	err = json.Unmarshal(stdout.Bytes(), &raw)
@@ -214,6 +241,7 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	}
 
 	audioIdx := 0
+	subtitleIdx := 0
 	for _, s := range raw.Streams {
 		switch s.CodecType {
 		case "video":
@@ -239,6 +267,24 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 				Title:         s.Tags.Title,
 			})
 			audioIdx++
+		case "subtitle":
+			// Increment unconditionally: ffmpeg's -map 0:s:N
+			// counts every subtitle stream in the source
+			// container regardless of codec, so the index we
+			// hand back must reflect the source-side position
+			// even when we filter the entry out.
+			idx := subtitleIdx
+			subtitleIdx++
+			if !subtitleTextCodecs[s.CodecName] {
+				continue
+			}
+			result.Subtitles = append(result.Subtitles, SubtitleStream{
+				Index:     idx,
+				CodecName: s.CodecName,
+				Language:  s.Tags.Language,
+				Title:     s.Tags.Title,
+				Forced:    s.Disposition.Forced != 0,
+			})
 		}
 	}
 
@@ -665,6 +711,90 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		return err
 	}
 	return copyFileData(dst.File, outPath)
+}
+
+// -----------------------------------------------------------------------
+// Subtitle extraction
+// -----------------------------------------------------------------------
+
+// subtitleOriginalFormat maps a subtitle codec name (as reported by
+// ffprobe) to the ffmpeg output format that wraps the codec as a
+// standalone file. mov_text is intentionally absent: it is the
+// 3GPP timed-text codec carried inside MP4, and has no standalone
+// on-disk format that round-trips losslessly. Callers wanting
+// mov_text on disk should use ExtractSubtitleWebVTT instead.
+var subtitleOriginalFormat = map[string]string{
+	"ass":    "ass",
+	"ssa":    "ass", // ffmpeg writes both as ASS
+	"subrip": "srt",
+	"webvtt": "webvtt",
+}
+
+// ExtractSubtitleOriginal extracts subtitle stream streamIndex from
+// src in its original codec, writing it to dst. format is the ffprobe
+// format_name from a prior Probe; it is forced via -f to avoid
+// demuxer auto-detection on attacker-controlled bytes. codec is the
+// subtitle codec name from the same Probe; it selects the output
+// container so we don't have to re-probe to know what we're writing.
+func ExtractSubtitleOriginal(ctx context.Context, src *os.File, format string, streamIndex int, codec string, dst *os.File) (err error) {
+	defer errorfmt.Handlef("extract subtitle original: %w", &err)
+
+	outFormat, ok := subtitleOriginalFormat[codec]
+	if !ok {
+		return fmt.Errorf("no standalone output format for codec %q", codec)
+	}
+	if _, err := src.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	var stderr bytes.Buffer
+	c := newCmd(ctx, "ffmpeg",
+		"-v", "error",
+		"-nostdin", "-hide_banner",
+		"-protocol_whitelist", "file",
+		"-f", format,
+		"-i", "/dev/stdin",
+		"-map", fmt.Sprintf("0:s:%d", streamIndex),
+		"-c:s", "copy",
+		"-f", outFormat,
+		"pipe:1",
+	)
+	c.Stdin = src
+	c.Stdout = dst
+	c.Stderr = &stderr
+	if err := c.Run(); err != nil {
+		return errors.Join(err, errors.New(stderr.String()))
+	}
+	return nil
+}
+
+// ExtractSubtitleWebVTT extracts subtitle stream streamIndex from
+// src and converts to WebVTT, writing it to dst. format is the
+// ffprobe format_name from a prior Probe.
+func ExtractSubtitleWebVTT(ctx context.Context, src *os.File, format string, streamIndex int, dst *os.File) (err error) {
+	defer errorfmt.Handlef("extract subtitle webvtt: %w", &err)
+
+	if _, err := src.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
+	var stderr bytes.Buffer
+	c := newCmd(ctx, "ffmpeg",
+		"-v", "error",
+		"-nostdin", "-hide_banner",
+		"-protocol_whitelist", "file",
+		"-f", format,
+		"-i", "/dev/stdin",
+		"-map", fmt.Sprintf("0:s:%d", streamIndex),
+		"-c:s", "webvtt",
+		"-f", "webvtt",
+		"pipe:1",
+	)
+	c.Stdin = src
+	c.Stdout = dst
+	c.Stderr = &stderr
+	if err := c.Run(); err != nil {
+		return errors.Join(err, errors.New(stderr.String()))
+	}
+	return nil
 }
 
 // -----------------------------------------------------------------------
