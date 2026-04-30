@@ -151,14 +151,12 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 }
 
 func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
-	return DialogStream(
-		ImageFrame()(
-			buttonUpload()(
-				Hidden("col-id", col.ID()),
-				html.Img(
-					imgAttrs(col.BannerField()),
-					Style("width: 100%; aspect-ratio: 1000/185; object-fit: cover"),
-				),
+	return ImageDialogStream(1000, 185)(
+		buttonUpload()(
+			Hidden("col-id", col.ID()),
+			html.Img(
+				imgAttrs(col.BannerField()),
+				Style("width: 100%; aspect-ratio: 1000/185; object-fit: cover"),
 			),
 		),
 	)
