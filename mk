@@ -188,6 +188,7 @@ case "${1:-}" in
 		chmod +x .git/hooks/pre-push
 		echo "Installed git hooks"
 		if [ -d .jj ]; then
+			jj config set --repo ui.editor vim
 			jj config set --repo fix.tools.gofmt.command '["gofmt"]'
 			jj config set --repo fix.tools.gofmt.patterns "[\"glob:'**/*.go'\"]"
 			jj config set --repo fix.tools.dprint.command '["dprint", "fmt", "--stdin", "$path"]'
