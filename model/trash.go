@@ -903,8 +903,9 @@ func (tx *TxRW) trashPurge(ctx Context, threshold time.Time) (err error) {
 	return nil
 }
 
-// purgeVideoBlobs deletes AudioTrack and Rendition rows for the given
-// videos and schedules their CAS blob keys for removal on commit.
+// purgeVideoBlobs deletes AudioTrack, SubtitleTrack and Rendition rows
+// for the given videos and schedules their CAS blob keys for removal on
+// commit.
 func (tx *TxRW) purgeVideoBlobs(ctx Context, vidIDs, origKeys []string) error {
 	if len(vidIDs) == 0 {
 		return nil
@@ -914,6 +915,20 @@ func (tx *TxRW) purgeVideoBlobs(ctx Context, vidIDs, origKeys []string) error {
 		return err
 	}
 	keys := append(origKeys, rendKeys...)
+	for _, vid := range vidIDs {
+		subs, err := tx.q.SubtitleTrackListByVideoID(ctx, vid)
+		if err != nil {
+			return err
+		}
+		for _, st := range subs {
+			if st.OriginalKey != "" {
+				keys = append(keys, st.OriginalKey)
+			}
+			if st.WebVTTKey != "" {
+				keys = append(keys, st.WebVTTKey)
+			}
+		}
+	}
 	if len(keys) > 0 {
 		tx.onCommit(func() {
 			for _, k := range keys {
@@ -922,6 +937,9 @@ func (tx *TxRW) purgeVideoBlobs(ctx Context, vidIDs, origKeys []string) error {
 		})
 	}
 	if err := tx.q.AudioTrackDeleteByVideoIDList(ctx, vidIDs); err != nil {
+		return err
+	}
+	if err := tx.q.SubtitleTrackDeleteByVideoIDList(ctx, vidIDs); err != nil {
 		return err
 	}
 	return tx.q.RenditionDeleteByVideoIDList(ctx, vidIDs)

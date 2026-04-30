@@ -288,6 +288,18 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 		})
 	}
 
+	var stParams []schema.SubtitleTrackCreateParams
+	for _, ss := range probe.Subtitles {
+		stParams = append(stParams, schema.SubtitleTrackCreateParams{
+			VideoID:       vid.ID,
+			StreamIndex:   int64(ss.Index),
+			Language:      ss.Language,
+			Title:         ss.Title,
+			OriginalCodec: ss.CodecName,
+			Forced:        boolToInt64(ss.Forced),
+		})
+	}
+
 	tx.m.prog.UpdateStatus(vid.ID, "Queued")
 	return tx.m.WithTxRW(func(txw *TxRW) error {
 		err = txw.q.VideoUpdateProbe(ctx, schema.VideoUpdateProbeParams{
@@ -307,6 +319,12 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 				return err
 			}
 		}
+		for _, st := range stParams {
+			_, err = txw.q.SubtitleTrackCreate(ctx, st)
+			if err != nil {
+				return err
+			}
+		}
 		for _, rp := range rendParams {
 			_, err = txw.q.RenditionCreate(ctx, rp)
 			if err != nil {
@@ -314,6 +332,9 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			}
 		}
 		txw.addTaskWithPriority(ctx, priority.Pass1, taskIngestPass1, vid.ID)
+		if len(stParams) > 0 {
+			txw.addTask(ctx, taskIngestExtractSubs, vid.ID)
+		}
 		return nil
 	})
 }
@@ -727,11 +748,28 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 			tx.m.store.Remove(r.Key)
 		}
 	}
+	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	for _, st := range subTracks {
+		if st.OriginalKey != "" {
+			tx.m.store.Remove(st.OriginalKey)
+		}
+		if st.WebVTTKey != "" {
+			tx.m.store.Remove(st.WebVTTKey)
+		}
+	}
 	os.RemoveAll(tx.m.pass1Dir(vid.ID))
 
-	// Delete rendition and audio track DB records, clear MV playlist.
+	// Delete rendition, audio track, and subtitle track DB records;
+	// clear MV playlist.
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
 		err := txw.q.AudioTrackDeleteByVideoID(ctx, vid.ID)
+		if err != nil {
+			return err
+		}
+		err = txw.q.SubtitleTrackDeleteByVideoID(ctx, vid.ID)
 		if err != nil {
 			return err
 		}
