@@ -1,5 +1,5 @@
 .v-button-image-edit {
-	height: 32px;
+	height: 48px;
 	/* width is set by aspect ratio in inline style */
 
 	border-radius: 0.1875rem;
@@ -19,4 +19,10 @@
 
 .v-button-image-edit:hover .v-button-image-edit-overlay { visibility: visible; }
 
-.v-button-image-edit button { display: block; }
+.v-button-image-edit button {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.v-button-image-edit img { height: 100%; }
