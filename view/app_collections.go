@@ -71,6 +71,14 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 				FlexCol(Gap6)(
 					SettingsContent()(
 						TextNode(Size6)(LiveText(col.TitleField())),
+						Box()(
+							Link(
+								col.TheaterPath(),
+								turbo.DataFrame("_top"),
+							)(Text("View in Theater", Size3,
+								Style("display: inline-block"),
+							)),
+						),
 					),
 
 					SettingsGroup()(
