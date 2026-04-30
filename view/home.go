@@ -24,10 +24,6 @@ func Home(
 		)(
 			FlexRow(Gap4, Class("v-home-toolbar"))(
 				FlexRow(Gap1)(
-					Button(ButtonSurface)(Text("Title")),
-					Button(ButtonSurface, ButtonCircle)(Icon("line/switch-vertical-01")),
-				),
-				FlexRow(Gap1)(
 					Button(
 						ButtonSurface,
 						stimulus.Action("click->home#setMovie"),
@@ -39,7 +35,6 @@ func Home(
 						stimulus.Target("home", "series"),
 					)(Text("Series")),
 				),
-				Button(ButtonSurface, ButtonCircle)(Icon("line/filter-lines")),
 				Box(Class("v-home-search"))(
 					Icon("line/search-sm"),
 					html.Input(
