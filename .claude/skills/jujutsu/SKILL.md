@@ -43,14 +43,16 @@ No editor in this environment. Commands that open one will hang.
 
 ## Workflow in this repo
 
-**`@` is usually non-empty.** Run `jj new -m "..."` *before* starting
-a change, not after finishing one — no trailing empty working commit.
+**`@` is usually empty,** but run `jj st` before starting work.
+(If `@` is not empty, run `jj new -m "..."` before making edits.)
 
 ```sh
-jj new -m "short imperative msg"    # start + describe in one step
+jj st                               # confirm whether empty
+jj desc -m "short imperative msg"   # describe the empty @
 # ... edit files ...
 jj st                               # confirm
 jj diff                             # review
+jj new                              # finalize; leave a fresh empty @
 ```
 
 Change the message mid-flight with `jj desc -m "new msg"`.
