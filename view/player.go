@@ -12,12 +12,12 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
-func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption) html.Node {
-	return player(v, playerTitleForEpisode(ep), qualityOpts)
+func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption) html.Node {
+	return player(v, playerTitleForEpisode(ep), qualityOpts, captionsOpts)
 }
 
-func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption) html.Node {
-	return player(v, playerTitleForMovie(med), qualityOpts)
+func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption) html.Node {
+	return player(v, playerTitleForMovie(med), qualityOpts, captionsOpts)
 }
 
 func playerTitleForMovie(med *model.MovieEditionHead) string {
@@ -28,7 +28,7 @@ func playerTitleForMovie(med *model.MovieEditionHead) string {
 	return title
 }
 
-func player(v *model.Video, title string, qualityOpts []model.QualityOption) html.Node {
+func player(v *model.Video, title string, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption) html.Node {
 	return turbo.Frame("player")(
 		html.Div(
 			attr.ID("full-player"),
@@ -42,6 +42,8 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption) htm
 			stimulus.Value("player", "hide-controls")("false"),
 			stimulus.Value("player", "current-quality")("Auto"),
 			stimulus.Value("player", "quality-menu-open")("false"),
+			stimulus.Value("player", "current-subtitle")(""),
+			stimulus.Value("player", "captions-menu-open")("false"),
 
 			stimulus.Action("keydown.h@window->player#toggleHarlow"),
 			stimulus.Action("keydown@window->player#handleKey"),
@@ -103,6 +105,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption) htm
 						attr.Type("application/vnd.apple.mpegurl"),
 					),
 				),
+				playerCaptionsTemplate(captionsOpts),
 			),
 			html.Div(
 				Class("v-player-controls"),
@@ -122,7 +125,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption) htm
 					),
 					html.Div(Class("v-player-button-row"))(
 						html.Div(Class("v-player-button-group"), Attr("data-align")("start"))(
-							Button(stimulus.Action("click->player#toggleCaptions"), ButtonSurface, ButtonCircle)(Icon("line/message-text-square-02")),
+							playerCaptionsMenu(captionsOpts),
 							Button(stimulus.Action("click->player#toggleAudioDesc"), ButtonSurface, ButtonCircle)(Icon("line/recording-01")),
 							playerVolumeBar(),
 						),
@@ -176,6 +179,66 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		html.Div(
 			stimulus.Target("player", "qualityMenu"),
 			Class("v-player-quality-menu"),
+		)(items...),
+	)
+}
+
+// playerCaptionsTemplate emits a <template> containing one <track>
+// child per subtitle option. The JS clones it into <video> after the
+// manifest has loaded if the HLS implementation didn't surface its
+// SUBTITLES group via textTracks (Chrome's case today — see Chromium
+// #383582114). When the manifest does surface them (Safari, Roku,
+// AppleTV, future Chrome) the template stays unused and there are no
+// duplicate TextTracks to deduplicate.
+func playerCaptionsTemplate(opts []model.SubtitleOption) html.Node {
+	var tracks []html.Node
+	for _, opt := range opts {
+		tracks = append(tracks, html.Track(
+			attr.Src(opt.WebVTTPath),
+			Attr("srclang")(opt.Language),
+			Attr("label")(opt.Label),
+			Attr("kind")("subtitles"),
+		))
+	}
+	if len(tracks) == 0 {
+		return nil
+	}
+	return html.Template(stimulus.Target("player", "captionsTemplate"))(tracks...)
+}
+
+// playerCaptionsMenu mirrors playerQualityMenu: a popover menu over a
+// settings-style button. Subtitle tracks come from either the HLS
+// manifest (Safari, Roku, AppleTV) or the playerCaptionsTemplate
+// fallback inserted by the JS (Chrome). The JS toggles TextTrack.mode
+// to switch between them. The label param is how the JS finds the
+// matching TextTrack — it must equal the manifest NAME (and the
+// template's label attribute) for the same row.
+func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
+	items := []html.Node{
+		html.Button(
+			attr.Type("button"),
+			stimulus.Action("click->player#setSubtitle"),
+			Attr("data-player-sub-id-param")(""),
+			Class("v-player-quality-option"),
+			Attr("data-active")(""),
+		)(Text("Off")),
+	}
+	for _, opt := range opts {
+		items = append(items,
+			html.Button(
+				attr.Type("button"),
+				stimulus.Action("click->player#setSubtitle"),
+				Attr("data-player-sub-id-param")(opt.ID),
+				Attr("data-player-sub-label-param")(opt.Label),
+				Class("v-player-quality-option"),
+			)(Text(opt.Label)),
+		)
+	}
+	return html.Div(Class("v-player-quality-wrapper"))(
+		Button(stimulus.Action("click->player#toggleCaptionsMenu"), ButtonSurface, ButtonCircle)(Icon("line/message-text-square-02")),
+		html.Div(
+			stimulus.Target("player", "captionsMenu"),
+			Class("v-player-captions-menu"),
 		)(items...),
 	)
 }
