@@ -50,7 +50,7 @@ func browseDownloadButton(dls []*model.RenditionForDownload) html.Node {
 	id := "dl-" + crand.Text()[:8]
 	anchor := "--" + id
 	return FlexCol()(
-		Button(ButtonGhost, ButtonSize3,
+		Button(ButtonGhost, ButtonSize3, ButtonCircle,
 			Disabled(len(dls) == 0),
 			attr.Popovertarget(id),
 			Style("anchor-name:"+anchor),
