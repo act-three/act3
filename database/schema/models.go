@@ -188,6 +188,18 @@ type Slug struct {
 	Target string
 }
 
+type SubtitleTrack struct {
+	ID            string
+	VideoID       string
+	StreamIndex   int64
+	Language      string
+	Title         string
+	OriginalCodec string
+	OriginalKey   string
+	WebVTTKey     string
+	Forced        int64
+}
+
 type Task struct {
 	ID          string
 	Type        string

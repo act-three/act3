@@ -1175,6 +1175,33 @@ SELECT * FROM Slug WHERE Slug = ?;
 INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
 ON CONFLICT (Target) DO UPDATE SET Slug = ?1;
 
+-- name: SubtitleTrackCreate :one
+INSERT INTO SubtitleTrack (
+	VideoID, StreamIndex, Language, Title,
+	OriginalCodec, Forced
+) VALUES (?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: SubtitleTrackDeleteByVideoID :exec
+DELETE FROM SubtitleTrack WHERE VideoID = ?;
+
+-- name: SubtitleTrackDeleteByVideoIDList :exec
+DELETE FROM SubtitleTrack WHERE VideoID IN (sqlc.slice(ids));
+
+-- name: SubtitleTrackGet :one
+SELECT * FROM SubtitleTrack WHERE ID = ?;
+
+-- name: SubtitleTrackListByVideoID :many
+SELECT * FROM SubtitleTrack
+WHERE VideoID = ?
+ORDER BY StreamIndex;
+
+-- name: SubtitleTrackUpdateKeys :one
+UPDATE SubtitleTrack
+SET OriginalKey = ?, WebVTTKey = ?
+WHERE ID = ?
+RETURNING *;
+
 -- name: TaskCountError :one
 SELECT COUNT(*) FROM Task WHERE State = 'failed';
 

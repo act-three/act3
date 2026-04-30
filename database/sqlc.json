@@ -49,6 +49,7 @@
 						"mvplaylist": "MVPlaylist",
 						"nextrun": "NextRun",
 						"orderid": "OrderID",
+						"originalcodec": "OriginalCodec",
 						"originalkey": "OriginalKey",
 						"originaltype": "OriginalType",
 						"ownerid": "OwnerID",
@@ -63,6 +64,7 @@
 						"seriesslug": "SeriesSlug",
 						"sortkey": "SortKey",
 						"streamindex": "StreamIndex",
+						"subtitletrack": "SubtitleTrack",
 						"surroundaudio": "SurroundAudio",
 						"tagid": "TagID",
 						"targetbitrate": "TargetBitrate",
@@ -74,7 +76,8 @@
 						"tvmazeupdatedat": "TVmazeUpdatedAt",
 						"tvmazeurl": "TVmazeURL",
 						"tvrageid": "TVRageID",
-						"videoid": "VideoID"
+						"videoid": "VideoID",
+						"webvttkey": "WebVTTKey"
 					},
 					"overrides": [
 						{

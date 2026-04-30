@@ -5166,6 +5166,165 @@ func (q *Queries) SlugUpsert(ctx context.Context, arg SlugUpsertParams) error {
 	return err
 }
 
+const subtitleTrackCreate = `-- name: SubtitleTrackCreate :one
+INSERT INTO SubtitleTrack (
+	VideoID, StreamIndex, Language, Title,
+	OriginalCodec, Forced
+) VALUES (?, ?, ?, ?, ?, ?)
+RETURNING id, videoid, streamindex, language, title, originalcodec, originalkey, webvttkey, forced
+`
+
+type SubtitleTrackCreateParams struct {
+	VideoID       string
+	StreamIndex   int64
+	Language      string
+	Title         string
+	OriginalCodec string
+	Forced        int64
+}
+
+func (q *Queries) SubtitleTrackCreate(ctx context.Context, arg SubtitleTrackCreateParams) (SubtitleTrack, error) {
+	row := q.db.QueryRowContext(ctx, subtitleTrackCreate,
+		arg.VideoID,
+		arg.StreamIndex,
+		arg.Language,
+		arg.Title,
+		arg.OriginalCodec,
+		arg.Forced,
+	)
+	var i SubtitleTrack
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.StreamIndex,
+		&i.Language,
+		&i.Title,
+		&i.OriginalCodec,
+		&i.OriginalKey,
+		&i.WebVTTKey,
+		&i.Forced,
+	)
+	return i, err
+}
+
+const subtitleTrackDeleteByVideoID = `-- name: SubtitleTrackDeleteByVideoID :exec
+DELETE FROM SubtitleTrack WHERE VideoID = ?
+`
+
+func (q *Queries) SubtitleTrackDeleteByVideoID(ctx context.Context, videoid string) error {
+	_, err := q.db.ExecContext(ctx, subtitleTrackDeleteByVideoID, videoid)
+	return err
+}
+
+const subtitleTrackDeleteByVideoIDList = `-- name: SubtitleTrackDeleteByVideoIDList :exec
+DELETE FROM SubtitleTrack WHERE VideoID IN (/*SLICE:ids*/?)
+`
+
+func (q *Queries) SubtitleTrackDeleteByVideoIDList(ctx context.Context, ids []string) error {
+	query := subtitleTrackDeleteByVideoIDList
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
+const subtitleTrackGet = `-- name: SubtitleTrackGet :one
+SELECT id, videoid, streamindex, language, title, originalcodec, originalkey, webvttkey, forced FROM SubtitleTrack WHERE ID = ?
+`
+
+func (q *Queries) SubtitleTrackGet(ctx context.Context, id string) (SubtitleTrack, error) {
+	row := q.db.QueryRowContext(ctx, subtitleTrackGet, id)
+	var i SubtitleTrack
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.StreamIndex,
+		&i.Language,
+		&i.Title,
+		&i.OriginalCodec,
+		&i.OriginalKey,
+		&i.WebVTTKey,
+		&i.Forced,
+	)
+	return i, err
+}
+
+const subtitleTrackListByVideoID = `-- name: SubtitleTrackListByVideoID :many
+SELECT id, videoid, streamindex, language, title, originalcodec, originalkey, webvttkey, forced FROM SubtitleTrack
+WHERE VideoID = ?
+ORDER BY StreamIndex
+`
+
+func (q *Queries) SubtitleTrackListByVideoID(ctx context.Context, videoid string) ([]SubtitleTrack, error) {
+	rows, err := q.db.QueryContext(ctx, subtitleTrackListByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SubtitleTrack
+	for rows.Next() {
+		var i SubtitleTrack
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.StreamIndex,
+			&i.Language,
+			&i.Title,
+			&i.OriginalCodec,
+			&i.OriginalKey,
+			&i.WebVTTKey,
+			&i.Forced,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const subtitleTrackUpdateKeys = `-- name: SubtitleTrackUpdateKeys :one
+UPDATE SubtitleTrack
+SET OriginalKey = ?, WebVTTKey = ?
+WHERE ID = ?
+RETURNING id, videoid, streamindex, language, title, originalcodec, originalkey, webvttkey, forced
+`
+
+type SubtitleTrackUpdateKeysParams struct {
+	OriginalKey string
+	WebVTTKey   string
+	ID          string
+}
+
+func (q *Queries) SubtitleTrackUpdateKeys(ctx context.Context, arg SubtitleTrackUpdateKeysParams) (SubtitleTrack, error) {
+	row := q.db.QueryRowContext(ctx, subtitleTrackUpdateKeys, arg.OriginalKey, arg.WebVTTKey, arg.ID)
+	var i SubtitleTrack
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.StreamIndex,
+		&i.Language,
+		&i.Title,
+		&i.OriginalCodec,
+		&i.OriginalKey,
+		&i.WebVTTKey,
+		&i.Forced,
+	)
+	return i, err
+}
+
 const taskCountError = `-- name: TaskCountError :one
 SELECT COUNT(*) FROM Task WHERE State = 'failed'
 `
