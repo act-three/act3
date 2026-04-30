@@ -34,6 +34,16 @@ func TheaterCollection(c *model.Collection, itemCount, runtimeMinutes int64) htm
 			stimulus.Value("collection", "mode")("overview"),
 		)(
 			collectionBanner(&c.CollectionHead),
+			html.If(isUserAdmin(), func() html.Node {
+				return FlexRow()(
+					Link(
+						c.EditorPath(),
+						turbo.DataFrame("_top"),
+					)(Text("View in Editor", Size3,
+						Style("display: inline-block"),
+					)),
+				)
+			}),
 			FlexRow(Style("justify-content:space-between;align-items:baseline"))(
 				FlexRow(Gap4, ButtonSize3)(
 					collectionTabButton(
