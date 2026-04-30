@@ -11,6 +11,8 @@ export default class extends Controller {
 		"currentTime",
 		"duration",
 		"qualityMenu",
+		"captionsMenu",
+		"captionsTemplate",
 	];
 	static values = {
 		title: String,
@@ -22,6 +24,8 @@ export default class extends Controller {
 		loading: Boolean,
 		currentQuality: String,
 		qualityMenuOpen: Boolean,
+		currentSubtitle: String,
+		captionsMenuOpen: Boolean,
 	};
 
 	#isTouch = false;
@@ -33,6 +37,7 @@ export default class extends Controller {
 	#userSeeking = false;
 	#lastKey = null;
 	#lastSeekTime = Date.now();
+	#subtitleTracksDecided = false;
 
 	connect() {
 	}
@@ -253,7 +258,12 @@ export default class extends Controller {
 		const currentTime = video.currentTime;
 		const wasPlaying = !video.paused;
 
-		// Switch the source.
+		// Switch the source. Drop any <track> children we cloned from
+		// the captions template — they were tied to the old manifest's
+		// TextTrack list, and the new source's #ensureSubtitleTracks
+		// pass needs a clean slate to decide whether to re-insert.
+		for (const te of video.querySelectorAll("track")) te.remove();
+		this.#subtitleTracksDecided = false;
 		const source = video.querySelector("source");
 		if (source) {
 			source.src = url;
@@ -300,11 +310,50 @@ export default class extends Controller {
 		}
 	}
 
+	// 'c' hotkey opens the captions menu — the user picks a track from
+	// the popover. v1: discoverable, no hidden state about which track
+	// was last shown.
 	toggleCaptions() {
+		this.toggleCaptionsMenu();
+	}
+
+	toggleCaptionsMenu() {
+		this.captionsMenuOpenValue = !this.captionsMenuOpenValue;
+	}
+
+	setSubtitle(e) {
+		const id = e.params.subId;
+		const label = e.params.subLabel;
 		const video = this.videoTarget;
-		for (const track of video.textTracks) {
-			if (track.kind === "captions" || track.kind === "subtitles") {
-				track.mode = track.mode === "showing" ? "hidden" : "showing";
+
+		for (const t of video.textTracks) {
+			if (t.kind === "subtitles" || t.kind === "captions") {
+				t.mode = "disabled";
+			}
+		}
+
+		// Match by label only — browsers normalize language codes
+		// inconsistently (Safari may turn LANGUAGE="eng" into
+		// track.language === "en"). Labels are unique by construction
+		// (Forced suffix in the manifest NAME).
+		if (id !== "") {
+			for (const t of video.textTracks) {
+				if (t.kind !== "subtitles" && t.kind !== "captions") continue;
+				if (t.label === label) {
+					t.mode = "showing";
+					break;
+				}
+			}
+		}
+
+		this.currentSubtitleValue = id;
+		this.captionsMenuOpenValue = false;
+
+		for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
+			if (btn.dataset.playerSubIdParam === id) {
+				btn.setAttribute("data-active", "");
+			} else {
+				btn.removeAttribute("data-active");
 			}
 		}
 	}
@@ -494,6 +543,67 @@ export default class extends Controller {
 		this.seekTarget.setAttribute("aria-valuemax", duration);
 
 		this.durationTarget.textContent = this.#formatTime(duration);
+
+		this.#ensureSubtitleTracks();
+		this.#filterCaptionsMenu();
+		this.#syncSubtitleFromTracks();
+	}
+
+	// Hide menu entries whose label doesn't match any TextTrack the
+	// browser surfaced — picks route through TextTrack.mode, so an
+	// entry without a matching track wouldn't render anything. ASS
+	// sources downconvert to WebVTT and reach textTracks the same way
+	// as everything else.
+	#filterCaptionsMenu() {
+		const labels = new Set();
+		for (const t of this.videoTarget.textTracks) {
+			if (t.kind === "subtitles" || t.kind === "captions") {
+				labels.add(t.label);
+			}
+		}
+		for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
+			if (btn.dataset.playerSubIdParam === "") continue;
+			btn.hidden = !labels.has(btn.dataset.playerSubLabelParam);
+		}
+	}
+
+	// If the manifest's HLS implementation didn't surface any subtitle
+	// TextTracks (Chromium #383582114), clone our <track>-element
+	// fallback from the captions template into the <video> so the
+	// browser fetches and renders the WebVTT file directly. When the
+	// manifest *did* surface them (Safari, Roku, AppleTV, future
+	// Chrome), the template stays unused — no duplicate TextTracks to
+	// reconcile. Decided once per source; setQuality clears the gate.
+	#ensureSubtitleTracks() {
+		if (this.#subtitleTracksDecided) return;
+		this.#subtitleTracksDecided = true;
+		if (!this.hasCaptionsTemplateTarget) return;
+		for (const t of this.videoTarget.textTracks) {
+			if (t.kind === "subtitles" || t.kind === "captions") return;
+		}
+		this.videoTarget.appendChild(
+			this.captionsTemplateTarget.content.cloneNode(true),
+		);
+	}
+
+	// Reflect a textTrack the HLS player auto-enabled (e.g. Safari with
+	// DEFAULT=YES) into our menu state. No-op once the user has made an
+	// explicit pick — currentSubtitle is the source of truth from then on.
+	#syncSubtitleFromTracks() {
+		if (this.currentSubtitleValue !== "") return;
+		for (const t of this.videoTarget.textTracks) {
+			if (t.kind !== "subtitles" && t.kind !== "captions") continue;
+			if (t.mode !== "showing") continue;
+			for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
+				if (btn.dataset.playerSubLabelParam !== t.label) continue;
+				this.currentSubtitleValue = btn.dataset.playerSubIdParam;
+				for (const b of this.captionsMenuTarget.querySelectorAll("button")) {
+					if (b === btn) b.setAttribute("data-active", "");
+					else b.removeAttribute("data-active");
+				}
+				return;
+			}
+		}
 	}
 
 	handleProgress() {

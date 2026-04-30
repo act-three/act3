@@ -358,3 +358,20 @@
 	color: white;
 	font-weight: 700;
 }
+
+/* The captions menu sits in the left-aligned button group, so it
+   anchors to its wrapper's left edge (vs the quality menu on the
+   right which anchors to the right). */
+.v-player-captions-menu {
+	display: none;
+	position: absolute;
+	bottom: 100%;
+	left: 0;
+	margin-bottom: 0.5rem;
+	background: rgb(0 0 0 / 0.8);
+	backdrop-filter: blur(8px);
+	border-radius: 0.5rem;
+	padding-block: 0.25rem;
+	min-width: 120px;
+}
+.v-player[data-player-captions-menu-open-value="true"] .v-player-captions-menu { display: block; }

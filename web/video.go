@@ -104,7 +104,11 @@ func (c *Config) playerForEpisode(_ http.ResponseWriter, req *http.Request) (htm
 		if err != nil {
 			return nil, err
 		}
-		return view.PlayerForEpisode(v, ep, qualityOpts), nil
+		captionsOpts, err := tr.SubtitleOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		return view.PlayerForEpisode(v, ep, qualityOpts, captionsOpts), nil
 	})
 }
 
@@ -123,7 +127,11 @@ func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.
 		if err != nil {
 			return nil, err
 		}
-		return view.PlayerForMovie(v, med, qualityOpts), nil
+		captionsOpts, err := tr.SubtitleOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		return view.PlayerForMovie(v, med, qualityOpts, captionsOpts), nil
 	})
 }
 
