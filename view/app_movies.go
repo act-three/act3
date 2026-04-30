@@ -250,12 +250,10 @@ func AppMovieAddDialog() html.Node {
 }
 
 func AppMoviePosterDialog(med *model.MovieEdition) html.Node {
-	return DialogStream(
-		ImageFrame()(
-			buttonUpload()(
-				Hidden("med-id", med.ID()),
-				PosterImg(PosterFill, imgAttrs(med.PosterField())),
-			),
+	return ImageDialogStream(2, 3)(
+		buttonUpload()(
+			Hidden("med-id", med.ID()),
+			PosterImg(PosterFill, imgAttrs(med.PosterField())),
 		),
 	)
 }

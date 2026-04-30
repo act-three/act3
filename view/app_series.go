@@ -249,12 +249,10 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 }
 
 func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) html.Node {
-	return DialogStream(
-		ImageFrame()(
-			buttonUpload()(
-				Hidden("sed-id", sed.ID()),
-				PosterImg(PosterFill, imgAttrs(sed.PosterField())),
-			),
+	return ImageDialogStream(2, 3)(
+		buttonUpload()(
+			Hidden("sed-id", sed.ID()),
+			PosterImg(PosterFill, imgAttrs(sed.PosterField())),
 		),
 	)
 }
@@ -824,12 +822,10 @@ func SeriesEditionChangePoster(sed *model.SeriesEditionHead) html.Node {
 }
 
 func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) html.Node {
-	return DialogStream(
-		ImageFrame()(
-			buttonUpload()(
-				Hidden("ep-id", ep.ID()),
-				PosterImg(PosterFill, PosterAspect169, imgAttrs(ep.ThumbnailField())),
-			),
+	return ImageDialogStream(16, 9)(
+		buttonUpload()(
+			Hidden("ep-id", ep.ID()),
+			PosterImg(PosterFill, PosterAspect169, imgAttrs(ep.ThumbnailField())),
 		),
 	)
 }
