@@ -42,7 +42,7 @@ func browseWash(images []model.Image) html.Node {
 		url = urls[rand.IntN(len(urls))]
 	}
 	return Box(Class("v-media-wash"))(
-		PosterImg(PosterFill, attr.Src(url)),
+		PosterImg(AspectPoster, PosterFill, attr.Src(url)),
 	)
 }
 

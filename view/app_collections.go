@@ -95,9 +95,10 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Banner"),
 							),
-							buttonBannerEdit(
+							buttonImageEdit(
 								"/-/dialog/collection-banner/"+col.ID(),
 								col.Banner(), col.BannerAddr(),
+								AspectBanner,
 							),
 						),
 					),
@@ -151,13 +152,10 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 }
 
 func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
-	return ImageDialogStream(1000, 185)(
+	return ImageDialogStream(AspectBanner)(
 		buttonUpload()(
 			Hidden("col-id", col.ID()),
-			html.Img(
-				imgAttrs(col.BannerField()),
-				Style("width: 100%; aspect-ratio: 1000/185; object-fit: cover"),
-			),
+			PosterImg(AspectBanner, PosterFill, imgAttrs(col.BannerField())),
 		),
 	)
 }
@@ -218,7 +216,7 @@ func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSear
 						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
 							FlexRow(Gap4, Style("height: 100%"))(
 								Inset(InsetSideLeft, Class("v-media-search-poster"))(
-									PosterImg(Style("height: 100%"), imgAttrs(mw.PosterField())),
+									PosterImg(AspectPoster, Style("height: 100%"), imgAttrs(mw.PosterField())),
 								),
 								FlexCol(Gap2)(
 									html.If(r.InCollection, func() html.Node {
@@ -324,7 +322,7 @@ func AppCollectionSeriesSearchResults(colID string, results []CollectionSeriesSe
 						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
 							FlexRow(Gap4, Style("height: 100%"))(
 								Inset(InsetSideLeft, Class("v-media-search-poster"))(
-									PosterImg(Style("height: 100%"), imgAttrs(sw.PosterField())),
+									PosterImg(AspectPoster, Style("height: 100%"), imgAttrs(sw.PosterField())),
 								),
 								FlexCol(Gap2)(
 									html.If(r.InCollection, func() html.Node {

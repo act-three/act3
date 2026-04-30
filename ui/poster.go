@@ -5,18 +5,14 @@ import (
 	"ily.dev/act3/html/attr"
 )
 
-var (
-	PosterFill          = Attr("data-fill")
-	PosterAspect23      = Attr("data-aspect")("2-3")
-	PosterAspect169     = Attr("data-aspect")("16-9")
-	PosterAspect1000185 = Attr("data-aspect")("1000-185")
-)
+var PosterFill = Attr("data-fill")
 
-// PosterImg renders an <img> styled for poster display.
-// Defaults to 2:3 aspect ratio with object-cover.
-func PosterImg(attrs ...attr.Node) html.Element {
+// PosterImg renders an <img> styled for poster/banner/thumbnail
+// display: object-fit cover, with the given aspect ratio.
+func PosterImg(a Aspect, attrs ...attr.Node) html.Element {
 	return html.Img(
 		Class("u-poster"),
+		Stylef("aspect-ratio: %s", a),
 		group(attrs...),
 	)
 }

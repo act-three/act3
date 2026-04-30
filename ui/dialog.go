@@ -34,10 +34,10 @@ func DialogStream(children ...html.Node) html.Node {
 // largest box of the given aspect ratio that fits the viewport
 // (minus a 3rem gutter on each side). Use for dialogs whose contents
 // are a single image of known intrinsic aspect.
-func ImageDialogStream(aspectW, aspectH int) html.Element {
+func ImageDialogStream(a Aspect) html.Element {
 	panel := html.Div(
 		Class("u-dialog-panel-image"),
-		Stylef("--aspect-w: %d; --aspect-h: %d", aspectW, aspectH),
+		Stylef("--aspect-w: %d; --aspect-h: %d", a.W, a.H),
 	)
 	return func(children ...html.Node) html.Node {
 		return dialogStream(panel, children)
