@@ -18,7 +18,7 @@ func playButtonForList(p model.Playable) html.Node {
 
 func playButtonIcon(p model.Playable) string {
 	if p.PlayerPath() == "" {
-		return "line/x-close"
+		return "line/x"
 	}
 	return "solid/play"
 }

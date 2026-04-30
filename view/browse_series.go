@@ -125,7 +125,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 							)(Icon("solid/play"))
 						},
 						func() html.Node {
-							return Button(Disabled(true), ButtonSurface, ButtonCircle)(Icon("line/x-close"))
+							return Button(Disabled(true), ButtonSurface, ButtonCircle)(Icon("line/x"))
 						},
 					),
 				),

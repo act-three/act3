@@ -36,18 +36,12 @@ func BrowseEpisode(
 						browsePlayButton(ep),
 					),
 					FlexCol(Class("v-detail-play"))(
-						Button(Disabled(true), ButtonSize3)(Icon("solid/play"), Text("Play from 5:18:02")),
+						Button(Disabled(true), ButtonSize3)(Icon("line/x"), Text("Play from 18:02")),
 					),
 					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(Icon("line/check-circle")),
-					),
-					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(Icon("solid/check-circle")),
+						Button(Disabled(true), ButtonGhost, ButtonCircle, ButtonSize3)(Icon("line/check-circle")),
 					),
 					browseDownloadButton(dls),
-					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(Icon("line/info-circle")),
-					),
 				),
 				browseAudioTrackSelect(ep),
 				Button(ButtonSurface)(Text("Subtitles")),
@@ -95,7 +89,7 @@ func browsePlayButton(ep *model.Episode) html.Node {
 				ButtonSize3)(Icon("solid/play"), Text("Start"))
 		},
 		func() html.Node {
-			return Button(Disabled(true), ButtonSize3)(Icon("line/x-close"), Text("Start"))
+			return Button(Disabled(true), ButtonSize3)(Icon("line/x"), Text("Start"))
 		},
 	)
 }

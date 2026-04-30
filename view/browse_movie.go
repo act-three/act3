@@ -38,15 +38,14 @@ func BrowseMovieEdition(
 					FlexCol(Class("v-detail-play"))(
 						browseMoviePlayButton(med),
 					),
+					FlexCol(Class("v-detail-play"))(
+						Button(Disabled(true), ButtonSize3)(Icon("line/x"), Text("Play from 18:02")),
+					),
 					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(
+						Button(Disabled(true), ButtonGhost, ButtonSize3)(
 							Icon("line/check-circle")),
 					),
 					browseDownloadButton(dls),
-					FlexCol()(
-						Button(ButtonGhost, ButtonSize3)(
-							Icon("line/info-circle")),
-					),
 				),
 				browseMovieAudioTrackSelect(med),
 				TextNode()(html.Safe(med.Summary())),
@@ -73,7 +72,7 @@ func browseMoviePlayButton(med *model.MovieEdition) html.Node {
 		},
 		func() html.Node {
 			return Button(Disabled(true), ButtonSize3)(
-				Icon("line/x-close"), Text("Play"))
+				Icon("line/x"), Text("Play"))
 		},
 	)
 }
