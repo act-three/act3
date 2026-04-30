@@ -135,9 +135,10 @@ func AppMoviesDetail(
 								SettingsItemLabelTitle("Poster"),
 							),
 
-							buttonPosterEdit(
+							buttonImageEdit(
 								"/-/dialog/movie-poster/"+med.ID(),
 								med.Poster(), med.PosterAddr(),
+								AspectPoster,
 							),
 						),
 
@@ -250,10 +251,10 @@ func AppMovieAddDialog() html.Node {
 }
 
 func AppMoviePosterDialog(med *model.MovieEdition) html.Node {
-	return ImageDialogStream(2, 3)(
+	return ImageDialogStream(AspectPoster)(
 		buttonUpload()(
 			Hidden("med-id", med.ID()),
-			PosterImg(PosterFill, imgAttrs(med.PosterField())),
+			PosterImg(AspectPoster, PosterFill, imgAttrs(med.PosterField())),
 		),
 	)
 }
@@ -284,7 +285,7 @@ func AppMovieSearchResults(results []MovieSearchResult) html.Node {
 				)(
 					FlexRow(Gap4, Style("height: 100%"))(
 						Inset(InsetSideLeft, Class("v-media-search-poster"))(
-							PosterImg(Style("height: 100%"), attr.Src(posterURL(t.TMDB.PosterPath))),
+							PosterImg(AspectPoster, Style("height: 100%"), attr.Src(posterURL(t.TMDB.PosterPath))),
 						),
 						FlexCol(Gap2)(
 							movieSearchTitle(t.TMDB),

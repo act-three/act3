@@ -172,7 +172,7 @@ func collectionBannerLink(c *model.CollectionHead, attrs ...attr.Node) html.Node
 
 func collectionBanner(c *model.CollectionHead) html.Node {
 	return Box(Class("v-collection-banner"))(
-		PosterImg(PosterFill, PosterAspect1000185, imgAttrs(c.BannerField())),
+		PosterImg(AspectBanner, PosterFill, imgAttrs(c.BannerField())),
 		html.If(c.Banner().IsPlaceholder(), func() html.Node {
 			return Text(c.Title(), Class("v-collection-title"))
 		}),

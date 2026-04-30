@@ -241,18 +241,19 @@ func seriesPosterItem(sed *model.SeriesEdition) html.Node {
 		SettingsItemLabel()(
 			SettingsItemLabelTitle("Poster"),
 		),
-		buttonPosterEdit(
+		buttonImageEdit(
 			"/-/dialog/series-edition-poster/"+sed.ID(),
 			sed.Poster(), sed.PosterAddr(),
+			AspectPoster,
 		),
 	)
 }
 
 func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) html.Node {
-	return ImageDialogStream(2, 3)(
+	return ImageDialogStream(AspectPoster)(
 		buttonUpload()(
 			Hidden("sed-id", sed.ID()),
-			PosterImg(PosterFill, imgAttrs(sed.PosterField())),
+			PosterImg(AspectPoster, PosterFill, imgAttrs(sed.PosterField())),
 		),
 	)
 }
@@ -489,9 +490,10 @@ func AppEpisodeDetail(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Thumbnail"),
 							),
-							buttonThumbnailEdit(
+							buttonImageEdit(
 								"/-/dialog/episode-thumbnail/"+ep.ID(),
 								ep.Thumbnail(), ep.ThumbnailAddr(),
+								AspectThumbnail,
 							),
 						),
 						SettingsItem()(
@@ -724,7 +726,7 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 				return Card(CardSurface, CardSize3, Class("v-media-search-card"))(
 					FlexRow(Gap4, Style("height: 100%"))(
 						Inset(InsetSideLeft, Class("v-media-search-poster"))(
-							PosterImg(Style("height: 100%"), attr.Src(t.TVmaze.Image.Medium())),
+							PosterImg(AspectPoster, Style("height: 100%"), attr.Src(t.TVmaze.Image.Medium())),
 						),
 						FlexCol(Gap2)(
 							html.Text(t.TVmaze.Name),
@@ -822,10 +824,10 @@ func SeriesEditionChangePoster(sed *model.SeriesEditionHead) html.Node {
 }
 
 func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) html.Node {
-	return ImageDialogStream(16, 9)(
+	return ImageDialogStream(AspectThumbnail)(
 		buttonUpload()(
 			Hidden("ep-id", ep.ID()),
-			PosterImg(PosterFill, PosterAspect169, imgAttrs(ep.ThumbnailField())),
+			PosterImg(AspectThumbnail, PosterFill, imgAttrs(ep.ThumbnailField())),
 		),
 	)
 }

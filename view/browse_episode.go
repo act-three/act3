@@ -50,7 +50,7 @@ func BrowseEpisode(
 			Box(),
 			Box(ColSpan4)(
 				ImageFrame()(
-					PosterImg(PosterFill, PosterAspect169, imgAttrs(ep.ThumbnailField())),
+					PosterImg(AspectThumbnail, PosterFill, imgAttrs(ep.ThumbnailField())),
 				),
 			),
 		),

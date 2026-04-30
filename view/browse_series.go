@@ -27,7 +27,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork)
 			FlexCol(Class("v-series-sidebar"))(
 				FlexCol(Class("v-series-sidebar-inner"), Gap4)(
 					ImageFrame()(
-						PosterImg(PosterFill, imgAttrs(sed.PosterField())),
+						PosterImg(AspectPoster, PosterFill, imgAttrs(sed.PosterField())),
 					),
 					html.If(isUserAdmin(), func() html.Node {
 						return FlexCol(Class("v-series-sidebar-section"))(
@@ -145,7 +145,7 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 		),
 		Box(HoverOverlay, Class("v-series-episode-thumb"))(
 			html.A(Href(ep.TheaterPath()))(
-				PosterImg(PosterFill, PosterAspect169, Class("v-series-episode-thumb"), imgAttrs(ep.ThumbnailField())),
+				PosterImg(AspectThumbnail, PosterFill, Class("v-series-episode-thumb"), imgAttrs(ep.ThumbnailField())),
 			),
 			Box(Class("v-series-spoiler-overlay")),
 			Box(Class("v-series-episode-progress"))(

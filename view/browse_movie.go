@@ -53,7 +53,7 @@ func BrowseMovieEdition(
 			Box(),
 			Box(ColSpan4)(
 				ImageFrame()(
-					PosterImg(PosterFill, imgAttrs(med.PosterField())),
+					PosterImg(AspectPoster, PosterFill, imgAttrs(med.PosterField())),
 				),
 			),
 		),
