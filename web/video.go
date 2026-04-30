@@ -7,8 +7,84 @@ import (
 
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
+	"ily.dev/act3/video"
 	"ily.dev/act3/view"
 )
+
+// subtitleExts is the set of URL suffixes the subtitleFile handler
+// recognises.
+var subtitleExts = []string{".vtt", ".ass", ".srt"}
+
+func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		raw := req.PathValue("id")
+		var id, ext string
+		for _, e := range subtitleExts {
+			if rest, ok := strings.CutSuffix(raw, e); ok {
+				id = rest
+				ext = strings.TrimPrefix(e, ".")
+				break
+			}
+		}
+		if id == "" {
+			return nil, errNotFound
+		}
+		st, err := tx.Subtitle(ctx, id)
+		if err != nil {
+			return nil, errNotFound
+		}
+
+		var key, contentType string
+		switch {
+		case ext == "vtt":
+			key = st.WebVTTKey
+			contentType = "text/vtt; charset=utf-8"
+		case ext == model.SubtitleOriginalExt(st.OriginalCodec):
+			key = st.OriginalKey
+			contentType = model.SubtitleContentType(st.OriginalCodec)
+		default:
+			return nil, errNotFound
+		}
+		if key == "" {
+			return nil, errNotFound
+		}
+
+		// Pin Content-Type so http.ServeFileFS can't fall through to
+		// mime sniffing on extensionless blob keys. A tight CSP
+		// overrides the middleware default as defense in depth: even
+		// if a non-subtitle blob ever lands here, nothing in the
+		// response can load as active content.
+		w.Header().Set("Content-Type", contentType)
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
+		http.ServeFileFS(w, req, c.Store, key)
+		return nil, nil
+	})
+}
+
+func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
+		if !found {
+			return nil, errNotFound
+		}
+		st, err := tx.Subtitle(ctx, id)
+		if err != nil {
+			return nil, errNotFound
+		}
+		if st.WebVTTKey == "" {
+			return nil, errNotFound
+		}
+		vid, err := tx.Video(ctx, st.VideoID)
+		if err != nil {
+			return nil, errNotFound
+		}
+		body := video.GenerateSubtitleMediaPlaylist(vid.Duration(), "/-/sub/"+st.ID+".vtt")
+		stringHandler("application/vnd.apple.mpegurl", body).ServeHTTP(w, req)
+		return nil, nil
+	})
+}
 
 func (c *Config) playerForEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tr *model.TxR) (html.Node, error) {

@@ -801,7 +801,8 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 }
 
 // rebuildMVPlaylist regenerates the multivariant HLS playlist from
-// all currently encoded renditions for the video.
+// all currently encoded renditions for the video, plus any extracted
+// subtitle tracks.
 func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -829,7 +830,45 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 			Codecs:     r.HLSCodecs(),
 		})
 	}
-	mvPlaylist := video.GenerateMVPlaylist(mvEntries)
+
+	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	var mvSubs []video.MVSubtitle
+	// Default-track rule: prefer the first non-forced English track,
+	// else the first non-forced track, else nothing. A single linear
+	// scan picks the index; only that one entry sets Default=true.
+	defaultIdx := -1
+	for i, st := range subTracks {
+		if st.WebVTTKey == "" {
+			continue
+		}
+		if st.Forced != 0 {
+			continue
+		}
+		if st.Language == "eng" {
+			defaultIdx = i
+			break
+		}
+		if defaultIdx == -1 {
+			defaultIdx = i
+		}
+	}
+	for i, st := range subTracks {
+		if st.WebVTTKey == "" {
+			continue
+		}
+		mvSubs = append(mvSubs, video.MVSubtitle{
+			URI:      "/-/subpls/" + st.ID + ".m3u8",
+			Name:     (&SubtitleTrack{st: st}).Label(),
+			Language: st.Language,
+			Default:  i == defaultIdx,
+			Forced:   st.Forced != 0,
+		})
+	}
+
+	mvPlaylist := video.GenerateMVPlaylist(mvEntries, mvSubs)
 
 	_, err = tx.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
 		ID:         vid.ID,
