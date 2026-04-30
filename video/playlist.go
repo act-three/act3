@@ -2,11 +2,17 @@ package video
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Eyevinn/hls-m3u8/m3u8"
 )
+
+// subtitleGroupID is the GROUP-ID used for the subtitle alternative
+// rendition group referenced by every variant in the MV playlist.
+const subtitleGroupID = "subs"
 
 // FixupMediaPlaylist replaces all occurrences of oldName in the
 // HLS media playlist text with newName.
@@ -24,11 +30,45 @@ type MVEntry struct {
 	Codecs     string // e.g. "hvc1.1.6.L150.90,mp4a.40.2"; empty to omit
 }
 
+// MVSubtitle describes one subtitle media entry referenced from a
+// multivariant playlist via #EXT-X-MEDIA:TYPE=SUBTITLES.
+type MVSubtitle struct {
+	URI      string // points at a per-track media playlist (.m3u8)
+	Name     string // human-readable for the menu (e.g. "English")
+	Language string // BCP47-ish code (we store ISO 639-2 like "eng")
+	Default  bool   // first track of preferred language; client may auto-select
+	Forced   bool   // forced narrative
+}
+
 // GenerateMVPlaylist builds a multivariant (master) HLS playlist
-// from the given entries and returns it as a string.
-func GenerateMVPlaylist(entries []MVEntry) string {
+// from the given variants and subtitle alternatives and returns it as
+// a string. When subtitles is non-empty, every variant gains a
+// SUBTITLES="subs" group reference so HLS clients know variants share
+// the subtitle group.
+//
+// EXT-X-MEDIA emission uses the m3u8 library's Alternative type
+// (writeExtXMedia in github.com/Eyevinn/hls-m3u8/m3u8/writer.go);
+// alternatives are attached to the first variant, since
+// MasterPlaylist.GetAllAlternatives dedups across variants and sorts
+// by GROUP-ID, TYPE, NAME, LANGUAGE before emitting.
+func GenerateMVPlaylist(variants []MVEntry, subtitles []MVSubtitle) string {
 	master := m3u8.NewMasterPlaylist()
-	for _, e := range entries {
+	var alts []*m3u8.Alternative
+	if len(subtitles) > 0 {
+		for _, s := range subtitles {
+			alts = append(alts, &m3u8.Alternative{
+				Type:       "SUBTITLES",
+				GroupId:    subtitleGroupID,
+				Name:       sanitizeAttrString(s.Name),
+				Language:   s.Language,
+				URI:        s.URI,
+				Default:    s.Default,
+				Autoselect: !s.Forced,
+				Forced:     s.Forced,
+			})
+		}
+	}
+	for i, e := range variants {
 		p := m3u8.VariantParams{
 			Bandwidth: uint32(e.Bandwidth),
 		}
@@ -38,9 +78,51 @@ func GenerateMVPlaylist(entries []MVEntry) string {
 		if e.Codecs != "" {
 			p.Codecs = e.Codecs
 		}
+		if len(alts) > 0 {
+			p.Subtitles = subtitleGroupID
+			if i == 0 {
+				p.Alternatives = alts
+			}
+		}
 		master.Append(e.URI, nil, p)
 	}
 	return master.Encode().String()
+}
+
+// GenerateSubtitleMediaPlaylist builds a per-track HLS subtitle media
+// playlist with a single VTT segment covering the whole video.
+// vttURI is the URL of the WebVTT file. The output is small enough
+// that string concatenation is preferred over the m3u8 library's
+// segment API.
+func GenerateSubtitleMediaPlaylist(duration time.Duration, vttURI string) string {
+	seconds := duration.Seconds()
+	target := int64(math.Ceil(seconds))
+	var b strings.Builder
+	b.WriteString("#EXTM3U\n")
+	// v3 is the minimum that supports floating-point EXTINF, which is
+	// all this playlist needs.
+	b.WriteString("#EXT-X-VERSION:3\n")
+	b.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
+	b.WriteString("#EXT-X-TARGETDURATION:")
+	b.WriteString(strconv.FormatInt(target, 10))
+	b.WriteByte('\n')
+	// Optional per spec but some clients require it.
+	b.WriteString("#EXT-X-MEDIA-SEQUENCE:0\n")
+	b.WriteString("#EXTINF:")
+	b.WriteString(strconv.FormatFloat(seconds, 'f', -1, 64))
+	b.WriteString(",\n")
+	b.WriteString(vttURI)
+	b.WriteByte('\n')
+	b.WriteString("#EXT-X-ENDLIST\n")
+	return b.String()
+}
+
+// sanitizeAttrString defends the EXT-X-MEDIA NAME attribute against
+// embedded double quotes. Realistic input ("English", "Spanish") never
+// contains a quote, but a malformed mux could; replacing with a single
+// quote keeps the playlist parseable.
+func sanitizeAttrString(s string) string {
+	return strings.ReplaceAll(s, `"`, `'`)
 }
 
 // PeakBitrate computes the peak segment bitrate from an HLS

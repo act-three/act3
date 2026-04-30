@@ -1,6 +1,8 @@
 package model
 
 import (
+	"time"
+
 	"ily.dev/act3/database/schema"
 )
 
@@ -15,6 +17,7 @@ func (v *Video) Name() string               { return v.v.Name }
 func (v *Video) OriginalKey() string        { return v.v.OriginalKey }
 func (v *Video) MVPlaylist() string         { return v.v.MVPlaylist }
 func (v *Video) State() string              { return v.v.State }
+func (v *Video) Duration() time.Duration    { return time.Duration(v.v.Duration) * time.Millisecond }
 func (v *Video) PlaylistPath() string       { return "/-/plr/" + v.ID() + ".m3u8" }
 func (v *Video) AudioTracks() []*AudioTrack { return v.audioTracks }
 

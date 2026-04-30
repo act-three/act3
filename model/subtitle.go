@@ -23,9 +23,10 @@ func (s *SubtitleTrack) OriginalKey() string   { return s.st.OriginalKey }
 func (s *SubtitleTrack) WebVTTKey() string     { return s.st.WebVTTKey }
 func (s *SubtitleTrack) Forced() bool          { return s.st.Forced != 0 }
 
-// Label returns a human-readable label like
-// "English" or "English (Forced)" or "Track 2".
-func (s *SubtitleTrack) Label() string {
+// Name returns a human-readable name without any forced-narrative
+// suffix. Use this when an out-of-band signal already conveys the
+// forced flag (e.g. HLS FORCED=YES).
+func (s *SubtitleTrack) Name() string {
 	name := s.st.Title
 	if name == "" {
 		name = langName(s.st.Language)
@@ -33,6 +34,14 @@ func (s *SubtitleTrack) Label() string {
 	if name == "" {
 		name = fmt.Sprintf("Track %d", s.st.StreamIndex+1)
 	}
+	return name
+}
+
+// Label returns Name with " (Forced)" appended for forced tracks.
+// Use this for in-app UI (menus) where there's no other forced-flag
+// indicator.
+func (s *SubtitleTrack) Label() string {
+	name := s.Name()
 	if s.st.Forced != 0 {
 		name += " (Forced)"
 	}
@@ -94,6 +103,33 @@ func subtitleOriginalExt(codec string) string {
 	return codec
 }
 
+// SubtitleOriginalExt is the exported counterpart to subtitleOriginalExt
+// for use by the web layer when matching a request URL suffix to a track.
+func SubtitleOriginalExt(codec string) string {
+	return subtitleOriginalExt(codec)
+}
+
+// SubtitleContentType returns the response Content-Type to pin when
+// serving the original-format subtitle blob for a given codec. WebVTT
+// is text/vtt; ASS/SSA share text/x-ssa; SubRip is application/x-subrip.
+// All formats are UTF-8 (we transcode at extraction time).
+func SubtitleContentType(codec string) string {
+	switch codec {
+	case "ass", "ssa":
+		return "text/x-ssa; charset=utf-8"
+	case "subrip":
+		return "application/x-subrip; charset=utf-8"
+	case "webvtt":
+		return "text/vtt; charset=utf-8"
+	}
+	return "application/octet-stream"
+}
+
+// Subtitle returns the SubtitleTrack row for the given ID.
+func (tx *TxR) Subtitle(ctx Context, id string) (schema.SubtitleTrack, error) {
+	return tx.q.SubtitleTrackGet(ctx, id)
+}
+
 // taskIngestExtractSubs extracts each subtitle track of a video to CAS:
 // always a WebVTT artifact, plus an original-codec artifact for codecs
 // that have a standalone on-disk format (everything except mov_text).
@@ -120,6 +156,7 @@ func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 	}
 	defer src.Close()
 
+	var updated bool
 	for _, track := range tracks {
 		if track.WebVTTKey != "" {
 			continue
@@ -149,6 +186,20 @@ func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 				WebVTTKey:   webvttKey,
 			})
 			return err
+		})
+		if err != nil {
+			return err
+		}
+		updated = true
+	}
+
+	// Rebuild the MV playlist once, after the per-track loop, so the
+	// new subtitle entries appear alongside the existing variants.
+	// One rebuild per task keeps DB writes minimal; for text-only
+	// extraction the per-track latency cost is microseconds.
+	if updated {
+		err = tx.m.WithTxRW(func(txw *TxRW) error {
+			return rebuildMVPlaylist(ctx, txw, vid)
 		})
 		if err != nil {
 			return err
