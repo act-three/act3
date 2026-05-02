@@ -75,11 +75,13 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 					stimulus.Action("timeupdate->player#handleTimeUpdate"),
 					stimulus.Action("seeking->player#handleTimeUpdate"),
 					stimulus.Action("seeked->player#handleTimeUpdate"),
+					stimulus.Action("durationchange->player#handleDurationChange"),
 
-					// Display duration.
-					stimulus.Action("durationchange->player#handleDuration"),
-					stimulus.Action("loadeddata->player#handleDuration"),
-					stimulus.Action("loadedmetadata->player#handleDuration"),
+					// Wire menus to manifest tracks. Per spec, textTracks
+					// and audioTracks are populated by loadedmetadata —
+					// earlier events can fire before manifest parsing is
+					// complete (ACT-169).
+					stimulus.Action("loadedmetadata->player#handleLoadedMetadata"),
 
 					// Buffer progress.
 					stimulus.Action("progress->player#handleProgress"),

@@ -43,6 +43,27 @@ export default class extends Controller {
 	#subtitleTracksDecided = false;
 
 	connect() {
+		// When the manifest surfaces a subtitle TextTrack with the
+		// same label as one of our captions-template <track> clones,
+		// remove the cloned <track> to avoid leaving a duplicate
+		// TextTrack. The trackEl.track !== t check distinguishes
+		// addtrack events for manifest tracks (where the cloned
+		// <track> is bound to a *different* TextTrack) from addtrack
+		// events fired by our own <track> being inserted (where
+		// trackEl.track === t). Reactive — the manifest may surface
+		// tracks at an unspecified time after loadedmetadata in
+		// Safari's HLS implementation, so we can't gate on a
+		// snapshot. (ACT-169.)
+		this.videoTarget.textTracks.addEventListener("addtrack", (e) => {
+			const t = e.track;
+			if (t.kind !== "subtitles" && t.kind !== "captions") return;
+			for (const trackEl of this.videoTarget.querySelectorAll("track")) {
+				if (trackEl.label === t.label && trackEl.track !== t) {
+					trackEl.remove();
+					return;
+				}
+			}
+		});
 	}
 
 	disconnect() {
@@ -571,7 +592,7 @@ export default class extends Controller {
 		this.currentTimeTarget.textContent = this.#formatTime(currentTime);
 	}
 
-	handleDuration() {
+	handleDurationChange() {
 		const duration = this.videoTarget.duration;
 		if (!duration || !isFinite(duration)) return;
 
@@ -584,9 +605,17 @@ export default class extends Controller {
 
 		// Update aria-valuemax on the seek input for accessibility.
 		this.seekTarget.setAttribute("aria-valuemax", duration);
-
 		this.durationTarget.textContent = this.#formatTime(duration);
+	}
 
+	// loadedmetadata is the spec-guaranteed point at which the
+	// browser's HLS implementation has populated textTracks and
+	// audioTracks from the manifest. Earlier events (durationchange,
+	// loadeddata) can fire before parsing is complete, so any logic
+	// that probes the track lists must wait for this one — otherwise
+	// the captions-template fallback can clone tracks that Safari is
+	// about to surface natively (ACT-169).
+	handleLoadedMetadata() {
 		this.#ensureSubtitleTracks();
 		this.#filterCaptionsMenu();
 		this.#syncSubtitleFromTracks();
@@ -614,20 +643,20 @@ export default class extends Controller {
 		}
 	}
 
-	// If the manifest's HLS implementation didn't surface any subtitle
-	// TextTracks (Chromium #383582114), clone our <track>-element
-	// fallback from the captions template into the <video> so the
-	// browser fetches and renders the WebVTT file directly. When the
-	// manifest *did* surface them (Safari, Roku, AppleTV, future
-	// Chrome), the template stays unused — no duplicate TextTracks to
-	// reconcile. Decided once per source; setQuality clears the gate.
+	// Clone the captions <template>'s <track> elements into <video>
+	// so the browser fetches and renders the WebVTT files directly.
+	// This is the fallback for browsers whose HLS implementation
+	// doesn't surface the manifest's SUBTITLES group via textTracks
+	// (Chromium #383582114), and it also surfaces FORCED=YES tracks
+	// that Safari's native HLS hides from the textTracks API
+	// (ACT-170). When the manifest *does* surface a track, an
+	// addtrack listener installed in connect() removes the
+	// corresponding cloned <track> to avoid duplicates (ACT-169).
+	// Decided once per source; setQuality clears the gate.
 	#ensureSubtitleTracks() {
 		if (this.#subtitleTracksDecided) return;
 		this.#subtitleTracksDecided = true;
 		if (!this.hasCaptionsTemplateTarget) return;
-		for (const t of this.videoTarget.textTracks) {
-			if (t.kind === "subtitles" || t.kind === "captions") return;
-		}
 		this.videoTarget.appendChild(
 			this.captionsTemplateTarget.content.cloneNode(true),
 		);
