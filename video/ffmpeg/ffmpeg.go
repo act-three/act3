@@ -596,9 +596,17 @@ func RemuxSingle(ctx context.Context, src *os.File, format string, dst EncodePar
 }
 
 // RemuxToMP4 produces a single downloadable MP4 by copying the video stream.
+// Every source audio track is muxed in (stream-copied when AAC, otherwise
+// re-encoded to AAC), with per-track language and title metadata preserved
+// and the first track marked as the MP4 default audio track.
 func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodeParams,
 	duration time.Duration, onProgress func(float64),
 ) error {
+	probe, err := Probe(ctx, src)
+	if err != nil {
+		return fmt.Errorf("probe source: %w", err)
+	}
+
 	tmpDir, err := os.MkdirTemp("", "ffmpeg-remux-mp4-*")
 	if err != nil {
 		return err
@@ -616,15 +624,12 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	args := inputArgs(format)
 	args = append(args, "-i", src.Name(),
 		"-map", "0:v:0",
-		"-map", "0:a:0?",
 		"-c:v", "copy",
 	)
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
-	// Single hardcoded AAC stereo track is a chunk-5-pending placeholder;
-	// the multi-audio download story is on the chunk-5 backlog.
-	args = append(args, "-c:a", "aac", "-ac", "2", "-b:a", "128k")
+	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
 	if err := runWithProgress(ctx, args, report); err != nil {
@@ -637,12 +642,19 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 // producing a downloadable MP4 with faststart. dst.StatsID and
 // statsDir must refer to a rendition that was included in a prior
 // [Pass1Combined] call. On success, Pass2ToMP4 removes its own
-// per-rendition stats from statsDir.
+// per-rendition stats from statsDir. Every source audio track is
+// muxed in (stream-copied when AAC, otherwise re-encoded to AAC),
+// with per-track language and title metadata preserved and the
+// first track marked as the MP4 default audio track.
 func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodeParams,
 	statsDir string, duration time.Duration, onProgress func(float64),
 ) (err error) {
 	if dst.StatsID == "" {
 		return fmt.Errorf("ffmpeg.Pass2ToMP4: dst.StatsID is empty")
+	}
+	probe, err := Probe(ctx, src)
+	if err != nil {
+		return fmt.Errorf("probe source: %w", err)
 	}
 	passlog := filepath.Join(statsDir, dst.StatsID)
 	presetBytes, err := os.ReadFile(filepath.Join(statsDir, pass1PresetFile))
@@ -684,22 +696,79 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 
 	args = append(args, "-map", labels[0])
 	args = append(args, fpsPassthrough()...)
-	args = append(args, "-map", "0:a:0?")
 	args = append(args, "-c:v", dst.Codec, "-preset", preset)
 	args = append(args, "-b:v", fmt.Sprintf("%dk", dst.Bitrate))
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
 	args = append(args, twoPassArgs(dst.Codec, 2, passlog)...)
-	// Single hardcoded AAC stereo track is a chunk-5-pending placeholder;
-	// the multi-audio download story is on the chunk-5 backlog.
-	args = append(args, "-c:a", "aac", "-ac", "2", "-b:a", "128k")
+	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
 	if err := runWithProgress(ctx, args, report); err != nil {
 		return err
 	}
 	return copyFileData(dst.File, outPath)
+}
+
+// audioMuxArgsForDownload returns the ffmpeg args needed to mux every
+// source audio stream into a download MP4. Each stream is stream-copied
+// when the source is AAC, otherwise re-encoded to AAC at a
+// channel-count-scaled bitrate. Per-track language and title metadata
+// from the source is propagated, and the first track gets the MP4
+// default-audio disposition.
+//
+// Stream-copy is more permissive here than on the streaming path: HE-AAC
+// and unusual sample rates carry through unchanged. The streaming-side
+// guards (Profile == "LC", SampleRate ∈ {44100, 48000}) exist for HLS
+// manifest CODECS-attribute correctness and CoreMedia compatibility,
+// neither of which apply to downloadable MP4. The output's esds box
+// describes whatever the source actually was, so VLC and QuickTime
+// pick the right decoder.
+func audioMuxArgsForDownload(audio []AudioStream) []string {
+	// Be explicit about audio-less output rather than relying on
+	// "no -map for audio" → "no audio" by omission.
+	if len(audio) == 0 {
+		return []string{"-an"}
+	}
+	var args []string
+	for i, a := range audio {
+		args = append(args, "-map", fmt.Sprintf("0:a:%d", a.Index))
+		if a.CodecName == "aac" {
+			args = append(args, fmt.Sprintf("-c:a:%d", i), "copy")
+		} else {
+			args = append(args,
+				fmt.Sprintf("-c:a:%d", i), "aac",
+				fmt.Sprintf("-b:a:%d", i), fmt.Sprintf("%dk", downloadAudioBitrate(a.Channels)),
+			)
+		}
+		// "und" (undetermined) propagates as a literal label in some
+		// players; treat it the same as missing.
+		if a.Language != "" && a.Language != "und" {
+			args = append(args,
+				fmt.Sprintf("-metadata:s:a:%d", i), "language="+a.Language)
+		}
+		if a.Title != "" {
+			args = append(args,
+				fmt.Sprintf("-metadata:s:a:%d", i), "title="+a.Title)
+		}
+		if i == 0 {
+			args = append(args, fmt.Sprintf("-disposition:a:%d", i), "default")
+		} else {
+			args = append(args, fmt.Sprintf("-disposition:a:%d", i), "0")
+		}
+	}
+	return args
+}
+
+// downloadAudioBitrate scales bitrate with channel count for re-encoded
+// download audio: 64 kbit/s per channel. Falls back to 128 when the
+// source channel count is missing or zero.
+func downloadAudioBitrate(channels int) int {
+	if channels <= 0 {
+		return 128
+	}
+	return 64 * channels
 }
 
 // -----------------------------------------------------------------------
