@@ -24,7 +24,9 @@ type AudioTrack struct {
 	Title         string
 	Channels      int64
 	ChannelLayout string
+	SampleRate    int64
 	Codec         string
+	Profile       string
 }
 
 type Collection struct {

@@ -21,6 +21,12 @@ ORDER BY AudioTrackID, Channels;
 SELECT Key FROM AudioRendition
 WHERE VideoID IN (sqlc.slice(ids)) AND Key != '';
 
+-- name: AudioRenditionNextUnencoded :one
+SELECT * FROM AudioRendition
+WHERE VideoID = ? AND Key = ''
+ORDER BY Priority ASC, AudioTrackID, Channels
+LIMIT 1;
+
 -- name: AudioRenditionUpdateEncode :one
 UPDATE AudioRendition
 SET Key = ?, Playlist = ?
@@ -30,8 +36,8 @@ RETURNING *;
 -- name: AudioTrackCreate :one
 INSERT INTO AudioTrack (
 	VideoID, StreamIndex, Language, Title,
-	Channels, ChannelLayout, Codec
-) VALUES (?, ?, ?, ?, ?, ?, ?)
+	Channels, ChannelLayout, SampleRate, Codec, Profile
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: AudioTrackDeleteByVideoID :exec
@@ -39,6 +45,9 @@ DELETE FROM AudioTrack WHERE VideoID = ?;
 
 -- name: AudioTrackDeleteByVideoIDList :exec
 DELETE FROM AudioTrack WHERE VideoID IN (sqlc.slice(ids));
+
+-- name: AudioTrackGet :one
+SELECT * FROM AudioTrack WHERE ID = ? LIMIT 1;
 
 -- name: AudioTrackListByVideoID :many
 SELECT * FROM AudioTrack

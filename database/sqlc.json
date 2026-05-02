@@ -58,6 +58,7 @@
 						"posterid": "PosterID",
 						"premieredon": "PremieredOn",
 						"releasedate": "ReleaseDate",
+						"samplerate": "SampleRate",
 						"seasonepisode": "SeasonEpisode",
 						"seasonid": "SeasonID",
 						"seriesedition": "SeriesEdition",

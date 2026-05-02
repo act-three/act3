@@ -222,7 +222,9 @@ CREATE TABLE AudioTrack
 	Title         TEXT NOT NULL,
 	Channels      INTEGER NOT NULL,
 	ChannelLayout TEXT NOT NULL,
+	SampleRate    INTEGER NOT NULL DEFAULT (0),
 	Codec         TEXT NOT NULL,
+	Profile       TEXT NOT NULL DEFAULT (''),
 	UNIQUE (VideoID, StreamIndex)
 )
 STRICT;

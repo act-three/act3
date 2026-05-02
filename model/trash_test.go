@@ -511,7 +511,8 @@ func TestTrashPurgeOrdering(t *testing.T) {
 				}
 				if _, err := tx.q.AudioTrackCreate(ctx, schema.AudioTrackCreateParams{
 					VideoID: vid.ID, StreamIndex: 0, Language: "eng",
-					Channels: 2, ChannelLayout: "stereo", Codec: "aac",
+					Channels: 2, ChannelLayout: "stereo",
+					SampleRate: 48000, Codec: "aac", Profile: "LC",
 				}); err != nil {
 					return err
 				}
