@@ -12,12 +12,12 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
-func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption) html.Node {
-	return player(v, playerTitleForEpisode(ep), qualityOpts, captionsOpts)
+func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption) html.Node {
+	return player(v, playerTitleForEpisode(ep), qualityOpts, captionsOpts, audioOpts)
 }
 
-func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption) html.Node {
-	return player(v, playerTitleForMovie(med), qualityOpts, captionsOpts)
+func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption) html.Node {
+	return player(v, playerTitleForMovie(med), qualityOpts, captionsOpts, audioOpts)
 }
 
 func playerTitleForMovie(med *model.MovieEditionHead) string {
@@ -28,7 +28,7 @@ func playerTitleForMovie(med *model.MovieEditionHead) string {
 	return title
 }
 
-func player(v *model.Video, title string, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption) html.Node {
+func player(v *model.Video, title string, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption) html.Node {
 	return turbo.Frame("player")(
 		html.Div(
 			attr.ID("full-player"),
@@ -44,6 +44,8 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 			stimulus.Value("player", "quality-menu-open")("false"),
 			stimulus.Value("player", "current-subtitle")(""),
 			stimulus.Value("player", "captions-menu-open")("false"),
+			stimulus.Value("player", "current-audio")(""),
+			stimulus.Value("player", "audio-menu-open")("false"),
 
 			stimulus.Action("keydown.h@window->player#toggleHarlow"),
 			stimulus.Action("keydown@window->player#handleKey"),
@@ -126,6 +128,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 					html.Div(Class("v-player-button-row"))(
 						html.Div(Class("v-player-button-group"), Attr("data-align")("start"))(
 							playerCaptionsMenu(captionsOpts),
+							playerAudioMenu(audioOpts),
 							Button(stimulus.Action("click->player#toggleAudioDesc"), ButtonSurface, ButtonCircle)(Icon("line/recording-01")),
 							playerVolumeBar(),
 						),
@@ -239,6 +242,50 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 		html.Div(
 			stimulus.Target("player", "captionsMenu"),
 			Class("v-player-captions-menu"),
+		)(items...),
+	)
+}
+
+// playerAudioMenu mirrors playerCaptionsMenu: a popover menu over a
+// headphones-style button. Audio renditions are surfaced by the
+// browser's native HLS implementation as HTMLMediaElement.audioTracks
+// (both Safari and Chrome populate this from EXT-X-MEDIA AUDIO group),
+// so no template fallback is needed. The label param matches the HLS
+// NAME and is used by the JS to find the matching AudioTrack. Unlike
+// captions there is no "off" — every video has audio.
+func playerAudioMenu(opts []model.AudioOption) html.Node {
+	if len(opts) == 0 {
+		return nil
+	}
+	var items []html.Node
+	for _, opt := range opts {
+		// Visible button text uses the raw composition (humans don't
+		// care about quote sanitization). The data-attr label is the
+		// one matched against HTMLMediaElement.audioTracks[i].label,
+		// so it must equal the manifest NAME byte-for-byte — go
+		// through model.AudioMenuLabel for parity with the manifest.
+		display := opt.Title + " (" + model.OutputChannelLabel(opt.Channels) + ")"
+		matchLabel := model.AudioMenuLabel(opt.Title, opt.Channels)
+		btnAttrs := []attr.Node{
+			attr.Type("button"),
+			stimulus.Action("click->player#setAudio"),
+			Attr("data-player-audio-id-param")(opt.ID),
+			Attr("data-player-audio-label-param")(matchLabel),
+			Class("v-player-quality-option"),
+		}
+		if opt.Default {
+			btnAttrs = append(btnAttrs, Attr("data-active")(""))
+		}
+		items = append(items, html.Button(btnAttrs...)(Text(display)))
+	}
+	return html.Div(Class("v-player-audio-wrapper"))(
+		Button(
+			stimulus.Action("click->player#toggleAudioMenu"),
+			ButtonSurface, ButtonCircle,
+		)(Icon("line/headphones-01")),
+		html.Div(
+			stimulus.Target("player", "audioMenu"),
+			Class("v-player-audio-menu"),
 		)(items...),
 	)
 }

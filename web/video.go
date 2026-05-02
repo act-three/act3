@@ -154,7 +154,11 @@ func (c *Config) playerForEpisode(_ http.ResponseWriter, req *http.Request) (htm
 		if err != nil {
 			return nil, err
 		}
-		return view.PlayerForEpisode(v, ep, qualityOpts, captionsOpts), nil
+		audioOpts, err := tr.AudioOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		return view.PlayerForEpisode(v, ep, qualityOpts, captionsOpts, audioOpts), nil
 	})
 }
 
@@ -177,7 +181,11 @@ func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.
 		if err != nil {
 			return nil, err
 		}
-		return view.PlayerForMovie(v, med, qualityOpts, captionsOpts), nil
+		audioOpts, err := tr.AudioOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		return view.PlayerForMovie(v, med, qualityOpts, captionsOpts, audioOpts), nil
 	})
 }
 
@@ -196,6 +204,27 @@ func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (html.N
 			return nil, errNotFound
 		}
 		stringHandler("application/vnd.apple.mpegurl", vid.MVPlaylist()).ServeHTTP(w, req)
+		return nil, nil
+	})
+}
+
+// variantPlaylist serves a single-variant MV playlist for one video
+// rendition. The MV form (rather than the bare rendition media
+// playlist) is required because audio renditions live in the MV
+// EXT-X-MEDIA AUDIO group; a bare media playlist for an `-an` video
+// rendition would play silent.
+func (c *Config) variantPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
+		if !found {
+			return nil, errNotFound
+		}
+		pl, err := tx.VariantMVPlaylist(ctx, id)
+		if err != nil || pl == "" {
+			return nil, errNotFound
+		}
+		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
 		return nil, nil
 	})
 }
