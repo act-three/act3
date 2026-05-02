@@ -915,6 +915,11 @@ func (tx *TxRW) purgeVideoBlobs(ctx Context, vidIDs, origKeys []string) error {
 		return err
 	}
 	keys := append(origKeys, rendKeys...)
+	audKeys, err := tx.q.AudioRenditionListKeysByVideoIDs(ctx, vidIDs)
+	if err != nil {
+		return err
+	}
+	keys = append(keys, audKeys...)
 	for _, vid := range vidIDs {
 		subs, err := tx.q.SubtitleTrackListByVideoID(ctx, vid)
 		if err != nil {
@@ -935,6 +940,9 @@ func (tx *TxRW) purgeVideoBlobs(ctx Context, vidIDs, origKeys []string) error {
 				tx.m.store.Remove(k)
 			}
 		})
+	}
+	if err := tx.q.AudioRenditionDeleteByVideoIDList(ctx, vidIDs); err != nil {
+		return err
 	}
 	if err := tx.q.AudioTrackDeleteByVideoIDList(ctx, vidIDs); err != nil {
 		return err

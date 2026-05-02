@@ -235,13 +235,14 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 		return err
 	}
 
-	planned, err := video.PlanRenditions(probe)
+	planned, err := video.PlanVideoRenditions(probe)
 	if err != nil {
 		return err
 	}
 	if len(planned) == 0 {
 		return fmt.Errorf("no video stream found in source")
 	}
+	audioPlanned := video.PlanAudioRenditions(probe)
 
 	var rendParams []schema.RenditionCreateParams
 	for _, r := range planned {
@@ -313,11 +314,13 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 		if err != nil {
 			return err
 		}
+		streamIndexToTrackID := make(map[int]string, len(atParams))
 		for _, at := range atParams {
-			_, err = txw.q.AudioTrackCreate(ctx, at)
+			created, err := txw.q.AudioTrackCreate(ctx, at)
 			if err != nil {
 				return err
 			}
+			streamIndexToTrackID[int(created.StreamIndex)] = created.ID
 		}
 		for _, st := range stParams {
 			_, err = txw.q.SubtitleTrackCreate(ctx, st)
@@ -331,7 +334,27 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 				return err
 			}
 		}
+		for _, ar := range audioPlanned {
+			trackID, ok := streamIndexToTrackID[ar.SourceStreamIndex]
+			if !ok {
+				return fmt.Errorf("audio rendition: no AudioTrack for source stream %d", ar.SourceStreamIndex)
+			}
+			_, err = txw.q.AudioRenditionCreate(ctx, schema.AudioRenditionCreateParams{
+				VideoID:      vid.ID,
+				AudioTrackID: trackID,
+				Channels:     int64(ar.Channels),
+				Bitrate:      ar.Bitrate,
+				Codec:        ar.Codec,
+				Priority:     int64(ar.Priority),
+			})
+			if err != nil {
+				return err
+			}
+		}
 		txw.addTaskWithPriority(ctx, priority.Pass1, taskIngestPass1, vid.ID)
+		for range audioPlanned {
+			txw.addTaskWithPriority(ctx, priority.EncodeAudio, taskIngestEncodeAudio, vid.ID)
+		}
 		if len(stParams) > 0 {
 			txw.addTask(ctx, taskIngestExtractSubs, vid.ID)
 		}
@@ -423,6 +446,12 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 		}
 		return nil
 	})
+}
+
+// taskIngestEncodeAudio is the per-audio-rendition encode task.
+// Real implementation lands in chunk 2 of ACT-145.
+func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
+	return Permanent(errors.New("audio encoding not yet implemented"))
 }
 
 // taskIngestEncodeRend picks the highest-priority unencoded rendition
@@ -748,6 +777,15 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 			tx.m.store.Remove(r.Key)
 		}
 	}
+	audioRends, err := tx.q.AudioRenditionListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	for _, ar := range audioRends {
+		if ar.Key != "" {
+			tx.m.store.Remove(ar.Key)
+		}
+	}
 	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
@@ -765,7 +803,11 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	// Delete rendition, audio track, and subtitle track DB records;
 	// clear MV playlist.
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		err := txw.q.AudioTrackDeleteByVideoID(ctx, vid.ID)
+		err := txw.q.AudioRenditionDeleteByVideoIDList(ctx, []string{vid.ID})
+		if err != nil {
+			return err
+		}
+		err = txw.q.AudioTrackDeleteByVideoID(ctx, vid.ID)
 		if err != nil {
 			return err
 		}

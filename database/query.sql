@@ -1,5 +1,32 @@
 -- keep sorted by name
 
+-- name: AudioRenditionCreate :one
+INSERT INTO AudioRendition (
+	VideoID, AudioTrackID, Channels, Bitrate, Codec, Priority
+) VALUES (?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: AudioRenditionDeleteByVideoIDList :exec
+DELETE FROM AudioRendition WHERE VideoID IN (sqlc.slice(ids));
+
+-- name: AudioRenditionGet :one
+SELECT * FROM AudioRendition WHERE ID = ?;
+
+-- name: AudioRenditionListByVideoID :many
+SELECT * FROM AudioRendition
+WHERE VideoID = ?
+ORDER BY AudioTrackID, Channels;
+
+-- name: AudioRenditionListKeysByVideoIDs :many
+SELECT Key FROM AudioRendition
+WHERE VideoID IN (sqlc.slice(ids)) AND Key != '';
+
+-- name: AudioRenditionUpdateEncode :one
+UPDATE AudioRendition
+SET Key = ?, Playlist = ?
+WHERE ID = ?
+RETURNING *;
+
 -- name: AudioTrackCreate :one
 INSERT INTO AudioTrack (
 	VideoID, StreamIndex, Language, Title,
