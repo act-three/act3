@@ -1767,7 +1767,7 @@ AND EpisodeVideo.VideoID IN (
 	WHERE ev.EpisodeID = EpisodeVideo.EpisodeID
 	  AND ev.DeletedAt IS NULL
 	  AND Video.DeletedAt IS NULL
-	  AND Video.MVPlaylist != ''
+	  AND Video.Playable != 0
 	  AND NOT EXISTS (
 		SELECT 1 FROM EpisodeVideo AS ev2
 		WHERE ev2.EpisodeID = ev.EpisodeID
@@ -1790,11 +1790,11 @@ const episodeVideoCountPlayable = `-- name: EpisodeVideoCountPlayable :one
 SELECT COUNT(*) FROM EpisodeVideo AS ev
 JOIN Video ON Video.ID = ev.VideoID
 WHERE ev.EpisodeID = ? AND ev.DeletedAt IS NULL
-  AND Video.DeletedAt IS NULL AND Video.MVPlaylist != ''
+  AND Video.DeletedAt IS NULL AND Video.Playable != 0
 `
 
 // EpisodeVideoCountPlayable counts live junctions for an episode whose
-// video is playable (MVPlaylist non-empty and live).
+// video is playable (Playable=1 and live).
 func (q *Queries) EpisodeVideoCountPlayable(ctx context.Context, episodeid string) (int64, error) {
 	row := q.db.QueryRowContext(ctx, episodeVideoCountPlayable, episodeid)
 	var count int64
@@ -2068,7 +2068,7 @@ const episodeVideoMarkActive = `-- name: EpisodeVideoMarkActive :execrows
 UPDATE EpisodeVideo SET Active = 1
 WHERE EpisodeID = ?1 AND VideoID = ?2
 AND DeletedAt IS NULL
-AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND MVPlaylist != '')
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND Playable != 0)
 `
 
 type EpisodeVideoMarkActiveParams struct {
@@ -3035,7 +3035,7 @@ AND MovieVideo.VideoID IN (
 	WHERE mv.MovieEditionID = MovieVideo.MovieEditionID
 	  AND mv.DeletedAt IS NULL
 	  AND Video.DeletedAt IS NULL
-	  AND Video.MVPlaylist != ''
+	  AND Video.Playable != 0
 	  AND NOT EXISTS (
 		SELECT 1 FROM MovieVideo AS mv2
 		WHERE mv2.MovieEditionID = mv.MovieEditionID
@@ -3057,7 +3057,7 @@ const movieVideoCountPlayable = `-- name: MovieVideoCountPlayable :one
 SELECT COUNT(*) FROM MovieVideo AS mv
 JOIN Video ON Video.ID = mv.VideoID
 WHERE mv.MovieEditionID = ? AND mv.DeletedAt IS NULL
-  AND Video.DeletedAt IS NULL AND Video.MVPlaylist != ''
+  AND Video.DeletedAt IS NULL AND Video.Playable != 0
 `
 
 // MovieVideoCountPlayable counts live junctions for a movie edition
@@ -3265,7 +3265,7 @@ const movieVideoMarkActive = `-- name: MovieVideoMarkActive :execrows
 UPDATE MovieVideo SET Active = 1
 WHERE MovieEditionID = ?1 AND VideoID = ?2
 AND DeletedAt IS NULL
-AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND MVPlaylist != '')
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND Playable != 0)
 `
 
 type MovieVideoMarkActiveParams struct {
@@ -6035,7 +6035,7 @@ INSERT INTO Video
 	Name
 )
 VALUES (?, ?)
-RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat
+RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat
 `
 
 type VideoCreateParams struct {
@@ -6057,7 +6057,7 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 		&i.Duration,
 		&i.Width,
 		&i.Height,
-		&i.MVPlaylist,
+		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
 	)
@@ -6065,7 +6065,7 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 }
 
 const videoGet = `-- name: VideoGet :one
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video WHERE ID = ?
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video WHERE ID = ?
 `
 
 func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
@@ -6082,7 +6082,7 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 		&i.Duration,
 		&i.Width,
 		&i.Height,
-		&i.MVPlaylist,
+		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
 	)
@@ -6090,7 +6090,7 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 }
 
 const videoGetByName = `-- name: VideoGetByName :one
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video WHERE InfoHash = ? AND Name = ?
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video WHERE InfoHash = ? AND Name = ?
 `
 
 type VideoGetByNameParams struct {
@@ -6112,7 +6112,7 @@ func (q *Queries) VideoGetByName(ctx context.Context, arg VideoGetByNameParams) 
 		&i.Duration,
 		&i.Width,
 		&i.Height,
-		&i.MVPlaylist,
+		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
 	)
@@ -6131,7 +6131,7 @@ func (q *Queries) VideoHardDelete(ctx context.Context, id string) error {
 }
 
 const videoListByContentHash = `-- name: VideoListByContentHash :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video WHERE ContentHash = ? AND DeletedAt IS NULL
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video WHERE ContentHash = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) VideoListByContentHash(ctx context.Context, contenthash []byte) ([]Video, error) {
@@ -6154,7 +6154,7 @@ func (q *Queries) VideoListByContentHash(ctx context.Context, contenthash []byte
 			&i.Duration,
 			&i.Width,
 			&i.Height,
-			&i.MVPlaylist,
+			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
 		); err != nil {
@@ -6172,7 +6172,7 @@ func (q *Queries) VideoListByContentHash(ctx context.Context, contenthash []byte
 }
 
 const videoListByEditionID = `-- name: VideoListByEditionID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
@@ -6204,7 +6204,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 			&i.Duration,
 			&i.Width,
 			&i.Height,
-			&i.MVPlaylist,
+			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
 		); err != nil {
@@ -6222,7 +6222,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 }
 
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
@@ -6250,7 +6250,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 			&i.Duration,
 			&i.Width,
 			&i.Height,
-			&i.MVPlaylist,
+			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
 		); err != nil {
@@ -6268,7 +6268,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 }
 
 const videoListByInfoHash = `-- name: VideoListByInfoHash :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video WHERE InfoHash = ?
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video WHERE InfoHash = ?
 `
 
 func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]Video, error) {
@@ -6291,7 +6291,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 			&i.Duration,
 			&i.Width,
 			&i.Height,
-			&i.MVPlaylist,
+			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
 		); err != nil {
@@ -6309,7 +6309,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 }
 
 const videoListByMovieEditionID = `-- name: VideoListByMovieEditionID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM MovieVideo
@@ -6337,7 +6337,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 			&i.Duration,
 			&i.Width,
 			&i.Height,
-			&i.MVPlaylist,
+			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
 		); err != nil {
@@ -6355,7 +6355,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 }
 
 const videoListByMovieID = `-- name: VideoListByMovieID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM MovieVideo
@@ -6384,7 +6384,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 			&i.Duration,
 			&i.Width,
 			&i.Height,
-			&i.MVPlaylist,
+			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
 		); err != nil {
@@ -6402,7 +6402,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 }
 
 const videoListBySeriesID = `-- name: VideoListBySeriesID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
@@ -6435,7 +6435,7 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 			&i.Duration,
 			&i.Width,
 			&i.Height,
-			&i.MVPlaylist,
+			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
 		); err != nil {
@@ -6574,40 +6574,9 @@ func (q *Queries) VideoSoftDelete(ctx context.Context, arg VideoSoftDeleteParams
 	return err
 }
 
-const videoUpdateMVPlaylist = `-- name: VideoUpdateMVPlaylist :one
-UPDATE Video SET MVPlaylist = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat
-`
-
-type VideoUpdateMVPlaylistParams struct {
-	MVPlaylist string
-	ID         string
-}
-
-func (q *Queries) VideoUpdateMVPlaylist(ctx context.Context, arg VideoUpdateMVPlaylistParams) (Video, error) {
-	row := q.db.QueryRowContext(ctx, videoUpdateMVPlaylist, arg.MVPlaylist, arg.ID)
-	var i Video
-	err := row.Scan(
-		&i.ID,
-		&i.InfoHash,
-		&i.Name,
-		&i.State,
-		&i.OriginalKey,
-		&i.OriginalType,
-		&i.Format,
-		&i.Duration,
-		&i.Width,
-		&i.Height,
-		&i.MVPlaylist,
-		&i.ContentHash,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
 const videoUpdateOriginalKey = `-- name: VideoUpdateOriginalKey :one
 UPDATE Video SET OriginalKey = ?, ContentHash = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, mvplaylist, contenthash, deletedat
+RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat
 `
 
 type VideoUpdateOriginalKeyParams struct {
@@ -6630,7 +6599,38 @@ func (q *Queries) VideoUpdateOriginalKey(ctx context.Context, arg VideoUpdateOri
 		&i.Duration,
 		&i.Width,
 		&i.Height,
-		&i.MVPlaylist,
+		&i.Playable,
+		&i.ContentHash,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const videoUpdatePlayable = `-- name: VideoUpdatePlayable :one
+UPDATE Video SET Playable = ? WHERE ID = ?
+RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, playable, contenthash, deletedat
+`
+
+type VideoUpdatePlayableParams struct {
+	Playable int64
+	ID       string
+}
+
+func (q *Queries) VideoUpdatePlayable(ctx context.Context, arg VideoUpdatePlayableParams) (Video, error) {
+	row := q.db.QueryRowContext(ctx, videoUpdatePlayable, arg.Playable, arg.ID)
+	var i Video
+	err := row.Scan(
+		&i.ID,
+		&i.InfoHash,
+		&i.Name,
+		&i.State,
+		&i.OriginalKey,
+		&i.OriginalType,
+		&i.Format,
+		&i.Duration,
+		&i.Width,
+		&i.Height,
+		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
 	)

@@ -430,7 +430,7 @@ AND EpisodeVideo.VideoID IN (
 	WHERE ev.EpisodeID = EpisodeVideo.EpisodeID
 	  AND ev.DeletedAt IS NULL
 	  AND Video.DeletedAt IS NULL
-	  AND Video.MVPlaylist != ''
+	  AND Video.Playable != 0
 	  AND NOT EXISTS (
 		SELECT 1 FROM EpisodeVideo AS ev2
 		WHERE ev2.EpisodeID = ev.EpisodeID
@@ -440,12 +440,12 @@ AND EpisodeVideo.VideoID IN (
 );
 
 -- EpisodeVideoCountPlayable counts live junctions for an episode whose
--- video is playable (MVPlaylist non-empty and live).
+-- video is playable (Playable=1 and live).
 -- name: EpisodeVideoCountPlayable :one
 SELECT COUNT(*) FROM EpisodeVideo AS ev
 JOIN Video ON Video.ID = ev.VideoID
 WHERE ev.EpisodeID = ? AND ev.DeletedAt IS NULL
-  AND Video.DeletedAt IS NULL AND Video.MVPlaylist != '';
+  AND Video.DeletedAt IS NULL AND Video.Playable != 0;
 
 -- name: EpisodeVideoCreate :one
 INSERT INTO EpisodeVideo (EpisodeID, VideoID)
@@ -501,7 +501,7 @@ WHERE VideoID = ?;
 UPDATE EpisodeVideo SET Active = 1
 WHERE EpisodeID = sqlc.arg(EpisodeID) AND VideoID = sqlc.arg(VideoID)
 AND DeletedAt IS NULL
-AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND MVPlaylist != '');
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND Playable != 0);
 
 -- name: EpisodeVideoPurgeByCascade :exec
 DELETE FROM EpisodeVideo
@@ -731,7 +731,7 @@ AND MovieVideo.VideoID IN (
 	WHERE mv.MovieEditionID = MovieVideo.MovieEditionID
 	  AND mv.DeletedAt IS NULL
 	  AND Video.DeletedAt IS NULL
-	  AND Video.MVPlaylist != ''
+	  AND Video.Playable != 0
 	  AND NOT EXISTS (
 		SELECT 1 FROM MovieVideo AS mv2
 		WHERE mv2.MovieEditionID = mv.MovieEditionID
@@ -746,7 +746,7 @@ AND MovieVideo.VideoID IN (
 SELECT COUNT(*) FROM MovieVideo AS mv
 JOIN Video ON Video.ID = mv.VideoID
 WHERE mv.MovieEditionID = ? AND mv.DeletedAt IS NULL
-  AND Video.DeletedAt IS NULL AND Video.MVPlaylist != '';
+  AND Video.DeletedAt IS NULL AND Video.Playable != 0;
 
 -- name: MovieVideoCreate :one
 INSERT INTO MovieVideo (MovieEditionID, VideoID)
@@ -783,7 +783,7 @@ WHERE VideoID = ?;
 UPDATE MovieVideo SET Active = 1
 WHERE MovieEditionID = sqlc.arg(MovieEditionID) AND VideoID = sqlc.arg(VideoID)
 AND DeletedAt IS NULL
-AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND MVPlaylist != '');
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND Playable != 0);
 
 -- name: MovieVideoPurgeByCascade :exec
 DELETE FROM MovieVideo
@@ -1453,12 +1453,12 @@ UPDATE Video
 SET DeletedAt = sqlc.arg(DeletedAt)
 WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
--- name: VideoUpdateMVPlaylist :one
-UPDATE Video SET MVPlaylist = ? WHERE ID = ?
-RETURNING *;
-
 -- name: VideoUpdateOriginalKey :one
 UPDATE Video SET OriginalKey = ?, ContentHash = ? WHERE ID = ?
+RETURNING *;
+
+-- name: VideoUpdatePlayable :one
+UPDATE Video SET Playable = ? WHERE ID = ?
 RETURNING *;
 
 -- name: VideoUpdateProbe :exec

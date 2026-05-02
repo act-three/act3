@@ -22,14 +22,14 @@ func attachEpisodeVideo(t *testing.T, m *Model, episodeID, videoID string) {
 	}
 }
 
-// makeVideoPlayable sets MVPlaylist non-empty on videoID and runs the
-// active-video promotion that ingest's rebuildMVPlaylist would run.
+// makeVideoPlayable sets Playable=1 on videoID and runs the
+// active-video promotion that ingest's recomputePlayable would run.
 func makeVideoPlayable(t *testing.T, m *Model, videoID string) {
 	t.Helper()
 	ctx := context.Background()
 	if err := m.WithTxRW(func(tx *TxRW) error {
-		if _, err := tx.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
-			ID: videoID, MVPlaylist: "#EXTM3U\n",
+		if _, err := tx.q.VideoUpdatePlayable(ctx, schema.VideoUpdatePlayableParams{
+			ID: videoID, Playable: 1,
 		}); err != nil {
 			return err
 		}
