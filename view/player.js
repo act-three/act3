@@ -13,6 +13,7 @@ export default class extends Controller {
 		"qualityMenu",
 		"captionsMenu",
 		"captionsTemplate",
+		"audioMenu",
 	];
 	static values = {
 		title: String,
@@ -26,6 +27,8 @@ export default class extends Controller {
 		qualityMenuOpen: Boolean,
 		currentSubtitle: String,
 		captionsMenuOpen: Boolean,
+		currentAudio: String,
+		audioMenuOpen: Boolean,
 	};
 
 	#isTouch = false;
@@ -111,6 +114,7 @@ export default class extends Controller {
 			"7",
 			"8",
 			"9",
+			"a",
 			"c",
 			"f",
 			"k",
@@ -181,6 +185,11 @@ export default class extends Controller {
 				// Toggle captions.
 				case "c":
 					if (!repeat) this.toggleCaptions();
+					break;
+
+				// Toggle audio menu.
+				case "a":
+					if (!repeat) this.toggleAudio();
 					break;
 
 				// Toggle loop.
@@ -351,6 +360,41 @@ export default class extends Controller {
 
 		for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
 			if (btn.dataset.playerSubIdParam === id) {
+				btn.setAttribute("data-active", "");
+			} else {
+				btn.removeAttribute("data-active");
+			}
+		}
+	}
+
+	// 'a' hotkey opens the audio-track menu — the user picks a
+	// rendition from the popover. Mirrors toggleCaptions.
+	toggleAudio() {
+		this.toggleAudioMenu();
+	}
+
+	toggleAudioMenu() {
+		this.audioMenuOpenValue = !this.audioMenuOpenValue;
+	}
+
+	setAudio(e) {
+		const id = e.params.audioId;
+		const label = e.params.audioLabel;
+		const video = this.videoTarget;
+
+		// Native audioTracks: setting enabled=true on one track
+		// exclusively selects it (the spec says siblings flip to false
+		// and the change event fires). Walk and assign for clarity.
+		if (!video.audioTracks) return;
+		for (const t of video.audioTracks) {
+			t.enabled = t.label === label;
+		}
+
+		this.currentAudioValue = id;
+		this.audioMenuOpenValue = false;
+
+		for (const btn of this.audioMenuTarget.querySelectorAll("button")) {
+			if (btn.dataset.playerAudioIdParam === id) {
 				btn.setAttribute("data-active", "");
 			} else {
 				btn.removeAttribute("data-active");
@@ -547,6 +591,9 @@ export default class extends Controller {
 		this.#ensureSubtitleTracks();
 		this.#filterCaptionsMenu();
 		this.#syncSubtitleFromTracks();
+
+		this.#filterAudioMenu();
+		this.#applyAudioSelection();
 	}
 
 	// Hide menu entries whose label doesn't match any TextTrack the
@@ -584,6 +631,48 @@ export default class extends Controller {
 		this.videoTarget.appendChild(
 			this.captionsTemplateTarget.content.cloneNode(true),
 		);
+	}
+
+	// Hide audio-menu entries whose label doesn't match any
+	// audioTracks entry the browser surfaced. If audioTracks is
+	// empty (manifest not yet parsed), entries stay visible — the
+	// next handleDuration pass will prune.
+	#filterAudioMenu() {
+		if (!this.videoTarget.audioTracks) return;
+		if (this.videoTarget.audioTracks.length === 0) return;
+		const labels = new Set();
+		for (const t of this.videoTarget.audioTracks) labels.add(t.label);
+		for (const btn of this.audioMenuTarget.querySelectorAll("button")) {
+			btn.hidden = !labels.has(btn.dataset.playerAudioLabelParam);
+		}
+	}
+
+	// On each loaded manifest, force the chosen audio track:
+	//   - no user pick yet: the publisher's DEFAULT (the menu item
+	//     marked data-active server-side). Safari's native HLS picks
+	//     by system locale and ignores DEFAULT=YES; we override that
+	//     to honor the publisher's source-mux order (ACT-145 design).
+	//   - user has picked: re-enable that track. Quality switches
+	//     produce a new AudioTracks list whose default may not match
+	//     the user's choice; without re-applying, switching quality
+	//     would silently revert the audio selection.
+	#applyAudioSelection() {
+		if (!this.videoTarget.audioTracks) return;
+		let btn;
+		if (this.currentAudioValue === "") {
+			btn = this.audioMenuTarget.querySelector("button[data-active]");
+			if (!btn) return;
+			this.currentAudioValue = btn.dataset.playerAudioIdParam;
+		} else {
+			btn = this.audioMenuTarget.querySelector(
+				`button[data-player-audio-id-param="${CSS.escape(this.currentAudioValue)}"]`,
+			);
+			if (!btn) return;
+		}
+		const label = btn.dataset.playerAudioLabelParam;
+		for (const t of this.videoTarget.audioTracks) {
+			t.enabled = t.label === label;
+		}
 	}
 
 	// Reflect a textTrack the HLS player auto-enabled (e.g. Safari with

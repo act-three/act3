@@ -927,29 +927,6 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 	if err != nil {
 		return err
 	}
-	if len(encoded) == 0 {
-		return nil
-	}
-
-	var mvEntries []video.MVEntry
-	for _, rfs := range encoded {
-		bandwidth := video.PeakBitrate(rfs.Playlist)
-		if bandwidth == 0 {
-			bandwidth = rfs.TargetBitrate * 1000
-		}
-
-		w, h := video.ScaleResolution(
-			int(vid.Width), int(vid.Height), int(rfs.MaxHeight),
-		)
-		r := video.Rendition{Codec: rfs.Codec}
-		mvEntries = append(mvEntries, video.MVEntry{
-			URI:        "/-/pls/" + rfs.ID + ".m3u8",
-			Bandwidth:  bandwidth,
-			Resolution: video.ResolutionString(w, h),
-			Codecs:     r.HLSCodecs(),
-		})
-	}
-
 	encodedAudio, err := tx.q.AudioRenditionListEncodedForMV(ctx, vid.ID)
 	if err != nil {
 		return err
@@ -958,9 +935,42 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 	if err != nil {
 		return err
 	}
-	tracksByID := make(map[string]schema.AudioTrack, len(tracks))
-	for _, at := range tracks {
-		tracksByID[at.ID] = at
+	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+
+	pl := buildMVPlaylist(vid, encoded, encodedAudio, tracks, subTracks)
+	if pl == "" {
+		return nil
+	}
+
+	_, err = tx.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
+		ID:         vid.ID,
+		MVPlaylist: pl,
+	})
+	if err != nil {
+		return err
+	}
+	return tx.ensureActiveVideoForVideoID(ctx, vid.ID)
+}
+
+// buildMVPlaylist generates a multivariant HLS playlist from the
+// given inputs. Returns "" when not yet playable: no video renditions,
+// or any source audio track without an encoded rendition. Callers
+// pass already-filtered/sorted slices (encoded streaming video,
+// AudioRenditionListEncodedForMV ordering for audio). The set of
+// videoRends is what controls whether this is a full MV (all
+// renditions) or a single-variant MV (one rendition).
+func buildMVPlaylist(
+	vid schema.Video,
+	videoRends []schema.Rendition,
+	encodedAudio []schema.AudioRendition,
+	tracks []schema.AudioTrack,
+	subTracks []schema.SubtitleTrack,
+) string {
+	if len(videoRends) == 0 {
+		return ""
 	}
 
 	// "Playable" requires every source audio track to have at least
@@ -974,27 +984,45 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 		}
 		for _, t := range tracks {
 			if !ready[t.ID] {
-				return nil
+				return ""
 			}
 		}
 	}
 
+	var mvEntries []video.MVEntry
+	for _, rfs := range videoRends {
+		bandwidth := video.PeakBitrate(rfs.Playlist)
+		if bandwidth == 0 {
+			bandwidth = rfs.TargetBitrate * 1000
+		}
+		w, h := video.ScaleResolution(
+			int(vid.Width), int(vid.Height), int(rfs.MaxHeight),
+		)
+		r := video.Rendition{Codec: rfs.Codec}
+		mvEntries = append(mvEntries, video.MVEntry{
+			URI:        "/-/pls/" + rfs.ID + ".m3u8",
+			Bandwidth:  bandwidth,
+			Resolution: video.ResolutionString(w, h),
+			Codecs:     r.HLSCodecs(),
+		})
+	}
+
+	tracksByID := make(map[string]schema.AudioTrack, len(tracks))
+	for _, at := range tracks {
+		tracksByID[at.ID] = at
+	}
 	var mvAudios []video.MVAudio
 	for i, ar := range encodedAudio {
 		at := tracksByID[ar.AudioTrackID]
 		mvAudios = append(mvAudios, video.MVAudio{
 			URI:      "/-/audpls/" + ar.ID + ".m3u8",
-			Name:     (&AudioTrack{at: at}).Name() + " (" + OutputChannelLabel(int(ar.Channels)) + ")",
+			Name:     AudioMenuLabel((&AudioTrack{at: at}).Name(), int(ar.Channels)),
 			Language: at.Language,
 			Channels: int(ar.Channels),
 			Default:  i == 0,
 		})
 	}
 
-	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
-	if err != nil {
-		return err
-	}
 	var mvSubs []video.MVSubtitle
 	// Default-track rule: prefer the first non-forced English track,
 	// else the first non-forced track, else nothing. A single linear
@@ -1028,16 +1056,7 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 		})
 	}
 
-	mvPlaylist := video.GenerateMVPlaylist(mvEntries, mvAudios, mvSubs)
-
-	_, err = tx.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
-		ID:         vid.ID,
-		MVPlaylist: mvPlaylist,
-	})
-	if err != nil {
-		return err
-	}
-	return tx.ensureActiveVideoForVideoID(ctx, vid.ID)
+	return video.GenerateMVPlaylist(mvEntries, mvAudios, mvSubs)
 }
 
 // rendDesc returns a short human-readable description of a rendition,

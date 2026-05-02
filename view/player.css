@@ -375,3 +375,20 @@
 	min-width: 120px;
 }
 .v-player[data-player-captions-menu-open-value="true"] .v-player-captions-menu { display: block; }
+
+/* Audio menu sits in the same left-aligned button group as captions
+   and anchors to its wrapper's left edge. */
+.v-player-audio-wrapper { position: relative; }
+.v-player-audio-menu {
+	display: none;
+	position: absolute;
+	bottom: 100%;
+	left: 0;
+	margin-bottom: 0.5rem;
+	background: rgb(0 0 0 / 0.8);
+	backdrop-filter: blur(8px);
+	border-radius: 0.5rem;
+	padding-block: 0.25rem;
+	min-width: 160px;
+}
+.v-player[data-player-audio-menu-open-value="true"] .v-player-audio-menu { display: block; }

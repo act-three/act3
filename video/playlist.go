@@ -72,7 +72,7 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 		alts = append(alts, &m3u8.Alternative{
 			Type:       "AUDIO",
 			GroupId:    audioGroupID,
-			Name:       sanitizeAttrString(a.Name),
+			Name:       SanitizeAttrString(a.Name),
 			Language:   a.Language,
 			URI:        a.URI,
 			Default:    a.Default,
@@ -84,7 +84,7 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 		alts = append(alts, &m3u8.Alternative{
 			Type:       "SUBTITLES",
 			GroupId:    subtitleGroupID,
-			Name:       sanitizeAttrString(s.Name),
+			Name:       SanitizeAttrString(s.Name),
 			Language:   s.Language,
 			URI:        s.URI,
 			Default:    s.Default,
@@ -144,11 +144,11 @@ func GenerateSubtitleMediaPlaylist(duration time.Duration, vttURI string) string
 	return b.String()
 }
 
-// sanitizeAttrString defends the EXT-X-MEDIA NAME attribute against
+// SanitizeAttrString defends the EXT-X-MEDIA NAME attribute against
 // embedded double quotes. Realistic input ("English", "Spanish") never
 // contains a quote, but a malformed mux could; replacing with a single
 // quote keeps the playlist parseable.
-func sanitizeAttrString(s string) string {
+func SanitizeAttrString(s string) string {
 	return strings.ReplaceAll(s, `"`, `'`)
 }
 
