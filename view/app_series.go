@@ -612,16 +612,9 @@ func appEpisodeDialogVideo(ep *model.Episode, v *model.Video) html.Node {
 			html.Text("Original Key: "),
 			html.Text(v.OriginalKey()),
 		),
-		expr.IfElse(v.MVPlaylist() != "",
-			func() html.Node {
-				return html.Div()(
-					html.Text("Playlist: "),
-					Code()(
-						html.Text(v.MVPlaylist()),
-					),
-				)
-			},
-			func() html.Node { return Group() },
+		html.Div()(
+			html.Text("Playable: "),
+			html.Text(strconv.FormatBool(v.Playable())),
 		),
 		FlexRow(Gap2, Style("margin-top: 0.5rem"))(
 			activeVideoControl(v, "/-/do/episode-video-set-active/"+ep.ID()+"/"+v.ID()),

@@ -196,14 +196,11 @@ func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (html.N
 		if !found {
 			return nil, errNotFound
 		}
-		vid, err := tx.Video(ctx, id)
-		if err != nil {
-			return nil, err
-		}
-		if vid.MVPlaylist() == "" {
+		pl, err := tx.MVPlaylist(ctx, id)
+		if err != nil || pl == "" {
 			return nil, errNotFound
 		}
-		stringHandler("application/vnd.apple.mpegurl", vid.MVPlaylist()).ServeHTTP(w, req)
+		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
 		return nil, nil
 	})
 }

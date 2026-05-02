@@ -199,7 +199,7 @@ func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 	// extraction the per-track latency cost is microseconds.
 	if updated {
 		err = tx.m.WithTxRW(func(txw *TxRW) error {
-			return rebuildMVPlaylist(ctx, txw, vid)
+			return recomputePlayable(ctx, txw, vid)
 		})
 		if err != nil {
 			return err

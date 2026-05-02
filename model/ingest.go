@@ -525,7 +525,7 @@ func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		return rebuildMVPlaylist(ctx, txw, vid)
+		return recomputePlayable(ctx, txw, vid)
 	})
 	tx.m.prog.Close(progKey, err)
 	return err
@@ -631,7 +631,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		}
 
 		// Rebuild MV playlist from all completed renditions.
-		return rebuildMVPlaylist(ctx, txw, vid)
+		return recomputePlayable(ctx, txw, vid)
 	})
 	if err == nil && allDone {
 		os.RemoveAll(tx.m.pass1Dir(vid.ID))
@@ -878,7 +878,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	os.RemoveAll(tx.m.pass1Dir(vid.ID))
 
 	// Delete rendition, audio track, and subtitle track DB records;
-	// clear MV playlist.
+	// clear the playable flag.
 	err = tx.m.WithTxRW(func(txw *TxRW) error {
 		err := txw.q.AudioRenditionDeleteByVideoIDList(ctx, []string{vid.ID})
 		if err != nil {
@@ -896,9 +896,9 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		_, err = txw.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
-			ID:         vid.ID,
-			MVPlaylist: "",
+		_, err = txw.q.VideoUpdatePlayable(ctx, schema.VideoUpdatePlayableParams{
+			ID:       vid.ID,
+			Playable: 0,
 		})
 		return err
 	})
@@ -919,10 +919,12 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	return tx.planAndCreateRenditions(ctx, vid)
 }
 
-// rebuildMVPlaylist regenerates the multivariant HLS playlist from
-// all currently encoded renditions for the video, plus any extracted
-// subtitle tracks and encoded audio renditions.
-func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
+// recomputePlayable updates Video.Playable based on whether the
+// renditions needed for an MV playlist are all present. Only flips
+// the flag to 1; callers that need to clear it (e.g. re-encode) do
+// so explicitly. The MV playlist itself is built on demand by
+// (TxR).MVPlaylist.
+func recomputePlayable(ctx Context, tx *TxRW, vid schema.Video) error {
 	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
@@ -940,14 +942,13 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 		return err
 	}
 
-	pl := buildMVPlaylist(vid, encoded, encodedAudio, tracks, subTracks)
-	if pl == "" {
+	if buildMVPlaylist(vid, encoded, encodedAudio, tracks, subTracks) == "" {
 		return nil
 	}
 
-	_, err = tx.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
-		ID:         vid.ID,
-		MVPlaylist: pl,
+	_, err = tx.q.VideoUpdatePlayable(ctx, schema.VideoUpdatePlayableParams{
+		ID:       vid.ID,
+		Playable: 1,
 	})
 	if err != nil {
 		return err
