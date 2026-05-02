@@ -8528,7 +8528,6 @@
     }
     setSubtitle(e) {
       const id = e.params.subId;
-      const label = e.params.subLabel;
       const video = this.videoTarget;
       for (const t of video.textTracks) {
         if (t.kind === "subtitles" || t.kind === "captions") {
@@ -8538,7 +8537,7 @@
       if (id !== "") {
         for (const t of video.textTracks) {
           if (t.kind !== "subtitles" && t.kind !== "captions") continue;
-          if (t.label === label) {
+          if (t.label === id) {
             t.mode = "showing";
             break;
           }
@@ -8710,21 +8709,22 @@
       this.#filterAudioMenu();
       this.#applyAudioSelection();
     }
-    // Hide menu entries whose label doesn't match any TextTrack the
+    // Hide menu entries whose id doesn't match any TextTrack the
     // browser surfaced — picks route through TextTrack.mode, so an
     // entry without a matching track wouldn't render anything. ASS
     // sources downconvert to WebVTT and reach textTracks the same way
-    // as everything else.
+    // as everything else. Track .label carries the SubtitleTrack ID
+    // (set as EXT-X-MEDIA NAME and as the captions-template's label).
     #filterCaptionsMenu() {
-      const labels = /* @__PURE__ */ new Set();
+      const ids = /* @__PURE__ */ new Set();
       for (const t of this.videoTarget.textTracks) {
         if (t.kind === "subtitles" || t.kind === "captions") {
-          labels.add(t.label);
+          ids.add(t.label);
         }
       }
       for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
         if (btn.dataset.playerSubIdParam === "") continue;
-        btn.hidden = !labels.has(btn.dataset.playerSubLabelParam);
+        btn.hidden = !ids.has(btn.dataset.playerSubIdParam);
       }
     }
     // If the manifest's HLS implementation didn't surface any subtitle
@@ -8789,7 +8789,7 @@
         if (t.kind !== "subtitles" && t.kind !== "captions") continue;
         if (t.mode !== "showing") continue;
         for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
-          if (btn.dataset.playerSubLabelParam !== t.label) continue;
+          if (btn.dataset.playerSubIdParam !== t.label) continue;
           this.currentSubtitleValue = btn.dataset.playerSubIdParam;
           for (const b of this.captionsMenuTarget.querySelectorAll("button")) {
             if (b === btn) b.setAttribute("data-active", "");

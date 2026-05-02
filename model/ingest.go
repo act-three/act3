@@ -1053,9 +1053,12 @@ func buildMVPlaylist(
 		if st.WebVTTKey == "" {
 			continue
 		}
+		// NAME carries the SubtitleTrack ID, not a human label —
+		// same shape as audio (ACT-168). Display text lives in the
+		// player menu's visible text.
 		mvSubs = append(mvSubs, video.MVSubtitle{
 			URI:      "/-/subpls/" + st.ID + ".m3u8",
-			Name:     (&SubtitleTrack{st: st}).Label(),
+			Name:     st.ID,
 			Language: st.Language,
 			Default:  i == defaultIdx,
 			Forced:   st.Forced != 0,
