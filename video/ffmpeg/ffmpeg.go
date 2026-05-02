@@ -112,7 +112,9 @@ type VideoStream struct {
 type AudioStream struct {
 	Index         int    // audio stream index (0-based among audio streams)
 	CodecName     string // e.g. "aac", "ac3", "dts"
+	Profile       string // codec profile, e.g. "LC", "HE-AAC" (empty if unknown)
 	BitRate       int64  // bits per second (0 if unknown)
+	SampleRate    int    // Hz (0 if unknown)
 	Channels      int    // number of channels (e.g. 2, 6)
 	ChannelLayout string // e.g. "stereo", "5.1(side)", "5.1" (empty if unknown)
 	Language      string // e.g. "eng", "jpn" (empty if unknown)
@@ -208,9 +210,11 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 		Streams []struct {
 			CodecType     string `json:"codec_type"`
 			CodecName     string `json:"codec_name"`
+			Profile       string `json:"profile"`
 			Width         int    `json:"width"`
 			Height        int    `json:"height"`
 			BitRate       string `json:"bit_rate"`
+			SampleRate    string `json:"sample_rate"`
 			RFrameRate    string `json:"r_frame_rate"`
 			Channels      int    `json:"channels"`
 			ChannelLayout string `json:"channel_layout"`
@@ -257,10 +261,13 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			}
 		case "audio":
 			br, _ := strconv.ParseInt(s.BitRate, 10, 64)
+			sr, _ := strconv.Atoi(s.SampleRate)
 			result.Audio = append(result.Audio, AudioStream{
 				Index:         audioIdx,
 				CodecName:     s.CodecName,
+				Profile:       s.Profile,
 				BitRate:       br,
+				SampleRate:    sr,
 				Channels:      s.Channels,
 				ChannelLayout: s.ChannelLayout,
 				Language:      s.Tags.Language,

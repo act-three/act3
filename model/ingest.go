@@ -285,7 +285,9 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			Title:         as.Title,
 			Channels:      int64(as.Channels),
 			ChannelLayout: as.ChannelLayout,
+			SampleRate:    int64(as.SampleRate),
 			Codec:         as.CodecName,
+			Profile:       as.Profile,
 		})
 	}
 
@@ -448,10 +450,95 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 	})
 }
 
-// taskIngestEncodeAudio is the per-audio-rendition encode task.
-// Real implementation lands in chunk 2 of ACT-145.
+// taskIngestEncodeAudio picks the highest-priority unencoded audio
+// rendition for a video, encodes it, and rebuilds the MV playlist.
 func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
-	return Permanent(errors.New("audio encoding not yet implemented"))
+	vid, err := tx.q.VideoGet(ctx, args[0])
+	if err != nil {
+		return err
+	}
+
+	ar, err := tx.q.AudioRenditionNextUnencoded(ctx, vid.ID)
+	if err == sql.ErrNoRows {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	at, err := tx.q.AudioTrackGet(ctx, ar.AudioTrackID)
+	if err != nil {
+		return err
+	}
+
+	progKey := "aud-" + ar.ID
+	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	tx.m.prog.AddEdge(vid.ID, progKey)
+	for _, ev := range evs {
+		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
+	}
+	desc := audioRendDesc(ar)
+	tx.m.prog.Open(progKey, vid.Name, desc+": starting")
+
+	src, err := tx.m.store.Open(vid.OriginalKey)
+	if err != nil {
+		tx.m.prog.Close(progKey, err)
+		return err
+	}
+	defer src.Close()
+
+	streamCopy := at.Codec == "aac" &&
+		at.Profile == "LC" &&
+		int(at.Channels) == int(ar.Channels) &&
+		ar.Channels <= 2 &&
+		(at.SampleRate == 44100 || at.SampleRate == 48000)
+
+	dst := ffmpeg.AudioEncodeParams{
+		SourceStreamIndex: int(at.StreamIndex),
+		Channels:          int(ar.Channels),
+		Bitrate:           ar.Bitrate,
+		StreamCopy:        streamCopy,
+	}
+	duration := time.Duration(vid.Duration) * time.Millisecond
+
+	var playlist string
+	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
+		dst.File = dstFile
+		tx.m.prog.UpdateStatus(progKey, desc+": encoding")
+		var err error
+		playlist, err = ffmpeg.EncodeAudio(ctx, src, vid.Format, dst, duration,
+			func(v float64) { tx.m.prog.Update(progKey, v) })
+		return err
+	})
+	if err != nil {
+		tx.m.prog.Close(progKey, err)
+		return err
+	}
+
+	playlist = video.FixupMediaPlaylist(playlist, ffmpeg.MediaName(0), "/-/aud/"+ar.ID+".mp4")
+
+	tx.m.prog.UpdateStatus(progKey, desc+": saving")
+	err = tx.m.WithTxRW(func(txw *TxRW) error {
+		_, err := txw.q.AudioRenditionUpdateEncode(ctx,
+			schema.AudioRenditionUpdateEncodeParams{
+				ID:       ar.ID,
+				Key:      hash,
+				Playlist: playlist,
+			})
+		if err != nil {
+			return err
+		}
+		return rebuildMVPlaylist(ctx, txw, vid)
+	})
+	tx.m.prog.Close(progKey, err)
+	return err
+}
+
+func audioRendDesc(ar schema.AudioRendition) string {
+	return fmt.Sprintf("audio %dch %dk", ar.Channels, ar.Bitrate)
 }
 
 // taskIngestEncodeRend picks the highest-priority unencoded rendition

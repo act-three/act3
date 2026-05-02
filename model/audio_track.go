@@ -17,7 +17,9 @@ func (a *AudioTrack) Language() string      { return a.at.Language }
 func (a *AudioTrack) Title() string         { return a.at.Title }
 func (a *AudioTrack) Channels() int         { return int(a.at.Channels) }
 func (a *AudioTrack) ChannelLayout() string { return a.at.ChannelLayout }
+func (a *AudioTrack) SampleRate() int       { return int(a.at.SampleRate) }
 func (a *AudioTrack) Codec() string         { return a.at.Codec }
+func (a *AudioTrack) Profile() string       { return a.at.Profile }
 
 // Label returns a human-readable label like
 // "English (5.1)" or "Track 1 (Stereo)".

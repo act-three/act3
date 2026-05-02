@@ -106,6 +106,33 @@ func TestFixupMediaPlaylist(t *testing.T) {
 	}
 }
 
+func TestFixupMediaPlaylistAudio(t *testing.T) {
+	playlist := strings.Join([]string{
+		"#EXTM3U",
+		"#EXT-X-VERSION:7",
+		"#EXT-X-TARGETDURATION:6",
+		"#EXT-X-MEDIA-SEQUENCE:0",
+		"#EXT-X-PLAYLIST-TYPE:VOD",
+		`#EXT-X-MAP:URI="media0.mp4",BYTERANGE="744@0"`,
+		"#EXTINF:6.000000,",
+		"#EXT-X-BYTERANGE:131072@744",
+		"media0.mp4",
+		"#EXT-X-ENDLIST",
+		"",
+	}, "\n")
+	got := FixupMediaPlaylist(playlist, "media0.mp4", "/-/aud/arend123.mp4")
+	if strings.Contains(got, "media0.mp4") {
+		t.Errorf("old name still present: %s", got)
+	}
+	if !strings.Contains(got, `#EXT-X-MAP:URI="/-/aud/arend123.mp4"`) {
+		t.Errorf("EXT-X-MAP URI not substituted: %s", got)
+	}
+	// Segment URI line (the one not preceded by #EXT-X-MAP).
+	if !strings.Contains(got, "\n/-/aud/arend123.mp4\n") {
+		t.Errorf("segment URI not substituted: %s", got)
+	}
+}
+
 func TestGenerateMVPlaylist(t *testing.T) {
 	entries := []MVEntry{
 		{URI: "best.m3u8", Bandwidth: 5_000_000, Resolution: "1920x1080", Codecs: "avc1.640028,mp4a.40.2"},

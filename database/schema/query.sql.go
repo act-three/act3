@@ -169,6 +169,30 @@ func (q *Queries) AudioRenditionListKeysByVideoIDs(ctx context.Context, ids []st
 	return items, nil
 }
 
+const audioRenditionNextUnencoded = `-- name: AudioRenditionNextUnencoded :one
+SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority FROM AudioRendition
+WHERE VideoID = ? AND Key = ''
+ORDER BY Priority ASC, AudioTrackID, Channels
+LIMIT 1
+`
+
+func (q *Queries) AudioRenditionNextUnencoded(ctx context.Context, videoid string) (AudioRendition, error) {
+	row := q.db.QueryRowContext(ctx, audioRenditionNextUnencoded, videoid)
+	var i AudioRendition
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.AudioTrackID,
+		&i.Channels,
+		&i.Bitrate,
+		&i.Codec,
+		&i.Key,
+		&i.Playlist,
+		&i.Priority,
+	)
+	return i, err
+}
+
 const audioRenditionUpdateEncode = `-- name: AudioRenditionUpdateEncode :one
 UPDATE AudioRendition
 SET Key = ?, Playlist = ?
@@ -202,9 +226,9 @@ func (q *Queries) AudioRenditionUpdateEncode(ctx context.Context, arg AudioRendi
 const audioTrackCreate = `-- name: AudioTrackCreate :one
 INSERT INTO AudioTrack (
 	VideoID, StreamIndex, Language, Title,
-	Channels, ChannelLayout, Codec
-) VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, videoid, streamindex, language, title, channels, channellayout, codec
+	Channels, ChannelLayout, SampleRate, Codec, Profile
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, videoid, streamindex, language, title, channels, channellayout, samplerate, codec, profile
 `
 
 type AudioTrackCreateParams struct {
@@ -214,7 +238,9 @@ type AudioTrackCreateParams struct {
 	Title         string
 	Channels      int64
 	ChannelLayout string
+	SampleRate    int64
 	Codec         string
+	Profile       string
 }
 
 func (q *Queries) AudioTrackCreate(ctx context.Context, arg AudioTrackCreateParams) (AudioTrack, error) {
@@ -225,7 +251,9 @@ func (q *Queries) AudioTrackCreate(ctx context.Context, arg AudioTrackCreatePara
 		arg.Title,
 		arg.Channels,
 		arg.ChannelLayout,
+		arg.SampleRate,
 		arg.Codec,
+		arg.Profile,
 	)
 	var i AudioTrack
 	err := row.Scan(
@@ -236,7 +264,9 @@ func (q *Queries) AudioTrackCreate(ctx context.Context, arg AudioTrackCreatePara
 		&i.Title,
 		&i.Channels,
 		&i.ChannelLayout,
+		&i.SampleRate,
 		&i.Codec,
+		&i.Profile,
 	)
 	return i, err
 }
@@ -269,8 +299,30 @@ func (q *Queries) AudioTrackDeleteByVideoIDList(ctx context.Context, ids []strin
 	return err
 }
 
+const audioTrackGet = `-- name: AudioTrackGet :one
+SELECT id, videoid, streamindex, language, title, channels, channellayout, samplerate, codec, profile FROM AudioTrack WHERE ID = ? LIMIT 1
+`
+
+func (q *Queries) AudioTrackGet(ctx context.Context, id string) (AudioTrack, error) {
+	row := q.db.QueryRowContext(ctx, audioTrackGet, id)
+	var i AudioTrack
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.StreamIndex,
+		&i.Language,
+		&i.Title,
+		&i.Channels,
+		&i.ChannelLayout,
+		&i.SampleRate,
+		&i.Codec,
+		&i.Profile,
+	)
+	return i, err
+}
+
 const audioTrackListByVideoID = `-- name: AudioTrackListByVideoID :many
-SELECT id, videoid, streamindex, language, title, channels, channellayout, codec FROM AudioTrack
+SELECT id, videoid, streamindex, language, title, channels, channellayout, samplerate, codec, profile FROM AudioTrack
 WHERE VideoID = ?
 ORDER BY StreamIndex
 `
@@ -292,7 +344,9 @@ func (q *Queries) AudioTrackListByVideoID(ctx context.Context, videoid string) (
 			&i.Title,
 			&i.Channels,
 			&i.ChannelLayout,
+			&i.SampleRate,
 			&i.Codec,
+			&i.Profile,
 		); err != nil {
 			return nil, err
 		}
