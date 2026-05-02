@@ -14,6 +14,10 @@ import (
 // rendition group referenced by every variant in the MV playlist.
 const subtitleGroupID = "subs"
 
+// audioGroupID is the GROUP-ID used for the audio alternative
+// rendition group referenced by every variant in the MV playlist.
+const audioGroupID = "aud"
+
 // FixupMediaPlaylist replaces all occurrences of oldName in the
 // HLS media playlist text with newName.
 // This is used to replace the temporary media filename produced
@@ -40,33 +44,53 @@ type MVSubtitle struct {
 	Forced   bool   // forced narrative
 }
 
-// GenerateMVPlaylist builds a multivariant (master) HLS playlist
-// from the given variants and subtitle alternatives and returns it as
-// a string. When subtitles is non-empty, every variant gains a
-// SUBTITLES="subs" group reference so HLS clients know variants share
-// the subtitle group.
+// MVAudio describes one audio media entry referenced from a
+// multivariant playlist via #EXT-X-MEDIA:TYPE=AUDIO.
+type MVAudio struct {
+	URI      string // points at a per-track audio media playlist (.m3u8)
+	Name     string // human-readable for the menu
+	Language string // BCP47-ish code (we store ISO 639-2 like "eng")
+	Channels int    // CHANNELS attribute (1, 2, or 6)
+	Default  bool   // exactly one Default per group
+}
+
+// GenerateMVPlaylist builds a multivariant (root) HLS playlist from
+// the given variants, audio alternatives, and subtitle alternatives,
+// and returns it as a string. When audios is non-empty, every variant
+// gains an AUDIO="aud" group reference; likewise for subtitles via
+// SUBTITLES="subs".
 //
 // EXT-X-MEDIA emission uses the m3u8 library's Alternative type
 // (writeExtXMedia in github.com/Eyevinn/hls-m3u8/m3u8/writer.go);
 // alternatives are attached to the first variant, since
 // MasterPlaylist.GetAllAlternatives dedups across variants and sorts
 // by GROUP-ID, TYPE, NAME, LANGUAGE before emitting.
-func GenerateMVPlaylist(variants []MVEntry, subtitles []MVSubtitle) string {
-	master := m3u8.NewMasterPlaylist()
+func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubtitle) string {
+	root := m3u8.NewMasterPlaylist()
 	var alts []*m3u8.Alternative
-	if len(subtitles) > 0 {
-		for _, s := range subtitles {
-			alts = append(alts, &m3u8.Alternative{
-				Type:       "SUBTITLES",
-				GroupId:    subtitleGroupID,
-				Name:       sanitizeAttrString(s.Name),
-				Language:   s.Language,
-				URI:        s.URI,
-				Default:    s.Default,
-				Autoselect: !s.Forced,
-				Forced:     s.Forced,
-			})
-		}
+	for _, a := range audios {
+		alts = append(alts, &m3u8.Alternative{
+			Type:       "AUDIO",
+			GroupId:    audioGroupID,
+			Name:       sanitizeAttrString(a.Name),
+			Language:   a.Language,
+			URI:        a.URI,
+			Default:    a.Default,
+			Autoselect: true,
+			Channels:   &m3u8.Channels{Amount: a.Channels},
+		})
+	}
+	for _, s := range subtitles {
+		alts = append(alts, &m3u8.Alternative{
+			Type:       "SUBTITLES",
+			GroupId:    subtitleGroupID,
+			Name:       sanitizeAttrString(s.Name),
+			Language:   s.Language,
+			URI:        s.URI,
+			Default:    s.Default,
+			Autoselect: !s.Forced,
+			Forced:     s.Forced,
+		})
 	}
 	for i, e := range variants {
 		p := m3u8.VariantParams{
@@ -78,15 +102,18 @@ func GenerateMVPlaylist(variants []MVEntry, subtitles []MVSubtitle) string {
 		if e.Codecs != "" {
 			p.Codecs = e.Codecs
 		}
-		if len(alts) > 0 {
-			p.Subtitles = subtitleGroupID
-			if i == 0 {
-				p.Alternatives = alts
-			}
+		if len(audios) > 0 {
+			p.Audio = audioGroupID
 		}
-		master.Append(e.URI, nil, p)
+		if len(subtitles) > 0 {
+			p.Subtitles = subtitleGroupID
+		}
+		if i == 0 && len(alts) > 0 {
+			p.Alternatives = alts
+		}
+		root.Append(e.URI, nil, p)
 	}
-	return master.Encode().String()
+	return root.Encode().String()
 }
 
 // GenerateSubtitleMediaPlaylist builds a per-track HLS subtitle media

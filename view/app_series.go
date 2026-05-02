@@ -678,9 +678,6 @@ func appEpisodeDialogRendition(r schema.Rendition) html.Node {
 		html.Div()(
 			html.Textf("Remux: %v", r.Remux != 0),
 		),
-		html.Div()(
-			html.Textf("Copy Audio: %v", r.CopyAudio != 0),
-		),
 		expr.IfElse(r.MaxHeight != 0,
 			func() html.Node {
 				return html.Div()(

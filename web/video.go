@@ -15,6 +15,52 @@ import (
 // recognises.
 var subtitleExts = []string{".vtt", ".ass", ".srt"}
 
+func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		id, found := strings.CutSuffix(req.PathValue("id"), ".mp4")
+		if !found {
+			return nil, errNotFound
+		}
+		ar, err := tx.AudioRendition(ctx, id)
+		if err != nil {
+			return nil, errNotFound
+		}
+		if ar.Key == "" {
+			return nil, errNotFound
+		}
+		// Every audio rendition is fMP4; pin the Content-Type so
+		// http.ServeFileFS can't fall through to mime sniffing on
+		// our extensionless blob keys. A tight CSP overrides the
+		// middleware default as defense in depth even if a non-audio
+		// blob ever lands here.
+		w.Header().Set("Content-Type", "audio/mp4")
+		w.Header().Set("Content-Security-Policy",
+			"default-src 'none'; media-src 'self'; sandbox")
+		http.ServeFileFS(w, req, c.Store, ar.Key)
+		return nil, nil
+	})
+}
+
+func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+		ctx := req.Context()
+		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
+		if !found {
+			return nil, errNotFound
+		}
+		ar, err := tx.AudioRendition(ctx, id)
+		if err != nil {
+			return nil, errNotFound
+		}
+		if ar.Playlist == "" {
+			return nil, errNotFound
+		}
+		stringHandler("application/vnd.apple.mpegurl", ar.Playlist).ServeHTTP(w, req)
+		return nil, nil
+	})
+}
+
 func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()

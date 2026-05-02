@@ -254,8 +254,6 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			TargetBitrate: r.TargetBitrate,
 			MaxHeight:     int64(r.MaxHeight),
 			MaxFPS:        int64(r.MaxFPS),
-			CopyAudio:     boolToInt64(r.CopyAudio),
-			SurroundAudio: boolToInt64(r.SurroundAudio),
 			Priority:      int64(r.Priority),
 		})
 	}
@@ -271,8 +269,6 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 		TargetBitrate: best.TargetBitrate,
 		MaxHeight:     int64(best.MaxHeight),
 		MaxFPS:        int64(best.MaxFPS),
-		CopyAudio:     boolToInt64(best.CopyAudio),
-		SurroundAudio: boolToInt64(best.SurroundAudio),
 		Priority:      int64(priority.EncodeDownload),
 	})
 
@@ -410,15 +406,13 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 		dsts := make([]ffmpeg.EncodeParams, len(renditions))
 		for i, r := range renditions {
 			dsts[i] = ffmpeg.EncodeParams{
-				Remux:         r.Remux != 0,
-				Codec:         toFFmpegCodec(r.Codec),
-				Bitrate:       r.TargetBitrate,
-				MaxHeight:     int(r.MaxHeight),
-				MaxFPS:        int(r.MaxFPS),
-				Tag:           toVideoTag(r.Codec),
-				CopyAudio:     r.CopyAudio != 0,
-				SurroundAudio: r.SurroundAudio != 0,
-				StatsID:       r.ID,
+				Remux:     r.Remux != 0,
+				Codec:     toFFmpegCodec(r.Codec),
+				Bitrate:   r.TargetBitrate,
+				MaxHeight: int(r.MaxHeight),
+				MaxFPS:    int(r.MaxFPS),
+				Tag:       toVideoTag(r.Codec),
+				StatsID:   r.ID,
 			}
 		}
 
@@ -580,15 +574,13 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	duration := time.Duration(vid.Duration) * time.Millisecond
 
 	dst := ffmpeg.EncodeParams{
-		Remux:         rfs.Remux != 0,
-		Codec:         toFFmpegCodec(rfs.Codec),
-		Bitrate:       rfs.TargetBitrate,
-		MaxHeight:     int(rfs.MaxHeight),
-		MaxFPS:        int(rfs.MaxFPS),
-		Tag:           toVideoTag(rfs.Codec),
-		CopyAudio:     rfs.CopyAudio != 0,
-		SurroundAudio: rfs.SurroundAudio != 0,
-		StatsID:       rfs.ID,
+		Remux:     rfs.Remux != 0,
+		Codec:     toFFmpegCodec(rfs.Codec),
+		Bitrate:   rfs.TargetBitrate,
+		MaxHeight: int(rfs.MaxHeight),
+		MaxFPS:    int(rfs.MaxFPS),
+		Tag:       toVideoTag(rfs.Codec),
+		StatsID:   rfs.ID,
 	}
 
 	var playlist string
@@ -687,15 +679,13 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 
 	duration := time.Duration(vid.Duration) * time.Millisecond
 	dst := ffmpeg.EncodeParams{
-		Remux:         rfd.Remux != 0,
-		Codec:         toFFmpegCodec(rfd.Codec),
-		Bitrate:       rfd.TargetBitrate,
-		MaxHeight:     int(rfd.MaxHeight),
-		MaxFPS:        int(rfd.MaxFPS),
-		Tag:           toVideoTag(rfd.Codec),
-		CopyAudio:     rfd.CopyAudio != 0,
-		SurroundAudio: rfd.SurroundAudio != 0,
-		StatsID:       rfd.ID,
+		Remux:     rfd.Remux != 0,
+		Codec:     toFFmpegCodec(rfd.Codec),
+		Bitrate:   rfd.TargetBitrate,
+		MaxHeight: int(rfd.MaxHeight),
+		MaxFPS:    int(rfd.MaxFPS),
+		Tag:       toVideoTag(rfd.Codec),
+		StatsID:   rfd.ID,
 	}
 
 	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
@@ -931,7 +921,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 
 // rebuildMVPlaylist regenerates the multivariant HLS playlist from
 // all currently encoded renditions for the video, plus any extracted
-// subtitle tracks.
+// subtitle tracks and encoded audio renditions.
 func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(ctx, vid.ID)
 	if err != nil {
@@ -957,6 +947,47 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 			Bandwidth:  bandwidth,
 			Resolution: video.ResolutionString(w, h),
 			Codecs:     r.HLSCodecs(),
+		})
+	}
+
+	encodedAudio, err := tx.q.AudioRenditionListEncodedForMV(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	tracks, err := tx.q.AudioTrackListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	tracksByID := make(map[string]schema.AudioTrack, len(tracks))
+	for _, at := range tracks {
+		tracksByID[at.ID] = at
+	}
+
+	// "Playable" requires every source audio track to have at least
+	// one encoded rendition. A partially-encoded MV would either omit
+	// audio entries (silent playback) or expose only a subset of the
+	// publisher's intended tracks. Wait until all tracks are ready.
+	if len(tracks) > 0 {
+		ready := make(map[string]bool, len(encodedAudio))
+		for _, ar := range encodedAudio {
+			ready[ar.AudioTrackID] = true
+		}
+		for _, t := range tracks {
+			if !ready[t.ID] {
+				return nil
+			}
+		}
+	}
+
+	var mvAudios []video.MVAudio
+	for i, ar := range encodedAudio {
+		at := tracksByID[ar.AudioTrackID]
+		mvAudios = append(mvAudios, video.MVAudio{
+			URI:      "/-/audpls/" + ar.ID + ".m3u8",
+			Name:     (&AudioTrack{at: at}).Name() + " (" + OutputChannelLabel(int(ar.Channels)) + ")",
+			Language: at.Language,
+			Channels: int(ar.Channels),
+			Default:  i == 0,
 		})
 	}
 
@@ -997,7 +1028,7 @@ func rebuildMVPlaylist(ctx Context, tx *TxRW, vid schema.Video) error {
 		})
 	}
 
-	mvPlaylist := video.GenerateMVPlaylist(mvEntries, mvSubs)
+	mvPlaylist := video.GenerateMVPlaylist(mvEntries, mvAudios, mvSubs)
 
 	_, err = tx.q.VideoUpdateMVPlaylist(ctx, schema.VideoUpdateMVPlaylistParams{
 		ID:         vid.ID,

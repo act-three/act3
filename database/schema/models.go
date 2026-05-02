@@ -133,8 +133,6 @@ type Rendition struct {
 	TargetBitrate int64
 	MaxHeight     int64
 	MaxFPS        int64
-	CopyAudio     int64
-	SurroundAudio int64
 	Key           string
 	Playlist      string
 	Priority      int64

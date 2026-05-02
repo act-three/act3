@@ -139,19 +139,22 @@ func TestGenerateMVPlaylist(t *testing.T) {
 		{URI: "low.m3u8", Bandwidth: 500_000, Resolution: "640x360"},
 		{URI: "bare.m3u8", Bandwidth: 100_000},
 	}
-	playlist := GenerateMVPlaylist(entries, nil)
+	playlist := GenerateMVPlaylist(entries, nil, nil)
 	if !strings.Contains(playlist, "#EXTM3U") {
 		t.Error("missing #EXTM3U header")
 	}
 	if !strings.Contains(playlist, "best.m3u8") {
 		t.Error("missing best.m3u8 URI")
 	}
-	// No subtitles: no EXT-X-MEDIA lines and no SUBTITLES= attribute.
+	// No alternatives: no EXT-X-MEDIA lines and no AUDIO=/SUBTITLES= attributes.
 	if strings.Contains(playlist, "EXT-X-MEDIA") {
 		t.Errorf("unexpected EXT-X-MEDIA line: %s", playlist)
 	}
 	if strings.Contains(playlist, "SUBTITLES=") {
 		t.Errorf("unexpected SUBTITLES= attribute: %s", playlist)
+	}
+	if strings.Contains(playlist, "AUDIO=") {
+		t.Errorf("unexpected AUDIO= attribute: %s", playlist)
 	}
 }
 
@@ -164,7 +167,7 @@ func TestGenerateMVPlaylistWithSubtitles(t *testing.T) {
 		subs := []MVSubtitle{
 			{URI: "/sub/1.m3u8", Name: "English", Language: "eng", Default: true},
 		}
-		got := GenerateMVPlaylist(entries, subs)
+		got := GenerateMVPlaylist(entries, nil, subs)
 		if !strings.Contains(got, `#EXT-X-MEDIA:TYPE=SUBTITLES`) {
 			t.Errorf("missing EXT-X-MEDIA SUBTITLES tag: %s", got)
 		}
@@ -202,7 +205,7 @@ func TestGenerateMVPlaylistWithSubtitles(t *testing.T) {
 			{URI: "/sub/2.m3u8", Name: "English (Forced)", Language: "eng", Forced: true},
 			{URI: "/sub/3.m3u8", Name: "Japanese", Language: "jpn"},
 		}
-		got := GenerateMVPlaylist(entries, subs)
+		got := GenerateMVPlaylist(entries, nil, subs)
 		// One EXT-X-MEDIA line per subtitle.
 		if c := strings.Count(got, "#EXT-X-MEDIA:TYPE=SUBTITLES"); c != 3 {
 			t.Errorf("got %d EXT-X-MEDIA lines, want 3: %s", c, got)
@@ -224,7 +227,7 @@ func TestGenerateMVPlaylistWithSubtitles(t *testing.T) {
 		subs := []MVSubtitle{
 			{URI: "/sub/x.m3u8", Name: "Track 3"},
 		}
-		got := GenerateMVPlaylist(entries, subs)
+		got := GenerateMVPlaylist(entries, nil, subs)
 		if strings.Contains(got, "LANGUAGE=") {
 			t.Errorf("unexpected LANGUAGE attribute: %s", got)
 		}
@@ -232,6 +235,84 @@ func TestGenerateMVPlaylistWithSubtitles(t *testing.T) {
 			t.Errorf("missing NAME: %s", got)
 		}
 	})
+}
+
+func TestGenerateMVPlaylistWithAudio(t *testing.T) {
+	entries := []MVEntry{
+		{URI: "best.m3u8", Bandwidth: 5_000_000, Resolution: "1920x1080", Codecs: "hvc1.1.6.L150.90,mp4a.40.2"},
+		{URI: "low.m3u8", Bandwidth: 500_000, Resolution: "640x360"},
+	}
+	auds := []MVAudio{
+		{URI: "/-/audpls/a1.m3u8", Name: "English (Stereo)", Language: "eng", Channels: 2, Default: true},
+		{URI: "/-/audpls/a2.m3u8", Name: "English (5.1)", Language: "eng", Channels: 6},
+	}
+	got := GenerateMVPlaylist(entries, auds, nil)
+	if !strings.Contains(got, `#EXT-X-MEDIA:TYPE=AUDIO`) {
+		t.Errorf("missing EXT-X-MEDIA AUDIO tag: %s", got)
+	}
+	if !strings.Contains(got, `GROUP-ID="aud"`) {
+		t.Errorf("missing GROUP-ID: %s", got)
+	}
+	if !strings.Contains(got, `CHANNELS="2"`) {
+		t.Errorf("missing CHANNELS=\"2\": %s", got)
+	}
+	if !strings.Contains(got, `CHANNELS="6"`) {
+		t.Errorf("missing CHANNELS=\"6\": %s", got)
+	}
+	if !strings.Contains(got, `URI="/-/audpls/a1.m3u8"`) {
+		t.Errorf("missing audio URI: %s", got)
+	}
+	// Exactly one DEFAULT=YES across the AUDIO group entries.
+	mediaAudio := 0
+	defaults := 0
+	for line := range strings.SplitSeq(got, "\n") {
+		if !strings.HasPrefix(line, "#EXT-X-MEDIA:TYPE=AUDIO") {
+			continue
+		}
+		mediaAudio++
+		if strings.Contains(line, "DEFAULT=YES") {
+			defaults++
+		}
+	}
+	if mediaAudio != 2 {
+		t.Errorf("got %d EXT-X-MEDIA AUDIO lines, want 2: %s", mediaAudio, got)
+	}
+	if defaults != 1 {
+		t.Errorf("got %d DEFAULT=YES on AUDIO entries, want 1: %s", defaults, got)
+	}
+	// Every variant must carry AUDIO="aud".
+	if c := strings.Count(got, `AUDIO="aud"`); c != len(entries) {
+		t.Errorf(`AUDIO="aud" appeared %d times, want %d: %s`, c, len(entries), got)
+	}
+	if strings.Contains(got, "SUBTITLES=") {
+		t.Errorf("unexpected SUBTITLES= attribute: %s", got)
+	}
+}
+
+func TestGenerateMVPlaylistWithAudioAndSubtitles(t *testing.T) {
+	entries := []MVEntry{
+		{URI: "best.m3u8", Bandwidth: 5_000_000, Resolution: "1920x1080"},
+		{URI: "low.m3u8", Bandwidth: 500_000, Resolution: "640x360"},
+	}
+	auds := []MVAudio{
+		{URI: "/-/audpls/a1.m3u8", Name: "English", Language: "eng", Channels: 2, Default: true},
+	}
+	subs := []MVSubtitle{
+		{URI: "/-/subpls/s1.m3u8", Name: "English", Language: "eng", Default: true},
+	}
+	got := GenerateMVPlaylist(entries, auds, subs)
+	if c := strings.Count(got, `AUDIO="aud"`); c != len(entries) {
+		t.Errorf(`AUDIO="aud" appeared %d times, want %d: %s`, c, len(entries), got)
+	}
+	if c := strings.Count(got, `SUBTITLES="subs"`); c != len(entries) {
+		t.Errorf(`SUBTITLES="subs" appeared %d times, want %d: %s`, c, len(entries), got)
+	}
+	if c := strings.Count(got, `#EXT-X-MEDIA:TYPE=AUDIO`); c != 1 {
+		t.Errorf("got %d AUDIO EXT-X-MEDIA lines, want 1: %s", c, got)
+	}
+	if c := strings.Count(got, `#EXT-X-MEDIA:TYPE=SUBTITLES`); c != 1 {
+		t.Errorf("got %d SUBTITLES EXT-X-MEDIA lines, want 1: %s", c, got)
+	}
 }
 
 func TestGenerateSubtitleMediaPlaylist(t *testing.T) {

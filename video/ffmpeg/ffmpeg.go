@@ -134,16 +134,14 @@ type SubtitleStream struct {
 
 // EncodeParams describes how to produce one rendition.
 type EncodeParams struct {
-	File          *os.File // output file; media data is written here
-	Remux         bool     // true: copy video stream; false: reencode
-	Codec         string   // ffmpeg encoder name, e.g. "libx264" or "libx265" (ignored if Remux)
-	Bitrate       int64    // target video bitrate in kbit/s (ignored if Remux)
-	MaxHeight     int      // max output height; 0 = source (ignored if Remux)
-	MaxFPS        int      // max output fps; 0 = source (ignored if Remux)
-	Tag           string   // video tag, e.g. "hvc1" for HEVC in fMP4
-	CopyAudio     bool     // true: copy audio stream; false: reencode to AAC
-	SurroundAudio bool     // true: encode audio as 5.1(back); false: stereo downmix
-	StatsID       string   // stable filename for pass-1 stats inside statsDir; required when !Remux, ignored otherwise
+	File      *os.File // output file; media data is written here
+	Remux     bool     // true: copy video stream; false: reencode
+	Codec     string   // ffmpeg encoder name, e.g. "libx264" or "libx265" (ignored if Remux)
+	Bitrate   int64    // target video bitrate in kbit/s (ignored if Remux)
+	MaxHeight int      // max output height; 0 = source (ignored if Remux)
+	MaxFPS    int      // max output fps; 0 = source (ignored if Remux)
+	Tag       string   // video tag, e.g. "hvc1" for HEVC in fMP4
+	StatsID   string   // stable filename for pass-1 stats inside statsDir; required when !Remux, ignored otherwise
 }
 
 // allowedDemuxers is the comma-separated list of libavformat demuxer
@@ -529,21 +527,13 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 
 	args = append(args, "-map", labels[0])
 	args = append(args, fpsPassthrough()...)
-	args = append(args, "-map", "0:a:0?")
 	args = append(args, "-c:v", dst.Codec, "-preset", preset)
 	args = append(args, "-b:v", fmt.Sprintf("%dk", dst.Bitrate))
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
 	args = append(args, twoPassArgs(dst.Codec, 2, passlog)...)
-	if dst.CopyAudio {
-		args = append(args, "-c:a", "copy")
-	} else if dst.SurroundAudio {
-		args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
-	} else {
-		args = append(args, "-c:a", "aac", "-ac", "2")
-	}
-	args = append(args, "-sn")
+	args = append(args, "-an", "-sn")
 	args = append(args, hlsOutputArgs(mediaPath)...)
 	args = append(args, plsPath)
 
@@ -632,13 +622,9 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
-	if dst.CopyAudio {
-		args = append(args, "-c:a", "copy")
-	} else if dst.SurroundAudio {
-		args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
-	} else {
-		args = append(args, "-c:a", "aac", "-ac", "2")
-	}
+	// Single hardcoded AAC stereo track is a chunk-5-pending placeholder;
+	// the multi-audio download story is on the chunk-5 backlog.
+	args = append(args, "-c:a", "aac", "-ac", "2", "-b:a", "128k")
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
 	if err := runWithProgress(ctx, args, report); err != nil {
@@ -705,13 +691,9 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		args = append(args, "-tag:v", dst.Tag)
 	}
 	args = append(args, twoPassArgs(dst.Codec, 2, passlog)...)
-	if dst.CopyAudio {
-		args = append(args, "-c:a", "copy")
-	} else if dst.SurroundAudio {
-		args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
-	} else {
-		args = append(args, "-c:a", "aac", "-ac", "2")
-	}
+	// Single hardcoded AAC stereo track is a chunk-5-pending placeholder;
+	// the multi-audio download story is on the chunk-5 backlog.
+	args = append(args, "-c:a", "aac", "-ac", "2", "-b:a", "128k")
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
 	if err := runWithProgress(ctx, args, report); err != nil {
@@ -817,22 +799,12 @@ func doRemux(ctx context.Context, src *os.File, format, tmpDir string,
 
 	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
-	args = append(args,
-		"-map", "0:v:0",
-		"-map", "0:a:0?", // optional audio
-	)
+	args = append(args, "-map", "0:v:0")
 	args = append(args, "-c:v", "copy")
 	if p.Tag != "" {
 		args = append(args, "-tag:v", p.Tag)
 	}
-	if p.CopyAudio {
-		args = append(args, "-c:a", "copy")
-	} else if p.SurroundAudio {
-		args = append(args, "-c:a", "aac", "-ac", "6", "-channel_layout", "5.1")
-	} else {
-		args = append(args, "-c:a", "aac", "-ac", "2")
-	}
-	args = append(args, "-sn")
+	args = append(args, "-an", "-sn")
 	args = append(args, hlsOutputArgs(mediaPath)...)
 	args = append(args, plsPath)
 	return runWithProgress(ctx, args, onProgress)
