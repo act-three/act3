@@ -6,15 +6,26 @@ set -e
 refs=$(cat)
 
 # Check that .go files are formatted.
-unformatted=$(gofmt -l .)
-if [ -n "$unformatted" ]; then
+before=$(git status --porcelain)
+gofmt -w .
+after=$(git status --porcelain)
+if [ "$before" != "$after" ]; then
 	echo "gofmt: these files are not formatted:"
-	echo "$unformatted"
+	git status --short
+	echo "please run 'jj fix' to fix"
 	exit 1
 fi
 
 # Check that JS/CSS/JSON/SQL files are formatted.
-dprint check
+before=$(git status --porcelain)
+dprint fmt
+after=$(git status --porcelain)
+if [ "$before" != "$after" ]; then
+	echo "dprint: these files are not formatted:"
+	git status --short
+	echo "please run 'jj fix' to fix"
+	exit 1
+fi
 
 # Check for direct env var reads outside of package main.
 go vet -vettool=.git/hooks/act3vet ./...
@@ -37,7 +48,8 @@ go generate ./...
 after=$(git status --porcelain)
 if [ "$before" != "$after" ]; then
 	echo "go generate: generated files are out of date"
-	git status --short
+	git status --short || true
+	echo "please run './mk regen' to fix"
 	exit 1
 fi
 
