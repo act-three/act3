@@ -7,9 +7,9 @@ import (
 	"ily.dev/act3/video/ffmpeg"
 )
 
-func TestPlanRenditions_noVideo(t *testing.T) {
+func TestPlanVideoRenditions_noVideo(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -18,17 +18,17 @@ func TestPlanRenditions_noVideo(t *testing.T) {
 	}
 }
 
-func TestPlanRenditions_zeroBitrate(t *testing.T) {
+func TestPlanVideoRenditions_zeroBitrate(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{CodecName: "h264", BitRate: 0},
 	}
-	_, err := PlanRenditions(probe)
+	_, err := PlanVideoRenditions(probe)
 	if err == nil {
 		t.Fatal("expected error for zero bitrate")
 	}
 }
 
-func TestPlanRenditions_h264Remux(t *testing.T) {
+func TestPlanVideoRenditions_h264Remux(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
 			CodecName: "h264",
@@ -42,7 +42,7 @@ func TestPlanRenditions_h264Remux(t *testing.T) {
 			Channels:  2,
 		}},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,7 +72,7 @@ func TestPlanRenditions_h264Remux(t *testing.T) {
 	}
 }
 
-func TestPlanRenditions_hevcRemux(t *testing.T) {
+func TestPlanVideoRenditions_hevcRemux(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
 			CodecName: "hevc",
@@ -86,7 +86,7 @@ func TestPlanRenditions_hevcRemux(t *testing.T) {
 			Channels:  2,
 		}},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestPlanRenditions_hevcRemux(t *testing.T) {
 	}
 }
 
-func TestPlanRenditions_nonNativeCodec(t *testing.T) {
+func TestPlanVideoRenditions_nonNativeCodec(t *testing.T) {
 	// VP9 source below reencode threshold → reencode at 110%.
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
@@ -113,7 +113,7 @@ func TestPlanRenditions_nonNativeCodec(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 30, Den: 1},
 		},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func TestPlanRenditions_nonNativeCodec(t *testing.T) {
 	}
 }
 
-func TestPlanRenditions_highBitrateReencode(t *testing.T) {
+func TestPlanVideoRenditions_highBitrateReencode(t *testing.T) {
 	// Source above reencode threshold → cap at topTierCeiling.
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
@@ -141,7 +141,7 @@ func TestPlanRenditions_highBitrateReencode(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 60, Den: 1},
 		},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +151,7 @@ func TestPlanRenditions_highBitrateReencode(t *testing.T) {
 	}
 }
 
-func TestPlanRenditions_surroundAudio(t *testing.T) {
+func TestPlanVideoRenditions_noSurroundDuplicate(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
 			CodecName: "h264",
@@ -165,27 +165,22 @@ func TestPlanRenditions_surroundAudio(t *testing.T) {
 			Channels:  6,
 		}},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Should have: best, surround variant, then ladder entries.
-	if len(rs) < 3 {
-		t.Fatalf("expected at least 3 renditions, got %d", len(rs))
-	}
-	surround := rs[1]
-	if !surround.SurroundAudio {
-		t.Error("expected surround audio variant at index 1")
-	}
-	if surround.CopyAudio {
-		t.Error("surround variant should not copy audio")
-	}
-	if surround.Priority != priority.Pass1 {
-		t.Errorf("expected priority %d, got %d", priority.Pass1, surround.Priority)
+	best := rs[0]
+	for i, r := range rs {
+		if r.SurroundAudio {
+			t.Errorf("rs[%d]: SurroundAudio should always be false", i)
+		}
+		if i > 0 && r.TargetBitrate == best.TargetBitrate {
+			t.Errorf("rs[%d]: duplicate bitrate %d matches best", i, r.TargetBitrate)
+		}
 	}
 }
 
-func TestPlanRenditions_lowFPSReduction(t *testing.T) {
+func TestPlanVideoRenditions_lowFPSReduction(t *testing.T) {
 	// ≤25fps content gets 20% bitrate reduction on ladder entries.
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
@@ -197,7 +192,7 @@ func TestPlanRenditions_lowFPSReduction(t *testing.T) {
 		},
 		Audio: []ffmpeg.AudioStream{{CodecName: "aac", Channels: 2}},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +213,7 @@ func TestPlanRenditions_lowFPSReduction(t *testing.T) {
 	}
 }
 
-func TestPlanRenditions_ladderSkipsAboveBest(t *testing.T) {
+func TestPlanVideoRenditions_ladderSkipsAboveBest(t *testing.T) {
 	// Source at 4 Mbps: ladder entries at 20000 and 5000 should be skipped.
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
@@ -229,7 +224,7 @@ func TestPlanRenditions_ladderSkipsAboveBest(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 30, Den: 1},
 		},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -240,7 +235,7 @@ func TestPlanRenditions_ladderSkipsAboveBest(t *testing.T) {
 	}
 }
 
-func TestPlanRenditions_maxHeightResolved(t *testing.T) {
+func TestPlanVideoRenditions_maxHeightResolved(t *testing.T) {
 	// 4K source: ladder entries with MaxHeight caps should have them set.
 	// 720p source: ladder entries with MaxHeight=1080 should resolve to 0.
 	probe := &ffmpeg.ProbeResult{
@@ -252,7 +247,7 @@ func TestPlanRenditions_maxHeightResolved(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 60, Den: 1},
 		},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -268,7 +263,7 @@ func TestPlanRenditions_maxHeightResolved(t *testing.T) {
 	t.Error("did not find 5000 kbit/s ladder entry")
 }
 
-func TestPlanRenditions_maxHeightNotSetWhenSourceSmaller(t *testing.T) {
+func TestPlanVideoRenditions_maxHeightNotSetWhenSourceSmaller(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
 			CodecName: "h264",
@@ -278,7 +273,7 @@ func TestPlanRenditions_maxHeightNotSetWhenSourceSmaller(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 30, Den: 1},
 		},
 	}
-	rs, err := PlanRenditions(probe)
+	rs, err := PlanVideoRenditions(probe)
 	if err != nil {
 		t.Fatal(err)
 	}

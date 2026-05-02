@@ -10,8 +10,196 @@ import (
 	"strings"
 )
 
-const audioTrackCreate = `-- name: AudioTrackCreate :one
+const audioRenditionCreate = `-- name: AudioRenditionCreate :one
 
+INSERT INTO AudioRendition (
+	VideoID, AudioTrackID, Channels, Bitrate, Codec, Priority
+) VALUES (?, ?, ?, ?, ?, ?)
+RETURNING id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority
+`
+
+type AudioRenditionCreateParams struct {
+	VideoID      string
+	AudioTrackID string
+	Channels     int64
+	Bitrate      int64
+	Codec        string
+	Priority     int64
+}
+
+// keep sorted by name
+func (q *Queries) AudioRenditionCreate(ctx context.Context, arg AudioRenditionCreateParams) (AudioRendition, error) {
+	row := q.db.QueryRowContext(ctx, audioRenditionCreate,
+		arg.VideoID,
+		arg.AudioTrackID,
+		arg.Channels,
+		arg.Bitrate,
+		arg.Codec,
+		arg.Priority,
+	)
+	var i AudioRendition
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.AudioTrackID,
+		&i.Channels,
+		&i.Bitrate,
+		&i.Codec,
+		&i.Key,
+		&i.Playlist,
+		&i.Priority,
+	)
+	return i, err
+}
+
+const audioRenditionDeleteByVideoIDList = `-- name: AudioRenditionDeleteByVideoIDList :exec
+DELETE FROM AudioRendition WHERE VideoID IN (/*SLICE:ids*/?)
+`
+
+func (q *Queries) AudioRenditionDeleteByVideoIDList(ctx context.Context, ids []string) error {
+	query := audioRenditionDeleteByVideoIDList
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	_, err := q.db.ExecContext(ctx, query, queryParams...)
+	return err
+}
+
+const audioRenditionGet = `-- name: AudioRenditionGet :one
+SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority FROM AudioRendition WHERE ID = ?
+`
+
+func (q *Queries) AudioRenditionGet(ctx context.Context, id string) (AudioRendition, error) {
+	row := q.db.QueryRowContext(ctx, audioRenditionGet, id)
+	var i AudioRendition
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.AudioTrackID,
+		&i.Channels,
+		&i.Bitrate,
+		&i.Codec,
+		&i.Key,
+		&i.Playlist,
+		&i.Priority,
+	)
+	return i, err
+}
+
+const audioRenditionListByVideoID = `-- name: AudioRenditionListByVideoID :many
+SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority FROM AudioRendition
+WHERE VideoID = ?
+ORDER BY AudioTrackID, Channels
+`
+
+func (q *Queries) AudioRenditionListByVideoID(ctx context.Context, videoid string) ([]AudioRendition, error) {
+	rows, err := q.db.QueryContext(ctx, audioRenditionListByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AudioRendition
+	for rows.Next() {
+		var i AudioRendition
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.AudioTrackID,
+			&i.Channels,
+			&i.Bitrate,
+			&i.Codec,
+			&i.Key,
+			&i.Playlist,
+			&i.Priority,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const audioRenditionListKeysByVideoIDs = `-- name: AudioRenditionListKeysByVideoIDs :many
+SELECT Key FROM AudioRendition
+WHERE VideoID IN (/*SLICE:ids*/?) AND Key != ''
+`
+
+func (q *Queries) AudioRenditionListKeysByVideoIDs(ctx context.Context, ids []string) ([]string, error) {
+	query := audioRenditionListKeysByVideoIDs
+	var queryParams []interface{}
+	if len(ids) > 0 {
+		for _, v := range ids {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:ids*/?", strings.Repeat(",?", len(ids))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:ids*/?", "NULL", 1)
+	}
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, err
+		}
+		items = append(items, key)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const audioRenditionUpdateEncode = `-- name: AudioRenditionUpdateEncode :one
+UPDATE AudioRendition
+SET Key = ?, Playlist = ?
+WHERE ID = ?
+RETURNING id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority
+`
+
+type AudioRenditionUpdateEncodeParams struct {
+	Key      string
+	Playlist string
+	ID       string
+}
+
+func (q *Queries) AudioRenditionUpdateEncode(ctx context.Context, arg AudioRenditionUpdateEncodeParams) (AudioRendition, error) {
+	row := q.db.QueryRowContext(ctx, audioRenditionUpdateEncode, arg.Key, arg.Playlist, arg.ID)
+	var i AudioRendition
+	err := row.Scan(
+		&i.ID,
+		&i.VideoID,
+		&i.AudioTrackID,
+		&i.Channels,
+		&i.Bitrate,
+		&i.Codec,
+		&i.Key,
+		&i.Playlist,
+		&i.Priority,
+	)
+	return i, err
+}
+
+const audioTrackCreate = `-- name: AudioTrackCreate :one
 INSERT INTO AudioTrack (
 	VideoID, StreamIndex, Language, Title,
 	Channels, ChannelLayout, Codec
@@ -29,7 +217,6 @@ type AudioTrackCreateParams struct {
 	Codec         string
 }
 
-// keep sorted by name
 func (q *Queries) AudioTrackCreate(ctx context.Context, arg AudioTrackCreateParams) (AudioTrack, error) {
 	row := q.db.QueryRowContext(ctx, audioTrackCreate,
 		arg.VideoID,

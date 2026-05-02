@@ -27,10 +27,11 @@ const (
 	taskFetchSeriesPoster         = "fetch-series-poster"
 	taskFetchMoviePoster          = "fetch-movie-poster"
 	taskIngest                    = "ingest"
-	taskIngestPass1               = "ingest-pass1"
-	taskIngestEncodeRend          = "ingest-encode-rend"
+	taskIngestEncodeAudio         = "ingest-encode-audio"
 	taskIngestEncodeDownloadRend  = "ingest-encode-dl-rend"
+	taskIngestEncodeRend          = "ingest-encode-rend"
 	taskIngestExtractSubs         = "ingest-extract-subs"
+	taskIngestPass1               = "ingest-pass1"
 	taskReimport                  = "reimport"
 	taskReencode                  = "reencode"
 )
@@ -49,10 +50,11 @@ var taskTab = map[string]taskFunc{
 	taskFetchSeriesPoster:         (*TxR).taskFetchSeriesPoster,
 	taskFetchMoviePoster:          (*TxR).taskFetchMoviePoster,
 	taskIngest:                    (*TxR).taskIngest,
-	taskIngestPass1:               (*TxR).taskIngestPass1,
-	taskIngestEncodeRend:          (*TxR).taskIngestEncodeRend,
+	taskIngestEncodeAudio:         (*TxR).taskIngestEncodeAudio,
 	taskIngestEncodeDownloadRend:  (*TxR).taskIngestEncodeDownloadRend,
+	taskIngestEncodeRend:          (*TxR).taskIngestEncodeRend,
 	taskIngestExtractSubs:         (*TxR).taskIngestExtractSubs,
+	taskIngestPass1:               (*TxR).taskIngestPass1,
 	taskReimport:                  (*TxR).taskReimport,
 	taskReencode:                  (*TxR).taskReencode,
 }
@@ -64,10 +66,11 @@ var queueTab = map[string]string{
 	taskFetchSeriesPoster:         queueIO,
 	taskFetchMoviePoster:          queueIO,
 	taskIngest:                    queueIO,
-	taskIngestPass1:               queueCPU,
-	taskIngestEncodeRend:          queueCPU,
+	taskIngestEncodeAudio:         queueCPU,
 	taskIngestEncodeDownloadRend:  queueCPU,
+	taskIngestEncodeRend:          queueCPU,
 	taskIngestExtractSubs:         queueIO,
+	taskIngestPass1:               queueCPU,
 	taskReimport:                  queueIO,
 	taskReencode:                  queueIO,
 }

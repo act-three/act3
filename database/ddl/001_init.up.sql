@@ -260,6 +260,21 @@ CREATE TABLE Rendition
 )
 STRICT;
 
+CREATE TABLE AudioRendition
+(
+	ID           TEXT PRIMARY KEY DEFAULT ('arend'||newID()),
+	VideoID      TEXT NOT NULL REFERENCES Video,
+	AudioTrackID TEXT NOT NULL REFERENCES AudioTrack,
+	Channels     INTEGER NOT NULL, -- output channels (1 = mono, 2 = stereo, 6 = 5.1)
+	Bitrate      INTEGER NOT NULL, -- kbit/s
+	Codec        TEXT NOT NULL,    -- always "aac" for v1
+	Key          TEXT NOT NULL DEFAULT (''), -- empty during ingest
+	Playlist     TEXT NOT NULL DEFAULT (''), -- HLS media playlist; empty during ingest
+	Priority     INTEGER NOT NULL, -- 0 = highest priority
+	UNIQUE (VideoID, AudioTrackID, Channels)
+)
+STRICT;
+
 CREATE TABLE Task
 (
 	ID          TEXT PRIMARY KEY DEFAULT ('task'||newID()),

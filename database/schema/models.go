@@ -4,6 +4,18 @@
 
 package schema
 
+type AudioRendition struct {
+	ID           string
+	VideoID      string
+	AudioTrackID string
+	Channels     int64
+	Bitrate      int64
+	Codec        string
+	Key          string
+	Playlist     string
+	Priority     int64
+}
+
 type AudioTrack struct {
 	ID            string
 	VideoID       string

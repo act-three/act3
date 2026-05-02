@@ -22,11 +22,14 @@ const (
 	// least useful.
 	Encode1st = 0 // best rendition
 	Pass1     = 1 // ffmpeg pass-1 + surround variant
-	Encode2nd = 2 // lowest bitrate (quick preview)
-	Encode3rd = 3 // 720p
-	Encode4th = 4 // 1080p
-	Encode5th = 5 // 540p30
-	Encode6th = 6 // near-source 20 Mbps
+	// EncodeAudio runs after the best video rendition but in
+	// parallel with pass-1 / lower-tier video.
+	EncodeAudio = 1
+	Encode2nd   = 2 // lowest bitrate (quick preview)
+	Encode3rd   = 3 // 720p
+	Encode4th   = 4 // 1080p
+	Encode5th   = 5 // 540p30
+	Encode6th   = 6 // near-source 20 Mbps
 
 	EncodeDownload = 7 // downloadable MP4 (after all streaming)
 )

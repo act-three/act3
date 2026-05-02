@@ -83,9 +83,11 @@ const (
 	reencodeThreshold = 450_000
 )
 
-// PlanRenditions determines which renditions to produce based on
-// the probed source media. The returned list is ordered from
-// highest to lowest bitrate; the first entry is the best rendition.
+// PlanVideoRenditions determines which video renditions to produce
+// based on the probed source media. The returned list is ordered
+// from highest to lowest bitrate; the first entry is the best
+// rendition. Audio output variants are planned separately by
+// PlanAudioRenditions.
 //
 // MaxHeight and MaxFPS are pre-resolved against the source
 // properties: they are set to 0 (meaning "use source") when the
@@ -93,7 +95,7 @@ const (
 // does not need access to the source metadata.
 //
 // Returns nil if the source has no video stream.
-func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
+func PlanVideoRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 	if probe.Video == nil {
 		return nil, nil
 	}
@@ -113,18 +115,13 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 		outCodec = "h264"
 	}
 
-	// Determine whether source audio can be copied as-is.
 	// Only copy AAC with ≤2 channels; surround AAC may use PCE
 	// (Program Config Element) for non-standard layouts like
 	// 5.1(side), which CoreMedia's HLS parser rejects.
 	copyAudio := false
-	hasSurround := false
 	if a := probe.FirstAudio(); a != nil {
 		if a.CodecName == "aac" && a.Channels <= 2 {
 			copyAudio = true
-		}
-		if a.Channels > 2 {
-			hasSurround = true
 		}
 	}
 
@@ -158,18 +155,6 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 	}
 
 	renditions := []Rendition{best}
-
-	// When the source has surround audio, add a variant of the
-	// best rendition with 5.1(back) audio. This converts
-	// non-standard layouts like 5.1(side) to the standard 5.1
-	// channel configuration that CoreMedia accepts.
-	if hasSurround {
-		surround := best
-		surround.CopyAudio = false
-		surround.SurroundAudio = true
-		surround.Priority = priority.Pass1
-		renditions = append(renditions, surround)
-	}
 
 	// Add lower-bitrate renditions from the ladder.
 	for _, entry := range ladder {
@@ -208,4 +193,56 @@ func PlanRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 	}
 
 	return renditions, nil
+}
+
+// AudioRendition describes one audio output variant.
+// SourceStreamIndex matches ffmpeg.AudioStream.Index, so the
+// caller can resolve it to a database AudioTrack row.
+type AudioRendition struct {
+	SourceStreamIndex int
+	Channels          int    // 1 (mono), 2 (stereo) or 6 (5.1)
+	Bitrate           int64  // kbit/s
+	Codec             string // "aac"
+	Priority          int
+}
+
+// PlanAudioRenditions returns one or two output variants per source
+// audio stream:
+//   - mono sources (1 channel) → one mono rendition at 64 kbit/s.
+//   - stereo or higher → one stereo rendition at 128 kbit/s
+//     (downmixed when the source is surround).
+//   - sources with more than 2 channels also get a 5.1 rendition at
+//     384 kbit/s.
+//
+// Returns nil if the source has no audio.
+func PlanAudioRenditions(probe *ffmpeg.ProbeResult) []AudioRendition {
+	if len(probe.Audio) == 0 {
+		return nil
+	}
+	var out []AudioRendition
+	for _, as := range probe.Audio {
+		primary := AudioRendition{
+			SourceStreamIndex: as.Index,
+			Codec:             "aac",
+			Priority:          priority.EncodeAudio,
+		}
+		if as.Channels <= 1 {
+			primary.Channels = 1
+			primary.Bitrate = 64
+		} else {
+			primary.Channels = 2
+			primary.Bitrate = 128
+		}
+		out = append(out, primary)
+		if as.Channels > 2 {
+			out = append(out, AudioRendition{
+				SourceStreamIndex: as.Index,
+				Channels:          6,
+				Bitrate:           384,
+				Codec:             "aac",
+				Priority:          priority.EncodeAudio,
+			})
+		}
+	}
+	return out
 }
