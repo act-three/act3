@@ -21,9 +21,10 @@ func (a *AudioTrack) SampleRate() int       { return int(a.at.SampleRate) }
 func (a *AudioTrack) Codec() string         { return a.at.Codec }
 func (a *AudioTrack) Profile() string       { return a.at.Profile }
 
-// Label returns a human-readable label like
-// "English (5.1)" or "Track 1 (Stereo)".
-func (a *AudioTrack) Label() string {
+// Name returns the human-readable name of the track without any
+// channel-layout suffix: the source title, falling back to a
+// language name, falling back to "Track N".
+func (a *AudioTrack) Name() string {
 	name := a.at.Title
 	if name == "" {
 		name = langName(a.at.Language)
@@ -31,8 +32,31 @@ func (a *AudioTrack) Label() string {
 	if name == "" {
 		name = fmt.Sprintf("Track %d", a.at.StreamIndex+1)
 	}
+	return name
+}
+
+// Label returns a human-readable label like
+// "English (5.1)" or "Track 1 (Stereo)" describing the source
+// track's channel layout. For an output rendition's display label,
+// compose Name() with OutputChannelLabel(rendition.Channels) so the
+// suffix reflects the rendition rather than the source.
+func (a *AudioTrack) Label() string {
 	layout := layoutLabel(a.at.Channels, a.at.ChannelLayout)
-	return name + " (" + layout + ")"
+	return a.Name() + " (" + layout + ")"
+}
+
+// OutputChannelLabel returns a human-readable label for an output
+// rendition's channel count: "Mono", "Stereo", "5.1".
+func OutputChannelLabel(channels int) string {
+	switch channels {
+	case 1:
+		return "Mono"
+	case 2:
+		return "Stereo"
+	case 6:
+		return "5.1"
+	}
+	return fmt.Sprintf("%dch", channels)
 }
 
 func layoutLabel(channels int64, layout string) string {

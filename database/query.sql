@@ -17,6 +17,18 @@ SELECT * FROM AudioRendition
 WHERE VideoID = ?
 ORDER BY AudioTrackID, Channels;
 
+-- AudioRenditionListEncodedForMV returns encoded audio renditions
+-- for a video in MV-playlist source order: publisher source order
+-- (AudioTrack.StreamIndex), then channel count ascending. The first
+-- row is the DEFAULT for the audio group. The JOIN drops orphan
+-- renditions whose source AudioTrack is missing, and the WHERE
+-- filters out unencoded entries.
+-- name: AudioRenditionListEncodedForMV :many
+SELECT ar.* FROM AudioRendition ar
+JOIN AudioTrack at ON at.ID = ar.AudioTrackID
+WHERE ar.VideoID = ? AND ar.Key != ''
+ORDER BY at.StreamIndex, ar.Channels;
+
 -- name: AudioRenditionListKeysByVideoIDs :many
 SELECT Key FROM AudioRendition
 WHERE VideoID IN (sqlc.slice(ids)) AND Key != '';
@@ -827,8 +839,8 @@ WHERE VideoID = sqlc.arg(VideoID) AND DeletedAt IS NULL;
 -- name: RenditionCreate :one
 INSERT INTO Rendition (
 	VideoID, Purpose, Remux, Codec, TargetBitrate,
-	MaxHeight, MaxFPS, CopyAudio, SurroundAudio, Priority
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	MaxHeight, MaxFPS, Priority
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: RenditionDeleteByVideoID :exec

@@ -8,6 +8,11 @@ type AudioRendition struct {
 	ar schema.AudioRendition
 }
 
+// AudioRendition returns the AudioRendition row for the given ID.
+func (tx *TxR) AudioRendition(ctx Context, id string) (schema.AudioRendition, error) {
+	return tx.q.AudioRenditionGet(ctx, id)
+}
+
 func (a *AudioRendition) ID() string           { return a.ar.ID }
 func (a *AudioRendition) VideoID() string      { return a.ar.VideoID }
 func (a *AudioRendition) AudioTrackID() string { return a.ar.AudioTrackID }

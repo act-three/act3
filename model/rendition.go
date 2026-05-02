@@ -46,19 +46,15 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 }
 
 func qualityLabel(r schema.Rendition) string {
-	suffix := ""
-	if r.SurroundAudio != 0 {
-		suffix = " 5.1"
-	}
 	if r.MaxHeight > 0 {
-		return fmt.Sprintf("%dp%s", r.MaxHeight, suffix)
+		return fmt.Sprintf("%dp", r.MaxHeight)
 	}
 	// MaxHeight 0 means source resolution.
 	mbps := float64(r.TargetBitrate) / 1000
 	if mbps >= 1 {
-		return fmt.Sprintf("%.0f Mbps%s", mbps, suffix)
+		return fmt.Sprintf("%.0f Mbps", mbps)
 	}
-	return fmt.Sprintf("%d kbps%s", r.TargetBitrate, suffix)
+	return fmt.Sprintf("%d kbps", r.TargetBitrate)
 }
 
 type RenditionForDownload struct {

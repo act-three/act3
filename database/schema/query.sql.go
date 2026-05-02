@@ -131,6 +131,52 @@ func (q *Queries) AudioRenditionListByVideoID(ctx context.Context, videoid strin
 	return items, nil
 }
 
+const audioRenditionListEncodedForMV = `-- name: AudioRenditionListEncodedForMV :many
+SELECT ar.id, ar.videoid, ar.audiotrackid, ar.channels, ar.bitrate, ar.codec, ar."key", ar.playlist, ar.priority FROM AudioRendition ar
+JOIN AudioTrack at ON at.ID = ar.AudioTrackID
+WHERE ar.VideoID = ? AND ar.Key != ''
+ORDER BY at.StreamIndex, ar.Channels
+`
+
+// AudioRenditionListEncodedForMV returns encoded audio renditions
+// for a video in MV-playlist source order: publisher source order
+// (AudioTrack.StreamIndex), then channel count ascending. The first
+// row is the DEFAULT for the audio group. The JOIN drops orphan
+// renditions whose source AudioTrack is missing, and the WHERE
+// filters out unencoded entries.
+func (q *Queries) AudioRenditionListEncodedForMV(ctx context.Context, videoid string) ([]AudioRendition, error) {
+	rows, err := q.db.QueryContext(ctx, audioRenditionListEncodedForMV, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AudioRendition
+	for rows.Next() {
+		var i AudioRendition
+		if err := rows.Scan(
+			&i.ID,
+			&i.VideoID,
+			&i.AudioTrackID,
+			&i.Channels,
+			&i.Bitrate,
+			&i.Codec,
+			&i.Key,
+			&i.Playlist,
+			&i.Priority,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const audioRenditionListKeysByVideoIDs = `-- name: AudioRenditionListKeysByVideoIDs :many
 SELECT Key FROM AudioRendition
 WHERE VideoID IN (/*SLICE:ids*/?) AND Key != ''
@@ -3366,9 +3412,9 @@ func (q *Queries) MovieVideoSoftDeleteByVideoID(ctx context.Context, arg MovieVi
 const renditionCreate = `-- name: RenditionCreate :one
 INSERT INTO Rendition (
 	VideoID, Purpose, Remux, Codec, TargetBitrate,
-	MaxHeight, MaxFPS, CopyAudio, SurroundAudio, Priority
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority
+	MaxHeight, MaxFPS, Priority
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority
 `
 
 type RenditionCreateParams struct {
@@ -3379,8 +3425,6 @@ type RenditionCreateParams struct {
 	TargetBitrate int64
 	MaxHeight     int64
 	MaxFPS        int64
-	CopyAudio     int64
-	SurroundAudio int64
 	Priority      int64
 }
 
@@ -3393,8 +3437,6 @@ func (q *Queries) RenditionCreate(ctx context.Context, arg RenditionCreateParams
 		arg.TargetBitrate,
 		arg.MaxHeight,
 		arg.MaxFPS,
-		arg.CopyAudio,
-		arg.SurroundAudio,
 		arg.Priority,
 	)
 	var i Rendition
@@ -3407,8 +3449,6 @@ func (q *Queries) RenditionCreate(ctx context.Context, arg RenditionCreateParams
 		&i.TargetBitrate,
 		&i.MaxHeight,
 		&i.MaxFPS,
-		&i.CopyAudio,
-		&i.SurroundAudio,
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,
@@ -3445,7 +3485,7 @@ func (q *Queries) RenditionDeleteByVideoIDList(ctx context.Context, ids []string
 }
 
 const renditionGet = `-- name: RenditionGet :one
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition WHERE ID = ?
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition WHERE ID = ?
 `
 
 func (q *Queries) RenditionGet(ctx context.Context, id string) (Rendition, error) {
@@ -3460,8 +3500,6 @@ func (q *Queries) RenditionGet(ctx context.Context, id string) (Rendition, error
 		&i.TargetBitrate,
 		&i.MaxHeight,
 		&i.MaxFPS,
-		&i.CopyAudio,
-		&i.SurroundAudio,
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,
@@ -3470,7 +3508,7 @@ func (q *Queries) RenditionGet(ctx context.Context, id string) (Rendition, error
 }
 
 const renditionGetDownloadByVideoID = `-- name: RenditionGetDownloadByVideoID :one
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition
 WHERE VideoID = ? AND Purpose = 'download'
 LIMIT 1
 `
@@ -3487,8 +3525,6 @@ func (q *Queries) RenditionGetDownloadByVideoID(ctx context.Context, videoid str
 		&i.TargetBitrate,
 		&i.MaxHeight,
 		&i.MaxFPS,
-		&i.CopyAudio,
-		&i.SurroundAudio,
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,
@@ -3497,7 +3533,7 @@ func (q *Queries) RenditionGetDownloadByVideoID(ctx context.Context, videoid str
 }
 
 const renditionListByVideoID = `-- name: RenditionListByVideoID :many
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition WHERE VideoID = ?
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition WHERE VideoID = ?
 `
 
 func (q *Queries) RenditionListByVideoID(ctx context.Context, videoid string) ([]Rendition, error) {
@@ -3518,8 +3554,6 @@ func (q *Queries) RenditionListByVideoID(ctx context.Context, videoid string) ([
 			&i.TargetBitrate,
 			&i.MaxHeight,
 			&i.MaxFPS,
-			&i.CopyAudio,
-			&i.SurroundAudio,
 			&i.Key,
 			&i.Playlist,
 			&i.Priority,
@@ -3538,7 +3572,7 @@ func (q *Queries) RenditionListByVideoID(ctx context.Context, videoid string) ([
 }
 
 const renditionListEncodedStreamingByVideoID = `-- name: RenditionListEncodedStreamingByVideoID :many
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition
 WHERE VideoID = ? AND Purpose = 'streaming' AND Key != ''
 `
 
@@ -3560,8 +3594,6 @@ func (q *Queries) RenditionListEncodedStreamingByVideoID(ctx context.Context, vi
 			&i.TargetBitrate,
 			&i.MaxHeight,
 			&i.MaxFPS,
-			&i.CopyAudio,
-			&i.SurroundAudio,
 			&i.Key,
 			&i.Playlist,
 			&i.Priority,
@@ -3618,7 +3650,7 @@ func (q *Queries) RenditionListKeysByVideoIDs(ctx context.Context, ids []string)
 }
 
 const renditionListStreamingByEpisodeID = `-- name: RenditionListStreamingByEpisodeID :many
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition
 WHERE Purpose = 'streaming'
 AND VideoID IN (SELECT VideoID FROM EpisodeVideo WHERE EpisodeID = ?)
 `
@@ -3641,8 +3673,6 @@ func (q *Queries) RenditionListStreamingByEpisodeID(ctx context.Context, episode
 			&i.TargetBitrate,
 			&i.MaxHeight,
 			&i.MaxFPS,
-			&i.CopyAudio,
-			&i.SurroundAudio,
 			&i.Key,
 			&i.Playlist,
 			&i.Priority,
@@ -3661,7 +3691,7 @@ func (q *Queries) RenditionListStreamingByEpisodeID(ctx context.Context, episode
 }
 
 const renditionListStreamingByMovieEditionID = `-- name: RenditionListStreamingByMovieEditionID :many
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition
 WHERE Purpose = 'streaming'
 AND VideoID IN (SELECT VideoID FROM MovieVideo WHERE MovieEditionID = ?)
 `
@@ -3684,8 +3714,6 @@ func (q *Queries) RenditionListStreamingByMovieEditionID(ctx context.Context, mo
 			&i.TargetBitrate,
 			&i.MaxHeight,
 			&i.MaxFPS,
-			&i.CopyAudio,
-			&i.SurroundAudio,
 			&i.Key,
 			&i.Playlist,
 			&i.Priority,
@@ -3704,7 +3732,7 @@ func (q *Queries) RenditionListStreamingByMovieEditionID(ctx context.Context, mo
 }
 
 const renditionListStreamingByMovieID = `-- name: RenditionListStreamingByMovieID :many
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition
 WHERE Purpose = 'streaming'
 AND VideoID IN (
 	SELECT VideoID FROM MovieVideo
@@ -3730,8 +3758,6 @@ func (q *Queries) RenditionListStreamingByMovieID(ctx context.Context, movieid s
 			&i.TargetBitrate,
 			&i.MaxHeight,
 			&i.MaxFPS,
-			&i.CopyAudio,
-			&i.SurroundAudio,
 			&i.Key,
 			&i.Playlist,
 			&i.Priority,
@@ -3750,7 +3776,7 @@ func (q *Queries) RenditionListStreamingByMovieID(ctx context.Context, movieid s
 }
 
 const renditionListStreamingByVideoID = `-- name: RenditionListStreamingByVideoID :many
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition
 WHERE VideoID = ? AND Purpose = 'streaming'
 `
 
@@ -3772,8 +3798,6 @@ func (q *Queries) RenditionListStreamingByVideoID(ctx context.Context, videoid s
 			&i.TargetBitrate,
 			&i.MaxHeight,
 			&i.MaxFPS,
-			&i.CopyAudio,
-			&i.SurroundAudio,
 			&i.Key,
 			&i.Playlist,
 			&i.Priority,
@@ -3792,7 +3816,7 @@ func (q *Queries) RenditionListStreamingByVideoID(ctx context.Context, videoid s
 }
 
 const renditionNextUnencodedStreaming = `-- name: RenditionNextUnencodedStreaming :one
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority FROM Rendition
+SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition
 WHERE VideoID = ? AND Purpose = 'streaming' AND Key = ''
 ORDER BY Priority ASC LIMIT 1
 `
@@ -3809,8 +3833,6 @@ func (q *Queries) RenditionNextUnencodedStreaming(ctx context.Context, videoid s
 		&i.TargetBitrate,
 		&i.MaxHeight,
 		&i.MaxFPS,
-		&i.CopyAudio,
-		&i.SurroundAudio,
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,
@@ -3822,7 +3844,7 @@ const renditionUpdateEncode = `-- name: RenditionUpdateEncode :one
 UPDATE Rendition
 SET Key = ?, Playlist = ?
 WHERE ID = ?
-RETURNING id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, copyaudio, surroundaudio, "key", playlist, priority
+RETURNING id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority
 `
 
 type RenditionUpdateEncodeParams struct {
@@ -3843,8 +3865,6 @@ func (q *Queries) RenditionUpdateEncode(ctx context.Context, arg RenditionUpdate
 		&i.TargetBitrate,
 		&i.MaxHeight,
 		&i.MaxFPS,
-		&i.CopyAudio,
-		&i.SurroundAudio,
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,

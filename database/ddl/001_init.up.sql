@@ -254,8 +254,6 @@ CREATE TABLE Rendition
 	TargetBitrate INTEGER NOT NULL, -- kbit/s
 	MaxHeight     INTEGER NOT NULL, -- 0 = source
 	MaxFPS        INTEGER NOT NULL, -- 0 = source
-	CopyAudio     INTEGER NOT NULL, -- 1: copy audio; 0: reencode to AAC
-	SurroundAudio INTEGER NOT NULL, -- 1: encode as 5.1(back); 0: stereo downmix
 	Key           TEXT NOT NULL DEFAULT (''), -- empty during ingest
 	Playlist      TEXT NOT NULL DEFAULT (''), -- HLS media playlist; empty for download
 	Priority      INTEGER NOT NULL -- 0 = highest priority (best rendition)

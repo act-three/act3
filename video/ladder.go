@@ -16,8 +16,6 @@ type Rendition struct {
 	TargetBitrate int64  // kbit/s (actual source bitrate for remux)
 	MaxHeight     int    // output height in pixels; 0 = use source
 	MaxFPS        int    // output frame rate cap; 0 = use source
-	CopyAudio     bool   // true if source audio is AAC stereo (safe to copy)
-	SurroundAudio bool   // true: encode as 5.1(back); false: stereo downmix
 	Priority      int    // encoding order: 0 = best, then worst, middle, rest
 }
 
@@ -115,16 +113,6 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 		outCodec = "h264"
 	}
 
-	// Only copy AAC with ≤2 channels; surround AAC may use PCE
-	// (Program Config Element) for non-standard layouts like
-	// 5.1(side), which CoreMedia's HLS parser rejects.
-	copyAudio := false
-	if a := probe.FirstAudio(); a != nil {
-		if a.CodecName == "aac" && a.Channels <= 2 {
-			copyAudio = true
-		}
-	}
-
 	var best Rendition
 	switch {
 	case canRemux && srcBitrateKbps <= topTierCeiling:
@@ -133,7 +121,6 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 			Remux:         true,
 			Codec:         outCodec,
 			TargetBitrate: srcBitrateKbps,
-			CopyAudio:     copyAudio,
 			Priority:      priority.Encode1st,
 		}
 	case !canRemux && srcBitrateKbps <= reencodeThreshold:
@@ -141,7 +128,6 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 		best = Rendition{
 			Codec:         "hevc",
 			TargetBitrate: srcBitrateKbps * 11 / 10,
-			CopyAudio:     copyAudio,
 			Priority:      priority.Encode1st,
 		}
 	default:
@@ -149,7 +135,6 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 		best = Rendition{
 			Codec:         "hevc",
 			TargetBitrate: topTierCeiling,
-			CopyAudio:     copyAudio,
 			Priority:      priority.Encode1st,
 		}
 	}
@@ -187,7 +172,6 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 			TargetBitrate: bitrate,
 			MaxHeight:     maxH,
 			MaxFPS:        maxFPS,
-			CopyAudio:     copyAudio,
 			Priority:      entry.Priority,
 		})
 	}

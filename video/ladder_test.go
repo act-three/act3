@@ -59,9 +59,6 @@ func TestPlanVideoRenditions_h264Remux(t *testing.T) {
 	if best.TargetBitrate != 30_000 {
 		t.Errorf("expected 30000 kbit/s, got %d", best.TargetBitrate)
 	}
-	if !best.CopyAudio {
-		t.Error("expected CopyAudio for AAC stereo")
-	}
 	if best.Priority != priority.Encode1st {
 		t.Errorf("expected priority %d, got %d", priority.Encode1st, best.Priority)
 	}
@@ -96,9 +93,6 @@ func TestPlanVideoRenditions_hevcRemux(t *testing.T) {
 	}
 	if best.Codec != "hevc" {
 		t.Errorf("expected hevc, got %s", best.Codec)
-	}
-	if best.CopyAudio {
-		t.Error("expected CopyAudio=false for non-AAC audio")
 	}
 }
 
@@ -151,7 +145,7 @@ func TestPlanVideoRenditions_highBitrateReencode(t *testing.T) {
 	}
 }
 
-func TestPlanVideoRenditions_noSurroundDuplicate(t *testing.T) {
+func TestPlanVideoRenditions_noBitrateDuplicate(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
 			CodecName: "h264",
@@ -171,9 +165,6 @@ func TestPlanVideoRenditions_noSurroundDuplicate(t *testing.T) {
 	}
 	best := rs[0]
 	for i, r := range rs {
-		if r.SurroundAudio {
-			t.Errorf("rs[%d]: SurroundAudio should always be false", i)
-		}
 		if i > 0 && r.TargetBitrate == best.TargetBitrate {
 			t.Errorf("rs[%d]: duplicate bitrate %d matches best", i, r.TargetBitrate)
 		}
