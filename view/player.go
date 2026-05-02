@@ -193,13 +193,17 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 // #383582114). When the manifest does surface them (Safari, Roku,
 // AppleTV, future Chrome) the template stays unused and there are no
 // duplicate TextTracks to deduplicate.
+//
+// The label attribute carries the SubtitleTrack ID, matching the HLS
+// EXT-X-MEDIA NAME — both surface as TextTrack.label, and the player
+// JS keys on it. Visible menu text comes from the menu's Text node.
 func playerCaptionsTemplate(opts []model.SubtitleOption) html.Node {
 	var tracks []html.Node
 	for _, opt := range opts {
 		tracks = append(tracks, html.Track(
 			attr.Src(opt.WebVTTPath),
 			Attr("srclang")(opt.Language),
-			Attr("label")(opt.Label),
+			Attr("label")(opt.ID),
 			Attr("kind")("subtitles"),
 		))
 	}
@@ -213,9 +217,9 @@ func playerCaptionsTemplate(opts []model.SubtitleOption) html.Node {
 // settings-style button. Subtitle tracks come from either the HLS
 // manifest (Safari, Roku, AppleTV) or the playerCaptionsTemplate
 // fallback inserted by the JS (Chrome). The JS toggles TextTrack.mode
-// to switch between them. The label param is how the JS finds the
-// matching TextTrack — it must equal the manifest NAME (and the
-// template's label attribute) for the same row.
+// to switch between them. The id param matches the HLS NAME (which
+// is the SubtitleTrack ID) and the template's label attribute, and
+// is what the JS uses to find the matching TextTrack.
 func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 	items := []html.Node{
 		html.Button(
@@ -232,7 +236,6 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 				attr.Type("button"),
 				stimulus.Action("click->player#setSubtitle"),
 				Attr("data-player-sub-id-param")(opt.ID),
-				Attr("data-player-sub-label-param")(opt.Label),
 				Class("v-player-quality-option"),
 			)(Text(opt.Label)),
 		)

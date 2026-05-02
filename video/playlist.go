@@ -38,7 +38,7 @@ type MVEntry struct {
 // multivariant playlist via #EXT-X-MEDIA:TYPE=SUBTITLES.
 type MVSubtitle struct {
 	URI      string // points at a per-track media playlist (.m3u8)
-	Name     string // human-readable for the menu (e.g. "English")
+	Name     string // opaque identifier (emitted as NAME); the player JS matches on it
 	Language string // BCP47-ish code (we store ISO 639-2 like "eng")
 	Default  bool   // first track of preferred language; client may auto-select
 	Forced   bool   // forced narrative
@@ -84,7 +84,7 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 		alts = append(alts, &m3u8.Alternative{
 			Type:       "SUBTITLES",
 			GroupId:    subtitleGroupID,
-			Name:       SanitizeAttrString(s.Name),
+			Name:       s.Name,
 			Language:   s.Language,
 			URI:        s.URI,
 			Default:    s.Default,
@@ -142,14 +142,6 @@ func GenerateSubtitleMediaPlaylist(duration time.Duration, vttURI string) string
 	b.WriteByte('\n')
 	b.WriteString("#EXT-X-ENDLIST\n")
 	return b.String()
-}
-
-// SanitizeAttrString defends the EXT-X-MEDIA NAME attribute against
-// embedded double quotes. Realistic input ("English", "Spanish") never
-// contains a quote, but a malformed mux could; replacing with a single
-// quote keeps the playlist parseable.
-func SanitizeAttrString(s string) string {
-	return strings.ReplaceAll(s, `"`, `'`)
 }
 
 // PeakBitrate computes the peak segment bitrate from an HLS
