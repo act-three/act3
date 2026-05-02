@@ -8564,11 +8564,10 @@
     }
     setAudio(e) {
       const id = e.params.audioId;
-      const label = e.params.audioLabel;
       const video = this.videoTarget;
       if (!video.audioTracks) return;
       for (const t of video.audioTracks) {
-        t.enabled = t.label === label;
+        t.enabled = t.label === id;
       }
       this.currentAudioValue = id;
       this.audioMenuOpenValue = false;
@@ -8746,17 +8745,18 @@
         this.captionsTemplateTarget.content.cloneNode(true)
       );
     }
-    // Hide audio-menu entries whose label doesn't match any
-    // audioTracks entry the browser surfaced. If audioTracks is
-    // empty (manifest not yet parsed), entries stay visible — the
-    // next handleDuration pass will prune.
+    // Hide audio-menu entries whose id doesn't match any audioTracks
+    // entry the browser surfaced. If audioTracks is empty (manifest
+    // not yet parsed), entries stay visible — the next handleDuration
+    // pass will prune. Track .label carries the AudioRendition ID
+    // (set as EXT-X-MEDIA NAME in buildMVPlaylist).
     #filterAudioMenu() {
       if (!this.videoTarget.audioTracks) return;
       if (this.videoTarget.audioTracks.length === 0) return;
-      const labels = /* @__PURE__ */ new Set();
-      for (const t of this.videoTarget.audioTracks) labels.add(t.label);
+      const ids = /* @__PURE__ */ new Set();
+      for (const t of this.videoTarget.audioTracks) ids.add(t.label);
       for (const btn of this.audioMenuTarget.querySelectorAll("button")) {
-        btn.hidden = !labels.has(btn.dataset.playerAudioLabelParam);
+        btn.hidden = !ids.has(btn.dataset.playerAudioIdParam);
       }
     }
     // On each loaded manifest, force the chosen audio track:
@@ -8770,20 +8770,14 @@
     //     would silently revert the audio selection.
     #applyAudioSelection() {
       if (!this.videoTarget.audioTracks) return;
-      let btn;
       if (this.currentAudioValue === "") {
-        btn = this.audioMenuTarget.querySelector("button[data-active]");
+        const btn = this.audioMenuTarget.querySelector("button[data-active]");
         if (!btn) return;
         this.currentAudioValue = btn.dataset.playerAudioIdParam;
-      } else {
-        btn = this.audioMenuTarget.querySelector(
-          `button[data-player-audio-id-param="${CSS.escape(this.currentAudioValue)}"]`
-        );
-        if (!btn) return;
       }
-      const label = btn.dataset.playerAudioLabelParam;
+      const id = this.currentAudioValue;
       for (const t of this.videoTarget.audioTracks) {
-        t.enabled = t.label === label;
+        t.enabled = t.label === id;
       }
     }
     // Reflect a textTrack the HLS player auto-enabled (e.g. Safari with

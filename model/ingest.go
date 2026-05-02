@@ -1015,9 +1015,14 @@ func buildMVPlaylist(
 	var mvAudios []video.MVAudio
 	for i, ar := range encodedAudio {
 		at := tracksByID[ar.AudioTrackID]
+		// NAME carries the AudioRendition ID, not a human label. The
+		// browser exposes it as audioTracks[i].label; the player JS
+		// matches by that opaque ID. Display strings live in the
+		// player menu's visible text, so labels need not be globally
+		// unique, escaped, or generated identically across two paths.
 		mvAudios = append(mvAudios, video.MVAudio{
 			URI:      "/-/audpls/" + ar.ID + ".m3u8",
-			Name:     AudioMenuLabel((&AudioTrack{at: at}).Name(), int(ar.Channels)),
+			Name:     ar.ID,
 			Language: at.Language,
 			Channels: int(ar.Channels),
 			Default:  i == 0,

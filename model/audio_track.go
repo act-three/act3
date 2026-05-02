@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"ily.dev/act3/database/schema"
-	"ily.dev/act3/video"
 )
 
 type AudioTrack struct {
@@ -58,15 +57,6 @@ func OutputChannelLabel(channels int) string {
 		return "5.1"
 	}
 	return fmt.Sprintf("%dch", channels)
-}
-
-// AudioMenuLabel returns the label that must match between the HLS
-// EXT-X-MEDIA NAME attribute and the player audio menu's
-// data-player-audio-label-param. Run through video.SanitizeAttrString
-// so a source title containing `"` produces the same byte sequence on
-// both sides — the player matches by string equality.
-func AudioMenuLabel(title string, channels int) string {
-	return video.SanitizeAttrString(title + " (" + OutputChannelLabel(channels) + ")")
 }
 
 func layoutLabel(channels int64, layout string) string {

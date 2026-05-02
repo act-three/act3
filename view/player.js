@@ -379,15 +379,16 @@ export default class extends Controller {
 
 	setAudio(e) {
 		const id = e.params.audioId;
-		const label = e.params.audioLabel;
 		const video = this.videoTarget;
 
 		// Native audioTracks: setting enabled=true on one track
 		// exclusively selects it (the spec says siblings flip to false
 		// and the change event fires). Walk and assign for clarity.
+		// Track .label is the manifest's EXT-X-MEDIA NAME, which we
+		// set to the AudioRendition ID — match by id directly.
 		if (!video.audioTracks) return;
 		for (const t of video.audioTracks) {
-			t.enabled = t.label === label;
+			t.enabled = t.label === id;
 		}
 
 		this.currentAudioValue = id;
@@ -633,17 +634,18 @@ export default class extends Controller {
 		);
 	}
 
-	// Hide audio-menu entries whose label doesn't match any
-	// audioTracks entry the browser surfaced. If audioTracks is
-	// empty (manifest not yet parsed), entries stay visible — the
-	// next handleDuration pass will prune.
+	// Hide audio-menu entries whose id doesn't match any audioTracks
+	// entry the browser surfaced. If audioTracks is empty (manifest
+	// not yet parsed), entries stay visible — the next handleDuration
+	// pass will prune. Track .label carries the AudioRendition ID
+	// (set as EXT-X-MEDIA NAME in buildMVPlaylist).
 	#filterAudioMenu() {
 		if (!this.videoTarget.audioTracks) return;
 		if (this.videoTarget.audioTracks.length === 0) return;
-		const labels = new Set();
-		for (const t of this.videoTarget.audioTracks) labels.add(t.label);
+		const ids = new Set();
+		for (const t of this.videoTarget.audioTracks) ids.add(t.label);
 		for (const btn of this.audioMenuTarget.querySelectorAll("button")) {
-			btn.hidden = !labels.has(btn.dataset.playerAudioLabelParam);
+			btn.hidden = !ids.has(btn.dataset.playerAudioIdParam);
 		}
 	}
 
@@ -658,20 +660,14 @@ export default class extends Controller {
 	//     would silently revert the audio selection.
 	#applyAudioSelection() {
 		if (!this.videoTarget.audioTracks) return;
-		let btn;
 		if (this.currentAudioValue === "") {
-			btn = this.audioMenuTarget.querySelector("button[data-active]");
+			const btn = this.audioMenuTarget.querySelector("button[data-active]");
 			if (!btn) return;
 			this.currentAudioValue = btn.dataset.playerAudioIdParam;
-		} else {
-			btn = this.audioMenuTarget.querySelector(
-				`button[data-player-audio-id-param="${CSS.escape(this.currentAudioValue)}"]`,
-			);
-			if (!btn) return;
 		}
-		const label = btn.dataset.playerAudioLabelParam;
+		const id = this.currentAudioValue;
 		for (const t of this.videoTarget.audioTracks) {
-			t.enabled = t.label === label;
+			t.enabled = t.label === id;
 		}
 	}
 
