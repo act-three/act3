@@ -249,28 +249,22 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 // playerAudioMenu mirrors playerCaptionsMenu: a popover menu over a
 // headphones-style button. Audio renditions are surfaced by the
 // browser's native HLS implementation as HTMLMediaElement.audioTracks
-// (both Safari and Chrome populate this from EXT-X-MEDIA AUDIO group),
-// so no template fallback is needed. The label param matches the HLS
-// NAME and is used by the JS to find the matching AudioTrack. Unlike
-// captions there is no "off" — every video has audio.
+// (Safari populates this from EXT-X-MEDIA AUDIO group; Chrome's
+// AudioVideoTracks feature is currently disabled), so no template
+// fallback is needed. The id param matches the HLS NAME — which is
+// the AudioRendition ID — and is used by the JS to find the matching
+// AudioTrack. Unlike captions there is no "off" — every video has audio.
 func playerAudioMenu(opts []model.AudioOption) html.Node {
 	if len(opts) == 0 {
 		return nil
 	}
 	var items []html.Node
 	for _, opt := range opts {
-		// Visible button text uses the raw composition (humans don't
-		// care about quote sanitization). The data-attr label is the
-		// one matched against HTMLMediaElement.audioTracks[i].label,
-		// so it must equal the manifest NAME byte-for-byte — go
-		// through model.AudioMenuLabel for parity with the manifest.
 		display := opt.Title + " (" + model.OutputChannelLabel(opt.Channels) + ")"
-		matchLabel := model.AudioMenuLabel(opt.Title, opt.Channels)
 		btnAttrs := []attr.Node{
 			attr.Type("button"),
 			stimulus.Action("click->player#setAudio"),
 			Attr("data-player-audio-id-param")(opt.ID),
-			Attr("data-player-audio-label-param")(matchLabel),
 			Class("v-player-quality-option"),
 		}
 		if opt.Default {

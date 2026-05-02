@@ -48,7 +48,7 @@ type MVSubtitle struct {
 // multivariant playlist via #EXT-X-MEDIA:TYPE=AUDIO.
 type MVAudio struct {
 	URI      string // points at a per-track audio media playlist (.m3u8)
-	Name     string // human-readable for the menu
+	Name     string // opaque identifier (emitted as NAME); the player JS matches on it
 	Language string // BCP47-ish code (we store ISO 639-2 like "eng")
 	Channels int    // CHANNELS attribute (1, 2, or 6)
 	Default  bool   // exactly one Default per group
@@ -72,7 +72,7 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 		alts = append(alts, &m3u8.Alternative{
 			Type:       "AUDIO",
 			GroupId:    audioGroupID,
-			Name:       SanitizeAttrString(a.Name),
+			Name:       a.Name,
 			Language:   a.Language,
 			URI:        a.URI,
 			Default:    a.Default,
