@@ -2777,7 +2777,7 @@
     border-radius: 2.5px;
     height: 5px;
   }
-  .v-player-quality-wrapper {
+  .v-player-menu-wrapper {
     position: relative;
   }
   .v-player-volume-bar {
@@ -2829,9 +2829,6 @@
   }
   .v-player[data-player-captions-menu-open-value=true] .v-player-captions-menu {
     display: block;
-  }
-  .v-player-audio-wrapper {
-    position: relative;
   }
   .v-player-audio-menu {
     display: none;

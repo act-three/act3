@@ -344,7 +344,7 @@
 }
 
 /* player-quality-wrapper (positions quality menu relative to button) */
-.v-player-quality-wrapper { position: relative; }
+.v-player-menu-wrapper { position: relative; }
 
 .v-player-volume-bar { align-items: center; }
 
@@ -400,7 +400,6 @@
 
 /* Audio menu sits in the same left-aligned button group as captions
    and anchors to its wrapper's left edge. */
-.v-player-audio-wrapper { position: relative; }
 .v-player-audio-menu {
 	display: none;
 	position: absolute;

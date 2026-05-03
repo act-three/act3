@@ -58,6 +58,15 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 			stimulus.Action("touchmove->player#handleControls"),
 			stimulus.Action("enterfullscreen->player#handleControls"),
 			stimulus.Action("exitfullscreen->player#handleControls"),
+
+			// Any click anywhere in the player closes any open menu.
+			// Capture-phase so it runs before togglePlay:self on
+			// .v-player-controls — the bg-click on the video
+			// dismisses the menu without also flipping playback.
+			// All other controls (volume, play button, other menu
+			// toggles, etc.) handle their own click on bubble-up
+			// after the menu has been dismissed.
+			stimulus.Action("click->player#closeMenusOnClick:capture"),
 		)(
 			html.Div(Class("v-player-video-layer"))(
 				html.Video(
@@ -192,7 +201,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		}
 		items = append(items, html.Button(btnAttrs...)(Text(opt.Label)))
 	}
-	return html.Div(Class("v-player-quality-wrapper"))(
+	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("quality"))(
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle)(Icon("line/settings-04")),
 		html.Div(
 			stimulus.Target("player", "qualityMenu"),
@@ -255,7 +264,7 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 			)(Text(opt.Label)),
 		)
 	}
-	return html.Div(Class("v-player-quality-wrapper"))(
+	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("captions"))(
 		Button(stimulus.Action("click->player#toggleCaptionsMenu"), ButtonSurface, ButtonCircle)(Icon("line/message-text-square-02")),
 		html.Div(
 			stimulus.Target("player", "captionsMenu"),
@@ -290,7 +299,7 @@ func playerAudioMenu(opts []model.AudioOption) html.Node {
 		}
 		items = append(items, html.Button(btnAttrs...)(Text(display)))
 	}
-	return html.Div(Class("v-player-audio-wrapper"))(
+	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("audio"))(
 		Button(
 			stimulus.Action("click->player#toggleAudioMenu"),
 			ButtonSurface, ButtonCircle,
