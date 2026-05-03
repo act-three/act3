@@ -145,7 +145,6 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 						html.Div(Class("v-player-button-group"), Attr("data-align")("start"))(
 							playerCaptionsMenu(captionsOpts),
 							playerAudioMenu(audioOpts),
-							Button(stimulus.Action("click->player#toggleAudioDesc"), ButtonSurface, ButtonCircle)(Icon("line/recording-01")),
 							playerVolumeBar(),
 						),
 
@@ -303,7 +302,7 @@ func playerAudioMenu(opts []model.AudioOption) html.Node {
 		Button(
 			stimulus.Action("click->player#toggleAudioMenu"),
 			ButtonSurface, ButtonCircle,
-		)(Icon("line/headphones-01")),
+		)(Icon("line/recording-01")),
 		html.Div(
 			stimulus.Target("player", "audioMenu"),
 			Class("v-player-audio-menu"),
