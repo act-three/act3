@@ -8281,6 +8281,7 @@
   var player_default = class extends Controller {
     static targets = [
       "video",
+      "controls",
       "volume",
       "seek",
       "buffer",
@@ -8893,7 +8894,12 @@
       if (this.#harlowMode) {
         return false;
       }
-      return this.#recentInteraction || this.loadingValue || this.videoTarget.paused || this.#recentTouchSeek;
+      return this.#recentInteraction || this.loadingValue || this.videoTarget.paused || this.qualityMenuOpenValue || this.captionsMenuOpenValue || this.audioMenuOpenValue || this.#controlsHovered || this.#recentTouchSeek;
+    }
+    get #controlsHovered() {
+      return !!this.controlsTarget.querySelector(
+        ".v-player-overlay-top:hover, .v-player-overlay-bottom:hover"
+      );
     }
   };
 

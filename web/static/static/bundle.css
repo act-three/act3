@@ -2472,9 +2472,18 @@
     left: 0;
     right: 0;
     top: 0;
-    padding: 0.5rem 1rem 6rem;
+    padding: 0.5rem 1rem;
     align-items: center;
     gap: 1rem;
+    isolation: isolate;
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+  }
+  .v-player-overlay-top::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 -6rem 0;
+    z-index: -1;
+    pointer-events: none;
     background:
       linear-gradient(
         180deg,
@@ -2495,7 +2504,6 @@
         rgb(0% 0% 0% / 0.0125) 87.5%,
         rgb(0% 0% 0% / 0.003125) 93.75%,
         rgb(0% 0% 0% / 0) 100%);
-    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
   }
   .v-player-title {
   }
@@ -2506,8 +2514,17 @@
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 8rem 0.5rem 0.5rem;
+    padding: 0.5rem;
     gap: 0.5rem;
+    isolation: isolate;
+    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+  }
+  .v-player-overlay-bottom::before {
+    content: "";
+    position: absolute;
+    inset: -8rem 0 0 0;
+    z-index: -1;
+    pointer-events: none;
     background:
       linear-gradient(
         0deg,
@@ -2528,7 +2545,6 @@
         rgb(0% 0% 0% / 0.0125) 87.5%,
         rgb(0% 0% 0% / 0.003125) 93.75%,
         rgb(0% 0% 0% / 0) 100%);
-    transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
   }
   .v-player[data-player-harlow-value=true] .v-player-overlay-top,
   .v-player[data-player-hide-controls-value=true] .v-player-overlay-top {
