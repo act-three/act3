@@ -233,9 +233,13 @@ export default class extends Controller {
 					if (!repeat) video.loop = !video.loop;
 					break;
 
-				// Close video player.
+				// Close the open menu, or otherwise close the player.
 				case "Escape":
-					this.dismiss();
+					if (this.#anyMenuOpen) {
+						this.#closeAllMenus();
+					} else {
+						this.dismiss();
+					}
 					break;
 			}
 
@@ -371,6 +375,41 @@ export default class extends Controller {
 		} else {
 			video.pause();
 		}
+	}
+
+	closeMenusOnClick(e) {
+		if (!this.#anyMenuOpen) return;
+		// Close every open menu except the one whose wrapper was
+		// clicked into. Letting the click bubble to that menu's own
+		// toggle (or option) lets it do the right thing — toggling
+		// off if the click was its own toggle button, or running an
+		// option's setter (which closes the menu itself).
+		const insideMenu = e.target.closest("[data-player-menu]")?.dataset.playerMenu ?? null;
+		for (const key of ["quality", "captions", "audio"]) {
+			if (key === insideMenu) continue;
+			const valueProp = key + "MenuOpenValue";
+			if (this[valueProp]) this[valueProp] = false;
+		}
+		// Suppress togglePlay specifically when the click was on the
+		// .v-player-controls backdrop (i.e., on the video itself) —
+		// dismissing the menu by clicking the video shouldn't also
+		// flip playback. Clicks on real controls (which have their
+		// own targets) propagate normally.
+		if (e.target === this.controlsTarget) {
+			e.stopPropagation();
+		}
+	}
+
+	get #anyMenuOpen() {
+		return this.qualityMenuOpenValue
+			|| this.captionsMenuOpenValue
+			|| this.audioMenuOpenValue;
+	}
+
+	#closeAllMenus() {
+		this.qualityMenuOpenValue = false;
+		this.captionsMenuOpenValue = false;
+		this.audioMenuOpenValue = false;
 	}
 
 	toggleFullscreen() {
@@ -831,9 +870,7 @@ export default class extends Controller {
 		return this.#recentInteraction
 			|| this.loadingValue
 			|| this.videoTarget.paused
-			|| this.qualityMenuOpenValue
-			|| this.captionsMenuOpenValue
-			|| this.audioMenuOpenValue
+			|| this.#anyMenuOpen
 			|| this.#controlsHovered
 			|| this.#recentTouchSeek;
 	}

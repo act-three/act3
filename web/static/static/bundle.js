@@ -8453,9 +8453,13 @@
           case "l":
             if (!repeat) video.loop = !video.loop;
             break;
-          // Close video player.
+          // Close the open menu, or otherwise close the player.
           case "Escape":
-            this.dismiss();
+            if (this.#anyMenuOpen) {
+              this.#closeAllMenus();
+            } else {
+              this.dismiss();
+            }
             break;
         }
         this.#lastKey = key;
@@ -8550,6 +8554,26 @@
       } else {
         video.pause();
       }
+    }
+    closeMenusOnClick(e) {
+      if (!this.#anyMenuOpen) return;
+      const insideMenu = e.target.closest("[data-player-menu]")?.dataset.playerMenu ?? null;
+      for (const key of ["quality", "captions", "audio"]) {
+        if (key === insideMenu) continue;
+        const valueProp = key + "MenuOpenValue";
+        if (this[valueProp]) this[valueProp] = false;
+      }
+      if (e.target === this.controlsTarget) {
+        e.stopPropagation();
+      }
+    }
+    get #anyMenuOpen() {
+      return this.qualityMenuOpenValue || this.captionsMenuOpenValue || this.audioMenuOpenValue;
+    }
+    #closeAllMenus() {
+      this.qualityMenuOpenValue = false;
+      this.captionsMenuOpenValue = false;
+      this.audioMenuOpenValue = false;
     }
     toggleFullscreen() {
       if (document.fullscreenElement) {
@@ -8894,7 +8918,7 @@
       if (this.#harlowMode) {
         return false;
       }
-      return this.#recentInteraction || this.loadingValue || this.videoTarget.paused || this.qualityMenuOpenValue || this.captionsMenuOpenValue || this.audioMenuOpenValue || this.#controlsHovered || this.#recentTouchSeek;
+      return this.#recentInteraction || this.loadingValue || this.videoTarget.paused || this.#anyMenuOpen || this.#controlsHovered || this.#recentTouchSeek;
     }
     get #controlsHovered() {
       return !!this.controlsTarget.querySelector(
