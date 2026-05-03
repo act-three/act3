@@ -308,6 +308,8 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			Format:       probe.FormatName,
 			Width:        int64(probe.Video.Width),
 			Height:       int64(probe.Video.Height),
+			FrameRateNum: int64(probe.Video.FrameRate.Num),
+			FrameRateDen: int64(probe.Video.FrameRate.Den),
 		})
 		if err != nil {
 			return err

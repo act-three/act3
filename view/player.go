@@ -187,6 +187,7 @@ func playerTitleForEpisode(ep *model.Episode) string {
 // source-swap; in Safari, audio is switched via the audioTracks API
 // and the URL only carries the quality-id).
 func playerQualityMenu(opts []model.QualityOption) html.Node {
+	showFPS := fpsVaries(opts)
 	var items []html.Node
 	for _, opt := range opts {
 		btnAttrs := []attr.Node{
@@ -198,7 +199,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		if opt.RenditionID == "" {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
 		}
-		items = append(items, html.Button(btnAttrs...)(Label("line/check", qualityLabel(opt))))
+		items = append(items, html.Button(btnAttrs...)(Label("line/check", qualityLabel(opt, showFPS))))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("quality"))(
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/settings-04")),
@@ -209,11 +210,34 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 	)
 }
 
-func qualityLabel(opt model.QualityOption) string {
+func qualityLabel(opt model.QualityOption, showFPS bool) string {
 	if opt.RenditionID == "" {
 		return "Auto"
 	}
+	if showFPS {
+		return fmt.Sprintf("%dp %dfps", opt.Height, opt.FPS)
+	}
 	return fmt.Sprintf("%dp", opt.Height)
+}
+
+// fpsVaries reports whether the encoded renditions in opts have more
+// than one distinct FPS. When true, labels include the fps so users
+// can tell variants apart.
+func fpsVaries(opts []model.QualityOption) bool {
+	var first int
+	for _, opt := range opts {
+		if opt.RenditionID == "" {
+			continue
+		}
+		if first == 0 {
+			first = opt.FPS
+			continue
+		}
+		if opt.FPS != first {
+			return true
+		}
+	}
+	return false
 }
 
 // playerCaptionsTemplate emits a <template> containing one <track>

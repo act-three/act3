@@ -203,6 +203,8 @@ CREATE TABLE Video
 	Duration     INTEGER NOT NULL DEFAULT (0), -- milliseconds; 0 until probed
 	Width        INTEGER NOT NULL DEFAULT (0), -- source video pixels; 0 until probed
 	Height       INTEGER NOT NULL DEFAULT (0), -- source video pixels; 0 until probed
+	FrameRateNum INTEGER NOT NULL DEFAULT (0), -- source frame rate numerator; 0 until probed
+	FrameRateDen INTEGER NOT NULL DEFAULT (0), -- source frame rate denominator; 0 until probed
 	Playable     INTEGER NOT NULL DEFAULT (0), -- 1 once all renditions needed for an MV playlist are present
 	ContentHash  BLOB, -- blake3 of the original bytes; null until copied
 

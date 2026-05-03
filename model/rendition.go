@@ -17,6 +17,7 @@ import (
 type QualityOption struct {
 	RenditionID   string // empty for Auto
 	Height        int    // actual output pixel height; 0 for Auto
+	FPS           int    // actual output frame rate, rounded; 0 for Auto
 	TargetBitrate int    // kbit/s; 0 for Auto
 }
 
@@ -38,6 +39,11 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 		return rends[i].TargetBitrate > rends[j].TargetBitrate
 	})
 
+	var srcFPS int64
+	if v.v.FrameRateDen > 0 {
+		srcFPS = (v.v.FrameRateNum + v.v.FrameRateDen/2) / v.v.FrameRateDen
+	}
+
 	opts := []QualityOption{{}} // Auto
 	for _, r := range rends {
 		if r.Playlist == "" {
@@ -46,6 +52,7 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 		opts = append(opts, QualityOption{
 			RenditionID:   r.ID,
 			Height:        int(cmp.Or(r.MaxHeight, v.v.Height)),
+			FPS:           int(cmp.Or(r.MaxFPS, srcFPS)),
 			TargetBitrate: int(r.TargetBitrate),
 		})
 	}
