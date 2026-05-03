@@ -1462,7 +1462,7 @@ UPDATE Video SET Playable = ? WHERE ID = ?
 RETURNING *;
 
 -- name: VideoUpdateProbe :exec
-UPDATE Video SET Duration = ?, OriginalType = ?, Format = ?, Width = ?, Height = ? WHERE ID = ?;
+UPDATE Video SET Duration = ?, OriginalType = ?, Format = ?, Width = ?, Height = ?, FrameRateNum = ?, FrameRateDen = ? WHERE ID = ?;
 
 -- name: VideoUpdateState :exec
 UPDATE Video SET State = ? WHERE ID = ?;

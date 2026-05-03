@@ -248,6 +248,8 @@ type Video struct {
 	Duration     int64
 	Width        int64
 	Height       int64
+	FrameRateNum int64
+	FrameRateDen int64
 	Playable     int64
 	ContentHash  []byte
 	DeletedAt    *int64

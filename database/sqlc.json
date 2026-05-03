@@ -34,6 +34,8 @@
 						"episodetag": "EpisodeTag",
 						"episodevideo": "EpisodeVideo",
 						"failuredesc": "FailureDesc",
+						"frameratenum": "FrameRateNum",
+						"framerateden": "FrameRateDen",
 						"fromvideoid": "FromVideoID",
 						"genrename": "GenreName",
 						"imageid": "ImageID",
