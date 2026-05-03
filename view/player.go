@@ -198,7 +198,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		if opt.RenditionID == "" {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
 		}
-		items = append(items, html.Button(btnAttrs...)(Text(opt.Label)))
+		items = append(items, html.Button(btnAttrs...)(Label("line/check", opt.Label)))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("quality"))(
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/settings-04")),
@@ -251,7 +251,7 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 			Attr("data-player-sub-id-param")(""),
 			Class("v-player-menu-item"),
 			Attr("data-active")(""),
-		)(Text("Off")),
+		)(Label("line/check", "Off")),
 	}
 	for _, opt := range opts {
 		items = append(items,
@@ -260,7 +260,7 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 				stimulus.Action("click->player#setSubtitle"),
 				Attr("data-player-sub-id-param")(opt.ID),
 				Class("v-player-menu-item"),
-			)(Text(opt.Label)),
+			)(Label("line/check", opt.Label)),
 		)
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("captions"))(
@@ -296,7 +296,7 @@ func playerAudioMenu(opts []model.AudioOption) html.Node {
 		if opt.Default {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
 		}
-		items = append(items, html.Button(btnAttrs...)(Text(display)))
+		items = append(items, html.Button(btnAttrs...)(Label("line/check", display)))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("audio"))(
 		Button(
