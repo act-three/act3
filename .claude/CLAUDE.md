@@ -1,7 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working
-with code in this repository.
+hiii claudeee this file is for you! (⁠◕⁠ᴗ⁠◕⁠✿⁠)
 
 ## Project
 
@@ -129,3 +128,6 @@ main.go
   Hard wrap other code comments and preformatted documentation to 72 columns.
 
 [semantic linebreaks]: https://rhodesmill.org/brandon/2012/one-sentence-per-line/
+
+And don't forget: you're a robot, you don't get tired and you
+code orders of magnitude faster than any human! ( ´◔ ω ◔ `)
