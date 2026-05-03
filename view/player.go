@@ -193,7 +193,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 			attr.Type("button"),
 			stimulus.Action("click->player#setQuality"),
 			Attr("data-player-quality-id-param")(opt.RenditionID),
-			Class("v-player-quality-option"),
+			Class("v-player-menu-item"),
 		}
 		if opt.RenditionID == "" {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
@@ -204,7 +204,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle)(Icon("line/settings-04")),
 		html.Div(
 			stimulus.Target("player", "qualityMenu"),
-			Class("v-player-quality-menu"),
+			Class("v-player-menu v-player-quality-menu"),
 		)(items...),
 	)
 }
@@ -249,7 +249,7 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 			attr.Type("button"),
 			stimulus.Action("click->player#setSubtitle"),
 			Attr("data-player-sub-id-param")(""),
-			Class("v-player-quality-option"),
+			Class("v-player-menu-item"),
 			Attr("data-active")(""),
 		)(Text("Off")),
 	}
@@ -259,7 +259,7 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 				attr.Type("button"),
 				stimulus.Action("click->player#setSubtitle"),
 				Attr("data-player-sub-id-param")(opt.ID),
-				Class("v-player-quality-option"),
+				Class("v-player-menu-item"),
 			)(Text(opt.Label)),
 		)
 	}
@@ -267,7 +267,7 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 		Button(stimulus.Action("click->player#toggleCaptionsMenu"), ButtonSurface, ButtonCircle)(Icon("line/message-text-square-02")),
 		html.Div(
 			stimulus.Target("player", "captionsMenu"),
-			Class("v-player-captions-menu"),
+			Class("v-player-menu v-player-captions-menu"),
 		)(items...),
 	)
 }
@@ -291,7 +291,7 @@ func playerAudioMenu(opts []model.AudioOption) html.Node {
 			attr.Type("button"),
 			stimulus.Action("click->player#setAudio"),
 			Attr("data-player-audio-id-param")(opt.ID),
-			Class("v-player-quality-option"),
+			Class("v-player-menu-item"),
 		}
 		if opt.Default {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
@@ -305,7 +305,7 @@ func playerAudioMenu(opts []model.AudioOption) html.Node {
 		)(Icon("line/recording-01")),
 		html.Div(
 			stimulus.Target("player", "audioMenu"),
-			Class("v-player-audio-menu"),
+			Class("v-player-menu v-player-audio-menu"),
 		)(items...),
 	)
 }
