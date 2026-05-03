@@ -8319,6 +8319,7 @@
     #lastKey = null;
     #lastSeekTime = Date.now();
     #subtitleTracksDecided = false;
+    #pendingSeek = null;
     connect() {
       this.videoTarget.textTracks.addEventListener("addtrack", (e) => {
         const t = e.track;
@@ -8655,7 +8656,12 @@
       seek.removeAttribute("seek-value");
       const video = this.videoTarget;
       if (video.duration) {
-        video.currentTime = seekTo / seek.max * video.duration;
+        const targetTime = seekTo / seek.max * video.duration;
+        if (this.#canSeek) {
+          video.currentTime = targetTime;
+        } else {
+          this.#pendingSeek = targetTime;
+        }
       }
       this.#setSeekFill(seekTo);
     }
@@ -8759,6 +8765,16 @@
       this.#syncSubtitleFromTracks();
       this.#filterAudioMenu();
       this.#applyAudioSelection();
+      this.seekTarget.disabled = false;
+    }
+    // loadeddata fires when readyState reaches HAVE_CURRENT_DATA — the
+    // earliest point at which Safari's native HLS pipeline tolerates
+    // setting currentTime. Apply any seek the user made in the gap
+    // between loadedmetadata and now (ACT-171).
+    handleLoadedData() {
+      if (this.#pendingSeek == null) return;
+      this.videoTarget.currentTime = this.#pendingSeek;
+      this.#pendingSeek = null;
     }
     // Hide menu entries whose id doesn't match any TextTrack the
     // browser surfaced — picks route through TextTrack.mode, so an

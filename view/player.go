@@ -84,6 +84,11 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 					// complete (ACT-169).
 					stimulus.Action("loadedmetadata->player#handleLoadedMetadata"),
 
+					// Enable the seekbar once segments are available.
+					// Setting currentTime before HAVE_CURRENT_DATA breaks
+					// Safari's native HLS pipeline (ACT-171).
+					stimulus.Action("loadeddata->player#handleLoadedData"),
+
 					// Buffer progress.
 					stimulus.Action("progress->player#handleProgress"),
 					stimulus.Action("playing->player#handleProgress"),
@@ -318,6 +323,7 @@ func playerSeekBar() html.Node {
 				Attr("autocomplete")("off"),
 				Attr("aria-label")("Seek"),
 				Attr("style")("--value: 0%"),
+				Attr("disabled"),
 				stimulus.Target("player", "seek"),
 				stimulus.Action("input->player#handleSeek"),
 
