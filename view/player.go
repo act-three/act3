@@ -198,7 +198,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		if opt.RenditionID == "" {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
 		}
-		items = append(items, html.Button(btnAttrs...)(Label("line/check", opt.Label)))
+		items = append(items, html.Button(btnAttrs...)(Label("line/check", qualityLabel(opt))))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("quality"))(
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/settings-04")),
@@ -207,6 +207,21 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 			Class("v-player-menu v-player-quality-menu"),
 		)(items...),
 	)
+}
+
+func qualityLabel(opt model.QualityOption) string {
+	if opt.RenditionID == "" {
+		return "Auto"
+	}
+	if opt.MaxHeight > 0 {
+		return fmt.Sprintf("%dp", opt.MaxHeight)
+	}
+	// MaxHeight 0 means source resolution.
+	mbps := float64(opt.TargetBitrate) / 1000
+	if mbps >= 1 {
+		return fmt.Sprintf("%.0f Mbps", mbps)
+	}
+	return fmt.Sprintf("%d kbps", opt.TargetBitrate)
 }
 
 // playerCaptionsTemplate emits a <template> containing one <track>
