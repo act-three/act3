@@ -3,7 +3,6 @@ package model
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"sort"
 
 	"ily.dev/act3/database/schema"
@@ -13,10 +12,11 @@ import (
 // RenditionID is empty for the "Auto" entry (full MV playlist with
 // all renditions); for other entries it pins to a specific rendition.
 // The player JS composes a combined-pin URL from RenditionID and the
-// current audio selection.
+// current audio selection. Display formatting lives in the view layer.
 type QualityOption struct {
-	Label       string // e.g. "Auto", "1080p", "720p", "540p"
-	RenditionID string // empty for Auto
+	RenditionID   string // empty for Auto
+	MaxHeight     int    // pixels; 0 means source resolution (or Auto)
+	TargetBitrate int    // kbit/s; 0 for Auto
 }
 
 // QualityOptions returns the quality menu entries for a video.
@@ -34,31 +34,18 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 		return rends[i].TargetBitrate > rends[j].TargetBitrate
 	})
 
-	opts := []QualityOption{
-		{Label: "Auto"},
-	}
+	opts := []QualityOption{{}} // Auto
 	for _, r := range rends {
 		if r.Playlist == "" {
 			continue // not yet encoded
 		}
 		opts = append(opts, QualityOption{
-			Label:       qualityLabel(r),
-			RenditionID: r.ID,
+			RenditionID:   r.ID,
+			MaxHeight:     int(r.MaxHeight),
+			TargetBitrate: int(r.TargetBitrate),
 		})
 	}
 	return opts, nil
-}
-
-func qualityLabel(r schema.Rendition) string {
-	if r.MaxHeight > 0 {
-		return fmt.Sprintf("%dp", r.MaxHeight)
-	}
-	// MaxHeight 0 means source resolution.
-	mbps := float64(r.TargetBitrate) / 1000
-	if mbps >= 1 {
-		return fmt.Sprintf("%.0f Mbps", mbps)
-	}
-	return fmt.Sprintf("%d kbps", r.TargetBitrate)
 }
 
 type RenditionForDownload struct {
