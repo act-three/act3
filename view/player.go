@@ -367,7 +367,7 @@ func playerSeekBar() html.Node {
 }
 
 func playerVolumeBar() html.Node {
-	return FlexRow(Gap2, Class("v-player-volume-bar"))(
+	return FlexRow(Gap4, Class("v-player-volume-bar"))(
 		Button(stimulus.Action("click->player#toggleMute"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/volume-max")),
 		html.Div(Class("v-player-volume"))(
 			html.Input(
