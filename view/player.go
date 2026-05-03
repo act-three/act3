@@ -132,7 +132,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 				stimulus.Action("click->player#togglePlay:self"),
 			)(
 				html.Div(Class("v-player-overlay-top"))(
-					Button(stimulus.Action("click->player#dismiss"), ButtonSurface, ButtonCircle)(Icon("line/x-close")),
+					Button(stimulus.Action("click->player#dismiss"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/x-close")),
 					Box(Class("v-player-title"))(Text(title)),
 				),
 				html.Div(Class("v-player-overlay-bottom"))(
@@ -149,14 +149,14 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 						),
 
 						html.Div(Class("v-player-button-group"), Attr("data-align")("center"))(
-							Button(stimulus.Action("click->player#skipBackward"), ButtonSurface, ButtonCircle)(Icon("line/refresh-ccw-01")),
-							Button(stimulus.Action("click->player#togglePlay"), ButtonSurface, ButtonCircle)(Icon("solid/play")),
-							Button(stimulus.Action("click->player#skipForward"), ButtonSurface, ButtonCircle)(Icon("line/refresh-cw-01")),
+							Button(stimulus.Action("click->player#skipBackward"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/refresh-ccw-01")),
+							Button(stimulus.Action("click->player#togglePlay"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("solid/play")),
+							Button(stimulus.Action("click->player#skipForward"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/refresh-cw-01")),
 						),
 
 						html.Div(Class("v-player-button-group"), Attr("data-align")("end"))(
 							playerQualityMenu(qualityOpts),
-							Button(stimulus.Action("click->player#toggleFullscreen"), ButtonSurface, ButtonCircle)(Icon("line/maximize-02")),
+							Button(stimulus.Action("click->player#toggleFullscreen"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/maximize-02")),
 						),
 					),
 				),
@@ -201,7 +201,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		items = append(items, html.Button(btnAttrs...)(Text(opt.Label)))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("quality"))(
-		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle)(Icon("line/settings-04")),
+		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/settings-04")),
 		html.Div(
 			stimulus.Target("player", "qualityMenu"),
 			Class("v-player-menu v-player-quality-menu"),
@@ -264,7 +264,7 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 		)
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("captions"))(
-		Button(stimulus.Action("click->player#toggleCaptionsMenu"), ButtonSurface, ButtonCircle)(Icon("line/message-text-square-02")),
+		Button(stimulus.Action("click->player#toggleCaptionsMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/message-text-square-02")),
 		html.Div(
 			stimulus.Target("player", "captionsMenu"),
 			Class("v-player-menu v-player-captions-menu"),
@@ -301,7 +301,7 @@ func playerAudioMenu(opts []model.AudioOption) html.Node {
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("audio"))(
 		Button(
 			stimulus.Action("click->player#toggleAudioMenu"),
-			ButtonSurface, ButtonCircle,
+			ButtonSurface, ButtonCircle, ButtonSize3,
 		)(Icon("line/recording-01")),
 		html.Div(
 			stimulus.Target("player", "audioMenu"),
@@ -368,7 +368,7 @@ func playerSeekBar() html.Node {
 
 func playerVolumeBar() html.Node {
 	return FlexRow(Gap2, Class("v-player-volume-bar"))(
-		Button(stimulus.Action("click->player#toggleMute"), ButtonSurface, ButtonCircle)(Icon("line/volume-max")),
+		Button(stimulus.Action("click->player#toggleMute"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/volume-max")),
 		html.Div(Class("v-player-volume"))(
 			html.Input(
 				attr.Type("range"),
