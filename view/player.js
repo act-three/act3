@@ -17,6 +17,7 @@ export default class extends Controller {
 	];
 	static values = {
 		title: String,
+		videoId: String,
 		playing: Boolean,
 		paused: Boolean,
 		stopped: Boolean,
@@ -64,6 +65,18 @@ export default class extends Controller {
 				}
 			}
 		});
+
+		// When the manifest surfaces an audio TextTrack, re-apply the
+		// chosen audio selection. Safari fires loadedmetadata *before*
+		// audioTracks are populated for native HLS, so applying once
+		// in handleLoadedMetadata would always race the empty list and
+		// Safari would fall back to system-locale-based audio. Reactive
+		// here, just like the subtitle dedup above.
+		if (this.videoTarget.audioTracks) {
+			this.videoTarget.audioTracks.addEventListener("addtrack", () => {
+				this.#applyAudioSelection();
+			});
+		}
 	}
 
 	disconnect() {
@@ -281,19 +294,58 @@ export default class extends Controller {
 	}
 
 	setQuality(e) {
-		const url = e.params.url;
-		const label = e.params.label;
+		const qualityId = e.params.qualityId;
 		const video = this.videoTarget;
 
+		// Safari switches audio via the audioTracks API, so its URL
+		// only carries the quality pin (the full audio group is
+		// preserved in the manifest, and the API stays usable).
+		// Chrome has no audioTracks API, so audio must be source-
+		// swapped too — include the current audio pin in the URL so
+		// the user's audio choice survives the quality switch.
+		const audioPin = video.audioTracks ? "" : this.currentAudioValue;
+		this.#sourceSwap(this.#composedURL(qualityId, audioPin));
+
+		this.currentQualityValue = qualityId;
+		this.qualityMenuOpenValue = false;
+
+		for (const btn of this.qualityMenuTarget.querySelectorAll("button")) {
+			if (btn.dataset.playerQualityIdParam === qualityId) {
+				btn.setAttribute("data-active", "");
+			} else {
+				btn.removeAttribute("data-active");
+			}
+		}
+	}
+
+	// composedURL builds the player's MV playlist URL with optional
+	// quality and audio pins. Empty values are omitted from the
+	// query string. This is the one URL the player ever requests for
+	// the multivariant playlist; the server narrows the variant /
+	// audio set per the parameters.
+	#composedURL(qualityId, audioId) {
+		let url = `/-/plr/${this.videoIdValue}.m3u8`;
+		const params = [];
+		if (qualityId) params.push(`q=${encodeURIComponent(qualityId)}`);
+		if (audioId) params.push(`a=${encodeURIComponent(audioId)}`);
+		if (params.length > 0) url += "?" + params.join("&");
+		return url;
+	}
+
+	// sourceSwap replaces the <video> source URL and re-loads,
+	// restoring the previous play state and position once metadata
+	// is available. Drops any <track> children cloned from the
+	// captions template (they were tied to the old manifest's
+	// TextTrack list) and resets the subtitle-tracks gate so
+	// #ensureSubtitleTracks can decide afresh for the new source.
+	#sourceSwap(url) {
+		const video = this.videoTarget;
 		const currentTime = video.currentTime;
 		const wasPlaying = !video.paused;
 
-		// Switch the source. Drop any <track> children we cloned from
-		// the captions template — they were tied to the old manifest's
-		// TextTrack list, and the new source's #ensureSubtitleTracks
-		// pass needs a clean slate to decide whether to re-insert.
 		for (const te of video.querySelectorAll("track")) te.remove();
 		this.#subtitleTracksDecided = false;
+
 		const source = video.querySelector("source");
 		if (source) {
 			source.src = url;
@@ -302,25 +354,12 @@ export default class extends Controller {
 		}
 		video.load();
 
-		// Restore position once enough data is available.
 		const restore = () => {
 			video.currentTime = currentTime;
 			if (wasPlaying) video.play();
 			video.removeEventListener("loadedmetadata", restore);
 		};
 		video.addEventListener("loadedmetadata", restore);
-
-		this.currentQualityValue = label;
-		this.qualityMenuOpenValue = false;
-
-		// Update active state on menu items.
-		for (const btn of this.qualityMenuTarget.querySelectorAll("button")) {
-			if (btn.dataset.playerLabelParam === label) {
-				btn.setAttribute("data-active", "");
-			} else {
-				btn.removeAttribute("data-active");
-			}
-		}
 	}
 
 	togglePlay() {
@@ -400,14 +439,20 @@ export default class extends Controller {
 		const id = e.params.audioId;
 		const video = this.videoTarget;
 
-		// Native audioTracks: setting enabled=true on one track
-		// exclusively selects it (the spec says siblings flip to false
-		// and the change event fires). Walk and assign for clarity.
-		// Track .label is the manifest's EXT-X-MEDIA NAME, which we
-		// set to the AudioRendition ID — match by id directly.
-		if (!video.audioTracks) return;
-		for (const t of video.audioTracks) {
-			t.enabled = t.label === id;
+		if (video.audioTracks) {
+			// Safari: native audioTracks API. Setting enabled=true
+			// on one track exclusively selects it (the spec says
+			// siblings flip to false and the change event fires).
+			// Track .label is the manifest's EXT-X-MEDIA NAME,
+			// which we set to the AudioRendition ID — match by id
+			// directly. No source-swap needed.
+			for (const t of video.audioTracks) {
+				t.enabled = t.label === id;
+			}
+		} else {
+			// Chrome: no audioTracks API. Source-swap to a combined-
+			// pin URL that preserves the current quality choice.
+			this.#sourceSwap(this.#composedURL(this.currentQualityValue, id));
 		}
 
 		this.currentAudioValue = id;

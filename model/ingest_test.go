@@ -47,13 +47,6 @@ func TestBuildMVPlaylist(t *testing.T) {
 			want:   "",
 		},
 		{
-			name:   "audio not yet ready returns empty",
-			rends:  []schema.Rendition{rendFull},
-			audio:  nil,
-			tracks: []schema.AudioTrack{track},
-			want:   "",
-		},
-		{
 			name:   "full playlist when both ready",
 			rends:  []schema.Rendition{rendFull, rendHalf},
 			audio:  []schema.AudioRendition{encAudio},
@@ -115,4 +108,30 @@ func TestBuildMVPlaylist(t *testing.T) {
 			t.Errorf("expected EXT-X-MEDIA TYPE=AUDIO entry:\n%s", got)
 		}
 	})
+}
+
+func TestIsPlayableMV(t *testing.T) {
+	rend := schema.Rendition{ID: "rend1", Key: "k1", Playlist: "#EXTM3U\n"}
+	track := schema.AudioTrack{ID: "at1", VideoID: "vid1", Language: "eng", StreamIndex: 0}
+	encAudio := schema.AudioRendition{ID: "ar1", VideoID: "vid1", AudioTrackID: "at1", Channels: 2, Key: "ka1"}
+
+	tests := []struct {
+		name   string
+		rends  []schema.Rendition
+		audio  []schema.AudioRendition
+		tracks []schema.AudioTrack
+		want   bool
+	}{
+		{"no video renditions", nil, []schema.AudioRendition{encAudio}, []schema.AudioTrack{track}, false},
+		{"audio not yet ready", []schema.Rendition{rend}, nil, []schema.AudioTrack{track}, false},
+		{"no audio tracks at all", []schema.Rendition{rend}, nil, nil, true},
+		{"all ready", []schema.Rendition{rend}, []schema.AudioRendition{encAudio}, []schema.AudioTrack{track}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isPlayableMV(tt.rends, tt.audio, tt.tracks); got != tt.want {
+				t.Errorf("isPlayableMV = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

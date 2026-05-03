@@ -10,9 +10,13 @@ import (
 )
 
 // QualityOption describes one entry in the player quality menu.
+// RenditionID is empty for the "Auto" entry (full MV playlist with
+// all renditions); for other entries it pins to a specific rendition.
+// The player JS composes a combined-pin URL from RenditionID and the
+// current audio selection.
 type QualityOption struct {
-	Label string // e.g. "Auto", "1080p", "720p", "540p"
-	Path  string // playlist URL path
+	Label       string // e.g. "Auto", "1080p", "720p", "540p"
+	RenditionID string // empty for Auto
 }
 
 // QualityOptions returns the quality menu entries for a video.
@@ -31,15 +35,15 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 	})
 
 	opts := []QualityOption{
-		{Label: "Auto", Path: v.PlaylistPath()},
+		{Label: "Auto"},
 	}
 	for _, r := range rends {
 		if r.Playlist == "" {
 			continue // not yet encoded
 		}
 		opts = append(opts, QualityOption{
-			Label: qualityLabel(r),
-			Path:  "/-/qpls/" + r.ID + ".m3u8",
+			Label:       qualityLabel(r),
+			RenditionID: r.ID,
 		})
 	}
 	return opts, nil
@@ -90,40 +94,6 @@ func videoExtensionForContentType(ct string) string {
 
 func (tx *TxR) Rendition(ctx Context, id string) (schema.Rendition, error) {
 	return tx.q.RenditionGet(ctx, id)
-}
-
-// VariantMVPlaylist returns a single-variant MV playlist that pins
-// the given rendition as the only quality option but still carries
-// the full audio rendition group and subtitle group. The fixed-quality
-// menu items use this so picking "1080p" doesn't drop audio (post
-// chunk-3, video renditions are encoded -an; the only place audio
-// lives is in the AUDIO group on an MV playlist). Returns "" when the
-// rendition isn't yet encoded or the audio side isn't ready.
-func (tx *TxR) VariantMVPlaylist(ctx Context, rendID string) (string, error) {
-	rend, err := tx.q.RenditionGet(ctx, rendID)
-	if err != nil {
-		return "", err
-	}
-	if rend.Key == "" || rend.Playlist == "" {
-		return "", nil
-	}
-	vid, err := tx.q.VideoGet(ctx, rend.VideoID)
-	if err != nil {
-		return "", err
-	}
-	encodedAudio, err := tx.q.AudioRenditionListEncodedForMV(ctx, vid.ID)
-	if err != nil {
-		return "", err
-	}
-	tracks, err := tx.q.AudioTrackListByVideoID(ctx, vid.ID)
-	if err != nil {
-		return "", err
-	}
-	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
-	if err != nil {
-		return "", err
-	}
-	return buildMVPlaylist(vid, []schema.Rendition{rend}, encodedAudio, tracks, subTracks), nil
 }
 
 func (tx *TxR) RenditionListStreamingByEpisodeID(ctx Context, epID string) ([]schema.Rendition, error) {

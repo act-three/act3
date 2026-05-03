@@ -40,7 +40,8 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 			stimulus.Value("player", "stopped")("true"),
 			stimulus.Value("player", "harlow")("false"),
 			stimulus.Value("player", "hide-controls")("false"),
-			stimulus.Value("player", "current-quality")("Auto"),
+			stimulus.Value("player", "video-id")(v.ID()),
+			stimulus.Value("player", "current-quality")(""),
 			stimulus.Value("player", "quality-menu-open")("false"),
 			stimulus.Value("player", "current-subtitle")(""),
 			stimulus.Value("player", "captions-menu-open")("false"),
@@ -166,18 +167,26 @@ func playerTitleForEpisode(ep *model.Episode) string {
 	)
 }
 
+// playerQualityMenu emits the quality popover. The "Auto" entry has
+// an empty quality-id (full MV playlist with all renditions); other
+// entries pin to a specific video rendition. The JS composes the
+// final URL by combining the picked quality-id with the current
+// audio-id (in Chrome where audio switching also requires a
+// source-swap; in Safari, audio is switched via the audioTracks API
+// and the URL only carries the quality-id).
 func playerQualityMenu(opts []model.QualityOption) html.Node {
 	var items []html.Node
 	for _, opt := range opts {
-		items = append(items,
-			html.Button(
-				attr.Type("button"),
-				stimulus.Action("click->player#setQuality"),
-				Attr("data-player-url-param")(opt.Path),
-				Attr("data-player-label-param")(opt.Label),
-				Class("v-player-quality-option"),
-			)(Text(opt.Label)),
-		)
+		btnAttrs := []attr.Node{
+			attr.Type("button"),
+			stimulus.Action("click->player#setQuality"),
+			Attr("data-player-quality-id-param")(opt.RenditionID),
+			Class("v-player-quality-option"),
+		}
+		if opt.RenditionID == "" {
+			btnAttrs = append(btnAttrs, Attr("data-active")(""))
+		}
+		items = append(items, html.Button(btnAttrs...)(Text(opt.Label)))
 	}
 	return html.Div(Class("v-player-quality-wrapper"))(
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle)(Icon("line/settings-04")),
