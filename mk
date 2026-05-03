@@ -195,7 +195,8 @@ case "${1:-}" in
 			jj config set --repo fix.tools.dprint.patterns "[\"glob:'**/*.js'\", \"glob:'**/*.css'\", \"glob:'**/*.json'\", \"glob:'**/*.sh'\", \"glob:'mk'\"]"
 			# `jj push [bookmark] [rev]`: fetch, advance bookmark, push (defaults: main → @-)
 			jj config set --user aliases.push '["util", "exec", "--", "sh", "-c", "set -e; jj git fetch; jj bookmark move \"${1:-main}\" --to \"${2:-@-}\"; git push origin \"${1:-main}\"", "jj-push"]'
-			echo "Installed jj fix config"
+			jj config set --user ui.paginate never
+			echo "Installed jj config"
 		fi
 		;;
 	regen)
