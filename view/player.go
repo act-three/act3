@@ -121,7 +121,6 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 				Class("v-player-controls"),
 				stimulus.Target("player", "controls"),
 				stimulus.Action("click->player#togglePlay:self"),
-				stimulus.Action("focusin->player#handleControlsFocus"),
 			)(
 				html.Div(Class("v-player-overlay-top"))(
 					Button(stimulus.Action("click->player#dismiss"), ButtonSurface, ButtonCircle)(Icon("line/x-close")),

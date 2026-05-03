@@ -3,6 +3,7 @@ import { Controller } from "../web/stimulus.js";
 export default class extends Controller {
 	static targets = [
 		"video",
+		"controls",
 		"volume",
 		"seek",
 		"buffer",
@@ -824,13 +825,22 @@ export default class extends Controller {
 		if (this.#harlowMode) {
 			return false;
 		}
-		// Show controls if recentInteraction, loading, paused,
-		// button active, or recent touch seek, otherwise hide.
+		// Show controls if recentInteraction, loading, paused, a menu is
+		// open, the cursor is over the controls, or recent touch seek,
+		// otherwise hide.
 		return this.#recentInteraction
 			|| this.loadingValue
 			|| this.videoTarget.paused
-			// controlsElement.pressed ||
-			// controlsElement.hover ||
+			|| this.qualityMenuOpenValue
+			|| this.captionsMenuOpenValue
+			|| this.audioMenuOpenValue
+			|| this.#controlsHovered
 			|| this.#recentTouchSeek;
+	}
+
+	get #controlsHovered() {
+		return !!this.controlsTarget.querySelector(
+			".v-player-overlay-top:hover, .v-player-overlay-bottom:hover",
+		);
 	}
 }
