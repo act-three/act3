@@ -2594,6 +2594,7 @@
     position: relative;
     margin-left: 6.5px;
     margin-right: 13px;
+    isolation: isolate;
   }
   .v-player-seek-input {
     appearance: none;
@@ -2712,6 +2713,7 @@
   .v-player-volume {
     width: 5rem;
     position: relative;
+    isolation: isolate;
   }
   .v-player-volume-input {
     appearance: none;
