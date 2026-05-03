@@ -213,15 +213,7 @@ func qualityLabel(opt model.QualityOption) string {
 	if opt.RenditionID == "" {
 		return "Auto"
 	}
-	if opt.MaxHeight > 0 {
-		return fmt.Sprintf("%dp", opt.MaxHeight)
-	}
-	// MaxHeight 0 means source resolution.
-	mbps := float64(opt.TargetBitrate) / 1000
-	if mbps >= 1 {
-		return fmt.Sprintf("%.0f Mbps", mbps)
-	}
-	return fmt.Sprintf("%d kbps", opt.TargetBitrate)
+	return fmt.Sprintf("%dp", opt.Height)
 }
 
 // playerCaptionsTemplate emits a <template> containing one <track>
