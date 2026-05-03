@@ -40,11 +40,22 @@ func (tx *TxR) Video(ctx Context, id string) (*Video, error) {
 	return &Video{v: v}, nil
 }
 
+// MVFilter optionally narrows the multivariant HLS playlist returned
+// by (TxR).MVPlaylist. Empty fields mean "include the full set" for
+// that side; set fields pin to a specific rendition. Used by the
+// player's combined-pin URLs in Chrome (where the JS audioTracks API
+// is unavailable, so audio switching has to source-swap).
+type MVFilter struct {
+	VideoRenditionID string // empty = include all encoded video renditions
+	AudioRenditionID string // empty = include all encoded audio renditions
+}
+
 // MVPlaylist builds the multivariant HLS playlist for a video on
-// demand from the current rendition state. Returns "" when the video
-// is not yet playable (no encoded video, or any source audio track
-// without an encoded rendition).
-func (tx *TxR) MVPlaylist(ctx Context, videoID string) (string, error) {
+// demand from the current rendition state, optionally narrowed per
+// filter. Returns "" when the video is not yet playable (no encoded
+// video, or any source audio track without an encoded rendition), or
+// when a filter pins to a rendition that doesn't belong to this video.
+func (tx *TxR) MVPlaylist(ctx Context, videoID string, filter MVFilter) (string, error) {
 	vid, err := tx.q.VideoGet(ctx, videoID)
 	if err != nil {
 		return "", err
@@ -65,7 +76,40 @@ func (tx *TxR) MVPlaylist(ctx Context, videoID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if !isPlayableMV(encoded, encodedAudio, tracks) {
+		return "", nil
+	}
+	if filter.VideoRenditionID != "" {
+		encoded = filterByRenditionID(encoded, filter.VideoRenditionID)
+		if len(encoded) == 0 {
+			return "", nil
+		}
+	}
+	if filter.AudioRenditionID != "" {
+		encodedAudio = filterAudioByRenditionID(encodedAudio, filter.AudioRenditionID)
+		if len(encodedAudio) == 0 {
+			return "", nil
+		}
+	}
 	return buildMVPlaylist(vid, encoded, encodedAudio, tracks, subTracks), nil
+}
+
+func filterByRenditionID(rends []schema.Rendition, id string) []schema.Rendition {
+	for _, r := range rends {
+		if r.ID == id {
+			return []schema.Rendition{r}
+		}
+	}
+	return nil
+}
+
+func filterAudioByRenditionID(rends []schema.AudioRendition, id string) []schema.AudioRendition {
+	for _, r := range rends {
+		if r.ID == id {
+			return []schema.AudioRendition{r}
+		}
+	}
+	return nil
 }
 
 func (tx *TxR) VideoListByEpisodeID(ctx Context, epID string) ([]schema.Video, error) {

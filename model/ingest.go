@@ -937,12 +937,8 @@ func recomputePlayable(ctx Context, tx *TxRW, vid schema.Video) error {
 	if err != nil {
 		return err
 	}
-	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
-	if err != nil {
-		return err
-	}
 
-	if buildMVPlaylist(vid, encoded, encodedAudio, tracks, subTracks) == "" {
+	if !isPlayableMV(encoded, encodedAudio, tracks) {
 		return nil
 	}
 
@@ -956,13 +952,43 @@ func recomputePlayable(ctx Context, tx *TxRW, vid schema.Video) error {
 	return tx.ensureActiveVideoForVideoID(ctx, vid.ID)
 }
 
+// isPlayableMV reports whether a video has all the renditions
+// needed to assemble a multivariant playlist: at least one encoded
+// streaming video rendition, and an encoded audio rendition for
+// every source audio track. A partially-encoded MV would either
+// omit audio entries (silent playback) or expose only a subset of
+// the publisher's intended tracks. Inputs are the unfiltered sets
+// — callers must check this before applying any per-rendition
+// filter, otherwise the readiness signal is lost.
+func isPlayableMV(
+	encoded []schema.Rendition,
+	encodedAudio []schema.AudioRendition,
+	tracks []schema.AudioTrack,
+) bool {
+	if len(encoded) == 0 {
+		return false
+	}
+	if len(tracks) == 0 {
+		return true
+	}
+	ready := make(map[string]bool, len(encodedAudio))
+	for _, ar := range encodedAudio {
+		ready[ar.AudioTrackID] = true
+	}
+	for _, t := range tracks {
+		if !ready[t.ID] {
+			return false
+		}
+	}
+	return true
+}
+
 // buildMVPlaylist generates a multivariant HLS playlist from the
-// given inputs. Returns "" when not yet playable: no video renditions,
-// or any source audio track without an encoded rendition. Callers
-// pass already-filtered/sorted slices (encoded streaming video,
-// AudioRenditionListEncodedForMV ordering for audio). The set of
-// videoRends is what controls whether this is a full MV (all
-// renditions) or a single-variant MV (one rendition).
+// given inputs. The set of videoRends controls whether this is a
+// full MV (all renditions) or a single-variant MV (one rendition).
+// Callers must verify playability via isPlayableMV before filtering
+// the inputs and calling this function; an empty videoRends slice
+// (e.g. from a filter that didn't match) yields "".
 func buildMVPlaylist(
 	vid schema.Video,
 	videoRends []schema.Rendition,
@@ -972,22 +998,6 @@ func buildMVPlaylist(
 ) string {
 	if len(videoRends) == 0 {
 		return ""
-	}
-
-	// "Playable" requires every source audio track to have at least
-	// one encoded rendition. A partially-encoded MV would either omit
-	// audio entries (silent playback) or expose only a subset of the
-	// publisher's intended tracks. Wait until all tracks are ready.
-	if len(tracks) > 0 {
-		ready := make(map[string]bool, len(encodedAudio))
-		for _, ar := range encodedAudio {
-			ready[ar.AudioTrackID] = true
-		}
-		for _, t := range tracks {
-			if !ready[t.ID] {
-				return ""
-			}
-		}
 	}
 
 	var mvEntries []video.MVEntry

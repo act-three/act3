@@ -8295,6 +8295,7 @@
     ];
     static values = {
       title: String,
+      videoId: String,
       playing: Boolean,
       paused: Boolean,
       stopped: Boolean,
@@ -8329,6 +8330,11 @@
           }
         }
       });
+      if (this.videoTarget.audioTracks) {
+        this.videoTarget.audioTracks.addEventListener("addtrack", () => {
+          this.#applyAudioSelection();
+        });
+      }
     }
     disconnect() {
       clearTimeout(this.#timerLoading);
@@ -8482,8 +8488,40 @@
       this.qualityMenuOpenValue = !this.qualityMenuOpenValue;
     }
     setQuality(e) {
-      const url = e.params.url;
-      const label = e.params.label;
+      const qualityId = e.params.qualityId;
+      const video = this.videoTarget;
+      const audioPin = video.audioTracks ? "" : this.currentAudioValue;
+      this.#sourceSwap(this.#composedURL(qualityId, audioPin));
+      this.currentQualityValue = qualityId;
+      this.qualityMenuOpenValue = false;
+      for (const btn of this.qualityMenuTarget.querySelectorAll("button")) {
+        if (btn.dataset.playerQualityIdParam === qualityId) {
+          btn.setAttribute("data-active", "");
+        } else {
+          btn.removeAttribute("data-active");
+        }
+      }
+    }
+    // composedURL builds the player's MV playlist URL with optional
+    // quality and audio pins. Empty values are omitted from the
+    // query string. This is the one URL the player ever requests for
+    // the multivariant playlist; the server narrows the variant /
+    // audio set per the parameters.
+    #composedURL(qualityId, audioId) {
+      let url = `/-/plr/${this.videoIdValue}.m3u8`;
+      const params = [];
+      if (qualityId) params.push(`q=${encodeURIComponent(qualityId)}`);
+      if (audioId) params.push(`a=${encodeURIComponent(audioId)}`);
+      if (params.length > 0) url += "?" + params.join("&");
+      return url;
+    }
+    // sourceSwap replaces the <video> source URL and re-loads,
+    // restoring the previous play state and position once metadata
+    // is available. Drops any <track> children cloned from the
+    // captions template (they were tied to the old manifest's
+    // TextTrack list) and resets the subtitle-tracks gate so
+    // #ensureSubtitleTracks can decide afresh for the new source.
+    #sourceSwap(url) {
       const video = this.videoTarget;
       const currentTime = video.currentTime;
       const wasPlaying = !video.paused;
@@ -8502,15 +8540,6 @@
         video.removeEventListener("loadedmetadata", restore);
       };
       video.addEventListener("loadedmetadata", restore);
-      this.currentQualityValue = label;
-      this.qualityMenuOpenValue = false;
-      for (const btn of this.qualityMenuTarget.querySelectorAll("button")) {
-        if (btn.dataset.playerLabelParam === label) {
-          btn.setAttribute("data-active", "");
-        } else {
-          btn.removeAttribute("data-active");
-        }
-      }
     }
     togglePlay() {
       const video = this.videoTarget;
@@ -8574,9 +8603,12 @@
     setAudio(e) {
       const id = e.params.audioId;
       const video = this.videoTarget;
-      if (!video.audioTracks) return;
-      for (const t of video.audioTracks) {
-        t.enabled = t.label === id;
+      if (video.audioTracks) {
+        for (const t of video.audioTracks) {
+          t.enabled = t.label === id;
+        }
+      } else {
+        this.#sourceSwap(this.#composedURL(this.currentQualityValue, id));
       }
       this.currentAudioValue = id;
       this.audioMenuOpenValue = false;

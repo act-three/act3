@@ -189,6 +189,13 @@ func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.
 	})
 }
 
+// videoPlaylist serves the multivariant HLS playlist for a video,
+// optionally narrowed via ?q=<videoRendID>&a=<audioRendID> query
+// params. Both are optional; an absent or empty param includes the
+// full set on that side. The combined-pin form is what the player
+// JS sends in Chrome (where source-swapping is the only way to
+// change audio); Safari uses ?q= alone and switches audio via the
+// native audioTracks API.
 func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
@@ -196,28 +203,11 @@ func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (html.N
 		if !found {
 			return nil, errNotFound
 		}
-		pl, err := tx.MVPlaylist(ctx, id)
-		if err != nil || pl == "" {
-			return nil, errNotFound
+		filter := model.MVFilter{
+			VideoRenditionID: req.URL.Query().Get("q"),
+			AudioRenditionID: req.URL.Query().Get("a"),
 		}
-		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
-		return nil, nil
-	})
-}
-
-// variantPlaylist serves a single-variant MV playlist for one video
-// rendition. The MV form (rather than the bare rendition media
-// playlist) is required because audio renditions live in the MV
-// EXT-X-MEDIA AUDIO group; a bare media playlist for an `-an` video
-// rendition would play silent.
-func (c *Config) variantPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
-		ctx := req.Context()
-		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
-		if !found {
-			return nil, errNotFound
-		}
-		pl, err := tx.VariantMVPlaylist(ctx, id)
+		pl, err := tx.MVPlaylist(ctx, id, filter)
 		if err != nil || pl == "" {
 			return nil, errNotFound
 		}
