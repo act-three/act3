@@ -387,6 +387,9 @@
 	cursor: pointer;
 	white-space: nowrap;
 }
+/* Reserve space for the check icon on every row so labels align;
+   show the icon only on the active item. */
+.v-player-menu-item:not([data-active]) .u-icon { visibility: hidden; }
 .v-player-menu-item:hover {
 	color: white;
 	background: rgb(255 255 255 / 0.1);
