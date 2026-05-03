@@ -1,6 +1,7 @@
 package model
 
 import (
+	"cmp"
 	"database/sql"
 	"errors"
 	"sort"
@@ -15,14 +16,17 @@ import (
 // current audio selection. Display formatting lives in the view layer.
 type QualityOption struct {
 	RenditionID   string // empty for Auto
-	MaxHeight     int    // pixels; 0 means source resolution (or Auto)
+	Height        int    // actual output pixel height; 0 for Auto
 	TargetBitrate int    // kbit/s; 0 for Auto
 }
 
 // QualityOptions returns the quality menu entries for a video.
 // The first entry is "Auto" (the multivariant playlist);
 // the rest are individual rendition playlists sorted by bitrate
-// (highest first).
+// (highest first). Each rendition's Height is the actual output
+// pixel height — the planner stores the cap as MaxHeight (0 when
+// the source already satisfies the cap), so the actual output is
+// MaxHeight when set and the source height otherwise.
 func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 	rends, err := tx.q.RenditionListStreamingByVideoID(ctx, v.ID())
 	if err != nil {
@@ -41,7 +45,7 @@ func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
 		}
 		opts = append(opts, QualityOption{
 			RenditionID:   r.ID,
-			MaxHeight:     int(r.MaxHeight),
+			Height:        int(cmp.Or(r.MaxHeight, v.v.Height)),
 			TargetBitrate: int(r.TargetBitrate),
 		})
 	}
