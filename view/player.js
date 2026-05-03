@@ -42,6 +42,7 @@ export default class extends Controller {
 	#lastKey = null;
 	#lastSeekTime = Date.now();
 	#subtitleTracksDecided = false;
+	#pendingSeek = null;
 
 	connect() {
 		// When the manifest surfaces a subtitle TextTrack with the
@@ -517,7 +518,15 @@ export default class extends Controller {
 
 		const video = this.videoTarget;
 		if (video.duration) {
-			video.currentTime = (seekTo / seek.max) * video.duration;
+			const targetTime = (seekTo / seek.max) * video.duration;
+			if (this.#canSeek) {
+				video.currentTime = targetTime;
+			} else {
+				// Safari's native HLS pipeline breaks if currentTime is
+				// set before HAVE_CURRENT_DATA. Stash the seek and let
+				// handleLoadedData replay it (ACT-171).
+				this.#pendingSeek = targetTime;
+			}
 		}
 		this.#setSeekFill(seekTo);
 	}
@@ -667,6 +676,22 @@ export default class extends Controller {
 
 		this.#filterAudioMenu();
 		this.#applyAudioSelection();
+
+		// Enable the seekbar now that duration is known. We can't wait
+		// for loadeddata — Safari with native HLS may not reach
+		// HAVE_CURRENT_DATA until play() — so we accept clicks earlier
+		// and defer the seek via #pendingSeek (ACT-171).
+		this.seekTarget.disabled = false;
+	}
+
+	// loadeddata fires when readyState reaches HAVE_CURRENT_DATA — the
+	// earliest point at which Safari's native HLS pipeline tolerates
+	// setting currentTime. Apply any seek the user made in the gap
+	// between loadedmetadata and now (ACT-171).
+	handleLoadedData() {
+		if (this.#pendingSeek == null) return;
+		this.videoTarget.currentTime = this.#pendingSeek;
+		this.#pendingSeek = null;
 	}
 
 	// Hide menu entries whose id doesn't match any TextTrack the
