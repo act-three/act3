@@ -254,20 +254,13 @@ func qualityBaseLabel(opt model.QualityOption, showFPS bool) string {
 // fpsVaries reports whether the encoded renditions in opts have more
 // than one distinct FPS.
 func fpsVaries(opts []model.QualityOption) bool {
-	var first int
+	fps := map[int]bool{}
 	for _, opt := range opts {
-		if opt.RenditionID == "" {
-			continue
-		}
-		if first == 0 {
-			first = opt.FPS
-			continue
-		}
-		if opt.FPS != first {
-			return true
+		if opt.RenditionID != "" {
+			fps[opt.FPS] = true
 		}
 	}
-	return false
+	return len(fps) > 1
 }
 
 // bitrateLabel renders a kbit/s value as "X MB/s" or "X kB/s".

@@ -2,6 +2,7 @@ package view
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"ily.dev/act3/model"
@@ -108,6 +109,41 @@ func TestQualityMenuLabels(t *testing.T) {
 			got := qualityLabels(autoLast(tt.opts))
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("labels mismatch\n got: %q\nwant: %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFPSVaries(t *testing.T) {
+	auto := model.QualityOption{}
+	rend := func(fps int) model.QualityOption {
+		return model.QualityOption{RenditionID: "x", FPS: fps}
+	}
+	tests := []struct {
+		name string
+		opts []model.QualityOption
+		want bool
+	}{
+		{"empty", nil, false},
+		{"only auto", []model.QualityOption{auto}, false},
+		{"single rendition", []model.QualityOption{rend(24)}, false},
+		{"two same", []model.QualityOption{rend(24), rend(24)}, false},
+		{"two different", []model.QualityOption{rend(24), rend(30)}, true},
+		{"three same with auto first", []model.QualityOption{auto, rend(60), rend(60), rend(60)}, false},
+		{"three same with auto last", []model.QualityOption{rend(60), rend(60), rend(60), auto}, false},
+		{"varies with auto first", []model.QualityOption{auto, rend(60), rend(60), rend(30)}, true},
+		{"varies with auto last", []model.QualityOption{rend(60), rend(30), rend(30), auto}, true},
+		{"varies with auto sandwiched", []model.QualityOption{rend(24), auto, rend(30)}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			before := slices.Clone(tt.opts)
+			got := fpsVaries(tt.opts)
+			if got != tt.want {
+				t.Errorf("fpsVaries = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(tt.opts, before) {
+				t.Errorf("fpsVaries mutated input\n got: %+v\nwant: %+v", tt.opts, before)
 			}
 		})
 	}
