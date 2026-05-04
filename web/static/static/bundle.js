@@ -8277,6 +8277,35 @@
     }
   };
 
+  // view/playable.js
+  var playable_default = class extends Controller {
+    static targets = ["playButton", "audioSelect", "subtitleSelect"];
+    static values = { baseUrl: String };
+    connect() {
+      this.updateHref();
+    }
+    updateHref() {
+      if (!this.hasPlayButtonTarget) return;
+      const url = new URL(this.baseUrlValue, location.href);
+      if (this.hasAudioSelectTarget) {
+        url.searchParams.set("a", this.#selectValue(this.audioSelectTarget));
+      }
+      if (this.hasSubtitleSelectTarget) {
+        url.searchParams.set("s", this.#selectValue(this.subtitleSelectTarget));
+      }
+      if (!this.#hasAudioTracksAPI) {
+        url.searchParams.set("pin_audio", "1");
+      }
+      this.playButtonTarget.href = url.toString();
+    }
+    #selectValue(el) {
+      return el.dataset.selectCurrentValue ?? "";
+    }
+    get #hasAudioTracksAPI() {
+      return "audioTracks" in document.createElement("video");
+    }
+  };
+
   // view/player.js
   var player_default = class extends Controller {
     static targets = [
@@ -8328,14 +8357,18 @@
         for (const trackEl of this.videoTarget.querySelectorAll("track")) {
           if (trackEl.label === t.label && trackEl.track !== t) {
             trackEl.remove();
-            return;
+            break;
           }
         }
+        this.#applySubtitleSelection();
       });
       if (this.videoTarget.audioTracks) {
         this.videoTarget.audioTracks.addEventListener("addtrack", () => {
           this.#applyAudioSelection();
         });
+      }
+      if (this.videoTarget.readyState >= 1) {
+        this.handleLoadedMetadata();
       }
     }
     disconnect() {
@@ -8787,8 +8820,7 @@
     handleLoadedMetadata() {
       this.#ensureSubtitleTracks();
       this.#filterCaptionsMenu();
-      this.#syncSubtitleFromTracks();
-      this.#filterAudioMenu();
+      this.#applySubtitleSelection();
       this.#applyAudioSelection();
       this.seekTarget.disabled = false;
     }
@@ -8837,58 +8869,30 @@
         this.captionsTemplateTarget.content.cloneNode(true)
       );
     }
-    // Hide audio-menu entries whose id doesn't match any audioTracks
-    // entry the browser surfaced. If audioTracks is empty (manifest
-    // not yet parsed), entries stay visible — the next handleDuration
-    // pass will prune. Track .label carries the AudioRendition ID
-    // (set as EXT-X-MEDIA NAME in buildMVPlaylist).
-    #filterAudioMenu() {
-      if (!this.videoTarget.audioTracks) return;
-      if (this.videoTarget.audioTracks.length === 0) return;
-      const ids = /* @__PURE__ */ new Set();
-      for (const t of this.videoTarget.audioTracks) ids.add(t.label);
-      for (const btn of this.audioMenuTarget.querySelectorAll("button")) {
-        btn.hidden = !ids.has(btn.dataset.playerAudioIdParam);
-      }
-    }
-    // On each loaded manifest, force the chosen audio track:
-    //   - no user pick yet: the publisher's DEFAULT (the menu item
-    //     marked data-active server-side). Safari's native HLS picks
-    //     by system locale and ignores DEFAULT=YES; we override that
-    //     to honor the publisher's source-mux order (ACT-145 design).
-    //   - user has picked: re-enable that track. Quality switches
-    //     produce a new AudioTracks list whose default may not match
-    //     the user's choice; without re-applying, switching quality
-    //     would silently revert the audio selection.
+    // On each loaded manifest, force currentAudio onto the
+    // audioTracks list. Safari ignores HLS DEFAULT=YES and picks by
+    // system locale, so we override it (ACT-145). Re-applying matters
+    // across quality switches too: the new AudioTrackList may not
+    // preserve our enabled flag. Chrome lacks the API entirely; its
+    // playing audio is whatever the manifest carries, which the
+    // theater pins via pin_audio=1 server-side.
     #applyAudioSelection() {
       if (!this.videoTarget.audioTracks) return;
-      if (this.currentAudioValue === "") {
-        const btn = this.audioMenuTarget.querySelector("button[data-active]");
-        if (!btn) return;
-        this.currentAudioValue = btn.dataset.playerAudioIdParam;
-      }
       const id = this.currentAudioValue;
       for (const t of this.videoTarget.audioTracks) {
         t.enabled = t.label === id;
       }
     }
-    // Reflect a textTrack the HLS player auto-enabled (e.g. Safari with
-    // DEFAULT=YES) into our menu state. No-op once the user has made an
-    // explicit pick — currentSubtitle is the source of truth from then on.
-    #syncSubtitleFromTracks() {
-      if (this.currentSubtitleValue !== "") return;
+    // On each loaded manifest, force currentSubtitle onto the textTracks
+    // list. The seed comes from the player URL ("" = Off), so we always
+    // know what the user wants. Forcing matters in Safari, which auto-
+    // enables a manifest track with DEFAULT=YES regardless of our intent
+    // — without this, "Off" wouldn't actually be off.
+    #applySubtitleSelection() {
+      const id = this.currentSubtitleValue;
       for (const t of this.videoTarget.textTracks) {
         if (t.kind !== "subtitles" && t.kind !== "captions") continue;
-        if (t.mode !== "showing") continue;
-        for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
-          if (btn.dataset.playerSubIdParam !== t.label) continue;
-          this.currentSubtitleValue = btn.dataset.playerSubIdParam;
-          for (const b of this.captionsMenuTarget.querySelectorAll("button")) {
-            if (b === btn) b.setAttribute("data-active", "");
-            else b.removeAttribute("data-active");
-          }
-          return;
-        }
+        t.mode = id !== "" && t.label === id ? "showing" : "disabled";
       }
     }
     handleProgress() {
@@ -11922,6 +11926,7 @@
   Stimulus.register("popover", popover_default);
   Stimulus.register("popover-trigger", popover_trigger_default);
   Stimulus.register("picker", picker_default);
+  Stimulus.register("playable", playable_default);
   Stimulus.register("player", player_default);
   Stimulus.register("list", list_default);
   Stimulus.register("sidebar", sidebar_default);

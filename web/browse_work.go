@@ -77,7 +77,19 @@ func (c *Config) browseMovie(ctx model.Context, tr *model.TxR, movieSlug, edSlug
 	if err != nil {
 		return nil, err
 	}
-	return view.BrowseMovieEdition(med, editions, dls), nil
+	var audioOpts []model.AudioOption
+	var subOpts []model.SubtitleOption
+	if v := med.ActiveVideo(); v != nil {
+		audioOpts, err = tr.AudioOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		subOpts, err = tr.SubtitleOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return view.BrowseMovieEdition(med, editions, dls, audioOpts, subOpts), nil
 }
 
 func (c *Config) browseEpisode(ctx model.Context, tr *model.TxR, seriesSlug, edSlug, epSlug string) (html.Node, error) {
@@ -89,7 +101,19 @@ func (c *Config) browseEpisode(ctx model.Context, tr *model.TxR, seriesSlug, edS
 	if err != nil {
 		return nil, err
 	}
-	return view.BrowseEpisode(ep, dls), nil
+	var audioOpts []model.AudioOption
+	var subOpts []model.SubtitleOption
+	if v := ep.ActiveVideo(); v != nil {
+		audioOpts, err = tr.AudioOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		subOpts, err = tr.SubtitleOptions(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return view.BrowseEpisode(ep, dls, audioOpts, subOpts), nil
 }
 
 func (c *Config) browseCollection(ctx model.Context, tr *model.TxR, slug string) (html.Node, error) {

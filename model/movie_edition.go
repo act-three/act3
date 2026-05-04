@@ -196,15 +196,7 @@ func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
 	mo := &MovieHead{moData}
 	var videos []*Video
 	for i := range vids {
-		v := &Video{v: vids[i], active: activeByVID[vids[i].ID]}
-		ats, err := tx.q.AudioTrackListByVideoID(ctx, vids[i].ID)
-		if err != nil {
-			return nil, err
-		}
-		for j := range ats {
-			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
-		}
-		videos = append(videos, v)
+		videos = append(videos, &Video{v: vids[i], active: activeByVID[vids[i].ID]})
 	}
 	return newMovieEdition(mo, medData, map[string][]*Video{id: videos}), nil
 }

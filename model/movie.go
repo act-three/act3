@@ -137,15 +137,6 @@ func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEditi
 	}
 
 	vidByID := vidMapByID(vids)
-	for _, v := range vidByID {
-		ats, err := tx.q.AudioTrackListByVideoID(ctx, v.v.ID)
-		if err != nil {
-			return nil, err
-		}
-		for j := range ats {
-			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
-		}
-	}
 	videosByEditionID := vidMapByMovieEditionID(mvs, vidByID)
 
 	mo := newMovie(moData, meds, videosByEditionID)

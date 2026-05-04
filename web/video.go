@@ -132,6 +132,9 @@ func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request)
 	})
 }
 
+// playerForEpisode and playerForMovie render the player frame.
+// ?a, ?s, and ?pin_audio are all optional — see PlayerForEpisode in
+// view/player.go for the defaults applied when they're absent.
 func (c *Config) playerForEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
 		ctx := req.Context()
@@ -158,7 +161,8 @@ func (c *Config) playerForEpisode(_ http.ResponseWriter, req *http.Request) (htm
 		if err != nil {
 			return nil, err
 		}
-		return view.PlayerForEpisode(v, ep, qualityOpts, captionsOpts, audioOpts), nil
+		q := req.URL.Query()
+		return view.PlayerForEpisode(v, ep, qualityOpts, captionsOpts, audioOpts, q.Get("a"), q.Get("s"), q.Get("pin_audio") == "1"), nil
 	})
 }
 
@@ -185,7 +189,8 @@ func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.
 		if err != nil {
 			return nil, err
 		}
-		return view.PlayerForMovie(v, med, qualityOpts, captionsOpts, audioOpts), nil
+		q := req.URL.Query()
+		return view.PlayerForMovie(v, med, qualityOpts, captionsOpts, audioOpts, q.Get("a"), q.Get("s"), q.Get("pin_audio") == "1"), nil
 	})
 }
 
