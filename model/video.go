@@ -7,18 +7,16 @@ import (
 )
 
 type Video struct {
-	v           schema.Video
-	audioTracks []*AudioTrack
-	active      bool
+	v      schema.Video
+	active bool
 }
 
-func (v *Video) ID() string                 { return v.v.ID }
-func (v *Video) Name() string               { return v.v.Name }
-func (v *Video) OriginalKey() string        { return v.v.OriginalKey }
-func (v *Video) State() string              { return v.v.State }
-func (v *Video) Duration() time.Duration    { return time.Duration(v.v.Duration) * time.Millisecond }
-func (v *Video) PlaylistPath() string       { return "/-/plr/" + v.ID() + ".m3u8" }
-func (v *Video) AudioTracks() []*AudioTrack { return v.audioTracks }
+func (v *Video) ID() string              { return v.v.ID }
+func (v *Video) Name() string            { return v.v.Name }
+func (v *Video) OriginalKey() string     { return v.v.OriginalKey }
+func (v *Video) State() string           { return v.v.State }
+func (v *Video) Duration() time.Duration { return time.Duration(v.v.Duration) * time.Millisecond }
+func (v *Video) PlaylistPath() string    { return "/-/plr/" + v.ID() + ".m3u8" }
 
 // Active reports whether this Video is the active one for the work
 // (episode or movie edition) it was loaded for. False when the Video

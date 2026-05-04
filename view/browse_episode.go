@@ -11,10 +11,17 @@ import (
 func BrowseEpisode(
 	ep *model.Episode,
 	dls []*model.RenditionForDownload,
+	audioOpts []model.AudioOption,
+	subOpts []model.SubtitleOption,
 ) html.Node {
+	v := ep.ActiveVideo()
+	baseURL := ""
+	if v != nil {
+		baseURL = ep.VideoPlayerPath(v)
+	}
 	return browse(ep.Title(), ep.Thumbnail())(
 		Grid12(Class("v-detail"))(
-			FlexCol(ColSpan7, Class("v-detail-info"))(
+			FlexCol(ColSpan7, Class("v-detail-info"), playable(baseURL))(
 				Link(ep.EditionTheaterPath())(Text(ep.SeriesHead().Title())),
 				Grid7()(
 					Text(ep.SnnEnn(), Class("v-detail-muted")),
@@ -33,7 +40,7 @@ func BrowseEpisode(
 				}),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
-						browsePlayButton(ep),
+						browsePlayButton(ep, v),
 					),
 					FlexCol(Class("v-detail-play"))(
 						Button(Disabled(true), ButtonSize3)(Icon("line/x"), Text("Play from 18:02")),
@@ -43,8 +50,8 @@ func BrowseEpisode(
 					),
 					browseDownloadButton(dls),
 				),
-				browseAudioTrackSelect(ep),
-				Button(ButtonSurface)(Text("Subtitles")),
+				playableAudioSelect(audioOpts),
+				playableSubtitleSelect(subOpts),
 				TextNode()(html.Safe(ep.Summary())),
 			),
 			Box(),
@@ -57,35 +64,13 @@ func BrowseEpisode(
 	)
 }
 
-func browseAudioTrackSelect(ep *model.Episode) html.Node {
-	v := ep.ActiveVideo()
-	if v == nil {
-		return Group()
-	}
-	tracks := v.AudioTracks()
-	if len(tracks) == 0 {
-		return Group()
-	}
-	return Select(SelectSize3, SelectValue(tracks[0].ID()))(
-		SelectTrigger()(
-			Icon("line/recording-01"),
-			SelectLabel(tracks[0].Label()),
-		),
-		SelectContent()(
-			html.Range(tracks, func(t *model.AudioTrack) html.Node {
-				return SelectItem(t.ID())(html.Text(t.Label()))
-			}),
-		),
-	)
-}
-
-func browsePlayButton(ep *model.Episode) html.Node {
-	v := ep.ActiveVideo()
+func browsePlayButton(ep *model.Episode, v *model.Video) html.Node {
 	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
 				Href(ep.VideoPlayerPath(v)),
 				Attr("data-turbo-frame")("player"),
+				playableTarget,
 				ButtonSize3)(Icon("solid/play"), Text("Start"))
 		},
 		func() html.Node {

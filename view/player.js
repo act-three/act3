@@ -56,28 +56,41 @@ export default class extends Controller {
 		// trackEl.track === t). Reactive — the manifest may surface
 		// tracks at an unspecified time after loadedmetadata in
 		// Safari's HLS implementation, so we can't gate on a
-		// snapshot. (ACT-169.)
+		// snapshot. (ACT-169.) Re-apply the seeded subtitle after
+		// each addtrack so a late-arriving manifest track is forced
+		// into the user's chosen mode.
 		this.videoTarget.textTracks.addEventListener("addtrack", (e) => {
 			const t = e.track;
 			if (t.kind !== "subtitles" && t.kind !== "captions") return;
 			for (const trackEl of this.videoTarget.querySelectorAll("track")) {
 				if (trackEl.label === t.label && trackEl.track !== t) {
 					trackEl.remove();
-					return;
+					break;
 				}
 			}
+			this.#applySubtitleSelection();
 		});
 
-		// When the manifest surfaces an audio TextTrack, re-apply the
-		// chosen audio selection. Safari fires loadedmetadata *before*
-		// audioTracks are populated for native HLS, so applying once
-		// in handleLoadedMetadata would always race the empty list and
-		// Safari would fall back to system-locale-based audio. Reactive
-		// here, just like the subtitle dedup above.
+		// When the manifest surfaces an audio AudioTrack, re-apply
+		// the chosen audio selection. Safari fires loadedmetadata
+		// before audioTracks is populated for native HLS, so applying
+		// once in handleLoadedMetadata would race the empty list and
+		// Safari would fall back to system-locale-based audio
+		// (ACT-145). Reactive here, like the textTracks listener
+		// above. Chrome lacks the API entirely; .audioTracks is
+		// undefined and there's nothing to listen on.
 		if (this.videoTarget.audioTracks) {
 			this.videoTarget.audioTracks.addEventListener("addtrack", () => {
 				this.#applyAudioSelection();
 			});
+		}
+
+		// The video element may have already fired loadedmetadata
+		// before Stimulus wired up its action listener — readyState>=1
+		// means we missed the event. Replay the handler so seeded
+		// audio and subtitle selections take effect on first paint.
+		if (this.videoTarget.readyState >= 1) {
+			this.handleLoadedMetadata();
 		}
 	}
 
@@ -482,11 +495,10 @@ export default class extends Controller {
 
 		if (video.audioTracks) {
 			// Safari: native audioTracks API. Setting enabled=true
-			// on one track exclusively selects it (the spec says
-			// siblings flip to false and the change event fires).
-			// Track .label is the manifest's EXT-X-MEDIA NAME,
-			// which we set to the AudioRendition ID — match by id
-			// directly. No source-swap needed.
+			// on one track exclusively selects it (siblings flip to
+			// false and the change event fires). Track .label is the
+			// manifest's EXT-X-MEDIA NAME — which we set to the
+			// AudioRendition ID — so match by id directly.
 			for (const t of video.audioTracks) {
 				t.enabled = t.label === id;
 			}
@@ -712,9 +724,8 @@ export default class extends Controller {
 	handleLoadedMetadata() {
 		this.#ensureSubtitleTracks();
 		this.#filterCaptionsMenu();
-		this.#syncSubtitleFromTracks();
+		this.#applySubtitleSelection();
 
-		this.#filterAudioMenu();
 		this.#applyAudioSelection();
 
 		// Enable the seekbar now that duration is known. We can't wait
@@ -772,60 +783,31 @@ export default class extends Controller {
 		);
 	}
 
-	// Hide audio-menu entries whose id doesn't match any audioTracks
-	// entry the browser surfaced. If audioTracks is empty (manifest
-	// not yet parsed), entries stay visible — the next handleDuration
-	// pass will prune. Track .label carries the AudioRendition ID
-	// (set as EXT-X-MEDIA NAME in buildMVPlaylist).
-	#filterAudioMenu() {
-		if (!this.videoTarget.audioTracks) return;
-		if (this.videoTarget.audioTracks.length === 0) return;
-		const ids = new Set();
-		for (const t of this.videoTarget.audioTracks) ids.add(t.label);
-		for (const btn of this.audioMenuTarget.querySelectorAll("button")) {
-			btn.hidden = !ids.has(btn.dataset.playerAudioIdParam);
-		}
-	}
-
-	// On each loaded manifest, force the chosen audio track:
-	//   - no user pick yet: the publisher's DEFAULT (the menu item
-	//     marked data-active server-side). Safari's native HLS picks
-	//     by system locale and ignores DEFAULT=YES; we override that
-	//     to honor the publisher's source-mux order (ACT-145 design).
-	//   - user has picked: re-enable that track. Quality switches
-	//     produce a new AudioTracks list whose default may not match
-	//     the user's choice; without re-applying, switching quality
-	//     would silently revert the audio selection.
+	// On each loaded manifest, force currentAudio onto the
+	// audioTracks list. Safari ignores HLS DEFAULT=YES and picks by
+	// system locale, so we override it (ACT-145). Re-applying matters
+	// across quality switches too: the new AudioTrackList may not
+	// preserve our enabled flag. Chrome lacks the API entirely; its
+	// playing audio is whatever the manifest carries, which the
+	// theater pins via pin_audio=1 server-side.
 	#applyAudioSelection() {
 		if (!this.videoTarget.audioTracks) return;
-		if (this.currentAudioValue === "") {
-			const btn = this.audioMenuTarget.querySelector("button[data-active]");
-			if (!btn) return;
-			this.currentAudioValue = btn.dataset.playerAudioIdParam;
-		}
 		const id = this.currentAudioValue;
 		for (const t of this.videoTarget.audioTracks) {
 			t.enabled = t.label === id;
 		}
 	}
 
-	// Reflect a textTrack the HLS player auto-enabled (e.g. Safari with
-	// DEFAULT=YES) into our menu state. No-op once the user has made an
-	// explicit pick — currentSubtitle is the source of truth from then on.
-	#syncSubtitleFromTracks() {
-		if (this.currentSubtitleValue !== "") return;
+	// On each loaded manifest, force currentSubtitle onto the textTracks
+	// list. The seed comes from the player URL ("" = Off), so we always
+	// know what the user wants. Forcing matters in Safari, which auto-
+	// enables a manifest track with DEFAULT=YES regardless of our intent
+	// — without this, "Off" wouldn't actually be off.
+	#applySubtitleSelection() {
+		const id = this.currentSubtitleValue;
 		for (const t of this.videoTarget.textTracks) {
 			if (t.kind !== "subtitles" && t.kind !== "captions") continue;
-			if (t.mode !== "showing") continue;
-			for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
-				if (btn.dataset.playerSubIdParam !== t.label) continue;
-				this.currentSubtitleValue = btn.dataset.playerSubIdParam;
-				for (const b of this.captionsMenuTarget.querySelectorAll("button")) {
-					if (b === btn) b.setAttribute("data-active", "");
-					else b.removeAttribute("data-active");
-				}
-				return;
-			}
+			t.mode = id !== "" && t.label === id ? "showing" : "disabled";
 		}
 	}
 

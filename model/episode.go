@@ -290,15 +290,7 @@ func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) 
 	}
 	var videos []*Video
 	for i := range vids {
-		v := &Video{v: vids[i], active: activeByVID[vids[i].ID]}
-		ats, err := tx.q.AudioTrackListByVideoID(ctx, vids[i].ID)
-		if err != nil {
-			return nil, err
-		}
-		for j := range ats {
-			v.audioTracks = append(v.audioTracks, &AudioTrack{at: ats[j]})
-		}
-		videos = append(videos, v)
+		videos = append(videos, &Video{v: vids[i], active: activeByVID[vids[i].ID]})
 	}
 	ep := &Episode{
 		EpisodeHead: EpisodeHead{ep: epRec},

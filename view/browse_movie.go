@@ -12,10 +12,17 @@ func BrowseMovieEdition(
 	med *model.MovieEdition,
 	editions []*model.MovieWork,
 	dls []*model.RenditionForDownload,
+	audioOpts []model.AudioOption,
+	subOpts []model.SubtitleOption,
 ) html.Node {
+	v := med.ActiveVideo()
+	baseURL := ""
+	if v != nil {
+		baseURL = med.VideoPlayerPath(v)
+	}
 	return browse(med.Title(), med.Poster())(
 		Grid12(Class("v-detail"))(
-			FlexCol(ColSpan7, Class("v-detail-info"))(
+			FlexCol(ColSpan7, Class("v-detail-info"), playable(baseURL))(
 				html.If(len(editions) > 1, func() html.Node {
 					return browseMovieEditionSelect(editions, med)
 				}),
@@ -36,7 +43,7 @@ func BrowseMovieEdition(
 				),
 				FlexRow(Gap3)(
 					FlexCol(Class("v-detail-play"))(
-						browseMoviePlayButton(med),
+						browseMoviePlayButton(med, v),
 					),
 					FlexCol(Class("v-detail-play"))(
 						Button(Disabled(true), ButtonSize3)(Icon("line/x"), Text("Play from 18:02")),
@@ -47,7 +54,8 @@ func BrowseMovieEdition(
 					),
 					browseDownloadButton(dls),
 				),
-				browseMovieAudioTrackSelect(med),
+				playableAudioSelect(audioOpts),
+				playableSubtitleSelect(subOpts),
 				TextNode()(html.Safe(med.Summary())),
 			),
 			Box(),
@@ -60,13 +68,13 @@ func BrowseMovieEdition(
 	)
 }
 
-func browseMoviePlayButton(med *model.MovieEdition) html.Node {
-	v := med.ActiveVideo()
+func browseMoviePlayButton(med *model.MovieEdition, v *model.Video) html.Node {
 	return expr.IfElse(v != nil,
 		func() html.Node {
 			return Button(
 				Href(med.VideoPlayerPath(v)),
 				Attr("data-turbo-frame")("player"),
+				playableTarget,
 				ButtonSize3,
 			)(Icon("solid/play"), Text("Play"))
 		},
@@ -74,30 +82,6 @@ func browseMoviePlayButton(med *model.MovieEdition) html.Node {
 			return Button(Disabled(true), ButtonSize3)(
 				Icon("line/x"), Text("Play"))
 		},
-	)
-}
-
-func browseMovieAudioTrackSelect(med *model.MovieEdition) html.Node {
-	v := med.ActiveVideo()
-	if v == nil {
-		return Group()
-	}
-	tracks := v.AudioTracks()
-	if len(tracks) == 0 {
-		return Group()
-	}
-	return Select(SelectSize3,
-		SelectValue(tracks[0].ID()),
-	)(
-		SelectTrigger()(
-			Icon("line/recording-01"),
-			SelectLabel(tracks[0].Label()),
-		),
-		SelectContent()(
-			html.Range(tracks, func(t *model.AudioTrack) html.Node {
-				return SelectItem(t.ID())(html.Text(t.Label()))
-			}),
-		),
 	)
 }
 

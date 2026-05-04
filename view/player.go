@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 
@@ -13,12 +14,29 @@ import (
 	"ily.dev/act3/ui/turbo"
 )
 
-func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption) html.Node {
-	return player(v, playerTitleForEpisode(ep), qualityOpts, captionsOpts, audioOpts)
+// PlayerForEpisode and PlayerForMovie render the player frame.
+// initAudio, initSubtitle, and pinAudio come from the player URL's
+// ?a / ?s / ?pin_audio query params:
+//
+//   - ?a is optional. Empty → fall back to the HLS DEFAULT
+//     (audioOpts[0].ID). Pages without an audio picker can omit it
+//     and rely on the default; pages with a picker (theater) supply
+//     the user's pick.
+//   - ?s is optional. Empty → captions Off; matches the "Off" menu
+//     entry's id="" naturally with no special-casing.
+//   - ?pin_audio is required on every link to the player. It must
+//     come from a runtime audioTracks feature check in the linking
+//     page, not a server-side guess: Chrome (no audioTracks API)
+//     needs the manifest pre-pinned to the chosen audio rendition;
+//     Safari has the API and switches via JS without a source-swap.
+//     Both the playable controller (theater) and playButtonForList
+//     (list views) do this check on connect.
+func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption, initAudio, initSubtitle string, pinAudio bool) html.Node {
+	return player(v, playerTitleForEpisode(ep), qualityOpts, captionsOpts, audioOpts, initAudio, initSubtitle, pinAudio)
 }
 
-func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption) html.Node {
-	return player(v, playerTitleForMovie(med), qualityOpts, captionsOpts, audioOpts)
+func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption, initAudio, initSubtitle string, pinAudio bool) html.Node {
+	return player(v, playerTitleForMovie(med), qualityOpts, captionsOpts, audioOpts, initAudio, initSubtitle, pinAudio)
 }
 
 func playerTitleForMovie(med *model.MovieEditionHead) string {
@@ -29,7 +47,10 @@ func playerTitleForMovie(med *model.MovieEditionHead) string {
 	return title
 }
 
-func player(v *model.Video, title string, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption) html.Node {
+func player(v *model.Video, title string, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption, initAudio, initSubtitle string, pinAudio bool) html.Node {
+	if initAudio == "" && len(audioOpts) > 0 {
+		initAudio = audioOpts[0].ID
+	}
 	return turbo.Frame("player")(
 		html.Div(
 			attr.ID("full-player"),
@@ -44,9 +65,9 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 			stimulus.Value("player", "video-id")(v.ID()),
 			stimulus.Value("player", "current-quality")(""),
 			stimulus.Value("player", "quality-menu-open")("false"),
-			stimulus.Value("player", "current-subtitle")(""),
+			stimulus.Value("player", "current-subtitle")(initSubtitle),
 			stimulus.Value("player", "captions-menu-open")("false"),
-			stimulus.Value("player", "current-audio")(""),
+			stimulus.Value("player", "current-audio")(initAudio),
 			stimulus.Value("player", "audio-menu-open")("false"),
 
 			stimulus.Action("keydown.h@window->player#toggleHarlow"),
@@ -90,8 +111,8 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 
 					// Wire menus to manifest tracks. Per spec, textTracks
 					// and audioTracks are populated by loadedmetadata —
-					// earlier events can fire before manifest parsing is
-					// complete (ACT-169).
+					// earlier events can fire before manifest parsing
+					// is complete (ACT-169).
 					stimulus.Action("loadedmetadata->player#handleLoadedMetadata"),
 
 					// Enable the seekbar once segments are available.
@@ -121,7 +142,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 					stimulus.Action("contextmenu->player#handleContextMenu"),
 				)(
 					html.Source(
-						attr.Src(v.PlaylistPath()),
+						attr.Src(initialPlaylistPath(v, initAudio, pinAudio)),
 						attr.Type("application/vnd.apple.mpegurl"),
 					),
 				),
@@ -144,8 +165,8 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 					),
 					html.Div(Class("v-player-button-row"))(
 						html.Div(Class("v-player-button-group"), Attr("data-align")("start"))(
-							playerCaptionsMenu(captionsOpts),
-							playerAudioMenu(audioOpts),
+							playerCaptionsMenu(captionsOpts, initSubtitle),
+							playerAudioMenu(audioOpts, initAudio),
 							playerVolumeBar(),
 						),
 
@@ -178,6 +199,20 @@ func playerTitleForEpisode(ep *model.Episode) string {
 		ep.Title(),
 		year,
 	)
+}
+
+// initialPlaylistPath optionally pins the seeded audio rendition into
+// the <source> URL. Chrome lacks the audioTracks API and would
+// otherwise play the manifest's HLS DEFAULT regardless of the seed,
+// so the theater's playable JS sets pin_audio=1 there. Safari has the
+// API and switches via #applyAudioSelection, so it stays unpinned to
+// avoid a source-swap on every audio change.
+func initialPlaylistPath(v *model.Video, initAudio string, pinAudio bool) string {
+	if !pinAudio || initAudio == "" {
+		return v.PlaylistPath()
+	}
+	q := url.Values{"a": {initAudio}}
+	return v.PlaylistPath() + "?" + q.Encode()
 }
 
 // playerQualityMenu emits the quality popover. The "Auto" entry has
@@ -320,25 +355,10 @@ func playerCaptionsTemplate(opts []model.SubtitleOption) html.Node {
 // to switch between them. The id param matches the HLS NAME (which
 // is the SubtitleTrack ID) and the template's label attribute, and
 // is what the JS uses to find the matching TextTrack.
-func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
-	items := []html.Node{
-		html.Button(
-			attr.Type("button"),
-			stimulus.Action("click->player#setSubtitle"),
-			Attr("data-player-sub-id-param")(""),
-			Class("v-player-menu-item"),
-			Attr("data-active")(""),
-		)(Label("line/check", "Off")),
-	}
+func playerCaptionsMenu(opts []model.SubtitleOption, initSubtitle string) html.Node {
+	items := []html.Node{playerCaptionsItem("", "Off", initSubtitle)}
 	for _, opt := range opts {
-		items = append(items,
-			html.Button(
-				attr.Type("button"),
-				stimulus.Action("click->player#setSubtitle"),
-				Attr("data-player-sub-id-param")(opt.ID),
-				Class("v-player-menu-item"),
-			)(Label("line/check", opt.Label)),
-		)
+		items = append(items, playerCaptionsItem(opt.ID, opt.Label, initSubtitle))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("captions"))(
 		Button(stimulus.Action("click->player#toggleCaptionsMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/message-text-square-02")),
@@ -349,6 +369,19 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 	)
 }
 
+func playerCaptionsItem(id, label, initSubtitle string) html.Node {
+	attrs := []attr.Node{
+		attr.Type("button"),
+		stimulus.Action("click->player#setSubtitle"),
+		Attr("data-player-sub-id-param")(id),
+		Class("v-player-menu-item"),
+	}
+	if id == initSubtitle {
+		attrs = append(attrs, Attr("data-active")(""))
+	}
+	return html.Button(attrs...)(Label("line/check", label))
+}
+
 // playerAudioMenu mirrors playerCaptionsMenu: a popover menu over a
 // headphones-style button. Audio renditions are surfaced by the
 // browser's native HLS implementation as HTMLMediaElement.audioTracks
@@ -356,24 +389,23 @@ func playerCaptionsMenu(opts []model.SubtitleOption) html.Node {
 // AudioVideoTracks feature is currently disabled), so no template
 // fallback is needed. The id param matches the HLS NAME — which is
 // the AudioRendition ID — and is used by the JS to find the matching
-// AudioTrack. Unlike captions there is no "off" — every video has audio.
-func playerAudioMenu(opts []model.AudioOption) html.Node {
+// AudioTrack.
+func playerAudioMenu(opts []model.AudioOption, initAudio string) html.Node {
 	if len(opts) == 0 {
 		return nil
 	}
 	var items []html.Node
 	for _, opt := range opts {
-		display := opt.Title + " (" + model.OutputChannelLabel(opt.Channels) + ")"
 		btnAttrs := []attr.Node{
 			attr.Type("button"),
 			stimulus.Action("click->player#setAudio"),
 			Attr("data-player-audio-id-param")(opt.ID),
 			Class("v-player-menu-item"),
 		}
-		if opt.Default {
+		if opt.ID == initAudio {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
 		}
-		items = append(items, html.Button(btnAttrs...)(Label("line/check", display)))
+		items = append(items, html.Button(btnAttrs...)(Label("line/check", audioOptionLabel(opt))))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("audio"))(
 		Button(
