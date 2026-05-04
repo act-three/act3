@@ -527,7 +527,7 @@ func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		return recomputePlayable(ctx, txw, vid)
+		return txw.recomputePlayable(ctx, vid)
 	})
 	tx.m.prog.Close(progKey, err)
 	return err
@@ -627,13 +627,13 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		allDone, err = allRenditionsEncoded(ctx, txw, vid.ID)
+		allDone, err = txw.allRenditionsEncoded(ctx, vid.ID)
 		if err != nil {
 			return err
 		}
 
 		// Rebuild MV playlist from all completed renditions.
-		return recomputePlayable(ctx, txw, vid)
+		return txw.recomputePlayable(ctx, vid)
 	})
 	if err == nil && allDone {
 		os.RemoveAll(tx.m.pass1Dir(vid.ID))
@@ -720,7 +720,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		allDone, err = allRenditionsEncoded(ctx, txw, vid.ID)
+		allDone, err = txw.allRenditionsEncoded(ctx, vid.ID)
 		return err
 	})
 	if err == nil && allDone {
@@ -926,7 +926,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 // the flag to 1; callers that need to clear it (e.g. re-encode) do
 // so explicitly. The MV playlist itself is built on demand by
 // (TxR).MVPlaylist.
-func recomputePlayable(ctx Context, tx *TxRW, vid schema.Video) error {
+func (tx *TxRW) recomputePlayable(ctx Context, vid schema.Video) error {
 	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(ctx, vid.ID)
 	if err != nil {
 		return err
@@ -1120,7 +1120,7 @@ func (m *Model) pass1Dir(vidID string) string {
 // allRenditionsEncoded reports whether every rendition for videoID
 // has a storage key, meaning no further encode task will need the
 // pass-1 stats directory.
-func allRenditionsEncoded(ctx Context, tx *TxRW, videoID string) (bool, error) {
+func (tx *TxRW) allRenditionsEncoded(ctx Context, videoID string) (bool, error) {
 	rends, err := tx.q.RenditionListByVideoID(ctx, videoID)
 	if err != nil {
 		return false, err
