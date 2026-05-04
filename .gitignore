@@ -2,6 +2,7 @@
 *.db
 *.db-shm
 *.db-wal
+/.claude/scheduled_tasks.lock
 /.mcp.json
 /.playwright-mcp/
 /deploy
