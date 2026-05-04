@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"ily.dev/act3/html"
@@ -187,6 +188,9 @@ func playerTitleForEpisode(ep *model.Episode) string {
 // source-swap; in Safari, audio is switched via the audioTracks API
 // and the URL only carries the quality-id).
 func playerQualityMenu(opts []model.QualityOption) html.Node {
+	// Render Auto at the bottom — visually it's the dynamic default
+	// and the per-rendition pins read top-down by resolution.
+	opts = autoLast(opts)
 	labels := qualityLabels(opts)
 	var items []html.Node
 	for i, opt := range opts {
@@ -272,6 +276,21 @@ func bitrateLabel(kbps int) string {
 		return fmt.Sprintf("%d kB/s", kbps)
 	}
 	return fmt.Sprintf("%.1f", float64(kbps)/1000) + " MB/s"
+}
+
+// autoLast returns a copy of opts with the Auto entry (RenditionID
+// "") moved to the end. Other entries keep their relative order. The
+// model returns Auto first; the player UI shows it at the bottom.
+func autoLast(opts []model.QualityOption) []model.QualityOption {
+	return slices.SortedStableFunc(slices.Values(opts), func(a, b model.QualityOption) int {
+		if a.RenditionID == "" {
+			return 1
+		}
+		if b.RenditionID == "" {
+			return -1
+		}
+		return 0
+	})
 }
 
 // playerCaptionsTemplate emits a <template> containing one <track>
