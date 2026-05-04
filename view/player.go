@@ -187,9 +187,9 @@ func playerTitleForEpisode(ep *model.Episode) string {
 // source-swap; in Safari, audio is switched via the audioTracks API
 // and the URL only carries the quality-id).
 func playerQualityMenu(opts []model.QualityOption) html.Node {
-	showFPS := fpsVaries(opts)
+	labels := qualityLabels(opts)
 	var items []html.Node
-	for _, opt := range opts {
+	for i, opt := range opts {
 		btnAttrs := []attr.Node{
 			attr.Type("button"),
 			stimulus.Action("click->player#setQuality"),
@@ -199,7 +199,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		if opt.RenditionID == "" {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
 		}
-		items = append(items, html.Button(btnAttrs...)(Label("line/check", qualityLabel(opt, showFPS))))
+		items = append(items, html.Button(btnAttrs...)(Label("line/check", labels[i])))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("quality"))(
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/settings-04")),
@@ -210,7 +210,34 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 	)
 }
 
-func qualityLabel(opt model.QualityOption, showFPS bool) string {
+// qualityLabels formats one display string per option. Each label
+// starts with the resolution. FPS is appended to every rendition
+// when the set has more than one distinct frame rate. Bitrate is
+// appended within runs of adjacent renditions that would otherwise
+// produce the same label, so users can tell same-resolution variants
+// apart.
+func qualityLabels(opts []model.QualityOption) []string {
+	showFPS := fpsVaries(opts)
+	out := make([]string, len(opts))
+	for i, opt := range opts {
+		out[i] = qualityBaseLabel(opt, showFPS)
+	}
+	for i := 0; i < len(out); {
+		j := i + 1
+		for j < len(out) && out[j] == out[i] {
+			j++
+		}
+		if j-i > 1 {
+			for k := i; k < j; k++ {
+				out[k] += " — " + bitrateLabel(opts[k].TargetBitrate)
+			}
+		}
+		i = j
+	}
+	return out
+}
+
+func qualityBaseLabel(opt model.QualityOption, showFPS bool) string {
 	if opt.RenditionID == "" {
 		return "Auto"
 	}
@@ -221,8 +248,7 @@ func qualityLabel(opt model.QualityOption, showFPS bool) string {
 }
 
 // fpsVaries reports whether the encoded renditions in opts have more
-// than one distinct FPS. When true, labels include the fps so users
-// can tell variants apart.
+// than one distinct FPS.
 func fpsVaries(opts []model.QualityOption) bool {
 	var first int
 	for _, opt := range opts {
@@ -238,6 +264,14 @@ func fpsVaries(opts []model.QualityOption) bool {
 		}
 	}
 	return false
+}
+
+// bitrateLabel renders a kbit/s value as "X MB/s" or "X kB/s".
+func bitrateLabel(kbps int) string {
+	if kbps < 1000 {
+		return fmt.Sprintf("%d kB/s", kbps)
+	}
+	return fmt.Sprintf("%.1f", float64(kbps)/1000) + " MB/s"
 }
 
 // playerCaptionsTemplate emits a <template> containing one <track>
