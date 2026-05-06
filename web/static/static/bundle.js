@@ -8337,7 +8337,14 @@
       currentSubtitle: String,
       captionsMenuOpen: Boolean,
       currentAudio: String,
-      audioMenuOpen: Boolean
+      audioMenuOpen: Boolean,
+      // Empty in default builds; populated only by -tags jassub.
+      // A non-empty hostUrl unlocks the libass-via-WASM branch
+      // of #applySubtitleSelection for ass/ssa picks.
+      jassubHostUrl: String,
+      jassubWorkerUrl: String,
+      jassubWasmUrl: String,
+      jassubFontUrl: String
     };
     #isTouch = false;
     #timerControls = null;
@@ -8350,6 +8357,12 @@
     #lastSeekTime = Date.now();
     #subtitleTracksDecided = false;
     #pendingSeek = null;
+    #jassubInstance = null;
+    #jassubActiveId = null;
+    // Bumped on every teardown / new setup to invalidate stale
+    // async work from the previous selection (the dynamic-import
+    // of the host module is the slow leg).
+    #jassubGen = 0;
     connect() {
       this.videoTarget.textTracks.addEventListener("addtrack", (e) => {
         const t = e.track;
@@ -8362,6 +8375,13 @@
         }
         this.#applySubtitleSelection();
       });
+      this.videoTarget.textTracks.addEventListener("change", () => {
+        if (!this.#jassubInstance) return;
+        for (const t of this.videoTarget.textTracks) {
+          if (t.kind !== "subtitles" && t.kind !== "captions") continue;
+          if (t.mode !== "disabled") t.mode = "disabled";
+        }
+      });
       if (this.videoTarget.audioTracks) {
         this.videoTarget.audioTracks.addEventListener("addtrack", () => {
           this.#applyAudioSelection();
@@ -8373,6 +8393,7 @@
     }
     disconnect() {
       clearTimeout(this.#timerLoading);
+      this.#destroyJassub();
     }
     dismiss() {
       this.element.remove();
@@ -8560,12 +8581,16 @@
     // captions template (they were tied to the old manifest's
     // TextTrack list) and resets the subtitle-tracks gate so
     // #ensureSubtitleTracks can decide afresh for the new source.
+    // Tears down any active jassub renderer too — the subsequent
+    // loadedmetadata triggers #applySubtitleSelection, which will
+    // recreate it when currentSubtitle is still an ASS pick.
     #sourceSwap(url) {
       const video = this.videoTarget;
       const currentTime = video.currentTime;
       const wasPlaying = !video.paused;
       for (const te of video.querySelectorAll("track")) te.remove();
       this.#subtitleTracksDecided = false;
+      this.#destroyJassub();
       const source = video.querySelector("source");
       if (source) {
         source.src = url;
@@ -8626,23 +8651,9 @@
     }
     setSubtitle(e) {
       const id = e.params.subId;
-      const video = this.videoTarget;
-      for (const t of video.textTracks) {
-        if (t.kind === "subtitles" || t.kind === "captions") {
-          t.mode = "disabled";
-        }
-      }
-      if (id !== "") {
-        for (const t of video.textTracks) {
-          if (t.kind !== "subtitles" && t.kind !== "captions") continue;
-          if (t.label === id) {
-            t.mode = "showing";
-            break;
-          }
-        }
-      }
       this.currentSubtitleValue = id;
       this.captionsMenuOpenValue = false;
+      this.#applySubtitleSelection();
       for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
         if (btn.dataset.playerSubIdParam === id) {
           btn.setAttribute("data-active", "");
@@ -8883,17 +8894,86 @@
         t.enabled = t.label === id;
       }
     }
-    // On each loaded manifest, force currentSubtitle onto the textTracks
-    // list. The seed comes from the player URL ("" = Off), so we always
-    // know what the user wants. Forcing matters in Safari, which auto-
-    // enables a manifest track with DEFAULT=YES regardless of our intent
-    // — without this, "Off" wouldn't actually be off.
+    // On each loaded manifest (or addtrack), force currentSubtitle
+    // onto the renderer. Seed comes from the player URL ("" = Off).
+    // Forcing matters in Safari, which auto-enables a manifest
+    // track with DEFAULT=YES regardless of our intent — without
+    // this, "Off" wouldn't actually be off.
+    //
+    // In a jassub-tagged build, ass/ssa picks route through
+    // #startJassub instead of textTracks; this method is the
+    // branch point. The codec and original-format URL come from
+    // the menu button's data attrs (see playerCaptionsItem in
+    // view/player.go), so a single read keeps state aligned
+    // across user clicks and reactive (addtrack / loadedmetadata)
+    // re-applies.
     #applySubtitleSelection() {
       const id = this.currentSubtitleValue;
+      const btn = id ? this.captionsMenuTarget.querySelector(
+        `button[data-player-sub-id-param="${CSS.escape(id)}"]`
+      ) : null;
+      const codec = btn?.dataset.playerSubCodecParam || "";
+      const originalUrl = btn?.dataset.playerSubOriginalParam || "";
+      const useJassub = id !== "" && this.jassubHostUrlValue !== "" && (codec === "ass" || codec === "ssa") && originalUrl !== "";
+      if (useJassub) {
+        for (const t of this.videoTarget.textTracks) {
+          if (t.kind === "subtitles" || t.kind === "captions") {
+            t.mode = "disabled";
+          }
+        }
+        if (this.#jassubActiveId !== id) {
+          this.#startJassub(originalUrl, id);
+        }
+        return;
+      }
+      this.#destroyJassub();
       for (const t of this.videoTarget.textTracks) {
         if (t.kind !== "subtitles" && t.kind !== "captions") continue;
         t.mode = id !== "" && t.label === id ? "showing" : "disabled";
       }
+    }
+    // Dynamic-import the jassub host module and instantiate it
+    // over the video. The host module is bundled at vendor time
+    // (web/static/jassub/gen.go), so the import resolves to a
+    // single self-contained ESM file.
+    async #startJassub(subUrl, id) {
+      const gen = ++this.#jassubGen;
+      this.#destroyJassub();
+      this.#jassubGen = gen;
+      let mod;
+      try {
+        mod = await import(this.jassubHostUrlValue);
+      } catch {
+        return;
+      }
+      if (gen !== this.#jassubGen) return;
+      this.#jassubInstance = new mod.default({
+        video: this.videoTarget,
+        subUrl,
+        workerUrl: this.jassubWorkerUrlValue,
+        wasmUrl: this.jassubWasmUrlValue,
+        modernWasmUrl: this.jassubWasmUrlValue,
+        // Hand-supply the Liberation Sans fallback so libass has
+        // a font to open — without it nothing renders. jassub
+        // would otherwise resolve `./default.woff2` relative to
+        // the host module, which fails since our handler serves
+        // digest-cache-busted URLs.
+        availableFonts: { "liberation sans": this.jassubFontUrlValue },
+        // Don't try to discover local fonts via the Local Font
+        // Access API — act3 doesn't ship them and the discovery
+        // path forces a host→worker proxy roundtrip that throws
+        // on Chromium variants without the permission.
+        queryFonts: false
+      });
+      this.#jassubActiveId = id;
+    }
+    #destroyJassub() {
+      this.#jassubGen++;
+      if (this.#jassubInstance) {
+        this.#jassubInstance.destroy();
+        this.#jassubInstance = null;
+      }
+      this.#jassubActiveId = null;
     }
     handleProgress() {
       const video = this.videoTarget;

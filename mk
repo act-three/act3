@@ -139,6 +139,15 @@ case "${1:-}" in
 		dir=$(mktemp -d /tmp/act3.XXXXXX)
 		trap "rm -rf '$dir'" EXIT
 
+		# Vendor jassub for the high-fidelity ASS subtitle path
+		# (libass via WebAssembly). Idempotent; the network fetch
+		# only happens when dist/ is empty or out of date with the
+		# pinned version in gen.go. The package detects the bundle
+		# at runtime via the embed.FS, so no build tag is needed —
+		# without this step dist/ stays at the placeholder Readme
+		# and jassub.Path returns "" at runtime.
+		go run web/jassub/gen.go
+
 		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags prod,nodynamic -o $dir/act3
 
 		## Build static ffmpeg and ffprobe from source via Docker.
