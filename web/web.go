@@ -19,6 +19,7 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/icon"
 	"ily.dev/act3/ui/turbo"
+	"ily.dev/act3/web/jassub"
 	"ily.dev/act3/web/static"
 )
 
@@ -142,6 +143,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/video-reimport/{id}", c.doVideoReimport)
 	mux.Handle("GET /-/icon/{type}/{name}", http.StripPrefix("/-/icon", icon.Handler()))
 	mux.Handle("GET /-/static/{name}", static.Handler())
+	mux.Handle("GET /-/jassub/{name}", jassub.Handler())
 	mux.HandleFunc("GET /-/events", c.events)
 	// Landing point after the degraded server resets the DB and
 	// hands control back to the normal server. The browser arrives

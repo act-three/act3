@@ -31,6 +31,13 @@ export default class extends Controller {
 		captionsMenuOpen: Boolean,
 		currentAudio: String,
 		audioMenuOpen: Boolean,
+		// Empty in default builds; populated only by -tags jassub.
+		// A non-empty hostUrl unlocks the libass-via-WASM branch
+		// of #applySubtitleSelection for ass/ssa picks.
+		jassubHostUrl: String,
+		jassubWorkerUrl: String,
+		jassubWasmUrl: String,
+		jassubFontUrl: String,
 	};
 
 	#isTouch = false;
@@ -44,6 +51,12 @@ export default class extends Controller {
 	#lastSeekTime = Date.now();
 	#subtitleTracksDecided = false;
 	#pendingSeek = null;
+	#jassubInstance = null;
+	#jassubActiveId = null;
+	// Bumped on every teardown / new setup to invalidate stale
+	// async work from the previous selection (the dynamic-import
+	// of the host module is the slow leg).
+	#jassubGen = 0;
 
 	connect() {
 		// When the manifest surfaces a subtitle TextTrack with the
@@ -71,6 +84,23 @@ export default class extends Controller {
 			this.#applySubtitleSelection();
 		});
 
+		// While jassub is rendering, no native textTrack should be
+		// showing — the WebVTT version of the same subtitle would
+		// paint over libass. Safari's HLS layer can flip a manifest
+		// track with DEFAULT=YES to "showing" outside of addtrack
+		// timing (it's been observed when the player opens with the
+		// ASS sub already preselected via the URL ?s= query), so
+		// we listen for any mode change and re-disable on the spot
+		// when jassub is active. Idempotent: setting a track that's
+		// already disabled to "disabled" doesn't fire change again.
+		this.videoTarget.textTracks.addEventListener("change", () => {
+			if (!this.#jassubInstance) return;
+			for (const t of this.videoTarget.textTracks) {
+				if (t.kind !== "subtitles" && t.kind !== "captions") continue;
+				if (t.mode !== "disabled") t.mode = "disabled";
+			}
+		});
+
 		// When the manifest surfaces an audio AudioTrack, re-apply
 		// the chosen audio selection. Safari fires loadedmetadata
 		// before audioTracks is populated for native HLS, so applying
@@ -96,6 +126,7 @@ export default class extends Controller {
 
 	disconnect() {
 		clearTimeout(this.#timerLoading);
+		this.#destroyJassub();
 	}
 
 	dismiss() {
@@ -357,6 +388,9 @@ export default class extends Controller {
 	// captions template (they were tied to the old manifest's
 	// TextTrack list) and resets the subtitle-tracks gate so
 	// #ensureSubtitleTracks can decide afresh for the new source.
+	// Tears down any active jassub renderer too — the subsequent
+	// loadedmetadata triggers #applySubtitleSelection, which will
+	// recreate it when currentSubtitle is still an ASS pick.
 	#sourceSwap(url) {
 		const video = this.videoTarget;
 		const currentTime = video.currentTime;
@@ -364,6 +398,7 @@ export default class extends Controller {
 
 		for (const te of video.querySelectorAll("track")) te.remove();
 		this.#subtitleTracksDecided = false;
+		this.#destroyJassub();
 
 		const source = video.querySelector("source");
 		if (source) {
@@ -446,29 +481,15 @@ export default class extends Controller {
 
 	setSubtitle(e) {
 		const id = e.params.subId;
-		const video = this.videoTarget;
-
-		for (const t of video.textTracks) {
-			if (t.kind === "subtitles" || t.kind === "captions") {
-				t.mode = "disabled";
-			}
-		}
-
-		// TextTrack.label carries the SubtitleTrack ID (set as
-		// EXT-X-MEDIA NAME and as the captions-template's label
-		// attribute) — match on it directly.
-		if (id !== "") {
-			for (const t of video.textTracks) {
-				if (t.kind !== "subtitles" && t.kind !== "captions") continue;
-				if (t.label === id) {
-					t.mode = "showing";
-					break;
-				}
-			}
-		}
-
 		this.currentSubtitleValue = id;
 		this.captionsMenuOpenValue = false;
+
+		// #applySubtitleSelection reads the menu's data attrs on
+		// the active button to decide between the textTracks path
+		// and the jassub path, so it stays the single source of
+		// truth across user clicks, addtrack events, and post-
+		// sourceSwap loadedmetadata.
+		this.#applySubtitleSelection();
 
 		for (const btn of this.captionsMenuTarget.querySelectorAll("button")) {
 			if (btn.dataset.playerSubIdParam === id) {
@@ -798,17 +819,102 @@ export default class extends Controller {
 		}
 	}
 
-	// On each loaded manifest, force currentSubtitle onto the textTracks
-	// list. The seed comes from the player URL ("" = Off), so we always
-	// know what the user wants. Forcing matters in Safari, which auto-
-	// enables a manifest track with DEFAULT=YES regardless of our intent
-	// — without this, "Off" wouldn't actually be off.
+	// On each loaded manifest (or addtrack), force currentSubtitle
+	// onto the renderer. Seed comes from the player URL ("" = Off).
+	// Forcing matters in Safari, which auto-enables a manifest
+	// track with DEFAULT=YES regardless of our intent — without
+	// this, "Off" wouldn't actually be off.
+	//
+	// In a jassub-tagged build, ass/ssa picks route through
+	// #startJassub instead of textTracks; this method is the
+	// branch point. The codec and original-format URL come from
+	// the menu button's data attrs (see playerCaptionsItem in
+	// view/player.go), so a single read keeps state aligned
+	// across user clicks and reactive (addtrack / loadedmetadata)
+	// re-applies.
 	#applySubtitleSelection() {
 		const id = this.currentSubtitleValue;
+		const btn = id
+			? this.captionsMenuTarget.querySelector(
+				`button[data-player-sub-id-param="${CSS.escape(id)}"]`,
+			)
+			: null;
+		const codec = btn?.dataset.playerSubCodecParam || "";
+		const originalUrl = btn?.dataset.playerSubOriginalParam || "";
+
+		const useJassub = id !== ""
+			&& this.jassubHostUrlValue !== ""
+			&& (codec === "ass" || codec === "ssa")
+			&& originalUrl !== "";
+
+		if (useJassub) {
+			// A native track for the same id would render the
+			// lossy WebVTT alongside libass — disable everything.
+			for (const t of this.videoTarget.textTracks) {
+				if (t.kind === "subtitles" || t.kind === "captions") {
+					t.mode = "disabled";
+				}
+			}
+			if (this.#jassubActiveId !== id) {
+				this.#startJassub(originalUrl, id);
+			}
+			return;
+		}
+
+		this.#destroyJassub();
 		for (const t of this.videoTarget.textTracks) {
 			if (t.kind !== "subtitles" && t.kind !== "captions") continue;
 			t.mode = id !== "" && t.label === id ? "showing" : "disabled";
 		}
+	}
+
+	// Dynamic-import the jassub host module and instantiate it
+	// over the video. The host module is bundled at vendor time
+	// (web/static/jassub/gen.go), so the import resolves to a
+	// single self-contained ESM file.
+	async #startJassub(subUrl, id) {
+		const gen = ++this.#jassubGen;
+		this.#destroyJassub();
+		// #destroyJassub bumps #jassubGen; restore our token so
+		// only later switches invalidate this attempt.
+		this.#jassubGen = gen;
+
+		let mod;
+		try {
+			mod = await import(this.jassubHostUrlValue);
+		} catch {
+			return;
+		}
+		if (gen !== this.#jassubGen) return;
+
+		this.#jassubInstance = new mod.default({
+			video: this.videoTarget,
+			subUrl,
+			workerUrl: this.jassubWorkerUrlValue,
+			wasmUrl: this.jassubWasmUrlValue,
+			modernWasmUrl: this.jassubWasmUrlValue,
+			// Hand-supply the Liberation Sans fallback so libass has
+			// a font to open — without it nothing renders. jassub
+			// would otherwise resolve `./default.woff2` relative to
+			// the host module, which fails since our handler serves
+			// digest-cache-busted URLs.
+			availableFonts: { "liberation sans": this.jassubFontUrlValue },
+			// Don't try to discover local fonts via the Local Font
+			// Access API — act3 doesn't ship them and the discovery
+			// path forces a host→worker proxy roundtrip that throws
+			// on Chromium variants without the permission.
+			queryFonts: false,
+		});
+		this.#jassubActiveId = id;
+	}
+
+	#destroyJassub() {
+		this.#jassubGen++;
+		if (this.#jassubInstance) {
+			this.#jassubInstance.destroy();
+			this.#jassubInstance = null;
+		}
+		this.#jassubActiveId = null;
 	}
 
 	handleProgress() {

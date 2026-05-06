@@ -1,0 +1,11 @@
+Placeholder so //go:embed dist always succeeds.
+
+The real vendor artifacts (jassub.js, jassub-worker.js, the wasm,
+default.woff2, LICENSE, version.txt) are written here by ../gen.go
+and gitignored — present in dist/ only after running
+
+	go run web/jassub/gen.go
+
+When this directory holds nothing but Readme, jassub.Handler
+returns 404 and jassub.Path returns "". The player view branches
+on an empty Path and stays on the WebVTT downconversion path.

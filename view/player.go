@@ -12,6 +12,7 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
+	"ily.dev/act3/web/jassub"
 )
 
 // PlayerForEpisode and PlayerForMovie render the player frame.
@@ -69,6 +70,16 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 			stimulus.Value("player", "captions-menu-open")("false"),
 			stimulus.Value("player", "current-audio")(initAudio),
 			stimulus.Value("player", "audio-menu-open")("false"),
+
+			// jassub URLs are empty in default builds; the
+			// player JS treats an empty host URL as "feature off"
+			// and stays on the native textTracks path. In
+			// -tags jassub builds these resolve to the digest-
+			// cache-busted artifacts under /-/jassub/.
+			stimulus.Value("player", "jassub-host-url")(jassub.Path("jassub.js")),
+			stimulus.Value("player", "jassub-worker-url")(jassub.Path("jassub-worker.js")),
+			stimulus.Value("player", "jassub-wasm-url")(jassub.Path("jassub-worker-modern.wasm")),
+			stimulus.Value("player", "jassub-font-url")(jassub.Path("default.woff2")),
 
 			stimulus.Action("keydown.h@window->player#toggleHarlow"),
 			stimulus.Action("keydown@window->player#handleKey"),
@@ -355,10 +366,15 @@ func playerCaptionsTemplate(opts []model.SubtitleOption) html.Node {
 // to switch between them. The id param matches the HLS NAME (which
 // is the SubtitleTrack ID) and the template's label attribute, and
 // is what the JS uses to find the matching TextTrack.
+//
+// Each non-Off entry also carries the original codec and a URL to
+// the original-format blob, so the JS can route ass/ssa picks to
+// jassub when a jassub-tagged build provides the host URL. Default
+// builds ignore those attributes and stay on the WebVTT path.
 func playerCaptionsMenu(opts []model.SubtitleOption, initSubtitle string) html.Node {
-	items := []html.Node{playerCaptionsItem("", "Off", initSubtitle)}
+	items := []html.Node{playerCaptionsItem("", "Off", "", "", initSubtitle)}
 	for _, opt := range opts {
-		items = append(items, playerCaptionsItem(opt.ID, opt.Label, initSubtitle))
+		items = append(items, playerCaptionsItem(opt.ID, opt.Label, opt.OriginalCodec, opt.OriginalPath, initSubtitle))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("captions"))(
 		Button(stimulus.Action("click->player#toggleCaptionsMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/message-text-square-02")),
@@ -369,11 +385,13 @@ func playerCaptionsMenu(opts []model.SubtitleOption, initSubtitle string) html.N
 	)
 }
 
-func playerCaptionsItem(id, label, initSubtitle string) html.Node {
+func playerCaptionsItem(id, label, codec, original, initSubtitle string) html.Node {
 	attrs := []attr.Node{
 		attr.Type("button"),
 		stimulus.Action("click->player#setSubtitle"),
 		Attr("data-player-sub-id-param")(id),
+		Attr("data-player-sub-codec-param")(codec),
+		Attr("data-player-sub-original-param")(original),
 		Class("v-player-menu-item"),
 	}
 	if id == initSubtitle {

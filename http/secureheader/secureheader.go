@@ -29,12 +29,22 @@ const DefaultCSP = "default-src 'self'; " +
 // security headers on every response. Handlers may override any
 // individual header by calling w.Header().Set before the response
 // is flushed.
+//
+// COOP+COEP turn the document into a cross-origin-isolated context,
+// which is what unlocks SharedArrayBuffer for libass-wasm in the
+// optional -tags jassub build. credentialless is the right COEP
+// mode for us: cross-origin no-cors fetches (TMDB/TVmaze posters,
+// Google Fonts) load without credentials and don't need CORP
+// headers from the foreign origin. Those endpoints don't
+// authenticate via cookies, so nothing breaks.
 func Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		hdr := w.Header()
 		hdr.Set("X-Content-Type-Options", "nosniff")
 		hdr.Set("Referrer-Policy", "no-referrer")
 		hdr.Set("X-Frame-Options", "DENY")
+		hdr.Set("Cross-Origin-Opener-Policy", "same-origin")
+		hdr.Set("Cross-Origin-Embedder-Policy", "credentialless")
 		hdr.Set("Content-Security-Policy", DefaultCSP)
 		h.ServeHTTP(w, req)
 	})
