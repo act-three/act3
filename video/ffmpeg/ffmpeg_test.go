@@ -14,27 +14,32 @@ const dockerImage = "act3-ffmpeg"
 // setupDocker configures the package to run ffmpeg/ffprobe inside
 // the act3-ffmpeg Docker container and returns a working directory
 // that is bind-mounted into the container at the same host path.
+//
+// If docker is unavailable but a host ffmpeg is on PATH, falls back
+// to running ffmpeg/ffprobe directly via the default newCmd. Skips
+// if neither is available.
 func setupDocker(t *testing.T) string {
 	t.Helper()
-	if _, err := exec.LookPath("docker"); err != nil {
-		t.Skip("docker not in PATH")
-	}
-	if err := exec.Command("docker", "image", "inspect",
-		dockerImage).Run(); err != nil {
-		t.Skipf("%s image not built", dockerImage)
-	}
-
 	dir := t.TempDir()
 
 	// Temp dirs created by production code (e.g. Pass2Single) must
-	// land under dir so they are accessible inside the container.
+	// land under dir so they are accessible inside the container
+	// (and stay together for the host fallback too).
 	t.Setenv("TMPDIR", dir)
 
-	origCmd := newCmd
-	newCmd = dockerCmd(dir)
+	if _, err := exec.LookPath("docker"); err == nil {
+		if err := exec.Command("docker", "image", "inspect",
+			dockerImage).Run(); err == nil {
+			origCmd := newCmd
+			newCmd = dockerCmd(dir)
+			t.Cleanup(func() { newCmd = origCmd })
+			return dir
+		}
+	}
 
-	t.Cleanup(func() { newCmd = origCmd })
-
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("neither docker+act3-ffmpeg nor host ffmpeg available")
+	}
 	return dir
 }
 
