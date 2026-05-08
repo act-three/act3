@@ -142,6 +142,25 @@ type EncodeParams struct {
 	MaxFPS    int      // max output fps; 0 = source (ignored if Remux)
 	Tag       string   // video tag, e.g. "hvc1" for HEVC in fMP4
 	StatsID   string   // stable filename for pass-1 stats inside statsDir; required when !Remux, ignored otherwise
+
+	// SegmentBoundaries is the list of HLS segment cut points shared
+	// by every rendition of one source video, expressed as
+	// display-order source frame indices. When set on a re-encode
+	// rendition, the encoder is forced to emit keyframes at exactly
+	// these frame indices (and is told not to insert other
+	// keyframes), so the HLS muxer cuts segments at the same source
+	// frames the stream-copy remux variant naturally cuts at.
+	// Without this, libx264/libx265 use their own GOP cadence and
+	// the resulting variants disagree on segment boundaries —
+	// Chrome's MSE refuses to bridge the resulting buffer gap on ABR
+	// switch. Ignored for stream-copy renditions, which inherit
+	// source keyframes regardless.
+	//
+	// Frame indices (rather than times) are used so the forced
+	// keyframe lands on an exact frame boundary and not approximate
+	// to within a frame's duration, satisfying the HLS authoring
+	// spec's "aligned to within 1 video frame" requirement.
+	SegmentBoundaries []int64
 }
 
 // allowedDemuxers is the comma-separated list of libavformat demuxer
@@ -532,7 +551,9 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
-	args = append(args, twoPassArgs(dst.Codec, 2, passlog)...)
+	forceArgs, codecExtras := keyframeArgs(dst.SegmentBoundaries)
+	args = append(args, forceArgs...)
+	args = append(args, twoPassArgs(dst.Codec, 2, passlog, codecExtras...)...)
 	args = append(args, "-an", "-sn")
 	args = append(args, hlsOutputArgs(mediaPath)...)
 	args = append(args, plsPath)
@@ -907,7 +928,9 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
 		args = append(args, fpsPassthrough()...)
 		args = append(args, "-c:v", p.Codec, "-preset", preset)
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
-		args = append(args, twoPassArgs(p.Codec, 1, filepath.Join(statsDir, p.StatsID))...)
+		forceArgs, codecExtras := keyframeArgs(p.SegmentBoundaries)
+		args = append(args, forceArgs...)
+		args = append(args, twoPassArgs(p.Codec, 1, filepath.Join(statsDir, p.StatsID), codecExtras...)...)
 		args = append(args, "-an", "-sn")
 		args = append(args, "-f", "null", "/dev/null")
 	}
@@ -1025,13 +1048,27 @@ func inputArgs(format string) []string {
 	}
 }
 
+// MinSegmentDuration is the floor on HLS segment length. Both
+// SegmentBoundaries (which greedily picks source keyframes at
+// least this far apart) and the HLS muxer's -hls_time trigger key
+// off this value, so they agree on where to cut.
+//
+// Apple's HLS authoring spec recommends ≤6s; we want to stay under
+// that ceiling whenever the source allows. A 4s floor gives us
+// room to land on closely-spaced source keyframes — content
+// typically uses 2–5s GOPs — instead of skipping every other
+// keyframe and overshooting to 8–10s. Sources whose GOPs exceed
+// the upper bound (handled separately, see ACT-180) fall back to
+// re-encoding the top tier so we can pick boundaries freely.
+const MinSegmentDuration = 4 * time.Second
+
 func hlsOutputArgs(mediaPath string) []string {
 	return []string{
 		"-f", "hls",
 		"-hls_segment_type", "fmp4",
 		"-hls_flags", "single_file",
 		"-hls_playlist_type", "vod",
-		"-hls_time", "6",
+		"-hls_time", strconv.Itoa(int(MinSegmentDuration.Seconds())),
 		"-hls_list_size", "0",
 		"-hls_segment_filename", mediaPath,
 	}
@@ -1067,33 +1104,73 @@ func removePass1StatsFor(passlog string) {
 // bases the suffix on a global output stream index that differs
 // between pass 1 (video only) and pass 2 (video + audio).
 //
+// Any extras are appended to the colon-separated params string for
+// libx264/libx265; for other codecs they are ignored. Each extra is
+// expected to be a single "key=value" fragment.
+//
 // Panics if passlog contains ':', '\\', or '\n': those characters
 // would be reinterpreted as additional options inside the
 // colon-separated -x264-params / -x265-params lists. The passlog
 // path is built from operator config ($A3STORAGE), so this
 // represents misconfiguration, not user input.
-func twoPassArgs(codec string, pass int, passlog string) []string {
+func twoPassArgs(codec string, pass int, passlog string, extras ...string) []string {
 	if strings.ContainsAny(passlog, ":\\\n") {
 		panic(fmt.Sprintf("ffmpeg: passlog path %q contains forbidden character (:, \\, or \\n)", passlog))
 	}
+	var key, params string
 	switch codec {
 	case "libx265":
-		return []string{
-			"-x265-params",
-			fmt.Sprintf("pass=%d:stats=%s:open-gop=0",
-				pass, passlog),
-		}
+		key = "-x265-params"
+		params = fmt.Sprintf("pass=%d:stats=%s:open-gop=0", pass, passlog)
 	case "libx264":
-		return []string{
-			"-x264-params",
-			fmt.Sprintf("pass=%d:stats=%s", pass, passlog),
-		}
+		key = "-x264-params"
+		params = fmt.Sprintf("pass=%d:stats=%s", pass, passlog)
 	default:
 		return []string{
 			"-pass", strconv.Itoa(pass),
 			"-passlogfile", passlog,
 		}
 	}
+	for _, e := range extras {
+		if e != "" {
+			params += ":" + e
+		}
+	}
+	return []string{key, params}
+}
+
+// keyframeArgs returns the encoder-level flags that pin segment
+// boundaries to the supplied source frame indices. Empty if cuts
+// is empty.
+//
+// -force_key_frames "expr:eq(n,N1)+eq(n,N2)+..." pins each keyframe
+// to a specific encoder-input frame index — exact, no time-rounding
+// slop. (The Boolean ORs in the expression evaluate to 0/1 ints; a
+// non-zero sum forces a keyframe.) The codec-params extras
+// (returned for splicing into twoPassArgs) raise the maximum GOP
+// size far above any plausible cut spacing and disable scene-cut
+// detection, so the only keyframes the encoder produces are the
+// forced ones — which is what makes ffmpeg's HLS muxer cut segments
+// at exactly the requested frames.
+//
+// Assumes the rendition is encoded at the source's frame rate (no
+// fps filter): then encoder frame `n` equals source display frame
+// `n`. fps-changed re-encodes would need to convert source frame
+// indices to encoder frame indices first.
+func keyframeArgs(cuts []int64) (forceArgs []string, extras []string) {
+	if len(cuts) == 0 {
+		return nil, nil
+	}
+	var sb strings.Builder
+	sb.WriteString("expr:")
+	for i, c := range cuts {
+		if i > 0 {
+			sb.WriteByte('+')
+		}
+		fmt.Fprintf(&sb, "eq(n,%d)", c)
+	}
+	return []string{"-force_key_frames", sb.String()},
+		[]string{"keyint=99999", "scenecut=0"}
 }
 
 // -----------------------------------------------------------------------

@@ -405,16 +405,22 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 		}
 		defer src.Close()
 
+		boundaries, err := sourceSegmentBoundaries(ctx, src, vid)
+		if err != nil {
+			return fmt.Errorf("probe source keyframes: %w", err)
+		}
+
 		dsts := make([]ffmpeg.EncodeParams, len(renditions))
 		for i, r := range renditions {
 			dsts[i] = ffmpeg.EncodeParams{
-				Remux:     r.Remux != 0,
-				Codec:     toFFmpegCodec(r.Codec),
-				Bitrate:   r.TargetBitrate,
-				MaxHeight: int(r.MaxHeight),
-				MaxFPS:    int(r.MaxFPS),
-				Tag:       toVideoTag(r.Codec),
-				StatsID:   r.ID,
+				Remux:             r.Remux != 0,
+				Codec:             toFFmpegCodec(r.Codec),
+				Bitrate:           r.TargetBitrate,
+				MaxHeight:         int(r.MaxHeight),
+				MaxFPS:            int(r.MaxFPS),
+				Tag:               toVideoTag(r.Codec),
+				StatsID:           r.ID,
+				SegmentBoundaries: boundaries,
 			}
 		}
 
@@ -575,14 +581,20 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 
 	duration := time.Duration(vid.Duration) * time.Millisecond
 
+	boundaries, err := sourceSegmentBoundaries(ctx, src, vid)
+	if err != nil {
+		return fmt.Errorf("probe source keyframes: %w", err)
+	}
+
 	dst := ffmpeg.EncodeParams{
-		Remux:     rfs.Remux != 0,
-		Codec:     toFFmpegCodec(rfs.Codec),
-		Bitrate:   rfs.TargetBitrate,
-		MaxHeight: int(rfs.MaxHeight),
-		MaxFPS:    int(rfs.MaxFPS),
-		Tag:       toVideoTag(rfs.Codec),
-		StatsID:   rfs.ID,
+		Remux:             rfs.Remux != 0,
+		Codec:             toFFmpegCodec(rfs.Codec),
+		Bitrate:           rfs.TargetBitrate,
+		MaxHeight:         int(rfs.MaxHeight),
+		MaxFPS:            int(rfs.MaxFPS),
+		Tag:               toVideoTag(rfs.Codec),
+		StatsID:           rfs.ID,
+		SegmentBoundaries: boundaries,
 	}
 
 	var playlist string
@@ -1115,6 +1127,23 @@ func toVideoTag(codec string) string {
 // files inside belong to video/ffmpeg.
 func (m *Model) pass1Dir(vidID string) string {
 	return filepath.Join(m.persistentTmp, "pass1", vidID)
+}
+
+// sourceSegmentBoundaries probes src's video keyframes and returns
+// the HLS segment cut points every rendition of this source should
+// share, as display-order source frame indices. The same list is
+// fed to each rendition's EncodeParams so re-encodes force
+// keyframes at exactly the source frames the stream-copy remux
+// variant cuts at, keeping HLS variants aligned to within one frame
+// — frame-exact rather than time-approximate.
+func sourceSegmentBoundaries(ctx Context, src *os.File, vid schema.Video) ([]int64, error) {
+	keyframes, err := ffmpeg.ProbeKeyframes(ctx, src, vid.Format)
+	if err != nil {
+		return nil, err
+	}
+	fps := ffmpeg.FrameRate{Num: int(vid.FrameRateNum), Den: int(vid.FrameRateDen)}
+	minFrames := ffmpeg.MinFramesPerSegment(fps, ffmpeg.MinSegmentDuration)
+	return ffmpeg.SegmentBoundaries(keyframes, minFrames), nil
 }
 
 // allRenditionsEncoded reports whether every rendition for videoID
