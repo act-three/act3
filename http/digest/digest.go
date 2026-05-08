@@ -57,8 +57,13 @@ func (h *Handler) NameToDigest(name string) string {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := strings.TrimPrefix(req.URL.Path, "/")
+	bare, ok := h.toBare[path]
+	if !ok {
+		http.NotFound(w, req)
+		return
+	}
 	w.Header().Set("Cache-Control", "max-age=31536000, immutable")
-	http.ServeFileFS(w, req, h.fs, h.toBare[path])
+	http.ServeFileFS(w, req, h.fs, bare)
 }
 
 func digest(fsys fs.FS, name string) (string, error) {
