@@ -170,7 +170,7 @@ type EncodeParams struct {
 // and the acceptance gate for the -f value forced into subsequent
 // ffprobe/ffmpeg invocations, so demuxers like concat, HLS, and
 // QuickTime reference movies never auto-detect on attacker bytes.
-const allowedDemuxers = "matroska,webm,avi,mov,mp4,m4a,3gp,3g2,mj2"
+const allowedDemuxers = "matroska,webm,avi,mov,mp4,m4a,3gp,3g2,mj2,mpegts"
 
 // subtitleTextCodecs lists the text-based subtitle codecs we surface
 // from Probe. Bitmap formats (PGS, VOBSUB, DVB) are intentionally
@@ -193,6 +193,9 @@ var subtitleTextCodecs = map[string]bool{
 // demuxer via -f using the format learned in stage 1 — so demuxer
 // auto-detection never runs on attacker-controlled bytes.
 func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
 	format, err := probeFormat(ctx, r)
 	if err != nil {
 		return nil, err
@@ -770,8 +773,11 @@ func audioMuxArgsForDownload(audio []AudioStream) []string {
 				fmt.Sprintf("-metadata:s:a:%d", i), "language="+a.Language)
 		}
 		if a.Title != "" {
+			// MP4's per-track name lives in the hdlr box, set via
+			// handler_name; the title= key is silently dropped by
+			// the mov muxer.
 			args = append(args,
-				fmt.Sprintf("-metadata:s:a:%d", i), "title="+a.Title)
+				fmt.Sprintf("-metadata:s:a:%d", i), "handler_name="+a.Title)
 		}
 		if i == 0 {
 			args = append(args, fmt.Sprintf("-disposition:a:%d", i), "default")

@@ -185,7 +185,7 @@ func TestEncodeAudio(t *testing.T) {
 			name: "aac-5_1-reencode",
 			srcArgs: append(append([]string{}, commonVideo...),
 				"-f", "lavfi", "-i",
-				"sine=frequency=440:duration=2:sample_rate=48000:channel_layout=5.1",
+				"aevalsrc=exprs=sin(440*2*PI*t):duration=2:sample_rate=48000:channel_layout=5.1",
 				"-c:v", "libx264", "-preset", "ultrafast",
 				"-c:a", "aac", "-b:a", "384k",
 				"-t", "2",
@@ -214,7 +214,7 @@ func TestEncodeAudio(t *testing.T) {
 			name: "ac3-5_1-reencode",
 			srcArgs: append(append([]string{}, commonVideo...),
 				"-f", "lavfi", "-i",
-				"sine=frequency=440:duration=2:sample_rate=48000:channel_layout=5.1",
+				"aevalsrc=exprs=sin(440*2*PI*t):duration=2:sample_rate=48000:channel_layout=5.1",
 				"-c:v", "libx264", "-preset", "ultrafast",
 				"-c:a", "ac3", "-b:a", "384k",
 				"-t", "2",
@@ -229,7 +229,7 @@ func TestEncodeAudio(t *testing.T) {
 			name: "mono-reencode",
 			srcArgs: append(append([]string{}, commonVideo...),
 				"-f", "lavfi", "-i",
-				"sine=frequency=440:duration=2:sample_rate=48000:channel_layout=mono",
+				"sine=frequency=440:duration=2:sample_rate=48000",
 				"-c:v", "libx264", "-preset", "ultrafast",
 				"-c:a", "aac", "-b:a", "64k",
 				"-t", "2",
@@ -311,15 +311,15 @@ func TestEncodeAudio51SideRemap(t *testing.T) {
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "src-5_1-side.mkv")
 
-	t.Log("generating AAC 5.1(side) source...")
+	t.Log("generating AC3 5.1(side) source...")
 	generate(t,
 		"-y",
 		"-f", "lavfi", "-i",
 		"testsrc2=duration=2:size=160x90:rate=24",
 		"-f", "lavfi", "-i",
-		"sine=frequency=440:duration=2:sample_rate=48000:channel_layout=5.1(side)",
+		"aevalsrc=exprs=sin(440*2*PI*t):duration=2:sample_rate=48000:channel_layout=5.1(side)",
 		"-c:v", "libx264", "-preset", "ultrafast",
-		"-c:a", "aac", "-b:a", "384k",
+		"-c:a", "ac3", "-b:a", "384k",
 		"-t", "2",
 		srcPath,
 	)

@@ -43,6 +43,22 @@ func setupDocker(t *testing.T) string {
 	return dir
 }
 
+// setupHost is like setupDocker but never routes through the
+// container, even when docker and the act3-ffmpeg image are
+// available. Use it for tests that hit a code path Docker's stdin
+// pipe breaks — e.g. mpegts probing, where the demuxer needs a
+// seekable input to compute duration but `docker run -i` always
+// pipes stdin through the daemon.
+func setupHost(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	t.Setenv("TMPDIR", dir)
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("host ffmpeg not available")
+	}
+	return dir
+}
+
 // dockerCmd returns a newCmd replacement that runs tools inside
 // Docker, with dir bind-mounted at the same host path.
 func dockerCmd(dir string) func(context.Context, string, ...string) *exec.Cmd {
@@ -204,9 +220,11 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 
 // TestEncodeMPEG2ToHEVC verifies that a synthetic MPEG2+MP2 source
 // in MPEG-TS (typical of broadcast captures and DVD rips) encodes
-// correctly to HEVC HLS fMP4.
+// correctly to HEVC HLS fMP4. Always runs against host ffmpeg
+// because Probe needs a seekable stdin to compute mpegts duration,
+// and `docker run -i` strips that.
 func TestEncodeMPEG2ToHEVC(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "source.ts")

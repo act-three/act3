@@ -46,8 +46,8 @@ func probeDownload(t *testing.T, ctx context.Context, path string) []downloadAud
 			CodecName string `json:"codec_name"`
 			Channels  int    `json:"channels"`
 			Tags      struct {
-				Language string `json:"language"`
-				Title    string `json:"title"`
+				Language    string `json:"language"`
+				HandlerName string `json:"handler_name"`
 			} `json:"tags"`
 			Disposition struct {
 				Default int `json:"default"`
@@ -63,7 +63,7 @@ func probeDownload(t *testing.T, ctx context.Context, path string) []downloadAud
 			CodecName:   s.CodecName,
 			Channels:    s.Channels,
 			Language:    s.Tags.Language,
-			Title:       s.Tags.Title,
+			Title:       s.Tags.HandlerName,
 			DefaultFlag: s.Disposition.Default != 0,
 		})
 	}
@@ -101,13 +101,13 @@ func generateTwoAudioMKV(t *testing.T, srcPath string) {
 		"-f", "lavfi", "-i",
 		"sine=frequency=440:duration=2:sample_rate=48000",
 		"-f", "lavfi", "-i",
-		"sine=frequency=880:duration=2:sample_rate=48000:channel_layout=5.1",
+		"aevalsrc=exprs=sin(880*2*PI*t):duration=2:sample_rate=48000:channel_layout=5.1",
 		"-map", "0:v", "-map", "1:a", "-map", "2:a",
 		"-c:v", "libx264", "-preset", "ultrafast",
-		"-c:a:0", "aac", "-ac:0", "2", "-b:a:0", "128k",
+		"-c:a:0", "aac", "-ac:a:0", "2", "-b:a:0", "128k",
 		"-c:a:1", "ac3", "-b:a:1", "384k",
 		"-metadata:s:a:0", "language=eng",
-		"-metadata:s:a:0", "title=English",
+		"-metadata:s:a:0", "handler_name=English",
 		"-metadata:s:a:1", "language=eng",
 		"-metadata:s:a:1", "title=Director's Commentary",
 		"-t", "2",
@@ -313,7 +313,7 @@ func TestAudioMuxArgsForDownload(t *testing.T) {
 				"-map", "0:a:0",
 				"-c:a:0", "copy",
 				"-metadata:s:a:0", "language=eng",
-				"-metadata:s:a:0", "title=English",
+				"-metadata:s:a:0", "handler_name=English",
 				"-disposition:a:0", "default",
 			},
 		},
@@ -327,13 +327,13 @@ func TestAudioMuxArgsForDownload(t *testing.T) {
 				"-map", "0:a:0",
 				"-c:a:0", "copy",
 				"-metadata:s:a:0", "language=eng",
-				"-metadata:s:a:0", "title=English",
+				"-metadata:s:a:0", "handler_name=English",
 				"-disposition:a:0", "default",
 				"-map", "0:a:1",
 				"-c:a:1", "aac",
 				"-b:a:1", "384k",
 				"-metadata:s:a:1", "language=eng",
-				"-metadata:s:a:1", "title=Commentary",
+				"-metadata:s:a:1", "handler_name=Commentary",
 				"-disposition:a:1", "0",
 			},
 		},
