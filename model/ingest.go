@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -235,19 +236,18 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 		return err
 	}
 
-	// When the source might be remuxable, also probe its keyframe
-	// layout so the planner can fall back to re-encoding when GOPs
-	// are long enough that aligned segments would overshoot Apple's
-	// recommended ceiling.
+	// When the source might be remuxable, the planner falls back to
+	// re-encoding if GOPs are long enough that aligned segments would
+	// overshoot Apple's recommended ceiling. Probe.Video.Keyframes is
+	// already populated; we only need to convert the largest gap to a
+	// duration. Use the coded frame rate (the rate the encoder
+	// actually sees under -fps_mode passthrough) so soft-telecine
+	// sources don't get measured at the inflated display rate.
 	var maxKeyframeGap time.Duration
 	if probe.Video != nil && (probe.Video.CodecName == "h264" || probe.Video.CodecName == "hevc") {
-		keyframes, err := ffmpeg.ProbeKeyframes(ctx, f, probe.FormatName)
-		if err != nil {
-			return fmt.Errorf("probe keyframes: %w", err)
-		}
-		gapFrames := ffmpeg.MaxKeyframeGap(keyframes)
-		fps := probe.Video.FrameRate
-		if fps.Num > 0 && fps.Den > 0 {
+		gapFrames := ffmpeg.MaxKeyframeGap(probe.Video.Keyframes)
+		fps := probe.Video.CodedFrameRate()
+		if fps.Positive() {
 			maxKeyframeGap = time.Duration(gapFrames) * time.Second *
 				time.Duration(fps.Den) / time.Duration(fps.Num)
 		}
@@ -317,17 +317,27 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 		})
 	}
 
+	keyframesJSON, err := json.Marshal(probe.Video.Keyframes)
+	if err != nil {
+		return err
+	}
+
 	tx.m.prog.UpdateStatus(vid.ID, "Queued")
 	return tx.m.WithTxRW(func(txw *TxRW) error {
 		err = txw.q.VideoUpdateProbe(ctx, schema.VideoUpdateProbeParams{
-			ID:           vid.ID,
-			Duration:     probe.Duration.Milliseconds(),
-			OriginalType: probe.ContentType(),
-			Format:       probe.FormatName,
-			Width:        int64(probe.Video.Width),
-			Height:       int64(probe.Video.Height),
-			FrameRateNum: int64(probe.Video.FrameRate.Num),
-			FrameRateDen: int64(probe.Video.FrameRate.Den),
+			ID:                 vid.ID,
+			Duration:           probe.Duration.Milliseconds(),
+			OriginalType:       probe.ContentType(),
+			Format:             probe.FormatName,
+			Width:              int64(probe.Video.Width),
+			Height:             int64(probe.Video.Height),
+			FrameRateNum:       int64(probe.Video.FrameRate.Num),
+			FrameRateDen:       int64(probe.Video.FrameRate.Den),
+			VideoPacketCount:   probe.Video.PacketCount,
+			VideoDurationTicks: probe.Video.DurationTicks,
+			VideoTimebaseNum:   int64(probe.Video.TimebaseNum),
+			VideoTimebaseDen:   int64(probe.Video.TimebaseDen),
+			VideoKeyframes:     string(keyframesJSON),
 		})
 		if err != nil {
 			return err
@@ -426,9 +436,9 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 		}
 		defer src.Close()
 
-		boundaries, err := sourceSegmentBoundaries(ctx, src, vid, hasRemux)
+		boundaries, err := sourceSegmentBoundaries(vid, hasRemux)
 		if err != nil {
-			return fmt.Errorf("probe source keyframes: %w", err)
+			return fmt.Errorf("source segment boundaries: %w", err)
 		}
 
 		dsts := make([]ffmpeg.EncodeParams, len(renditions))
@@ -617,9 +627,9 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 
 	duration := time.Duration(vid.Duration) * time.Millisecond
 
-	boundaries, err := sourceSegmentBoundaries(ctx, src, vid, hasRemux)
+	boundaries, err := sourceSegmentBoundaries(vid, hasRemux)
 	if err != nil {
-		return fmt.Errorf("probe source keyframes: %w", err)
+		return fmt.Errorf("source segment boundaries: %w", err)
 	}
 
 	dst := ffmpeg.EncodeParams{
@@ -1172,30 +1182,56 @@ func (m *Model) pass1Dir(vidID string) string {
 }
 
 // sourceSegmentBoundaries returns the HLS segment cut points every
-// rendition of this source should share, as display-order source
-// frame indices.
+// rendition of this source should share, as source-frame indices in
+// the encoder's input order (i.e. coded-rate frames, what
+// -force_key_frames "expr:eq(n,N)" indexes).
 //
 // When hasRemux is true the cuts must land on source keyframes, so
-// we probe them and pick a subset spaced at least MinSegmentDuration
-// apart. Re-encodes are then forced to keyframe at exactly those
-// source frames, keeping every variant aligned to within one frame.
+// we pick a subset of the persisted keyframe list spaced at least
+// MinSegmentDuration apart. Re-encodes are then forced to keyframe
+// at exactly those source frames, keeping every variant aligned to
+// within one frame.
 //
 // When hasRemux is false every variant is under our encoder's
-// control, so we skip the probe and emit a uniform 4s grid the
-// encoders can hit exactly. Sources with long GOPs would otherwise
-// inherit those long GOPs as segment lengths needlessly.
-func sourceSegmentBoundaries(ctx Context, src *os.File, vid schema.Video, hasRemux bool) ([]int64, error) {
-	fps := ffmpeg.FrameRate{Num: int(vid.FrameRateNum), Den: int(vid.FrameRateDen)}
+// control, so we skip the keyframe constraint and emit a uniform
+// MinSegmentDuration grid the encoders can hit exactly. Sources
+// with long GOPs would otherwise inherit those long GOPs as segment
+// lengths needlessly.
+//
+// Coded rate (rather than the display rate carried in
+// FrameRateNum/Den) is used because -fps_mode passthrough hands the
+// encoder one frame per source coded picture; on soft-telecine and
+// VFR sources the display rate is higher and would produce too few
+// frames per segment.
+func sourceSegmentBoundaries(vid schema.Video, hasRemux bool) ([]int64, error) {
+	fps := codedFrameRate(vid)
 	minFrames := ffmpeg.MinFramesPerSegment(fps, ffmpeg.MinSegmentDuration)
 	if !hasRemux {
 		duration := time.Duration(vid.Duration) * time.Millisecond
 		return ffmpeg.UniformSegmentBoundaries(fps, duration, minFrames), nil
 	}
-	keyframes, err := ffmpeg.ProbeKeyframes(ctx, src, vid.Format)
-	if err != nil {
-		return nil, err
+	var keyframes []int64
+	if err := json.Unmarshal([]byte(vid.VideoKeyframes), &keyframes); err != nil {
+		return nil, fmt.Errorf("unmarshal video keyframes: %w", err)
 	}
 	return ffmpeg.SegmentBoundaries(keyframes, minFrames), nil
+}
+
+// codedFrameRate returns the source's coded picture rate computed
+// from the persisted probe measurements. Falls back to the display
+// rate when the new fields aren't populated (e.g. for legacy Video
+// records ingested before the coded-rate columns existed).
+func codedFrameRate(vid schema.Video) ffmpeg.FrameRate {
+	v := &ffmpeg.VideoStream{
+		PacketCount:   vid.VideoPacketCount,
+		DurationTicks: vid.VideoDurationTicks,
+		TimebaseNum:   int(vid.VideoTimebaseNum),
+		TimebaseDen:   int(vid.VideoTimebaseDen),
+	}
+	if fps := v.CodedFrameRate(); fps.Positive() {
+		return fps
+	}
+	return ffmpeg.FrameRate{Num: int(vid.FrameRateNum), Den: int(vid.FrameRateDen)}
 }
 
 // allRenditionsEncoded reports whether every rendition for videoID

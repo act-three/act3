@@ -79,7 +79,12 @@
 						"tvmazeupdatedat": "TVmazeUpdatedAt",
 						"tvmazeurl": "TVmazeURL",
 						"tvrageid": "TVRageID",
+						"videodurationticks": "VideoDurationTicks",
 						"videoid": "VideoID",
+						"videokeyframes": "VideoKeyframes",
+						"videopacketcount": "VideoPacketCount",
+						"videotimebaseden": "VideoTimebaseDen",
+						"videotimebasenum": "VideoTimebaseNum",
 						"webvttkey": "WebVTTKey"
 					},
 					"overrides": [

@@ -238,19 +238,24 @@ type User struct {
 }
 
 type Video struct {
-	ID           string
-	InfoHash     *string
-	Name         string
-	State        string
-	OriginalKey  string
-	OriginalType string
-	Format       string
-	Duration     int64
-	Width        int64
-	Height       int64
-	FrameRateNum int64
-	FrameRateDen int64
-	Playable     int64
-	ContentHash  []byte
-	DeletedAt    *int64
+	ID                 string
+	InfoHash           *string
+	Name               string
+	State              string
+	OriginalKey        string
+	OriginalType       string
+	Format             string
+	Duration           int64
+	Width              int64
+	Height             int64
+	FrameRateNum       int64
+	FrameRateDen       int64
+	VideoPacketCount   int64
+	VideoDurationTicks int64
+	VideoTimebaseNum   int64
+	VideoTimebaseDen   int64
+	VideoKeyframes     string
+	Playable           int64
+	ContentHash        []byte
+	DeletedAt          *int64
 }

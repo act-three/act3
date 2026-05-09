@@ -160,13 +160,26 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult, maxKeyframeGap time.Duration
 
 	renditions := []Rendition{best}
 
+	// FrameRate caps and the low-fps bitrate adjustment compare
+	// against the rate the encoder actually receives — coded fps
+	// under -fps_mode passthrough, not the container's r_frame_rate.
+	// On soft-telecine and other VFR sources these differ (display
+	// rate ~60, coded ~24); using display rate would falsely trigger
+	// the fps filter and produce variants whose encoder frame counter
+	// ticks at a different rate than passthrough variants, leaving
+	// SegmentBoundaries no longer aligned across the ladder.
+	encFPS := vs.CodedFrameRate()
+	if !encFPS.Positive() {
+		encFPS = vs.FrameRate
+	}
+
 	// Add lower-bitrate renditions from the ladder.
 	for _, entry := range ladder {
 		bitrate := entry.Bitrate
 
 		// Apply 20 % bitrate reduction for ≤ 25 fps content
 		// (per the HLS authoring spec note on low-frame-rate video).
-		if vs.FrameRate.Positive() && vs.FrameRate.Le(25) {
+		if encFPS.Positive() && encFPS.Le(25) {
 			bitrate = bitrate * 4 / 5
 		}
 
@@ -182,7 +195,7 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult, maxKeyframeGap time.Duration
 
 		// Resolve MaxFPS: only set when the source exceeds the cap.
 		maxFPS := 0
-		if entry.MaxFPS > 0 && vs.FrameRate.Gt(entry.MaxFPS) {
+		if entry.MaxFPS > 0 && encFPS.Gt(entry.MaxFPS) {
 			maxFPS = entry.MaxFPS
 		}
 

@@ -131,6 +131,69 @@ func TestUniformSegmentBoundaries(t *testing.T) {
 	}
 }
 
+func TestVideoStreamCodedFrameRate(t *testing.T) {
+	tests := []struct {
+		name string
+		vs   *VideoStream
+		want FrameRate
+	}{
+		{
+			name: "nil",
+			vs:   nil,
+			want: FrameRate{},
+		},
+		{
+			name: "zero",
+			vs:   &VideoStream{},
+			want: FrameRate{},
+		},
+		{
+			name: "CFR 24000/1001 in 1/1000 timebase",
+			vs: &VideoStream{
+				PacketCount:   600,
+				DurationTicks: 25025,
+				TimebaseNum:   1, TimebaseDen: 1000,
+			},
+			want: FrameRate{Num: 24000, Den: 1001},
+		},
+		{
+			name: "CFR 24000/1001 in 1/24000 timebase",
+			vs: &VideoStream{
+				PacketCount:   600,
+				DurationTicks: 600600,
+				TimebaseNum:   1, TimebaseDen: 24000,
+			},
+			want: FrameRate{Num: 24000, Den: 1001},
+		},
+		{
+			name: "soft-telecine (24fps coded under MKV 1/1000)",
+			vs: &VideoStream{
+				PacketCount:   1560, // 24000/1001 × 65.065s
+				DurationTicks: 65065,
+				TimebaseNum:   1, TimebaseDen: 1000,
+			},
+			want: FrameRate{Num: 24000, Den: 1001},
+		},
+		{
+			name: "30/1 in 1/30 timebase",
+			vs: &VideoStream{
+				PacketCount:   300,
+				DurationTicks: 300,
+				TimebaseNum:   1, TimebaseDen: 30,
+			},
+			want: FrameRate{Num: 30, Den: 1},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.vs.CodedFrameRate()
+			if got != tt.want {
+				t.Errorf("got %s, want %s", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMaxKeyframeGap(t *testing.T) {
 	tests := []struct {
 		name      string

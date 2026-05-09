@@ -1,64 +1,8 @@
 package ffmpeg
 
 import (
-	"bytes"
-	"context"
-	"errors"
-	"io"
-	"os"
-	"strings"
 	"time"
 )
-
-// ProbeKeyframes returns the display-order frame indices of every
-// video keyframe in r. Indices are 0-based; the first keyframe is
-// always present and starts segment 0.
-//
-// The implementation enumerates video stream packets via ffprobe
-// (each video packet carries one frame) and counts them in stream
-// order. For closed-GOP encodings — which all standard HLS inputs
-// use — a keyframe's stream-order packet index equals its
-// display-order frame index, so the returned indices line up with
-// the encoder's `n` variable in `-force_key_frames "expr:..."`.
-//
-// HLS segment boundaries can only fall on keyframes (each fMP4
-// segment must be independently decodable), so the keyframe list is
-// what determines achievable cut points for any rendition produced
-// from this source — both stream-copy and re-encode.
-func ProbeKeyframes(ctx context.Context, r *os.File, format string) ([]int64, error) {
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
-		return nil, err
-	}
-	var stdout, stderr bytes.Buffer
-	c := newCmd(ctx, "ffprobe",
-		"-v", "error",
-		"-protocol_whitelist", "file",
-		"-f", format,
-		"-select_streams", "v:0",
-		"-show_packets",
-		"-show_entries", "packet=flags",
-		"-of", "csv=p=0",
-		"/dev/stdin",
-	)
-	c.Stdin = r
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-	if err := c.Run(); err != nil {
-		return nil, errors.Join(err, errors.New(stderr.String()))
-	}
-	var out []int64
-	var idx int64
-	for line := range strings.SplitSeq(strings.TrimSpace(stdout.String()), "\n") {
-		if line == "" {
-			continue
-		}
-		if strings.HasPrefix(line, "K") {
-			out = append(out, idx)
-		}
-		idx++
-	}
-	return out, nil
-}
 
 // SegmentBoundaries picks a subset of source keyframes to use as HLS
 // segment cuts, with at least minFrames between consecutive
