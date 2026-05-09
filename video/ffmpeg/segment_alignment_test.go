@@ -80,13 +80,9 @@ func TestSegmentAlignment(t *testing.T) {
 		probe.Video.Width, probe.Video.Height, probe.FormatName,
 		probe.Video.FrameRate, probe.Video.CodecName, probe.Duration)
 
-	keyframes, err := ProbeKeyframes(ctx, srcFile, probe.FormatName)
-	if err != nil {
-		t.Fatalf("probe keyframes: %v", err)
-	}
 	minFrames := MinFramesPerSegment(probe.Video.FrameRate, MinSegmentDuration)
-	cuts := SegmentBoundaries(keyframes, minFrames)
-	t.Logf("source keyframes: %v", keyframes)
+	cuts := SegmentBoundaries(probe.Video.Keyframes, minFrames)
+	t.Logf("source keyframes: %v", probe.Video.Keyframes)
 	t.Logf("min frames/segment: %d", minFrames)
 	t.Logf("segment boundaries (frame indices): %v", cuts)
 
@@ -144,11 +140,11 @@ func TestSegmentAlignment(t *testing.T) {
 	// switch streams: frames N, M, ... will land on the same
 	// timeline position iff the underlying media has keyframes at
 	// the same display-order indices.
-	reencKf, err := ProbeKeyframes(ctx, reencFile, "mp4")
+	reencKf, _, _, err := scanVideoPackets(ctx, reencFile, "mp4")
 	if err != nil {
 		t.Fatalf("probe re-encode keyframes: %v", err)
 	}
-	remuxKf, err := ProbeKeyframes(ctx, remuxFile, "mp4")
+	remuxKf, _, _, err := scanVideoPackets(ctx, remuxFile, "mp4")
 	if err != nil {
 		t.Fatalf("probe remux keyframes: %v", err)
 	}

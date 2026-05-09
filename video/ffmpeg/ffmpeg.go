@@ -105,7 +105,60 @@ type VideoStream struct {
 	BitRate   int64     // bits per second (0 if unknown)
 	Width     int       //
 	Height    int       //
-	FrameRate FrameRate // exact fraction from r_frame_rate
+	FrameRate FrameRate // exact fraction from r_frame_rate (display rate)
+
+	// Stream timebase (seconds per tick) and exact stream duration in
+	// those ticks. Together with PacketCount these give an exact
+	// rational coded picture rate via CodedFrameRate, which is the
+	// rate the encoder receives frames at under -fps_mode passthrough
+	// — distinct from the display rate FrameRate carries on
+	// soft-telecine and VFR sources.
+	TimebaseNum   int   // e.g. 1 for "1/24000"
+	TimebaseDen   int   // e.g. 24000
+	DurationTicks int64 // exact stream duration, in TimebaseNum/TimebaseDen ticks
+
+	// Display-order frame indices of every video keyframe and the
+	// total video packet count, populated from a packet-level scan.
+	// For closed-GOP encodings (which all standard HLS inputs use) a
+	// keyframe's stream-order packet index equals its display-order
+	// frame index, so these indices line up with the encoder's `n`
+	// variable in `-force_key_frames "expr:..."`.
+	//
+	// HLS segment boundaries can only fall on keyframes (each fMP4
+	// segment must be independently decodable), so Keyframes
+	// determines achievable cut points for any rendition produced
+	// from this source — both stream-copy and re-encode.
+	Keyframes   []int64
+	PacketCount int64
+}
+
+// CodedFrameRate returns the source's coded picture rate as the exact
+// rational PacketCount / (DurationTicks × Timebase). For CFR sources
+// this equals FrameRate; for soft-telecine and VFR it's the rate at
+// which the encoder receives frames under -fps_mode passthrough.
+// Returns the zero FrameRate if any input is missing.
+func (v *VideoStream) CodedFrameRate() FrameRate {
+	if v == nil || v.PacketCount <= 0 || v.DurationTicks <= 0 ||
+		v.TimebaseNum <= 0 || v.TimebaseDen <= 0 {
+		return FrameRate{}
+	}
+	num := v.PacketCount * int64(v.TimebaseDen)
+	den := v.DurationTicks * int64(v.TimebaseNum)
+	g := gcdInt64(num, den)
+	return FrameRate{Num: int(num / g), Den: int(den / g)}
+}
+
+func gcdInt64(a, b int64) int64 {
+	if a < 0 {
+		a = -a
+	}
+	if b < 0 {
+		b = -b
+	}
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
 }
 
 // AudioStream describes an audio stream.
@@ -236,6 +289,8 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			BitRate       string `json:"bit_rate"`
 			SampleRate    string `json:"sample_rate"`
 			RFrameRate    string `json:"r_frame_rate"`
+			TimeBase      string `json:"time_base"`
+			DurationTs    int64  `json:"duration_ts"`
 			Channels      int    `json:"channels"`
 			ChannelLayout string `json:"channel_layout"`
 			Tags          struct {
@@ -271,12 +326,16 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 		case "video":
 			if result.Video == nil {
 				br, _ := strconv.ParseInt(s.BitRate, 10, 64)
+				tb := parseFrameRate(s.TimeBase)
 				result.Video = &VideoStream{
-					CodecName: s.CodecName,
-					BitRate:   br,
-					Width:     s.Width,
-					Height:    s.Height,
-					FrameRate: parseFrameRate(s.RFrameRate),
+					CodecName:     s.CodecName,
+					BitRate:       br,
+					Width:         s.Width,
+					Height:        s.Height,
+					FrameRate:     parseFrameRate(s.RFrameRate),
+					TimebaseNum:   tb.Num,
+					TimebaseDen:   tb.Den,
+					DurationTicks: s.DurationTs,
 				}
 			}
 		case "audio":
@@ -328,7 +387,88 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 		}
 	}
 
+	if result.Video != nil {
+		keyframes, packetCount, durationTicks, err := scanVideoPackets(ctx, r, format)
+		if err != nil {
+			return nil, err
+		}
+		result.Video.Keyframes = keyframes
+		result.Video.PacketCount = packetCount
+		// Stream-level duration_ts isn't always populated (MKV
+		// doesn't carry per-track durations natively), so prefer
+		// the value derived from actual packet timing.
+		if durationTicks > 0 {
+			result.Video.DurationTicks = durationTicks
+		}
+	}
+
 	return result, nil
+}
+
+// scanVideoPackets enumerates video packets via ffprobe to derive
+// keyframe positions (display-order frame indices, suitable for
+// `-force_key_frames "expr:eq(n,...)"`), the total packet count, and
+// the stream's exact duration in timebase ticks (max(pts+duration) −
+// min(pts) across all packets, which equals the wall-clock interval
+// the encoder receives frames over).
+//
+// Sequential streams without B-frame reordering across packet
+// boundaries — which closed-GOP HLS inputs are — get equal stream and
+// display order, so packet index == frame index.
+func scanVideoPackets(ctx context.Context, r *os.File, format string) ([]int64, int64, int64, error) {
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return nil, 0, 0, err
+	}
+	var stdout, stderr bytes.Buffer
+	c := newCmd(ctx, "ffprobe",
+		"-v", "error",
+		"-protocol_whitelist", "file",
+		"-f", format,
+		"-select_streams", "v:0",
+		"-show_packets",
+		"-show_entries", "packet=pts,duration,flags",
+		"-of", "csv=p=0",
+		"/dev/stdin",
+	)
+	c.Stdin = r
+	c.Stdout = &stdout
+	c.Stderr = &stderr
+	if err := c.Run(); err != nil {
+		return nil, 0, 0, errors.Join(err, errors.New(stderr.String()))
+	}
+	var keyframes []int64
+	var idx int64
+	var minPTS, maxEnd int64
+	var haveSpan bool
+	for line := range strings.SplitSeq(strings.TrimSpace(stdout.String()), "\n") {
+		if line == "" {
+			continue
+		}
+		// CSV fields, in -show_entries order: pts, duration, flags.
+		fields := strings.Split(line, ",")
+		if len(fields) >= 3 && strings.HasPrefix(fields[2], "K") {
+			keyframes = append(keyframes, idx)
+		}
+		if len(fields) >= 2 {
+			pts, ptsErr := strconv.ParseInt(fields[0], 10, 64)
+			dur, durErr := strconv.ParseInt(fields[1], 10, 64)
+			if ptsErr == nil && durErr == nil {
+				if !haveSpan || pts < minPTS {
+					minPTS = pts
+				}
+				if end := pts + dur; !haveSpan || end > maxEnd {
+					maxEnd = end
+				}
+				haveSpan = true
+			}
+		}
+		idx++
+	}
+	var duration int64
+	if haveSpan {
+		duration = maxEnd - minPTS
+	}
+	return keyframes, idx, duration, nil
 }
 
 // probeFormat runs a constrained ffprobe to detect the container

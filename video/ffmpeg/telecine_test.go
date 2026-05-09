@@ -707,6 +707,33 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 			"got %s", probe.Video.FrameRate)
 	}
 
+	// Coded-rate sanity: every coded picture lands in one video
+	// packet, so packets/duration is the rate the encoder receives
+	// frames at under -fps_mode passthrough — ~24fps for a 2:3
+	// pulldown source even when the container claims 59.94. If
+	// CodedFrameRate ever drifts up to the display rate, segment
+	// boundary math (MinFramesPerSegment etc.) will silently
+	// over-count frames per segment and produce ~10s segments
+	// instead of ≤6s. See ACT-183.
+	codedFps := probe.Video.CodedFrameRate()
+	t.Logf("coded fps=%s (packets=%d, duration_ticks=%d, "+
+		"timebase=%d/%d)",
+		codedFps, probe.Video.PacketCount,
+		probe.Video.DurationTicks,
+		probe.Video.TimebaseNum, probe.Video.TimebaseDen)
+	if codedFps.Gt(30) {
+		t.Errorf("expected coded fps ≤ 30 on a 2:3-pulldown "+
+			"source, got %s", codedFps)
+	}
+	if MinFramesPerSegment(codedFps, MinSegmentDuration) >
+		MinFramesPerSegment(FrameRate{Num: 30, Den: 1},
+			MinSegmentDuration) {
+		t.Errorf("MinFramesPerSegment(coded fps) = %d exceeds "+
+			"the cap for 30fps; soft-telecine source is being "+
+			"measured at the display rate",
+			MinFramesPerSegment(codedFps, MinSegmentDuration))
+	}
+
 	mediaFile, err := os.Create(filepath.Join(dir, MediaName(0)))
 	if err != nil {
 		t.Fatal(err)

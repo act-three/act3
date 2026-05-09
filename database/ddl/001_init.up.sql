@@ -203,8 +203,21 @@ CREATE TABLE Video
 	Duration     INTEGER NOT NULL DEFAULT (0), -- milliseconds; 0 until probed
 	Width        INTEGER NOT NULL DEFAULT (0), -- source video pixels; 0 until probed
 	Height       INTEGER NOT NULL DEFAULT (0), -- source video pixels; 0 until probed
-	FrameRateNum INTEGER NOT NULL DEFAULT (0), -- source frame rate numerator; 0 until probed
-	FrameRateDen INTEGER NOT NULL DEFAULT (0), -- source frame rate denominator; 0 until probed
+	FrameRateNum INTEGER NOT NULL DEFAULT (0), -- source display frame rate numerator (r_frame_rate); 0 until probed
+	FrameRateDen INTEGER NOT NULL DEFAULT (0), -- source display frame rate denominator (r_frame_rate); 0 until probed
+
+	-- Exact source video timing: PacketCount / (DurationTicks × Timebase)
+	-- gives the coded picture rate, which is what the encoder receives
+	-- under -fps_mode passthrough — distinct from the display rate above
+	-- on soft-telecine and VFR sources. Together with VideoKeyframes
+	-- these are everything a later encode task needs about source
+	-- timing without re-probing.
+	VideoPacketCount   INTEGER NOT NULL DEFAULT (0),
+	VideoDurationTicks INTEGER NOT NULL DEFAULT (0),
+	VideoTimebaseNum   INTEGER NOT NULL DEFAULT (0),
+	VideoTimebaseDen   INTEGER NOT NULL DEFAULT (0),
+	VideoKeyframes     TEXT NOT NULL DEFAULT (''), -- JSON array of display-order frame indices; empty until probed
+
 	Playable     INTEGER NOT NULL DEFAULT (0), -- 1 once all renditions needed for an MV playlist are present
 	ContentHash  BLOB, -- blake3 of the original bytes; null until copied
 
