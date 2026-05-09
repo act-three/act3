@@ -18,7 +18,8 @@ To see source files from a dependency, or to answer questions about a
 dependency, run `go mod download -json MODULE` and use the returned
 `Dir` path to read the files.
 
-IMPORTANT: never use nodejs or npm.
+IMPORTANT: never use nodejs or npm in the act3 build or codebase.
+(MCP servers launched via npx are unrelated to this rule.)
 
 ## Build & Run
 
@@ -33,15 +34,9 @@ The project uses `encoding/json/v2`,
 and the environment carries `GOEXPERIMENT=jsonv2`.
 (No need to explicitly specify `-tags goexperiment.jsonv2`.)
 
-Run locally: use act3-mcp server to start, reload, and stop the server.
-These tools will compile and properly run and kill the dev server.
-The dev server is dedicated to Claude and runs on its own port,
-so feel free to start, reload, and stop it without asking.
-
-Playwright and Chrome DevTools MCP servers are configured to connect
-to a local Chrome instance via CDP.
-Use them to visually verify UI changes in the running app —
-navigate to pages, take snapshots, click elements, etc.
+Run locally: use `go run . -listen :4445` to start the server.
+Port 4445 belongs to Claude; port 4444 belongs to the user.
+Feel free to start and stop your own server on port 4445 as you see fit.
 
 Environment variables:
 - `A3DATABASE` — dir for SQLite DB (default `.`)
