@@ -1,7 +1,6 @@
 package fsinfo
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -59,28 +58,4 @@ func splitPath(p string) []string {
 		return nil
 	}
 	return strings.Split(strings.TrimPrefix(p, "/"), "/")
-}
-
-func mountPoints() ([]string, error) {
-	f, err := os.Open("/proc/self/mounts")
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	seen := make(map[string]bool)
-	var paths []string
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		fields := strings.SplitN(s.Text(), " ", 3)
-		if len(fields) < 2 {
-			continue
-		}
-		p := fields[1]
-		if !seen[p] {
-			seen[p] = true
-			paths = append(paths, p)
-		}
-	}
-	return paths, s.Err()
 }
