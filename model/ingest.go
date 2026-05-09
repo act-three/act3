@@ -930,7 +930,13 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	}
 	tx.m.prog.Open(vid.ID, vid.Name, "Re-encoding")
 
-	return tx.planAndCreateRenditions(ctx, vid)
+	// Open a fresh read transaction so planAndCreateRenditions's
+	// existing-rendition guard observes the post-delete state. Reusing
+	// the outer tx would still see the pre-delete snapshot pinned by
+	// our earlier reads, and the guard would short-circuit.
+	return tx.m.WithTxR(func(tx *TxR) error {
+		return tx.planAndCreateRenditions(ctx, vid)
+	})
 }
 
 // recomputePlayable updates Video.Playable based on whether the

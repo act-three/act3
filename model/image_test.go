@@ -8,6 +8,7 @@ import (
 	"image/draw"
 	"image/png"
 	"io"
+	"path/filepath"
 	"testing"
 
 	"golang.org/x/image/webp"
@@ -24,7 +25,21 @@ import (
 // per-kind FK DEFAULTs can succeed.
 func newTestModel(t *testing.T) *Model {
 	t.Helper()
-	dbr, dbw, err := database.Open(":memory:")
+	return openTestModel(t, ":memory:")
+}
+
+// newFileBackedTestModel is like newTestModel but opens the DB on
+// disk so SQLite can use WAL mode. Use this for tests that depend on
+// reader/writer concurrency or WAL snapshot semantics, which the
+// :memory: shared-cache setup doesn't reproduce.
+func newFileBackedTestModel(t *testing.T) *Model {
+	t.Helper()
+	return openTestModel(t, filepath.Join(t.TempDir(), "test.db"))
+}
+
+func openTestModel(t *testing.T, dbPath string) *Model {
+	t.Helper()
+	dbr, dbw, err := database.Open(dbPath)
 	if err != nil {
 		t.Fatal(err)
 	}
