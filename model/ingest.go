@@ -392,9 +392,12 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 
 	// Count renditions needing reencode to decide whether to run pass 1.
 	var numReencode int
+	var hasRemux bool
 	for _, r := range renditions {
 		if r.Remux == 0 {
 			numReencode++
+		} else {
+			hasRemux = true
 		}
 	}
 
@@ -405,7 +408,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 		}
 		defer src.Close()
 
-		boundaries, err := sourceSegmentBoundaries(ctx, src, vid)
+		boundaries, err := sourceSegmentBoundaries(ctx, src, vid, hasRemux)
 		if err != nil {
 			return fmt.Errorf("probe source keyframes: %w", err)
 		}
@@ -560,6 +563,21 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		return err
 	}
 
+	// Determine whether any rendition is a stream-copy remux: that
+	// decides whether segment boundaries must follow source keyframes
+	// or can be on a synthetic grid.
+	all, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
+	if err != nil {
+		return err
+	}
+	var hasRemux bool
+	for _, r := range all {
+		if r.Remux != 0 {
+			hasRemux = true
+			break
+		}
+	}
+
 	// Progress tracking: use rendition ID as key, link to video.
 	progKey := "rfs-" + rfs.ID
 	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
@@ -581,7 +599,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 
 	duration := time.Duration(vid.Duration) * time.Millisecond
 
-	boundaries, err := sourceSegmentBoundaries(ctx, src, vid)
+	boundaries, err := sourceSegmentBoundaries(ctx, src, vid, hasRemux)
 	if err != nil {
 		return fmt.Errorf("probe source keyframes: %w", err)
 	}
@@ -1135,20 +1153,30 @@ func (m *Model) pass1Dir(vidID string) string {
 	return filepath.Join(m.persistentTmp, "pass1", vidID)
 }
 
-// sourceSegmentBoundaries probes src's video keyframes and returns
-// the HLS segment cut points every rendition of this source should
-// share, as display-order source frame indices. The same list is
-// fed to each rendition's EncodeParams so re-encodes force
-// keyframes at exactly the source frames the stream-copy remux
-// variant cuts at, keeping HLS variants aligned to within one frame
-// — frame-exact rather than time-approximate.
-func sourceSegmentBoundaries(ctx Context, src *os.File, vid schema.Video) ([]int64, error) {
+// sourceSegmentBoundaries returns the HLS segment cut points every
+// rendition of this source should share, as display-order source
+// frame indices.
+//
+// When hasRemux is true the cuts must land on source keyframes, so
+// we probe them and pick a subset spaced at least MinSegmentDuration
+// apart. Re-encodes are then forced to keyframe at exactly those
+// source frames, keeping every variant aligned to within one frame.
+//
+// When hasRemux is false every variant is under our encoder's
+// control, so we skip the probe and emit a uniform 4s grid the
+// encoders can hit exactly. Sources with long GOPs would otherwise
+// inherit those long GOPs as segment lengths needlessly.
+func sourceSegmentBoundaries(ctx Context, src *os.File, vid schema.Video, hasRemux bool) ([]int64, error) {
+	fps := ffmpeg.FrameRate{Num: int(vid.FrameRateNum), Den: int(vid.FrameRateDen)}
+	minFrames := ffmpeg.MinFramesPerSegment(fps, ffmpeg.MinSegmentDuration)
+	if !hasRemux {
+		duration := time.Duration(vid.Duration) * time.Millisecond
+		return ffmpeg.UniformSegmentBoundaries(fps, duration, minFrames), nil
+	}
 	keyframes, err := ffmpeg.ProbeKeyframes(ctx, src, vid.Format)
 	if err != nil {
 		return nil, err
 	}
-	fps := ffmpeg.FrameRate{Num: int(vid.FrameRateNum), Den: int(vid.FrameRateDen)}
-	minFrames := ffmpeg.MinFramesPerSegment(fps, ffmpeg.MinSegmentDuration)
 	return ffmpeg.SegmentBoundaries(keyframes, minFrames), nil
 }
 

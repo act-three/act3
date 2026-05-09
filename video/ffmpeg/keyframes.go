@@ -99,3 +99,39 @@ func MinFramesPerSegment(fps FrameRate, target time.Duration) int64 {
 	// ceil(num/den)
 	return (num + den - 1) / den
 }
+
+// UniformSegmentBoundaries returns synthetic HLS segment cut points
+// at minFrames intervals up to duration, expressed as display-order
+// frame indices. Used when every rendition for a source is a
+// re-encode: with no stream-copy variant in the mix, segment cuts
+// don't have to land on source keyframes, so we pick a uniform grid
+// the encoder can hit exactly.
+//
+// Like SegmentBoundaries, the implicit cut at frame 0 is omitted —
+// only interior boundaries are returned.
+func UniformSegmentBoundaries(fps FrameRate, duration time.Duration, minFrames int64) []int64 {
+	if minFrames <= 0 || fps.Num <= 0 || fps.Den <= 0 {
+		return nil
+	}
+	num := int64(duration) * int64(fps.Num)
+	den := int64(fps.Den) * int64(time.Second)
+	totalFrames := num / den
+	var out []int64
+	for k := minFrames; k < totalFrames; k += minFrames {
+		out = append(out, k)
+	}
+	return out
+}
+
+// MaxKeyframeGap returns the largest distance (in display-order
+// frames) between consecutive entries in keyframes. Returns 0 for
+// fewer than two entries.
+func MaxKeyframeGap(keyframes []int64) int64 {
+	var max int64
+	for i := 1; i < len(keyframes); i++ {
+		if g := keyframes[i] - keyframes[i-1]; g > max {
+			max = g
+		}
+	}
+	return max
+}
