@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -133,5 +134,48 @@ func TestIsPlayableMV(t *testing.T) {
 				t.Errorf("isPlayableMV = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+// TestReencodeReplansAfterDelete is a regression test for ACT-179.
+// taskReencode opens an inner WithTxRW to delete the existing
+// renditions, then re-plans. Before the fix, planAndCreateRenditions
+// ran on the outer (stale) TxR; its existing-rendition guard saw the
+// pre-delete snapshot and silently returned, leaving the video without
+// renditions and without queued encode tasks. With the fix, planning
+// runs in a fresh TxR — the guard sees the empty list and proceeds to
+// open the source. We pass a bogus OriginalKey so that step fails
+// noisily, which is what we assert on: pre-fix taskReencode returned
+// nil.
+//
+// Uses a file-backed DB because the snapshot pinning the bug depends
+// on only manifests in WAL mode; :memory: shared-cache falls back to
+// MEMORY journal, where the outer reader blocks the inner writer.
+func TestReencodeReplansAfterDelete(t *testing.T) {
+	ctx := context.Background()
+	m := newFileBackedTestModel(t)
+
+	vidID := createVideoRow(t, m, "v.mkv", "fakekey", []string{"rendkey1"})
+
+	err := m.WithTxR(func(tx *TxR) error {
+		return tx.taskReencode(ctx, []string{vidID})
+	})
+
+	// The inner WithTxRW commits the delete regardless of what runs
+	// afterward; both pre- and post-fix the rendition row is gone here.
+	var renditions []schema.Rendition
+	if rerr := m.WithTxR(func(tx *TxR) error {
+		var e error
+		renditions, e = tx.q.RenditionListByVideoID(ctx, vidID)
+		return e
+	}); rerr != nil {
+		t.Fatal(rerr)
+	}
+	if len(renditions) != 0 {
+		t.Fatalf("renditions should be deleted, got %d", len(renditions))
+	}
+
+	if err == nil {
+		t.Fatal("expected planAndCreateRenditions to attempt the source open and fail; got nil — guard short-circuited on stale snapshot?")
 	}
 }
