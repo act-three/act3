@@ -7,7 +7,7 @@ hiii claudeee this file is for you! (⁠◕⁠ᴗ⁠◕⁠✿⁠)
 Act Three (`ily.dev/act3`) is a self-hosted media server for TV series
 and movies. Single Go binary serving a web UI, managing torrent
 downloads via Transmission, fetching metadata from TMDB and TVmaze,
-ingesting video into a content-addressed store,
+ingesting video into a filesystem key-value store,
 and transcoding to HLS via ffmpeg.
 
 We are still pre-production, so the db isn't precious. For instance, no
