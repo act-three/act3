@@ -235,7 +235,25 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 		return err
 	}
 
-	planned, err := video.PlanVideoRenditions(probe)
+	// When the source might be remuxable, also probe its keyframe
+	// layout so the planner can fall back to re-encoding when GOPs
+	// are long enough that aligned segments would overshoot Apple's
+	// recommended ceiling.
+	var maxKeyframeGap time.Duration
+	if probe.Video != nil && (probe.Video.CodecName == "h264" || probe.Video.CodecName == "hevc") {
+		keyframes, err := ffmpeg.ProbeKeyframes(ctx, f, probe.FormatName)
+		if err != nil {
+			return fmt.Errorf("probe keyframes: %w", err)
+		}
+		gapFrames := ffmpeg.MaxKeyframeGap(keyframes)
+		fps := probe.Video.FrameRate
+		if fps.Num > 0 && fps.Den > 0 {
+			maxKeyframeGap = time.Duration(gapFrames) * time.Second *
+				time.Duration(fps.Den) / time.Duration(fps.Num)
+		}
+	}
+
+	planned, err := video.PlanVideoRenditions(probe, maxKeyframeGap)
 	if err != nil {
 		return err
 	}

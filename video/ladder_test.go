@@ -2,6 +2,7 @@ package video
 
 import (
 	"testing"
+	"time"
 
 	"ily.dev/act3/priority"
 	"ily.dev/act3/video/ffmpeg"
@@ -9,7 +10,7 @@ import (
 
 func TestPlanVideoRenditions_noVideo(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -22,7 +23,7 @@ func TestPlanVideoRenditions_zeroBitrate(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{CodecName: "h264", BitRate: 0},
 	}
-	_, err := PlanVideoRenditions(probe)
+	_, err := PlanVideoRenditions(probe, 0)
 	if err == nil {
 		t.Fatal("expected error for zero bitrate")
 	}
@@ -42,7 +43,7 @@ func TestPlanVideoRenditions_h264Remux(t *testing.T) {
 			Channels:  2,
 		}},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +84,7 @@ func TestPlanVideoRenditions_hevcRemux(t *testing.T) {
 			Channels:  2,
 		}},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +108,7 @@ func TestPlanVideoRenditions_nonNativeCodec(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 30, Den: 1},
 		},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,7 +136,7 @@ func TestPlanVideoRenditions_highBitrateReencode(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 60, Den: 1},
 		},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +160,7 @@ func TestPlanVideoRenditions_noBitrateDuplicate(t *testing.T) {
 			Channels:  6,
 		}},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +184,7 @@ func TestPlanVideoRenditions_lowFPSReduction(t *testing.T) {
 		},
 		Audio: []ffmpeg.AudioStream{{CodecName: "aac", Channels: 2}},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -215,7 +216,7 @@ func TestPlanVideoRenditions_ladderSkipsAboveBest(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 30, Den: 1},
 		},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +239,7 @@ func TestPlanVideoRenditions_maxHeightResolved(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 60, Den: 1},
 		},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +265,7 @@ func TestPlanVideoRenditions_maxHeightNotSetWhenSourceSmaller(t *testing.T) {
 			FrameRate: ffmpeg.FrameRate{Num: 30, Den: 1},
 		},
 	}
-	rs, err := PlanVideoRenditions(probe)
+	rs, err := PlanVideoRenditions(probe, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,6 +274,72 @@ func TestPlanVideoRenditions_maxHeightNotSetWhenSourceSmaller(t *testing.T) {
 		if r.MaxHeight == 1080 {
 			t.Error("MaxHeight should not be 1080 for 720p source")
 		}
+	}
+}
+
+func TestPlanVideoRenditions_longGOPReencode(t *testing.T) {
+	// h264 source within the remux ceiling but with keyframes ~12s
+	// apart should fall back to re-encoding the top tier rather than
+	// inheriting long segment lengths.
+	probe := &ffmpeg.ProbeResult{
+		Video: &ffmpeg.VideoStream{
+			CodecName: "h264",
+			BitRate:   30_000_000,
+			Width:     1920,
+			Height:    1080,
+			FrameRate: ffmpeg.FrameRate{Num: 24000, Den: 1001},
+		},
+	}
+	rs, err := PlanVideoRenditions(probe, 12*time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rs) == 0 {
+		t.Fatal("expected renditions")
+	}
+	if rs[0].Remux {
+		t.Error("expected re-encode top tier when keyframe gap exceeds threshold")
+	}
+}
+
+func TestPlanVideoRenditions_atRemuxKeyframeGapStillRemuxes(t *testing.T) {
+	// Exactly at MaxRemuxKeyframeGap: still remuxes (boundary condition).
+	probe := &ffmpeg.ProbeResult{
+		Video: &ffmpeg.VideoStream{
+			CodecName: "h264",
+			BitRate:   30_000_000,
+			Width:     1920,
+			Height:    1080,
+			FrameRate: ffmpeg.FrameRate{Num: 24000, Den: 1001},
+		},
+	}
+	rs, err := PlanVideoRenditions(probe, MaxRemuxKeyframeGap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rs[0].Remux {
+		t.Error("expected remux at exactly MaxRemuxKeyframeGap")
+	}
+}
+
+func TestPlanVideoRenditions_unknownGapStillRemuxes(t *testing.T) {
+	// maxKeyframeGap == 0 means "unknown / not measured" — must not
+	// trigger the long-GOP fallback.
+	probe := &ffmpeg.ProbeResult{
+		Video: &ffmpeg.VideoStream{
+			CodecName: "h264",
+			BitRate:   30_000_000,
+			Width:     1920,
+			Height:    1080,
+			FrameRate: ffmpeg.FrameRate{Num: 24, Den: 1},
+		},
+	}
+	rs, err := PlanVideoRenditions(probe, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rs[0].Remux {
+		t.Error("expected remux when keyframe gap is unknown (0)")
 	}
 }
 
