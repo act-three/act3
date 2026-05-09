@@ -4,6 +4,7 @@ package video
 
 import (
 	"fmt"
+	"time"
 
 	"ily.dev/act3/priority"
 	"ily.dev/act3/video/ffmpeg"
@@ -79,6 +80,16 @@ const (
 	// For non-native codecs with source bitrate below this we
 	// reencode at ~110 % of the source bitrate.
 	reencodeThreshold = 450_000
+
+	// MaxRemuxKeyframeGap is the largest source-keyframe gap we'll
+	// tolerate when remuxing the top tier. A stream-copy variant
+	// inherits the source's keyframe layout, and HLS segments can
+	// only end on keyframes — so a source with a longer gap forces
+	// every aligned variant past Apple's recommended 6s ceiling and
+	// degrades ABR responsiveness. When the source's max gap exceeds
+	// this, the planner falls back to re-encoding the top tier so
+	// segments can use the synthetic 4s grid.
+	MaxRemuxKeyframeGap = 10 * time.Second
 )
 
 // PlanVideoRenditions determines which video renditions to produce
@@ -87,13 +98,20 @@ const (
 // rendition. Audio output variants are planned separately by
 // PlanAudioRenditions.
 //
+// maxKeyframeGap is the largest distance between consecutive source
+// keyframes (0 = unknown). When known and beyond MaxRemuxKeyframeGap,
+// the top-tier remux candidate is re-encoded instead, so HLS segment
+// length isn't bound by the source's GOP cadence. Pass 0 when the
+// source's keyframe layout doesn't matter (e.g. the codec can't be
+// remuxed anyway).
+//
 // MaxHeight and MaxFPS are pre-resolved against the source
 // properties: they are set to 0 (meaning "use source") when the
 // source already satisfies the constraint, so the encoding layer
 // does not need access to the source metadata.
 //
 // Returns nil if the source has no video stream.
-func PlanVideoRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
+func PlanVideoRenditions(probe *ffmpeg.ProbeResult, maxKeyframeGap time.Duration) ([]Rendition, error) {
 	if probe.Video == nil {
 		return nil, nil
 	}
@@ -104,7 +122,8 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult) ([]Rendition, error) {
 		return nil, fmt.Errorf("source video bitrate is unknown")
 	}
 
-	canRemux := vs.CodecName == "h264" || vs.CodecName == "hevc"
+	canRemux := (vs.CodecName == "h264" || vs.CodecName == "hevc") &&
+		(maxKeyframeGap == 0 || maxKeyframeGap <= MaxRemuxKeyframeGap)
 
 	// Determine output codec: use source codec if native,
 	// otherwise reencode everything to HEVC.
