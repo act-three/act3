@@ -124,8 +124,8 @@ main.go
   Useful comments say something non-obvious: motivation, subtle behavior, etc.
 - Go code can go beyond 80 columns (just not by a lot).
   Don't insert needless line breaks.
-- Use [semantic linebreaks] in Godoc comments and Markdown.
-  Hard wrap other code comments and preformatted documentation to 72 columns.
+- Use [semantic linebreaks] in godoc comments.
+  Hard wrap non-godoc source-code comments to ~72 columns.
 
 [semantic linebreaks]: https://rhodesmill.org/brandon/2012/one-sentence-per-line/
 
