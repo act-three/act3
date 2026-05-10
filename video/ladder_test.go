@@ -32,11 +32,12 @@ func TestPlanVideoRenditions_zeroBitrate(t *testing.T) {
 func TestPlanVideoRenditions_h264Remux(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
-			CodecName: "h264",
-			BitRate:   30_000_000, // 30 Mbps
-			Width:     1920,
-			Height:    1080,
-			FrameRate: ffmpeg.FrameRate{Num: 24000, Den: 1001},
+			CodecName:      "h264",
+			BitRate:        30_000_000, // 30 Mbps
+			Width:          1920,
+			Height:         1080,
+			FrameRate:      ffmpeg.FrameRate{Num: 24000, Den: 1001},
+			HasExplicitDTS: true,
 		},
 		Audio: []ffmpeg.AudioStream{{
 			CodecName: "aac",
@@ -73,11 +74,12 @@ func TestPlanVideoRenditions_h264Remux(t *testing.T) {
 func TestPlanVideoRenditions_hevcRemux(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
-			CodecName: "hevc",
-			BitRate:   50_000_000,
-			Width:     3840,
-			Height:    2160,
-			FrameRate: ffmpeg.FrameRate{Num: 30, Den: 1},
+			CodecName:      "hevc",
+			BitRate:        50_000_000,
+			Width:          3840,
+			Height:         2160,
+			FrameRate:      ffmpeg.FrameRate{Num: 30, Den: 1},
+			HasExplicitDTS: true,
 		},
 		Audio: []ffmpeg.AudioStream{{
 			CodecName: "flac",
@@ -149,11 +151,12 @@ func TestPlanVideoRenditions_highBitrateReencode(t *testing.T) {
 func TestPlanVideoRenditions_noBitrateDuplicate(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
-			CodecName: "h264",
-			BitRate:   30_000_000,
-			Width:     1920,
-			Height:    1080,
-			FrameRate: ffmpeg.FrameRate{Num: 24, Den: 1},
+			CodecName:      "h264",
+			BitRate:        30_000_000,
+			Width:          1920,
+			Height:         1080,
+			FrameRate:      ffmpeg.FrameRate{Num: 24, Den: 1},
+			HasExplicitDTS: true,
 		},
 		Audio: []ffmpeg.AudioStream{{
 			CodecName: "ac3",
@@ -176,11 +179,12 @@ func TestPlanVideoRenditions_lowFPSReduction(t *testing.T) {
 	// ≤25fps content gets 20% bitrate reduction on ladder entries.
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
-			CodecName: "h264",
-			BitRate:   25_000_000,
-			Width:     1920,
-			Height:    1080,
-			FrameRate: ffmpeg.FrameRate{Num: 24, Den: 1}, // 24fps ≤ 25
+			CodecName:      "h264",
+			BitRate:        25_000_000,
+			Width:          1920,
+			Height:         1080,
+			FrameRate:      ffmpeg.FrameRate{Num: 24, Den: 1}, // 24fps ≤ 25
+			HasExplicitDTS: true,
 		},
 		Audio: []ffmpeg.AudioStream{{CodecName: "aac", Channels: 2}},
 	}
@@ -283,11 +287,12 @@ func TestPlanVideoRenditions_longGOPReencode(t *testing.T) {
 	// inheriting long segment lengths.
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
-			CodecName: "h264",
-			BitRate:   30_000_000,
-			Width:     1920,
-			Height:    1080,
-			FrameRate: ffmpeg.FrameRate{Num: 24000, Den: 1001},
+			CodecName:      "h264",
+			BitRate:        30_000_000,
+			Width:          1920,
+			Height:         1080,
+			FrameRate:      ffmpeg.FrameRate{Num: 24000, Den: 1001},
+			HasExplicitDTS: true,
 		},
 	}
 	rs, err := PlanVideoRenditions(probe, 12*time.Second)
@@ -306,11 +311,12 @@ func TestPlanVideoRenditions_atRemuxKeyframeGapStillRemuxes(t *testing.T) {
 	// Exactly at MaxRemuxKeyframeGap: still remuxes (boundary condition).
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
-			CodecName: "h264",
-			BitRate:   30_000_000,
-			Width:     1920,
-			Height:    1080,
-			FrameRate: ffmpeg.FrameRate{Num: 24000, Den: 1001},
+			CodecName:      "h264",
+			BitRate:        30_000_000,
+			Width:          1920,
+			Height:         1080,
+			FrameRate:      ffmpeg.FrameRate{Num: 24000, Den: 1001},
+			HasExplicitDTS: true,
 		},
 	}
 	rs, err := PlanVideoRenditions(probe, MaxRemuxKeyframeGap)
@@ -327,11 +333,12 @@ func TestPlanVideoRenditions_unknownGapStillRemuxes(t *testing.T) {
 	// trigger the long-GOP fallback.
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
-			CodecName: "h264",
-			BitRate:   30_000_000,
-			Width:     1920,
-			Height:    1080,
-			FrameRate: ffmpeg.FrameRate{Num: 24, Den: 1},
+			CodecName:      "h264",
+			BitRate:        30_000_000,
+			Width:          1920,
+			Height:         1080,
+			FrameRate:      ffmpeg.FrameRate{Num: 24, Den: 1},
+			HasExplicitDTS: true,
 		},
 	}
 	rs, err := PlanVideoRenditions(probe, 0)
@@ -340,6 +347,37 @@ func TestPlanVideoRenditions_unknownGapStillRemuxes(t *testing.T) {
 	}
 	if !rs[0].Remux {
 		t.Error("expected remux when keyframe gap is unknown (0)")
+	}
+}
+
+func TestPlanVideoRenditions_synthesizedDTSReencode(t *testing.T) {
+	// MKV h264 with B-frames: first packet has no DTS, so the mp4
+	// muxer would synthesise one and offset the timeline. The
+	// planner must fall back to re-encoding the top tier instead.
+	// Once the top tier is a re-encode, the rest of the ladder
+	// switches to HEVC too — Chrome's MSE refuses to ABR-switch
+	// between SourceBuffers with different codecs.
+	probe := &ffmpeg.ProbeResult{
+		Video: &ffmpeg.VideoStream{
+			CodecName: "h264",
+			BitRate:   30_000_000,
+			Width:     1920,
+			Height:    1080,
+			FrameRate: ffmpeg.FrameRate{Num: 24000, Den: 1001},
+			// HasExplicitDTS deliberately false.
+		},
+	}
+	rs, err := PlanVideoRenditions(probe, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rs[0].Remux {
+		t.Error("expected re-encode when source has no explicit DTS")
+	}
+	for i, r := range rs {
+		if r.Codec != "hevc" {
+			t.Errorf("rs[%d]: expected hevc, got %s", i, r.Codec)
+		}
 	}
 }
 

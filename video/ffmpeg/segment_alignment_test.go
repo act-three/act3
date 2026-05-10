@@ -138,14 +138,16 @@ func TestSegmentAlignment(t *testing.T) {
 	// switch streams: frames N, M, ... will land on the same
 	// timeline position iff the underlying media has keyframes at
 	// the same display-order indices.
-	reencKf, _, _, err := scanVideoPackets(ctx, reencFile, "mp4")
+	reencScan, err := scanVideoPackets(ctx, reencFile, "mp4")
 	if err != nil {
 		t.Fatalf("probe re-encode keyframes: %v", err)
 	}
-	remuxKf, _, _, err := scanVideoPackets(ctx, remuxFile, "mp4")
+	remuxScan, err := scanVideoPackets(ctx, remuxFile, "mp4")
 	if err != nil {
 		t.Fatalf("probe remux keyframes: %v", err)
 	}
+	reencKf := reencScan.keyframes
+	remuxKf := remuxScan.keyframes
 	t.Logf("re-encode keyframes: %v", reencKf)
 	t.Logf("remux keyframes:     %v", remuxKf)
 
