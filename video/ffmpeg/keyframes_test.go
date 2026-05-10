@@ -10,37 +10,78 @@ func TestSegmentBoundaries(t *testing.T) {
 	tests := []struct {
 		name      string
 		keyframes []int64
-		minFrames int64
+		fps       FrameRate
+		target    time.Duration
 		want      []int64
 	}{
 		{
 			name:      "empty",
 			keyframes: nil,
-			minFrames: 96,
+			fps:       FrameRate{Num: 24, Den: 1},
+			target:    4 * time.Second,
 			want:      nil,
 		},
 		{
 			name:      "single keyframe",
 			keyframes: []int64{0},
-			minFrames: 96,
+			fps:       FrameRate{Num: 24, Den: 1},
+			target:    4 * time.Second,
 			want:      nil,
 		},
 		{
 			name:      "all spaced ≥ minFrames",
 			keyframes: []int64{0, 144, 288, 432, 576},
-			minFrames: 96,
+			fps:       FrameRate{Num: 24, Den: 1},
+			target:    4 * time.Second,
 			want:      []int64{144, 288, 432, 576},
 		},
 		{
 			name:      "skip closely-spaced keyframes",
 			keyframes: []int64{0, 50, 100, 200, 250, 350},
-			minFrames: 100,
+			fps:       FrameRate{Num: 25, Den: 1}, // 4s × 25 = 100 frames/seg
+			target:    4 * time.Second,
 			want:      []int64{100, 200, 350},
+		},
+		{
+			// When a previous cut overshoots its target, the next
+			// target is still on the absolute schedule — so a
+			// segment can come out shorter than the nominal
+			// frame-count target as long as its end keyframe sits
+			// at or past N × target on the time axis. Mirrors
+			// ffmpeg's stream-copy schedule for irregular source
+			// GOPs (scene-change keyframes interspersed with the
+			// regular cadence).
+			name:      "absolute schedule with overshoot recovery",
+			keyframes: []int64{0, 98, 194, 295, 391, 488, 587, 672, 695},
+			fps:       FrameRate{Num: 24000, Den: 1001}, // 4s ≈ 95.9 frames
+			target:    4 * time.Second,
+			want:      []int64{98, 194, 295, 391, 488, 587, 672},
+		},
+		{
+			// Quantization regression: with minFrames = ceil(4 ×
+			// 24000/1001) = 96, an integer-frame schedule would put
+			// segment 14's target at 14×96 = 1344, missing the
+			// keyframe at 1343 which sits at PTS 1343×1001/24000 =
+			// 56.014s ≥ the actual 56s target. The exact-rational
+			// schedule picks 1343 (matching ffmpeg) instead of
+			// jumping to 1369. Cut points up to segment 13 omitted
+			// for brevity; only the 14th boundary is asserted.
+			name: "exact arithmetic catches keyframes integer math drifts past",
+			keyframes: []int64{
+				0, 98, 194, 295, 391, 488, 587, 672, 787, 876, 965,
+				1063, 1152, 1250, 1343, 1369, 1393,
+			},
+			fps:    FrameRate{Num: 24000, Den: 1001},
+			target: 4 * time.Second,
+			want: []int64{
+				98, 194, 295, 391, 488, 587, 672, 787, 876, 965,
+				1063, 1152, 1250, 1343,
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := SegmentBoundaries(tt.keyframes, tt.minFrames)
+			got := SegmentBoundaries(tt.keyframes, tt.fps, tt.target)
 			if !slices.Equal(got, tt.want) {
 				t.Errorf("got %v, want %v", got, tt.want)
 			}

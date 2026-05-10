@@ -1205,16 +1205,16 @@ func (m *Model) pass1Dir(vidID string) string {
 // frames per segment.
 func sourceSegmentBoundaries(vid schema.Video, hasRemux bool) ([]int64, error) {
 	fps := codedFrameRate(vid)
-	minFrames := ffmpeg.MinFramesPerSegment(fps, ffmpeg.MinSegmentDuration)
 	if !hasRemux {
 		duration := time.Duration(vid.Duration) * time.Millisecond
+		minFrames := ffmpeg.MinFramesPerSegment(fps, ffmpeg.MinSegmentDuration)
 		return ffmpeg.UniformSegmentBoundaries(fps, duration, minFrames), nil
 	}
 	var keyframes []int64
 	if err := json.Unmarshal([]byte(vid.VideoKeyframes), &keyframes); err != nil {
 		return nil, fmt.Errorf("unmarshal video keyframes: %w", err)
 	}
-	return ffmpeg.SegmentBoundaries(keyframes, minFrames), nil
+	return ffmpeg.SegmentBoundaries(keyframes, fps, ffmpeg.MinSegmentDuration), nil
 }
 
 // codedFrameRate returns the source's coded picture rate computed
