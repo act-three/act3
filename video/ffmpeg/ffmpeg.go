@@ -131,6 +131,18 @@ type VideoStream struct {
 	// from this source — both stream-copy and re-encode.
 	Keyframes   []int64
 	PacketCount int64
+
+	// HasExplicitDTS is true when the source's first packet carries
+	// an explicit DTS value, false when ffprobe reports it as N/A.
+	// MKV doesn't store DTS, so h264-in-MKV with B-frame reordering
+	// has DTS unset on the leading packets — when the mp4 muxer is
+	// asked to stream-copy such a source it synthesises DTS by
+	// shifting the timeline forward and writing an empty edit-list
+	// entry to compensate, which means the resulting fmp4 init can't
+	// share an HLS timeline with re-encodes (which start at 0). The
+	// planner uses this to refuse remux for those sources; see
+	// PlanVideoRenditions.
+	HasExplicitDTS bool
 }
 
 // CodedFrameRate returns the source's coded picture rate as the exact
@@ -389,30 +401,42 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	}
 
 	if result.Video != nil {
-		keyframes, packetCount, durationTicks, err := scanVideoPackets(ctx, r, format)
+		scan, err := scanVideoPackets(ctx, r, format)
 		if err != nil {
 			return nil, err
 		}
-		result.Video.Keyframes = keyframes
-		result.Video.PacketCount = packetCount
+		result.Video.Keyframes = scan.keyframes
+		result.Video.PacketCount = scan.packetCount
+		result.Video.HasExplicitDTS = scan.hasExplicitDTS
 		// Stream-level duration_ts isn't always populated (MKV
 		// doesn't carry per-track durations natively), so prefer
 		// the value derived from actual packet timing.
-		if durationTicks > 0 {
-			result.Video.DurationTicks = durationTicks
+		if scan.durationTicks > 0 {
+			result.Video.DurationTicks = scan.durationTicks
 		}
 	}
 
 	return result, nil
 }
 
+// videoPacketScan bundles the derived facts we extract from a
+// packet-level ffprobe walk.
+type videoPacketScan struct {
+	keyframes      []int64 // display-order indices of K_-flagged packets
+	packetCount    int64
+	durationTicks  int64 // max(pts+dur) − min(pts) in stream-timebase ticks
+	hasExplicitDTS bool  // first ffprobe-reported packet carries a DTS value
+}
+
 // scanVideoPackets enumerates video packets via ffprobe to derive
 // keyframe positions (in display order, suitable for
 // `-force_key_frames "expr:eq(n,...)"` since ffmpeg hands the
 // encoder frames in display order under -fps_mode passthrough),
-// the total packet count, and the stream's exact duration in
-// timebase ticks (max(pts+duration) − min(pts), the wall-clock
-// interval the encoder receives frames over).
+// the total packet count, the stream's exact duration in timebase
+// ticks (max(pts+duration) − min(pts), the wall-clock interval the
+// encoder receives frames over), and whether the first packet
+// carries an explicit DTS (vs. N/A, which means the muxer would
+// have to synthesize one — see VideoStream.HasExplicitDTS).
 //
 // ffprobe walks packets in DTS order, which is the same as display
 // order for closed-GOP sources but differs for open-GOP h264 (BD,
@@ -421,9 +445,9 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 // position sits a frame or two past its DTS index. Keyframe
 // positions are translated to display order by sorting packets on
 // PTS and emitting the post-sort indices.
-func scanVideoPackets(ctx context.Context, r *os.File, format string) ([]int64, int64, int64, error) {
+func scanVideoPackets(ctx context.Context, r *os.File, format string) (videoPacketScan, error) {
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
-		return nil, 0, 0, err
+		return videoPacketScan{}, err
 	}
 	var stdout, stderr bytes.Buffer
 	c := newCmd(ctx, "ffprobe",
@@ -432,7 +456,7 @@ func scanVideoPackets(ctx context.Context, r *os.File, format string) ([]int64, 
 		"-f", format,
 		"-select_streams", "v:0",
 		"-show_packets",
-		"-show_entries", "packet=pts,duration,flags",
+		"-show_entries", "packet=pts,dts,duration,flags",
 		"-of", "csv=p=0",
 		"/dev/stdin",
 	)
@@ -440,10 +464,9 @@ func scanVideoPackets(ctx context.Context, r *os.File, format string) ([]int64, 
 	c.Stdout = &stdout
 	c.Stderr = &stderr
 	if err := c.Run(); err != nil {
-		return nil, 0, 0, errors.Join(err, errors.New(stderr.String()))
+		return videoPacketScan{}, errors.Join(err, errors.New(stderr.String()))
 	}
-	keyframes, packetCount, durationTicks := parseVideoPackets(stdout.String())
-	return keyframes, packetCount, durationTicks, nil
+	return parseVideoPackets(stdout.String()), nil
 }
 
 // pktInfo carries the per-packet fields we extract during
@@ -456,26 +479,36 @@ type pktInfo struct {
 }
 
 // parseVideoPackets parses ffprobe `-show_packets -show_entries
-// packet=pts,duration,flags -of csv=p=0` output and returns the
-// display-order keyframe positions, total packet count, and the
-// stream's exact duration in timebase ticks (max(pts+dur) −
-// min(pts)). Split out from scanVideoPackets for testability.
-func parseVideoPackets(out string) (keyframes []int64, packetCount int64, durationTicks int64) {
+// packet=pts,dts,duration,flags -of csv=p=0` output. Split out from
+// scanVideoPackets for testability.
+func parseVideoPackets(out string) videoPacketScan {
 	var pkts []pktInfo
+	var scan videoPacketScan
 	var minPTS, maxEnd int64
 	var haveSpan bool
 	allValid := true
+	first := true
 	for line := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
 		if line == "" {
 			continue
 		}
-		// CSV fields, in -show_entries order: pts, duration, flags.
+		// CSV fields, in -show_entries order: pts, dts, duration, flags.
 		fields := strings.Split(line, ",")
+		if first {
+			// ffprobe emits "N/A" (not an empty field) when DTS is
+			// unset, so a parseable integer is the positive signal.
+			if len(fields) >= 2 {
+				if _, err := strconv.ParseInt(fields[1], 10, 64); err == nil {
+					scan.hasExplicitDTS = true
+				}
+			}
+			first = false
+		}
 		var p pktInfo
-		p.isKey = len(fields) >= 3 && strings.HasPrefix(fields[2], "K")
-		if len(fields) >= 2 {
+		p.isKey = len(fields) >= 4 && strings.HasPrefix(fields[3], "K")
+		if len(fields) >= 3 {
 			pts, ptsErr := strconv.ParseInt(fields[0], 10, 64)
-			dur, durErr := strconv.ParseInt(fields[1], 10, 64)
+			dur, durErr := strconv.ParseInt(fields[2], 10, 64)
 			if ptsErr == nil && durErr == nil {
 				p.pts, p.dur, p.valid = pts, dur, true
 				if !haveSpan || pts < minPTS {
@@ -503,14 +536,15 @@ func parseVideoPackets(out string) (keyframes []int64, packetCount int64, durati
 	}
 	for i, p := range pkts {
 		if p.isKey {
-			keyframes = append(keyframes, int64(i))
+			scan.keyframes = append(scan.keyframes, int64(i))
 		}
 	}
 
+	scan.packetCount = int64(len(pkts))
 	if haveSpan {
-		durationTicks = maxEnd - minPTS
+		scan.durationTicks = maxEnd - minPTS
 	}
-	return keyframes, int64(len(pkts)), durationTicks
+	return scan
 }
 
 // probeFormat runs a constrained ffprobe to detect the container

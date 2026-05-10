@@ -105,6 +105,14 @@ const (
 // source's keyframe layout doesn't matter (e.g. the codec can't be
 // remuxed anyway).
 //
+// Sources whose first packet has no explicit DTS (typically MKV
+// h264 with B-frames, since MKV doesn't carry DTS) are also
+// excluded from remux. The mp4 muxer would otherwise synthesize a
+// DTS shift on stream-copy and write an empty edit-list entry to
+// compensate, leaving the resulting fmp4 init segment on a
+// different timeline than re-encodes — Chrome MSE refuses to
+// bridge the gap on ABR switch (ACT-186).
+//
 // MaxHeight and MaxFPS are pre-resolved against the source
 // properties: they are set to 0 (meaning "use source") when the
 // source already satisfies the constraint, so the encoding layer
@@ -123,12 +131,13 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult, maxKeyframeGap time.Duration
 	}
 
 	canRemux := (vs.CodecName == "h264" || vs.CodecName == "hevc") &&
-		(maxKeyframeGap == 0 || maxKeyframeGap <= MaxRemuxKeyframeGap)
+		(maxKeyframeGap == 0 || maxKeyframeGap <= MaxRemuxKeyframeGap) &&
+		vs.HasExplicitDTS
 
-	// Determine output codec: use source codec if native,
+	// Determine output codec: use source codec if remuxing,
 	// otherwise reencode everything to HEVC.
 	outCodec := "hevc"
-	if vs.CodecName == "h264" {
+	if canRemux && vs.CodecName == "h264" {
 		outCodec = "h264"
 	}
 
@@ -145,14 +154,14 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult, maxKeyframeGap time.Duration
 	case !canRemux && srcBitrateKbps <= reencodeThreshold:
 		// Reencode at ~110 % of source bitrate.
 		best = Rendition{
-			Codec:         "hevc",
+			Codec:         outCodec,
 			TargetBitrate: srcBitrateKbps * 11 / 10,
 			Priority:      priority.Encode1st,
 		}
 	default:
 		// Reencode at top-tier ceiling.
 		best = Rendition{
-			Codec:         "hevc",
+			Codec:         outCodec,
 			TargetBitrate: topTierCeiling,
 			Priority:      priority.Encode1st,
 		}
