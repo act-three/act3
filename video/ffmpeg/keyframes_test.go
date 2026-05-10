@@ -131,6 +131,87 @@ func TestUniformSegmentBoundaries(t *testing.T) {
 	}
 }
 
+func TestParseVideoPackets(t *testing.T) {
+	// CSV format is "pts,duration,flags" per packet, in DTS order
+	// — same as `ffprobe -show_packets -show_entries
+	// packet=pts,duration,flags -of csv=p=0`.
+	tests := []struct {
+		name              string
+		out               string
+		wantKeyframes     []int64
+		wantPacketCount   int64
+		wantDurationTicks int64
+	}{
+		{
+			name:              "empty",
+			out:               "",
+			wantKeyframes:     nil,
+			wantPacketCount:   0,
+			wantDurationTicks: 0,
+		},
+		{
+			name: "closed GOP, no B-frames (DTS == display)",
+			// 5 frames at 24000/1001 with 1/24000 timebase.
+			out: "0,1001,K__\n" +
+				"1001,1001,___\n" +
+				"2002,1001,___\n" +
+				"3003,1001,___\n" +
+				"4004,1001,___\n",
+			wantKeyframes:     []int64{0},
+			wantPacketCount:   5,
+			wantDurationTicks: 5005,
+		},
+		{
+			name: "open GOP, 2-frame leading B-pyramid (Zeta-like)",
+			// First GOP starts at IDR at display 0; second IDR is at
+			// DTS index 4 but displays at 6 because two leading
+			// B-frames at DTS 5,6 display at positions 4,5 (ahead of
+			// the IDR in display order).
+			//
+			// DTS:    0  1  2  3  4  5  6  7
+			// Display:0  ?  ?  ?  6  4  5  7
+			// IDR2 at DTS=4 has the highest PTS of the first 5
+			// packets, so post-sort it lands at display index 6.
+			out: "0,1001,K__\n" +
+				"1001,1001,___\n" +
+				"2002,1001,___\n" +
+				"3003,1001,___\n" +
+				"6006,1001,K__\n" +
+				"4004,1001,___\n" +
+				"5005,1001,___\n" +
+				"7007,1001,___\n",
+			wantKeyframes:     []int64{0, 6},
+			wantPacketCount:   8,
+			wantDurationTicks: 8008,
+		},
+		{
+			name: "missing PTS falls back to DTS-order keyframes",
+			// Without complete PTS data we can't sort to display
+			// order, so the keyframe list is whatever DTS gave us.
+			out: "0,1001,K__\n" +
+				",1001,___\n" +
+				"2002,1001,K__\n",
+			wantKeyframes:     []int64{0, 2},
+			wantPacketCount:   3,
+			wantDurationTicks: 3003, // (2002+1001) - 0
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotKf, gotN, gotDur := parseVideoPackets(tt.out)
+			if !slices.Equal(gotKf, tt.wantKeyframes) {
+				t.Errorf("keyframes: got %v, want %v", gotKf, tt.wantKeyframes)
+			}
+			if gotN != tt.wantPacketCount {
+				t.Errorf("packetCount: got %d, want %d", gotN, tt.wantPacketCount)
+			}
+			if gotDur != tt.wantDurationTicks {
+				t.Errorf("durationTicks: got %d, want %d", gotDur, tt.wantDurationTicks)
+			}
+		})
+	}
+}
+
 func TestVideoStreamCodedFrameRate(t *testing.T) {
 	tests := []struct {
 		name string

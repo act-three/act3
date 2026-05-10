@@ -3,6 +3,7 @@ package ffmpeg
 import (
 	"bufio"
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json/v2"
 	"errors"
@@ -406,15 +407,20 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 }
 
 // scanVideoPackets enumerates video packets via ffprobe to derive
-// keyframe positions (display-order frame indices, suitable for
-// `-force_key_frames "expr:eq(n,...)"`), the total packet count, and
-// the stream's exact duration in timebase ticks (max(pts+duration) −
-// min(pts) across all packets, which equals the wall-clock interval
-// the encoder receives frames over).
+// keyframe positions (in display order, suitable for
+// `-force_key_frames "expr:eq(n,...)"` since ffmpeg hands the
+// encoder frames in display order under -fps_mode passthrough),
+// the total packet count, and the stream's exact duration in
+// timebase ticks (max(pts+duration) − min(pts), the wall-clock
+// interval the encoder receives frames over).
 //
-// Sequential streams without B-frame reordering across packet
-// boundaries — which closed-GOP HLS inputs are — get equal stream and
-// display order, so packet index == frame index.
+// ffprobe walks packets in DTS order, which is the same as display
+// order for closed-GOP sources but differs for open-GOP h264 (BD,
+// some DVD remuxes): each new GOP's leading B-pictures decode
+// after the IDR but display before it, so the IDR's display
+// position sits a frame or two past its DTS index. Keyframe
+// positions are translated to display order by sorting packets on
+// PTS and emitting the post-sort indices.
 func scanVideoPackets(ctx context.Context, r *os.File, format string) ([]int64, int64, int64, error) {
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return nil, 0, 0, err
@@ -436,23 +442,42 @@ func scanVideoPackets(ctx context.Context, r *os.File, format string) ([]int64, 
 	if err := c.Run(); err != nil {
 		return nil, 0, 0, errors.Join(err, errors.New(stderr.String()))
 	}
-	var keyframes []int64
-	var idx int64
+	keyframes, packetCount, durationTicks := parseVideoPackets(stdout.String())
+	return keyframes, packetCount, durationTicks, nil
+}
+
+// pktInfo carries the per-packet fields we extract during
+// scanVideoPackets parsing.
+type pktInfo struct {
+	pts   int64
+	dur   int64
+	isKey bool
+	valid bool // pts and dur both parsed successfully
+}
+
+// parseVideoPackets parses ffprobe `-show_packets -show_entries
+// packet=pts,duration,flags -of csv=p=0` output and returns the
+// display-order keyframe positions, total packet count, and the
+// stream's exact duration in timebase ticks (max(pts+dur) −
+// min(pts)). Split out from scanVideoPackets for testability.
+func parseVideoPackets(out string) (keyframes []int64, packetCount int64, durationTicks int64) {
+	var pkts []pktInfo
 	var minPTS, maxEnd int64
 	var haveSpan bool
-	for line := range strings.SplitSeq(strings.TrimSpace(stdout.String()), "\n") {
+	allValid := true
+	for line := range strings.SplitSeq(strings.TrimSpace(out), "\n") {
 		if line == "" {
 			continue
 		}
 		// CSV fields, in -show_entries order: pts, duration, flags.
 		fields := strings.Split(line, ",")
-		if len(fields) >= 3 && strings.HasPrefix(fields[2], "K") {
-			keyframes = append(keyframes, idx)
-		}
+		var p pktInfo
+		p.isKey = len(fields) >= 3 && strings.HasPrefix(fields[2], "K")
 		if len(fields) >= 2 {
 			pts, ptsErr := strconv.ParseInt(fields[0], 10, 64)
 			dur, durErr := strconv.ParseInt(fields[1], 10, 64)
 			if ptsErr == nil && durErr == nil {
+				p.pts, p.dur, p.valid = pts, dur, true
 				if !haveSpan || pts < minPTS {
 					minPTS = pts
 				}
@@ -462,13 +487,30 @@ func scanVideoPackets(ctx context.Context, r *os.File, format string) ([]int64, 
 				haveSpan = true
 			}
 		}
-		idx++
+		if !p.valid {
+			allValid = false
+		}
+		pkts = append(pkts, p)
 	}
-	var duration int64
+
+	// Sort to display order when every packet has a valid PTS;
+	// fall back to DTS order otherwise so a stream with patchy
+	// timestamps still produces a usable keyframe list.
+	if allValid {
+		slices.SortStableFunc(pkts, func(a, b pktInfo) int {
+			return cmp.Compare(a.pts, b.pts)
+		})
+	}
+	for i, p := range pkts {
+		if p.isKey {
+			keyframes = append(keyframes, int64(i))
+		}
+	}
+
 	if haveSpan {
-		duration = maxEnd - minPTS
+		durationTicks = maxEnd - minPTS
 	}
-	return keyframes, idx, duration, nil
+	return keyframes, int64(len(pkts)), durationTicks
 }
 
 // probeFormat runs a constrained ffprobe to detect the container
