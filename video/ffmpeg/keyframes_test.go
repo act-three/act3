@@ -173,37 +173,40 @@ func TestUniformSegmentBoundaries(t *testing.T) {
 }
 
 func TestParseVideoPackets(t *testing.T) {
-	// CSV format is "pts,duration,flags" per packet, in DTS order
-	// — same as `ffprobe -show_packets -show_entries
-	// packet=pts,duration,flags -of csv=p=0`.
+	// CSV format is "pts,dts,duration,flags" per packet, in DTS
+	// order — same as `ffprobe -show_packets -show_entries
+	// packet=pts,dts,duration,flags -of csv=p=0`.
 	tests := []struct {
-		name              string
-		out               string
-		wantKeyframes     []int64
-		wantPacketCount   int64
-		wantDurationTicks int64
+		name               string
+		out                string
+		wantKeyframes      []int64
+		wantPacketCount    int64
+		wantDurationTicks  int64
+		wantHasExplicitDTS bool
 	}{
 		{
-			name:              "empty",
-			out:               "",
-			wantKeyframes:     nil,
-			wantPacketCount:   0,
-			wantDurationTicks: 0,
+			name:               "empty",
+			out:                "",
+			wantKeyframes:      nil,
+			wantPacketCount:    0,
+			wantDurationTicks:  0,
+			wantHasExplicitDTS: false,
 		},
 		{
-			name: "closed GOP, no B-frames (DTS == display)",
+			name: "closed GOP, no B-frames (DTS == display, MP4-like)",
 			// 5 frames at 24000/1001 with 1/24000 timebase.
-			out: "0,1001,K__\n" +
-				"1001,1001,___\n" +
-				"2002,1001,___\n" +
-				"3003,1001,___\n" +
-				"4004,1001,___\n",
-			wantKeyframes:     []int64{0},
-			wantPacketCount:   5,
-			wantDurationTicks: 5005,
+			out: "0,0,1001,K__\n" +
+				"1001,1001,1001,___\n" +
+				"2002,2002,1001,___\n" +
+				"3003,3003,1001,___\n" +
+				"4004,4004,1001,___\n",
+			wantKeyframes:      []int64{0},
+			wantPacketCount:    5,
+			wantDurationTicks:  5005,
+			wantHasExplicitDTS: true,
 		},
 		{
-			name: "open GOP, 2-frame leading B-pyramid (Zeta-like)",
+			name: "open GOP, 2-frame leading B-pyramid (Zeta-like, MKV)",
 			// First GOP starts at IDR at display 0; second IDR is at
 			// DTS index 4 but displays at 6 because two leading
 			// B-frames at DTS 5,6 display at positions 4,5 (ahead of
@@ -213,41 +216,64 @@ func TestParseVideoPackets(t *testing.T) {
 			// Display:0  ?  ?  ?  6  4  5  7
 			// IDR2 at DTS=4 has the highest PTS of the first 5
 			// packets, so post-sort it lands at display index 6.
-			out: "0,1001,K__\n" +
-				"1001,1001,___\n" +
-				"2002,1001,___\n" +
-				"3003,1001,___\n" +
-				"6006,1001,K__\n" +
-				"4004,1001,___\n" +
-				"5005,1001,___\n" +
-				"7007,1001,___\n",
-			wantKeyframes:     []int64{0, 6},
-			wantPacketCount:   8,
-			wantDurationTicks: 8008,
+			//
+			// MKV doesn't carry DTS, so the field is N/A throughout.
+			out: "0,N/A,1001,K__\n" +
+				"1001,N/A,1001,___\n" +
+				"2002,N/A,1001,___\n" +
+				"3003,N/A,1001,___\n" +
+				"6006,N/A,1001,K__\n" +
+				"4004,N/A,1001,___\n" +
+				"5005,N/A,1001,___\n" +
+				"7007,N/A,1001,___\n",
+			wantKeyframes:      []int64{0, 6},
+			wantPacketCount:    8,
+			wantDurationTicks:  8008,
+			wantHasExplicitDTS: false,
+		},
+		{
+			name: "MP4 source with B-frames (DTS shifted negative)",
+			// Closed-GOP MP4 emitted by ffmpeg with B-frames: PTS in
+			// display order, DTS in decode order, and -1 DTS for the
+			// IDR (which decodes one B-pyramid worth of frames before
+			// it displays). The first packet still has an explicit
+			// DTS so remux is safe.
+			out: "0,-1,1001,K__\n" +
+				"3003,0,1001,___\n" +
+				"1001,1001,1001,___\n" +
+				"2002,2002,1001,___\n",
+			wantKeyframes:      []int64{0},
+			wantPacketCount:    4,
+			wantDurationTicks:  4004,
+			wantHasExplicitDTS: true,
 		},
 		{
 			name: "missing PTS falls back to DTS-order keyframes",
 			// Without complete PTS data we can't sort to display
 			// order, so the keyframe list is whatever DTS gave us.
-			out: "0,1001,K__\n" +
-				",1001,___\n" +
-				"2002,1001,K__\n",
-			wantKeyframes:     []int64{0, 2},
-			wantPacketCount:   3,
-			wantDurationTicks: 3003, // (2002+1001) - 0
+			out: "0,0,1001,K__\n" +
+				",1,1001,___\n" +
+				"2002,2,1001,K__\n",
+			wantKeyframes:      []int64{0, 2},
+			wantPacketCount:    3,
+			wantDurationTicks:  3003, // (2002+1001) - 0
+			wantHasExplicitDTS: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotKf, gotN, gotDur := parseVideoPackets(tt.out)
-			if !slices.Equal(gotKf, tt.wantKeyframes) {
-				t.Errorf("keyframes: got %v, want %v", gotKf, tt.wantKeyframes)
+			got := parseVideoPackets(tt.out)
+			if !slices.Equal(got.keyframes, tt.wantKeyframes) {
+				t.Errorf("keyframes: got %v, want %v", got.keyframes, tt.wantKeyframes)
 			}
-			if gotN != tt.wantPacketCount {
-				t.Errorf("packetCount: got %d, want %d", gotN, tt.wantPacketCount)
+			if got.packetCount != tt.wantPacketCount {
+				t.Errorf("packetCount: got %d, want %d", got.packetCount, tt.wantPacketCount)
 			}
-			if gotDur != tt.wantDurationTicks {
-				t.Errorf("durationTicks: got %d, want %d", gotDur, tt.wantDurationTicks)
+			if got.durationTicks != tt.wantDurationTicks {
+				t.Errorf("durationTicks: got %d, want %d", got.durationTicks, tt.wantDurationTicks)
+			}
+			if got.hasExplicitDTS != tt.wantHasExplicitDTS {
+				t.Errorf("hasExplicitDTS: got %v, want %v", got.hasExplicitDTS, tt.wantHasExplicitDTS)
 			}
 		})
 	}
