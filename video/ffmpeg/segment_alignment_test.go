@@ -80,10 +80,8 @@ func TestSegmentAlignment(t *testing.T) {
 		probe.Video.Width, probe.Video.Height, probe.FormatName,
 		probe.Video.FrameRate, probe.Video.CodecName, probe.Duration)
 
-	minFrames := MinFramesPerSegment(probe.Video.FrameRate, MinSegmentDuration)
-	cuts := SegmentBoundaries(probe.Video.Keyframes, minFrames)
+	cuts := SegmentBoundaries(probe.Video.Keyframes, probe.Video.FrameRate, MinSegmentDuration)
 	t.Logf("source keyframes: %v", probe.Video.Keyframes)
-	t.Logf("min frames/segment: %d", minFrames)
 	t.Logf("segment boundaries (frame indices): %v", cuts)
 
 	// Re-encode rendition: h264 at 540p (downsized from 320x180 is
