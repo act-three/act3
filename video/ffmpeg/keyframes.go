@@ -5,27 +5,43 @@ import (
 )
 
 // SegmentBoundaries picks a subset of source keyframes to use as HLS
-// segment cuts, with at least minFrames between consecutive
-// boundaries. Inputs and outputs are display-order frame indices.
-// The first keyframe (start of segment 0) is not included — only
-// the interior cut points between segments.
+// segment cuts, matching the schedule ffmpeg's HLS muxer follows on
+// stream-copy. Inputs and outputs are display-order frame indices.
+// The first keyframe (start of segment 0) is omitted — only the
+// interior cut points between segments are returned.
 //
-// The selection algorithm matches what ffmpeg's HLS muxer does on
-// stream-copy: walk keyframes in order, take the first one whose
-// distance from the previous cut is at least minFrames. Re-encodes
-// can be forced (via -force_key_frames "expr:eq(n,...)") to put
-// keyframes at exactly the returned frame indices so every variant
-// cuts at the same boundaries.
-func SegmentBoundaries(keyframes []int64, minFrames int64) []int64 {
-	if len(keyframes) <= 1 {
+// Cuts follow ffmpeg's absolute schedule exactly: segment N ends at
+// the first keyframe with display PTS ≥ N × target. The target is
+// expressed as a duration (rather than a frame count) so the
+// comparison happens in time, with no fps-quantization drift — for
+// 24000/1001fps content a 4s target yields ~95.904 frames per
+// segment, and rounding that up to 96 cumulatively overshoots by
+// ~0.096 frames per segment, enough to walk past a scene-change
+// keyframe ffmpeg would have picked. Comparing k × fps.Den against
+// N × target_ticks_per_seg in 1/fps.Num-second ticks keeps the
+// arithmetic integer-exact.
+//
+// Re-encodes can be forced (via -force_key_frames "expr:eq(n,...)")
+// to put keyframes at exactly the returned frame indices.
+func SegmentBoundaries(keyframes []int64, fps FrameRate, target time.Duration) []int64 {
+	if len(keyframes) <= 1 || !fps.Positive() || target <= 0 {
+		return nil
+	}
+	// In 1/fps.Num-second ticks: a keyframe at display index k has
+	// PTS k × fps.Den; one segment of `target` covers
+	// target × fps.Num / time.Second ticks. Both are exact integers
+	// for the rational frame rates HLS sources use.
+	targetTicks := int64(target) * int64(fps.Num) / int64(time.Second)
+	if targetTicks <= 0 {
 		return nil
 	}
 	var out []int64
-	last := keyframes[0]
+	cur := targetTicks
+	den := int64(fps.Den)
 	for _, k := range keyframes[1:] {
-		if k-last >= minFrames {
+		if k*den >= cur {
 			out = append(out, k)
-			last = k
+			cur += targetTicks
 		}
 	}
 	return out
