@@ -88,7 +88,9 @@ func browseNavigationMenu() html.Node {
 					Link("/")(wordmark()),
 					Button(Href("/collections"), ButtonGhost)(Text("Collections")),
 					Box(Class("v-media-nav-spacer")),
-					Button(Href("/app/profile"), ButtonGhost)(Icon("line/settings-01")),
+					html.If(isUserAdmin(), func() html.Node {
+						return Button(Href("/app/profile"), ButtonGhost, ButtonCircle)(Icon("line/settings-01"))
+					}),
 				),
 			),
 		),
