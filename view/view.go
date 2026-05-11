@@ -10,5 +10,5 @@ var group = attr.Group
 func isUserAdmin() bool {
 	// TODO(april): make this work properly once we have user accounts,
 	// maybe via context.
-	return true
+	return false
 }
