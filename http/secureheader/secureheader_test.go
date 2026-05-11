@@ -15,7 +15,7 @@ func TestHandlerSetsDefaults(t *testing.T) {
 
 	want := map[string]string{
 		"X-Content-Type-Options":  "nosniff",
-		"Referrer-Policy":         "no-referrer",
+		"Referrer-Policy":         "same-origin",
 		"X-Frame-Options":         "DENY",
 		"Content-Security-Policy": DefaultCSP,
 	}
