@@ -8,7 +8,7 @@ refs=$(cat)
 # Capture absolute source paths up front — the per-commit checks below
 # cd into a worktree, so repo-relative paths wouldn't resolve there.
 src=$(git rev-parse --show-toplevel)
-hooks_dir=$(cd "$(git rev-parse --git-path hooks)" && pwd)
+hooks_dir=$(cd "$(git rev-parse --git-path hooks)" >/dev/null && pwd)
 act3vet=$hooks_dir/act3vet
 commit_msg_check=$hooks_dir/commit-msg-check
 
