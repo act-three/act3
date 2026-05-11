@@ -41,7 +41,7 @@ func Handler(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		hdr := w.Header()
 		hdr.Set("X-Content-Type-Options", "nosniff")
-		hdr.Set("Referrer-Policy", "no-referrer")
+		hdr.Set("Referrer-Policy", "same-origin")
 		hdr.Set("X-Frame-Options", "DENY")
 		hdr.Set("Cross-Origin-Opener-Policy", "same-origin")
 		hdr.Set("Cross-Origin-Embedder-Policy", "credentialless")
