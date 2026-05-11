@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"net/http"
 
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
@@ -17,4 +18,9 @@ func (c *Config) app(ctx context.Context, tx *model.TxR, title string, body html
 		TaskCount:      stats.Queued + stats.Running,
 		TaskCountError: stats.CountError,
 	}), nil
+}
+
+func (c *Config) appIndex(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	http.Redirect(w, req, "/app/profile", http.StatusSeeOther)
+	return nil, nil
 }
