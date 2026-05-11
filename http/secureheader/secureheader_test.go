@@ -14,10 +14,11 @@ func TestHandlerSetsDefaults(t *testing.T) {
 	h.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
 
 	want := map[string]string{
-		"X-Content-Type-Options":  "nosniff",
-		"Referrer-Policy":         "same-origin",
-		"X-Frame-Options":         "DENY",
-		"Content-Security-Policy": DefaultCSP,
+		"X-Content-Type-Options":    "nosniff",
+		"Referrer-Policy":           "same-origin",
+		"X-Frame-Options":           "DENY",
+		"Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+		"Content-Security-Policy":   DefaultCSP,
 	}
 	for k, v := range want {
 		if got := rec.Header().Get(k); got != v {

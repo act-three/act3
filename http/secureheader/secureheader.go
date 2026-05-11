@@ -43,6 +43,7 @@ func Handler(h http.Handler) http.Handler {
 		hdr.Set("X-Content-Type-Options", "nosniff")
 		hdr.Set("Referrer-Policy", "same-origin")
 		hdr.Set("X-Frame-Options", "DENY")
+		hdr.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 		hdr.Set("Cross-Origin-Opener-Policy", "same-origin")
 		hdr.Set("Cross-Origin-Embedder-Policy", "credentialless")
 		hdr.Set("Content-Security-Policy", DefaultCSP)
