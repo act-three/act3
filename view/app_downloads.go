@@ -191,7 +191,6 @@ func uploadVideoForm(targetName, targetValue string) html.Node {
 		attr.Enctype("multipart/form-data"),
 		attr.Action("/-/do/video-upload"),
 		stimulus.Controller("upload"),
-		stimulus.Action("turbo:submit-end->upload#reset"),
 	)(
 		Hidden(targetName, targetValue),
 		html.Input(
@@ -208,6 +207,24 @@ func uploadVideoForm(targetName, targetValue string) html.Node {
 			stimulus.Action("click->upload#open:prevent"),
 		)(
 			html.Text("Upload Video"),
+		),
+		uploadProgress(),
+	)
+}
+
+// uploadProgress renders the inline progress bar that the upload
+// Stimulus controller swaps in for the picker button while an XHR
+// upload is in flight. Starts hidden; the controller un-hides it.
+func uploadProgress() html.Node {
+	return html.Div(
+		attr.Hidden,
+		stimulus.Target("upload", "progress"),
+		Class("v-upload-progress u-progress"),
+		attr.Role("progressbar"),
+	)(
+		html.Div(
+			stimulus.Target("upload", "progressFill"),
+			Class("u-progress-fill"),
 		),
 	)
 }
