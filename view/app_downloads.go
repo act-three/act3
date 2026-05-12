@@ -170,6 +170,48 @@ func addTorrentButton(inputName, inputValue string) html.Node {
 	)
 }
 
+// uploadMovieVideoButton renders a file-upload form that streams a
+// video file directly into the library and attaches it to the
+// given movie edition.
+func uploadMovieVideoButton(medID string) html.Node {
+	return uploadVideoForm("med-id", medID)
+}
+
+// uploadEpisodeVideoButton renders a file-upload form that streams a
+// video file directly into the library and attaches it to the given
+// episode.
+func uploadEpisodeVideoButton(epID string) html.Node {
+	return uploadVideoForm("ep-id", epID)
+}
+
+func uploadVideoForm(targetName, targetValue string) html.Node {
+	return html.Form(
+		Class("v-media-torrent-form"),
+		attr.Method("POST"),
+		attr.Enctype("multipart/form-data"),
+		attr.Action("/-/do/video-upload"),
+		stimulus.Controller("upload"),
+		stimulus.Action("turbo:submit-end->upload#reset"),
+	)(
+		Hidden(targetName, targetValue),
+		html.Input(
+			Class("v-media-torrent-picker"),
+			attr.Type("file"),
+			attr.Name("video"),
+			attr.Accept(".mkv,.mp4,video/*"),
+			stimulus.Target("upload", "picker"),
+			stimulus.Action("change->upload#upload"),
+		),
+		Button(
+			ButtonGhost,
+			stimulus.Target("upload", "button"),
+			stimulus.Action("click->upload#open:prevent"),
+		)(
+			html.Text("Upload Video"),
+		),
+	)
+}
+
 func appDownloadsDetail(dl *model.Download) html.Node {
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(Class("v-media-detail-body"))(

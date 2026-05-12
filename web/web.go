@@ -143,6 +143,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 	handle(mux, "POST /-/do/upload", c.doUpload)
 	handle(mux, "POST /-/do/video-reencode/{id}", c.doVideoReencode)
 	handle(mux, "POST /-/do/video-reimport/{id}", c.doVideoReimport)
+	handleStreaming(mux, "POST /-/do/video-upload", c.doVideoUpload)
 	mux.Handle("GET /-/icon/{type}/{name}", http.StripPrefix("/-/icon", icon.Handler()))
 	mux.Handle("GET /-/static/{name}", static.Handler())
 	mux.Handle("GET /-/jassub/{name}", jassub.Handler())
@@ -200,8 +201,20 @@ func (c *Config) withTxRW(f func(*model.TxRW) (html.Node, error)) (n html.Node, 
 }
 
 func handle(mux *http.ServeMux, pattern string, hf handlerFunc) {
-	var h http.Handler
-	h = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+	mux.Handle(pattern, http.MaxBytesHandler(makeHandler(hf), maxReqBody))
+}
+
+// handleStreaming registers a route without the global request-body
+// cap. Reserved for endpoints that legitimately need large or
+// indefinite bodies — currently just video upload. Such handlers
+// MUST consume req.Body via a streaming API so the process doesn't
+// buffer the upload into memory.
+func handleStreaming(mux *http.ServeMux, pattern string, hf handlerFunc) {
+	mux.Handle(pattern, makeHandler(hf))
+}
+
+func makeHandler(hf handlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		slog.InfoContext(ctx, "request", "url", req.URL)
 		var node html.Node
@@ -225,8 +238,6 @@ func handle(mux *http.ServeMux, pattern string, hf handlerFunc) {
 			rawHandler(200, node).ServeHTTP(w, req)
 		}
 	})
-	h = http.MaxBytesHandler(h, maxReqBody)
-	mux.Handle(pattern, h)
 }
 
 func rawHandler(code int, node ...html.Node) http.Handler {

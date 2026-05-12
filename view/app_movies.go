@@ -174,6 +174,15 @@ func AppMoviesDetail(
 				),
 
 				SettingsGroup()(
+					SettingsGroupHead()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Upload"),
+						),
+						uploadMovieVideoButton(med.ID()),
+					),
+				),
+
+				SettingsGroup()(
 					appMoviesDetailVideos(med),
 				),
 

@@ -1,7 +1,9 @@
 package web
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	"ily.dev/act3/html"
@@ -64,4 +66,86 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, 
 	}
 	w.WriteHeader(http.StatusNoContent)
 	return nil, nil
+}
+
+// maxUploadFormField caps each non-file multipart text part. Form
+// fields here are ID strings; anything larger is a client bug or an
+// abuse attempt and we'd rather fail fast than buffer.
+const maxUploadFormField = 1 << 10
+
+// doVideoUpload streams a video file multipart upload directly into
+// the CAS store via model.VideoUploadCreate. Registered on the
+// streaming path so the global request-body cap doesn't apply; we
+// rely on req.MultipartReader to avoid spooling the upload through
+// req.FormFile's default /tmp file.
+//
+// The form is expected to emit small text parts (sed-id / med-id /
+// ep-id) before the file part named "video".
+func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+	ctx := req.Context()
+	mr, err := req.MultipartReader()
+	if err != nil {
+		return nil, &model.ValidationError{Op: "multipart", Err: err}
+	}
+
+	var medID, epID string
+	var fileSeen bool
+	for {
+		part, err := mr.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		switch part.FormName() {
+		case "med-id":
+			medID, err = readField(part)
+		case "ep-id":
+			epID, err = readField(part)
+		case "video":
+			if fileSeen {
+				err = &model.ValidationError{
+					Op:  "video",
+					Err: fmt.Errorf("multiple video parts"),
+				}
+				break
+			}
+			fileSeen = true
+			var medp, epp *string
+			if medID != "" {
+				medp = &medID
+			}
+			if epID != "" {
+				epp = &epID
+			}
+			_, err = c.Model.VideoUploadCreate(ctx, part, part.FileName(), medp, epp)
+		}
+		part.Close()
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !fileSeen {
+		return nil, &model.ValidationError{
+			Op:  "params",
+			Err: fmt.Errorf("missing video file part"),
+		}
+	}
+	w.WriteHeader(http.StatusNoContent)
+	return nil, nil
+}
+
+func readField(r io.Reader) (string, error) {
+	b, err := io.ReadAll(io.LimitReader(r, maxUploadFormField+1))
+	if err != nil {
+		return "", err
+	}
+	if len(b) > maxUploadFormField {
+		return "", &model.ValidationError{
+			Op:  "form field",
+			Err: fmt.Errorf("value exceeds %d bytes", maxUploadFormField),
+		}
+	}
+	return string(b), nil
 }

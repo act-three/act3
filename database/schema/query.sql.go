@@ -3128,6 +3128,21 @@ func (q *Queries) MovieVideoDistinctEditionsByVideo(ctx context.Context, videoid
 	return items, nil
 }
 
+const movieVideoEnsure = `-- name: MovieVideoEnsure :exec
+INSERT OR IGNORE INTO MovieVideo (MovieEditionID, VideoID)
+VALUES (?, ?)
+`
+
+type MovieVideoEnsureParams struct {
+	MovieEditionID string
+	VideoID        string
+}
+
+func (q *Queries) MovieVideoEnsure(ctx context.Context, arg MovieVideoEnsureParams) error {
+	_, err := q.db.ExecContext(ctx, movieVideoEnsure, arg.MovieEditionID, arg.VideoID)
+	return err
+}
+
 const movieVideoListByInfoHash = `-- name: MovieVideoListByInfoHash :many
 SELECT movieeditionid, videoid, active, deletedat FROM MovieVideo
 WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?)

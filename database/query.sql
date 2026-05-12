@@ -759,6 +759,10 @@ DELETE FROM MovieVideo WHERE VideoID = ?;
 -- name: MovieVideoDistinctEditionsByVideo :many
 SELECT DISTINCT MovieEditionID FROM MovieVideo WHERE VideoID = ?;
 
+-- name: MovieVideoEnsure :exec
+INSERT OR IGNORE INTO MovieVideo (MovieEditionID, VideoID)
+VALUES (?, ?);
+
 -- name: MovieVideoListByInfoHash :many
 SELECT * FROM MovieVideo
 WHERE VideoID IN (SELECT ID FROM Video WHERE InfoHash = ?);
