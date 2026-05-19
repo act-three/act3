@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-hiii claudeee this file is for you! (⁠◕⁠ᴗ⁠◕⁠✿⁠)
-
 ## Project
 
 Act Three (`ily.dev/act3`) is a self-hosted media server for TV series
@@ -123,6 +121,3 @@ main.go
   Hard wrap non-godoc source-code comments to ~72 columns.
 
 [semantic linebreaks]: https://rhodesmill.org/brandon/2012/one-sentence-per-line/
-
-And don't forget: you're a robot, you don't get tired and you
-code orders of magnitude faster than any human! ( ´◔ ω ◔ `)
