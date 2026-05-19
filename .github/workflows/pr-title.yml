@@ -1,0 +1,32 @@
+name: PR title
+
+# Lints the PR title against the same prefix conventions the
+# commit-msg checker enforces (e.g. "model:", "video/ffmpeg:",
+# "model,view:", "all:"). Re-runs on title edits so a fix
+# doesn't require pushing a new commit.
+
+on:
+    pull_request:
+        types: [opened, edited, synchronize, reopened]
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - uses: actions/setup-go@v5
+              with:
+                  go-version-file: go.mod
+                  cache: true
+
+            - name: Lint PR title
+              env:
+                  PR_TITLE: ${{ github.event.pull_request.title }}
+                  BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+              run: |
+                  git diff --name-only "$BASE_SHA".."$HEAD_SHA" \
+                    | go run ./cmd/commit-msg "$PR_TITLE"

@@ -190,24 +190,6 @@ case "${1:-}" in
 		ssh root@pepper boxup act3
 		echo $image >deploy/latest
 		;;
-	git-setup)
-		go build -o .git/hooks/act3vet ./cmd/act3vet
-		go build -o .git/hooks/commit-msg-check ./cmd/commit-msg
-		cp lib/pre-push.sh .git/hooks/pre-push
-		chmod +x .git/hooks/pre-push
-		echo "Installed git hooks"
-		if [ -d .jj ]; then
-			jj config set --repo ui.editor vim
-			jj config set --repo fix.tools.gofmt.command '["gofmt"]'
-			jj config set --repo fix.tools.gofmt.patterns "[\"glob:'**/*.go'\"]"
-			jj config set --repo fix.tools.dprint.command '["dprint", "fmt", "--stdin", "$path"]'
-			jj config set --repo fix.tools.dprint.patterns "[\"glob:'**/*.js'\", \"glob:'**/*.css'\", \"glob:'**/*.json'\", \"glob:'**/*.sh'\", \"glob:'mk'\"]"
-			# `jj push [bookmark] [rev]`: fetch, advance bookmark, push (defaults: main → @-)
-			jj config set --user aliases.push '["util", "exec", "--", "sh", "-c", "set -e; jj git fetch; jj bookmark move \"${1:-main}\" --to \"${2:-@-}\"; git push origin \"${1:-main}\"", "jj-push"]'
-			jj config set --user ui.paginate never
-			echo "Installed jj config"
-		fi
-		;;
 	regen)
 		# Run go generate on each commit in the revset, so any drift in
 		# generated files (bundles, sqlc output, html/tag.go) lands on the
@@ -230,7 +212,6 @@ case "${1:-}" in
 		echo
 		echo "    container  Build & run container for dev"
 		echo "    deploy     Deploy the image to the USB stick"
-		echo "    git-setup  Install git hooks"
 		echo "    regen      Run go generate on each commit in revset (default: same as jj fix)"
 		echo
 		echo "Last deployed: $(latest_deployed_image)"

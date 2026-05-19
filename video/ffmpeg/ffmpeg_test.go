@@ -20,6 +20,9 @@ const dockerImage = "act3-ffmpeg"
 // if neither is available.
 func setupDocker(t *testing.T) string {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("ffmpeg test, skipped in -short mode")
+	}
 	dir := t.TempDir()
 
 	// Temp dirs created by production code (e.g. Pass2Single) must
@@ -51,6 +54,9 @@ func setupDocker(t *testing.T) string {
 // pipes stdin through the daemon.
 func setupHost(t *testing.T) string {
 	t.Helper()
+	if testing.Short() {
+		t.Skip("ffmpeg test, skipped in -short mode")
+	}
 	dir := t.TempDir()
 	t.Setenv("TMPDIR", dir)
 	if _, err := exec.LookPath("ffmpeg"); err != nil {

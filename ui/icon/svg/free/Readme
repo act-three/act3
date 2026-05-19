@@ -1,0 +1,5 @@
+Free-licensed icons (MIT / public domain) checked into the repo so
+'go generate' produces a deterministic bundle.css on CI, where
+untitled-icons.zip is not available.
+
+Sources are noted at the top of each file.

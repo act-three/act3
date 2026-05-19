@@ -1,82 +1,57 @@
-// Command commit-msg validates commit subject prefix conventions
-// for one or more commits.
+// Command commit-msg validates a commit subject's prefix conventions
+// (e.g. "model:" or "video/ffmpeg:" before the colon).
 //
-// It is intended to be invoked from a pre-push hook, with the SHAs of
-// the commits being pushed passed as arguments.
+// Usage: commit-msg <subject>
 //
-// Usage: commit-msg <sha>...
+// The list of files touched by the change is read from stdin, one
+// path per line. Used in CI to lint a PR title against the files the
+// PR touches.
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: commit-msg <sha>...")
+	if len(os.Args) != 2 {
+		fmt.Fprintln(os.Stderr, "usage: commit-msg <subject>")
 		os.Exit(2)
 	}
-	fail := false
-	for _, sha := range os.Args[1:] {
-		if err := checkCommit(sha); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			fail = true
+	subject := os.Args[1]
+
+	var changed []string
+	sc := bufio.NewScanner(os.Stdin)
+	for sc.Scan() {
+		f := strings.TrimSpace(sc.Text())
+		if f != "" {
+			changed = append(changed, f)
 		}
 	}
-	if fail {
+	if err := sc.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading stdin:", err)
+		os.Exit(2)
+	}
+
+	if err := check(subject, changed); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-}
-
-func checkCommit(sha string) error {
-	subject, err := commitSubject(sha)
-	if err != nil {
-		return err
-	}
-	files, err := commitFiles(sha)
-	if err != nil {
-		return err
-	}
-	if err := check(subject, files); err != nil {
-		return fmt.Errorf("%s: %w", short(sha), err)
-	}
-	return nil
-}
-
-func short(sha string) string {
-	if len(sha) > 12 {
-		return sha[:12]
-	}
-	return sha
-}
-
-func commitSubject(sha string) (string, error) {
-	out, err := exec.Command("git", "log", "-1", "--format=%s", sha).Output()
-	if err != nil {
-		return "", fmt.Errorf("git log %s: %w", short(sha), err)
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func commitFiles(sha string) ([]string, error) {
-	out, err := exec.Command("git", "diff-tree", "--no-commit-id", "--name-only", "-r", sha).Output()
-	if err != nil {
-		return nil, fmt.Errorf("git diff-tree %s: %w", short(sha), err)
-	}
-	s := strings.TrimSpace(string(out))
-	if s == "" {
-		return nil, nil
-	}
-	return strings.Split(s, "\n"), nil
 }
 
 // check validates a commit subject line.
 // changed is the list of files modified in the commit (may be nil).
 func check(subject string, changed []string) error {
+	if len(subject) > 55 {
+		return fmt.Errorf("commit-msg: subject must be at most 55 characters (got %d)\n  subject: %s", len(subject), subject)
+	}
+	if strings.HasSuffix(subject, ".") {
+		return fmt.Errorf("commit-msg: subject must not end with a period\n  subject: %s", subject)
+	}
+
 	// Extract prefix (everything before the first colon).
 	prefixPart, _, ok := strings.Cut(subject, ":")
 	if !ok {
