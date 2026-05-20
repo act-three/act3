@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"math/bits"
 	"time"
 )
 
@@ -70,12 +71,25 @@ func MinFramesPerSegment(fps FrameRate, target time.Duration) int64 {
 // Like SegmentBoundaries, the implicit cut at frame 0 is omitted —
 // only interior boundaries are returned.
 func UniformSegmentBoundaries(fps FrameRate, duration time.Duration, minFrames int64) []int64 {
-	if minFrames <= 0 || fps.Num <= 0 || fps.Den <= 0 {
+	if minFrames <= 0 || fps.Num <= 0 || fps.Den <= 0 || duration <= 0 {
 		return nil
 	}
-	num := int64(duration) * int64(fps.Num)
-	den := int64(fps.Den) * int64(time.Second)
-	totalFrames := num / den
+	// totalFrames = floor(duration × fps.Num / (fps.Den × time.Second)).
+	// duration × fps.Num overflows int64 when fps is a large irreducible
+	// fraction (e.g. CodedFrameRate derived from a multi-million-packet
+	// source with a fine timebase: Num is the packet count scaled by
+	// the timebase denominator, easily ~5×10⁷, and at a 39-minute
+	// duration the product reaches ~10²³). Promote to a 128-bit
+	// product so the division remains exact.
+	hi, lo := bits.Mul64(uint64(duration), uint64(fps.Num))
+	den := uint64(fps.Den) * uint64(time.Second)
+	if hi >= den {
+		// Would need a multi-century video to reach this. Bail out
+		// rather than panic in bits.Div64.
+		return nil
+	}
+	q, _ := bits.Div64(hi, lo, den)
+	totalFrames := int64(q)
 	var out []int64
 	for k := minFrames; k < totalFrames; k += minFrames {
 		out = append(out, k)
