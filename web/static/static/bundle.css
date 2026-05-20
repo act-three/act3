@@ -2086,10 +2086,14 @@
   .v-media-torrent-form {
     display: flex;
     flex-direction: row;
+    align-items: center;
     gap: 0.25rem;
   }
   .v-media-torrent-picker {
     display: none;
+  }
+  .v-upload-progress {
+    width: 12rem;
   }
   .v-media-auto-import {
     display: flex;
