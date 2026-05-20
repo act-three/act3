@@ -517,6 +517,15 @@ func AppEpisodeDetail(
 					),
 				),
 
+				SettingsGroup()(
+					SettingsGroupHead()(
+						SettingsItemLabel()(
+							SettingsItemLabelTitle("Upload"),
+						),
+						uploadEpisodeVideoButton(ep.ID()),
+					),
+				),
+
 				TextNode(TextBold, Style("margin-top: 1rem"))(html.Text("Videos")),
 				expr.IfElse(len(videos) == 0,
 					func() html.Node {
