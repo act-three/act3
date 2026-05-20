@@ -1422,7 +1422,7 @@
       width: 15px;
       height: 15px;
       background-color: currentColor;
-      mask-image: url('data:image/svg+xml,<svg  xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">%0A<path d="M20 6L9 17L4 12"/>%0A</svg>%0A');
+      mask-image: url('data:image/svg+xml,<!-- Lucide check, MIT licensed: https://lucide.dev/icons/check -->%0A<svg  xmlns="http://www.w3.org/2000/svg" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>%0A');
       mask-size: contain;
       mask-repeat: no-repeat;
     }

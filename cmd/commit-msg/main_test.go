@@ -111,6 +111,22 @@ func TestCheck(t *testing.T) {
 			subject: "model: fix one file",
 			changed: []string{"model/movie.go"},
 		},
+		{
+			// "model: " (7) + 48 x's = 55 chars exactly.
+			name:    "subject at length limit",
+			subject: "model: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		},
+		{
+			// "model: " (7) + 49 x's = 56 chars.
+			name:    "subject over length limit",
+			subject: "model: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			wantErr: "at most 55 characters",
+		},
+		{
+			name:    "trailing period rejected",
+			subject: "model: fix the thing.",
+			wantErr: "must not end with a period",
+		},
 	}
 
 	for _, tt := range tests {

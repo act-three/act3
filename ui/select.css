@@ -117,7 +117,7 @@
 		width: 15px;
 		height: 15px;
 		background-color: currentColor;
-		mask-image: url("icon/line/check.svg");
+		mask-image: url("icon/free/check.svg");
 		mask-size: contain;
 		mask-repeat: no-repeat;
 	}

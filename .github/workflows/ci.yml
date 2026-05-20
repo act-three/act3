@@ -1,0 +1,126 @@
+name: CI
+
+on:
+    pull_request:
+    push:
+        branches: [main]
+
+# For PR pushes, cancel any in-flight run on the same branch so we
+# don't burn CI minutes on a superseded commit. Pushes to main always
+# run to completion.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+    GOEXPERIMENT: jsonv2
+
+jobs:
+    ci:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-go@v5
+              with:
+                  go-version-file: go.mod
+                  cache: true
+
+            - name: Install sqlc
+              run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+
+            - name: Install shfmt
+              run: go install mvdan.cc/sh/v3/cmd/shfmt@latest
+
+            - name: Install dprint
+              run: |
+                  curl -fsSL https://dprint.dev/install.sh | sh -s 0.54.0
+                  echo "$HOME/.dprint/bin" >> "$GITHUB_PATH"
+
+            - name: Cache dprint plugins
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/dprint
+                  key: dprint-${{ hashFiles('dprint.json') }}
+
+            # Cheap checks first, so an obvious format slip fails fast
+            # before the slower steps run.
+
+            - name: gofmt
+              run: |
+                  unformatted=$(gofmt -l .)
+                  if [ -n "$unformatted" ]; then
+                    echo "the following files are not gofmt-clean:"
+                    echo "$unformatted"
+                    echo
+                    echo "run: gofmt -w ."
+                    exit 1
+                  fi
+
+            - name: dprint check
+              run: dprint check
+
+            - name: go vet
+              run: go vet ./...
+
+            - name: act3vet
+              run: |
+                  go build -o /tmp/act3vet ./cmd/act3vet
+                  go vet -vettool=/tmp/act3vet ./...
+
+            - name: go mod tidy
+              run: |
+                  go mod tidy
+                  if ! git diff --quiet go.mod go.sum; then
+                    echo "go.mod or go.sum is not tidy:"
+                    git diff go.mod go.sum
+                    exit 1
+                  fi
+
+            - name: go generate
+              run: |
+                  go generate ./...
+                  if ! git diff --quiet; then
+                    echo "go generate produced changes — generated files are out of date:"
+                    git status --short
+                    git diff
+                    exit 1
+                  fi
+
+            - name: go build
+              run: go build ./...
+
+            - name: go test
+              run: go test -short ./...
+
+    # Race-detector pass on the same short subset (skips ffmpeg).
+    # Not required to land: race regressions don't block, but they
+    # show up as a failing check.
+    test-race:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-go@v5
+              with:
+                  go-version-file: go.mod
+                  cache: true
+
+            - name: go test -race -short
+              run: go test -race -short ./...
+
+    # Full suite including the ffmpeg-driven tests, no race.
+    # Relies on the ffmpeg pre-installed on ubuntu-latest runners.
+    # Not required to land.
+    test-full:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-go@v5
+              with:
+                  go-version-file: go.mod
+                  cache: true
+
+            - name: go test (full)
+              run: go test ./...
