@@ -224,31 +224,7 @@ func (tx *TxR) ImageVariantKey(ctx Context, originalID string, width int) (key s
 // Decode failures are returned as ValidationError so callers at
 // the HTTP edge can return 400.
 func (m *Model) ImageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind) (originalID string, err error) {
-	return m.imageCreate(ctx, r, kind, "")
-}
-
-// imageCreate is the shared implementation. If explicitID is
-// empty the Image row gets a freshly generated ID;
-// otherwise it uses explicitID and is a no-op when a row with
-// that ID already exists (used for boot-time placeholder
-// creation).
-func (m *Model) imageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind, explicitID string) (originalID string, err error) {
 	defer errorfmt.Handlef("image create: %w", &err)
-
-	if explicitID != "" {
-		// Idempotence for boot-time placeholder creation: if a
-		// row with explicitID already exists, do nothing.
-		err := m.WithTxR(func(tx *TxR) error {
-			_, err := tx.q.ImageGet(ctx, explicitID)
-			return err
-		})
-		if err == nil {
-			return explicitID, nil
-		}
-		if !errors.Is(err, sql.ErrNoRows) {
-			return "", err
-		}
-	}
 
 	// Buffer the input so we can both store it byte-for-byte and
 	// hand it to the decoder. MaxBytesReader makes the cap
@@ -272,13 +248,21 @@ func (m *Model) imageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind
 
 	cropped := centerCrop(src, kind)
 	encoded := encodeVariants(cropped, kind)
+	return m.insertImage(ctx, "", mime, raw, encoded)
+}
 
+// insertImage writes raw + variants to the blob store and the
+// Image / ImageRendition tables in a single transaction. If id
+// is empty the Image row gets a freshly generated ID; otherwise
+// the row is created with id (used for boot-time placeholders,
+// whose IDs are fixed so parent FK DEFAULTs can reference them).
+func (m *Model) insertImage(ctx context.Context, id, mime string, raw []byte, variants []encodedVariant) (originalID string, err error) {
 	err = m.WithTxRW(func(tx *TxRW) error {
 		originalKey, err := m.store.Copy(bytes.NewReader(raw))
 		if err != nil {
 			return err
 		}
-		if explicitID == "" {
+		if id == "" {
 			io_, err := tx.q.ImageCreate(ctx, schema.ImageCreateParams{
 				OriginalKey: originalKey,
 				Type:        mime,
@@ -288,29 +272,27 @@ func (m *Model) imageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind
 			}
 			originalID = io_.ID
 		} else {
-			err := tx.q.ImageCreateWithID(ctx, schema.ImageCreateWithIDParams{
-				ID:          explicitID,
+			if err := tx.q.ImageCreateWithID(ctx, schema.ImageCreateWithIDParams{
+				ID:          id,
 				OriginalKey: originalKey,
 				Type:        mime,
-			})
-			if err != nil {
+			}); err != nil {
 				return err
 			}
-			originalID = explicitID
+			originalID = id
 		}
-		for _, v := range encoded {
+		for _, v := range variants {
 			variantKey, err := m.store.Copy(bytes.NewReader(v.bytes))
 			if err != nil {
 				return err
 			}
-			err = tx.q.ImageRenditionCreate(ctx, schema.ImageRenditionCreateParams{
+			if err := tx.q.ImageRenditionCreate(ctx, schema.ImageRenditionCreateParams{
 				Key:     variantKey,
 				ImageID: originalID,
 				Type:    "image/webp",
 				Width:   int64(v.width),
 				Height:  int64(v.height),
-			})
-			if err != nil {
+			}); err != nil {
 				return err
 			}
 		}
@@ -403,25 +385,76 @@ func encodeWebP(img image.Image, w, h int) encodedVariant {
 	return encodedVariant{bytes: buf.Bytes(), width: w, height: h}
 }
 
-// insertPlaceholderImages creates the placeholder Image
-// rows (and their variant blobs) from embedded fallback PNGs if
-// they don't already exist. Called once at boot from model.New
-// so the per-kind FK DEFAULTs on parent tables always resolve.
+// placeholderBlobs holds the bytes that a placeholder Image
+// inserts into the database and blob store. Each kind's blobs
+// are decoded and encoded once at package init from the embedded
+// fallback PNGs, so the resize + webp encode cost doesn't recur
+// on every Model.New (which the model package tests do per test).
+type placeholderBlobs struct {
+	id       string
+	raw      []byte
+	mime     string
+	variants []encodedVariant
+}
+
+func placeholderVariants(raw []byte, kind ImageKind) []encodedVariant {
+	src, err := png.Decode(bytes.NewReader(raw))
+	if err != nil {
+		panic(fmt.Sprintf("placeholder decode: %v", err))
+	}
+	return encodeVariants(centerCrop(src, kind), kind)
+}
+
+var placeholders = []*placeholderBlobs{
+	{
+		id:       imagePosterPlaceholderID,
+		raw:      assets.PosterFallbackPNG,
+		mime:     "image/png",
+		variants: placeholderVariants(assets.PosterFallbackPNG, ImagePoster),
+	},
+	{
+		id:       imageThumbnailPlaceholderID,
+		raw:      assets.ThumbnailFallbackPNG,
+		mime:     "image/png",
+		variants: placeholderVariants(assets.ThumbnailFallbackPNG, ImageThumbnail),
+	},
+	{
+		id:       imageBannerPlaceholderID,
+		raw:      assets.BannerFallbackPNG,
+		mime:     "image/png",
+		variants: placeholderVariants(assets.BannerFallbackPNG, ImageBanner),
+	},
+}
+
+// insertPlaceholderImages creates the placeholder Image rows
+// (and their variant blobs) from embedded fallback PNGs if they
+// don't already exist. Called once at boot from model.New so
+// the per-kind FK DEFAULTs on parent tables always resolve.
 func (m *Model) insertPlaceholderImages(ctx context.Context) error {
-	for _, e := range []struct {
-		id    string
-		kind  ImageKind
-		bytes []byte
-	}{
-		{imagePosterPlaceholderID, ImagePoster, assets.PosterFallbackPNG},
-		{imageThumbnailPlaceholderID, ImageThumbnail, assets.ThumbnailFallbackPNG},
-		{imageBannerPlaceholderID, ImageBanner, assets.BannerFallbackPNG},
-	} {
-		if _, err := m.imageCreate(ctx, io.NopCloser(bytes.NewReader(e.bytes)), e.kind, e.id); err != nil {
-			return fmt.Errorf("placeholder %s: %w", e.id, err)
+	for _, b := range placeholders {
+		if err := m.insertPlaceholder(ctx, b); err != nil {
+			return fmt.Errorf("placeholder %s: %w", b.id, err)
 		}
 	}
 	return nil
+}
+
+// insertPlaceholder is idempotent: if a row with b.id already
+// exists it returns nil without touching the store or the
+// Image / ImageRendition tables.
+func (m *Model) insertPlaceholder(ctx context.Context, b *placeholderBlobs) error {
+	err := m.WithTxR(func(tx *TxR) error {
+		_, err := tx.q.ImageGet(ctx, b.id)
+		return err
+	})
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	_, err = m.insertImage(ctx, b.id, b.mime, b.raw, b.variants)
+	return err
 }
 
 // imageDelete deletes an Image and its rendition rows + blobs
