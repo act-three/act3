@@ -99,6 +99,7 @@ func sidebarContent(c Config) html.Node {
 			Link("/")(Box(Class("v-wordmark"))),
 		),
 		html.Range(sidebarData(c), sidebarGroup),
+		sidebarUploadProgress(),
 	)
 }
 
@@ -186,6 +187,27 @@ func menuStatsInner(value, badge string) html.Node {
 func TaskStats(count, countError int) html.Node {
 	return turbo.Update(TaskStatsID)(
 		menuStatsInner(numeric(count), numeric(countError)),
+	)
+}
+
+func sidebarUploadProgress() html.Node {
+	return html.Div(
+		attr.Hidden,
+		Class("v-sidebar-upload-progress"),
+		stimulus.Controller("upload-progress"),
+		stimulus.Action("upload:start@document->upload-progress#start"),
+		stimulus.Action("upload:progress@document->upload-progress#progress"),
+		stimulus.Action("upload:end@document->upload-progress#end"),
+	)(
+		html.Div(Class("v-sidebar-upload-label"),
+			stimulus.Target("upload-progress", "label"),
+		)(html.Text("Uploading…")),
+		html.Div(Class("u-progress"))(
+			html.Div(
+				stimulus.Target("upload-progress", "fill"),
+				Class("u-progress-fill"),
+			),
+		),
 	)
 }
 
