@@ -436,7 +436,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 		}
 		defer src.Close()
 
-		boundaries, err := sourceSegmentBoundaries(vid, hasRemux)
+		boundaries, fps, err := sourceSegmentBoundaries(vid, hasRemux)
 		if err != nil {
 			return fmt.Errorf("source segment boundaries: %w", err)
 		}
@@ -444,14 +444,24 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 		dsts := make([]ffmpeg.EncodeParams, len(renditions))
 		for i, r := range renditions {
 			dsts[i] = ffmpeg.EncodeParams{
-				Remux:             r.Remux != 0,
-				Codec:             toFFmpegCodec(r.Codec),
-				Bitrate:           r.TargetBitrate,
-				MaxHeight:         int(r.MaxHeight),
-				MaxFPS:            int(r.MaxFPS),
-				Tag:               toVideoTag(r.Codec),
-				StatsID:           r.ID,
-				SegmentBoundaries: boundaries,
+				Remux:     r.Remux != 0,
+				Codec:     toFFmpegCodec(r.Codec),
+				Bitrate:   r.TargetBitrate,
+				MaxHeight: int(r.MaxHeight),
+				MaxFPS:    int(r.MaxFPS),
+				Tag:       toVideoTag(r.Codec),
+				StatsID:   r.ID,
+			}
+			// Forced keyframes (and the keyint=99999:scenecut=0
+			// extras that go with them) only matter for streaming
+			// renditions, which Pass2Single also passes through
+			// keyframeArgs. The download rendition's Pass2ToMP4 runs
+			// without those extras, so giving it the same extras in
+			// pass 1 would write stats x265 then rejects in pass 2
+			// with "different keyint setting than first pass".
+			if r.Purpose != "download" {
+				dsts[i].SegmentBoundaries = boundaries
+				dsts[i].SegmentBoundaryRate = fps
 			}
 		}
 
@@ -627,20 +637,21 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 
 	duration := time.Duration(vid.Duration) * time.Millisecond
 
-	boundaries, err := sourceSegmentBoundaries(vid, hasRemux)
+	boundaries, fps, err := sourceSegmentBoundaries(vid, hasRemux)
 	if err != nil {
 		return fmt.Errorf("source segment boundaries: %w", err)
 	}
 
 	dst := ffmpeg.EncodeParams{
-		Remux:             rfs.Remux != 0,
-		Codec:             toFFmpegCodec(rfs.Codec),
-		Bitrate:           rfs.TargetBitrate,
-		MaxHeight:         int(rfs.MaxHeight),
-		MaxFPS:            int(rfs.MaxFPS),
-		Tag:               toVideoTag(rfs.Codec),
-		StatsID:           rfs.ID,
-		SegmentBoundaries: boundaries,
+		Remux:               rfs.Remux != 0,
+		Codec:               toFFmpegCodec(rfs.Codec),
+		Bitrate:             rfs.TargetBitrate,
+		MaxHeight:           int(rfs.MaxHeight),
+		MaxFPS:              int(rfs.MaxFPS),
+		Tag:                 toVideoTag(rfs.Codec),
+		StatsID:             rfs.ID,
+		SegmentBoundaries:   boundaries,
+		SegmentBoundaryRate: fps,
 	}
 
 	var playlist string
@@ -1203,18 +1214,18 @@ func (m *Model) pass1Dir(vidID string) string {
 // encoder one frame per source coded picture; on soft-telecine and
 // VFR sources the display rate is higher and would produce too few
 // frames per segment.
-func sourceSegmentBoundaries(vid schema.Video, hasRemux bool) ([]int64, error) {
+func sourceSegmentBoundaries(vid schema.Video, hasRemux bool) ([]int64, ffmpeg.FrameRate, error) {
 	fps := codedFrameRate(vid)
 	if !hasRemux {
 		duration := time.Duration(vid.Duration) * time.Millisecond
 		minFrames := ffmpeg.MinFramesPerSegment(fps, ffmpeg.MinSegmentDuration)
-		return ffmpeg.UniformSegmentBoundaries(fps, duration, minFrames), nil
+		return ffmpeg.UniformSegmentBoundaries(fps, duration, minFrames), fps, nil
 	}
 	var keyframes []int64
 	if err := json.Unmarshal([]byte(vid.VideoKeyframes), &keyframes); err != nil {
-		return nil, fmt.Errorf("unmarshal video keyframes: %w", err)
+		return nil, fps, fmt.Errorf("unmarshal video keyframes: %w", err)
 	}
-	return ffmpeg.SegmentBoundaries(keyframes, fps, ffmpeg.MinSegmentDuration), nil
+	return ffmpeg.SegmentBoundaries(keyframes, fps, ffmpeg.MinSegmentDuration), fps, nil
 }
 
 // codedFrameRate returns the source's coded picture rate computed
