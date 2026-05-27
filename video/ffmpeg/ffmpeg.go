@@ -222,11 +222,21 @@ type EncodeParams struct {
 	// switch. Ignored for stream-copy renditions, which inherit
 	// source keyframes regardless.
 	//
-	// Frame indices (rather than times) are used so the forced
-	// keyframe lands on an exact frame boundary and not approximate
-	// to within a frame's duration, satisfying the HLS authoring
-	// spec's "aligned to within 1 video frame" requirement.
+	// Frame indices (rather than times) are used so the cut points
+	// can be expressed exactly in the source's timeline; keyframeArgs
+	// converts each index N to a timestamp half a frame before
+	// frame N's PTS, which makes ffmpeg's "first frame after time"
+	// rule land the keyframe on frame N exactly — satisfying the
+	// HLS authoring spec's "aligned to within 1 video frame"
+	// requirement. The conversion needs SegmentBoundaryRate.
 	SegmentBoundaries []int64
+
+	// SegmentBoundaryRate is the frame rate against which
+	// SegmentBoundaries indices are interpreted, i.e. the source's
+	// coded picture rate (since -fps_mode passthrough hands the
+	// encoder one frame per source coded picture). Required when
+	// SegmentBoundaries is non-empty; ignored otherwise.
+	SegmentBoundaryRate FrameRate
 }
 
 // allowedDemuxers is the comma-separated list of libavformat demuxer
@@ -770,7 +780,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
-	forceArgs, codecExtras := keyframeArgs(dst.SegmentBoundaries)
+	forceArgs, codecExtras := keyframeArgs(dst.SegmentBoundaries, dst.SegmentBoundaryRate)
 	args = append(args, forceArgs...)
 	args = append(args, twoPassArgs(dst.Codec, 2, passlog, codecExtras...)...)
 	args = append(args, "-an", "-sn")
@@ -1150,7 +1160,7 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
 		args = append(args, fpsPassthrough()...)
 		args = append(args, "-c:v", p.Codec, "-preset", preset)
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
-		forceArgs, codecExtras := keyframeArgs(p.SegmentBoundaries)
+		forceArgs, codecExtras := keyframeArgs(p.SegmentBoundaries, p.SegmentBoundaryRate)
 		args = append(args, forceArgs...)
 		args = append(args, twoPassArgs(p.Codec, 1, filepath.Join(statsDir, p.StatsID), codecExtras...)...)
 		args = append(args, "-an", "-sn")
@@ -1365,31 +1375,55 @@ func twoPassArgs(codec string, pass int, passlog string, extras ...string) []str
 // boundaries to the supplied source frame indices. Empty if cuts
 // is empty.
 //
-// -force_key_frames "expr:eq(n,N1)+eq(n,N2)+..." pins each keyframe
-// to a specific encoder-input frame index — exact, no time-rounding
-// slop. (The Boolean ORs in the expression evaluate to 0/1 ints; a
-// non-zero sum forces a keyframe.) The codec-params extras
-// (returned for splicing into twoPassArgs) raise the maximum GOP
-// size far above any plausible cut spacing and disable scene-cut
-// detection, so the only keyframes the encoder produces are the
-// forced ones — which is what makes ffmpeg's HLS muxer cut segments
-// at exactly the requested frames.
+// -force_key_frames T1,T2,... asks ffmpeg to mark a keyframe at the
+// first encoded frame whose PTS reaches Ti. To land that keyframe
+// on source frame Ni exactly, Ti is set half a frame before frame
+// Ni's PTS — i.e. (Ni - 0.5) * Den/Num seconds — giving a half-frame
+// margin on either side of any float-rounding ffmpeg does
+// internally. The codec-params extras (returned for splicing into
+// twoPassArgs) raise the maximum GOP size far above any plausible
+// cut spacing and disable scene-cut detection, so the only
+// keyframes the encoder produces are the forced ones — which is
+// what makes ffmpeg's HLS muxer cut segments at exactly the
+// requested frames.
+//
+// The earlier expr:eq(n,N1)+eq(n,N2)+... form was exact in frame
+// index but tripped libavutil/eval.c's alternation-term limit
+// (>~100 OR terms reject the expression outright with "Invalid
+// force_key_frames expression"), which made any episode longer
+// than ~6.7 minutes at our 4s target unencodable. The time form
+// has no such limit.
 //
 // Assumes the rendition is encoded at the source's frame rate (no
-// fps filter): then encoder frame `n` equals source display frame
-// `n`. fps-changed re-encodes would need to convert source frame
-// indices to encoder frame indices first.
-func keyframeArgs(cuts []int64) (forceArgs []string, extras []string) {
+// fps filter): then encoder PTS equals source display PTS.
+// fps-changed re-encodes would need to convert source frame
+// indices to encoder timestamps separately.
+func keyframeArgs(cuts []int64, rate FrameRate) (forceArgs []string, extras []string) {
 	if len(cuts) == 0 {
 		return nil, nil
 	}
+	if !rate.Positive() {
+		panic("ffmpeg: keyframeArgs requires a positive frame rate")
+	}
+	// 2*Num as the divisor lets us encode the half-frame offset as
+	// integer arithmetic before the single float division.
+	denom := 2 * float64(rate.Num)
 	var sb strings.Builder
-	sb.WriteString("expr:")
 	for i, c := range cuts {
 		if i > 0 {
-			sb.WriteByte('+')
+			sb.WriteByte(',')
 		}
-		fmt.Fprintf(&sb, "eq(n,%d)", c)
+		// (c - 0.5) * Den/Num seconds. The rational is in general
+		// irrational in binary (e.g. 1001/24000) and ffmpeg parses
+		// -force_key_frames values via av_strtod into a double
+		// anyway, so exact transport isn't possible. FormatFloat's
+		// shortest-round-trip form gives the closest decimal that
+		// re-parses to the same float64 we computed; any residual
+		// imprecision is sub-nanosecond — orders of magnitude
+		// smaller than the half-frame margin, which exists to
+		// absorb exactly this kind of slop.
+		t := float64((2*c-1)*int64(rate.Den)) / denom
+		sb.WriteString(strconv.FormatFloat(t, 'f', -1, 64))
 	}
 	return []string{"-force_key_frames", sb.String()},
 		[]string{"keyint=99999", "scenecut=0"}

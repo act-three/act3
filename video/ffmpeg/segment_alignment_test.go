@@ -95,12 +95,13 @@ func TestSegmentAlignment(t *testing.T) {
 	defer reencFile.Close()
 
 	reencParams := EncodeParams{
-		File:              reencFile,
-		Codec:             "libx264",
-		Bitrate:           500,
-		MaxHeight:         540,
-		StatsID:           "r0",
-		SegmentBoundaries: cuts,
+		File:                reencFile,
+		Codec:               "libx264",
+		Bitrate:             500,
+		MaxHeight:           540,
+		StatsID:             "r0",
+		SegmentBoundaries:   cuts,
+		SegmentBoundaryRate: probe.Video.FrameRate,
 	}
 
 	t.Log("running re-encode pass 1...")
