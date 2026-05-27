@@ -161,12 +161,35 @@ func TestUniformSegmentBoundaries(t *testing.T) {
 			minFrames: 0,
 			want:      nil,
 		},
+		{
+			// CodedFrameRate(PacketCount=56414,
+			// DurationTicks=2350583, Timebase=1/1000) for a real
+			// 39-minute 24fps source. The fraction is irreducible,
+			// and duration*Num = 2350583e6 × 56414000 ≈ 1.3 × 10²³,
+			// which overflows int64. Without 128-bit multiplication
+			// the result wraps to ~1479 frames, producing only 15
+			// cuts — observed as a 16-segment HLS playlist where the
+			// final segment swallows ~38 minutes of unsegmented
+			// content and crashes Chrome on seek.
+			name:      "Andor s1e1 (overflow regression)",
+			fps:       FrameRate{56414000, 2350583},
+			duration:  2350583 * time.Millisecond,
+			minFrames: 97,
+			want: func() []int64 {
+				var out []int64
+				for k := int64(97); k < 56414; k += 97 {
+					out = append(out, k)
+				}
+				return out
+			}(),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := UniformSegmentBoundaries(tt.fps, tt.duration, tt.minFrames)
 			if !slices.Equal(got, tt.want) {
-				t.Errorf("got %v, want %v", got, tt.want)
+				t.Errorf("len(got)=%d len(want)=%d; got %v, want %v",
+					len(got), len(tt.want), got, tt.want)
 			}
 		})
 	}
