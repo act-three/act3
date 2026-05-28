@@ -4651,17 +4651,6 @@ class History {
     if (this.shouldHandlePopState()) {
       const { turbo } = event.state || {};
       if (turbo) {
-        // act3 patch: let application code gate restoration visits
-        // (back/forward) by preventDefault'ing turbo:before-popstate.
-        // Turbo's standard cancellable hook turbo:before-visit only
-        // fires on proposed visits, not on the startVisit path that
-        // popstate takes, so this is the only way to intercept the
-        // browser back button cleanly.
-        const gateEvent = dispatch("turbo:before-popstate", {
-          cancelable: true,
-          detail: { url: window.location.href, state: event.state }
-        });
-        if (gateEvent.defaultPrevented) return;
         this.location = new URL(window.location.href);
         const { restorationIdentifier, restorationIndex } = turbo;
         this.restorationIdentifier = restorationIdentifier;

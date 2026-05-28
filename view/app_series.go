@@ -522,7 +522,10 @@ func AppEpisodeDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Upload"),
 						),
-						uploadEpisodeVideoButton(ep.ID()),
+						FlexRow()(
+							uploadEpisodeVideoButton(ep.ID()),
+							uploadProgress(ep.ID()),
+						),
 					),
 				),
 

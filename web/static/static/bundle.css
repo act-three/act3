@@ -2220,6 +2220,11 @@
   .v-media-nav-spacer {
     flex-grow: 1;
   }
+  .v-nav-upload-progress {
+    width: 8rem;
+    display: flex;
+    align-items: center;
+  }
 }
 
 /* view/branding.css */
@@ -2997,6 +3002,19 @@
     background: var(--warmred);
     padding: 0.25rem;
     border-radius: 9999px;
+  }
+  .v-sidebar-upload-progress {
+    margin-top: auto;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .v-sidebar-upload-label {
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

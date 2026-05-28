@@ -190,7 +190,10 @@ func uploadVideoForm(targetName, targetValue string) html.Node {
 		attr.Method("POST"),
 		attr.Enctype("multipart/form-data"),
 		attr.Action("/-/do/video-upload"),
+		Attr("data-upload-target")(targetValue),
 		stimulus.Controller("upload"),
+		stimulus.Action("upload:start@document->upload#onUploadStart"),
+		stimulus.Action("upload:end@document->upload#onUploadEnd"),
 	)(
 		Hidden(targetName, targetValue),
 		html.Input(
@@ -208,22 +211,25 @@ func uploadVideoForm(targetName, targetValue string) html.Node {
 		)(
 			html.Text("Upload Video"),
 		),
-		uploadProgress(),
 	)
 }
 
-// uploadProgress renders the inline progress bar that the upload
-// Stimulus controller swaps in for the picker button while an XHR
-// upload is in flight. Starts hidden; the controller un-hides it.
-func uploadProgress() html.Node {
+// uploadProgress renders an upload-progress controller slot bound
+// to the given target. Starts hidden; the controller un-hides it
+// when an upload to that target is active.
+func uploadProgress(target string) html.Node {
 	return html.Div(
 		attr.Hidden,
-		stimulus.Target("upload", "progress"),
+		Attr("data-upload-target")(target),
+		stimulus.Controller("upload-progress"),
+		stimulus.Action("upload:start@document->upload-progress#start"),
+		stimulus.Action("upload:progress@document->upload-progress#progress"),
+		stimulus.Action("upload:end@document->upload-progress#end"),
 		Class("v-upload-progress u-progress"),
 		attr.Role("progressbar"),
 	)(
 		html.Div(
-			stimulus.Target("upload", "progressFill"),
+			stimulus.Target("upload-progress", "fill"),
 			Class("u-progress-fill"),
 		),
 	)

@@ -8,6 +8,7 @@ import (
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
@@ -74,6 +75,24 @@ func browseDownloadButton(dls []*model.RenditionForDownload) html.Node {
 	)
 }
 
+func browseUploadProgress() html.Node {
+	return html.Div(
+		attr.Hidden,
+		Class("v-nav-upload-progress"),
+		stimulus.Controller("upload-progress"),
+		stimulus.Action("upload:start@document->upload-progress#start"),
+		stimulus.Action("upload:progress@document->upload-progress#progress"),
+		stimulus.Action("upload:end@document->upload-progress#end"),
+	)(
+		html.Div(Class("u-progress"))(
+			html.Div(
+				stimulus.Target("upload-progress", "fill"),
+				Class("u-progress-fill"),
+			),
+		),
+	)
+}
+
 func browseNavigationMenu() html.Node {
 	return FlexCol(
 		Class("v-media-nav"),
@@ -88,6 +107,7 @@ func browseNavigationMenu() html.Node {
 					Link("/")(wordmark()),
 					Button(Href("/collections"), ButtonGhost)(Text("Collections")),
 					Box(Class("v-media-nav-spacer")),
+					browseUploadProgress(),
 					html.If(isUserAdmin(), func() html.Node {
 						return Button(Href("/app/profile"), ButtonGhost, ButtonCircle)(Icon("line/settings-01"))
 					}),

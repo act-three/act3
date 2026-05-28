@@ -178,7 +178,10 @@ func AppMoviesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Upload"),
 						),
-						uploadMovieVideoButton(med.ID()),
+						FlexRow()(
+							uploadMovieVideoButton(med.ID()),
+							uploadProgress(med.ID()),
+						),
 					),
 				),
 

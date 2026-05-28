@@ -37,3 +37,9 @@
 
 /* navigation bar spacer (pushes trailing items right) */
 .v-media-nav-spacer { flex-grow: 1; }
+
+.v-nav-upload-progress {
+	width: 8rem;
+	display: flex;
+	align-items: center;
+}
