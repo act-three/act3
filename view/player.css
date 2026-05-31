@@ -120,6 +120,15 @@
 	transform: translateY(100%);
 }
 
+/* Lift native (WebVTT) subtitle cues clear of the bottom controls
+   while the overlay is showing, so it never covers them. Gated on the
+   same condition that shows the overlay. Neither harlow mode nor
+   auto-hide active. (ASS subs can't be fixed this way because they
+   contain precise positioning to align with video content.) */
+.v-player-video::-webkit-media-text-track-container { transition: transform 0.4s ease-in-out; }
+.v-player[data-player-harlow-value="false"][data-player-hide-controls-value="false"]
+	.v-player-video::-webkit-media-text-track-container { transform: translateY(-5.5rem); }
+
 .v-player-time-row {
 	display: flex;
 	padding-inline: 0.25rem;
