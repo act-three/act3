@@ -73,7 +73,11 @@ export default class extends Controller {
 		content.style.margin = "0";
 		content.style.top = "0";
 		content.style.left = "0";
-		content.style.minWidth = trigger.offsetWidth + "px";
+		// Match the trigger width, but never past the content's
+		// max-width — otherwise a wide trigger's min-width would win
+		// over max-width and the menu couldn't cap or truncate.
+		const maxW = parseFloat(getComputedStyle(content).maxWidth);
+		content.style.minWidth = (maxW ? Math.min(trigger.offsetWidth, maxW) : trigger.offsetWidth) + "px";
 
 		const triggerRect = trigger.getBoundingClientRect();
 		const contentRect = content.getBoundingClientRect();
@@ -104,6 +108,14 @@ export default class extends Controller {
 
 		content.style.top = top + "px";
 		content.style.left = left + "px";
+
+		// When the list is taller than its cap it scrolls; bring the
+		// selected item into view (centered when there's room). The
+		// browser clamps scrollTop to the valid range.
+		if (content.scrollHeight > content.clientHeight) {
+			content.scrollTop = selected.offsetTop
+				- (content.clientHeight - selected.offsetHeight) / 2;
+		}
 	}
 
 	#syncFromValue() {

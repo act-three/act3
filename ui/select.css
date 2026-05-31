@@ -90,6 +90,10 @@
 	border-radius: var(--select-radius, var(--radius-2));
 	box-shadow: 0 12px 60px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
 	margin: 0;
+	max-width: min(24rem, 90vw);
+	max-height: min(70svh, 32rem);
+	overflow-y: auto;
+	overscroll-behavior: contain;
 	&:popover-open {
 		display: flex;
 		flex-direction: column;

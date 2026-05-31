@@ -373,7 +373,10 @@
 	border-radius: 1rem;
 	padding: 0.5rem;
 	min-width: 120px;
-	max-width: min(640px, 80svw);
+	max-width: min(24rem, 80svw);
+	max-height: min(60svh, 30rem);
+	overflow-y: auto;
+	overscroll-behavior: contain;
 }
 
 .v-player-quality-menu { right: 0; }

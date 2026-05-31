@@ -9323,7 +9323,8 @@
       content.style.margin = "0";
       content.style.top = "0";
       content.style.left = "0";
-      content.style.minWidth = trigger.offsetWidth + "px";
+      const maxW = parseFloat(getComputedStyle(content).maxWidth);
+      content.style.minWidth = (maxW ? Math.min(trigger.offsetWidth, maxW) : trigger.offsetWidth) + "px";
       const triggerRect = trigger.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
       const itemRect = selected.getBoundingClientRect();
@@ -9346,6 +9347,9 @@
       left = Math.max(margin, Math.min(left, vw - contentRect.width - margin));
       content.style.top = top + "px";
       content.style.left = left + "px";
+      if (content.scrollHeight > content.clientHeight) {
+        content.scrollTop = selected.offsetTop - (content.clientHeight - selected.offsetHeight) / 2;
+      }
     }
     #syncFromValue() {
       const val = this.currentValue;

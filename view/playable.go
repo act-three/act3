@@ -63,7 +63,7 @@ func playableAudioSelect(opts []model.AudioOption) html.Node {
 		),
 		SelectContent()(
 			html.Range(opts, func(o model.AudioOption) html.Node {
-				return SelectItem(o.ID)(html.Text(audioOptionLabel(o)))
+				return SelectItem(o.ID)(TruncTail(audioOptionLabel(o)))
 			}),
 		),
 	)
@@ -85,7 +85,7 @@ func playableSubtitleSelect(opts []model.SubtitleOption) html.Node {
 		SelectContent()(
 			SelectItem("")(html.Text("Off")),
 			html.Range(opts, func(o model.SubtitleOption) html.Node {
-				return SelectItem(o.ID)(html.Text(o.Label))
+				return SelectItem(o.ID)(TruncTail(o.Label))
 			}),
 		),
 	)
