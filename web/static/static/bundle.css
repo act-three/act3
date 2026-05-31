@@ -1396,6 +1396,10 @@
     border-radius: var(--select-radius, var(--radius-2));
     box-shadow: 0 12px 60px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
     margin: 0;
+    max-width: min(24rem, 90vw);
+    max-height: min(70svh, 32rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     &:popover-open {
       display: flex;
       flex-direction: column;
@@ -2007,6 +2011,25 @@
     gap: 1rem;
     border-bottom-width: 1px;
     padding-inline: 1rem;
+  }
+}
+
+/* ui/trunc.css */
+@layer components {
+  .u-trunc {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+  }
+  .u-trunc-head {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .u-trunc-tail {
+    flex-shrink: 0;
+    white-space: pre;
   }
 }
 
@@ -2814,7 +2837,10 @@
     border-radius: 1rem;
     padding: 0.5rem;
     min-width: 120px;
-    max-width: min(640px, 80svw);
+    max-width: min(24rem, 80svw);
+    max-height: min(60svh, 30rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   .v-player-quality-menu {
     right: 0;

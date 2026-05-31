@@ -252,7 +252,7 @@ func playerQualityMenu(opts []model.QualityOption) html.Node {
 		if opt.RenditionID == "" {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
 		}
-		items = append(items, html.Button(btnAttrs...)(Label("line/check", labels[i])))
+		items = append(items, html.Button(btnAttrs...)(LabelNode("line/check", TruncTail(labels[i]))))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("quality"))(
 		Button(stimulus.Action("click->player#toggleQualityMenu"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/settings-04")),
@@ -400,7 +400,7 @@ func playerCaptionsItem(id, label, codec, original, initSubtitle string) html.No
 	if id == initSubtitle {
 		attrs = append(attrs, Attr("data-active")(""))
 	}
-	return html.Button(attrs...)(Label("line/check", label))
+	return html.Button(attrs...)(LabelNode("line/check", TruncTail(label)))
 }
 
 // playerAudioMenu mirrors playerCaptionsMenu: a popover menu over a
@@ -426,7 +426,7 @@ func playerAudioMenu(opts []model.AudioOption, initAudio string) html.Node {
 		if opt.ID == initAudio {
 			btnAttrs = append(btnAttrs, Attr("data-active")(""))
 		}
-		items = append(items, html.Button(btnAttrs...)(Label("line/check", audioOptionLabel(opt))))
+		items = append(items, html.Button(btnAttrs...)(LabelNode("line/check", TruncTail(audioOptionLabel(opt)))))
 	}
 	return html.Div(Class("v-player-menu-wrapper"), Attr("data-player-menu")("audio"))(
 		Button(

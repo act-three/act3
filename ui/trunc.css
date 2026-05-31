@@ -1,0 +1,20 @@
+.u-trunc {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+}
+
+/* The head gives way first, ellipsizing from its end... */
+.u-trunc-head {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* ...while the tail is pinned at full width. white-space: pre keeps
+   any leading space between head and tail from collapsing. */
+.u-trunc-tail {
+	flex-shrink: 0;
+	white-space: pre;
+}
