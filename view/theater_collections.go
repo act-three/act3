@@ -105,7 +105,6 @@ func theaterCollectionPlayable(p model.Playable) html.Node {
 		),
 		Text(p.ReleaseDate(), Class("v-collection-playlist-release-date")),
 		Text(p.Runtime()+"m"),
-		Button(ButtonGhost, ButtonCircle)(Icon("line/check")), // placeholder for watched status & button
 	)
 }
 

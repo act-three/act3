@@ -45,13 +45,6 @@ func BrowseMovieEdition(
 					FlexCol(Class("v-detail-play"))(
 						browseMoviePlayButton(med, v),
 					),
-					FlexCol(Class("v-detail-play"))(
-						Button(Disabled(true), ButtonSize3)(Icon("line/x"), Text("Play from 18:02")),
-					),
-					FlexCol()(
-						Button(Disabled(true), ButtonGhost, ButtonSize3)(
-							Icon("line/check-circle")),
-					),
 					browseDownloadButton(dls),
 				),
 				playableAudioSelect(audioOpts),

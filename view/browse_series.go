@@ -148,9 +148,6 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 				PosterImg(AspectThumbnail, PosterFill, Class("v-series-episode-thumb"), imgAttrs(ep.ThumbnailField())),
 			),
 			Box(Class("v-series-spoiler-overlay")),
-			Box(Class("v-series-episode-progress"))(
-				Progress(0.1, ProgressSM),
-			),
 		),
 	)
 }
