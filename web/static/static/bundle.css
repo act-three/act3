@@ -2588,6 +2588,12 @@
     pointer-events: none;
     transform: translateY(100%);
   }
+  .v-player-video::-webkit-media-text-track-container {
+    transition: transform 0.4s ease-in-out;
+  }
+  .v-player[data-player-harlow-value=false][data-player-hide-controls-value=false] .v-player-video::-webkit-media-text-track-container {
+    transform: translateY(-5.5rem);
+  }
   .v-player-time-row {
     display: flex;
     padding-inline: 0.25rem;
