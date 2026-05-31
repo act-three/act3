@@ -144,6 +144,16 @@
 .v-player-button-group[data-align="center"] { justify-content: center; }
 .v-player-button-group[data-align="end"] { justify-content: flex-end; }
 
+/* Play/pause toggle: show the play triangle while paused, the pause
+   bars while playing. The wrappers use display:contents so the icon
+   sits in the button exactly as a bare child would. paused-value is
+   seeded true (the player loads paused) and kept in sync by
+   handlePlaying. */
+.v-player-icon-play, .v-player-icon-pause { display: contents; }
+.v-player-icon-pause { display: none; }
+.v-player[data-player-paused-value="false"] .v-player-icon-play { display: none; }
+.v-player[data-player-paused-value="false"] .v-player-icon-pause { display: contents; }
+
 .v-player-seek {
 	flex: 1;
 	min-width: 0;
