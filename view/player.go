@@ -59,7 +59,7 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 			stimulus.Controller("player"),
 			stimulus.Value("player", "title")(title),
 			stimulus.Value("player", "playing")("false"),
-			stimulus.Value("player", "paused")("false"),
+			stimulus.Value("player", "paused")("true"),
 			stimulus.Value("player", "stopped")("true"),
 			stimulus.Value("player", "harlow")("false"),
 			stimulus.Value("player", "hide-controls")("false"),
@@ -183,7 +183,10 @@ func player(v *model.Video, title string, qualityOpts []model.QualityOption, cap
 
 						html.Div(Class("v-player-button-group"), Attr("data-align")("center"))(
 							Button(stimulus.Action("click->player#skipBackward"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/refresh-ccw-01")),
-							Button(stimulus.Action("click->player#togglePlay"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("solid/play")),
+							Button(stimulus.Action("click->player#togglePlay"), ButtonSurface, ButtonCircle, ButtonSize3)(
+								Box(Class("v-player-icon-play"))(Icon("solid/play")),
+								Box(Class("v-player-icon-pause"))(Icon("free/pause")),
+							),
 							Button(stimulus.Action("click->player#skipForward"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/refresh-cw-01")),
 						),
 
