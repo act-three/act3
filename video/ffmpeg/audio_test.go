@@ -23,12 +23,8 @@ func TestEncodeAudioValidation(t *testing.T) {
 			dst:  AudioEncodeParams{SourceStreamIndex: 0, Channels: 0, Bitrate: 128},
 		},
 		{
-			name: "channels=3",
-			dst:  AudioEncodeParams{SourceStreamIndex: 0, Channels: 3, Bitrate: 128},
-		},
-		{
-			name: "channels=4",
-			dst:  AudioEncodeParams{SourceStreamIndex: 0, Channels: 4, Bitrate: 128},
+			name: "negative channels",
+			dst:  AudioEncodeParams{SourceStreamIndex: 0, Channels: -1, Bitrate: 128},
 		},
 		{
 			name: "zero bitrate, no stream copy",
@@ -47,6 +43,21 @@ func TestEncodeAudioValidation(t *testing.T) {
 				t.Errorf("EncodeAudio(%+v) returned nil error", c.dst)
 			}
 		})
+	}
+}
+
+// TestStandardLayout pins the channel counts that map to a PCE-free
+// AAC channel configuration. Runs without Docker.
+func TestStandardLayout(t *testing.T) {
+	cases := map[int]string{
+		1: "mono", 2: "stereo", 3: "3.0", 4: "4.0",
+		5: "5.0", 6: "5.1", 8: "7.1",
+		0: "", 7: "", 9: "", 12: "",
+	}
+	for channels, want := range cases {
+		if got := standardLayout[channels]; got != want {
+			t.Errorf("standardLayout[%d] = %q, want %q", channels, got, want)
+		}
 	}
 }
 
@@ -195,6 +206,24 @@ func TestEncodeAudio(t *testing.T) {
 			wantCodec:  "aac",
 			wantCh:     6,
 			wantLayout: "5.1",
+		},
+		{
+			// 8-channel source: exercises a channel count that the
+			// old validation rejected, and confirms it lands on the
+			// standard 7.1 (config 7) AAC layout.
+			name: "aac-7_1-reencode",
+			srcArgs: append(append([]string{}, commonVideo...),
+				"-f", "lavfi", "-i",
+				"aevalsrc=exprs=sin(440*2*PI*t):duration=2:sample_rate=48000:channel_layout=7.1",
+				"-c:v", "libx264", "-preset", "ultrafast",
+				"-c:a", "aac", "-b:a", "512k",
+				"-t", "2",
+			),
+			srcExt:     "mkv",
+			dst:        AudioEncodeParams{SourceStreamIndex: 0, Channels: 8, Bitrate: 512, SourceLayout: "7.1"},
+			wantCodec:  "aac",
+			wantCh:     8,
+			wantLayout: "7.1",
 		},
 		{
 			name: "flac-stereo-reencode",

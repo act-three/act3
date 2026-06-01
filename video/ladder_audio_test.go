@@ -124,6 +124,37 @@ func TestPlanAudioRenditions_surroundKeepsDownmixWhenStereoDiffers(t *testing.T)
 	}
 }
 
+func TestPlanAudioRenditions_preservesChannelCount(t *testing.T) {
+	cases := []struct {
+		name        string
+		channels    int
+		wantAsis    int   // as-is rendition channels
+		wantBitrate int64 // as-is rendition bitrate
+	}{
+		{"5.0", 5, 5, 320},
+		{"7.1", 8, 8, 512},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			probe := &ffmpeg.ProbeResult{
+				Audio: []ffmpeg.AudioStream{{Index: 0, CodecName: "dts", Channels: c.channels}},
+			}
+			got := PlanAudioRenditions(probe)
+			// Surround source with no stereo twin: as-is + downmix.
+			if len(got) != 2 {
+				t.Fatalf("expected 2 renditions, got %d: %+v", len(got), got)
+			}
+			if got[0].Channels != c.wantAsis || got[0].Bitrate != c.wantBitrate {
+				t.Errorf("as-is: got %dch/%dk, want %dch/%dk",
+					got[0].Channels, got[0].Bitrate, c.wantAsis, c.wantBitrate)
+			}
+			if got[1].Channels != 2 || got[1].Bitrate != 128 {
+				t.Errorf("downmix: got %+v, want 2ch/128k", got[1])
+			}
+		})
+	}
+}
+
 func TestPlanAudioRenditions_mono(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Audio: []ffmpeg.AudioStream{{
