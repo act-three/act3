@@ -148,29 +148,28 @@ func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEditi
 }
 
 func (tx *TxR) MovieDownloadList(ctx Context, med *MovieEdition) ([]*RenditionForDownload, error) {
-	vids, err := tx.q.VideoListByMovieID(ctx, med.mo.ID())
-	if err != nil {
+	active := med.ActiveVideo()
+	if active == nil {
+		return nil, nil
+	}
+
+	var rends []*RenditionForDownload
+	rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, active.ID())
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
-	var rends []*RenditionForDownload
-	for _, vid := range vids {
-		rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
-		if err != nil && err != sql.ErrNoRows {
-			return nil, err
-		}
-		if err == nil && rfd.Key != "" {
-			rends = append(rends, &RenditionForDownload{
-				path:  path.Join("/-/dl", rfd.ID, med.ID()),
-				label: "Best Quality MP4 (Recommended)",
-			})
-		}
-
-		ext := videoExtensionForContentType(vid.OriginalType)
+	if err == nil && rfd.Key != "" {
 		rends = append(rends, &RenditionForDownload{
-			path:  path.Join("/-/dl", vid.ID, med.ID()),
-			label: "Original " + strings.ToUpper(ext),
+			path:  path.Join("/-/dl", rfd.ID, med.ID()),
+			label: "Best Quality MP4 (Recommended)",
 		})
 	}
+
+	ext := videoExtensionForContentType(active.v.OriginalType)
+	rends = append(rends, &RenditionForDownload{
+		path:  path.Join("/-/dl", active.ID(), med.ID()),
+		label: "Original " + strings.ToUpper(ext),
+	})
 	return rends, nil
 }
 
