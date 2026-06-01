@@ -104,9 +104,8 @@ func browseSeriesSeason(sn *model.Season) html.Node {
 }
 
 func browseSeriesEpisode(ep *model.Episode) html.Node {
-	const doHideSpoilers = false
 	spoiler := group()
-	if doHideSpoilers {
+	if hideSpoilers(ep) {
 		spoiler = Attr("data-spoiler")
 	}
 	active := ep.ActiveVideo()
@@ -150,6 +149,18 @@ func browseSeriesEpisode(ep *model.Episode) html.Node {
 			Box(Class("v-series-spoiler-overlay")),
 		),
 	)
+}
+
+// hideSpoilers reports whether an episode's thumbnail and summary
+// should be blurred as a spoiler. The demo shows the first three
+// episodes of every series in the clear and blurs the rest.
+func hideSpoilers(ep *model.Episode) bool {
+	switch ep.SnnEnn() {
+	case "S1E1", "S1E2", "S1E3":
+		return false
+	default:
+		return true
+	}
 }
 
 func haveSpecials(sed *model.SeriesEdition) bool {
