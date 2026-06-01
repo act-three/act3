@@ -231,39 +231,57 @@ type AudioRendition struct {
 	Priority          int
 }
 
-// PlanAudioRenditions returns one or two output variants per source
-// audio stream:
-//   - mono sources (1 channel) → one mono rendition at 64 kbit/s.
-//   - stereo or higher → one stereo rendition at 128 kbit/s
-//     (downmixed when the source is surround).
-//   - sources with more than 2 channels also get a 5.1 rendition at
-//     384 kbit/s.
+// PlanAudioRenditions returns the output variants for each source
+// audio stream. Every stream is encoded to AAC as it is, at 64 kbit/s
+// per channel:
+//   - mono (1 channel) → 64 kbit/s.
+//   - stereo (2 channels) → 128 kbit/s.
+//   - surround (more than 2 channels) → 5.1 at 384 kbit/s.
+//
+// As a special case, if there is no stereo track and there is a
+// surround source, we generate a stereo downmix, so clients
+// without surround output have a stereo option.
 //
 // Returns nil if the source has no audio.
 func PlanAudioRenditions(probe *ffmpeg.ProbeResult) []AudioRendition {
 	if len(probe.Audio) == 0 {
 		return nil
 	}
+	// Source tracks that already provide stereo, keyed by title and
+	// language, so a surround track matching one can skip its extra
+	// downmix.
+	type key struct{ title, language string }
+	haveStereo := make(map[key]bool)
+	for _, as := range probe.Audio {
+		if as.Channels == 2 {
+			haveStereo[key{as.Title, as.Language}] = true
+		}
+	}
 	var out []AudioRendition
 	for _, as := range probe.Audio {
-		primary := AudioRendition{
+		// Emit the track as it is: mono, stereo, or 5.1.
+		asis := AudioRendition{
 			SourceStreamIndex: as.Index,
 			Codec:             "aac",
 			Priority:          priority.EncodeAudio,
 		}
-		if as.Channels <= 1 {
-			primary.Channels = 1
-			primary.Bitrate = 64
-		} else {
-			primary.Channels = 2
-			primary.Bitrate = 128
+		switch {
+		case as.Channels <= 1:
+			asis.Channels, asis.Bitrate = 1, 64
+		case as.Channels == 2:
+			asis.Channels, asis.Bitrate = 2, 128
+		default:
+			asis.Channels, asis.Bitrate = 6, 384
 		}
-		out = append(out, primary)
-		if as.Channels > 2 {
+		out = append(out, asis)
+
+		// Add an extra stereo downmix for surround, unless the file
+		// already carries an equivalent stereo track.
+		if as.Channels > 2 && !haveStereo[key{as.Title, as.Language}] {
 			out = append(out, AudioRendition{
 				SourceStreamIndex: as.Index,
-				Channels:          6,
-				Bitrate:           384,
+				Channels:          2,
+				Bitrate:           128,
 				Codec:             "aac",
 				Priority:          priority.EncodeAudio,
 			})
