@@ -50,11 +50,11 @@ func TestPlanAudioRenditions_ac3Surround(t *testing.T) {
 	if len(got) != 2 {
 		t.Fatalf("expected 2 renditions, got %d", len(got))
 	}
-	if got[0].Channels != 2 || got[0].Bitrate != 128 {
-		t.Errorf("stereo: got %+v", got[0])
+	if got[0].Channels != 6 || got[0].Bitrate != 384 {
+		t.Errorf("surround: got %+v", got[0])
 	}
-	if got[1].Channels != 6 || got[1].Bitrate != 384 {
-		t.Errorf("surround: got %+v", got[1])
+	if got[1].Channels != 2 || got[1].Bitrate != 128 {
+		t.Errorf("stereo downmix: got %+v", got[1])
 	}
 	for i, r := range got {
 		if r.SourceStreamIndex != 0 {
@@ -78,7 +78,7 @@ func TestPlanAudioRenditions_multipleTracks(t *testing.T) {
 		t.Fatalf("expected 3 renditions, got %d", len(got))
 	}
 	wantIndices := []int{0, 1, 1}
-	wantChannels := []int{2, 2, 6}
+	wantChannels := []int{2, 6, 2}
 	for i, r := range got {
 		if r.SourceStreamIndex != wantIndices[i] {
 			t.Errorf("got[%d].SourceStreamIndex = %d, want %d", i, r.SourceStreamIndex, wantIndices[i])
@@ -86,6 +86,41 @@ func TestPlanAudioRenditions_multipleTracks(t *testing.T) {
 		if r.Channels != wantChannels[i] {
 			t.Errorf("got[%d].Channels = %d, want %d", i, r.Channels, wantChannels[i])
 		}
+	}
+}
+
+func TestPlanAudioRenditions_surroundSkipsDownmixWithStereoTwin(t *testing.T) {
+	probe := &ffmpeg.ProbeResult{
+		Audio: []ffmpeg.AudioStream{
+			{Index: 0, CodecName: "ac3", Channels: 6, Language: "eng", Title: "English"},
+			{Index: 1, CodecName: "aac", Channels: 2, Language: "eng", Title: "English"},
+		},
+	}
+	got := PlanAudioRenditions(probe)
+	// Stream 0 keeps only its 5.1 rendition (the stereo downmix is
+	// covered by stream 1); stream 1 keeps its stereo rendition.
+	if len(got) != 2 {
+		t.Fatalf("expected 2 renditions, got %d: %+v", len(got), got)
+	}
+	if got[0].SourceStreamIndex != 0 || got[0].Channels != 6 {
+		t.Errorf("got[0] = %+v, want 5.1 from stream 0", got[0])
+	}
+	if got[1].SourceStreamIndex != 1 || got[1].Channels != 2 {
+		t.Errorf("got[1] = %+v, want stereo from stream 1", got[1])
+	}
+}
+
+func TestPlanAudioRenditions_surroundKeepsDownmixWhenStereoDiffers(t *testing.T) {
+	probe := &ffmpeg.ProbeResult{
+		Audio: []ffmpeg.AudioStream{
+			{Index: 0, CodecName: "ac3", Channels: 6, Language: "eng", Title: "English"},
+			{Index: 1, CodecName: "aac", Channels: 2, Language: "eng", Title: "Commentary"},
+		},
+	}
+	got := PlanAudioRenditions(probe)
+	// Titles differ, so the surround track still gets its downmix.
+	if len(got) != 3 {
+		t.Fatalf("expected 3 renditions, got %d: %+v", len(got), got)
 	}
 }
 
