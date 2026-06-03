@@ -229,6 +229,7 @@ type AudioRendition struct {
 	Bitrate           int64  // kbit/s
 	Codec             string // "aac"
 	Priority          int
+	SortKey           int
 }
 
 // PlanAudioRenditions returns the output variants for each source
@@ -265,6 +266,7 @@ func PlanAudioRenditions(probe *ffmpeg.ProbeResult) []AudioRendition {
 			Bitrate:           int64(64 * channels),
 			Codec:             "aac",
 			Priority:          priority.EncodeAudio,
+			SortKey:           len(out),
 		})
 
 		// Add an extra stereo downmix for surround, unless the file
@@ -276,6 +278,7 @@ func PlanAudioRenditions(probe *ffmpeg.ProbeResult) []AudioRendition {
 				Bitrate:           128,
 				Codec:             "aac",
 				Priority:          priority.EncodeAudio,
+				SortKey:           len(out),
 			})
 		}
 	}

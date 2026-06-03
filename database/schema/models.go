@@ -14,6 +14,7 @@ type AudioRendition struct {
 	Key          string
 	Playlist     string
 	Priority     int64
+	SortKey      int64
 }
 
 type AudioTrack struct {

@@ -13,9 +13,9 @@ import (
 const audioRenditionCreate = `-- name: AudioRenditionCreate :one
 
 INSERT INTO AudioRendition (
-	VideoID, AudioTrackID, Channels, Bitrate, Codec, Priority
-) VALUES (?, ?, ?, ?, ?, ?)
-RETURNING id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority
+	VideoID, AudioTrackID, Channels, Bitrate, Codec, Priority, SortKey
+) VALUES (?, ?, ?, ?, ?, ?, ?)
+RETURNING id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority, sortkey
 `
 
 type AudioRenditionCreateParams struct {
@@ -25,6 +25,7 @@ type AudioRenditionCreateParams struct {
 	Bitrate      int64
 	Codec        string
 	Priority     int64
+	SortKey      int64
 }
 
 // keep sorted by name
@@ -36,6 +37,7 @@ func (q *Queries) AudioRenditionCreate(ctx context.Context, arg AudioRenditionCr
 		arg.Bitrate,
 		arg.Codec,
 		arg.Priority,
+		arg.SortKey,
 	)
 	var i AudioRendition
 	err := row.Scan(
@@ -48,6 +50,7 @@ func (q *Queries) AudioRenditionCreate(ctx context.Context, arg AudioRenditionCr
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,
+		&i.SortKey,
 	)
 	return i, err
 }
@@ -72,7 +75,7 @@ func (q *Queries) AudioRenditionDeleteByVideoIDList(ctx context.Context, ids []s
 }
 
 const audioRenditionGet = `-- name: AudioRenditionGet :one
-SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority FROM AudioRendition WHERE ID = ?
+SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority, sortkey FROM AudioRendition WHERE ID = ?
 `
 
 func (q *Queries) AudioRenditionGet(ctx context.Context, id string) (AudioRendition, error) {
@@ -88,12 +91,13 @@ func (q *Queries) AudioRenditionGet(ctx context.Context, id string) (AudioRendit
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,
+		&i.SortKey,
 	)
 	return i, err
 }
 
 const audioRenditionListByVideoID = `-- name: AudioRenditionListByVideoID :many
-SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority FROM AudioRendition
+SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority, sortkey FROM AudioRendition
 WHERE VideoID = ?
 ORDER BY AudioTrackID, Channels
 `
@@ -117,6 +121,7 @@ func (q *Queries) AudioRenditionListByVideoID(ctx context.Context, videoid strin
 			&i.Key,
 			&i.Playlist,
 			&i.Priority,
+			&i.SortKey,
 		); err != nil {
 			return nil, err
 		}
@@ -132,18 +137,19 @@ func (q *Queries) AudioRenditionListByVideoID(ctx context.Context, videoid strin
 }
 
 const audioRenditionListEncodedForMV = `-- name: AudioRenditionListEncodedForMV :many
-SELECT ar.id, ar.videoid, ar.audiotrackid, ar.channels, ar.bitrate, ar.codec, ar."key", ar.playlist, ar.priority FROM AudioRendition ar
+SELECT ar.id, ar.videoid, ar.audiotrackid, ar.channels, ar.bitrate, ar.codec, ar."key", ar.playlist, ar.priority, ar.sortkey FROM AudioRendition ar
 JOIN AudioTrack at ON at.ID = ar.AudioTrackID
 WHERE ar.VideoID = ? AND ar.Key != ''
-ORDER BY at.StreamIndex, ar.Channels
+ORDER BY ar.SortKey
 `
 
-// AudioRenditionListEncodedForMV returns encoded audio renditions
-// for a video in MV-playlist source order: publisher source order
-// (AudioTrack.StreamIndex), then channel count ascending. The first
-// row is the DEFAULT for the audio group. The JOIN drops orphan
-// renditions whose source AudioTrack is missing, and the WHERE
-// filters out unencoded entries.
+// AudioRenditionListEncodedForMV returns encoded audio renditions for
+// a video in MV-playlist order, given by the SortKey assigned when
+// the renditions were planned: source-track order, with a generated
+// downmix following the original it was derived from. The first row is
+// the DEFAULT for the audio group. The JOIN drops orphan renditions
+// whose source AudioTrack is missing, and the WHERE filters out
+// unencoded entries.
 func (q *Queries) AudioRenditionListEncodedForMV(ctx context.Context, videoid string) ([]AudioRendition, error) {
 	rows, err := q.db.QueryContext(ctx, audioRenditionListEncodedForMV, videoid)
 	if err != nil {
@@ -163,6 +169,7 @@ func (q *Queries) AudioRenditionListEncodedForMV(ctx context.Context, videoid st
 			&i.Key,
 			&i.Playlist,
 			&i.Priority,
+			&i.SortKey,
 		); err != nil {
 			return nil, err
 		}
@@ -216,7 +223,7 @@ func (q *Queries) AudioRenditionListKeysByVideoIDs(ctx context.Context, ids []st
 }
 
 const audioRenditionNextUnencoded = `-- name: AudioRenditionNextUnencoded :one
-SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority FROM AudioRendition
+SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority, sortkey FROM AudioRendition
 WHERE VideoID = ? AND Key = ''
 ORDER BY Priority ASC, AudioTrackID, Channels
 LIMIT 1
@@ -235,6 +242,7 @@ func (q *Queries) AudioRenditionNextUnencoded(ctx context.Context, videoid strin
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,
+		&i.SortKey,
 	)
 	return i, err
 }
@@ -243,7 +251,7 @@ const audioRenditionUpdateEncode = `-- name: AudioRenditionUpdateEncode :one
 UPDATE AudioRendition
 SET Key = ?, Playlist = ?
 WHERE ID = ?
-RETURNING id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority
+RETURNING id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority, sortkey
 `
 
 type AudioRenditionUpdateEncodeParams struct {
@@ -265,6 +273,7 @@ func (q *Queries) AudioRenditionUpdateEncode(ctx context.Context, arg AudioRendi
 		&i.Key,
 		&i.Playlist,
 		&i.Priority,
+		&i.SortKey,
 	)
 	return i, err
 }

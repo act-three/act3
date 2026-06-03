@@ -374,6 +374,7 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 				Bitrate:      ar.Bitrate,
 				Codec:        ar.Codec,
 				Priority:     int64(ar.Priority),
+				SortKey:      int64(ar.SortKey),
 			})
 			if err != nil {
 				return err
