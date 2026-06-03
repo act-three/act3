@@ -56,6 +56,11 @@ func TestPlanAudioRenditions_ac3Surround(t *testing.T) {
 	if got[1].Channels != 2 || got[1].Bitrate != 128 {
 		t.Errorf("stereo downmix: got %+v", got[1])
 	}
+	// The generated downmix must sort after the original it derives from.
+	if got[0].SortKey != 0 || got[1].SortKey != 1 {
+		t.Errorf("SortKey: got %d, %d; want 0, 1 (downmix after original)",
+			got[0].SortKey, got[1].SortKey)
+	}
 	for i, r := range got {
 		if r.SourceStreamIndex != 0 {
 			t.Errorf("got[%d].SourceStreamIndex = %d, want 0", i, r.SourceStreamIndex)
@@ -85,6 +90,10 @@ func TestPlanAudioRenditions_multipleTracks(t *testing.T) {
 		}
 		if r.Channels != wantChannels[i] {
 			t.Errorf("got[%d].Channels = %d, want %d", i, r.Channels, wantChannels[i])
+		}
+		// SortKey follows plan order: source-track order, downmix last.
+		if r.SortKey != i {
+			t.Errorf("got[%d].SortKey = %d, want %d", i, r.SortKey, i)
 		}
 	}
 }

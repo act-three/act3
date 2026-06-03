@@ -2,8 +2,8 @@
 
 -- name: AudioRenditionCreate :one
 INSERT INTO AudioRendition (
-	VideoID, AudioTrackID, Channels, Bitrate, Codec, Priority
-) VALUES (?, ?, ?, ?, ?, ?)
+	VideoID, AudioTrackID, Channels, Bitrate, Codec, Priority, SortKey
+) VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: AudioRenditionDeleteByVideoIDList :exec
@@ -17,17 +17,18 @@ SELECT * FROM AudioRendition
 WHERE VideoID = ?
 ORDER BY AudioTrackID, Channels;
 
--- AudioRenditionListEncodedForMV returns encoded audio renditions
--- for a video in MV-playlist source order: publisher source order
--- (AudioTrack.StreamIndex), then channel count ascending. The first
--- row is the DEFAULT for the audio group. The JOIN drops orphan
--- renditions whose source AudioTrack is missing, and the WHERE
--- filters out unencoded entries.
+-- AudioRenditionListEncodedForMV returns encoded audio renditions for
+-- a video in MV-playlist order, given by the SortKey assigned when
+-- the renditions were planned: source-track order, with a generated
+-- downmix following the original it was derived from. The first row is
+-- the DEFAULT for the audio group. The JOIN drops orphan renditions
+-- whose source AudioTrack is missing, and the WHERE filters out
+-- unencoded entries.
 -- name: AudioRenditionListEncodedForMV :many
 SELECT ar.* FROM AudioRendition ar
 JOIN AudioTrack at ON at.ID = ar.AudioTrackID
 WHERE ar.VideoID = ? AND ar.Key != ''
-ORDER BY at.StreamIndex, ar.Channels;
+ORDER BY ar.SortKey;
 
 -- name: AudioRenditionListKeysByVideoIDs :many
 SELECT Key FROM AudioRendition
