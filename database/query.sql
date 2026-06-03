@@ -1473,7 +1473,8 @@ UPDATE Video SET
 	FrameRateNum = ?, FrameRateDen = ?,
 	VideoPacketCount = ?, VideoDurationTicks = ?,
 	VideoTimebaseNum = ?, VideoTimebaseDen = ?,
-	VideoKeyframes = ?
+	VideoKeyframes = ?,
+	DolbyVisionProfile = ?
 WHERE ID = ?;
 
 -- name: VideoUpdateState :exec

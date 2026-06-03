@@ -26,6 +26,7 @@
 						"contenthash": "ContentHash",
 						"cascadeof": "CascadeOf",
 						"deletedat": "DeletedAt",
+						"dolbyvisionprofile": "DolbyVisionProfile",
 						"editionid": "EditionID",
 						"editionslug": "EditionSlug",
 						"endedon": "EndedOn",

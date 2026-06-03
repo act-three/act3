@@ -1,7 +1,9 @@
 package ffmpeg
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -86,6 +88,11 @@ func dockerCmd(dir string) func(context.Context, string, ...string) *exec.Cmd {
 		a := []string{
 			"run", "--rm", "-i",
 			"-v", dir + ":" + dir,
+			// The Dolby Vision path runs libplacebo on the bundled
+			// software Vulkan driver; point the loader at it. Harmless
+			// for tools and filters that don't touch Vulkan.
+			"-e", "VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json",
+			"--tmpfs", "/tmp",
 			dockerImage,
 			"/out/" + name,
 		}
@@ -521,4 +528,159 @@ func TestX264MbtreePass2(t *testing.T) {
 	}
 
 	t.Log("pass 2 succeeded — x264 mbtree stats OK")
+}
+
+func TestBuildFilterComplexDolbyVision(t *testing.T) {
+	// No filtering and no Dolby Vision: direct map, no filter_complex.
+	plain, labels := buildFilterComplex([]EncodeParams{{Codec: "libx265"}})
+	if plain != "" {
+		t.Errorf("plain reencode: want empty filter, got %q", plain)
+	}
+	if labels[0] != "0:v:0" {
+		t.Errorf("plain reencode: want label 0:v:0, got %q", labels[0])
+	}
+
+	// Dolby Vision forces a graph even with no scaling, and the
+	// libplacebo head must download a single-plane packed format
+	// (rgba64le) rather than multiplanar YUV — software Vulkan returns
+	// garbage chroma for the latter.
+	dv, labels := buildFilterComplex([]EncodeParams{{Codec: "libx265", DolbyVision: true}})
+	if !strings.Contains(dv, "apply_dolbyvision=true") {
+		t.Errorf("DV: filter missing libplacebo DV pass: %q", dv)
+	}
+	if !strings.Contains(dv, "format=rgba64le") {
+		t.Errorf("DV: filter missing rgba64le download workaround: %q", dv)
+	}
+	if strings.Contains(dv, "[dv]split=") == false {
+		t.Errorf("DV: expected the DV output to feed the split: %q", dv)
+	}
+	if !strings.HasPrefix(labels[0], "[") {
+		t.Errorf("DV: expected a filtergraph label, got %q", labels[0])
+	}
+
+	// Remux renditions never carry the DV flag into the graph.
+	remux, labels := buildFilterComplex([]EncodeParams{{Remux: true}})
+	if remux != "" || len(labels) != 0 {
+		t.Errorf("remux: want no filter and no labels, got %q / %v", remux, labels)
+	}
+}
+
+// TestDolbyVisionEncodeHDR10 runs a Dolby Vision Profile 5 source
+// through the real two-pass encode path and verifies the output is
+// 10-bit HDR10 (Main 10, BT.2020 PQ).
+//
+// The source is fully synthetic: a testsrc2 pattern encoded to 10-bit
+// HEVC, a Profile 5 RPU generated and injected by dovi_tool, and the
+// stream muxed by mkvmerge, which writes the DOVI configuration
+// record the probe detects. dovi_tool and mkvmerge live in the
+// act3-ffmpeg image alongside ffmpeg; the test skips when they aren't
+// available (host-ffmpeg fallback, or a stale image).
+func TestDolbyVisionEncodeHDR10(t *testing.T) {
+	dir := setupDocker(t)
+	setPreset(t, "ultrafast")
+	ctx := t.Context()
+
+	if err := newCmd(ctx, "dovi_tool", "--version").Run(); err != nil {
+		t.Skip("dovi_tool not available (rebuild the act3-ffmpeg image)")
+	}
+	runTool := func(name string, args ...string) {
+		t.Helper()
+		if out, err := newCmd(ctx, name, args...).CombinedOutput(); err != nil {
+			t.Fatalf("%s: %v\n%s", name, err, out)
+		}
+	}
+
+	// Synthesize a Profile 5 source. The RPU length must match the
+	// encoded frame count (duration × rate).
+	const frames = 48
+	basePath := filepath.Join(dir, "base.hevc")
+	runTool("ffmpeg",
+		"-y", "-f", "lavfi", "-i", "testsrc2=duration=2:size=160x90:rate=24",
+		"-pix_fmt", "yuv420p10le",
+		"-c:v", "libx265", "-preset", "ultrafast",
+		"-f", "hevc", basePath,
+	)
+	genPath := filepath.Join(dir, "gen.json")
+	genConfig := fmt.Sprintf(`{
+		"cm_version": "V29",
+		"length": %d,
+		"level6": {
+			"max_display_mastering_luminance": 1000,
+			"min_display_mastering_luminance": 1,
+			"max_content_light_level": 1000,
+			"max_frame_average_light_level": 400
+		}
+	}`, frames)
+	if err := os.WriteFile(genPath, []byte(genConfig), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	rpuPath := filepath.Join(dir, "rpu.bin")
+	runTool("dovi_tool", "generate", "-j", genPath, "--profile", "5", "-o", rpuPath)
+	dvPath := filepath.Join(dir, "dv.hevc")
+	runTool("dovi_tool", "inject-rpu", "-i", basePath, "--rpu-in", rpuPath, "-o", dvPath)
+	srcPath := filepath.Join(dir, "source.mkv")
+	runTool("mkvmerge", "-q", "-o", srcPath, dvPath)
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srcFile.Close()
+
+	probe, err := Probe(ctx, srcFile)
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+	if probe.Video == nil || probe.Video.DolbyVisionProfile != 5 {
+		t.Fatalf("expected Dolby Vision profile 5 source, got %+v", probe.Video)
+	}
+
+	mediaPath := filepath.Join(dir, MediaName(0))
+	outFile, err := os.Create(mediaPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	params := EncodeParams{
+		File:        outFile,
+		Codec:       "libx265",
+		Bitrate:     1000,
+		Tag:         "hvc1",
+		StatsID:     "r0",
+		DolbyVision: true,
+	}
+
+	t.Log("pass 1 (libplacebo DV → HDR10 on software Vulkan)...")
+	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
+		[]EncodeParams{params}, dir, probe.Duration, nil); err != nil {
+		t.Fatalf("pass 1: %v", err)
+	}
+	t.Log("pass 2...")
+	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
+		dir, probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 2: %v", err)
+	}
+	if playlist == "" {
+		t.Fatal("empty playlist")
+	}
+	outFile.Close()
+
+	// The encoded media must be 10-bit HDR10 (Main 10, BT.2020 PQ).
+	var buf bytes.Buffer
+	cmd := newCmd(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+		"-show_entries",
+		"stream=profile,pix_fmt,color_transfer,color_primaries,color_space",
+		"-of", "default=noprint_wrappers=1", mediaPath)
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("probe output: %v\n%s", err, buf.String())
+	}
+	out := buf.String()
+	t.Logf("encoded stream:\n%s", out)
+	for _, want := range []string{"Main 10", "yuv420p10le", "smpte2084", "bt2020"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("HDR10 output missing %q", want)
+		}
+	}
 }

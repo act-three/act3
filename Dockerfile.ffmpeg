@@ -1,17 +1,22 @@
-# Build static ffmpeg and ffprobe binaries on Alpine (musl).
-# Based on shaka-project/static-ffmpeg-binaries build scripts.
+# Build ffmpeg/ffprobe with libplacebo + libdovi for Dolby Vision on
+# Alpine. Codec libraries are still built static from source as before,
+# but the Vulkan stack (libplacebo, libdovi, the loader, and the Mesa
+# lavapipe software rasterizer) is dynamic, so the binary is no longer
+# fully static and ships with a runtime library tree under /out/rootfs.
 #
-# Usage:
-#   docker build -t act3-ffmpeg -f Dockerfile.ffmpeg video/ffmpeg
-#   docker run --rm act3-ffmpeg cat /out/ffmpeg > ffmpeg && chmod +x ffmpeg
-#   docker run --rm act3-ffmpeg cat /out/ffprobe > ffprobe && chmod +x ffprobe
+# libdovi and lavapipe come from Alpine packages; libplacebo is built
+# from source because ffmpeg n8.1 needs a newer libplacebo than Alpine
+# packages. Dolby Vision Profile 5 stores its base layer in a reshaped
+# IPT color space that is unwatchable without applying the RPU, which
+# libplacebo (built against libdovi) does on the Vulkan device.
 
 FROM --platform=linux/amd64 alpine:3.21 AS build
 
 RUN apk add --no-cache \
     bash build-base cmake curl git nasm yasm \
-    meson ninja pkgconf python3 \
-    linux-headers perl diffutils
+    meson ninja samurai pkgconf python3 \
+    linux-headers perl diffutils \
+    libplacebo-dev libdovi-dev vulkan-loader-dev
 
 WORKDIR /src
 
@@ -50,15 +55,28 @@ RUN cd x264 && ./configure \
     --enable-static --disable-cli \
     && make -j$(nproc) && make install
 
-# --- x265 ---
+# --- x265 (8+10-bit multilib) ---
+# HDR10 output requires a 10-bit (Main 10) encoder, but 8-bit content
+# still needs Main; build both bit depths and combine into one libx265.a
+# so ffmpeg picks the right one from the input pixel format. This is
+# x265's documented multilib recipe.
 ARG X265_VERSION=4.1
 RUN git clone --depth 1 --branch $X265_VERSION https://bitbucket.org/multicoreware/x265_git.git x265
-RUN mkdir x265-build && cd x265-build && cmake ../x265/source \
-    -DCMAKE_INSTALL_PREFIX=/usr/local \
-    -DENABLE_SHARED=OFF -DENABLE_CLI=OFF \
-    && make -j$(nproc) && make install
-# Fix x265.pc: cmake adds glibc-specific private libs that break static
-# linking on musl (e.g. -lgcc_s which doesn't exist as a static lib).
+RUN mkdir -p x265/build/10bit x265/build/8bit && \
+    cd x265/build/10bit && \
+    cmake ../../source -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF \
+        -DENABLE_SHARED=OFF -DENABLE_CLI=OFF && \
+    make -j$(nproc)
+RUN cd x265/build/8bit && \
+    ln -sf ../10bit/libx265.a libx265_main10.a && \
+    cmake ../../source -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DENABLE_SHARED=OFF -DENABLE_CLI=OFF \
+        -DEXTRA_LIB="x265_main10.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON && \
+    make -j$(nproc) && make install
+# Combine the 8-bit and 10-bit archives into the installed libx265.a.
+RUN cd x265/build/8bit && \
+    mv /usr/local/lib/libx265.a libx265_main.a && \
+    printf 'CREATE /usr/local/lib/libx265.a\nADDLIB libx265_main.a\nADDLIB libx265_main10.a\nSAVE\nEND\n' | ar -M
 RUN sed -i 's/^Libs\.private:.*/Libs.private: -lstdc++ -lm -ldl/' \
     /usr/local/lib/pkgconfig/x265.pc
 
@@ -87,13 +105,41 @@ RUN mkdir mbedtls-build && cd mbedtls-build && cmake ../mbedtls \
     -DENABLE_PROGRAMS=OFF -DENABLE_TESTING=OFF \
     && make -j$(nproc) && make install
 
-# --- ffmpeg ---
+# --- recent Vulkan headers (ffmpeg --enable-vulkan needs a recent
+#     VK_HEADER_VERSION; the loader itself is the apk package) ---
+RUN git clone --depth 1 --branch v1.4.309 https://github.com/KhronosGroup/Vulkan-Headers /src/vulkan-headers && \
+    cmake -S /src/vulkan-headers -B /src/vulkan-headers/build -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    cmake --install /src/vulkan-headers/build
+
+# --- Mesa lavapipe: software Vulkan rasterizer. The appliance has no
+#     GPU, and SwiftShader can't satisfy ffmpeg's Vulkan hwupload, so
+#     lavapipe drives the libplacebo filter. Installed as a package;
+#     bundled into the runtime tree by assemble.sh. ---
+RUN apk add --no-cache mesa-vulkan-swrast
+# Canonical ICD manifest (the package's is arch-named) with an absolute
+# library_path, so VK_ICD_FILENAMES is a fixed path on every arch.
+RUN printf '{\n  "file_format_version": "1.0.0",\n  "ICD": { "library_path": "/usr/lib/libvulkan_lvp.so", "api_version": "1.3.0" }\n}\n' \
+    > /usr/share/vulkan/icd.d/lvp_icd.json
+
+# --- libplacebo from source: ffmpeg n8.1 needs libplacebo >= 7 (it uses
+#     PL_ALPHA_NONE etc.), newer than Alpine's 6.338 package. Built
+#     against Alpine's libdovi (so no Rust/cargo-c needed) with shaderc
+#     for runtime GLSL->SPIR-V (links cleaner than glslang on Alpine). ---
+RUN apk add --no-cache shaderc-dev
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+ARG LIBPLACEBO_VERSION=v7.360.1
+RUN git clone --recursive --depth 1 --branch $LIBPLACEBO_VERSION https://code.videolan.org/videolan/libplacebo /src/libplacebo
+RUN cd /src/libplacebo && meson setup build \
+    -Dvulkan=enabled -Dlibdovi=enabled -Dshaderc=enabled -Dglslang=disabled \
+    -Ddemos=false -Dtests=false --prefix=/usr/local --buildtype=release && \
+    ninja -C build && ninja -C build install
+
+# --- ffmpeg (dynamic: the Vulkan loader must dlopen its ICD at runtime,
+#     which a fully-static musl binary can't do; codec libs stay static) ---
 ARG FFMPEG_VERSION=n8.1
 RUN git clone --depth 1 --branch $FFMPEG_VERSION https://git.ffmpeg.org/ffmpeg.git ffmpeg
 RUN cd ffmpeg && \
-    CFLAGS="-static" LDFLAGS="-static" \
     ./configure \
-    --pkg-config-flags="--static" \
     --disable-ffplay \
     --enable-libvpx \
     --enable-libsvtav1 \
@@ -103,14 +149,39 @@ RUN cd ffmpeg && \
     --enable-libmp3lame \
     --enable-libopus \
     --enable-mbedtls \
+    --enable-libplacebo \
+    --enable-vulkan \
     --enable-runtime-cpudetect \
     --enable-gpl \
     --enable-version3 \
-    --enable-static \
-    && make -j$(nproc)
+    --extra-cflags=-I/usr/local/include \
+    --extra-ldflags="-L/usr/local/lib -no-pie" \
+    --extra-libs="-lstdc++ -lm" \
+    && make -j$(nproc) && make install
 
-# Verify binaries are static.
-RUN file ffmpeg/ffmpeg ffmpeg/ffprobe | grep -q "statically linked"
+# --- dovi_tool + mkvmerge (test tooling only): the test suite uses
+#     them to synthesize Dolby Vision Profile 5 sources (generate an
+#     RPU, inject it into a 10-bit HEVC stream, mux with the DOVI
+#     configuration record) instead of depending on real-world clips.
+#     They ship in /out for the test harness, not in the runtime tree.
+#     internal-font avoids a fontconfig dependency that dovi_tool's
+#     (unused) plot subcommand would otherwise pull in. ---
+RUN apk add --no-cache mkvtoolnix
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+ARG DOVI_TOOL_VERSION=2.3.2
+RUN git clone --depth 1 --branch $DOVI_TOOL_VERSION https://github.com/quietvoid/dovi_tool /src/dovi_tool_cli
+RUN cd /src/dovi_tool_cli && . $HOME/.cargo/env && \
+    cargo build --release --no-default-features --features internal-font && \
+    install -m755 target/release/dovi_tool /usr/local/bin/dovi_tool
 
-# Copy to output.
-RUN mkdir /out && cp ffmpeg/ffmpeg ffmpeg/ffprobe /out/
+# Binaries at /out for the ffmpeg-package test harness, which runs
+# /out/<tool> in this image. The shipped artifact is the runtime tree
+# assembled under /out/rootfs below.
+RUN mkdir -p /out \
+    && cp /usr/local/bin/ffmpeg /usr/local/bin/ffprobe /usr/local/bin/dovi_tool /out/ \
+    && ln -s /usr/bin/mkvmerge /out/mkvmerge
+
+# --- assemble runtime tree: binaries + shared-library closure +
+#     dynamic linker + lavapipe driver and ICD, laid out as a rootfs ---
+COPY assemble.sh /assemble.sh
+RUN bash /assemble.sh

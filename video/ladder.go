@@ -18,6 +18,7 @@ type Rendition struct {
 	MaxHeight     int    // output height in pixels; 0 = use source
 	MaxFPS        int    // output frame rate cap; 0 = use source
 	Priority      int    // encoding order: 0 = best, then worst, middle, rest
+	HDR           bool   // output is HDR10 (BT.2020 PQ); drives HLS signaling
 }
 
 // FFmpegCodec returns the ffmpeg encoder name for the rendition codec.
@@ -47,11 +48,24 @@ func (r *Rendition) HLSCodecs() string {
 	case "h264":
 		vc = "avc1.640028" // High Profile, Level 4.0
 	case "hevc":
-		vc = "hvc1.1.6.L150.90" // Main Profile, Main Tier, Level 5.0
+		if r.HDR {
+			vc = "hvc1.2.4.L150.90" // Main 10 Profile (HDR10), Main Tier, Level 5.0
+		} else {
+			vc = "hvc1.1.6.L150.90" // Main Profile, Main Tier, Level 5.0
+		}
 	default:
 		vc = "hvc1.1.6.L150.90"
 	}
 	return vc + ",mp4a.40.2" // + AAC-LC
+}
+
+// HLSVideoRange returns the EXT-X-STREAM-INF VIDEO-RANGE value for the
+// rendition: "PQ" for HDR10 output, "SDR" otherwise.
+func (r *Rendition) HLSVideoRange() string {
+	if r.HDR {
+		return "PQ"
+	}
+	return "SDR"
 }
 
 // ladder defines the bitrate tiers below the best rendition.
@@ -130,9 +144,17 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult, maxKeyframeGap time.Duration
 		return nil, fmt.Errorf("source video bitrate is unknown")
 	}
 
+	// Dolby Vision sources whose base layer needs conversion (Profile
+	// 5) can't be stream-copied: the copied stream would still carry
+	// the reshaped IPT base layer and play back with a green/magenta
+	// cast on clients that don't apply the RPU. They are re-encoded
+	// through the Dolby-Vision-aware filter to HDR10 instead; see
+	// ffmpeg.dolbyVisionFilter.
+	dolbyVision := ffmpeg.DolbyVisionNeedsConversion(vs.DolbyVisionProfile)
+
 	canRemux := (vs.CodecName == "h264" || vs.CodecName == "hevc") &&
 		(maxKeyframeGap == 0 || maxKeyframeGap <= MaxRemuxKeyframeGap) &&
-		vs.HasExplicitDTS
+		vs.HasExplicitDTS && !dolbyVision
 
 	// Determine output codec: use source codec if remuxing,
 	// otherwise reencode everything to HEVC.
@@ -215,6 +237,14 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult, maxKeyframeGap time.Duration
 			MaxFPS:        maxFPS,
 			Priority:      entry.Priority,
 		})
+	}
+
+	// A Dolby Vision source is converted to HDR10 for every rendition,
+	// so they all carry HDR signaling.
+	if dolbyVision {
+		for i := range renditions {
+			renditions[i].HDR = true
+		}
 	}
 
 	return renditions, nil

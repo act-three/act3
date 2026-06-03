@@ -143,6 +143,25 @@ type VideoStream struct {
 	// planner uses this to refuse remux for those sources; see
 	// PlanVideoRenditions.
 	HasExplicitDTS bool
+
+	// DolbyVisionProfile is the Dolby Vision profile carried by the
+	// stream's DOVI configuration record, or 0 when the stream is not
+	// Dolby Vision. Profile 5 stores its base layer in a reshaped IPT
+	// color space that is unwatchable without applying the RPU
+	// metadata, so the planner re-encodes such sources through a
+	// Dolby-Vision-aware filter rather than passing them through; see
+	// PlanVideoRenditions.
+	DolbyVisionProfile int
+}
+
+// DolbyVisionNeedsConversion reports whether a stream carrying the
+// given Dolby Vision profile must be converted to HDR10 before
+// encoding. Profile 5 stores its base layer in a reshaped IPT color
+// space that is unwatchable without applying the RPU; the
+// HDR10-compatible profiles (8.x) carry a standard base layer and are
+// left alone. A profile of 0 means the stream is not Dolby Vision.
+func DolbyVisionNeedsConversion(profile int) bool {
+	return profile == 5
 }
 
 // CodedFrameRate returns the source's coded picture rate as the exact
@@ -208,6 +227,15 @@ type EncodeParams struct {
 	MaxFPS    int      // max output fps; 0 = source (ignored if Remux)
 	Tag       string   // video tag, e.g. "hvc1" for HEVC in fMP4
 	StatsID   string   // stable filename for pass-1 stats inside statsDir; required when !Remux, ignored otherwise
+
+	// DolbyVision, when set on a re-encode rendition, applies the
+	// source's Dolby Vision RPU and converts the reshaped base layer
+	// to HDR10 (BT.2020 PQ) before scaling and encoding. This is
+	// required for Profile 5 sources, whose base layer is otherwise
+	// unwatchable (green/magenta cast). It requires an ffmpeg built
+	// with libplacebo+libdovi and a Vulkan device; see
+	// dolbyVisionFilter. Ignored for stream-copy renditions.
+	DolbyVision bool
 
 	// SegmentBoundaries is the list of HLS segment cut points shared
 	// by every rendition of one source video, expressed as
@@ -323,6 +351,10 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			Disposition struct {
 				Forced int `json:"forced"`
 			} `json:"disposition"`
+			SideDataList []struct {
+				SideDataType string `json:"side_data_type"`
+				DVProfile    int    `json:"dv_profile"`
+			} `json:"side_data_list"`
 		} `json:"streams"`
 	}
 	err = json.Unmarshal(stdout.Bytes(), &raw)
@@ -350,15 +382,23 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			if result.Video == nil {
 				br, _ := strconv.ParseInt(s.BitRate, 10, 64)
 				tb := parseFrameRate(s.TimeBase)
+				dvProfile := 0
+				for _, sd := range s.SideDataList {
+					if sd.SideDataType == "DOVI configuration record" {
+						dvProfile = sd.DVProfile
+						break
+					}
+				}
 				result.Video = &VideoStream{
-					CodecName:     s.CodecName,
-					BitRate:       br,
-					Width:         s.Width,
-					Height:        s.Height,
-					FrameRate:     parseFrameRate(s.RFrameRate),
-					TimebaseNum:   tb.Num,
-					TimebaseDen:   tb.Den,
-					DurationTicks: s.DurationTs,
+					CodecName:          s.CodecName,
+					BitRate:            br,
+					Width:              s.Width,
+					Height:             s.Height,
+					FrameRate:          parseFrameRate(s.RFrameRate),
+					TimebaseNum:        tb.Num,
+					TimebaseDen:        tb.Den,
+					DurationTicks:      s.DurationTs,
+					DolbyVisionProfile: dvProfile,
 				}
 			}
 		case "audio":
@@ -763,7 +803,8 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 
 	// Build single-rendition pass-2 args.
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
-	args := inputArgs(format)
+	args := hwDeviceArgs(dst.DolbyVision)
+	args = append(args, inputArgs(format)...)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
@@ -777,6 +818,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	args = append(args, fpsPassthrough()...)
 	args = append(args, "-c:v", dst.Codec, "-preset", preset)
 	args = append(args, "-b:v", fmt.Sprintf("%dk", dst.Bitrate))
+	args = append(args, hdr10OutputArgs(dst.DolbyVision)...)
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
@@ -934,7 +976,8 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 
 	outPath := filepath.Join(tmpDir, "output.mp4")
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
-	args := inputArgs(format)
+	args := hwDeviceArgs(dst.DolbyVision)
+	args = append(args, inputArgs(format)...)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
@@ -948,6 +991,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	args = append(args, fpsPassthrough()...)
 	args = append(args, "-c:v", dst.Codec, "-preset", preset)
 	args = append(args, "-b:v", fmt.Sprintf("%dk", dst.Bitrate))
+	args = append(args, hdr10OutputArgs(dst.DolbyVision)...)
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
@@ -1141,7 +1185,8 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
 ) error {
 	filterStr, labels := buildFilterComplex(dsts)
 
-	args := inputArgs(format)
+	args := hwDeviceArgs(anyDolbyVision(dsts))
+	args = append(args, inputArgs(format)...)
 	args = append(args, "-i", src.Name())
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
@@ -1174,28 +1219,56 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
 // Internal: filter_complex construction
 // -----------------------------------------------------------------------
 
+// dolbyVisionFilter applies the source's Dolby Vision RPU and converts
+// the reshaped base layer to HDR10 (BT.2020 PQ, 10-bit) via libplacebo.
+// It uploads to and downloads from the Vulkan device that the caller
+// must have created (see hwDeviceArgs). Without this conversion a
+// Profile 5 base layer is misread as ordinary YCbCr, producing a
+// green/magenta cast.
+//
+// libplacebo emits rgba64le (16-bit packed RGB, enough for 10-bit
+// HDR), which is then converted to yuv420p10le in software for the
+// encoder. The packed intermediate is deliberate: the appliance has no
+// GPU, so libplacebo runs on a software Vulkan rasterizer, and reading
+// a multiplanar YUV image back from such a device returns garbage
+// chroma (an all-green frame). Single-plane packed formats download
+// correctly, so the YUV conversion is done on the CPU after hwdownload.
+const dolbyVisionFilter = "hwupload," +
+	"libplacebo=apply_dolbyvision=true:colorspace=bt2020nc:color_primaries=bt2020:color_trc=smpte2084:format=rgba64le," +
+	"hwdownload,format=rgba64le,format=yuv420p10le"
+
 // buildFilterComplex produces a filter_complex string that splits the
 // input video into one branch per reencode rendition (those with Remux
 // false), applying per-branch scale and fps filters as needed. It
 // returns the filter string (empty if no filtering is required) and a
 // map from rendition index in dsts to the label or stream specifier
 // to use in -map. Remux entries are absent from the returned map.
+//
+// Dolby Vision renditions force a filter graph even when no scaling is
+// needed: a single dolbyVisionFilter pass converts the source to HDR10
+// up front, and its output feeds the split (a libplacebo output pad can
+// only be consumed once, so every branch draws from the split).
 func buildFilterComplex(dsts []EncodeParams) (string, map[int]string) {
 	labels := make(map[int]string)
 
-	// Check whether any reencode rendition needs video filtering.
+	// Check whether any reencode rendition needs video filtering, and
+	// whether the source is Dolby Vision (a whole-stream property, so
+	// any reencode rendition carrying the flag implies it for all).
 	anyFilter := false
+	dolbyVision := false
 	for _, p := range dsts {
 		if p.Remux {
 			continue
 		}
 		if p.MaxHeight > 0 || p.MaxFPS > 0 {
 			anyFilter = true
-			break
+		}
+		if p.DolbyVision {
+			dolbyVision = true
 		}
 	}
 
-	if !anyFilter {
+	if !anyFilter && !dolbyVision {
 		// Every rendition uses source resolution and frame rate.
 		// No filter_complex needed; each output maps 0:v:0 directly.
 		for i, p := range dsts {
@@ -1207,9 +1280,10 @@ func buildFilterComplex(dsts []EncodeParams) (string, map[int]string) {
 		return "", labels
 	}
 
-	// At least one rendition needs filtering, so we route all
-	// reencode renditions through a split. Branches that need no
-	// filtering are identity pass-throughs (virtually free).
+	// At least one rendition needs filtering (or Dolby Vision
+	// conversion), so we route all reencode renditions through a
+	// split. Branches that need no filtering are identity
+	// pass-throughs (virtually free).
 	var idxs []int
 	for i, p := range dsts {
 		if p.Remux {
@@ -1220,9 +1294,17 @@ func buildFilterComplex(dsts []EncodeParams) (string, map[int]string) {
 	n := len(idxs)
 	var parts []string
 
-	// [0:v]split=N[s0][s1]...
+	// Source feeding the split. For Dolby Vision, a single libplacebo
+	// pass converts the whole stream to HDR10 before the split.
+	splitSrc := "[0:v]"
+	if dolbyVision {
+		parts = append(parts, "[0:v]"+dolbyVisionFilter+"[dv]")
+		splitSrc = "[dv]"
+	}
+
+	// <src>split=N[s0][s1]...
 	var split strings.Builder
-	split.WriteString("[0:v]split=" + strconv.Itoa(n))
+	split.WriteString(splitSrc + "split=" + strconv.Itoa(n))
 	for j := range n {
 		fmt.Fprintf(&split, "[s%d]", j)
 	}
@@ -1277,6 +1359,46 @@ func inputArgs(format string) []string {
 		"-protocol_whitelist", "file,pipe",
 		"-progress", "pipe:3", "-nostats",
 		"-f", format,
+	}
+}
+
+// anyDolbyVision reports whether any reencode rendition in dsts needs
+// the Dolby Vision conversion.
+func anyDolbyVision(dsts []EncodeParams) bool {
+	for _, p := range dsts {
+		if !p.Remux && p.DolbyVision {
+			return true
+		}
+	}
+	return false
+}
+
+// hwDeviceArgs returns the global flags that create the Vulkan device
+// dolbyVisionFilter runs on, or nil when no rendition needs it. The
+// device is created with no explicit physical-device index so
+// libavutil picks the first available Vulkan device — on the appliance
+// that is the bundled software rasterizer. These are global options
+// and so are placed ahead of the per-input flags.
+func hwDeviceArgs(dolbyVision bool) []string {
+	if !dolbyVision {
+		return nil
+	}
+	return []string{"-init_hw_device", "vulkan=vk", "-filter_hw_device", "vk"}
+}
+
+// hdr10OutputArgs tags a reencode output as HDR10 (BT.2020 PQ) so the
+// encoder writes matching VUI signaling and the mp4 muxer writes a colr
+// box. Returned only for Dolby Vision renditions, whose frames
+// dolbyVisionFilter has converted to HDR10; nil otherwise.
+func hdr10OutputArgs(dolbyVision bool) []string {
+	if !dolbyVision {
+		return nil
+	}
+	return []string{
+		"-colorspace", "bt2020nc",
+		"-color_primaries", "bt2020",
+		"-color_trc", "smpte2084",
+		"-color_range", "tv",
 	}
 }
 

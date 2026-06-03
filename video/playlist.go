@@ -28,10 +28,12 @@ func FixupMediaPlaylist(playlist, oldName, newName string) string {
 
 // MVEntry describes one variant in a multivariant HLS playlist.
 type MVEntry struct {
-	URI        string // rendition identifier (resolved to a URL by the HTTP layer)
-	Bandwidth  int64  // peak bitrate in bits per second
-	Resolution string // e.g. "1920x1080"; empty to omit
-	Codecs     string // e.g. "hvc1.1.6.L150.90,mp4a.40.2"; empty to omit
+	URI        string  // rendition identifier (resolved to a URL by the HTTP layer)
+	Bandwidth  int64   // peak bitrate in bits per second
+	Resolution string  // e.g. "1920x1080"; empty to omit
+	Codecs     string  // e.g. "hvc1.1.6.L150.90,mp4a.40.2"; empty to omit
+	VideoRange string  // VIDEO-RANGE: "SDR", "PQ", or "HLG"; empty to omit
+	FrameRate  float64 // FRAME-RATE: peak frame rate in fps; 0 to omit
 }
 
 // MVSubtitle describes one subtitle media entry referenced from a
@@ -101,6 +103,16 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 		}
 		if e.Codecs != "" {
 			p.Codecs = e.Codecs
+		}
+		if e.VideoRange != "" {
+			p.VideoRange = e.VideoRange
+		}
+		// FRAME-RATE is required on HDR variants: CoreMedia drops a
+		// VIDEO-RANGE=PQ variant without it, leaving Safari nothing to
+		// play. Emitted for SDR variants too, as the authoring spec
+		// recommends.
+		if e.FrameRate > 0 {
+			p.FrameRate = e.FrameRate
 		}
 		if len(audios) > 0 {
 			p.Audio = audioGroupID
