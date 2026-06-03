@@ -287,7 +287,8 @@ CREATE TABLE AudioRendition
 	Playlist     TEXT NOT NULL DEFAULT (''), -- HLS media playlist; empty during ingest
 	Priority     INTEGER NOT NULL, -- 0 = highest priority
 	SortKey      INTEGER NOT NULL, -- ascending playlist position; a downmix follows its source track
-	UNIQUE (VideoID, AudioTrackID, Channels)
+	UNIQUE (VideoID, AudioTrackID, Channels),
+	UNIQUE (VideoID, SortKey)
 )
 STRICT;
 
