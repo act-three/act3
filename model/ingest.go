@@ -542,6 +542,7 @@ func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
 	dst := ffmpeg.AudioEncodeParams{
 		SourceStreamIndex: int(at.StreamIndex),
 		Channels:          int(ar.Channels),
+		SourceLayout:      at.ChannelLayout,
 		Bitrate:           ar.Bitrate,
 		StreamCopy:        streamCopy,
 	}

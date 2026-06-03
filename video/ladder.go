@@ -232,11 +232,9 @@ type AudioRendition struct {
 }
 
 // PlanAudioRenditions returns the output variants for each source
-// audio stream. Every stream is encoded to AAC as it is, at 64 kbit/s
-// per channel:
-//   - mono (1 channel) → 64 kbit/s.
-//   - stereo (2 channels) → 128 kbit/s.
-//   - surround (more than 2 channels) → 5.1 at 384 kbit/s.
+// audio stream. Every stream keeps its source channel count and is
+// encoded to AAC at 64 kbit/s per channel (so stereo is 128 kbit/s
+// and 5.1 is 384 kbit/s).
 //
 // As a special case, if there is no stereo track and there is a
 // surround source, we generate a stereo downmix, so clients
@@ -259,21 +257,15 @@ func PlanAudioRenditions(probe *ffmpeg.ProbeResult) []AudioRendition {
 	}
 	var out []AudioRendition
 	for _, as := range probe.Audio {
-		// Emit the track as it is: mono, stereo, or 5.1.
-		asis := AudioRendition{
+		// Emit the track as it is, keeping its channel count.
+		channels := max(as.Channels, 1)
+		out = append(out, AudioRendition{
 			SourceStreamIndex: as.Index,
+			Channels:          channels,
+			Bitrate:           int64(64 * channels),
 			Codec:             "aac",
 			Priority:          priority.EncodeAudio,
-		}
-		switch {
-		case as.Channels <= 1:
-			asis.Channels, asis.Bitrate = 1, 64
-		case as.Channels == 2:
-			asis.Channels, asis.Bitrate = 2, 128
-		default:
-			asis.Channels, asis.Bitrate = 6, 384
-		}
-		out = append(out, asis)
+		})
 
 		// Add an extra stereo downmix for surround, unless the file
 		// already carries an equivalent stereo track.
