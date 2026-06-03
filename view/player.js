@@ -383,14 +383,24 @@ export default class extends Controller {
 	}
 
 	// sourceSwap replaces the <video> source URL and re-loads,
-	// restoring the previous play state and position once metadata
-	// is available. Drops any <track> children cloned from the
+	// restoring the previous play state and position once the new
+	// source has data. Drops any <track> children cloned from the
 	// captions template (they were tied to the old manifest's
 	// TextTrack list) and resets the subtitle-tracks gate so
 	// #ensureSubtitleTracks can decide afresh for the new source.
 	// Tears down any active jassub renderer too — the subsequent
 	// loadedmetadata triggers #applySubtitleSelection, which will
 	// recreate it when currentSubtitle is still an ASS pick.
+	//
+	// The position restore is deferred to loadeddata, not applied at
+	// loadedmetadata: setting currentTime before HAVE_CURRENT_DATA
+	// permanently wedges Safari's requestVideoFrameCallback delivery
+	// for this element. Playback continues off the normal pipeline,
+	// but jassub renders solely off rVFC, so it freezes and the ASS
+	// overlay vanishes for the rest of the session (ACT-220). The
+	// seek rides the same #pendingSeek path the seekbar uses (ACT-171);
+	// play() resumes at loadedmetadata, which is also what prompts
+	// Safari to start loading data so loadeddata can fire.
 	#sourceSwap(url) {
 		const video = this.videoTarget;
 		const currentTime = video.currentTime;
@@ -408,12 +418,14 @@ export default class extends Controller {
 		}
 		video.load();
 
-		const restore = () => {
-			video.currentTime = currentTime;
-			if (wasPlaying) video.play();
-			video.removeEventListener("loadedmetadata", restore);
-		};
-		video.addEventListener("loadedmetadata", restore);
+		this.#pendingSeek = currentTime;
+		if (wasPlaying) {
+			const resume = () => {
+				video.play();
+				video.removeEventListener("loadedmetadata", resume);
+			};
+			video.addEventListener("loadedmetadata", resume);
+		}
 	}
 
 	togglePlay() {
