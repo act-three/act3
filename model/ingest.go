@@ -339,6 +339,7 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			VideoTimebaseDen:   int64(probe.Video.TimebaseDen),
 			VideoKeyframes:     string(keyframesJSON),
 			DolbyVisionProfile: int64(probe.Video.DolbyVisionProfile),
+			ColorTransfer:      probe.Video.ColorTransfer,
 		})
 		if err != nil {
 			return err
@@ -1084,7 +1085,7 @@ func buildMVPlaylist(
 		return ""
 	}
 
-	hdr := ffmpeg.DolbyVisionNeedsConversion(int(vid.DolbyVisionProfile))
+	hdr := ffmpeg.HDRFormat(int(vid.DolbyVisionProfile), vid.ColorTransfer)
 	srcFPS := codedFrameRate(vid)
 	var mvEntries []video.MVEntry
 	for _, rfs := range videoRends {

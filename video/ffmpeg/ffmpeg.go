@@ -152,6 +152,12 @@ type VideoStream struct {
 	// Dolby-Vision-aware filter rather than passing them through; see
 	// PlanVideoRenditions.
 	DolbyVisionProfile int
+
+	// ColorTransfer is the stream's transfer characteristics as
+	// reported by ffprobe (e.g. "smpte2084", "arib-std-b67", "bt709"),
+	// or empty when the source carries no color tags.
+	// HDRFormat derives the output dynamic range from it.
+	ColorTransfer string
 }
 
 // DolbyVisionNeedsConversion reports whether a stream carrying the
@@ -162,6 +168,29 @@ type VideoStream struct {
 // left alone. A profile of 0 means the stream is not Dolby Vision.
 func DolbyVisionNeedsConversion(profile int) bool {
 	return profile == 5
+}
+
+// HDRFormat returns the dynamic range of the output the pipeline
+// produces from a source with the given Dolby Vision profile and
+// transfer characteristics, as an HLS VIDEO-RANGE label:
+// "PQ" for a PQ (SMPTE 2084) source
+// or a Dolby Vision source that is converted to HDR10,
+// "HLG" for an HLG (ARIB STD-B67) source,
+// and "" for SDR.
+// Re-encoding preserves the source's dynamic range
+// (color properties carry through the filtergraph into the output),
+// so the label applies to every rendition, remuxed or re-encoded.
+func HDRFormat(dolbyVisionProfile int, colorTransfer string) string {
+	if DolbyVisionNeedsConversion(dolbyVisionProfile) {
+		return "PQ" // dolbyVisionFilter emits BT.2020 PQ
+	}
+	switch colorTransfer {
+	case "smpte2084":
+		return "PQ"
+	case "arib-std-b67":
+		return "HLG"
+	}
+	return ""
 }
 
 // CodedFrameRate returns the source's coded picture rate as the exact
@@ -344,6 +373,7 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			DurationTs    int64  `json:"duration_ts"`
 			Channels      int    `json:"channels"`
 			ChannelLayout string `json:"channel_layout"`
+			ColorTransfer string `json:"color_transfer"`
 			Tags          struct {
 				Language string `json:"language"`
 				Title    string `json:"title"`
@@ -399,6 +429,7 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 					TimebaseDen:        tb.Den,
 					DurationTicks:      s.DurationTs,
 					DolbyVisionProfile: dvProfile,
+					ColorTransfer:      s.ColorTransfer,
 				}
 			}
 		case "audio":

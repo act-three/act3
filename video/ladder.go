@@ -18,7 +18,7 @@ type Rendition struct {
 	MaxHeight     int    // output height in pixels; 0 = use source
 	MaxFPS        int    // output frame rate cap; 0 = use source
 	Priority      int    // encoding order: 0 = best, then worst, middle, rest
-	HDR           bool   // output is HDR10 (BT.2020 PQ); drives HLS signaling
+	HDR           string // output dynamic range as an HLS VIDEO-RANGE label ("PQ" or "HLG"); empty = SDR
 }
 
 // FFmpegCodec returns the ffmpeg encoder name for the rendition codec.
@@ -48,8 +48,8 @@ func (r *Rendition) HLSCodecs() string {
 	case "h264":
 		vc = "avc1.640028" // High Profile, Level 4.0
 	case "hevc":
-		if r.HDR {
-			vc = "hvc1.2.4.L150.90" // Main 10 Profile (HDR10), Main Tier, Level 5.0
+		if r.HDR != "" {
+			vc = "hvc1.2.4.L150.90" // Main 10 Profile (HDR), Main Tier, Level 5.0
 		} else {
 			vc = "hvc1.1.6.L150.90" // Main Profile, Main Tier, Level 5.0
 		}
@@ -59,11 +59,11 @@ func (r *Rendition) HLSCodecs() string {
 	return vc + ",mp4a.40.2" // + AAC-LC
 }
 
-// HLSVideoRange returns the EXT-X-STREAM-INF VIDEO-RANGE value for the
-// rendition: "PQ" for HDR10 output, "SDR" otherwise.
+// HLSVideoRange returns the EXT-X-STREAM-INF VIDEO-RANGE value for
+// the rendition: "PQ" or "HLG" for HDR output, "SDR" otherwise.
 func (r *Rendition) HLSVideoRange() string {
-	if r.HDR {
-		return "PQ"
+	if r.HDR != "" {
+		return r.HDR
 	}
 	return "SDR"
 }
@@ -239,11 +239,12 @@ func PlanVideoRenditions(probe *ffmpeg.ProbeResult, maxKeyframeGap time.Duration
 		})
 	}
 
-	// A Dolby Vision source is converted to HDR10 for every rendition,
-	// so they all carry HDR signaling.
-	if dolbyVision {
+	// An HDR source stays HDR in every rendition — re-encodes preserve
+	// the source's dynamic range and Dolby Vision is converted to
+	// HDR10 — so they all carry the same VIDEO-RANGE label.
+	if hdr := ffmpeg.HDRFormat(vs.DolbyVisionProfile, vs.ColorTransfer); hdr != "" {
 		for i := range renditions {
-			renditions[i].HDR = true
+			renditions[i].HDR = hdr
 		}
 	}
 

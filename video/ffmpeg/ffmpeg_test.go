@@ -530,6 +530,115 @@ func TestX264MbtreePass2(t *testing.T) {
 	t.Log("pass 2 succeeded — x264 mbtree stats OK")
 }
 
+func TestHDRFormat(t *testing.T) {
+	tests := []struct {
+		dvProfile int
+		transfer  string
+		want      string
+	}{
+		{0, "", ""},
+		{0, "bt709", ""},
+		{0, "smpte2084", "PQ"},
+		{0, "arib-std-b67", "HLG"},
+		{5, "", "PQ"},          // DV P5: converted to HDR10; source is untagged
+		{8, "smpte2084", "PQ"}, // DV P8: HDR10-compatible base layer
+	}
+	for _, tt := range tests {
+		if got := HDRFormat(tt.dvProfile, tt.transfer); got != tt.want {
+			t.Errorf("HDRFormat(%d, %q) = %q, want %q",
+				tt.dvProfile, tt.transfer, got, tt.want)
+		}
+	}
+}
+
+// TestHDR10EncodePreservesColor runs a native HDR10 source through the
+// real two-pass encode path — including a scale branch, so the
+// filtergraph is exercised — and verifies the output keeps its 10-bit
+// BT.2020 PQ color tags without any explicit color arguments. This is
+// the contract PlanVideoRenditions relies on when it labels every
+// rendition of an HDR source with the source's VIDEO-RANGE.
+//
+// The source is tagged via setparams: frame-level color properties are
+// what the encoder writes into the VUI; ffmpeg 8's -color* output
+// flags no longer reach it.
+func TestHDR10EncodePreservesColor(t *testing.T) {
+	dir := setupDocker(t)
+	setPreset(t, "ultrafast")
+	ctx := t.Context()
+	srcPath := filepath.Join(dir, "source.mkv")
+
+	t.Log("generating HDR10 source...")
+	generate(t,
+		"-y",
+		"-f", "lavfi", "-i", "testsrc2=duration=2:size=320x180:rate=24",
+		"-vf", "setparams=colorspace=bt2020nc:color_primaries=bt2020:color_trc=smpte2084:range=tv,format=yuv420p10le",
+		"-c:v", "libx265", "-preset", "ultrafast",
+		srcPath,
+	)
+
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer srcFile.Close()
+
+	probe, err := Probe(ctx, srcFile)
+	if err != nil {
+		t.Fatalf("probe: %v", err)
+	}
+	if probe.Video.ColorTransfer != "smpte2084" {
+		t.Fatalf("probe ColorTransfer = %q, want smpte2084", probe.Video.ColorTransfer)
+	}
+
+	mediaPath := filepath.Join(dir, MediaName(0))
+	outFile, err := os.Create(mediaPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	params := EncodeParams{
+		File:      outFile,
+		Codec:     "libx265",
+		Bitrate:   500,
+		MaxHeight: 90, // force the scale filtergraph
+		Tag:       "hvc1",
+		StatsID:   "r0",
+	}
+
+	t.Log("running pass 1...")
+	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
+		[]EncodeParams{params}, dir, probe.Duration, nil); err != nil {
+		t.Fatalf("pass 1: %v", err)
+	}
+	t.Log("running pass 2...")
+	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
+		dir, probe.Duration, nil)
+	if err != nil {
+		t.Fatalf("pass 2: %v", err)
+	}
+	if playlist == "" {
+		t.Fatal("empty playlist")
+	}
+	outFile.Close()
+
+	var buf bytes.Buffer
+	cmd := newCmd(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+		"-show_entries",
+		"stream=profile,pix_fmt,color_transfer,color_primaries,color_space",
+		"-of", "default=noprint_wrappers=1", mediaPath)
+	cmd.Stdout = &buf
+	cmd.Stderr = &buf
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("probe output: %v\n%s", err, buf.String())
+	}
+	out := buf.String()
+	t.Logf("encoded stream:\n%s", out)
+	for _, want := range []string{"Main 10", "yuv420p10le", "smpte2084", "bt2020"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("HDR10 output missing %q", want)
+		}
+	}
+}
+
 func TestBuildFilterComplexDolbyVision(t *testing.T) {
 	// No filtering and no Dolby Vision: direct map, no filter_complex.
 	plain, labels := buildFilterComplex([]EncodeParams{{Codec: "libx265"}})
