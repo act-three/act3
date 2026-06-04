@@ -197,7 +197,7 @@ func TestGenerateMVPlaylistWithSubtitles(t *testing.T) {
 		if !strings.Contains(got, `NAME="English"`) {
 			t.Errorf("missing NAME: %s", got)
 		}
-		if !strings.Contains(got, `LANGUAGE="eng"`) {
+		if !strings.Contains(got, `LANGUAGE="en"`) {
 			t.Errorf("missing LANGUAGE: %s", got)
 		}
 		if !strings.Contains(got, `DEFAULT=YES`) {
@@ -332,6 +332,28 @@ func TestGenerateMVPlaylistWithAudioAndSubtitles(t *testing.T) {
 	}
 	if c := strings.Count(got, `#EXT-X-MEDIA:TYPE=SUBTITLES`); c != 1 {
 		t.Errorf("got %d SUBTITLES EXT-X-MEDIA lines, want 1: %s", c, got)
+	}
+}
+
+func TestRFC5646Language(t *testing.T) {
+	tests := []struct {
+		code, want string
+	}{
+		{"eng", "en"}, // ISO 639-2/T = /B
+		{"ger", "de"}, // ISO 639-2/B (bibliographic)
+		{"deu", "de"}, // ISO 639-2/T (terminological)
+		{"por", "pt"},
+		{"und", "und"}, // undetermined: no shorter form
+		{"fil", "fil"}, // no ISO 639-1 equivalent
+		{"en", "en"},   // already canonical
+		{"pt-BR", "pt-BR"},
+		{"", ""},       // unset stays unset (LANGUAGE omitted)
+		{"x?!", "x?!"}, // unparseable passes through
+	}
+	for _, tt := range tests {
+		if got := rfc5646Language(tt.code); got != tt.want {
+			t.Errorf("rfc5646Language(%q) = %q, want %q", tt.code, got, tt.want)
+		}
 	}
 }
 

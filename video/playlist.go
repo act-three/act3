@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Eyevinn/hls-m3u8/m3u8"
+	"golang.org/x/text/language"
 )
 
 // subtitleGroupID is the GROUP-ID used for the subtitle alternative
@@ -41,7 +42,7 @@ type MVEntry struct {
 type MVSubtitle struct {
 	URI      string // points at a per-track media playlist (.m3u8)
 	Name     string // opaque identifier (emitted as NAME); the player JS matches on it
-	Language string // BCP47-ish code (we store ISO 639-2 like "eng")
+	Language string // ISO 639-2 code (like "eng")
 	Default  bool   // first track of preferred language; client may auto-select
 	Forced   bool   // forced narrative
 }
@@ -51,7 +52,7 @@ type MVSubtitle struct {
 type MVAudio struct {
 	URI      string // points at a per-track audio media playlist (.m3u8)
 	Name     string // opaque identifier (emitted as NAME); the player JS matches on it
-	Language string // BCP47-ish code (we store ISO 639-2 like "eng")
+	Language string // ISO 639-2 code (like "eng")
 	Channels int    // CHANNELS attribute (1, 2, or 6)
 	Default  bool   // exactly one Default per group
 }
@@ -61,6 +62,8 @@ type MVAudio struct {
 // and returns it as a string. When audios is non-empty, every variant
 // gains an AUDIO="aud" group reference; likewise for subtitles via
 // SUBTITLES="subs".
+// Audio and subtitle language codes are canonicalized to RFC 5646
+// for the LANGUAGE attribute.
 //
 // EXT-X-MEDIA emission uses the m3u8 library's Alternative type
 // (writeExtXMedia in github.com/Eyevinn/hls-m3u8/m3u8/writer.go);
@@ -75,7 +78,7 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 			Type:       "AUDIO",
 			GroupId:    audioGroupID,
 			Name:       a.Name,
-			Language:   a.Language,
+			Language:   rfc5646Language(a.Language),
 			URI:        a.URI,
 			Default:    a.Default,
 			Autoselect: true,
@@ -87,7 +90,7 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 			Type:       "SUBTITLES",
 			GroupId:    subtitleGroupID,
 			Name:       s.Name,
-			Language:   s.Language,
+			Language:   rfc5646Language(s.Language),
 			URI:        s.URI,
 			Default:    s.Default,
 			Autoselect: !s.Forced,
@@ -126,6 +129,20 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 		root.Append(e.URI, nil, p)
 	}
 	return root.Encode().String()
+}
+
+// rfc5646Language canonicalizes a language code to the RFC 5646 tag
+// required by the HLS LANGUAGE attribute:
+// ISO 639-2 codes ("eng", "ger", "deu") become their shortest
+// BCP 47 form ("en", "de"),
+// and codes with no shorter form ("und", "fil") are kept.
+// Values that don't parse as a language tag pass through unchanged.
+func rfc5646Language(iso6392code string) string {
+	tag, err := language.Parse(iso6392code)
+	if err != nil {
+		return iso6392code
+	}
+	return tag.String()
 }
 
 // GenerateSubtitleMediaPlaylist builds a per-track HLS subtitle media
