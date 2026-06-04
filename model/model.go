@@ -98,11 +98,9 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	if err != nil {
 		return nil, err
 	}
-	for name, n := range taskQueues {
-		tq := newTaskQueue(name, m)
-		for range n {
-			go tq.runTasks()
-		}
+	for name, capacity := range taskQueues {
+		tq := newTaskQueue(name, capacity, m)
+		go tq.runTasks()
 		m.tasks[name] = tq
 	}
 	go m.pollTransission()
