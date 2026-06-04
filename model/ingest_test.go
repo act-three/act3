@@ -95,6 +95,25 @@ func TestBuildMVPlaylist(t *testing.T) {
 		}
 	})
 
+	t.Run("native HDR10 source signals PQ variants", func(t *testing.T) {
+		hdrVid := vid
+		hdrVid.ColorTransfer = "smpte2084"
+		rend := rendHalf
+		rend.Codec = "hevc"
+		got := buildMVPlaylist(hdrVid,
+			[]schema.Rendition{rend},
+			[]schema.AudioRendition{encAudio},
+			[]schema.AudioTrack{track},
+			nil,
+		)
+		if !strings.Contains(got, "VIDEO-RANGE=PQ") {
+			t.Errorf("missing VIDEO-RANGE=PQ:\n%s", got)
+		}
+		if !strings.Contains(got, "hvc1.2.4") {
+			t.Errorf("missing Main 10 codec string:\n%s", got)
+		}
+	})
+
 	t.Run("stereo downmix of surround is not autoselected", func(t *testing.T) {
 		surround := schema.AudioTrack{ID: "at6", VideoID: "vid1", Language: "eng", StreamIndex: 1, Channels: 6}
 		got := buildMVPlaylist(vid,

@@ -23,6 +23,7 @@
 						"collectionid": "CollectionID",
 						"collectionmovie": "CollectionMovie",
 						"collectionseries": "CollectionSeries",
+						"colortransfer": "ColorTransfer",
 						"contenthash": "ContentHash",
 						"cascadeof": "CascadeOf",
 						"deletedat": "DeletedAt",

@@ -257,6 +257,7 @@ type Video struct {
 	VideoTimebaseDen   int64
 	VideoKeyframes     string
 	DolbyVisionProfile int64
+	ColorTransfer      string
 	Playable           int64
 	ContentHash        []byte
 	DeletedAt          *int64

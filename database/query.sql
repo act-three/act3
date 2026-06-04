@@ -1474,7 +1474,8 @@ UPDATE Video SET
 	VideoPacketCount = ?, VideoDurationTicks = ?,
 	VideoTimebaseNum = ?, VideoTimebaseDen = ?,
 	VideoKeyframes = ?,
-	DolbyVisionProfile = ?
+	DolbyVisionProfile = ?,
+	ColorTransfer = ?
 WHERE ID = ?;
 
 -- name: VideoUpdateState :exec

@@ -223,6 +223,12 @@ CREATE TABLE Video
 	-- re-encode to HDR10 (see video/ffmpeg.dolbyVisionFilter).
 	DolbyVisionProfile INTEGER NOT NULL DEFAULT (0),
 
+	-- Source transfer characteristics as reported by ffprobe
+	-- (e.g. "smpte2084", "arib-std-b67", "bt709"); empty until probed
+	-- or when the source carries no color tags. Drives HDR labeling in
+	-- the MV playlist (see ffmpeg.HDRFormat).
+	ColorTransfer TEXT NOT NULL DEFAULT (''),
+
 	Playable     INTEGER NOT NULL DEFAULT (0), -- 1 once all renditions needed for an MV playlist are present
 	ContentHash  BLOB, -- blake3 of the original bytes; null until copied
 

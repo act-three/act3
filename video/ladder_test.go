@@ -127,11 +127,14 @@ func TestPlanVideoRenditions_dolbyVisionProfile5(t *testing.T) {
 		if r.Codec != "hevc" {
 			t.Errorf("rendition %d: expected hevc, got %s", i, r.Codec)
 		}
+		if r.HDR != "PQ" {
+			t.Errorf("rendition %d: HDR = %q, want PQ", i, r.HDR)
+		}
 	}
 }
 
 // A Profile 8.1 source carries an HDR10-compatible base layer and is
-// left on the normal remux path.
+// left on the normal remux path, labeled PQ via its transfer tag.
 func TestPlanVideoRenditions_dolbyVisionProfile8Remux(t *testing.T) {
 	probe := &ffmpeg.ProbeResult{
 		Video: &ffmpeg.VideoStream{
@@ -142,6 +145,7 @@ func TestPlanVideoRenditions_dolbyVisionProfile8Remux(t *testing.T) {
 			FrameRate:          ffmpeg.FrameRate{Num: 24, Den: 1},
 			HasExplicitDTS:     true,
 			DolbyVisionProfile: 8,
+			ColorTransfer:      "smpte2084",
 		},
 		Audio: []ffmpeg.AudioStream{{CodecName: "eac3", Channels: 6}},
 	}
@@ -151,6 +155,50 @@ func TestPlanVideoRenditions_dolbyVisionProfile8Remux(t *testing.T) {
 	}
 	if !rs[0].Remux {
 		t.Error("expected remux for HDR10-compatible Profile 8 source")
+	}
+	if rs[0].HDR != "PQ" {
+		t.Errorf("HDR = %q, want PQ", rs[0].HDR)
+	}
+}
+
+// A native HDR source (no Dolby Vision) keeps the normal remux path,
+// and every rendition carries its VIDEO-RANGE label — re-encodes
+// preserve the source's dynamic range.
+func TestPlanVideoRenditions_nativeHDR(t *testing.T) {
+	tests := []struct {
+		transfer, want string
+	}{
+		{"smpte2084", "PQ"},
+		{"arib-std-b67", "HLG"},
+		{"bt709", ""},
+		{"", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.transfer, func(t *testing.T) {
+			probe := &ffmpeg.ProbeResult{
+				Video: &ffmpeg.VideoStream{
+					CodecName:      "hevc",
+					BitRate:        15_000_000,
+					Width:          3840,
+					Height:         2160,
+					FrameRate:      ffmpeg.FrameRate{Num: 24, Den: 1},
+					HasExplicitDTS: true,
+					ColorTransfer:  tt.transfer,
+				},
+			}
+			rs, err := PlanVideoRenditions(probe, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !rs[0].Remux {
+				t.Error("expected remux for native-codec source")
+			}
+			for i, r := range rs {
+				if r.HDR != tt.want {
+					t.Errorf("rendition %d: HDR = %q, want %q", i, r.HDR, tt.want)
+				}
+			}
+		})
 	}
 }
 
@@ -470,5 +518,24 @@ func TestHLSCodecs(t *testing.T) {
 	got = (&Rendition{Codec: "hevc"}).HLSCodecs()
 	if got != "hvc1.1.6.L150.90,mp4a.40.2" {
 		t.Errorf("HLSCodecs(hevc) = %q", got)
+	}
+	got = (&Rendition{Codec: "hevc", HDR: "PQ"}).HLSCodecs()
+	if got != "hvc1.2.4.L150.90,mp4a.40.2" {
+		t.Errorf("HLSCodecs(hevc HDR) = %q", got)
+	}
+}
+
+func TestHLSVideoRange(t *testing.T) {
+	tests := []struct {
+		hdr, want string
+	}{
+		{"", "SDR"},
+		{"PQ", "PQ"},
+		{"HLG", "HLG"},
+	}
+	for _, tt := range tests {
+		if got := (&Rendition{HDR: tt.hdr}).HLSVideoRange(); got != tt.want {
+			t.Errorf("HLSVideoRange(HDR=%q) = %q, want %q", tt.hdr, got, tt.want)
+		}
 	}
 }
