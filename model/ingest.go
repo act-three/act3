@@ -1212,7 +1212,7 @@ func toVideoTag(codec string) string {
 // creation and removal are this package's responsibility, but the
 // files inside belong to video/ffmpeg.
 func (m *Model) pass1Dir(vidID string) string {
-	return filepath.Join(m.persistentTmp, "pass1", vidID)
+	return filepath.Join(m.pass1Root, vidID)
 }
 
 // sourceSegmentBoundaries returns the HLS segment cut points every

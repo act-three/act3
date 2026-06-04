@@ -35,17 +35,17 @@ import (
 type Context = context.Context
 
 type Config struct {
-	Store         *storage.Dir
-	PersistentTmp string
-	TMDB          *tmdb.Client
-	TVmaze        *tvmaze.Client
+	Store    *storage.Dir
+	Pass1Dir string
+	TMDB     *tmdb.Client
+	TVmaze   *tvmaze.Client
 }
 
 type Model struct {
-	store         *storage.Dir
-	persistentTmp string
-	tmdb          *tmdb.Client
-	tvmaze        *tvmaze.Client
+	store     *storage.Dir
+	pass1Root string
+	tmdb      *tmdb.Client
+	tvmaze    *tvmaze.Client
 
 	dbr   *sql.DB
 	dbw   *sql.DB
@@ -70,16 +70,16 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	ctx := context.Background()
 	defer errorfmt.Handlef("model init: %w", &err)
 	m = &Model{
-		store:         c.Store,
-		persistentTmp: c.PersistentTmp,
-		tmdb:          c.TMDB,
-		tvmaze:        c.TVmaze,
-		dbr:           dbr,
-		dbw:           dbw,
-		tasks:         map[string]*taskQueue{},
-		torrent:       map[string]*transmissionrpc.Torrent{},
-		downloadDir:   map[string]string{},
-		sub:           map[chan *Event]struct{}{},
+		store:       c.Store,
+		pass1Root:   c.Pass1Dir,
+		tmdb:        c.TMDB,
+		tvmaze:      c.TVmaze,
+		dbr:         dbr,
+		dbw:         dbw,
+		tasks:       map[string]*taskQueue{},
+		torrent:     map[string]*transmissionrpc.Torrent{},
+		downloadDir: map[string]string{},
+		sub:         map[chan *Event]struct{}{},
 	}
 	m.prog.SetHook(func(event string, it *progress.Item) {
 		m.emitEvent(&Event{Type: event, Progress: it})

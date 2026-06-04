@@ -106,12 +106,12 @@ func main() {
 	}
 
 	datDir := filepath.Join(storageDir, "dat")
-	tmpDir := filepath.Join(storageDir, "tmp")
+	pass1Dir := filepath.Join(storageDir, "pass1")
 	if err := os.MkdirAll(datDir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+	if err := os.MkdirAll(pass1Dir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -130,10 +130,10 @@ func main() {
 	tmdbClient := tmdb.New()
 	tvmazeClient := tvmaze.New()
 	m := must(model.New(dbr, dbw, model.Config{
-		Store:         store,
-		PersistentTmp: tmpDir,
-		TMDB:          tmdbClient,
-		TVmaze:        tvmazeClient,
+		Store:    store,
+		Pass1Dir: pass1Dir,
+		TMDB:     tmdbClient,
+		TVmaze:   tvmazeClient,
 	}))
 
 	mux := &http.ServeMux{}
