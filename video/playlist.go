@@ -50,11 +50,12 @@ type MVSubtitle struct {
 // MVAudio describes one audio media entry referenced from a
 // multivariant playlist via #EXT-X-MEDIA:TYPE=AUDIO.
 type MVAudio struct {
-	URI      string // points at a per-track audio media playlist (.m3u8)
-	Name     string // opaque identifier (emitted as NAME); the player JS matches on it
-	Language string // ISO 639-2 code (like "eng")
-	Channels int    // CHANNELS attribute (1, 2, or 6)
-	Default  bool   // exactly one Default per group
+	URI       string // points at a per-track audio media playlist (.m3u8)
+	Name      string // opaque identifier (emitted as NAME); the player JS matches on it
+	Language  string // ISO 639-2 code (like "eng")
+	Channels  int    // CHANNELS attribute (1, 2, or 6)
+	Default   bool   // exactly one Default per group
+	IsDownmix bool   // generated stereo downmix of a surround track; never Default
 }
 
 // GenerateMVPlaylist builds a multivariant (root) HLS playlist from
@@ -75,13 +76,17 @@ func GenerateMVPlaylist(variants []MVEntry, audios []MVAudio, subtitles []MVSubt
 	var alts []*m3u8.Alternative
 	for _, a := range audios {
 		alts = append(alts, &m3u8.Alternative{
-			Type:       "AUDIO",
-			GroupId:    audioGroupID,
-			Name:       a.Name,
-			Language:   rfc5646Language(a.Language),
-			URI:        a.URI,
-			Default:    a.Default,
-			Autoselect: true,
+			Type:     "AUDIO",
+			GroupId:  audioGroupID,
+			Name:     a.Name,
+			Language: rfc5646Language(a.Language),
+			URI:      a.URI,
+			Default:  a.Default,
+			// A downmix duplicates its surround track's language, and
+			// AUTOSELECT=YES group members must be distinct in language
+			// and characteristics — it's a manual choice and a fallback
+			// for clients without surround output, not auto-pickable.
+			Autoselect: !a.IsDownmix,
 			Channels:   &m3u8.Channels{Amount: a.Channels},
 		})
 	}

@@ -1129,11 +1129,12 @@ func buildMVPlaylist(
 		// player menu's visible text, so labels need not be globally
 		// unique, escaped, or generated identically across two paths.
 		mvAudios = append(mvAudios, video.MVAudio{
-			URI:      "/-/audpls/" + ar.ID + ".m3u8",
-			Name:     ar.ID,
-			Language: at.Language,
-			Channels: int(ar.Channels),
-			Default:  i == 0,
+			URI:       "/-/audpls/" + ar.ID + ".m3u8",
+			Name:      ar.ID,
+			Language:  at.Language,
+			Channels:  int(ar.Channels),
+			Default:   i == 0,
+			IsDownmix: ar.Channels < at.Channels,
 		})
 	}
 
