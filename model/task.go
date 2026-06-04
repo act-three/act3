@@ -39,8 +39,9 @@ const (
 )
 
 const (
-	queueIO  = "io"
-	queueCPU = "cpu"
+	queueNet  = "net"
+	queueDisk = "disk"
+	queueCPU  = "cpu"
 )
 
 type taskFunc func(*TxR, Context, []string) error
@@ -62,28 +63,32 @@ var taskTab = map[string]taskFunc{
 }
 
 var queueTab = map[string]string{
-	taskAddDownloadToTransmission: queueIO,
-	taskFetchEpisodes:             queueIO,
-	taskFetchEpisodeThumbnail:     queueIO,
-	taskFetchSeriesPoster:         queueIO,
-	taskFetchMoviePoster:          queueIO,
-	taskIngest:                    queueIO,
+	taskAddDownloadToTransmission: queueNet,
+	taskFetchEpisodes:             queueNet,
+	taskFetchEpisodeThumbnail:     queueNet,
+	taskFetchSeriesPoster:         queueNet,
+	taskFetchMoviePoster:          queueNet,
+	taskIngest:                    queueDisk,
 	taskIngestEncodeAudio:         queueCPU,
 	taskIngestEncodeDownloadRend:  queueCPU,
 	taskIngestEncodeRend:          queueCPU,
-	taskIngestExtractSubs:         queueIO,
+	taskIngestExtractSubs:         queueDisk,
 	taskIngestPass1:               queueCPU,
-	taskReimport:                  queueIO,
-	taskReencode:                  queueIO,
+	taskReimport:                  queueDisk,
+	taskReencode:                  queueDisk,
 }
 
-// taskQueues maps each queue to its admission capacity. The io
-// queue counts tasks (all weigh 1). The cpu queue counts cores:
-// GOMAXPROCS rather than NumCPU so container CPU quotas and an
-// explicit GOMAXPROCS setting are respected.
+// taskQueues maps each queue to its admission capacity. The net
+// queue bounds in-flight HTTP work (the API rate limiters in
+// service/ are the real throughput guard); the disk queue bounds
+// concurrent heavy file work, where two sequential copies already
+// saturate disk bandwidth. Both count tasks (all weigh 1). The cpu
+// queue counts cores: GOMAXPROCS rather than NumCPU so container
+// CPU quotas and an explicit GOMAXPROCS setting are respected.
 var taskQueues = map[string]int{
-	queueIO:  2,
-	queueCPU: runtime.GOMAXPROCS(0),
+	queueNet:  4,
+	queueDisk: 2,
+	queueCPU:  runtime.GOMAXPROCS(0),
 }
 
 // taskWeight maps a task type to its admission weight; absent types
