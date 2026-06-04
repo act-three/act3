@@ -31,6 +31,25 @@ func OverridePreset(preset string) {
 	overridePreset = preset
 }
 
+var scratchDir string
+
+// SetScratchDir directs all ffmpeg scratch output
+// (encode and remux working files)
+// to directories created under dir.
+// Scratch contents are transient:
+// they are removed when each operation finishes
+// and need not survive a restart.
+// By default, or when dir is empty,
+// scratch goes to the system temporary directory.
+func SetScratchDir(dir string) {
+	scratchDir = dir
+}
+
+// mkScratch creates a new scratch directory for one operation.
+func mkScratch(pattern string) (string, error) {
+	return os.MkdirTemp(scratchDir, pattern)
+}
+
 // newCmd creates an *exec.Cmd for the named tool (ffmpeg or ffprobe).
 // Tests override this to run tools inside Docker.
 var newCmd = exec.CommandContext
@@ -816,7 +835,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 		}
 	}()
 
-	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass2-*")
+	tmpDir, err := mkScratch("ffmpeg-pass2-*")
 	if err != nil {
 		return "", err
 	}
@@ -888,7 +907,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 func RemuxSingle(ctx context.Context, src *os.File, format string, dst EncodeParams,
 	duration time.Duration, onProgress func(float64),
 ) (playlist string, err error) {
-	tmpDir, err := os.MkdirTemp("", "ffmpeg-remux-*")
+	tmpDir, err := mkScratch("ffmpeg-remux-*")
 	if err != nil {
 		return "", err
 	}
@@ -930,7 +949,7 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		return fmt.Errorf("probe source: %w", err)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "ffmpeg-remux-mp4-*")
+	tmpDir, err := mkScratch("ffmpeg-remux-mp4-*")
 	if err != nil {
 		return err
 	}
@@ -992,7 +1011,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		}
 	}()
 
-	tmpDir, err := os.MkdirTemp("", "ffmpeg-pass2-mp4-*")
+	tmpDir, err := mkScratch("ffmpeg-pass2-mp4-*")
 	if err != nil {
 		return err
 	}

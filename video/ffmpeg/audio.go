@@ -47,7 +47,7 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 		return "", fmt.Errorf("ffmpeg.EncodeAudio: non-positive Bitrate %d", dst.Bitrate)
 	}
 
-	tmpDir, err := os.MkdirTemp("", "ffmpeg-audio-*")
+	tmpDir, err := mkScratch("ffmpeg-audio-*")
 	if err != nil {
 		return "", err
 	}
