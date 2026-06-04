@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/time/rate"
 	"kr.dev/errorfmt"
 
 	"ily.dev/act3/http/timing"
@@ -25,6 +26,11 @@ var taskTypes = []string{
 }
 
 var baseURL = *must1(url.Parse("https://api.tvmaze.com/"))
+
+// apiLimit keeps API calls inside TVmaze's documented rate limit of
+// 20 calls per 10 seconds per IP: a sustained 2/s with enough burst
+// for interactive use to feel instant.
+var apiLimit = rate.NewLimiter(rate.Every(500*time.Millisecond), 10)
 
 type Client struct {
 	client http.Client
@@ -82,6 +88,9 @@ func (c *Client) GetShow(ctx context.Context, id int) (*Show, error) {
 func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (err error) {
 	defer errorfmt.Handlef("getf %s %v: %w", format, args, &err)
 	slog.InfoContext(ctx, "getf", "format", format, "args", args)
+	if err := apiLimit.Wait(ctx); err != nil {
+		return err
+	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "GET", "", nil)

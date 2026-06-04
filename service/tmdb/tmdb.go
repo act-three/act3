@@ -11,12 +11,17 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/time/rate"
 	"kr.dev/errorfmt"
 
 	"ily.dev/act3/http/timing"
 )
 
 var baseURL = *must(url.Parse("https://api.themoviedb.org"))
+
+// apiLimit keeps API calls well under TMDB's advised ceiling of
+// ~50 requests per second.
+var apiLimit = rate.NewLimiter(rate.Every(100*time.Millisecond), 10)
 
 // PosterURL returns the full URL for a TMDB image path.
 func PosterURL(posterPath string) string {
@@ -104,6 +109,9 @@ func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (e
 	token := c.getToken()
 	if token == "" {
 		return fmt.Errorf("TMDB access token not configured")
+	}
+	if err := apiLimit.Wait(ctx); err != nil {
+		return err
 	}
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
