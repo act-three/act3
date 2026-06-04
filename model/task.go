@@ -18,6 +18,7 @@ import (
 	"ily.dev/act3/log/logcontext"
 	"ily.dev/act3/priority"
 	"ily.dev/act3/tlog"
+	"ily.dev/act3/video/ffmpeg"
 	"kr.dev/errorfmt"
 )
 
@@ -89,10 +90,12 @@ var taskQueues = map[string]int{
 // weigh 1. cpu-queue weights estimate the cores a task keeps busy:
 // a rendition encode runs one ffmpeg encoder, and pass 1 bundles
 // all of a video's encoders (typically five) into one process.
+// These are nominal: encode tasks call reweighTask once they know
+// which rendition they drew.
 var taskWeight = map[string]int{
-	taskIngestPass1:              40,
-	taskIngestEncodeRend:         8,
-	taskIngestEncodeDownloadRend: 8,
+	taskIngestPass1:              5 * ffmpeg.EncoderThreads,
+	taskIngestEncodeRend:         ffmpeg.EncoderThreads,
+	taskIngestEncodeDownloadRend: ffmpeg.EncoderThreads,
 }
 
 func weightFor(ttype string) int {
@@ -212,6 +215,7 @@ func (tq *taskQueue) canAdmit() bool {
 func (tq *taskQueue) dispatch(task schema.Task) {
 	ctx := context.Background()
 	ctx = logcontext.With(ctx, slog.Group("task", "id", task.ID))
+	ctx = context.WithValue(ctx, taskIDKey{}, task.ID)
 	ctx, cancel := context.WithCancel(ctx)
 	key, err := tq.lock(task.ID, task.Type, task.Args, cancel)
 	if err != nil {
@@ -227,6 +231,46 @@ func (tq *taskQueue) dispatch(task schema.Task) {
 		defer tq.unlock(task.ID, key)
 		tq.run(ctx, task)
 	}()
+}
+
+// taskIDKey carries the running task's ID in its context, so task
+// funcs can find their own queue entry (see reweighTask).
+type taskIDKey struct{}
+
+// reweighTask replaces the admission weight of the running task
+// that owns ctx, for use once a task learns its true width (e.g.
+// which rendition it drew). No-op when ctx carries no task ID.
+func (m *Model) reweighTask(ctx Context, weight int) {
+	id, ok := ctx.Value(taskIDKey{}).(string)
+	if !ok {
+		return
+	}
+	for _, tq := range m.tasks {
+		if tq.reweigh(id, weight) {
+			return
+		}
+	}
+}
+
+// reweigh sets the weight of running task id, reporting whether the
+// task was found. Shrinking frees budget, so it wakes the
+// dispatcher.
+func (tq *taskQueue) reweigh(id string, weight int) bool {
+	tq.runningMu.Lock()
+	e, ok := tq.running[id]
+	if !ok {
+		tq.runningMu.Unlock()
+		return false
+	}
+	shrunk := weight < e.weight
+	tq.used += weight - e.weight
+	e.weight = weight
+	tq.running[id] = e
+	tq.runningMu.Unlock()
+	if shrunk {
+		tq.wake()
+	}
+	return true
 }
 
 // wake sends a non-blocking signal to unblock the dispatcher.
