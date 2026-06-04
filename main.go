@@ -107,6 +107,7 @@ func main() {
 
 	datDir := filepath.Join(storageDir, "dat")
 	pass1Dir := filepath.Join(storageDir, "pass1")
+	tmpDir := filepath.Join(storageDir, "tmp")
 	if err := os.MkdirAll(datDir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -115,6 +116,17 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	// Scratch space for in-flight encodes. Contents are worthless
+	// after a crash or restart, so start from empty.
+	if err := os.RemoveAll(tmpDir); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	ffmpeg.SetScratchDir(tmpDir)
 
 	if v := os.Getenv("A3TRANSMISSION"); v != "" {
 		model.SettingDefaultString(model.SettingKeyTransmissionBaseURL, v)
