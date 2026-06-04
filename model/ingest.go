@@ -433,6 +433,11 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 	}
 
 	if numReencode > 0 {
+		// Pass 1 runs one capped encoder per reencode rendition in a
+		// single ffmpeg; refine the nominal admission weight now that
+		// the count is known.
+		tx.m.reweighTask(ctx, numReencode*ffmpeg.EncoderThreads)
+
 		src, err := tx.m.store.Open(vid.OriginalKey)
 		if err != nil {
 			return err
@@ -660,6 +665,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		SegmentBoundaryRate: fps,
 		DolbyVision:         rfs.Remux == 0 && ffmpeg.DolbyVisionNeedsConversion(int(vid.DolbyVisionProfile)),
 	}
+	tx.m.reweighTask(ctx, ffmpeg.ThreadsFor(dst))
 
 	var playlist string
 	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
@@ -766,6 +772,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 		StatsID:     rfd.ID,
 		DolbyVision: rfd.Remux == 0 && ffmpeg.DolbyVisionNeedsConversion(int(vid.DolbyVisionProfile)),
 	}
+	tx.m.reweighTask(ctx, ffmpeg.ThreadsFor(dst))
 
 	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
 		dst.File = dstFile

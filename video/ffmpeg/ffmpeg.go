@@ -50,6 +50,53 @@ func mkScratch(pattern string) (string, error) {
 	return os.MkdirTemp(scratchDir, pattern)
 }
 
+// Per-encoder thread budgets. Encoder thread pools are capped so
+// that concurrent encodes pack predictably onto large machines,
+// rather than every x265/x264 instance sizing its pools for the
+// whole machine and thrashing. EncoderThreads is the general
+// budget: every pass-1 encoder, and pass 2 of the smaller tiers,
+// which stop scaling well past 8 threads anyway. TopEncoderThreads
+// goes to pass 2 of high-bitrate renditions, which dominate
+// time-to-watchable and still scale usefully to 16.
+const (
+	EncoderThreads    = 8
+	TopEncoderThreads = 16
+)
+
+// ThreadsFor returns the thread budget granted to dst's pass-2
+// encoder: TopEncoderThreads for high-bitrate renditions (the top
+// tier and best-rendition re-encodes), EncoderThreads otherwise.
+// Bitrate stands in for output resolution, which EncodeParams
+// cannot express (MaxHeight 0 means "source").
+//
+// Remux renditions run no encoder; ThreadsFor reports
+// EncoderThreads for them, a deliberately conservative figure that
+// doubles as a concurrency throttle when used as a scheduling
+// weight, since concurrent stream copies contend on IO instead.
+func ThreadsFor(dst EncodeParams) int {
+	if !dst.Remux && dst.Bitrate >= 10_000 {
+		return TopEncoderThreads
+	}
+	return EncoderThreads
+}
+
+// threadParams returns a codec-params fragment capping the encoder
+// at threads. For x265, pools sizes the worker pool, and
+// frame-threads is pinned to threads/4 (min 2) because its auto
+// value is derived from the machine's core count, which oversizes
+// frame parallelism once the pool is capped. For x264, threads=
+// replaces its own machine-derived default (1.5x cores, capped at
+// 16).
+func threadParams(codec string, threads int) string {
+	switch codec {
+	case "libx265":
+		return fmt.Sprintf("pools=%d:frame-threads=%d", threads, max(threads/4, 2))
+	case "libx264":
+		return fmt.Sprintf("threads=%d", threads)
+	}
+	return ""
+}
+
 // newCmd creates an *exec.Cmd for the named tool (ffmpeg or ffprobe).
 // Tests override this to run tools inside Docker.
 var newCmd = exec.CommandContext
@@ -874,6 +921,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	}
 	forceArgs, codecExtras := keyframeArgs(dst.SegmentBoundaries, dst.SegmentBoundaryRate)
 	args = append(args, forceArgs...)
+	codecExtras = append(codecExtras, threadParams(dst.Codec, ThreadsFor(dst)))
 	args = append(args, twoPassArgs(dst.Codec, 2, passlog, codecExtras...)...)
 	args = append(args, "-an", "-sn")
 	args = append(args, hlsOutputArgs(mediaPath)...)
@@ -1045,7 +1093,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
-	args = append(args, twoPassArgs(dst.Codec, 2, passlog)...)
+	args = append(args, twoPassArgs(dst.Codec, 2, passlog, threadParams(dst.Codec, ThreadsFor(dst)))...)
 	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
@@ -1257,6 +1305,7 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
 		args = append(args, "-b:v", fmt.Sprintf("%dk", p.Bitrate))
 		forceArgs, codecExtras := keyframeArgs(p.SegmentBoundaries, p.SegmentBoundaryRate)
 		args = append(args, forceArgs...)
+		codecExtras = append(codecExtras, threadParams(p.Codec, EncoderThreads))
 		args = append(args, twoPassArgs(p.Codec, 1, filepath.Join(statsDir, p.StatsID), codecExtras...)...)
 		args = append(args, "-an", "-sn")
 		args = append(args, "-f", "null", "/dev/null")
