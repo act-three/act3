@@ -95,6 +95,28 @@ func TestBuildMVPlaylist(t *testing.T) {
 		}
 	})
 
+	t.Run("stereo downmix of surround is not autoselected", func(t *testing.T) {
+		surround := schema.AudioTrack{ID: "at6", VideoID: "vid1", Language: "eng", StreamIndex: 1, Channels: 6}
+		got := buildMVPlaylist(vid,
+			[]schema.Rendition{rendHalf},
+			[]schema.AudioRendition{
+				{ID: "ar6", VideoID: "vid1", AudioTrackID: "at6", Channels: 6, Key: "ka6"},
+				{ID: "ar2", VideoID: "vid1", AudioTrackID: "at6", Channels: 2, Key: "ka2"},
+			},
+			[]schema.AudioTrack{surround},
+			nil,
+		)
+		for line := range strings.SplitSeq(got, "\n") {
+			if !strings.Contains(line, "TYPE=AUDIO") {
+				continue
+			}
+			want := strings.Contains(line, "ar6.m3u8")
+			if got := strings.Contains(line, "AUTOSELECT=YES"); got != want {
+				t.Errorf("AUTOSELECT=YES is %v, want %v: %s", got, want, line)
+			}
+		}
+	})
+
 	t.Run("audio group present in single-variant", func(t *testing.T) {
 		got := buildMVPlaylist(vid,
 			[]schema.Rendition{rendHalf},

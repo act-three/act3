@@ -309,6 +309,29 @@ func TestGenerateMVPlaylistWithAudio(t *testing.T) {
 	}
 }
 
+func TestGenerateMVPlaylistAudioDownmix(t *testing.T) {
+	entries := []MVEntry{
+		{URI: "best.m3u8", Bandwidth: 5_000_000, Resolution: "1920x1080"},
+	}
+	auds := []MVAudio{
+		{URI: "/-/audpls/a1.m3u8", Name: "a1", Language: "eng", Channels: 6, Default: true},
+		{URI: "/-/audpls/a2.m3u8", Name: "a2", Language: "eng", Channels: 2, IsDownmix: true},
+	}
+	got := GenerateMVPlaylist(entries, auds, nil)
+	// Only the surround track is auto-selectable: its generated
+	// downmix duplicates the language, and AUTOSELECT=YES members of
+	// a group must be distinct in language and characteristics.
+	for line := range strings.SplitSeq(got, "\n") {
+		if !strings.HasPrefix(line, "#EXT-X-MEDIA:TYPE=AUDIO") {
+			continue
+		}
+		want := strings.Contains(line, `CHANNELS="6"`)
+		if got := strings.Contains(line, "AUTOSELECT=YES"); got != want {
+			t.Errorf("AUTOSELECT=YES is %v, want %v: %s", got, want, line)
+		}
+	}
+}
+
 func TestGenerateMVPlaylistWithAudioAndSubtitles(t *testing.T) {
 	entries := []MVEntry{
 		{URI: "best.m3u8", Bandwidth: 5_000_000, Resolution: "1920x1080"},
