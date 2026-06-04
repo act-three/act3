@@ -14,4 +14,10 @@ env (
 	A3DATABASE /database
 	A3STORAGE  /storage
 	PATH       /
+
+	# Dolby Vision conversion runs ffmpeg's libplacebo filter on a
+	# software Vulkan rasterizer (Mesa lavapipe); these point the Vulkan
+	# loader at the bundled driver and its shared libraries.
+	VK_ICD_FILENAMES /usr/share/vulkan/icd.d/lvp_icd.json
+	LD_LIBRARY_PATH  /usr/lib:/lib
 )

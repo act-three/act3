@@ -218,6 +218,11 @@ CREATE TABLE Video
 	VideoTimebaseDen   INTEGER NOT NULL DEFAULT (0),
 	VideoKeyframes     TEXT NOT NULL DEFAULT (''), -- JSON array of display-order frame indices; empty until probed
 
+	-- Dolby Vision profile from the source's DOVI configuration record,
+	-- or 0 when not Dolby Vision. Profile 5 drives a Dolby-Vision-aware
+	-- re-encode to HDR10 (see video/ffmpeg.dolbyVisionFilter).
+	DolbyVisionProfile INTEGER NOT NULL DEFAULT (0),
+
 	Playable     INTEGER NOT NULL DEFAULT (0), -- 1 once all renditions needed for an MV playlist are present
 	ContentHash  BLOB, -- blake3 of the original bytes; null until copied
 

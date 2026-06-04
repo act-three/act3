@@ -6059,7 +6059,7 @@ INSERT INTO Video
 	Name
 )
 VALUES (?, ?)
-RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat
+RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat
 `
 
 type VideoCreateParams struct {
@@ -6088,6 +6088,7 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 		&i.VideoTimebaseNum,
 		&i.VideoTimebaseDen,
 		&i.VideoKeyframes,
+		&i.DolbyVisionProfile,
 		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
@@ -6096,7 +6097,7 @@ func (q *Queries) VideoCreate(ctx context.Context, arg VideoCreateParams) (Video
 }
 
 const videoGet = `-- name: VideoGet :one
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video WHERE ID = ?
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video WHERE ID = ?
 `
 
 func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
@@ -6120,6 +6121,7 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 		&i.VideoTimebaseNum,
 		&i.VideoTimebaseDen,
 		&i.VideoKeyframes,
+		&i.DolbyVisionProfile,
 		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
@@ -6128,7 +6130,7 @@ func (q *Queries) VideoGet(ctx context.Context, id string) (Video, error) {
 }
 
 const videoGetByName = `-- name: VideoGetByName :one
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video WHERE InfoHash = ? AND Name = ?
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video WHERE InfoHash = ? AND Name = ?
 `
 
 type VideoGetByNameParams struct {
@@ -6157,6 +6159,7 @@ func (q *Queries) VideoGetByName(ctx context.Context, arg VideoGetByNameParams) 
 		&i.VideoTimebaseNum,
 		&i.VideoTimebaseDen,
 		&i.VideoKeyframes,
+		&i.DolbyVisionProfile,
 		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
@@ -6176,7 +6179,7 @@ func (q *Queries) VideoHardDelete(ctx context.Context, id string) error {
 }
 
 const videoListByContentHash = `-- name: VideoListByContentHash :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video WHERE ContentHash = ? AND DeletedAt IS NULL
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video WHERE ContentHash = ? AND DeletedAt IS NULL
 `
 
 func (q *Queries) VideoListByContentHash(ctx context.Context, contenthash []byte) ([]Video, error) {
@@ -6206,6 +6209,7 @@ func (q *Queries) VideoListByContentHash(ctx context.Context, contenthash []byte
 			&i.VideoTimebaseNum,
 			&i.VideoTimebaseDen,
 			&i.VideoKeyframes,
+			&i.DolbyVisionProfile,
 			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
@@ -6224,7 +6228,7 @@ func (q *Queries) VideoListByContentHash(ctx context.Context, contenthash []byte
 }
 
 const videoListByEditionID = `-- name: VideoListByEditionID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
@@ -6263,6 +6267,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 			&i.VideoTimebaseNum,
 			&i.VideoTimebaseDen,
 			&i.VideoKeyframes,
+			&i.DolbyVisionProfile,
 			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
@@ -6281,7 +6286,7 @@ func (q *Queries) VideoListByEditionID(ctx context.Context, editionid string) ([
 }
 
 const videoListByEpisodeID = `-- name: VideoListByEpisodeID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
@@ -6316,6 +6321,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 			&i.VideoTimebaseNum,
 			&i.VideoTimebaseDen,
 			&i.VideoKeyframes,
+			&i.DolbyVisionProfile,
 			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
@@ -6334,7 +6340,7 @@ func (q *Queries) VideoListByEpisodeID(ctx context.Context, episodeid string) ([
 }
 
 const videoListByInfoHash = `-- name: VideoListByInfoHash :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video WHERE InfoHash = ?
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video WHERE InfoHash = ?
 `
 
 func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]Video, error) {
@@ -6364,6 +6370,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 			&i.VideoTimebaseNum,
 			&i.VideoTimebaseDen,
 			&i.VideoKeyframes,
+			&i.DolbyVisionProfile,
 			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
@@ -6382,7 +6389,7 @@ func (q *Queries) VideoListByInfoHash(ctx context.Context, infohash *string) ([]
 }
 
 const videoListByMovieEditionID = `-- name: VideoListByMovieEditionID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM MovieVideo
@@ -6417,6 +6424,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 			&i.VideoTimebaseNum,
 			&i.VideoTimebaseDen,
 			&i.VideoKeyframes,
+			&i.DolbyVisionProfile,
 			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
@@ -6435,7 +6443,7 @@ func (q *Queries) VideoListByMovieEditionID(ctx context.Context, movieeditionid 
 }
 
 const videoListByMovieID = `-- name: VideoListByMovieID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM MovieVideo
@@ -6471,6 +6479,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 			&i.VideoTimebaseNum,
 			&i.VideoTimebaseDen,
 			&i.VideoKeyframes,
+			&i.DolbyVisionProfile,
 			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
@@ -6489,7 +6498,7 @@ func (q *Queries) VideoListByMovieID(ctx context.Context, movieid string) ([]Vid
 }
 
 const videoListBySeriesID = `-- name: VideoListBySeriesID :many
-SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat FROM Video
+SELECT id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat FROM Video
 WHERE DeletedAt IS NULL
 AND ID IN (
 	SELECT VideoID FROM EpisodeVideo
@@ -6529,6 +6538,7 @@ func (q *Queries) VideoListBySeriesID(ctx context.Context, seriesid string) ([]V
 			&i.VideoTimebaseNum,
 			&i.VideoTimebaseDen,
 			&i.VideoKeyframes,
+			&i.DolbyVisionProfile,
 			&i.Playable,
 			&i.ContentHash,
 			&i.DeletedAt,
@@ -6670,7 +6680,7 @@ func (q *Queries) VideoSoftDelete(ctx context.Context, arg VideoSoftDeleteParams
 
 const videoUpdateOriginalKey = `-- name: VideoUpdateOriginalKey :one
 UPDATE Video SET OriginalKey = ?, ContentHash = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat
+RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat
 `
 
 type VideoUpdateOriginalKeyParams struct {
@@ -6700,6 +6710,7 @@ func (q *Queries) VideoUpdateOriginalKey(ctx context.Context, arg VideoUpdateOri
 		&i.VideoTimebaseNum,
 		&i.VideoTimebaseDen,
 		&i.VideoKeyframes,
+		&i.DolbyVisionProfile,
 		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
@@ -6709,7 +6720,7 @@ func (q *Queries) VideoUpdateOriginalKey(ctx context.Context, arg VideoUpdateOri
 
 const videoUpdatePlayable = `-- name: VideoUpdatePlayable :one
 UPDATE Video SET Playable = ? WHERE ID = ?
-RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, playable, contenthash, deletedat
+RETURNING id, infohash, name, state, originalkey, originaltype, format, duration, width, height, frameratenum, framerateden, videopacketcount, videodurationticks, videotimebasenum, videotimebaseden, videokeyframes, dolbyvisionprofile, playable, contenthash, deletedat
 `
 
 type VideoUpdatePlayableParams struct {
@@ -6738,6 +6749,7 @@ func (q *Queries) VideoUpdatePlayable(ctx context.Context, arg VideoUpdatePlayab
 		&i.VideoTimebaseNum,
 		&i.VideoTimebaseDen,
 		&i.VideoKeyframes,
+		&i.DolbyVisionProfile,
 		&i.Playable,
 		&i.ContentHash,
 		&i.DeletedAt,
@@ -6752,7 +6764,8 @@ UPDATE Video SET
 	FrameRateNum = ?, FrameRateDen = ?,
 	VideoPacketCount = ?, VideoDurationTicks = ?,
 	VideoTimebaseNum = ?, VideoTimebaseDen = ?,
-	VideoKeyframes = ?
+	VideoKeyframes = ?,
+	DolbyVisionProfile = ?
 WHERE ID = ?
 `
 
@@ -6769,6 +6782,7 @@ type VideoUpdateProbeParams struct {
 	VideoTimebaseNum   int64
 	VideoTimebaseDen   int64
 	VideoKeyframes     string
+	DolbyVisionProfile int64
 	ID                 string
 }
 
@@ -6786,6 +6800,7 @@ func (q *Queries) VideoUpdateProbe(ctx context.Context, arg VideoUpdateProbePara
 		arg.VideoTimebaseNum,
 		arg.VideoTimebaseDen,
 		arg.VideoKeyframes,
+		arg.DolbyVisionProfile,
 		arg.ID,
 	)
 	return err

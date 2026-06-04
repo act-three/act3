@@ -338,6 +338,7 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			VideoTimebaseNum:   int64(probe.Video.TimebaseNum),
 			VideoTimebaseDen:   int64(probe.Video.TimebaseDen),
 			VideoKeyframes:     string(keyframesJSON),
+			DolbyVisionProfile: int64(probe.Video.DolbyVisionProfile),
 		})
 		if err != nil {
 			return err
@@ -442,16 +443,18 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 			return fmt.Errorf("source segment boundaries: %w", err)
 		}
 
+		dolbyVision := ffmpeg.DolbyVisionNeedsConversion(int(vid.DolbyVisionProfile))
 		dsts := make([]ffmpeg.EncodeParams, len(renditions))
 		for i, r := range renditions {
 			dsts[i] = ffmpeg.EncodeParams{
-				Remux:     r.Remux != 0,
-				Codec:     toFFmpegCodec(r.Codec),
-				Bitrate:   r.TargetBitrate,
-				MaxHeight: int(r.MaxHeight),
-				MaxFPS:    int(r.MaxFPS),
-				Tag:       toVideoTag(r.Codec),
-				StatsID:   r.ID,
+				Remux:       r.Remux != 0,
+				Codec:       toFFmpegCodec(r.Codec),
+				Bitrate:     r.TargetBitrate,
+				MaxHeight:   int(r.MaxHeight),
+				MaxFPS:      int(r.MaxFPS),
+				Tag:         toVideoTag(r.Codec),
+				StatsID:     r.ID,
+				DolbyVision: dolbyVision && r.Remux == 0,
 			}
 			// Forced keyframes (and the keyint=99999:scenecut=0
 			// extras that go with them) only matter for streaming
@@ -654,6 +657,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		StatsID:             rfs.ID,
 		SegmentBoundaries:   boundaries,
 		SegmentBoundaryRate: fps,
+		DolbyVision:         rfs.Remux == 0 && ffmpeg.DolbyVisionNeedsConversion(int(vid.DolbyVisionProfile)),
 	}
 
 	var playlist string
@@ -752,13 +756,14 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 
 	duration := time.Duration(vid.Duration) * time.Millisecond
 	dst := ffmpeg.EncodeParams{
-		Remux:     rfd.Remux != 0,
-		Codec:     toFFmpegCodec(rfd.Codec),
-		Bitrate:   rfd.TargetBitrate,
-		MaxHeight: int(rfd.MaxHeight),
-		MaxFPS:    int(rfd.MaxFPS),
-		Tag:       toVideoTag(rfd.Codec),
-		StatsID:   rfd.ID,
+		Remux:       rfd.Remux != 0,
+		Codec:       toFFmpegCodec(rfd.Codec),
+		Bitrate:     rfd.TargetBitrate,
+		MaxHeight:   int(rfd.MaxHeight),
+		MaxFPS:      int(rfd.MaxFPS),
+		Tag:         toVideoTag(rfd.Codec),
+		StatsID:     rfd.ID,
+		DolbyVision: rfd.Remux == 0 && ffmpeg.DolbyVisionNeedsConversion(int(vid.DolbyVisionProfile)),
 	}
 
 	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
@@ -1079,6 +1084,8 @@ func buildMVPlaylist(
 		return ""
 	}
 
+	hdr := ffmpeg.DolbyVisionNeedsConversion(int(vid.DolbyVisionProfile))
+	srcFPS := codedFrameRate(vid)
 	var mvEntries []video.MVEntry
 	for _, rfs := range videoRends {
 		bandwidth := video.PeakBitrate(rfs.Playlist)
@@ -1088,12 +1095,24 @@ func buildMVPlaylist(
 		w, h := video.ScaleResolution(
 			int(vid.Width), int(vid.Height), int(rfs.MaxHeight),
 		)
-		r := video.Rendition{Codec: rfs.Codec}
+		// The variant's peak frame rate: the coded source rate (what
+		// -fps_mode passthrough emits), capped by the rendition's fps
+		// filter when present.
+		var fps float64
+		if srcFPS.Positive() {
+			fps = float64(srcFPS.Num) / float64(srcFPS.Den)
+			if rfs.MaxFPS > 0 && float64(rfs.MaxFPS) < fps {
+				fps = float64(rfs.MaxFPS)
+			}
+		}
+		r := video.Rendition{Codec: rfs.Codec, HDR: hdr}
 		mvEntries = append(mvEntries, video.MVEntry{
 			URI:        "/-/pls/" + rfs.ID + ".m3u8",
 			Bandwidth:  bandwidth,
 			Resolution: video.ResolutionString(w, h),
 			Codecs:     r.HLSCodecs(),
+			VideoRange: r.HLSVideoRange(),
+			FrameRate:  fps,
 		})
 	}
 

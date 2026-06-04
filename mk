@@ -150,26 +150,36 @@ case "${1:-}" in
 
 		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags prod,nodynamic -o $dir/act3
 
-		## Build static ffmpeg and ffprobe from source via Docker.
+		## Build ffmpeg and ffprobe from source via Docker.
 		## See Dockerfile.ffmpeg for the build configuration.
 		## Docker layer caching makes rebuilds fast when only the Go app changes.
+		##
+		## The build emits a runtime tree under /out/rootfs: the binaries
+		## plus the shared libraries, musl loader, and Mesa lavapipe
+		## Vulkan driver they need (ffmpeg can't be fully static because
+		## the Vulkan loader dlopens its driver). Stage the whole tree,
+		## plus the app binary and box.meta, into one root directory so
+		## everything lands at the paths the dynamic linker and box
+		## runtime expect.
 		ffmpeg_image=act3-ffmpeg
 		if ! docker image inspect "$ffmpeg_image" >/dev/null 2>&1; then
 			docker build -t "$ffmpeg_image" -f Dockerfile.ffmpeg video/ffmpeg
 		fi
-		docker run --rm "$ffmpeg_image" cat /out/ffmpeg >"$dir/ffmpeg"
-		docker run --rm "$ffmpeg_image" cat /out/ffprobe >"$dir/ffprobe"
-		chmod +x "$dir/ffmpeg" "$dir/ffprobe"
+		root="$dir/root"
+		mkdir -p "$root"
+		docker run --rm "$ffmpeg_image" tar -C /out/rootfs -cf - . \
+			| tar -C "$root" -xf -
+		cp "$dir/act3" "$root/act3"
+		cp box.meta "$root/box.meta"
 
 		version=$(build_version)
 		image="act3.$version.app"
 
-		## Combines given files and directories into a squashfs file system image.
+		## Combines the staged root directory into a squashfs file system
+		## image. A single source directory has its contents placed at the
+		## image root (multiple sources would instead nest each by name).
 		mksquashfs \
-			box.meta \
-			"$dir/act3" \
-			"$dir/ffmpeg" \
-			"$dir/ffprobe" \
+			"$root" \
 			deploy/$image \
 			-p '/data d 0555 0 0' \
 			-p '/database d 0555 0 0' \

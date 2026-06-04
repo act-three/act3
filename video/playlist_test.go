@@ -158,6 +158,26 @@ func TestGenerateMVPlaylist(t *testing.T) {
 	}
 }
 
+// HDR variants must carry VIDEO-RANGE and FRAME-RATE: CoreMedia drops a
+// PQ variant without FRAME-RATE, leaving Safari nothing to play.
+func TestGenerateMVPlaylistHDR(t *testing.T) {
+	entries := []MVEntry{{
+		URI:        "best.m3u8",
+		Bandwidth:  16_000_000,
+		Resolution: "3840x2160",
+		Codecs:     "hvc1.2.4.L150.90,mp4a.40.2",
+		VideoRange: "PQ",
+		FrameRate:  24,
+	}}
+	playlist := GenerateMVPlaylist(entries, nil, nil)
+	if !strings.Contains(playlist, "VIDEO-RANGE=PQ") {
+		t.Errorf("missing VIDEO-RANGE=PQ: %s", playlist)
+	}
+	if !strings.Contains(playlist, "FRAME-RATE=24") {
+		t.Errorf("missing FRAME-RATE: %s", playlist)
+	}
+}
+
 func TestGenerateMVPlaylistWithSubtitles(t *testing.T) {
 	entries := []MVEntry{
 		{URI: "best.m3u8", Bandwidth: 5_000_000, Resolution: "1920x1080", Codecs: "avc1.640028,mp4a.40.2"},

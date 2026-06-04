@@ -99,6 +99,61 @@ func TestPlanVideoRenditions_hevcRemux(t *testing.T) {
 	}
 }
 
+// A Dolby Vision Profile 5 source must never be stream-copied: the
+// copied base layer would still need the RPU applied. Every rendition
+// is re-encoded (to HDR10) instead, even when the bitrate and keyframe
+// cadence would otherwise allow a remux.
+func TestPlanVideoRenditions_dolbyVisionProfile5(t *testing.T) {
+	probe := &ffmpeg.ProbeResult{
+		Video: &ffmpeg.VideoStream{
+			CodecName:          "hevc",
+			BitRate:            15_000_000,
+			Width:              3840,
+			Height:             2160,
+			FrameRate:          ffmpeg.FrameRate{Num: 24, Den: 1},
+			HasExplicitDTS:     true,
+			DolbyVisionProfile: 5,
+		},
+		Audio: []ffmpeg.AudioStream{{CodecName: "eac3", Channels: 6}},
+	}
+	rs, err := PlanVideoRenditions(probe, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, r := range rs {
+		if r.Remux {
+			t.Errorf("rendition %d: expected re-encode for Dolby Vision, got remux", i)
+		}
+		if r.Codec != "hevc" {
+			t.Errorf("rendition %d: expected hevc, got %s", i, r.Codec)
+		}
+	}
+}
+
+// A Profile 8.1 source carries an HDR10-compatible base layer and is
+// left on the normal remux path.
+func TestPlanVideoRenditions_dolbyVisionProfile8Remux(t *testing.T) {
+	probe := &ffmpeg.ProbeResult{
+		Video: &ffmpeg.VideoStream{
+			CodecName:          "hevc",
+			BitRate:            50_000_000,
+			Width:              3840,
+			Height:             2160,
+			FrameRate:          ffmpeg.FrameRate{Num: 24, Den: 1},
+			HasExplicitDTS:     true,
+			DolbyVisionProfile: 8,
+		},
+		Audio: []ffmpeg.AudioStream{{CodecName: "eac3", Channels: 6}},
+	}
+	rs, err := PlanVideoRenditions(probe, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rs[0].Remux {
+		t.Error("expected remux for HDR10-compatible Profile 8 source")
+	}
+}
+
 func TestPlanVideoRenditions_nonNativeCodec(t *testing.T) {
 	// VP9 source below reencode threshold → reencode at 110%.
 	probe := &ffmpeg.ProbeResult{
