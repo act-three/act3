@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
+	"runtime"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -75,9 +76,30 @@ var queueTab = map[string]string{
 	taskReencode:                  queueIO,
 }
 
+// taskQueues maps each queue to its admission capacity. The io
+// queue counts tasks (all weigh 1). The cpu queue counts cores:
+// GOMAXPROCS rather than NumCPU so container CPU quotas and an
+// explicit GOMAXPROCS setting are respected.
 var taskQueues = map[string]int{
 	queueIO:  2,
-	queueCPU: 1,
+	queueCPU: runtime.GOMAXPROCS(0),
+}
+
+// taskWeight maps a task type to its admission weight; absent types
+// weigh 1. cpu-queue weights estimate the cores a task keeps busy:
+// a rendition encode runs one ffmpeg encoder, and pass 1 bundles
+// all of a video's encoders (typically five) into one process.
+var taskWeight = map[string]int{
+	taskIngestPass1:              40,
+	taskIngestEncodeRend:         8,
+	taskIngestEncodeDownloadRend: 8,
+}
+
+func weightFor(ttype string) int {
+	if w := taskWeight[ttype]; w > 0 {
+		return w
+	}
+	return 1
 }
 
 // ErrPermanent marks a task error as not retriable.
@@ -123,12 +145,14 @@ func (t *Task) FailureDesc() string {
 }
 
 type taskQueue struct {
-	name string
-	m    *Model
+	name     string
+	capacity int // admission budget; see taskQueues
+	m        *Model
 
-	signal chan struct{} // capacity 1; wakes a worker
+	signal chan struct{} // capacity 1; wakes the dispatcher
 
 	runningMu sync.Mutex
+	used      int // total weight of running tasks
 	running   map[string]runEntry
 }
 
@@ -136,15 +160,17 @@ type runEntry struct {
 	key    string
 	ttype  string
 	args   string
+	weight int
 	cancel context.CancelFunc
 }
 
-func newTaskQueue(name string, m *Model) *taskQueue {
+func newTaskQueue(name string, capacity int, m *Model) *taskQueue {
 	return &taskQueue{
-		name:    name,
-		m:       m,
-		signal:  make(chan struct{}, 1),
-		running: map[string]runEntry{},
+		name:     name,
+		capacity: capacity,
+		m:        m,
+		signal:   make(chan struct{}, 1),
+		running:  map[string]runEntry{},
 	}
 }
 
@@ -156,7 +182,7 @@ func (tq *taskQueue) runTasks() {
 		case <-tq.signal:
 		case <-tick.C:
 		}
-		for {
+		for tq.canAdmit() {
 			task, err := tq.next()
 			if err != nil {
 				slog.Error("task-next-error", "error", err)
@@ -164,12 +190,46 @@ func (tq *taskQueue) runTasks() {
 			if task == nil {
 				break
 			}
-			tq.run(*task)
+			tq.dispatch(*task)
 		}
 	}
 }
 
-// wake sends a non-blocking signal to unblock one worker.
+// canAdmit reports whether the queue has budget to start another
+// task. The test deliberately ignores the candidate's own weight:
+// a task wider than the remaining budget still starts, overbooking
+// the queue by at most one task, so that wide tasks can't starve
+// and a nearly-full queue never idles.
+func (tq *taskQueue) canAdmit() bool {
+	tq.runningMu.Lock()
+	defer tq.runningMu.Unlock()
+	return tq.used < tq.capacity
+}
+
+// dispatch locks task and, if the lock is won, runs it on its own
+// goroutine. Locking happens synchronously so that by the time
+// dispatch returns, TaskNext no longer offers the task.
+func (tq *taskQueue) dispatch(task schema.Task) {
+	ctx := context.Background()
+	ctx = logcontext.With(ctx, slog.Group("task", "id", task.ID))
+	ctx, cancel := context.WithCancel(ctx)
+	key, err := tq.lock(task.ID, task.Type, task.Args, cancel)
+	if err != nil {
+		cancel()
+		slog.Error("task-lock-error", "id", task.ID, "error", err)
+		return
+	}
+	if key == "" {
+		cancel()
+		return // someone else locked it
+	}
+	go func() {
+		defer tq.unlock(task.ID, key)
+		tq.run(ctx, task)
+	}()
+}
+
+// wake sends a non-blocking signal to unblock the dispatcher.
 func (tq *taskQueue) wake() {
 	select {
 	case tq.signal <- struct{}{}:
@@ -205,7 +265,9 @@ func (tq *taskQueue) lock(id, ttype, args string, cancel context.CancelFunc) (st
 	tq.runningMu.Lock()
 	defer tq.runningMu.Unlock()
 	key := cryptorand.Text()
-	tq.running[id] = runEntry{key: key, ttype: ttype, args: args, cancel: cancel}
+	w := weightFor(ttype)
+	tq.running[id] = runEntry{key: key, ttype: ttype, args: args, weight: w, cancel: cancel}
+	tq.used += w
 	return key, nil
 }
 
@@ -218,11 +280,13 @@ func (tq *taskQueue) unlock(id, key string) {
 	}
 	e.cancel()
 	delete(tq.running, id)
+	tq.used -= e.weight
 	ctx := context.Background()
 	err := schema.New(tq.m.dbw).TaskUnlock(ctx, id)
 	if err != nil {
 		slog.Error("task-unlock", "id", id, "error", err)
 	}
+	tq.wake()
 }
 
 func (tq *taskQueue) kill(id string) bool {
@@ -235,9 +299,7 @@ func (tq *taskQueue) kill(id string) bool {
 	return ok
 }
 
-func (tq *taskQueue) run(task schema.Task) {
-	ctx := context.Background()
-	ctx = logcontext.With(ctx, slog.Group("task", "id", task.ID))
+func (tq *taskQueue) run(ctx Context, task schema.Task) {
 	tq.m.emitEvent(&Event{Type: EventTaskStatsChange})
 	defer tq.m.emitEvent(&Event{Type: EventTaskStatsChange})
 	err := tq.run1(ctx, task)
@@ -255,15 +317,6 @@ func (tq *taskQueue) run(task schema.Task) {
 }
 
 func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	if key, err := tq.lock(task.ID, task.Type, task.Args, cancel); err != nil {
-		return err
-	} else if key == "" {
-		return nil
-	} else {
-		defer tq.unlock(task.ID, key)
-	}
 	defer func() {
 		// run1's only ctx-cancel source is tq.kill, so if ctx.Err() is
 		// non-nil here the user explicitly killed the task.
