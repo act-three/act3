@@ -364,12 +364,13 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 				return err
 			}
 		}
+		var audioRendIDs []string
 		for _, ar := range audioPlanned {
 			trackID, ok := streamIndexToTrackID[ar.SourceStreamIndex]
 			if !ok {
 				return fmt.Errorf("audio rendition: no AudioTrack for source stream %d", ar.SourceStreamIndex)
 			}
-			_, err = txw.q.AudioRenditionCreate(ctx, schema.AudioRenditionCreateParams{
+			created, err := txw.q.AudioRenditionCreate(ctx, schema.AudioRenditionCreateParams{
 				VideoID:      vid.ID,
 				AudioTrackID: trackID,
 				Channels:     int64(ar.Channels),
@@ -381,10 +382,11 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			if err != nil {
 				return err
 			}
+			audioRendIDs = append(audioRendIDs, created.ID)
 		}
 		txw.addTaskWithPriority(ctx, priority.Pass1, taskIngestPass1, vid.ID)
-		for range audioPlanned {
-			txw.addTaskWithPriority(ctx, priority.EncodeAudio, taskIngestEncodeAudio, vid.ID)
+		for _, id := range audioRendIDs {
+			txw.addTaskWithPriority(ctx, priority.EncodeAudio, taskIngestEncodeAudio, id)
 		}
 		if len(stParams) > 0 {
 			txw.addTask(ctx, taskIngestExtractSubs, vid.ID)
@@ -497,24 +499,27 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 			if r.Purpose == "download" {
 				ttype = taskIngestEncodeDownloadRend
 			}
-			txw.addTaskWithPriority(ctx, r.Priority, ttype, vid.ID)
+			txw.addTaskWithPriority(ctx, r.Priority, ttype, r.ID)
 		}
 		return nil
 	})
 }
 
-// taskIngestEncodeAudio picks the highest-priority unencoded audio
-// rendition for a video, encodes it, and rebuilds the MV playlist.
+// taskIngestEncodeAudio encodes the audio rendition named in args
+// and rebuilds the MV playlist.
 func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
-	vid, err := tx.q.VideoGet(ctx, args[0])
+	ar, err := tx.q.AudioRenditionGet(ctx, args[0])
+	if err == sql.ErrNoRows {
+		return nil // rendition deleted (reencode or trash)
+	}
 	if err != nil {
 		return err
 	}
-
-	ar, err := tx.q.AudioRenditionNextUnencoded(ctx, vid.ID)
-	if err == sql.ErrNoRows {
-		return nil
+	if ar.Key != "" {
+		return nil // already encoded (retried task)
 	}
+
+	vid, err := tx.q.VideoGet(ctx, ar.VideoID)
 	if err != nil {
 		return err
 	}
@@ -595,19 +600,21 @@ func audioRendDesc(ar schema.AudioRendition) string {
 	return fmt.Sprintf("audio %dch %dk", ar.Channels, ar.Bitrate)
 }
 
-// taskIngestEncodeRend picks the highest-priority unencoded rendition
-// for a video, encodes it, and rebuilds the MV playlist.
+// taskIngestEncodeRend encodes the streaming rendition named in args
+// and rebuilds the MV playlist.
 func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
-	vid, err := tx.q.VideoGet(ctx, args[0])
+	rfs, err := tx.q.RenditionGet(ctx, args[0])
+	if err == sql.ErrNoRows {
+		return nil // rendition deleted (reencode or trash)
+	}
 	if err != nil {
 		return err
 	}
-
-	rfs, err := tx.q.RenditionNextUnencodedStreaming(ctx, vid.ID)
-	if err == sql.ErrNoRows {
-		// All renditions already encoded (race or duplicate task).
-		return nil
+	if rfs.Key != "" {
+		return nil // already encoded (retried task)
 	}
+
+	vid, err := tx.q.VideoGet(ctx, rfs.VideoID)
 	if err != nil {
 		return err
 	}
@@ -724,23 +731,23 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	return err
 }
 
-// taskIngestEncodeDownloadRend encodes the download rendition for a
-// video as a plain MP4 with faststart.
+// taskIngestEncodeDownloadRend encodes the download rendition named
+// in args as a plain MP4 with faststart.
 func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
-	vid, err := tx.q.VideoGet(ctx, args[0])
-	if err != nil {
-		return err
-	}
-
-	rfd, err := tx.q.RenditionGetDownloadByVideoID(ctx, vid.ID)
+	rfd, err := tx.q.RenditionGet(ctx, args[0])
 	if err == sql.ErrNoRows {
-		return nil
+		return nil // rendition deleted (reencode or trash)
 	}
 	if err != nil {
 		return err
 	}
 	if rfd.Key != "" {
-		return nil // already encoded
+		return nil // already encoded (retried task)
+	}
+
+	vid, err := tx.q.VideoGet(ctx, rfd.VideoID)
+	if err != nil {
+		return err
 	}
 
 	progKey := "rfd-" + rfd.ID

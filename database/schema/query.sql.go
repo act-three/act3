@@ -222,31 +222,6 @@ func (q *Queries) AudioRenditionListKeysByVideoIDs(ctx context.Context, ids []st
 	return items, nil
 }
 
-const audioRenditionNextUnencoded = `-- name: AudioRenditionNextUnencoded :one
-SELECT id, videoid, audiotrackid, channels, bitrate, codec, "key", playlist, priority, sortkey FROM AudioRendition
-WHERE VideoID = ? AND Key = ''
-ORDER BY Priority ASC, AudioTrackID, Channels
-LIMIT 1
-`
-
-func (q *Queries) AudioRenditionNextUnencoded(ctx context.Context, videoid string) (AudioRendition, error) {
-	row := q.db.QueryRowContext(ctx, audioRenditionNextUnencoded, videoid)
-	var i AudioRendition
-	err := row.Scan(
-		&i.ID,
-		&i.VideoID,
-		&i.AudioTrackID,
-		&i.Channels,
-		&i.Bitrate,
-		&i.Codec,
-		&i.Key,
-		&i.Playlist,
-		&i.Priority,
-		&i.SortKey,
-	)
-	return i, err
-}
-
 const audioRenditionUpdateEncode = `-- name: AudioRenditionUpdateEncode :one
 UPDATE AudioRendition
 SET Key = ?, Playlist = ?
@@ -3837,31 +3812,6 @@ func (q *Queries) RenditionListStreamingByVideoID(ctx context.Context, videoid s
 		return nil, err
 	}
 	return items, nil
-}
-
-const renditionNextUnencodedStreaming = `-- name: RenditionNextUnencodedStreaming :one
-SELECT id, videoid, purpose, remux, codec, targetbitrate, maxheight, maxfps, "key", playlist, priority FROM Rendition
-WHERE VideoID = ? AND Purpose = 'streaming' AND Key = ''
-ORDER BY Priority ASC LIMIT 1
-`
-
-func (q *Queries) RenditionNextUnencodedStreaming(ctx context.Context, videoid string) (Rendition, error) {
-	row := q.db.QueryRowContext(ctx, renditionNextUnencodedStreaming, videoid)
-	var i Rendition
-	err := row.Scan(
-		&i.ID,
-		&i.VideoID,
-		&i.Purpose,
-		&i.Remux,
-		&i.Codec,
-		&i.TargetBitrate,
-		&i.MaxHeight,
-		&i.MaxFPS,
-		&i.Key,
-		&i.Playlist,
-		&i.Priority,
-	)
-	return i, err
 }
 
 const renditionUpdateEncode = `-- name: RenditionUpdateEncode :one

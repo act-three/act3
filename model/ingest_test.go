@@ -220,3 +220,71 @@ func TestReencodeReplansAfterDelete(t *testing.T) {
 		t.Fatal("expected planAndCreateRenditions to attempt the source open and fail; got nil — guard short-circuited on stale snapshot?")
 	}
 }
+
+// TestEncodeTaskNoOps verifies that encode tasks operate on exactly
+// the rendition named in their args: a task whose rendition is gone
+// (reencode or trash) or already encoded (retry) must no-op rather
+// than draw a different rendition. This pins down the fix for a race
+// where concurrent same-video tasks each picked the "next unencoded"
+// rendition, encoding one rendition twice and another never.
+func TestEncodeTaskNoOps(t *testing.T) {
+	ctx := context.Background()
+	m := newFileBackedTestModel(t)
+
+	vidID := createVideoRow(t, m, "v.mkv", "fakekey", []string{"rendkey1"})
+
+	var rendID, audioRendID string
+	err := m.WithTxRW(func(tx *TxRW) error {
+		var e error
+		rends, e := tx.q.RenditionListByVideoID(ctx, vidID)
+		if e != nil {
+			return e
+		}
+		rendID = rends[0].ID
+		at, e := tx.q.AudioTrackCreate(ctx, schema.AudioTrackCreateParams{
+			VideoID: vidID, Channels: 2, ChannelLayout: "stereo",
+			SampleRate: 48000, Codec: "aac", Profile: "LC",
+		})
+		if e != nil {
+			return e
+		}
+		ar, e := tx.q.AudioRenditionCreate(ctx, schema.AudioRenditionCreateParams{
+			VideoID: vidID, AudioTrackID: at.ID,
+			Channels: 2, Bitrate: 128, Codec: "aac", Priority: 1,
+		})
+		if e != nil {
+			return e
+		}
+		audioRendID = ar.ID
+		_, e = tx.q.AudioRenditionUpdateEncode(ctx, schema.AudioRenditionUpdateEncodeParams{
+			ID: ar.ID, Key: "audiokey1",
+		})
+		return e
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		f    func(*TxR, Context, []string) error
+		args []string
+	}{
+		{"rend already encoded", (*TxR).taskIngestEncodeRend, []string{rendID}},
+		{"rend deleted", (*TxR).taskIngestEncodeRend, []string{"rendgone"}},
+		{"dl-rend already encoded", (*TxR).taskIngestEncodeDownloadRend, []string{rendID}},
+		{"dl-rend deleted", (*TxR).taskIngestEncodeDownloadRend, []string{"rendgone"}},
+		{"audio already encoded", (*TxR).taskIngestEncodeAudio, []string{audioRendID}},
+		{"audio deleted", (*TxR).taskIngestEncodeAudio, []string{"argone"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := m.WithTxR(func(tx *TxR) error {
+				return tt.f(tx, ctx, tt.args)
+			})
+			if err != nil {
+				t.Fatalf("want no-op, got error: %v", err)
+			}
+		})
+	}
+}

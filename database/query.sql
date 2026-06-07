@@ -34,12 +34,6 @@ ORDER BY ar.SortKey;
 SELECT Key FROM AudioRendition
 WHERE VideoID IN (sqlc.slice(ids)) AND Key != '';
 
--- name: AudioRenditionNextUnencoded :one
-SELECT * FROM AudioRendition
-WHERE VideoID = ? AND Key = ''
-ORDER BY Priority ASC, AudioTrackID, Channels
-LIMIT 1;
-
 -- name: AudioRenditionUpdateEncode :one
 UPDATE AudioRendition
 SET Key = ?, Playlist = ?
@@ -894,11 +888,6 @@ AND VideoID IN (
 -- name: RenditionListStreamingByVideoID :many
 SELECT * FROM Rendition
 WHERE VideoID = ? AND Purpose = 'streaming';
-
--- name: RenditionNextUnencodedStreaming :one
-SELECT * FROM Rendition
-WHERE VideoID = ? AND Purpose = 'streaming' AND Key = ''
-ORDER BY Priority ASC LIMIT 1;
 
 -- name: RenditionUpdateEncode :one
 UPDATE Rendition
