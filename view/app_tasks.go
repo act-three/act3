@@ -1,39 +1,42 @@
 package view
 
 import (
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/expr"
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
 )
 
-func AppTasks(running []*model.RunningTask, queued, failed []*model.Task) (string, html.Node) {
+func AppTasks(running []*model.RunningTask, queued, failed []*model.Task) (string, domi.Node) {
 	return "Tasks", ScrollY(Class("v-system"))(
-		html.Div()(html.Text("Scheduled Tasks")),
+		html.Div()(domi.Text("Scheduled Tasks")),
 
 		html.Div(Class("v-system-field"))(
-			html.Div()(html.Text("Running")),
+			html.Div()(domi.Text("Running")),
 			expr.IfElse(len(running) > 0,
-				func() html.Node {
+				func() domi.Node {
 					return TableRoot(Class("v-system-input-wide"))(
 						TableHeader()(
 							TableRow()(
-								TableHead()(html.Text("Task")),
-								TableHead()(html.Text("ID")),
-								TableHead()(html.Text("Args")),
+								TableHead()(domi.Text("Task")),
+								TableHead()(domi.Text("ID")),
+								TableHead()(domi.Text("Args")),
 								TableHead()(),
 							),
 						),
 						TableBody()(
-							html.Range(running, func(t *model.RunningTask) html.Node {
-								return html.Tr()(
-									TableCell()(html.Text(t.Type())),
-									TableCell()(html.Text(t.ID())),
-									TableCell()(html.Text(t.Args())),
+							rangeNodes(running, func(t *model.RunningTask) domi.Node {
+								return html.TR()(
+									TableCell()(domi.Text(t.Type())),
+									TableCell()(domi.Text(t.ID())),
+									TableCell()(domi.Text(t.Args())),
 									TableCell()(
-										ActionButton("/-/do/task-kill/"+t.ID(), nil, Destructive)(
-											html.Text("Kill"),
+										Button(onClick(&msg.TaskKill{ID: t.ID()}), Destructive)(
+											domi.Text("Kill"),
 										),
 									),
 								)
@@ -41,53 +44,53 @@ func AppTasks(running []*model.RunningTask, queued, failed []*model.Task) (strin
 						),
 					)
 				},
-				func() html.Node {
+				func() domi.Node {
 					return Text("No running tasks")
 				},
 			),
 		),
 
 		html.Div(Class("v-system-field"))(
-			html.Div()(html.Text("Failed")),
+			html.Div()(domi.Text("Failed")),
 			expr.IfElse(len(failed) > 0,
-				func() html.Node {
+				func() domi.Node {
 					return TableRoot(Class("v-system-input-wide"))(
 						TableHeader()(
 							TableRow()(
-								TableHead()(html.Text("Task")),
-								TableHead()(html.Text("ID")),
-								TableHead()(html.Text("Args")),
-								TableHead()(html.Text("Failures")),
+								TableHead()(domi.Text("Task")),
+								TableHead()(domi.Text("ID")),
+								TableHead()(domi.Text("Args")),
+								TableHead()(domi.Text("Failures")),
 								TableHead()(),
 							),
 						),
 						TableBody()(
-							html.Range(failed, func(t *model.Task) html.Node {
+							rangeNodes(failed, func(t *model.Task) domi.Node {
 								return taskRow(t, "Retry")
 							}),
 						),
 					)
 				},
-				func() html.Node {
+				func() domi.Node {
 					return Text("No failed tasks")
 				},
 			),
 		),
 
 		html.Div(Class("v-system-field"))(
-			html.Div()(html.Text("Queued")),
+			html.Div()(domi.Text("Queued")),
 			TableRoot(Class("v-system-input-wide"))(
 				TableHeader()(
 					TableRow()(
-						TableHead()(html.Text("Task")),
-						TableHead()(html.Text("ID")),
-						TableHead()(html.Text("Args")),
-						TableHead()(html.Text("Failures")),
-						TableHead()(html.Text("Next Run")),
+						TableHead()(domi.Text("Task")),
+						TableHead()(domi.Text("ID")),
+						TableHead()(domi.Text("Args")),
+						TableHead()(domi.Text("Failures")),
+						TableHead()(domi.Text("Next Run")),
 					),
 				),
 				TableBody()(
-					html.Range(queued, func(t *model.Task) html.Node {
+					rangeNodes(queued, func(t *model.Task) domi.Node {
 						return taskRow(t, "Run Now")
 					}),
 				),
@@ -96,35 +99,36 @@ func AppTasks(running []*model.RunningTask, queued, failed []*model.Task) (strin
 	)
 }
 
-func taskRow(t *model.Task, runLabel string) html.Node {
+func taskRow(t *model.Task, runLabel string) domi.Node {
 	s := t.FailureDesc()
 	return Group(
-		html.Tr()(
-			TableCell()(html.Text(t.Type())),
+		html.TR()(
+			TableCell()(domi.Text(t.Type())),
 			TableCell()(
-				html.Text(t.ID()),
-				ActionButton("/-/do/task-delete/"+t.ID(), nil, ButtonGhost)(
-					html.Text("Delete"),
+				domi.Text(t.ID()),
+				Button(onClick(&msg.TaskDelete{ID: t.ID()}), ButtonGhost)(
+					domi.Text("Delete"),
 				),
 			),
-			TableCell()(html.Text(t.Args())),
-			TableCell()(html.Textf("%d", t.Failures())),
+			TableCell()(domi.Text(t.Args())),
+			TableCell()(domi.Textf("%d", t.Failures())),
 			TableCell()(
-				html.If(!t.Failed(), func() html.Node {
-					return html.Textf("%v", t.NextRun())
+				iff(!t.Failed(), func() domi.Node {
+					return domi.Textf("%v", t.NextRun())
 				}),
-				ActionButton("/-/do/task-run/"+t.ID(), nil, ButtonGhost)(
-					html.Text(runLabel),
+
+				Button(onClick(&msg.TaskRun{ID: t.ID()}), ButtonGhost)(
+					domi.Text(runLabel),
 				),
 			),
 		),
-		html.If(s != "", func() html.Node {
-			return html.Tr()(
+		iff(s != "", func() domi.Node {
+			return html.TR()(
 				TableCell(
 					attr.Colspan("5"),
 				)(
 					Code()(
-						html.Text(s),
+						domi.Text(s),
 					),
 				),
 			)

@@ -3,20 +3,20 @@ package ui
 import (
 	"fmt"
 
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
-func Textf(format string, arg ...any) html.Node {
+func Textf(format string, arg ...any) domi.Node {
 	return Text(fmt.Sprintf(format, arg...))
 }
 
-func Text(s string, attrs ...attr.Node) html.Node {
-	return TextNode(attrs...)(html.Text(s))
+func Text(s string, attrs ...domi.Attr) domi.Node {
+	return TextNode(attrs...)(domi.Text(s))
 }
 
-func TextNode(attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
+func TextNode(attrs ...domi.Attr) domi.Element {
+	return func(nodes ...domi.Node) domi.Node {
 		return html.Div(
 			Class("u-text"),
 			group(attrs...),

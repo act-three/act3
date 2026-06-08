@@ -6,37 +6,34 @@ import (
 	"slices"
 	"strings"
 
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/jassub"
 )
 
-// PlayerForEpisode and PlayerForMovie render the player frame.
-// initAudio, initSubtitle, and pinAudio come from the player URL's
-// ?a / ?s / ?pin_audio query params:
-//
-//   - ?a is optional. Empty → fall back to the HLS DEFAULT
-//     (audioOpts[0].ID). Pages without an audio picker can omit it
-//     and rely on the default; pages with a picker (theater) supply
-//     the user's pick.
-//   - ?s is optional. Empty → captions Off; matches the "Off" menu
-//     entry's id="" naturally with no special-casing.
-//   - ?pin_audio is required on every link to the player. It must
-//     come from a runtime audioTracks feature check in the linking
-//     page, not a server-side guess: Chrome (no audioTracks API)
-//     needs the manifest pre-pinned to the chosen audio rendition;
-//     Safari has the API and switches via JS without a source-swap.
-//     Both the playable controller (theater) and playButtonForList
-//     (list views) do this check on connect.
-func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption, initAudio, initSubtitle string, pinAudio bool) html.Node {
+func PlayerContainer(id string, player domi.Node) domi.Node {
+	return domi.Keyed("div")(attr.ID("player"))(
+		func(yield func(string, domi.Node) bool) {
+			if player == nil {
+				return
+			}
+			yield(id, player)
+		},
+	)
+}
+
+// PlayerForEpisode and PlayerForMovie render the player for an episode
+// or movie edition's video.
+func PlayerForEpisode(v *model.Video, ep *model.Episode, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption, initAudio, initSubtitle string, pinAudio bool) domi.Node {
 	return player(v, playerTitleForEpisode(ep), qualityOpts, captionsOpts, audioOpts, initAudio, initSubtitle, pinAudio)
 }
 
-func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption, initAudio, initSubtitle string, pinAudio bool) html.Node {
+func PlayerForMovie(v *model.Video, med *model.MovieEditionHead, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption, initAudio, initSubtitle string, pinAudio bool) domi.Node {
 	return player(v, playerTitleForMovie(med), qualityOpts, captionsOpts, audioOpts, initAudio, initSubtitle, pinAudio)
 }
 
@@ -48,152 +45,162 @@ func playerTitleForMovie(med *model.MovieEditionHead) string {
 	return title
 }
 
-func player(v *model.Video, title string, qualityOpts []model.QualityOption, captionsOpts []model.SubtitleOption, audioOpts []model.AudioOption, initAudio, initSubtitle string, pinAudio bool) html.Node {
+// player renders the play surface. An empty initAudio falls back to
+// the video's default audio; an empty initSubtitle leaves captions off.
+func player(
+	v *model.Video,
+	title string,
+	qualityOpts []model.QualityOption,
+	captionsOpts []model.SubtitleOption,
+	audioOpts []model.AudioOption,
+	initAudio, initSubtitle string,
+	pinAudio bool,
+) domi.Node {
 	if initAudio == "" && len(audioOpts) > 0 {
 		initAudio = audioOpts[0].ID
 	}
-	return turbo.Frame("player")(
-		html.Div(
-			attr.ID("full-player"),
-			Class("v-player"),
-			stimulus.Controller("player"),
-			stimulus.Value("player", "title")(title),
-			stimulus.Value("player", "playing")("false"),
-			stimulus.Value("player", "paused")("true"),
-			stimulus.Value("player", "stopped")("true"),
-			stimulus.Value("player", "harlow")("false"),
-			stimulus.Value("player", "hide-controls")("false"),
-			stimulus.Value("player", "video-id")(v.ID()),
-			stimulus.Value("player", "current-quality")(""),
-			stimulus.Value("player", "quality-menu-open")("false"),
-			stimulus.Value("player", "current-subtitle")(initSubtitle),
-			stimulus.Value("player", "captions-menu-open")("false"),
-			stimulus.Value("player", "current-audio")(initAudio),
-			stimulus.Value("player", "audio-menu-open")("false"),
+	return html.Div(
+		domi.Opaque,
+		attr.ID("full-player"),
+		Class("v-player"),
+		stimulus.Controller("player"),
+		stimulus.Value("player", "title")(title),
+		stimulus.Value("player", "playing")("false"),
+		stimulus.Value("player", "paused")("true"),
+		stimulus.Value("player", "stopped")("true"),
+		stimulus.Value("player", "harlow")("false"),
+		stimulus.Value("player", "hide-controls")("false"),
+		stimulus.Value("player", "video-id")(v.ID()),
+		stimulus.Value("player", "current-quality")(""),
+		stimulus.Value("player", "quality-menu-open")("false"),
+		stimulus.Value("player", "current-subtitle")(initSubtitle),
+		stimulus.Value("player", "captions-menu-open")("false"),
+		stimulus.Value("player", "current-audio")(initAudio),
+		stimulus.Value("player", "audio-menu-open")("false"),
 
-			// jassub URLs are empty in default builds; the
-			// player JS treats an empty host URL as "feature off"
-			// and stays on the native textTracks path. In
-			// -tags jassub builds these resolve to the digest-
-			// cache-busted artifacts under /-/jassub/.
-			stimulus.Value("player", "jassub-host-url")(jassub.Path("jassub.js")),
-			stimulus.Value("player", "jassub-worker-url")(jassub.Path("jassub-worker.js")),
-			stimulus.Value("player", "jassub-wasm-url")(jassub.Path("jassub-worker-modern.wasm")),
-			stimulus.Value("player", "jassub-font-url")(jassub.Path("default.woff2")),
+		// jassub URLs are empty in default builds; the
+		// player JS treats an empty host URL as "feature off"
+		// and stays on the native textTracks path. In
+		// -tags jassub builds these resolve to the digest-
+		// cache-busted artifacts under /-/jassub/.
+		stimulus.Value("player", "jassub-host-url")(jassub.Path("jassub.js")),
+		stimulus.Value("player", "jassub-worker-url")(jassub.Path("jassub-worker.js")),
+		stimulus.Value("player", "jassub-wasm-url")(jassub.Path("jassub-worker-modern.wasm")),
+		stimulus.Value("player", "jassub-font-url")(jassub.Path("default.woff2")),
 
-			stimulus.Action("keydown.h@window->player#toggleHarlow"),
-			stimulus.Action("keydown@window->player#handleKey"),
-			stimulus.Action("keyup@window->player#handleKey"),
+		stimulus.Action("keydown.h@window->player#toggleHarlow"),
+		stimulus.Action("keydown@window->player#handleKey"),
+		stimulus.Action("keyup@window->player#handleKey"),
 
-			stimulus.Action("mousemove->player#handleControls"),
-			stimulus.Action("mouseleave->player#handleControls"),
-			stimulus.Action("touchstart->player#handleControls"),
-			stimulus.Action("touchmove->player#handleControls"),
-			stimulus.Action("enterfullscreen->player#handleControls"),
-			stimulus.Action("exitfullscreen->player#handleControls"),
+		stimulus.Action("mousemove->player#handleControls"),
+		stimulus.Action("mouseleave->player#handleControls"),
+		stimulus.Action("touchstart->player#handleControls"),
+		stimulus.Action("touchmove->player#handleControls"),
+		stimulus.Action("enterfullscreen->player#handleControls"),
+		stimulus.Action("exitfullscreen->player#handleControls"),
 
-			// Any click anywhere in the player closes any open menu.
-			// Capture-phase so it runs before togglePlay:self on
-			// .v-player-controls — the bg-click on the video
-			// dismisses the menu without also flipping playback.
-			// All other controls (volume, play button, other menu
-			// toggles, etc.) handle their own click on bubble-up
-			// after the menu has been dismissed.
-			stimulus.Action("click->player#closeMenusOnClick:capture"),
-		)(
-			html.Div(Class("v-player-video-layer"))(
-				html.Video(
-					Class("v-player-video"),
-					Attr("playsinline"),
-					stimulus.Target("player", "video"),
+		// Any click anywhere in the player closes any open menu.
+		// Capture-phase so it runs before togglePlay:self on
+		// .v-player-controls — the bg-click on the video
+		// dismisses the menu without also flipping playback.
+		// All other controls (volume, play button, other menu
+		// toggles, etc.) handle their own click on bubble-up
+		// after the menu has been dismissed.
+		stimulus.Action("click->player#closeMenusOnClick:capture"),
+	)(
+		html.Div(Class("v-player-video-layer"))(
+			html.Video(
+				Class("v-player-video"),
+				Attr("playsinline")(""),
+				stimulus.Target("player", "video"),
 
-					stimulus.Action("playing->player#handlePlaying"),
-					stimulus.Action("play->player#handlePlaying"),
-					stimulus.Action("pause->player#handlePlaying"),
-					stimulus.Action("ended->player#handlePlaying"),
-					stimulus.Action("emptied->player#handlePlaying"),
-					stimulus.Action("timeupdate->player#handlePlaying"),
+				stimulus.Action("playing->player#handlePlaying"),
+				stimulus.Action("play->player#handlePlaying"),
+				stimulus.Action("pause->player#handlePlaying"),
+				stimulus.Action("ended->player#handlePlaying"),
+				stimulus.Action("emptied->player#handlePlaying"),
+				stimulus.Action("timeupdate->player#handlePlaying"),
 
-					// Handle time change on media.
-					stimulus.Action("timeupdate->player#handleTimeUpdate"),
-					stimulus.Action("seeking->player#handleTimeUpdate"),
-					stimulus.Action("seeked->player#handleTimeUpdate"),
-					stimulus.Action("durationchange->player#handleDurationChange"),
+				// Handle time change on media.
+				stimulus.Action("timeupdate->player#handleTimeUpdate"),
+				stimulus.Action("seeking->player#handleTimeUpdate"),
+				stimulus.Action("seeked->player#handleTimeUpdate"),
+				stimulus.Action("durationchange->player#handleDurationChange"),
 
-					// Wire menus to manifest tracks. Per spec, textTracks
-					// and audioTracks are populated by loadedmetadata —
-					// earlier events can fire before manifest parsing
-					// is complete (ACT-169).
-					stimulus.Action("loadedmetadata->player#handleLoadedMetadata"),
+				// Wire menus to manifest tracks. Per spec, textTracks
+				// and audioTracks are populated by loadedmetadata —
+				// earlier events can fire before manifest parsing
+				// is complete (ACT-169).
+				stimulus.Action("loadedmetadata->player#handleLoadedMetadata"),
 
-					// Enable the seekbar once segments are available.
-					// Setting currentTime before HAVE_CURRENT_DATA breaks
-					// Safari's native HLS pipeline (ACT-171).
-					stimulus.Action("loadeddata->player#handleLoadedData"),
+				// Enable the seekbar once segments are available.
+				// Setting currentTime before HAVE_CURRENT_DATA breaks
+				// Safari's native HLS pipeline (ACT-171).
+				stimulus.Action("loadeddata->player#handleLoadedData"),
 
-					// Buffer progress.
-					stimulus.Action("progress->player#handleProgress"),
-					stimulus.Action("playing->player#handleProgress"),
-					stimulus.Action("seeking->player#handleProgress"),
-					stimulus.Action("seeked->player#handleProgress"),
+				// Buffer progress.
+				stimulus.Action("progress->player#handleProgress"),
+				stimulus.Action("playing->player#handleProgress"),
+				stimulus.Action("seeking->player#handleProgress"),
+				stimulus.Action("seeked->player#handleProgress"),
 
-					// Volume changes.
-					stimulus.Action("volumechange->player#handleVolume"),
+				// Volume changes.
+				stimulus.Action("volumechange->player#handleVolume"),
 
-					// Loading state.
-					stimulus.Action("waiting->player#handleLoading"),
-					stimulus.Action("canplay->player#handleLoading"),
-					stimulus.Action("seeked->player#handleLoading"),
-					stimulus.Action("playing->player#handleLoading"),
+				// Loading state.
+				stimulus.Action("waiting->player#handleLoading"),
+				stimulus.Action("canplay->player#handleLoading"),
+				stimulus.Action("seeked->player#handleLoading"),
+				stimulus.Action("playing->player#handleLoading"),
 
-					// Speed change.
-					stimulus.Action("ratechange->player#handleRate"),
+				// Speed change.
+				stimulus.Action("ratechange->player#handleRate"),
 
-					// Disable right click.
-					stimulus.Action("contextmenu->player#handleContextMenu"),
-				)(
-					html.Source(
-						attr.Src(initialPlaylistPath(v, initAudio, pinAudio)),
-						attr.Type("application/vnd.apple.mpegurl"),
-					),
-				),
-				playerCaptionsTemplate(captionsOpts),
-			),
-			html.Div(
-				Class("v-player-controls"),
-				stimulus.Target("player", "controls"),
-				stimulus.Action("click->player#togglePlay:self"),
+				// Disable right click.
+				stimulus.Action("contextmenu->player#handleContextMenu"),
 			)(
-				html.Div(Class("v-player-overlay-top"))(
-					Button(stimulus.Action("click->player#dismiss"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/x-close")),
-					Box(Class("v-player-title"))(Text(title)),
+				html.Source(
+					attr.Src(initialPlaylistPath(v, initAudio, pinAudio)),
+					attr.Type("application/vnd.apple.mpegurl"),
 				),
-				html.Div(Class("v-player-overlay-bottom"))(
-					html.Div(Class("v-player-time-row"))(
-						Box(stimulus.Target("player", "currentTime"))(Text("0:00")),
-						playerSeekBar(),
-						Box(stimulus.Target("player", "duration"))(Text("0:00")),
+			),
+			playerCaptionsTemplate(captionsOpts),
+		),
+		html.Div(
+			Class("v-player-controls"),
+			stimulus.Target("player", "controls"),
+			stimulus.Action("click->player#togglePlay:self"),
+		)(
+			html.Div(Class("v-player-overlay-top"))(
+				// TODO: optimistic commit to close (or hide) the player faster.
+				Button(onPlayerClose(), stimulus.Target("player", "dismiss"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/x-close")),
+				Box(Class("v-player-title"))(Text(title)),
+			),
+			html.Div(Class("v-player-overlay-bottom"))(
+				html.Div(Class("v-player-time-row"))(
+					Box(stimulus.Target("player", "currentTime"))(Text("0:00")),
+					playerSeekBar(),
+					Box(stimulus.Target("player", "duration"))(Text("0:00")),
+				),
+				html.Div(Class("v-player-button-row"))(
+					html.Div(Class("v-player-button-group"), Attr("data-align")("start"))(
+						playerCaptionsMenu(captionsOpts, initSubtitle),
+						playerAudioMenu(audioOpts, initAudio),
+						playerVolumeBar(),
 					),
-					html.Div(Class("v-player-button-row"))(
-						html.Div(Class("v-player-button-group"), Attr("data-align")("start"))(
-							playerCaptionsMenu(captionsOpts, initSubtitle),
-							playerAudioMenu(audioOpts, initAudio),
-							playerVolumeBar(),
-						),
 
-						html.Div(Class("v-player-button-group"), Attr("data-align")("center"))(
-							Button(stimulus.Action("click->player#skipBackward"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/refresh-ccw-01")),
-							Button(stimulus.Action("click->player#togglePlay"), ButtonSurface, ButtonCircle, ButtonSize3)(
-								Box(Class("v-player-icon-play"))(Icon("solid/play")),
-								Box(Class("v-player-icon-pause"))(Icon("free/pause")),
-							),
-							Button(stimulus.Action("click->player#skipForward"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/refresh-cw-01")),
+					html.Div(Class("v-player-button-group"), Attr("data-align")("center"))(
+						Button(stimulus.Action("click->player#skipBackward"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/refresh-ccw-01")),
+						Button(stimulus.Action("click->player#togglePlay"), ButtonSurface, ButtonCircle, ButtonSize3)(
+							Box(Class("v-player-icon-play"))(Icon("solid/play")),
+							Box(Class("v-player-icon-pause"))(Icon("free/pause")),
 						),
+						Button(stimulus.Action("click->player#skipForward"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/refresh-cw-01")),
+					),
 
-						html.Div(Class("v-player-button-group"), Attr("data-align")("end"))(
-							playerQualityMenu(qualityOpts),
-							Button(stimulus.Action("click->player#toggleFullscreen"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/maximize-02")),
-						),
+					html.Div(Class("v-player-button-group"), Attr("data-align")("end"))(
+						playerQualityMenu(qualityOpts),
+						Button(stimulus.Action("click->player#toggleFullscreen"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/maximize-02")),
 					),
 				),
 			),
@@ -215,12 +222,9 @@ func playerTitleForEpisode(ep *model.Episode) string {
 	)
 }
 
-// initialPlaylistPath optionally pins the seeded audio rendition into
-// the <source> URL. Chrome lacks the audioTracks API and would
-// otherwise play the manifest's HLS DEFAULT regardless of the seed,
-// so the theater's playable JS sets pin_audio=1 there. Safari has the
-// API and switches via #applyAudioSelection, so it stays unpinned to
-// avoid a source-swap on every audio change.
+// initialPlaylistPath is the player's initial <source> URL: the video's
+// multivariant playlist, with the audio rendition pinned when pinAudio
+// is set.
 func initialPlaylistPath(v *model.Video, initAudio string, pinAudio bool) string {
 	if !pinAudio || initAudio == "" {
 		return v.PlaylistPath()
@@ -236,14 +240,14 @@ func initialPlaylistPath(v *model.Video, initAudio string, pinAudio bool) string
 // audio-id (in Chrome where audio switching also requires a
 // source-swap; in Safari, audio is switched via the audioTracks API
 // and the URL only carries the quality-id).
-func playerQualityMenu(opts []model.QualityOption) html.Node {
+func playerQualityMenu(opts []model.QualityOption) domi.Node {
 	// Render Auto at the bottom — visually it's the dynamic default
 	// and the per-rendition pins read top-down by resolution.
 	opts = autoLast(opts)
 	labels := qualityLabels(opts)
-	var items []html.Node
+	var items []domi.Node
 	for i, opt := range opts {
-		btnAttrs := []attr.Node{
+		btnAttrs := []domi.Attr{
 			attr.Type("button"),
 			stimulus.Action("click->player#setQuality"),
 			Attr("data-player-quality-id-param")(opt.RenditionID),
@@ -346,8 +350,8 @@ func autoLast(opts []model.QualityOption) []model.QualityOption {
 // The label attribute carries the SubtitleTrack ID, matching the HLS
 // EXT-X-MEDIA NAME — both surface as TextTrack.label, and the player
 // JS keys on it. Visible menu text comes from the menu's Text node.
-func playerCaptionsTemplate(opts []model.SubtitleOption) html.Node {
-	var tracks []html.Node
+func playerCaptionsTemplate(opts []model.SubtitleOption) domi.Node {
+	var tracks []domi.Node
 	for _, opt := range opts {
 		tracks = append(tracks, html.Track(
 			attr.Src(opt.WebVTTPath),
@@ -374,8 +378,8 @@ func playerCaptionsTemplate(opts []model.SubtitleOption) html.Node {
 // the original-format blob, so the JS can route ass/ssa picks to
 // jassub when a jassub-tagged build provides the host URL. Default
 // builds ignore those attributes and stay on the WebVTT path.
-func playerCaptionsMenu(opts []model.SubtitleOption, initSubtitle string) html.Node {
-	items := []html.Node{playerCaptionsItem("", "Off", "", "", initSubtitle)}
+func playerCaptionsMenu(opts []model.SubtitleOption, initSubtitle string) domi.Node {
+	items := []domi.Node{playerCaptionsItem("", "Off", "", "", initSubtitle)}
 	for _, opt := range opts {
 		items = append(items, playerCaptionsItem(opt.ID, opt.Label, opt.OriginalCodec, opt.OriginalPath, initSubtitle))
 	}
@@ -388,8 +392,8 @@ func playerCaptionsMenu(opts []model.SubtitleOption, initSubtitle string) html.N
 	)
 }
 
-func playerCaptionsItem(id, label, codec, original, initSubtitle string) html.Node {
-	attrs := []attr.Node{
+func playerCaptionsItem(id, label, codec, original, initSubtitle string) domi.Node {
+	attrs := []domi.Attr{
 		attr.Type("button"),
 		stimulus.Action("click->player#setSubtitle"),
 		Attr("data-player-sub-id-param")(id),
@@ -411,13 +415,13 @@ func playerCaptionsItem(id, label, codec, original, initSubtitle string) html.No
 // fallback is needed. The id param matches the HLS NAME — which is
 // the AudioRendition ID — and is used by the JS to find the matching
 // AudioTrack.
-func playerAudioMenu(opts []model.AudioOption, initAudio string) html.Node {
+func playerAudioMenu(opts []model.AudioOption, initAudio string) domi.Node {
 	if len(opts) == 0 {
 		return nil
 	}
-	var items []html.Node
+	var items []domi.Node
 	for _, opt := range opts {
-		btnAttrs := []attr.Node{
+		btnAttrs := []domi.Attr{
 			attr.Type("button"),
 			stimulus.Action("click->player#setAudio"),
 			Attr("data-player-audio-id-param")(opt.ID),
@@ -440,7 +444,7 @@ func playerAudioMenu(opts []model.AudioOption, initAudio string) html.Node {
 	)
 }
 
-func playerSeekBar() html.Node {
+func playerSeekBar() domi.Node {
 	return html.Div(Class("v-player-seek"))(
 		html.Div(
 			Class("v-player-seek-bar"),
@@ -460,7 +464,7 @@ func playerSeekBar() html.Node {
 				Attr("autocomplete")("off"),
 				Attr("aria-label")("Seek"),
 				Attr("style")("--value: 0%"),
-				Attr("disabled"),
+				Attr("disabled")(""),
 				stimulus.Target("player", "seek"),
 				stimulus.Action("input->player#handleSeek"),
 
@@ -484,19 +488,19 @@ func playerSeekBar() html.Node {
 				stimulus.Target("player", "buffer"),
 				Class("v-player-buffer"),
 			)(
-				html.Text("% buffered"),
+				domi.Text("% buffered"),
 			),
 			html.Span(
 				stimulus.Target("player", "seekTooltip"),
 				Class("v-player-seek-tooltip"),
 			)(
-				html.Text("00:00"),
+				domi.Text("00:00"),
 			),
 		),
 	)
 }
 
-func playerVolumeBar() html.Node {
+func playerVolumeBar() domi.Node {
 	return FlexRow(Gap4, Class("v-player-volume-bar"))(
 		Button(stimulus.Action("click->player#toggleMute"), ButtonSurface, ButtonCircle, ButtonSize3)(Icon("line/volume-max")),
 		html.Div(Class("v-player-volume"))(

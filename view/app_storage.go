@@ -3,8 +3,9 @@ package view
 import (
 	"fmt"
 
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
 )
 
 type Filesystem struct {
@@ -15,18 +16,18 @@ type Filesystem struct {
 	Free int64
 }
 
-func AppStorage(fs []*Filesystem) (string, html.Node) {
+func AppStorage(fs []*Filesystem) (title string, n domi.Node) {
 	return "Storage", html.Div(attr.Class("v-system"))(
-		html.H2()(html.Text("filesystem info")),
-		html.Ul()(
-			html.Range(fs, fsItem),
+		html.H2()(domi.Text("filesystem info")),
+		html.UL()(
+			rangeNodes(fs, fsItem),
 		),
 	)
 }
 
-func fsItem(fs *Filesystem) html.Node {
+func fsItem(fs *Filesystem) domi.Node {
 	s := fmt.Sprintf("%s %d %d avail:%d %s", fs.Path, fs.Used, fs.Size, fs.Free, fs.Type)
-	return html.Li()(
-		html.Text(s),
+	return html.LI()(
+		domi.Text(s),
 	)
 }

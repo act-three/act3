@@ -11,10 +11,9 @@ import (
 	"time"
 )
 
-// validKey panics if key contains characters that are unsafe
-// for use in CSS class names. Keys are used as CSS selectors
-// for Turbo Stream targeting, so they must only contain
-// letters, digits, hyphens, and underscores.
+// validKey panics if key contains characters that are unsafe for use
+// in a CSS class name. Keys are embedded in CSS class names, so they
+// must contain only letters, digits, hyphens, and underscores.
 func validKey(key string) {
 	if key == "" {
 		panic("progress: empty key")

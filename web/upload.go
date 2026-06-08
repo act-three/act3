@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
-	"ily.dev/act3/html"
 	"ily.dev/act3/model"
 )
 
-func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (node, error) {
 	ctx := req.Context()
 	file, _, err := req.FormFile("file")
 	if err != nil {
@@ -45,19 +45,19 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (html.Node, 
 
 	switch {
 	case medID != "":
-		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		_, err = c.withTxRW(func(tx *model.TxRW) (node, error) {
 			return nil, tx.MovieEditionPosterIDSet(ctx, medID, originalID)
 		})
 	case sedID != "":
-		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		_, err = c.withTxRW(func(tx *model.TxRW) (node, error) {
 			return nil, tx.SeriesEditionPosterIDSet(ctx, sedID, originalID)
 		})
 	case epID != "":
-		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		_, err = c.withTxRW(func(tx *model.TxRW) (node, error) {
 			return nil, tx.EpisodeThumbnailIDSet(ctx, epID, originalID)
 		})
 	case colID != "":
-		_, err = c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		_, err = c.withTxRW(func(tx *model.TxRW) (node, error) {
 			return nil, tx.CollectionBannerIDSet(ctx, colID, originalID)
 		})
 	}
@@ -81,7 +81,7 @@ const maxUploadFormField = 1 << 10
 //
 // The form is expected to emit small text parts (sed-id / med-id /
 // ep-id) before the file part named "video".
-func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (node, error) {
 	ctx := req.Context()
 	mr, err := req.MultipartReader()
 	if err != nil {
@@ -89,6 +89,7 @@ func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (html.N
 	}
 
 	var medID, epID string
+	size := req.ContentLength // file size upper bound: includes multipart framing
 	var fileSeen bool
 	for {
 		part, err := mr.NextPart()
@@ -103,6 +104,16 @@ func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (html.N
 			medID, err = readField(part)
 		case "ep-id":
 			epID, err = readField(part)
+		case "size":
+			// The exact file size, sent by our own upload form just
+			// ahead of the file.
+			var s string
+			s, err = readField(part)
+			if err == nil {
+				if n, perr := strconv.ParseInt(s, 10, 64); perr == nil && n > 0 {
+					size = n
+				}
+			}
 		case "video":
 			if fileSeen {
 				err = &model.ValidationError{
@@ -119,7 +130,7 @@ func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (html.N
 			if epID != "" {
 				epp = &epID
 			}
-			_, err = c.Model.VideoUploadCreate(ctx, part, part.FileName(), medp, epp)
+			_, err = c.Model.VideoUploadCreate(ctx, part, part.FileName(), size, medp, epp)
 		}
 		part.Close()
 		if err != nil {

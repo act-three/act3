@@ -3,7 +3,15 @@ package ui
 import (
 	"strings"
 	"testing"
+
+	"ily.dev/domi"
 )
+
+func renderNode(n domi.Node) string {
+	var buf strings.Builder
+	domi.RenderTo(&buf, n)
+	return buf.String()
+}
 
 func TestTruncTail(t *testing.T) {
 	// Short enough to have nothing to collapse: rendered as plain

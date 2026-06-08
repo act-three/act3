@@ -1,18 +1,21 @@
 package view
 
 import (
-	"ily.dev/act3/html"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 )
 
-func posterGrid(works []model.Work) html.Node {
+func posterGrid(works []model.Work) domi.Node {
 	return Box(Class("v-poster-grid"))(
-		html.Range(works, posterGridLink),
+		rangeNodes(works, posterGridLink),
 	)
 }
 
-func posterGridLink(w model.Work) html.Node {
+func posterGridLink(w model.Work) domi.Node {
+	im, _ := w.PosterField()
 	return Box(
 		HoverOverlay,
 		Class("v-poster-grid-poster"),
@@ -23,7 +26,7 @@ func posterGridLink(w model.Work) html.Node {
 			Class("v-poster-grid-link"),
 			Href(w.TheaterPath()),
 		)(
-			PosterImg(AspectPoster, PosterFill, imgAttrs(w.PosterField())),
+			PosterImg(AspectPoster, PosterFill, imgAttrs(im)),
 		),
 	)
 }

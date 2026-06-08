@@ -1,6 +1,6 @@
 module ily.dev/act3
 
-go 1.26.0
+go 1.26.3
 
 require (
 	github.com/Eyevinn/hls-m3u8 v0.6.4
@@ -8,10 +8,11 @@ require (
 	github.com/gen2brain/webp v0.5.5
 	github.com/hekmon/transmissionrpc/v3 v3.0.0
 	golang.org/x/image v0.38.0
-	golang.org/x/net v0.52.0
-	golang.org/x/text v0.35.0
+	golang.org/x/net v0.54.0
+	golang.org/x/text v0.37.0
 	golang.org/x/time v0.15.0
-	golang.org/x/tools v0.43.0
+	golang.org/x/tools v0.44.0
+	ily.dev/domi v0.1.0
 	kr.dev/errorfmt v0.1.1
 	kr.dev/walk v0.1.0
 	lukechampine.com/blake3 v1.4.1
@@ -40,9 +41,9 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/tetratelabs/wazero v1.9.0 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
+	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
-	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect

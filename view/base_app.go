@@ -1,50 +1,43 @@
 package view
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
+	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/view/sidebar"
 )
 
 type AppConfig struct {
+	Path           string
 	TaskCount      int
 	TaskCountError int
+	Uploads        []model.Upload
 }
 
-func App(title string, body html.Node, cfg AppConfig) html.Node {
-	return base(title)()(
-		turbo.StreamSource("/-/events"),
+func Editor(body domi.Node, cfg AppConfig) domi.Node {
+	return domi.Fragment(
 		html.Div(
 			Attr("data-slot")("sidebar-wrapper"),
 			Class("v-app"),
 			Style("--sidebar-width: 200px; --sidebar-width-mobile: 20rem;"),
 		)(
 			sidebar.Sidebar(sidebar.Config{
+				Path:           cfg.Path,
 				TaskCount:      cfg.TaskCount,
 				TaskCountError: cfg.TaskCountError,
+				Uploads:        cfg.Uploads,
 			}),
 			html.Div(
 				attr.Role("main"),
 				Attr("data-slot")("sidebar-inset"),
 				Class("v-app-main"),
 			)(
-				turbo.Frame("main",
-					turbo.Advance(),
-				)(
-					body,
-				),
+				body,
 			),
 		),
 		Port(),
-		NotePort(),
-	)
-}
-
-func PageFrame(title, id string, child ...html.Node) html.Node {
-	return Group(
-		html.Title()(html.Text(title)),
-		turbo.Frame(id)(child...),
 	)
 }

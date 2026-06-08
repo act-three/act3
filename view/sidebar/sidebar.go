@@ -2,17 +2,20 @@ package sidebar
 
 import (
 	"fmt"
+	"strings"
 
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
+
+	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 )
 
 type Config struct {
+	Path           string // current URL path, used to highlight the active item
 	TaskCount      int
 	TaskCountError int
+	Uploads        []model.Upload
 }
 
 type MenuSection struct {
@@ -28,7 +31,7 @@ type MenuItem struct {
 	Label   string
 	Value   string // shown in muted text on right
 	Badge   string // shown in bright capsule on right
-	Attr    attr.Node
+	Attr    domi.Attr
 	StatsID string // if set, wraps value/badge in a stream target
 }
 
@@ -64,7 +67,7 @@ func sidebarData(c Config) []MenuSection {
 	}
 }
 
-func Sidebar(c Config) html.Node {
+func Sidebar(c Config) domi.Node {
 	return html.Div(
 		Class("v-sidebar"),
 		Attr("data-state")(""),
@@ -72,9 +75,6 @@ func Sidebar(c Config) html.Node {
 		Attr("data-variant")("inset"),
 		Attr("data-side")("left"),
 		Attr("data-slot")("sidebar"),
-		turbo.DataFrame("main"),
-		stimulus.Controller("sidebar"),
-		stimulus.Action("turbo:visit@document->sidebar#visit"),
 	)(
 		html.Div(
 			Attr("data-slot")("sidebar-gap"),
@@ -89,7 +89,7 @@ func Sidebar(c Config) html.Node {
 	)
 }
 
-func sidebarContent(c Config) html.Node {
+func sidebarContent(c Config) domi.Node {
 	return html.Div(
 		Attr("data-slot")("sidebar-content"),
 		Attr("data-sidebar")("content"),
@@ -98,64 +98,69 @@ func sidebarContent(c Config) html.Node {
 		html.Div(Class("v-sidebar-heading"))(
 			Link("/")(Box(Class("v-wordmark"))),
 		),
-		html.Range(sidebarData(c), sidebarGroup),
-		sidebarUploadProgress(),
+		rangeNodes(sidebarData(c), func(v MenuSection) domi.Node {
+			return sidebarGroup(v, c.Path)
+		}),
+		sidebarUploadProgress(c.Uploads),
 	)
 }
 
-func sidebarGroup(v MenuSection) html.Node {
+func sidebarGroup(v MenuSection, current string) domi.Node {
 	return html.Div(
 		Attr("data-slot")("sidebar-group"),
 		Attr("data-sidebar")("group"),
 		Class("v-sidebar-group"),
 	)(
-		html.If(v.Label != "", func() html.Node {
+		iff(v.Label != "", func() domi.Node {
 			return sidebarGroupLabel(v.Label)
 		}),
-		sidebarGroupContent(v.Items),
+
+		sidebarGroupContent(v.Items, current),
 	)
 }
 
-func sidebarGroupLabel(s string) html.Node {
+func sidebarGroupLabel(s string) domi.Node {
 	return html.Div(
 		Attr("data-slot")("sidebar-group-label"),
 		Attr("data-sidebar")("group-label"),
 		Class("v-sidebar-group-label"),
 	)(
-		html.Text(s),
+		domi.Text(s),
 	)
 }
 
-func sidebarGroupContent(items []MenuItem) html.Node {
-	return sidebarMenu(items)
+func sidebarGroupContent(items []MenuItem, current string) domi.Node {
+	return sidebarMenu(items, current)
 }
 
-func sidebarMenu(items []MenuItem) html.Node {
-	return html.Ul(
+func sidebarMenu(items []MenuItem, current string) domi.Node {
+	return html.UL(
 		Attr("data-slot")("sidebar-menu"),
 		Attr("data-sidebar")("menu"),
 		Class("v-sidebar-menu"),
 	)(
-		html.Range(items, sidebarMenuItem),
+		rangeNodes(items, func(it MenuItem) domi.Node {
+			return sidebarMenuItem(it, current)
+		}),
 	)
 }
 
-func sidebarMenuItem(it MenuItem) html.Node {
-	return html.Li(
+func sidebarMenuItem(it MenuItem, current string) domi.Node {
+	return html.LI(
 		Attr("data-slot")("sidebar-menu-item"),
 		Attr("data-sidebar")("menu-item"),
 		Class("v-sidebar-menu-item"),
 	)(
-		sidebarMenuButton(it),
+		sidebarMenuButton(it, current),
 	)
 }
 
-func sidebarMenuButton(it MenuItem) html.Node {
+func sidebarMenuButton(it MenuItem, current string) domi.Node {
 	return html.A(
 		Class("v-sidebar-menu-button"),
 		it.Attr,
 		Href(it.Path),
-		stimulus.Target("sidebar", "link"),
+		domi.Bool("data-selected")(isActive(it.Path, current)),
 		Attr("data-slot")("sidebar-menu-button"),
 		Attr("data-sidebar")("menu-button"),
 		Attr("data-size")("default"),
@@ -165,49 +170,37 @@ func sidebarMenuButton(it MenuItem) html.Node {
 	)
 }
 
-func menuStats(it MenuItem) html.Node {
-	inner := menuStatsInner(it.Value, it.Badge)
-	if it.StatsID != "" {
-		return turbo.StreamTarget(it.StatsID)(inner)
-	}
-	return inner
+// isActive reports whether the menu item at itemPath should be highlighted
+// for the current path: when the current path is the item's path or sits
+// beneath it, so /app/series stays lit on /app/series/spice-and-wolf.
+func isActive(itemPath, current string) bool {
+	return current == itemPath || strings.HasPrefix(current, itemPath+"/")
 }
 
-func menuStatsInner(value, badge string) html.Node {
+func menuStats(it MenuItem) domi.Node {
 	return FlexRow(Gap2)(
-		html.If(value != "", func() html.Node {
-			return html.Div(Class("v-sidebar-menu-value"))(html.Text(value))
+		iff(it.Value != "", func() domi.Node {
+			return html.Div(Class("v-sidebar-menu-value"))(domi.Text(it.Value))
 		}),
-		html.If(badge != "", func() html.Node {
-			return html.Div(Class("v-sidebar-menu-badge"))(html.Text(badge))
+
+		iff(it.Badge != "", func() domi.Node {
+			return html.Div(Class("v-sidebar-menu-badge"))(domi.Text(it.Badge))
 		}),
 	)
 }
 
-func TaskStats(count, countError int) html.Node {
-	return turbo.Update(TaskStatsID)(
-		menuStatsInner(numeric(count), numeric(countError)),
-	)
-}
-
-func sidebarUploadProgress() html.Node {
+// sidebarUploadProgress shows the oldest in-flight upload's name
+// and progress at the bottom of the sidebar.
+func sidebarUploadProgress(uploads []model.Upload) domi.Node {
+	if len(uploads) == 0 {
+		return nil
+	}
+	u := uploads[0]
 	return html.Div(
-		attr.Hidden,
 		Class("v-sidebar-upload-progress"),
-		stimulus.Controller("upload-progress"),
-		stimulus.Action("upload:start@document->upload-progress#start"),
-		stimulus.Action("upload:progress@document->upload-progress#progress"),
-		stimulus.Action("upload:end@document->upload-progress#end"),
 	)(
-		html.Div(Class("v-sidebar-upload-label"),
-			stimulus.Target("upload-progress", "label"),
-		)(html.Text("Uploading…")),
-		html.Div(Class("u-progress"))(
-			html.Div(
-				stimulus.Target("upload-progress", "fill"),
-				Class("u-progress-fill"),
-			),
-		),
+		html.Div(Class("v-sidebar-upload-label"))(domi.Text(u.Name)),
+		Progress(u.Frac),
 	)
 }
 

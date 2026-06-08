@@ -42,14 +42,37 @@ export default class extends Controller {
 
 	#onEnd(e) {
 		if (!this.#drag) return;
+		const drag = this.#drag;
 		this.#drag = null;
 
-		const body = new URLSearchParams();
-		body.set("episode-id", e.item.dataset.episodeId);
-		body.set("from-season-id", e.from.dataset.seasonId);
-		body.set("season-id", e.to.dataset.seasonId);
-		body.set("index", e.newIndex);
+		// The row the drop landed before, in its dropped position, or
+		// null if it dropped last. Captured before the revert below: the
+		// revert moves only e.item, so this reference stays valid — and
+		// in the destination container — in the clean DOM.
+		const anchor = e.item.nextElementSibling;
 
-		fetch("/-/do/episode-move", { method: "POST", body });
+		// Restore the pre-drag DOM so domi sees a clean tree, then hand
+		// it the drop as an optimistic mutation. domi applies the move
+		// synchronously (no paint between the revert and the re-apply,
+		// so no bounce), rebases onto a derived version so stale frames
+		// drop, and reports it; the server replays the move to
+		// reconstruct what we show and diffs forward — an empty patch
+		// when it agrees, a correction when it refuses. The event also
+		// carries the fields onEpisodeMove reads to perform the move.
+		drag.parent.insertBefore(drag.item, drag.next);
+
+		const move = anchor
+			? { op: "move", node: e.item, before: anchor }
+			: { op: "move", node: e.item, into: e.to };
+		const detail = {
+			episodeId: e.item.dataset.episodeId,
+			fromSeasonId: e.from.dataset.seasonId,
+			seasonId: e.to.dataset.seasonId,
+			index: e.newIndex,
+			domi: { mutations: [move] },
+		};
+		this.element.dispatchEvent(
+			new CustomEvent("change", { bubbles: true, detail }),
+		);
 	}
 }

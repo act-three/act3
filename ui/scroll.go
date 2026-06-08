@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 // ScrollXY is a simple overflow container using native scrollbars.
@@ -11,7 +11,7 @@ import (
 // Unlike the Radix ScrollArea component,
 // which provides custom styled scrollbar tracks and thumbs,
 // this relies on the browser's default scrollbar rendering.
-func ScrollX(attrs ...attr.Node) html.Element {
+func ScrollX(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-scroll u-scroll+x"),
 		group(attrs...),
@@ -24,7 +24,7 @@ func ScrollX(attrs ...attr.Node) html.Element {
 // Unlike the Radix ScrollArea component,
 // which provides custom styled scrollbar tracks and thumbs,
 // this relies on the browser's default scrollbar rendering.
-func ScrollY(attrs ...attr.Node) html.Element {
+func ScrollY(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-scroll u-scroll+y"),
 		group(attrs...),
@@ -37,7 +37,7 @@ func ScrollY(attrs ...attr.Node) html.Element {
 // Unlike the Radix ScrollArea component,
 // which provides custom styled scrollbar tracks and thumbs,
 // this relies on the browser's default scrollbar rendering.
-func ScrollXY(attrs ...attr.Node) html.Element {
+func ScrollXY(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-scroll u-scroll+xy"),
 		group(attrs...),

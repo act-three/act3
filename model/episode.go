@@ -179,15 +179,16 @@ func (ep *Episode) basename() string {
 	return xstrings.SanitizeFilename(strings.Join(p, " "))
 }
 
-func (ep *Episode) PlayerPath() string {
-	if v := ep.ActiveVideo(); v != nil {
-		return ep.VideoPlayerPath(v)
+func (ep *Episode) PlayIDs() PlayIDs {
+	v := ep.ActiveVideo()
+	if v == nil {
+		return PlayIDs{}
 	}
-	return ""
-}
-
-func (ep *Episode) VideoPlayerPath(v *Video) string {
-	return fmt.Sprintf("/-/player/%s/%s/%s", v.ID(), ep.ID(), ep.so.ID())
+	return PlayIDs{
+		VideoID:         v.ID(),
+		EpisodeID:       ep.ID(),
+		SeriesEditionID: ep.so.ID(),
+	}
 }
 
 func (ep *Episode) HasType(types EpisodeType) bool {
@@ -485,6 +486,9 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 			return err
 		}
 		if slug != snep.Slug {
+			tx.onCommit(func() {
+				tx.m.emitEvent(&Event{Type: EventEpisodeSetSlug, ID: id})
+			})
 			err = tx.q.SeasonEpisodeSlugSet(ctx, schema.SeasonEpisodeSlugSetParams{
 				Slug:      slug,
 				SeasonID:  snep.SeasonID,

@@ -1,8 +1,10 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/ui/stimulus"
 )
 
@@ -14,42 +16,31 @@ var SettingsTextFieldPrefix = stimulus.Value("settings-text-field", "prefix")
 // (e.g. " min") displayed after the input text.
 var SettingsTextFieldSuffix = stimulus.Value("settings-text-field", "suffix")
 
-// SettingsTextField renders an inline-updating text field.
-// It POSTs to action with a form body containing all
-// child hidden inputs plus the text input's value on blur.
-// Children become hidden inputs (for context like IDs).
-//
-// When addr is non-empty, the form element gets data-live
-// and data-addr0, data-addr1, etc. attributes.
-// A LiveTextUpdate with matching addr dispatches a live:update
-// event that the Stimulus controller picks up
-// to update the input and its saved original value.
-func SettingsTextField(action, name, value string, attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
-		return html.Div(
-			Class("u-settings-text-field"),
-			stimulus.Controller("settings-text-field"),
-			stimulus.Value("settings-text-field", "url")(action),
-			group(attrs...),
-		)(append(nodes,
-			html.Div(Class("u-settings-text-field-inner"))(
+// SettingsTextField renders an inline-editing text field showing
+// value. When the user commits an edit (blur or Enter after a
+// change), commit is called with the new value and the resulting
+// message is delivered. Escape reverts the field to value.
+func SettingsTextField[Msg any](value string, commit func(value string) Msg, attrs ...domi.Attr) domi.Node {
+	return html.Div(
+		Class("u-settings-text-field"),
+		stimulus.Controller("settings-text-field"),
+		group(attrs...),
+	)(
+		html.Div(Class("u-settings-text-field-inner"))(
+			InputText(
+				attr.Value(value),
+				onChangeValue(commit),
+				stimulus.Target("settings-text-field", "input"),
+				stimulus.Action("keydown->settings-text-field#keydown"),
+				stimulus.Action("input->settings-text-field#sync"),
+			),
+			html.Div(Class("u-settings-text-field-overlay"))(
 				InputText(
-					attr.Name(name),
-					attr.Value(value),
-					Attr("data-optimistic")(""),
-					stimulus.Target("settings-text-field", "input"),
-					stimulus.Action("blur->settings-text-field#save"),
-					stimulus.Action("keydown->settings-text-field#keydown"),
-					stimulus.Action("input->settings-text-field#sync"),
-				),
-				html.Div(Class("u-settings-text-field-overlay"))(
-					InputText(
-						attr.Tabindex("-1"),
-						attr.Disabled,
-						stimulus.Target("settings-text-field", "mirror"),
-					),
+					attr.TabIndex("-1"),
+					attr.Disabled(true),
+					stimulus.Target("settings-text-field", "mirror"),
 				),
 			),
-		)...)
-	}
+		),
+	)
 }

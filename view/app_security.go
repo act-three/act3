@@ -1,7 +1,10 @@
 package view
 
-import "ily.dev/act3/html"
+import (
+	"ily.dev/domi"
+	"ily.dev/domi/html"
+)
 
-func AppSecurity() (string, html.Node) {
-	return "Security", html.Div()(html.Text("Change Password"))
+func AppSecurity() (string, domi.Node) {
+	return "Security", html.Div()(domi.Text("Change Password"))
 }

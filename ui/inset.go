@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 	InsetSideRight  = Attr("data-side")("right")
 )
 
-func Inset(attrs ...attr.Node) html.Element {
+func Inset(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-inset"),
 		group(attrs...),

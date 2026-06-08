@@ -32,8 +32,19 @@ type Playable interface {
 	ReleaseDate() string           // YYYY-MM-DD
 	Runtime() string               // "123" (minutes)
 	TheaterPath() string
-	PlayerPath() string // empty if unplayable
+	PlayIDs() PlayIDs
 }
+
+// PlayIDs identifies the video to play and the content it belongs to:
+// an episode within a series edition, or a movie edition.
+type PlayIDs struct {
+	VideoID                    string // required
+	EpisodeID, SeriesEditionID string // set for episode
+	MovieEditionID             string // set for movie
+}
+
+// Playable reports whether p names a video to play.
+func (p PlayIDs) Playable() bool { return p.VideoID != "" }
 
 // WorkList returns all movies and series as a unified list,
 // sorted by title.

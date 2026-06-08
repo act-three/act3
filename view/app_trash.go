@@ -4,24 +4,25 @@ import (
 	"fmt"
 	"time"
 
+	"ily.dev/domi"
+
 	"ily.dev/act3/expr"
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/turbo"
 )
 
-const AppTrashListItems = "trash-list-items"
-
 func AppTrash(
-	title string,
 	items []model.TrashItem,
-	detail ...html.Node,
-) (string, html.Node) {
+	selected *model.TrashItem,
+) (title string, n domi.Node) {
+	title = "Trash"
+	if selected != nil {
+		title = trashItemTitle(*selected)
+	}
 	return title, FlexCol(Class("v-media-page"))(
 		Split()(
-			List("/app/trash/", "detail")(
+			List()(
 				Box(
 					Size2,
 					Style("background: var(--bg-surface)"),
@@ -33,48 +34,45 @@ func AppTrash(
 						TextBalance,
 					),
 				),
-				turbo.StreamTarget(AppTrashListItems)(
-					ListItems(items, AppTrashListItem),
-				),
+				ListItems(items, func(it model.TrashItem) bool {
+					return selected != nil && it.ID == selected.ID
+				}, AppTrashListItem),
 			),
-			turbo.Frame("detail", turbo.Advance())(
-				expr.IfElse(detail != nil,
-					func() html.Node {
-						return Group(detail...)
-					},
-					func() html.Node {
-						return Center(Class("v-media-muted"))(
-							html.Text("No Item Selected"),
-						)
-					},
-				),
+			expr.IfElse(selected != nil,
+				func() domi.Node {
+					return appTrashDetail(*selected)
+				},
+				func() domi.Node {
+					return Center(Class("v-media-muted"))(
+						domi.Text("No Item Selected"),
+					)
+				},
 			),
 		),
 	)
 }
 
-func AppTrashListItem(it model.TrashItem, attrs ...attr.Node) html.Node {
+func AppTrashListItem(it model.TrashItem, attrs ...domi.Attr) domi.Node {
 	i2 := trashKindIcon2(it.Kind)
-	return Card(CardGhost,
+	return CardLink(appTrashDetailPath(it.ID), CardGhost,
 		group(attrs...),
-		ListID(it.ID),
-		ListURL(appTrashDetailPath(it.ID)),
 	)(
 		CardContent()(
 			FlexRow(Gap2, Style("align-items:baseline"))(
 				FlexCol(Gap1, Style("flex-shrink:0"))(
 					Icon(trashKindIcon(it.Kind)),
-					html.If(i2 != "", func() html.Node {
+					iff(i2 != "", func() domi.Node {
 						return Icon(i2)
 					}),
 				),
 				FlexCol(Gap1)(
 					CardTitle()(Text(trashItemTitle(it))),
-					html.If(it.Subtitle != "", func() html.Node {
-						return CardDescription(LineClamp1)(html.Text(it.Subtitle))
+					iff(it.Subtitle != "", func() domi.Node {
+						return CardDescription(LineClamp1)(domi.Text(it.Subtitle))
 					}),
+
 					CardDescription(LineClamp2)(
-						html.Text(relativeTime(it.DeletedAt)),
+						domi.Text(relativeTime(it.DeletedAt)),
 					),
 				),
 			),
@@ -82,18 +80,19 @@ func AppTrashListItem(it model.TrashItem, attrs ...attr.Node) html.Node {
 	)
 }
 
-func AppTrashDetail(it model.TrashItem) html.Node {
+func appTrashDetail(it model.TrashItem) domi.Node {
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(Class("v-media-detail-body"))(
 			SettingsPage()(
 				FlexCol(Gap6)(
 					SettingsContent()(
-						TextNode(Size6)(html.Text(trashItemTitle(it))),
-						html.If(it.Subtitle != "", func() html.Node {
+						TextNode(Size6)(domi.Text(trashItemTitle(it))),
+						iff(it.Subtitle != "", func() domi.Node {
 							return Text(it.Subtitle, Size3,
 								Class("u-settings-label-description"),
 							)
 						}),
+
 						Text(trashKindLabel(it.Kind), Size3,
 							Class("u-settings-label-description"),
 						),
@@ -108,7 +107,7 @@ func AppTrashDetail(it model.TrashItem) html.Node {
 								SettingsItemLabelTitle("Restore"),
 								SettingsItemLabelDescription("Return this item to the library"),
 							),
-							ActionButton("/-/do/restore", trashParams(it.ID),
+							Button(onClick(&msg.Restore{ID: it.ID}),
 								ButtonGhost, ButtonSize2,
 							)(Text("Restore")),
 						),
@@ -118,7 +117,7 @@ func AppTrashDetail(it model.TrashItem) html.Node {
 								SettingsItemLabelTitle("Purge"),
 								SettingsItemLabelDescription("Permanently delete this item"),
 							),
-							ActionButton("/-/do/purge", trashParams(it.ID),
+							Button(onClick(&msg.Purge{ID: it.ID}),
 								Destructive, ButtonGhost, ButtonSize2,
 							)(Text("Purge")),
 						),
@@ -131,82 +130,10 @@ func AppTrashDetail(it model.TrashItem) html.Node {
 
 func appTrashDetailPath(id string) string { return "/app/trash/" + id }
 
-// TrashListAppend is a Turbo Stream fragment that inserts a newly
-// trashed item at the top of the trash list.
-func TrashListAppend(item *model.TrashItem) html.Node {
-	if item == nil {
-		return Group()
-	}
-	return turbo.Prepend(AppTrashListItems,
-		ListItems([]model.TrashItem{*item}, AppTrashListItem),
-	)
-}
-
-// TrashListRemove is a Turbo Stream fragment that removes an item
-// from the trash list (fired after restore or purge).
-func TrashListRemove(id string) html.Node {
-	return turbo.RemoveTargets(`[data-list-id-param="` + id + `"]`)
-}
-
-func trashForm(id string) html.Node {
-	return ActionButton("/-/do/trash", trashParams(id),
+func trashForm(id string) domi.Node {
+	return Button(onClick(&msg.Trash{ID: id}),
 		Destructive, ButtonGhost, ButtonSize2,
 	)(Text("Delete"))
-}
-
-func trashParams(id string) map[string]string {
-	return map[string]string{"id": id}
-}
-
-// MediaListRemove is a Turbo Stream fragment that removes a newly
-// trashed entity from whichever list/editor page currently shows it:
-// the top-level All Movies / All Series / All Collections / Downloads
-// pages for the root kinds, the series-edition editor's season list
-// for seasons, and the edition tab strip for editions. Episode trash
-// is covered by the season renumber event, and Video trash has no
-// standalone list item.
-func MediaListRemove(kind model.TrashKind, id string) html.Node {
-	switch kind {
-	case model.TrashKindMovie, model.TrashKindSeries, model.TrashKindCollection, model.TrashKindDownload:
-		return turbo.RemoveTargets(`[data-list-id-param="` + id + `"]`)
-	case model.TrashKindSeason:
-		return turbo.Remove("season-" + id)
-	case model.TrashKindMovieEdition, model.TrashKindSeriesEdition:
-		return turbo.Remove("edition-tab-" + id)
-	}
-	return Group()
-}
-
-// MoviesListAppend emits a Turbo stream that re-appends a restored
-// movie to the All Movies list page.
-func MoviesListAppend(mw *model.MovieWork) html.Node {
-	return turbo.Append(AppMoviesListItems,
-		ListItems([]*model.MovieWork{mw}, AppMoviesListItem),
-	)
-}
-
-// SeriesListAppend emits a Turbo stream that re-appends a restored
-// series to the All Series list page.
-func SeriesListAppend(sw *model.SeriesWork) html.Node {
-	return turbo.Append(AppSeriesListItems,
-		ListItems([]*model.SeriesWork{sw}, AppSeriesListItem),
-	)
-}
-
-// CollectionsListAppend emits a Turbo stream that re-appends a
-// restored collection to the All Collections list page.
-func CollectionsListAppend(col *model.CollectionHead) html.Node {
-	return turbo.Append(AppCollectionsListItems,
-		ListItems([]*model.CollectionHead{col}, AppCollectionsListItem),
-	)
-}
-
-// DownloadsListAppend emits a Turbo stream that re-appends a restored
-// download to the Downloads list page.
-func DownloadsListAppend(di *model.DownloadInfo) html.Node {
-	return turbo.Append(AppDownloadsListItems,
-		ListItems([]*model.DownloadInfo{di}, appDownloadsListItem),
-	)
 }
 
 func trashKindIcon(k model.TrashKind) string {

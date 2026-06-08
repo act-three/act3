@@ -2,79 +2,93 @@ package view
 
 import (
 	"fmt"
-	"path"
 	"strconv"
 	"time"
 
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/expr"
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 )
 
-const AppSeriesListItems = "series-list-items"
-
 func AppSeries(
-	title string,
 	s []*model.SeriesWork,
-	detail ...html.Node,
-) (string, html.Node) {
-	return title, FlexCol(Class("v-media-page"))(
+	selected *model.SeriesEdition,
+	editions []*model.SeriesWork,
+	dls []*model.DownloadHead,
+) (title string, n domi.Node) {
+	if selected == nil {
+		return "Edit Series", appSeries(s, "", nil)
+	}
+	sr := selected.SeriesHead()
+	return sr.Title(), appSeries(s, sr.ID(), appSeriesDetail(selected, editions, dls))
+}
+
+func AppSeriesEpisode(
+	s []*model.SeriesWork,
+	ep *model.Episode,
+	episodeEditions []*model.Episode,
+	renditions []schema.Rendition,
+	uploads []model.Upload,
+) (title string, n domi.Node) {
+	return ep.Title(), appSeries(s, ep.SeriesHead().ID(), appEpisodeDetail(ep, episodeEditions, renditions, uploads))
+}
+
+func appSeries(s []*model.SeriesWork, selectedID string, detail domi.Node) domi.Node {
+	return FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
-			DialogButton("/-/dialog/series-add", ButtonSurface)(
+			Button(onClick(&msg.SeriesAddOpen{}), ButtonSurface)(
 				Text("Add Series"),
 			),
 		),
 		Split()(
-			List("/app/series/", "detail")(
-				turbo.StreamTarget(AppSeriesListItems)(
-					ListItems(s, AppSeriesListItem),
-				),
+			List()(
+				ListItems(s, func(ss *model.SeriesWork) bool {
+					return ss.SeriesHead.ID() == selectedID
+				}, AppSeriesListItem),
 			),
-			turbo.Frame("detail", turbo.Advance())(
-				expr.IfElse(detail != nil,
-					func() html.Node {
-						return Group(detail...)
-					},
-					func() html.Node {
-						return Center(Class("v-media-muted"))(
-							html.Text("No Series Selected"),
-						)
-					},
-				),
+			expr.IfElse(detail != nil,
+				func() domi.Node {
+					return detail
+				},
+				func() domi.Node {
+					return Center(Class("v-media-muted"))(
+						domi.Text("No Series Selected"),
+					)
+				},
 			),
 		),
 	)
 }
 
-func AppSeriesListItem(ss *model.SeriesWork, attrs ...attr.Node) html.Node {
-	return Card(CardGhost,
+func AppSeriesListItem(ss *model.SeriesWork, attrs ...domi.Attr) domi.Node {
+	return CardLink(ss.EditorPath(), CardGhost,
 		group(attrs...),
-		ListID(ss.SeriesHead.ID()),
-		ListURL(ss.EditorPath()),
 	)(
-		CardMedia()(html.Img(imgAttrs(ss.PosterField()))),
+		CardMedia()(html.Img(imgAttrs(ss.Poster()))),
 		CardContent()(
-			CardTitle()(LiveText(ss.SeriesHead.TitleField())),
+			CardTitle()(domi.Text(ss.SeriesHead.Title())),
 			CardDescription(LineClamp2)(
-				html.If(ss.PremieredOn() != "",
-					func() html.Node { return html.Text(ss.PremieredOn()) },
-				),
-				html.Text(ss.Status()),
+				iff(ss.PremieredOn() != "",
+					func() domi.Node { return domi.Text(ss.PremieredOn()) }),
+
+				domi.Text(ss.Status()),
 			),
 		),
 	)
 }
 
-func AppSeriesDetail(
+func appSeriesDetail(
 	sed *model.SeriesEdition,
 	editions []*model.SeriesWork,
 	dls []*model.DownloadHead,
-) html.Node {
+) domi.Node {
 	sr := sed.SeriesHead()
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(
@@ -82,15 +96,14 @@ func AppSeriesDetail(
 		)(
 			SettingsPage()(
 				expr.IfElse(len(editions) < 2,
-					func() html.Node {
+					func() domi.Node {
 						return Group(
 							FlexCol(Gap6)(
 								SettingsContent()(
-									TextNode(Size6)(LiveText(sr.TitleField())),
+									TextNode(Size6)(domi.Text(sr.Title())),
 									Box()(
 										Link(
 											sr.TheaterPath(),
-											turbo.DataFrame("_top"),
 										)(Text("View in Theater", Size3,
 											Style("display: inline-block"),
 										)),
@@ -105,11 +118,11 @@ func AppSeriesDetail(
 						)
 
 					},
-					func() html.Node {
+					func() domi.Node {
 						return Group(
 							FlexCol(Gap4)(
 								SettingsContent()(
-									TextNode(Size6)(LiveText(sr.TitleField())),
+									TextNode(Size6)(domi.Text(sr.Title())),
 								),
 								SettingsGroup()(
 									seriesTitleItem(sr),
@@ -120,11 +133,10 @@ func AppSeriesDetail(
 
 							FlexCol(Gap6)(
 								SettingsContent()(
-									TextNode(Size4)(LiveText(sed.LabelField())),
+									TextNode(Size4)(domi.Text(sed.Label())),
 									Box()(
 										Link(
 											sed.TheaterPath(),
-											turbo.DataFrame("_top"),
 										)(Text("View in Theater", Size2,
 											// TODO(april): maybe make this the default for Text
 											Style("display: inline-block"),
@@ -137,9 +149,9 @@ func AppSeriesDetail(
 										SettingsItemLabel()(
 											SettingsItemLabelTitle("Edition"),
 										),
-										SettingsTextField("/-/do/series-edition-set-label", "label", sed.Label(), LiveAddr(sed.LabelAddr()))(
-											Hidden("id", sed.ID()),
-										),
+										SettingsTextField(sed.Label(), func(v string) msg.Msg {
+											return &msg.SeriesEditionSetLabel{ID: sed.ID(), Label: v}
+										}),
 									),
 									seriesPosterItem(sed),
 								),
@@ -156,9 +168,7 @@ func AppSeriesDetail(
 						),
 						addTorrentButton("sed-id", sed.ID()),
 					),
-					turbo.StreamTarget("edition-torrents-"+sed.ID())(
-						html.Range(dls, downloadListItem),
-					),
+					rangeNodes(dls, downloadListItem),
 				),
 
 				appSeriesDetailSeasonList(sed),
@@ -169,13 +179,9 @@ func AppSeriesDetail(
 							SettingsItemLabelTitle("New Season"),
 						),
 
-						html.Form(
-							attr.Method("POST"),
-							attr.Action("/-/do/season-add"),
-						)(
-							Hidden("edition-id", sed.ID()),
-							Button(ButtonGhost, ButtonSize2)(Text("Add")),
-						),
+						Button(onClick(&msg.SeasonAdd{EditionID: sed.ID()}),
+							ButtonGhost, ButtonSize2,
+						)(Text("Add")),
 					),
 				),
 
@@ -186,13 +192,9 @@ func AppSeriesDetail(
 							SettingsItemLabelDescription("Create a new edition by duplicating this one"),
 						),
 
-						html.Form(
-							attr.Method("POST"),
-							attr.Action("/-/do/series-edition-add"),
-						)(
-							Hidden("edition-id", sed.ID()),
-							Button(ButtonGhost, ButtonSize2)(Text("Duplicate")),
-						),
+						Button(onClick(&msg.SeriesEditionAdd{EditionID: sed.ID()}),
+							ButtonGhost, ButtonSize2,
+						)(Text("Duplicate")),
 					),
 				),
 
@@ -200,20 +202,20 @@ func AppSeriesDetail(
 					SettingsItem()(
 						SettingsItemLabel()(
 							expr.IfElse(len(editions) > 1,
-								func() html.Node {
+								func() domi.Node {
 									return SettingsItemLabelTitle("Delete Edition")
 								},
-								func() html.Node {
+								func() domi.Node {
 									return SettingsItemLabelTitle("Delete Series")
 								},
 							),
 							SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
 						),
 						expr.IfElse(len(editions) > 1,
-							func() html.Node {
+							func() domi.Node {
 								return trashForm(sed.ID())
 							},
-							func() html.Node {
+							func() domi.Node {
 								return trashForm(sr.ID())
 							},
 						),
@@ -224,73 +226,65 @@ func AppSeriesDetail(
 	)
 }
 
-func seriesTitleItem(sr *model.SeriesHead) html.Node {
+func seriesTitleItem(sr *model.SeriesHead) domi.Node {
 	return SettingsItem()(
 		SettingsItemLabel()(
 			SettingsItemLabelTitle("Title"),
 		),
-		SettingsTextField("/-/do/series-set-title", "title", sr.Title(), LiveAddr(sr.TitleAddr()))(
-			Hidden("id", sr.ID()),
-		),
+		SettingsTextField(sr.Title(), func(v string) msg.Msg {
+			return &msg.SeriesSetTitle{ID: sr.ID(), Title: v}
+		}),
 	)
 }
 
-func seriesPosterItem(sed *model.SeriesEdition) html.Node {
+func seriesPosterItem(sed *model.SeriesEdition) domi.Node {
 	return SettingsItem()(
 		SettingsItemLabel()(
 			SettingsItemLabelTitle("Poster"),
 		),
 		buttonImageEdit(
-			"/-/dialog/series-edition-poster/"+sed.ID(),
-			sed.Poster(), sed.PosterAddr(),
+			&msg.ImageDialogOpen{ID: sed.ID()},
+			sed.Poster(),
 			AspectPoster,
 		),
 	)
 }
 
-func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) html.Node {
-	return ImageDialogStream(AspectPoster)(
+func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) domi.Node {
+	return imageDialog(&msg.DialogClose{}, AspectPoster)(
 		buttonUpload()(
 			Hidden("sed-id", sed.ID()),
-			PosterImg(AspectPoster, PosterFill, imgAttrs(sed.PosterField())),
+			PosterImg(AspectPoster, PosterFill, imgAttrs(sed.Poster())),
 		),
 	)
 }
 
-func seriesSummarySection(sed *model.SeriesEdition) html.Node {
+func seriesSummarySection(sed *model.SeriesEdition) domi.Node {
 	return FlexCol(Gap2)(
 		SettingsContent()(Text("Summary", Size2)),
-		SettingsTextArea("/-/do/series-edition-set-summary", "summary", sed.Summary(), LiveAddr(sed.SummaryAddr()))(
-			Hidden("id", sed.ID()),
-		),
+		SettingsTextArea(sed.Summary(), func(v string) msg.Msg {
+			return &msg.SeriesEditionSetSummary{ID: sed.ID(), Summary: v}
+		}),
 	)
 }
 
-func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdition) html.Node {
+func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdition) domi.Node {
 	return FlexCol(Gap2)(
-		html.Range(editions, func(ed *model.SeriesWork) html.Node {
-			selected := group()
-			href := group()
+		rangeNodes(editions, func(ed *model.SeriesWork) domi.Node {
+			var card domi.Element
 			if ed.SeriesEditionHead.ID() == current.ID() {
-				selected = CardSelected
+				card = Card(CardSurface, CardSize1, CardSelected)
 			} else {
-				href = Href(ed.EditorPath())
+				card = CardLink(ed.EditorPath(), CardSurface, CardSize1)
 			}
-			return turbo.StreamTarget("edition-tab-" + ed.SeriesEditionHead.ID())(
-				Card(
-					CardSurface,
-					CardSize1,
-					href,
-					selected,
-				)(
-					FlexRow()(
-						CardContent()(
-							CardTitle()(
-								LiveText(ed.SeriesEditionHead.LabelField()),
-							),
-							CardDescription()(
-								seriesTheaterPathText(&ed.SeriesHead, &ed.SeriesEditionHead),
-							),
+			return card(
+				FlexRow()(
+					CardContent()(
+						CardTitle()(
+							domi.Text(ed.SeriesEditionHead.Label()),
+						),
+						CardDescription()(
+							seriesTheaterPathText(&ed.SeriesHead, &ed.SeriesEditionHead),
 						),
 					),
 				),
@@ -299,64 +293,64 @@ func appSeriesEditionList(editions []*model.SeriesWork, current *model.SeriesEdi
 	)
 }
 
-func appSeriesDetailSeasonList(sed *model.SeriesEdition) html.Node {
+func appSeriesDetailSeasonList(sed *model.SeriesEdition) domi.Node {
 	return FlexCol(Gap8)(
-		turbo.StreamTarget("edition-seasons-" + sed.ID())(
-			html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
-				return appSeriesDetailSeasonItem(sn)
-			}),
-		),
+		rangeSeq(sed.Seasons(), func(sn *model.Season) domi.Node {
+			return appSeriesDetailSeasonItem(sn)
+		}),
 	)
 }
 
-func appSeriesDetailSeasonItem(sn *model.Season) html.Node {
-	return turbo.StreamTarget("season-" + sn.ID())(
-		SettingsGroup()(
-			SettingsGroupHead(Class("v-season-group-head"))(
-				SettingsItemLabel(Class("v-season-label"),
-					stimulus.Controller("season-title"),
-					stimulus.Value("season-title", "mode")("display"),
-				)(
-					html.Div(Class("v-season-display"))(
-						FlexRow(Class("v-season-title-row"))(
-							TextNode(Size2)(LiveText(sn.TitleField())),
-							Button(ButtonCircle, ButtonGhost, ButtonSize1,
-								Class("v-season-title-edit-button"),
-								stimulus.Action("click->season-title#edit"),
-							)(Icon("line/edit-02")),
-						),
-						SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
-					),
-					html.Div(Class("v-season-edit"),
-						stimulus.Action("settings-text-field:commit->season-title#display"),
-						stimulus.Action("settings-text-field:error->season-title#display"),
-						stimulus.Action("settings-text-field:cancel->season-title#display"),
-					)(
-						SettingsTextField("/-/do/season-set-title", "title", sn.Title(), LiveAddr(sn.TitleAddr()))(
-							html.Input(attr.Type("hidden"), attr.Name("id"), attr.Value(sn.ID())),
-						),
-					),
-				),
-				FlexRow(Gap2)(
-					ActionButton("/-/do/series-episode-add",
-						map[string]string{"season-id": sn.ID()},
-						ButtonGhost, ButtonSize2,
-					)(Text("Add Episode")),
-					trashForm(sn.ID()),
-				),
-			),
-			turbo.StreamTarget("season-episodes-"+sn.ID(),
-				stimulus.Controller("sortable"),
-				stimulus.Action("keydown.esc@document->sortable#cancel"),
-				Attr("data-season-id")(sn.ID()),
+func appSeriesDetailSeasonItem(sn *model.Season) domi.Node {
+	return SettingsGroup()(
+		SettingsGroupHead(Class("v-season-group-head"))(
+			SettingsItemLabel(Class("v-season-label"),
+				stimulus.Controller("season-title"),
+				stimulus.Value("season-title", "mode")("display"),
 			)(
-				html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
+				html.Div(Class("v-season-display"))(
+					FlexRow(Class("v-season-title-row"))(
+						TextNode(Size2)(domi.Text(sn.Title())),
+						Button(ButtonCircle, ButtonGhost, ButtonSize1,
+							Class("v-season-title-edit-button"),
+							stimulus.Action("click->season-title#edit"),
+						)(Icon("line/edit-02")),
+					),
+					SettingsItemLabelDescription(fmt.Sprintf("%d Episodes", sn.NumEpisodes(model.Significant))),
+				),
+				html.Div(Class("v-season-edit"),
+					stimulus.Action("change->season-title#display"),
+					stimulus.Action("keydown.esc->season-title#display"),
+				)(
+					SettingsTextField(sn.Title(), func(v string) msg.Msg {
+						return &msg.SeasonSetTitle{ID: sn.ID(), Title: v}
+					}),
+				),
+			),
+			FlexRow(Gap2)(
+				Button(onClick(&msg.EpisodeCreate{SeasonID: sn.ID()}),
+					ButtonGhost, ButtonSize2,
+				)(Text("Add Episode")),
+				trashForm(sn.ID()),
 			),
 		),
+		domi.Keyed("div")(
+			Class("u-contents"),
+			stimulus.Controller("sortable"),
+			stimulus.Action("keydown.esc@document->sortable#cancel"),
+			Attr("data-season-id")(sn.ID()),
+			onEpisodeMove(),
+		)(func(yield func(string, domi.Node) bool) {
+			for ep := range sn.Episodes(model.AnyEpisode) {
+				if !yield(ep.ID(), appSeriesDetailEpisodeListItem(ep)) {
+					return
+				}
+			}
+		}),
 	)
 }
 
-func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
+func appSeriesDetailEpisodeListItem(ep *model.Episode) domi.Node {
 	icon := Group()
 	switch ep.State() {
 	case model.EpIsEmpty:
@@ -375,45 +369,58 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) html.Node {
 				progressContainer(ep.ID(), ep.Progress()),
 			),
 		),
-		Button(Href(ep.EditorPath()), ButtonGhost)(Icon("line/info-circle")),
+		ButtonLink(ep.EditorPath(), ButtonGhost)(Icon("line/info-circle")),
 		Grip(),
 	)
 }
 
-func AppSeriesAddDialog() html.Node {
-	return DialogStream(
+// AppSeriesAddDialog renders the add-series dialog: a TVmaze search
+// box and its results. While a search is in flight, searching shows
+// a spinner in place of the previous results.
+func AppSeriesAddDialog(query string, searching bool, results []model.SeriesSearchResult) domi.Node {
+	return dialog(&msg.DialogClose{})(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				Class("v-media-dialog-fixed"),
 			)(
-				html.Text("Add Series"),
+				domi.Text("Add Series"),
 			),
 			html.Form(
-				attr.Action("/-/part/series-search"),
-				Attr("data-turbo-frame")("results"),
+				onSubmit("q", func(v string) msg.Msg {
+					return &msg.SeriesSearch{Query: v}
+				}),
 			)(
 				InputText(
-					Attr("autofocus"),
+					Attr("autofocus")(""),
 					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
+					attr.Value(query),
 				),
 			),
 			html.Div(
 				Class("v-media-dialog-results"),
 			)(
-				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
+				expr.IfElse(searching,
+					func() domi.Node {
+						return Spinner(Class("v-media-dialog-spinner"))
+					},
+					func() domi.Node {
+						return AppSeriesSearchResults(results)
+					},
+				),
 			),
 		),
 	)
 }
 
-// AppEpisodeDetail renders the page for inspecting an
+// appEpisodeDetail renders the page for inspecting an
 // episode's videos, renditions, and metadata.
-func AppEpisodeDetail(
+func appEpisodeDetail(
 	ep *model.Episode,
 	episodeEditions []*model.Episode,
 	renditions []schema.Rendition,
-) html.Node {
+	uploads []model.Upload,
+) domi.Node {
 	videos := ep.Videos()
 	backLabel := ep.SeriesHead().Title()
 	if ep.SeriesEditionHead().Slug() != "" {
@@ -421,7 +428,7 @@ func AppEpisodeDetail(
 	}
 	return ScrollY(Style("padding:0.5rem"))(
 		FlexRow()(
-			Button(Href(model.SeriesEditionEditorPath(ep.SeriesHead(), ep.SeriesEditionHead())), ButtonGhost)(
+			ButtonLink(model.SeriesEditionEditorPath(ep.SeriesHead(), ep.SeriesEditionHead()), ButtonGhost)(
 				Label("line/chevron-left", backLabel),
 			),
 		),
@@ -429,7 +436,7 @@ func AppEpisodeDetail(
 			FlexCol(Gap8)(
 				FlexCol(Gap4)(
 					expr.IfElse(len(episodeEditions) > 1,
-						func() html.Node {
+						func() domi.Node {
 							return FlexCol(Gap8)(
 								SettingsGroup()(
 									SettingsGroupHead(Class("v-season-group-head"))(
@@ -438,13 +445,13 @@ func AppEpisodeDetail(
 											SettingsItemLabelDescription("Editing this episode affects these editions."),
 										),
 									),
-									html.Range(episodeEditions, func(eped *model.Episode) html.Node {
+									rangeNodes(episodeEditions, func(eped *model.Episode) domi.Node {
 										return SettingsItem()(
 											SettingsItemLabel()(
 												TextNode(Size2)(
-													LiveText(eped.SeriesEditionHead().LabelField()),
-													html.Text(" "),
-													html.Text(eped.SnnEnn()),
+													domi.Text(eped.SeriesEditionHead().Label()),
+													domi.Text(" "),
+													domi.Text(eped.SnnEnn()),
 												),
 											),
 											AppEpisodeEditionButton(eped.SeasonHead().ID(), eped.ID(), true, 0),
@@ -452,18 +459,18 @@ func AppEpisodeDetail(
 									}),
 								),
 								SettingsContent()(
-									TextNode(Size5)(LiveText((ep.TitleField()))),
+									TextNode(Size5)(domi.Text(ep.Title())),
 								),
 							)
 						},
-						func() html.Node {
+						func() domi.Node {
 							return SettingsContent()(
 								TextNode(Size3)(
-									LiveText(ep.SeriesEditionHead().LabelField()),
-									html.Text(" "),
-									html.Text(ep.SnnEnn()),
+									domi.Text(ep.SeriesEditionHead().Label()),
+									domi.Text(" "),
+									domi.Text(ep.SnnEnn()),
 								),
-								TextNode(Size5)(LiveText((ep.TitleField()))),
+								TextNode(Size5)(domi.Text(ep.Title())),
 							)
 						},
 					),
@@ -473,25 +480,25 @@ func AppEpisodeDetail(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Title"),
 							),
-							SettingsTextField("/-/do/episode-set-title", "title", ep.Title(), LiveAddr(ep.TitleAddr()))(
-								Hidden("id", ep.ID()),
-							),
+							SettingsTextField(ep.Title(), func(v string) msg.Msg {
+								return &msg.EpisodeSetTitle{ID: ep.ID(), Title: v}
+							}),
 						),
 						SettingsItem()(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Airdate"),
 							),
-							SettingsTextField("/-/do/episode-set-airdate", "airdate", ep.Airdate(), LiveAddr(ep.AirdateAddr()))(
-								Hidden("id", ep.ID()),
-							),
+							SettingsTextField(ep.Airdate(), func(v string) msg.Msg {
+								return &msg.EpisodeSetAirdate{ID: ep.ID(), Airdate: v}
+							}),
 						),
 						SettingsItem()(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Thumbnail"),
 							),
 							buttonImageEdit(
-								"/-/dialog/episode-thumbnail/"+ep.ID(),
-								ep.Thumbnail(), ep.ThumbnailAddr(),
+								&msg.ImageDialogOpen{ID: ep.ID()},
+								ep.Thumbnail(),
 								AspectThumbnail,
 							),
 						),
@@ -499,11 +506,10 @@ func AppEpisodeDetail(
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Type"),
 							),
-							SettingsButtonRow("/-/do/episode-set-type", "type", ep.Type(), LiveAddr(ep.TypeAddr()))(
-								Hidden("id", ep.ID()),
-								SettingsButtonRowItem("regular", Text("Regular")),
-								SettingsButtonRowItem("significant_special", Text("Special")),
-								SettingsButtonRowItem("insignificant_special", Text("Insignificant")),
+							SettingsButtonRow()(
+								episodeTypeButton(ep, "regular", "Regular"),
+								episodeTypeButton(ep, "significant_special", "Special"),
+								episodeTypeButton(ep, "insignificant_special", "Insignificant"),
 							),
 						),
 					),
@@ -511,9 +517,9 @@ func AppEpisodeDetail(
 
 				FlexCol(Gap2)(
 					SettingsContent()(Text("Summary", Size2)),
-					SettingsTextArea("/-/do/episode-set-summary", "summary", ep.Summary(), LiveAddr(ep.SummaryAddr()))(
-						Hidden("id", ep.ID()),
-					),
+					SettingsTextArea(ep.Summary(), func(v string) msg.Msg {
+						return &msg.EpisodeSetSummary{ID: ep.ID(), Summary: v}
+					}),
 				),
 
 				SettingsGroup()(
@@ -521,36 +527,33 @@ func AppEpisodeDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Upload"),
 						),
-						FlexRow()(
-							uploadEpisodeVideoButton(ep.ID()),
-							uploadProgress(ep.ID()),
-						),
+						uploadVideoControl("ep-id", ep.ID(), uploads),
 					),
 				),
 
-				TextNode(TextBold, Style("margin-top: 1rem"))(html.Text("Videos")),
+				TextNode(TextBold, Style("margin-top: 1rem"))(domi.Text("Videos")),
 				expr.IfElse(len(videos) == 0,
-					func() html.Node {
+					func() domi.Node {
 						return html.Div(
 							Class("v-media-muted"),
-						)(html.Text("No videos found"))
+						)(domi.Text("No videos found"))
 					},
-					func() html.Node { return Group() },
+					func() domi.Node { return Group() },
 				),
-				html.Range(videos, func(v *model.Video) html.Node {
+				rangeNodes(videos, func(v *model.Video) domi.Node {
 					return appEpisodeDialogVideo(ep, v)
 				}),
 
-				TextNode(TextBold, Style("margin-top: 1rem"))(html.Text("Renditions for Streaming")),
+				TextNode(TextBold, Style("margin-top: 1rem"))(domi.Text("Renditions for Streaming")),
 				expr.IfElse(len(renditions) == 0,
-					func() html.Node {
+					func() domi.Node {
 						return html.Div(
 							Class("v-media-muted"),
-						)(html.Text("No renditions found"))
+						)(domi.Text("No renditions found"))
 					},
-					func() html.Node { return Group() },
+					func() domi.Node { return Group() },
 				),
-				html.Range(renditions, func(r schema.Rendition) html.Node {
+				rangeNodes(renditions, func(r schema.Rendition) domi.Node {
 					return appEpisodeDialogRendition(r)
 				}),
 
@@ -571,29 +574,27 @@ func AppEpisodeDetail(
 // AppEpisodeEditionButton renders the per-edition remove/undo control.
 // undoSortKey is only consulted when inEdition is false: it's the
 // SortKey the undo action should reinsert the episode at.
-func AppEpisodeEditionButton(seasonID, episodeID string, inEdition bool, undoSortKey int64) html.Node {
-	return turbo.StreamTarget(appEpisodeEditionButtonID(seasonID, episodeID))(
-		expr.IfElse(inEdition,
-			func() html.Node {
-				return ActionButton(
-					path.Join("/-/do/season-remove-episode/", seasonID, episodeID),
-					nil, Destructive, SettingsHover,
+func AppEpisodeEditionButton(seasonID, episodeID string, inEdition bool, undoSortKey int64) domi.Node {
+	return expr.IfElse(inEdition,
+		func() domi.Node {
+			return Button(
+				onClick(&msg.SeasonRemoveEpisode{SeasonID: seasonID, EpisodeID: episodeID}),
+				Destructive, SettingsHover,
+			)(
+				Text("Remove"),
+			)
+		},
+		func() domi.Node {
+			return FlexRow(Gap4, Style("align-items:center"))(
+				Button(
+					onClick(&msg.SeasonAddEpisode{SeasonID: seasonID, EpisodeID: episodeID, SortKey: undoSortKey}),
+					ButtonGhost,
 				)(
-					Text("Remove"),
-				)
-			},
-			func() html.Node {
-				return FlexRow(Gap4, Style("align-items:center"))(
-					ActionButton(
-						path.Join("/-/do/season-add-episode/", seasonID, episodeID, strconv.FormatInt(undoSortKey, 10)),
-						nil, ButtonGhost,
-					)(
-						Text("Undo"),
-					),
-					Text("Removed"),
-				)
-			},
-		),
+					Text("Undo"),
+				),
+				Text("Removed"),
+			)
+		},
 	)
 }
 
@@ -601,233 +602,173 @@ func appEpisodeEditionButtonID(seasonID, episodeID string) string {
 	return "episode-edition-button-" + seasonID + "-" + episodeID
 }
 
-func EpisodeEditionButtonUpdate(seasonID, episodeID string, inEdition bool, undoSortKey int64) html.Node {
-	return turbo.Replace(appEpisodeEditionButtonID(seasonID, episodeID))(
-		AppEpisodeEditionButton(seasonID, episodeID, inEdition, undoSortKey),
-	)
-}
-
-func appEpisodeDialogVideo(ep *model.Episode, v *model.Video) html.Node {
+func appEpisodeDialogVideo(ep *model.Episode, v *model.Video) domi.Node {
 	return html.Div(
 		Class("v-media-indent"),
 	)(
 		html.Div()(
-			html.Text("ID: "),
-			html.Text(v.ID()),
+			domi.Text("ID: "),
+			domi.Text(v.ID()),
 		),
 		html.Div()(
-			html.Text("Name: "),
-			html.Text(v.Name()),
+			domi.Text("Name: "),
+			domi.Text(v.Name()),
 		),
 		html.Div()(
-			html.Text("Original Key: "),
-			html.Text(v.OriginalKey()),
+			domi.Text("Original Key: "),
+			domi.Text(v.OriginalKey()),
 		),
 		html.Div()(
-			html.Text("Playable: "),
-			html.Text(strconv.FormatBool(v.Playable())),
+			domi.Text("Playable: "),
+			domi.Text(strconv.FormatBool(v.Playable())),
 		),
 		FlexRow(Gap2, Style("margin-top: 0.5rem"))(
-			activeVideoControl(v, "/-/do/episode-video-set-active/"+ep.ID()+"/"+v.ID()),
-			ActionButton("/-/do/video-reimport/"+v.ID(), nil, Destructive)(
-				html.Text("Re-import"),
+			activeVideoControl(v, &msg.EpisodeVideoSetActive{EpisodeID: ep.ID(), VideoID: v.ID()}),
+			Button(onClick(&msg.VideoReimport{ID: v.ID()}), Destructive)(
+				domi.Text("Re-import"),
 			),
 			expr.IfElse(v.OriginalKey() != "",
-				func() html.Node {
-					return ActionButton("/-/do/video-reencode/"+v.ID(), nil, Destructive)(
-						html.Text("Re-encode"),
+				func() domi.Node {
+					return Button(onClick(&msg.VideoReencode{ID: v.ID()}), Destructive)(
+						domi.Text("Re-encode"),
 					)
 				},
-				func() html.Node { return Group() },
+				func() domi.Node { return Group() },
 			),
 			trashForm(v.ID()),
 		),
 	)
 }
 
+func episodeTypeButton(ep *model.Episode, value, label string) domi.Node {
+	return settingsButtonRowItem(ep.Type() == value, &msg.EpisodeSetType{
+		ID:   ep.ID(),
+		Type: value,
+	}, Text(label))
+}
+
 // activeVideoControl renders either an "Active" badge (when v is the
 // active video) or a "Set active" button (when v is playable and not
 // active). Unplayable videos render nothing — they cannot be made
 // active.
-func activeVideoControl(v *model.Video, setActivePath string) html.Node {
+func activeVideoControl(v *model.Video, setActive msg.Msg) domi.Node {
 	switch {
 	case v.Active():
-		return TextNode(TextBold)(html.Text("Active"))
+		return TextNode(TextBold)(domi.Text("Active"))
 	case v.Playable():
-		return ActionButton(setActivePath, nil)(html.Text("Set active"))
+		return Button(onClick(setActive))(domi.Text("Set active"))
 	default:
 		return Group()
 	}
 }
 
-func appEpisodeDialogRendition(r schema.Rendition) html.Node {
+func appEpisodeDialogRendition(r schema.Rendition) domi.Node {
 	return html.Div(
 		Class("v-media-indent"),
 	)(
 		html.Div()(
-			html.Text("ID: "),
-			html.Text(r.ID),
+			domi.Text("ID: "),
+			domi.Text(r.ID),
 		),
 		html.Div()(
-			html.Text("Video ID: "),
-			html.Text(r.VideoID),
+			domi.Text("Video ID: "),
+			domi.Text(r.VideoID),
 		),
 		html.Div()(
-			html.Text("Codec: "),
-			html.Text(r.Codec),
+			domi.Text("Codec: "),
+			domi.Text(r.Codec),
 		),
 		html.Div()(
-			html.Textf("Target Bitrate: %d kbit/s", r.TargetBitrate),
+			domi.Textf("Target Bitrate: %d kbit/s", r.TargetBitrate),
 		),
 		html.Div()(
-			html.Textf("Remux: %v", r.Remux != 0),
+			domi.Textf("Remux: %v", r.Remux != 0),
 		),
 		expr.IfElse(r.MaxHeight != 0,
-			func() html.Node {
+			func() domi.Node {
 				return html.Div()(
-					html.Textf("Max Height: %d", r.MaxHeight),
+					domi.Textf("Max Height: %d", r.MaxHeight),
 				)
 			},
-			func() html.Node { return Group() },
+			func() domi.Node { return Group() },
 		),
 		expr.IfElse(r.MaxFPS != 0,
-			func() html.Node {
+			func() domi.Node {
 				return html.Div()(
-					html.Textf("Max FPS: %d", r.MaxFPS),
+					domi.Textf("Max FPS: %d", r.MaxFPS),
 				)
 			},
-			func() html.Node { return Group() },
+			func() domi.Node { return Group() },
 		),
 		expr.IfElse(r.Key != "",
-			func() html.Node {
+			func() domi.Node {
 				return html.Div()(
-					html.Text("Key: "),
-					html.Text(r.Key),
+					domi.Text("Key: "),
+					domi.Text(r.Key),
 				)
 			},
-			func() html.Node { return Group() },
+			func() domi.Node { return Group() },
 		),
 	)
 }
 
 // AppSeriesSearchResults renders the search results for
 // adding a series.
-func AppSeriesSearchResults(results []model.SeriesSearchResult) html.Node {
-	return turbo.Frame("results")(
-		FlexCol(Gap4, Class("v-media-detail-body"))(
-			html.Range(results, func(t model.SeriesSearchResult) html.Node {
-				frameID := "tvmaze-" + strconv.Itoa(t.Show.ID)
-				return Card(CardSurface, CardSize3, Class("v-media-search-card"))(
-					FlexRow(Gap4, Style("height: 100%"))(
-						Inset(InsetSideLeft, Class("v-media-search-poster"))(
-							PosterImg(AspectPoster, Style("height: 100%"), attr.Src(t.Show.Image.Medium())),
-						),
-						FlexCol(Gap2)(
-							html.Text(t.Show.Name),
-							expr.IfElse(t.Local == nil,
-								func() html.Node {
-									return turbo.Frame(frameID)(
-										html.Form(
-											attr.Method("post"),
-											attr.Action("/-/do/series-add"),
-											turbo.DataFrame(frameID),
-										)(
-											Hidden("id", strconv.Itoa(t.Show.ID)),
-											Button(ButtonSurface)(html.Text("Add")),
-										),
-									)
-								},
-								func() html.Node {
-									return SeriesResultLink(t.Local.EditorPath())
-								},
-							),
-							TextNode(LineClamp3)(html.Safe(t.Show.Summary)),
-						),
+func AppSeriesSearchResults(results []model.SeriesSearchResult) domi.Node {
+	return FlexCol(Gap4, Class("v-media-detail-body"))(
+		rangeNodes(results, func(t model.SeriesSearchResult) domi.Node {
+			return Card(CardSurface, CardSize3, Class("v-media-search-card"))(
+				FlexRow(Gap4, Style("height: 100%"))(
+					Inset(InsetSideLeft, Class("v-media-search-poster"))(
+						PosterImg(AspectPoster, Style("height: 100%"), attr.Src(t.Show.Image.Medium())),
 					),
-				)
-			}),
-		),
+					FlexCol(Gap2)(
+						domi.Text(t.Show.Name),
+						expr.IfElse(t.Local == nil,
+							func() domi.Node {
+								return Button(
+									onClick(&msg.SeriesAdd{TVmazeID: t.Show.ID}),
+									ButtonSurface,
+								)(domi.Text("Add"))
+							},
+							func() domi.Node {
+								return seriesResultLink(t.Local.EditorPath())
+							},
+						),
+						TextNode(LineClamp3)(domi.Safe(t.Show.Summary)),
+					),
+				),
+			)
+		}),
 	)
 }
 
-func SeriesResultLink(editorURL string) html.Node {
+func seriesResultLink(editorURL string) domi.Node {
 	return FlexRow(Gap2)(
 		Label("line/check-circle", "In Library"),
-		Button(
-			Href(editorURL),
-			Attr("data-turbo-frame")("detail"),
-		)(
+		ButtonLink(editorURL)(
 			Text("Edit"),
 		),
 	)
 }
 
-func seriesTheaterPathText(sr *model.SeriesHead, sed *model.SeriesEditionHead) html.Node {
+func seriesTheaterPathText(sr *model.SeriesHead, sed *model.SeriesEditionHead) domi.Node {
 	if sed.Slug() == "" {
-		return Group(html.Text("/"), LiveText(sr.SlugField()))
+		return Group(domi.Text("/"), domi.Text(sr.Slug()))
 	}
 	return Group(
-		html.Text("/"), LiveText(sr.SlugField()),
-		html.Text("/"), LiveText(sed.SlugField()),
+		domi.Text("/"), domi.Text(sr.Slug()),
+		domi.Text("/"), domi.Text(sed.Slug()),
 	)
 }
 
-func SeasonAppend(sn *model.Season) html.Node {
-	return turbo.Append("edition-seasons-"+sn.EditionID(),
-		appSeriesDetailSeasonItem(sn),
-	)
-}
-
-func SeasonEpisodesUpdate(sn *model.Season) html.Node {
-	return turbo.Update("season-episodes-"+sn.ID(), turbo.Morph)(
-		html.RangeSeq(sn.Episodes(model.AnyEpisode), appSeriesDetailEpisodeListItem),
-	)
-}
-
-func SeriesSetSlug(sr *model.SeriesHead, oldSlug string, editions []*model.SeriesWork) html.Node {
-	nodes := []html.Node{
-		LiveTextUpdate(sr.SlugField()),
-		turbo.SetTargets("[data-list-id-param=\""+sr.ID()+"\"]",
-			html.Div(ListURL(sr.EditorPath()))(),
-		),
-	}
-	for _, ed := range editions {
-		edSlug := ed.SeriesEditionHead.Slug()
-		oldTheaterPath := path.Join("/", oldSlug, edSlug)
-		oldEditorPath := path.Join("/app/series", oldSlug, edSlug)
-		nodes = append(nodes,
-			turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
-			turbo.URLReplace(oldEditorPath, ed.EditorPath()),
-		)
-	}
-	return Group(nodes...)
-}
-
-func SeriesEditionSetSlug(ed *model.SeriesWork, oldSlug string) html.Node {
-	oldTheaterPath := path.Join(ed.SeriesHead.TheaterPath(), oldSlug)
-	oldEditorPath := path.Join(ed.SeriesHead.EditorPath(), oldSlug)
-	return Group(
-		LiveTextUpdate(ed.SeriesEditionHead.SlugField()),
-		turbo.URLReplace(oldTheaterPath, ed.TheaterPath()),
-		turbo.URLReplace(oldEditorPath, ed.EditorPath()),
-	)
-}
-
-func SeriesEditionChangePoster(sed *model.SeriesEditionHead) html.Node {
-	return liveImgUpdate(sed.PosterField())
-}
-
-func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) html.Node {
-	return ImageDialogStream(AspectThumbnail)(
+func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) domi.Node {
+	return imageDialog(&msg.DialogClose{}, AspectThumbnail)(
 		buttonUpload()(
 			Hidden("ep-id", ep.ID()),
-			PosterImg(AspectThumbnail, PosterFill, imgAttrs(ep.ThumbnailField())),
+			PosterImg(AspectThumbnail, PosterFill, imgAttrs(ep.Thumbnail())),
 		),
 	)
-}
-
-func EpisodeChangeThumbnail(ep *model.EpisodeHead) html.Node {
-	return liveImgUpdate(ep.ThumbnailField())
 }
 
 func truncate(s string, max int) string {

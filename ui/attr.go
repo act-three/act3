@@ -1,36 +1,27 @@
 package ui
 
-import "ily.dev/act3/html/attr"
+import (
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+)
 
 var (
 	Class = attr.Class
 	Style = attr.Style
 	Href  = attr.Href
-	group = attr.Group
+	group = domi.Group
 )
 
 // Stylef returns a style attribute with a formatted value.
-func Stylef(format string, a ...any) attr.Node {
+func Stylef(format string, a ...any) domi.Attr {
 	return attr.Stylef(format, a...)
 }
 
-func Attr(name string) attr.AttrName { return attr.Attr(name) }
+func Attr(name string) func(string) domi.Attr { return domi.Name(name) }
 
-func Disabled(disabled bool) attr.Node {
-	if disabled {
-		return attr.Disabled
-	} else {
-		return group()
-	}
-}
+func Disabled(disabled bool) domi.Attr { return attr.Disabled(disabled) }
 
-func Inert(inert bool) attr.Node {
-	if inert {
-		return attr.Inert
-	} else {
-		return group()
-	}
-}
+func Inert(inert bool) domi.Attr { return attr.Inert(inert) }
 
 var (
 	Gap0 = Class("u-gap-0")

@@ -1,11 +1,11 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
-func Link(url string, attrs ...attr.Node) html.Element {
+func Link(url string, attrs ...domi.Attr) domi.Element {
 	return html.A(
 		Href(url),
 		Class("u-link"),

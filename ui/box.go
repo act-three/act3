@@ -1,11 +1,11 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
-func Box(attrs ...attr.Node) html.Element {
+func Box(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		group(attrs...),
 	)

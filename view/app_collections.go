@@ -3,78 +3,66 @@ package view
 import (
 	"fmt"
 
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/expr"
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 )
 
-const AppCollectionsListItems = "collection-list-items"
-
 func AppCollections(
-	title string,
 	s []*model.CollectionHead,
-	detail ...html.Node,
-) (string, html.Node) {
-	return title, FlexCol(Class("v-media-page"))(
+	selected *model.Collection,
+) (title string, n domi.Node) {
+	return "Collections", FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
-			html.Form(
-				attr.Method("POST"),
-				attr.Action("/-/do/collection-add"),
-			)(
-				Button(ButtonSurface)(Text("Add Collection")),
-			),
+			Button(onClick(&msg.CollectionAdd{}), ButtonSurface)(Text("Add Collection")),
 		),
 		Split()(
-			List("/app/collections/", "detail")(
-				turbo.StreamTarget(AppCollectionsListItems)(
-					ListItems(s, AppCollectionsListItem),
-				),
+			List()(
+				ListItems(s, func(c *model.CollectionHead) bool {
+					return selected != nil && c.ID() == selected.ID()
+				}, AppCollectionsListItem),
 			),
-			turbo.Frame("detail", turbo.Advance())(
-				expr.IfElse(detail != nil,
-					func() html.Node {
-						return Group(detail...)
-					},
-					func() html.Node {
-						return Center(Class("v-media-muted"))(
-							html.Text("No Collection Selected"),
-						)
-					},
-				),
+			expr.IfElse(selected != nil,
+				func() domi.Node {
+					return appCollectionDetail(selected)
+				},
+				func() domi.Node {
+					return Center(Class("v-media-muted"))(
+						domi.Text("No Collection Selected"),
+					)
+				},
 			),
 		),
 	)
 }
 
 func AppCollectionsListItem(
-	c *model.CollectionHead, attrs ...attr.Node,
-) html.Node {
-	return Card(CardGhost,
+	c *model.CollectionHead, attrs ...domi.Attr,
+) domi.Node {
+	return CardLink(c.EditorPath(), CardGhost,
 		group(attrs...),
-		ListID(c.ID()),
-		ListURL(c.EditorPath()),
 	)(
 		CardContent()(
-			CardTitle()(LiveText(c.TitleField())),
+			CardTitle()(domi.Text(c.Title())),
 		),
 	)
 }
 
-func AppCollectionDetail(col *model.Collection) html.Node {
+func appCollectionDetail(col *model.Collection) domi.Node {
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(Class("v-media-detail-body"))(
 			SettingsPage()(
 				FlexCol(Gap6)(
 					SettingsContent()(
-						TextNode(Size6)(LiveText(col.TitleField())),
+						TextNode(Size6)(domi.Text(col.Title())),
 						Box()(
 							Link(
 								col.TheaterPath(),
-								turbo.DataFrame("_top"),
 							)(Text("View in Theater", Size3,
 								Style("display: inline-block"),
 							)),
@@ -86,9 +74,9 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							SettingsItemLabel()(
 								SettingsItemLabelTitle("Title"),
 							),
-							SettingsTextField("/-/do/collection-set-title", "title", col.Title(), LiveAddr(col.TitleAddr()))(
-								Hidden("id", col.ID()),
-							),
+							SettingsTextField(col.Title(), func(v string) msg.Msg {
+								return &msg.CollectionSetTitle{ID: col.ID(), Title: v}
+							}),
 						),
 
 						SettingsItem()(
@@ -96,8 +84,8 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 								SettingsItemLabelTitle("Banner"),
 							),
 							buttonImageEdit(
-								"/-/dialog/collection-banner/"+col.ID(),
-								col.Banner(), col.BannerAddr(),
+								&msg.ImageDialogOpen{ID: col.ID()},
+								col.Banner(),
 								AspectBanner,
 							),
 						),
@@ -108,32 +96,28 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 							SettingsItemLabel()(
 								TextNode(Size2)(
 									//fmt.Sprintf("%d Movies", len(col.Movies())),
-									LiveText(col.MovieCountField()),
+									domi.Textf("%d Movies", len(col.Movies())),
 								),
 							),
-							DialogButton("/-/dialog/collection-movie-add/"+col.ID(), ButtonGhost)(
+							Button(onClick(&msg.CollectionMovieAddOpen{CollectionID: col.ID()}), ButtonGhost)(
 								Text("Add Movie"),
 							),
 						),
-						turbo.StreamTarget("collection-"+col.ID()+"-movies")(
-							collectionMovieItems(col),
-						),
+						collectionMovieItems(col),
 					),
 
 					SettingsGroup()(
 						SettingsGroupHead()(
 							SettingsItemLabel()(
 								TextNode(Size2)(
-									LiveText(col.SeriesCountField()),
+									domi.Textf("%d Series", len(col.Series())),
 								),
 							),
-							DialogButton("/-/dialog/collection-series-add/"+col.ID(), ButtonGhost)(
+							Button(onClick(&msg.CollectionSeriesAddOpen{CollectionID: col.ID()}), ButtonGhost)(
 								Text("Add Series"),
 							),
 						),
-						turbo.StreamTarget("collection-"+col.ID()+"-series")(
-							collectionSeriesItems(col),
-						),
+						collectionSeriesItems(col),
 					),
 
 					SettingsGroup()(
@@ -151,82 +135,76 @@ func AppCollectionDetail(col *model.Collection) html.Node {
 	)
 }
 
-func AppCollectionBannerDialog(col *model.CollectionHead) html.Node {
-	return ImageDialogStream(AspectBanner)(
+func AppCollectionBannerDialog(col *model.CollectionHead) domi.Node {
+	return imageDialog(&msg.DialogClose{}, AspectBanner)(
 		buttonUpload()(
 			Hidden("col-id", col.ID()),
-			PosterImg(AspectBanner, PosterFill, imgAttrs(col.BannerField())),
+			PosterImg(AspectBanner, PosterFill, imgAttrs(col.Banner())),
 		),
 	)
 }
 
-func CollectionChangeBanner(col *model.CollectionHead) html.Node {
-	return liveImgUpdate(col.BannerField())
-}
-
-func AppCollectionMovieAddDialog(colID string) html.Node {
-	return DialogStream(
+// AppCollectionMovieAddDialog renders the add-movie-to-collection
+// picker: a library search box and its results.
+func AppCollectionMovieAddDialog(colID, query string, results []model.CollectionMovieSearchResult) domi.Node {
+	return dialog(&msg.DialogClose{})(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				Class("v-media-dialog-fixed"),
 			)(
-				html.Text("Add Movie to Collection"),
+				domi.Text("Add Movie to Collection"),
 			),
 			html.Form(
-				attr.Action("/-/part/collection-movie-search"),
-				Attr("data-turbo-frame")("results"),
+				onSubmit("q", func(v string) msg.Msg {
+					return &msg.CollectionPickerSearch{Query: v}
+				}),
 			)(
-				Hidden("col-id", colID),
 				InputText(
-					Attr("autofocus"),
+					Attr("autofocus")(""),
 					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
+					attr.Value(query),
 				),
 			),
 			html.Div(
 				Class("v-media-dialog-results"),
 			)(
-				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
+				AppCollectionMovieSearchResults(colID, results),
 			),
 		),
 	)
 }
 
-func AppCollectionMovieSearchResults(colID string, results []model.CollectionMovieSearchResult) html.Node {
-	return turbo.Frame("results")(
-		FlexCol(Gap4, Class("v-media-detail-body"))(
-			html.Range(results, func(r model.CollectionMovieSearchResult) html.Node {
-				mw := r.Movie
-				return html.Form(
-					attr.Method("POST"),
-					attr.Action("/-/do/collection-movie-add"),
-					stimulus.Action("turbo:submit-end->dialog#close"),
-					Inert(r.InCollection),
-				)(
-					Hidden("col-id", colID),
-					Hidden("movie-id", mw.MovieHead.ID()),
-					html.Button(
-						Style("all: unset; cursor: pointer; width: 100%"),
-					)(
-						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
-							FlexRow(Gap4, Style("height: 100%"))(
-								Inset(InsetSideLeft, Class("v-media-search-poster"))(
-									PosterImg(AspectPoster, Style("height: 100%"), imgAttrs(mw.PosterField())),
-								),
-								FlexCol(Gap2)(
-									html.If(r.InCollection, func() html.Node {
-										return Label("solid/check-circle", "Already in Collection")
-									}),
-									TextNode(TextBold)(html.Text(mw.Title())),
-									TextNode()(html.Text(mw.MovieEditionHead.Year())),
-									TextNode()(html.Text(fmt.Sprintf("%d min", mw.MovieEditionHead.Runtime()))),
-								),
-							),
+func AppCollectionMovieSearchResults(colID string, results []model.CollectionMovieSearchResult) domi.Node {
+	return FlexCol(Gap4, Class("v-media-detail-body"))(
+		rangeNodes(results, func(r model.CollectionMovieSearchResult) domi.Node {
+			mw := r.Movie
+			return html.Button(
+				onClick(&msg.CollectionMovieAdd{
+					CollectionID: colID,
+					MovieID:      mw.MovieHead.ID(),
+				}),
+				Inert(r.InCollection),
+				Style("all: unset; cursor: pointer; width: 100%"),
+			)(
+				Card(CardSurface, CardSize3, Class("v-media-search-card"))(
+					FlexRow(Gap4, Style("height: 100%"))(
+						Inset(InsetSideLeft, Class("v-media-search-poster"))(
+							PosterImg(AspectPoster, Style("height: 100%"), imgAttrs(mw.Poster())),
+						),
+						FlexCol(Gap2)(
+							iff(r.InCollection, func() domi.Node {
+								return Label("solid/check-circle", "Already in Collection")
+							}),
+
+							TextNode(TextBold)(domi.Text(mw.Title())),
+							TextNode()(domi.Text(mw.MovieEditionHead.Year())),
+							TextNode()(domi.Text(fmt.Sprintf("%d min", mw.MovieEditionHead.Runtime()))),
 						),
 					),
-				)
-			}),
-		),
+				),
+			)
+		}),
 	)
 }
 
@@ -234,98 +212,80 @@ func collectionMovieItemID(colID, movieID string) string {
 	return "col-" + colID + "-mo-" + movieID
 }
 
-func collectionMovieItems(col *model.Collection) html.Node {
-	return html.Range(col.Movies(), func(mo *model.MovieWork) html.Node {
+func collectionMovieItems(col *model.Collection) domi.Node {
+	return rangeNodes(col.Movies(), func(mo *model.MovieWork) domi.Node {
 		return SettingsItem(attr.ID(collectionMovieItemID(col.ID(), mo.MovieHead.ID())))(
 			FlexRow(Style("align-items:center"), Gap4)(
 				SettingsItemLabelIcon()(Icon("line/film-01")),
 				SettingsItemLabelTitle(mo.Title()+" ("+mo.Year()+")"),
 			),
-			ActionButton("/-/do/collection-movie-remove",
-				map[string]string{"col-id": col.ID(), "movie-id": mo.MovieHead.ID()},
-				SettingsHover, ButtonGhost,
-			)(Text("Remove")),
+			Button(onClick(&msg.CollectionMovieRemove{
+				CollectionID: col.ID(),
+				MovieID:      mo.MovieHead.ID(),
+			}), SettingsHover, ButtonGhost)(Text("Remove")),
 		)
 	})
 }
 
-func CollectionMovieAppend(col *model.Collection) html.Node {
-	return Group(
-		turbo.Update("collection-"+col.ID()+"-movies")(
-			collectionMovieItems(col),
-		),
-		LiveTextUpdate(col.MovieCountField()),
-	)
-}
-
-func CollectionMovieRemove(col *model.Collection, movieID string) html.Node {
-	return Group(
-		turbo.Remove(collectionMovieItemID(col.ID(), movieID)),
-		LiveTextUpdate(col.MovieCountField()),
-	)
-}
-
-func AppCollectionSeriesAddDialog(colID string) html.Node {
-	return DialogStream(
+// AppCollectionSeriesAddDialog renders the add-series-to-collection
+// picker: a library search box and its results.
+func AppCollectionSeriesAddDialog(colID, query string, results []model.CollectionSeriesSearchResult) domi.Node {
+	return dialog(&msg.DialogClose{})(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				Class("v-media-dialog-fixed"),
 			)(
-				html.Text("Add Series to Collection"),
+				domi.Text("Add Series to Collection"),
 			),
 			html.Form(
-				attr.Action("/-/part/collection-series-search"),
-				Attr("data-turbo-frame")("results"),
+				onSubmit("q", func(v string) msg.Msg {
+					return &msg.CollectionPickerSearch{Query: v}
+				}),
 			)(
-				Hidden("col-id", colID),
 				InputText(
-					Attr("autofocus"),
+					Attr("autofocus")(""),
 					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
+					attr.Value(query),
 				),
 			),
 			html.Div(
 				Class("v-media-dialog-results"),
 			)(
-				turbo.Frame("results")(Spinner(Class("v-media-dialog-spinner"))),
+				AppCollectionSeriesSearchResults(colID, results),
 			),
 		),
 	)
 }
 
-func AppCollectionSeriesSearchResults(colID string, results []model.CollectionSeriesSearchResult) html.Node {
-	return turbo.Frame("results")(
-		FlexCol(Gap4, Class("v-media-detail-body"))(
-			html.Range(results, func(r model.CollectionSeriesSearchResult) html.Node {
-				sw := r.Series
-				return html.Form(
-					attr.Method("POST"),
-					attr.Action("/-/do/collection-series-add"),
-					stimulus.Action("turbo:submit-end->dialog#close"),
-					Inert(r.InCollection),
-				)(
-					Hidden("col-id", colID),
-					Hidden("series-id", sw.SeriesHead.ID()),
-					html.Button(
-						Style("all: unset; cursor: pointer; width: 100%"),
-					)(
-						Card(CardSurface, CardSize3, Class("v-media-search-card"))(
-							FlexRow(Gap4, Style("height: 100%"))(
-								Inset(InsetSideLeft, Class("v-media-search-poster"))(
-									PosterImg(AspectPoster, Style("height: 100%"), imgAttrs(sw.PosterField())),
-								),
-								FlexCol(Gap2)(
-									html.If(r.InCollection, func() html.Node {
-										return Label("solid/check-circle", "Already in Collection")
-									}),
-									TextNode(TextBold)(html.Text(sw.Title())),
-								),
-							),
+func AppCollectionSeriesSearchResults(colID string, results []model.CollectionSeriesSearchResult) domi.Node {
+	return FlexCol(Gap4, Class("v-media-detail-body"))(
+		rangeNodes(results, func(r model.CollectionSeriesSearchResult) domi.Node {
+			sw := r.Series
+			return html.Button(
+				onClick(&msg.CollectionSeriesAdd{
+					CollectionID: colID,
+					SeriesID:     sw.SeriesHead.ID(),
+				}),
+				Inert(r.InCollection),
+				Style("all: unset; cursor: pointer; width: 100%"),
+			)(
+				Card(CardSurface, CardSize3, Class("v-media-search-card"))(
+					FlexRow(Gap4, Style("height: 100%"))(
+						Inset(InsetSideLeft, Class("v-media-search-poster"))(
+							PosterImg(AspectPoster, Style("height: 100%"), imgAttrs(sw.Poster())),
+						),
+						FlexCol(Gap2)(
+							iff(r.InCollection, func() domi.Node {
+								return Label("solid/check-circle", "Already in Collection")
+							}),
+
+							TextNode(TextBold)(domi.Text(sw.Title())),
 						),
 					),
-				)
-			}),
-		),
+				),
+			)
+		}),
 	)
 }
 
@@ -333,44 +293,18 @@ func collectionSeriesItemID(colID, seriesID string) string {
 	return "col-" + colID + "-sr-" + seriesID
 }
 
-func collectionSeriesItems(col *model.Collection) html.Node {
-	return html.Range(col.Series(), func(sw *model.SeriesWork) html.Node {
+func collectionSeriesItems(col *model.Collection) domi.Node {
+	return rangeNodes(col.Series(), func(sw *model.SeriesWork) domi.Node {
 		return SettingsItem(attr.ID(collectionSeriesItemID(col.ID(), sw.SeriesHead.ID())))(
 			FlexRow(Style("align-items:center"), Gap4)(
 				SettingsItemLabelIcon()(Icon("line/tv-03")),
 				SettingsItemLabelTitle(sw.Title()),
 			),
-			ActionButton("/-/do/collection-series-remove",
-				map[string]string{"col-id": col.ID(), "series-id": sw.SeriesHead.ID()},
-				SettingsHover, ButtonGhost,
-			)(Text("Remove")),
+			Button(onClick(&msg.CollectionSeriesRemove{
+				CollectionID: col.ID(),
+				SeriesID:     sw.SeriesHead.ID(),
+			}), SettingsHover, ButtonGhost)(Text("Remove")),
 		)
 	})
-}
 
-func CollectionSeriesAppend(col *model.Collection) html.Node {
-	return Group(
-		turbo.Update("collection-"+col.ID()+"-series")(
-			collectionSeriesItems(col),
-		),
-		LiveTextUpdate(col.SeriesCountField()),
-	)
-}
-
-func CollectionSeriesRemove(col *model.Collection, seriesID string) html.Node {
-	return Group(
-		turbo.Remove(collectionSeriesItemID(col.ID(), seriesID)),
-		LiveTextUpdate(col.SeriesCountField()),
-	)
-}
-
-func CollectionSetSlug(col *model.CollectionHead, oldSlug string) html.Node {
-	oldEditorPath := "/app/collections/" + oldSlug
-	return Group(
-		LiveTextUpdate(col.SlugField()),
-		turbo.SetTargets(`[data-list-id-param="`+col.ID()+`"]`,
-			html.Div(ListURL(col.EditorPath()))(),
-		),
-		turbo.URLReplace(oldEditorPath, col.EditorPath()),
-	)
 }

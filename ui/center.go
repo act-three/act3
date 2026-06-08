@@ -1,13 +1,13 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 // Center renders a full-size container that centers its
 // children both horizontally and vertically.
-func Center(attrs ...attr.Node) html.Element {
+func Center(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-center"),
 		group(attrs...),

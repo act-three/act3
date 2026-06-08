@@ -3,9 +3,11 @@ package view
 import (
 	"fmt"
 
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/database"
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	. "ily.dev/act3/ui"
 )
 
@@ -15,14 +17,14 @@ func Degraded(
 	sme *database.SchemaMismatchError,
 	stats []database.TableStat,
 	dbFileSize int64,
-) html.Node {
+) domi.Node {
 	var totalRows int64
 	for _, s := range stats {
 		totalRows += s.RowCount
 	}
 	hasData := totalRows > 0
 
-	return base("Schema Mismatch")()(
+	return domi.Fragment(
 		FlexCol(Class("v-degraded"), Gap6)(
 			Text("Schema Mismatch", Size7, TextBold),
 			Text("The database schema does not match "+
@@ -30,7 +32,7 @@ func Degraded(
 				"The database must be reinitialized before "+
 				"the server can start.", Size3),
 			Code(CodeSize2, CodeWrap)(
-				html.Pre()(html.Text(fmt.Sprintf(
+				html.Pre()(domi.Text(fmt.Sprintf(
 					"Version:  %s\nStored:   %s\n"+
 						"Expected: %s\nDB Path:  %s",
 					sme.Version,
@@ -43,19 +45,20 @@ func Degraded(
 			TableRoot(TableSize2)(
 				TableHeader()(
 					TableRow()(
-						TableHead()(html.Text("Table")),
-						TableHead()(html.Text("Rows")),
+						TableHead()(domi.Text("Table")),
+						TableHead()(domi.Text("Rows")),
 					),
 				),
 				TableBody()(
-					html.Range(stats, func(s database.TableStat) html.Node {
+					rangeNodes(stats, func(s database.TableStat) domi.Node {
 						return TableRow()(
-							TableCell()(html.Text(s.Name)),
-							TableCell()(html.Text(
+							TableCell()(domi.Text(s.Name)),
+							TableCell()(domi.Text(
 								fmt.Sprintf("%d", s.RowCount),
 							)),
 						)
 					}),
+
 					TableRow()(
 						TableCell()(Text("Total", TextBold)),
 						TableCell()(Text(
@@ -104,7 +107,7 @@ func fmtSize(size int64) string {
 	return fmt.Sprintf("%d bytes", size)
 }
 
-func degradedAction(hasData bool) html.Node {
+func degradedAction(hasData bool) domi.Node {
 	if hasData {
 		return Group(
 			Card(Destructive, Class("v-degraded-alert"))(
@@ -117,7 +120,6 @@ func degradedAction(hasData bool) html.Node {
 			html.Form(
 				attr.Method("POST"),
 				attr.Action("/-/do/database-reset"),
-				Attr("data-turbo")("false"),
 			)(
 				Button(
 					Destructive,
@@ -128,19 +130,18 @@ func degradedAction(hasData bool) html.Node {
 							"'Delete all data and "+
 							"reinitialize the database?')",
 					),
-				)(html.Text("Delete and Reinitialize")),
+				)(domi.Text("Delete and Reinitialize")),
 			),
 		)
 	}
 	return html.Form(
 		attr.Method("POST"),
 		attr.Action("/-/do/database-reset"),
-		Attr("data-turbo")("false"),
 	)(
 		Button(
 			ButtonSolid,
 			ButtonSize3,
 			Attr("type")("submit"),
-		)(html.Text("Reinitialize Database")),
+		)(domi.Text("Reinitialize Database")),
 	)
 }

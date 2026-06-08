@@ -1,58 +1,33 @@
 package ui
 
 import (
-	"crypto/rand"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
 
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 )
 
-// PopoverButton renders a button that GETs url as a turbo stream,
-// storing the trigger button's position for the popover to anchor to.
-// The label appears on the button;
-// children are placed alongside it (e.g. hidden inputs
-// whose values the controller includes as query parameters).
-func PopoverButton(url string, label html.Node, attrs ...attr.Node) html.Element {
-	id := "pt-" + rand.Text()[:8]
-	return func(children ...html.Node) html.Node {
+// Popover renders a popover panel positioned below the trigger
+// element identified by triggerID. A popover is open exactly while
+// the view renders it: close is delivered by the Escape key and by
+// clicking the backdrop outside the panel, and should remove the
+// popover from the app state.
+func Popover[Msg any](close Msg, triggerID string, attrs ...domi.Attr) domi.Element {
+	backdropID := triggerID + "-popover"
+	return func(children ...domi.Node) domi.Node {
 		return html.Div(
-			stimulus.Controller("popover-trigger"),
-			stimulus.Value("popover-trigger", "url")(url),
-			stimulus.Value("popover-trigger", "trigger")(id),
-		)(
-			append(children,
-				Button(
-					attr.ID(id),
-					Attr("data-optimistic")(""),
-					stimulus.Action("click->popover-trigger#open"),
-					stimulus.Action("mousedown->popover-trigger#activate"),
-					stimulus.Action("mouseleave->popover-trigger#deactivate"),
-					group(attrs...),
-				)(label),
-			)...,
-		)
-	}
-}
-
-// PopoverStream renders a popover panel and wraps it in a turbo stream
-// append to the [Port].
-// The panel is positioned below the trigger button
-// identified by triggerID.
-func PopoverStream(triggerID string, children ...html.Node) html.Node {
-	return turbo.Append("port",
-		html.Div(
+			attr.ID(backdropID),
 			Class("u-popover"),
 			stimulus.Controller("popover"),
 			stimulus.Value("popover", "trigger")(triggerID),
-			stimulus.Action("click->popover#close:self"),
-			stimulus.Action("keydown.esc@document->popover#close"),
-			stimulus.Action("turbo:before-visit@document->popover#close"),
+			onEscape(close),
+			onClickSelf(close),
 		)(
-			html.Div(Class("u-popover-panel"))(
-				children...,
-			),
-		),
-	)
+			html.Div(
+				Class("u-popover-panel"),
+				group(attrs...),
+			)(children...),
+		)
+	}
 }

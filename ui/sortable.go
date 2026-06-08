@@ -1,7 +1,10 @@
 package ui
 
-import "ily.dev/act3/html"
+import (
+	"ily.dev/domi"
+	"ily.dev/domi/html"
+)
 
-func Grip() html.Node {
+func Grip() domi.Node {
 	return html.Div(Class("u-sortable-handle"))(Icon("line/dots-grid"))
 }

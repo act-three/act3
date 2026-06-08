@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 var (
@@ -11,7 +11,7 @@ var (
 	CardClassic = Attr("data-card")("classic")
 )
 
-var CardSelected = Attr("data-selected")
+var CardSelected = Attr("data-selected")("")
 
 var (
 	CardSize1 = Attr("data-card-size")("1")
@@ -21,40 +21,44 @@ var (
 	CardSize5 = Attr("data-card-size")("5")
 )
 
-func Card(attrs ...attr.Node) html.Element {
-	a := group(attrs...)
-	tag := "div"
-	if a.Has("href") {
-		tag = "a"
-	}
-	return html.Tag(tag)(
+func Card(attrs ...domi.Attr) domi.Element {
+	return html.Div(
 		Class("u-card"),
-		a,
+		group(attrs...),
 	)
 }
 
-func CardMedia(attrs ...attr.Node) html.Element {
+// CardLink renders a card as an <a> with the given href.
+func CardLink(href string, attrs ...domi.Attr) domi.Element {
+	return html.A(
+		Class("u-card"),
+		Href(href),
+		group(attrs...),
+	)
+}
+
+func CardMedia(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-card-media"),
 		group(attrs...),
 	)
 }
 
-func CardContent(attrs ...attr.Node) html.Element {
+func CardContent(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-card-content"),
 		group(attrs...),
 	)
 }
 
-func CardTitle(attrs ...attr.Node) html.Element {
+func CardTitle(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-card-title"),
 		group(attrs...),
 	)
 }
 
-func CardDescription(attrs ...attr.Node) html.Element {
+func CardDescription(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-card-description"),
 		group(attrs...),

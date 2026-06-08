@@ -2081,11 +2081,7 @@
     border-radius: 0.125rem;
   }
   .v-media-dialog-spinner {
-    display: none;
     margin: 1rem auto;
-  }
-  turbo-frame[aria-busy=true] > .v-media-dialog-spinner {
-    display: block;
   }
   .v-media-search-card {
     height: 200px;
@@ -2201,9 +2197,6 @@
     border: 0.5px solid oklch(from var(--border) 0.21 c h);
     box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     overflow: hidden;
-  }
-  .v-app-main > * {
-    place-self: center;
   }
 }
 

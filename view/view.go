@@ -3,9 +3,11 @@
 // Code in these packages must not perform I/O (e.g. database or network).
 package view
 
-import "ily.dev/act3/html/attr"
+import (
+	"ily.dev/domi"
+)
 
-var group = attr.Group
+var group = domi.Group
 
 func isUserAdmin() bool {
 	// TODO(april): make this work properly once we have user accounts,

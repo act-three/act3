@@ -1,13 +1,13 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 // ImageFrame wraps content (typically an image) with
 // rounded corners and overflow hidden.
-func ImageFrame(attrs ...attr.Node) html.Element {
+func ImageFrame(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-image-frame"),
 		group(attrs...),

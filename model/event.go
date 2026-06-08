@@ -9,6 +9,7 @@ import (
 var (
 	EventLiveUpdate                = "live-update"
 	EventSeasonRenumber            = "season-renumber"
+	EventEpisodeSetSlug            = "episode-set-slug"
 	EventSeriesSetSlug             = "series-set-slug"
 	EventSeriesEditionSetSlug      = "series-edition-set-slug"
 	EventMovieSetSlug              = "movie-set-slug"
@@ -26,6 +27,7 @@ var (
 	EventSeasonEpisodeAdd          = "season-episode-add"
 	EventSeasonEpisodeRemove       = "season-episode-remove"
 	EventDownloadFileAttach        = "download-file-attach"
+	EventUploadProgress            = "upload-progress"
 	EventTaskStatsChange           = "task-stats-change"
 	EventTrash                     = "trash"
 	EventTrashCascade              = "trash-cascade"
@@ -37,12 +39,18 @@ type Event struct {
 	Type     string
 	Progress *progress.Item
 
-	ID         string
-	Addr       []string
-	NewText    string
-	OldText    string
-	TrashKind  TrashKind
-	TrashItems []TrashItem
+	ID      string
+	Addr    []string
+	NewText string
+	OldText string
+	// ParentSlug, on edition slug events, is the slug addressing the
+	// edition's series or movie. EditionSlugs, when the default
+	// edition gains a slug, lists the slugs addressing the parent's
+	// other editions.
+	ParentSlug   string
+	EditionSlugs []string
+	TrashKind    TrashKind
+	TrashItems   []TrashItem
 }
 
 func (m *Model) emitEvent(ev *Event) {

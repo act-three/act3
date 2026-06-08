@@ -47,6 +47,10 @@ func (c *CollectionHead) EditorPath() string {
 	return "/app/collections/" + c.col.Slug
 }
 
+func (c *CollectionHead) PlaylistPath() string {
+	return c.TheaterPath() + "/playlist"
+}
+
 // Collection is the full representation with associated movies and series.
 type Collection struct {
 	CollectionHead
@@ -444,14 +448,17 @@ func (tx *TxRW) collectionEnsureSlug(ctx Context, id string) error {
 		return err
 	}
 	if slug != col.Slug {
-		tx.onCommit(func() {
-			tx.m.emitEvent(&Event{
-				Type:    EventCollectionSetSlug,
-				ID:      id,
-				OldText: col.Slug,
-				NewText: slug,
+		// Only a live rename is announced; see seriesEnsureSlug.
+		if col.DeletedAt == nil {
+			tx.onCommit(func() {
+				tx.m.emitEvent(&Event{
+					Type:    EventCollectionSetSlug,
+					ID:      id,
+					OldText: col.Slug,
+					NewText: slug,
+				})
 			})
-		})
+		}
 		if err := tx.q.CollectionSetSlug(ctx, schema.CollectionSetSlugParams{Slug: slug, ID: id}); err != nil {
 			return err
 		}

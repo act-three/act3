@@ -33,12 +33,8 @@
 	border-radius: 0.125rem;
 }
 
-/* edit-media dialog loading spinner (visible only while turbo frame loads) */
-.v-media-dialog-spinner {
-	display: none;
-	margin: 1rem auto;
-}
-turbo-frame[aria-busy="true"] > .v-media-dialog-spinner { display: block; }
+/* dialog loading spinner; the markup renders it only while searching */
+.v-media-dialog-spinner { margin: 1rem auto; }
 
 .v-media-search-card { height: 200px; }
 
