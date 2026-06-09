@@ -19,6 +19,7 @@ func browse(title string, washImages ...model.Image) html.Element {
 			browseWash(washImages),
 			browseContainer(child...),
 			browseNavigationMenu(),
+			browseDemoStamp(),
 			turbo.Frame("player"),
 		)
 	}
@@ -44,6 +45,17 @@ func browseWash(images []model.Image) html.Node {
 	}
 	return Box(Class("v-media-wash"))(
 		PosterImg(AspectPoster, PosterFill, attr.Src(url)),
+	)
+}
+
+func browseDemoStamp() html.Node {
+	return html.Img(
+		Style("position:absolute"),
+		Style("top:0"),
+		Style("left:50%"),
+		Style("transform:translateX(-50%)"),
+		Style("width:8em"),
+		attr.Src(static.Path("/static/demo.png")),
 	)
 }
 
