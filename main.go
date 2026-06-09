@@ -15,6 +15,7 @@ import (
 
 	"ily.dev/act3/database"
 	"ily.dev/act3/http/panicstack"
+	"ily.dev/act3/http/primaryredirect"
 	"ily.dev/act3/http/requestid"
 	"ily.dev/act3/http/secureheader"
 	"ily.dev/act3/http/timing"
@@ -35,6 +36,7 @@ import (
 var (
 	databaseDir = getenv("A3DATABASE", ".")
 	storageDir  = getenv("A3STORAGE", "/var/lib/act3")
+	primaryURL  = os.Getenv("A3URL")
 )
 
 func getenv(name, def string) string {
@@ -156,6 +158,7 @@ func main() {
 		TVmaze: tvmazeClient,
 	})
 	h := http.Handler(mux)
+	h = primaryredirect.Handler(primaryURL, h)
 	h = panicstack.Handler(h)
 	h = timing.Handler(h)
 	h = requestid.Handler(h)
@@ -189,6 +192,7 @@ func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {
 		go srv.Shutdown(context.Background())
 	})
 	var h http.Handler = mux
+	h = primaryredirect.Handler(primaryURL, h)
 	h = panicstack.Handler(h)
 	h = timing.Handler(h)
 	h = requestid.Handler(h)
