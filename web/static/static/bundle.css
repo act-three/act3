@@ -2402,7 +2402,7 @@
     backdrop-filter: blur(4px);
   }
   .v-detail[data-spoiler] .v-detail-thumb > .v-detail-spoiler-overlay {
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(24px);
   }
 }
 
@@ -2475,7 +2475,7 @@
     backdrop-filter: blur(4px);
   }
   .v-series-episode[data-spoiler] .v-series-episode-thumb > .v-series-spoiler-overlay {
-    backdrop-filter: blur(12px);
+    backdrop-filter: blur(20px);
   }
   .v-series-episode-thumb {
     grid-column: span 3;
