@@ -7,3 +7,17 @@
 .v-detail-muted { color: var(--text-2); }
 
 .v-detail-play { width: 168px; }
+
+/* wrappers for the spoiler blur overlays */
+.v-detail-summary { position: relative; }
+.v-detail-thumb { position: relative; }
+
+.v-detail-spoiler-overlay {
+	position: absolute;
+	inset: -0.5rem;
+	pointer-events: none;
+}
+
+/* spoiler blur (activated by data-spoiler on the page grid) */
+.v-detail[data-spoiler] .v-detail-summary > .v-detail-spoiler-overlay { backdrop-filter: blur(4px); }
+.v-detail[data-spoiler] .v-detail-thumb > .v-detail-spoiler-overlay { backdrop-filter: blur(12px); }

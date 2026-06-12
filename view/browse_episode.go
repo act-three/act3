@@ -19,8 +19,12 @@ func BrowseEpisode(
 	if v != nil {
 		baseURL = ep.VideoPlayerPath(v)
 	}
+	spoiler := group()
+	if hideSpoilers(ep) {
+		spoiler = Attr("data-spoiler")
+	}
 	return browse(ep.Title(), ep.Thumbnail())(
-		Grid12(Class("v-detail"))(
+		Grid12(Class("v-detail"), spoiler)(
 			FlexCol(ColSpan7, Class("v-detail-info"), playable(baseURL))(
 				Link(ep.EditionTheaterPath())(Text(ep.SeriesHead().Title())),
 				Grid7()(
@@ -46,12 +50,16 @@ func BrowseEpisode(
 				),
 				playableAudioSelect(audioOpts),
 				playableSubtitleSelect(subOpts),
-				TextNode()(html.Safe(ep.Summary())),
+				Box(Class("v-detail-summary"))(
+					TextNode()(html.Safe(ep.Summary())),
+					Box(Class("v-detail-spoiler-overlay")),
+				),
 			),
 			Box(),
 			Box(ColSpan4)(
-				ImageFrame()(
+				ImageFrame(Class("v-detail-thumb"))(
 					PosterImg(AspectThumbnail, PosterFill, imgAttrs(ep.ThumbnailField())),
+					Box(Class("v-detail-spoiler-overlay")),
 				),
 			),
 		),
