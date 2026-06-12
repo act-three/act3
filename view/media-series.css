@@ -70,7 +70,7 @@
 
 /* spoiler blur (activated by data-spoiler on the episode row) */
 .v-series-episode[data-spoiler] .v-series-episode-summary > .v-series-spoiler-overlay { backdrop-filter: blur(4px); }
-.v-series-episode[data-spoiler] .v-series-episode-thumb > .v-series-spoiler-overlay { backdrop-filter: blur(12px); }
+.v-series-episode[data-spoiler] .v-series-episode-thumb > .v-series-spoiler-overlay { backdrop-filter: blur(20px); }
 
 .v-series-episode-thumb {
 	grid-column: span 3;

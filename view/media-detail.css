@@ -20,4 +20,4 @@
 
 /* spoiler blur (activated by data-spoiler on the page grid) */
 .v-detail[data-spoiler] .v-detail-summary > .v-detail-spoiler-overlay { backdrop-filter: blur(4px); }
-.v-detail[data-spoiler] .v-detail-thumb > .v-detail-spoiler-overlay { backdrop-filter: blur(12px); }
+.v-detail[data-spoiler] .v-detail-thumb > .v-detail-spoiler-overlay { backdrop-filter: blur(24px); }
