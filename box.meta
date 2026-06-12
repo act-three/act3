@@ -13,6 +13,7 @@ mount (
 env (
 	A3DATABASE /database
 	A3STORAGE  /storage
+	A3URL      "${A3URL}"
 	PATH       /
 
 	# Dolby Vision conversion runs ffmpeg's libplacebo filter on a
