@@ -7,5 +7,8 @@ import (
 )
 
 func wordmark() domi.Node {
-	return Box(Class("v-wordmark"))
+	return FlexRow(Style("align-items:center;gap:0.5rem"))(
+		Box(Class("v-wordmark")),
+		Box()(domi.Safe("&beta;")),
+	)
 }

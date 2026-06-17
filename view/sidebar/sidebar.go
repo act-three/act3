@@ -96,7 +96,12 @@ func sidebarContent(c Config) domi.Node {
 		Class("v-sidebar-content"),
 	)(
 		html.Div(Class("v-sidebar-heading"))(
-			Link("/")(Box(Class("v-wordmark"))),
+			Link("/")(
+				FlexRow(Style("align-items:center;gap:0.5rem"))(
+					Box(Class("v-wordmark")),
+					Box()(domi.Safe("&beta;")),
+				),
+			),
 		),
 		rangeNodes(sidebarData(c), func(v MenuSection) domi.Node {
 			return sidebarGroup(v, c.Path)

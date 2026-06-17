@@ -23,20 +23,8 @@ func browse(uploads []model.Upload, washImages ...model.Image) domi.Element {
 				browseContainer(child...),
 			),
 			browseNavigationMenu(uploads),
-			browseDemoStamp(),
 		)
 	}
-}
-
-func browseDemoStamp() domi.Node {
-	return html.Img(
-		Style("position:absolute"),
-		Style("top:0"),
-		Style("left:50%"),
-		Style("transform:translateX(-50%)"),
-		Style("width:8em"),
-		attr.Src(static.Path("/static/demo.png")),
-	)
 }
 
 func browseContainer(child ...domi.Node) domi.Node {
