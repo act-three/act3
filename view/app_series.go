@@ -11,7 +11,6 @@ import (
 	"ily.dev/act3/html"
 	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
-	"ily.dev/act3/service/tvmaze"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/ui/turbo"
@@ -711,27 +710,20 @@ func appEpisodeDialogRendition(r schema.Rendition) html.Node {
 	)
 }
 
-// SeriesSearchResult pairs a TVmaze show with an optional
-// local series entry.
-type SeriesSearchResult struct {
-	TVmaze tvmaze.Show
-	Local  *model.SeriesHead
-}
-
 // AppSeriesSearchResults renders the search results for
 // adding a series.
-func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
+func AppSeriesSearchResults(results []model.SeriesSearchResult) html.Node {
 	return turbo.Frame("results")(
 		FlexCol(Gap4, Class("v-media-detail-body"))(
-			html.Range(results, func(t SeriesSearchResult) html.Node {
-				frameID := "tvmaze-" + strconv.Itoa(t.TVmaze.ID)
+			html.Range(results, func(t model.SeriesSearchResult) html.Node {
+				frameID := "tvmaze-" + strconv.Itoa(t.Show.ID)
 				return Card(CardSurface, CardSize3, Class("v-media-search-card"))(
 					FlexRow(Gap4, Style("height: 100%"))(
 						Inset(InsetSideLeft, Class("v-media-search-poster"))(
-							PosterImg(AspectPoster, Style("height: 100%"), attr.Src(t.TVmaze.Image.Medium())),
+							PosterImg(AspectPoster, Style("height: 100%"), attr.Src(t.Show.Image.Medium())),
 						),
 						FlexCol(Gap2)(
-							html.Text(t.TVmaze.Name),
+							html.Text(t.Show.Name),
 							expr.IfElse(t.Local == nil,
 								func() html.Node {
 									return turbo.Frame(frameID)(
@@ -740,7 +732,7 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 											attr.Action("/-/do/series-add"),
 											turbo.DataFrame(frameID),
 										)(
-											Hidden("id", strconv.Itoa(t.TVmaze.ID)),
+											Hidden("id", strconv.Itoa(t.Show.ID)),
 											Button(ButtonSurface)(html.Text("Add")),
 										),
 									)
@@ -749,7 +741,7 @@ func AppSeriesSearchResults(results []SeriesSearchResult) html.Node {
 									return SeriesResultLink(t.Local.EditorPath())
 								},
 							),
-							TextNode(LineClamp3)(html.Safe(t.TVmaze.Summary)),
+							TextNode(LineClamp3)(html.Safe(t.Show.Summary)),
 						),
 					),
 				)

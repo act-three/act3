@@ -11,6 +11,7 @@ import (
 	"ily.dev/act3/priority"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/xstrings"
+	"kr.dev/errorfmt"
 )
 
 type SeriesHead struct {
@@ -83,6 +84,62 @@ func (tx *TxR) SeriesHeadListByTVmazeID(ctx Context, id []*int64) ([]*SeriesHead
 		return nil, err
 	}
 	return newSeriesHeadList(a), nil
+}
+
+// A SeriesSearchResult pairs a TVmaze show with the local series
+// already created from it, if any.
+type SeriesSearchResult struct {
+	Show  tvmaze.Show
+	Local *SeriesHead
+}
+
+// SearchSeries searches TVmaze for shows matching query and pairs
+// each result with the local series created from it, if any.
+func (m *Model) SearchSeries(ctx Context, query string) (results []SeriesSearchResult, err error) {
+	defer errorfmt.Handlef("search series: %w", &err)
+	found, err := m.tvmaze.Search(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]*int64, len(found))
+	for i, r := range found {
+		id := int64(r.Show.ID)
+		ids[i] = &id
+	}
+	err = m.WithTxR(func(tx *TxR) error {
+		heads, err := tx.SeriesHeadListByTVmazeID(ctx, ids)
+		if err != nil {
+			return err
+		}
+		local := make(map[int64]*SeriesHead, len(heads))
+		for _, sr := range heads {
+			local[*sr.TVmazeID()] = sr
+		}
+		for _, r := range found {
+			results = append(results, SeriesSearchResult{
+				Show:  r.Show,
+				Local: local[int64(r.Show.ID)],
+			})
+		}
+		return nil
+	})
+	return results, err
+}
+
+// AddSeriesByTVmazeID fetches show id from TVmaze
+// and creates a local series from it.
+func (m *Model) AddSeriesByTVmazeID(ctx Context, id int) (sw *SeriesWork, err error) {
+	defer errorfmt.Handlef("add series: %w", &err)
+	show, err := m.tvmaze.GetShow(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	err = m.WithTxRW(func(tx *TxRW) error {
+		var err error
+		sw, err = tx.SeriesCreateByTVmazeID(ctx, show)
+		return err
+	})
+	return sw, err
 }
 
 var reservedSlugs = map[string]bool{

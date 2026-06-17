@@ -271,13 +271,6 @@ func AppMoviePosterDialog(med *model.MovieEdition) html.Node {
 	)
 }
 
-// MovieSearchResult pairs a TMDB search result with an
-// optional local movie entry.
-type MovieSearchResult struct {
-	TMDB  tmdb.SearchResult
-	Local *model.MovieHead
-}
-
 func posterURL(p *string) string {
 	if p != nil {
 		return tmdb.PosterURL(*p)
@@ -287,23 +280,23 @@ func posterURL(p *string) string {
 
 // AppMovieSearchResults renders the search results for
 // adding a movie.
-func AppMovieSearchResults(results []MovieSearchResult) html.Node {
+func AppMovieSearchResults(results []model.MovieSearchResult) html.Node {
 	return turbo.Frame("results")(
 		FlexCol(Gap4, Class("v-media-detail-body"))(
-			html.Range(results, func(t MovieSearchResult) html.Node {
-				frameID := "tmdb-" + strconv.Itoa(t.TMDB.ID)
+			html.Range(results, func(t model.MovieSearchResult) html.Node {
+				frameID := "tmdb-" + strconv.Itoa(t.Movie.ID)
 				return Card(CardSurface, CardSize3,
 					Class("v-media-search-card"),
 				)(
 					FlexRow(Gap4, Style("height: 100%"))(
 						Inset(InsetSideLeft, Class("v-media-search-poster"))(
-							PosterImg(AspectPoster, Style("height: 100%"), attr.Src(posterURL(t.TMDB.PosterPath))),
+							PosterImg(AspectPoster, Style("height: 100%"), attr.Src(posterURL(t.Movie.PosterPath))),
 						),
 						FlexCol(Gap2)(
-							movieSearchTitle(t.TMDB),
+							movieSearchTitle(t.Movie),
 							movieSearchAction(frameID, t),
 							TextNode(LineClamp3)(
-								html.Text(t.TMDB.Overview),
+								html.Text(t.Movie.Overview),
 							),
 						),
 					),
@@ -321,7 +314,7 @@ func movieSearchTitle(m tmdb.SearchResult) html.Node {
 	return html.Text(title)
 }
 
-func movieSearchAction(frameID string, t MovieSearchResult) html.Node {
+func movieSearchAction(frameID string, t model.MovieSearchResult) html.Node {
 	if t.Local != nil {
 		return MovieResultLink(t.Local.EditorPath())
 	}
@@ -331,7 +324,7 @@ func movieSearchAction(frameID string, t MovieSearchResult) html.Node {
 			attr.Action("/-/do/movie-add-by-tmdb"),
 			turbo.DataFrame(frameID),
 		)(
-			Hidden("id", strconv.Itoa(t.TMDB.ID)),
+			Hidden("id", strconv.Itoa(t.Movie.ID)),
 			Button(ButtonSurface)(html.Text("Add")),
 		),
 	)

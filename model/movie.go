@@ -12,6 +12,7 @@ import (
 	"ily.dev/act3/priority"
 	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/xstrings"
+	"kr.dev/errorfmt"
 )
 
 // MovieHead is the lightweight representation used in lists.
@@ -266,6 +267,61 @@ func (tx *TxR) MovieHeadListByTMDBID(
 		return nil, err
 	}
 	return newMovieHeadList(a), nil
+}
+
+// MovieSearchResult pairs a TMDB search result with the local movie
+// it matches, if any.
+type MovieSearchResult struct {
+	Movie tmdb.SearchResult
+	Local *MovieHead
+}
+
+// SearchMovies searches TMDB for movies matching query, marking
+// results that are already in the library.
+func (m *Model) SearchMovies(ctx Context, query string) (results []MovieSearchResult, err error) {
+	defer errorfmt.Handlef("search movies: %w", &err)
+	found, err := m.tmdb.Search(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]*int64, len(found))
+	for i, r := range found {
+		id := int64(r.ID)
+		ids[i] = &id
+	}
+	err = m.WithTxR(func(tx *TxR) error {
+		heads, err := tx.MovieHeadListByTMDBID(ctx, ids)
+		if err != nil {
+			return err
+		}
+		local := make(map[int64]*MovieHead, len(heads))
+		for _, mo := range heads {
+			local[*mo.TMDBID()] = mo
+		}
+		for _, r := range found {
+			results = append(results, MovieSearchResult{
+				Movie: r,
+				Local: local[int64(r.ID)],
+			})
+		}
+		return nil
+	})
+	return results, err
+}
+
+// AddMovieByTMDBID creates a local movie from a TMDB entry.
+func (m *Model) AddMovieByTMDBID(ctx Context, id int) (mw *MovieWork, err error) {
+	defer errorfmt.Handlef("add movie: %w", &err)
+	movie, err := m.tmdb.GetMovie(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	err = m.WithTxRW(func(tx *TxRW) error {
+		var err error
+		mw, err = tx.MovieCreateByTMDBID(ctx, movie)
+		return err
+	})
+	return mw, err
 }
 
 // movieEnsureSlug aligns the Movie's slug with its current (default

@@ -192,15 +192,10 @@ func AppCollectionMovieAddDialog(colID string) html.Node {
 	)
 }
 
-type CollectionMovieSearchResult struct {
-	Movie        *model.MovieWork
-	InCollection bool
-}
-
-func AppCollectionMovieSearchResults(colID string, results []CollectionMovieSearchResult) html.Node {
+func AppCollectionMovieSearchResults(colID string, results []model.CollectionMovieSearchResult) html.Node {
 	return turbo.Frame("results")(
 		FlexCol(Gap4, Class("v-media-detail-body"))(
-			html.Range(results, func(r CollectionMovieSearchResult) html.Node {
+			html.Range(results, func(r model.CollectionMovieSearchResult) html.Node {
 				mw := r.Movie
 				return html.Form(
 					attr.Method("POST"),
@@ -298,15 +293,10 @@ func AppCollectionSeriesAddDialog(colID string) html.Node {
 	)
 }
 
-type CollectionSeriesSearchResult struct {
-	Series       *model.SeriesWork
-	InCollection bool
-}
-
-func AppCollectionSeriesSearchResults(colID string, results []CollectionSeriesSearchResult) html.Node {
+func AppCollectionSeriesSearchResults(colID string, results []model.CollectionSeriesSearchResult) html.Node {
 	return turbo.Frame("results")(
 		FlexCol(Gap4, Class("v-media-detail-body"))(
-			html.Range(results, func(r CollectionSeriesSearchResult) html.Node {
+			html.Range(results, func(r model.CollectionSeriesSearchResult) html.Node {
 				sw := r.Series
 				return html.Form(
 					attr.Method("POST"),
