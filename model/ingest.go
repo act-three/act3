@@ -821,11 +821,11 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 	return err
 }
 
-// ReImportVideo queues a reimport task for the given video.
+// ReimportVideo queues a reimport task for the given video.
 // The task will delete all existing renditions and the original
 // CAS blob, re-copy the source from the download path, and
 // restart the full ingestion pipeline.
-func (tx *TxRW) ReImportVideo(ctx Context, videoID string) error {
+func (tx *TxRW) ReimportVideo(ctx Context, videoID string) error {
 	if err := tx.guardActiveVideo(ctx, videoID); err != nil {
 		return err
 	}
@@ -908,21 +908,11 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 // The task will delete all existing renditions (CAS blobs and DB
 // records), re-probe the original source, plan new renditions,
 // and restart the encoding pipeline.
-func (m *Model) ReencodeVideo(ctx Context, videoID string) (err error) {
-	defer errorfmt.Handlef("reencode video %s: %w", videoID, &err)
-	vid, err := schema.New(m.dbr).VideoGet(ctx, videoID)
-	if err != nil {
+func (tx *TxRW) ReencodeVideo(ctx Context, videoID string) error {
+	if err := tx.guardActiveVideo(ctx, videoID); err != nil {
 		return err
 	}
-	if vid.OriginalKey == "" {
-		return fmt.Errorf("video has no original hash")
-	}
-	return m.WithTxRW(func(tx *TxRW) error {
-		if err := tx.guardActiveVideo(ctx, videoID); err != nil {
-			return err
-		}
-		return tx.addTask(ctx, taskReencode, videoID)
-	})
+	return tx.addTask(ctx, taskReencode, videoID)
 }
 
 // taskReencode deletes all existing renditions for a video

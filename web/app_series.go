@@ -286,7 +286,7 @@ func (c *Config) doEpisodeVideoSetActive(w http.ResponseWriter, req *http.Reques
 func (c *Config) doVideoReimport(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	_, err := c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-		return nil, tx.ReImportVideo(ctx, req.PathValue("id"))
+		return nil, tx.ReimportVideo(ctx, req.PathValue("id"))
 	})
 	if err != nil {
 		return nil, err
@@ -297,7 +297,9 @@ func (c *Config) doVideoReimport(w http.ResponseWriter, req *http.Request) (html
 
 func (c *Config) doVideoReencode(w http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
-	err := c.Model.ReencodeVideo(ctx, req.PathValue("id"))
+	_, err := c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
+		return nil, tx.ReencodeVideo(ctx, req.PathValue("id"))
+	})
 	if err != nil {
 		return nil, err
 	}
