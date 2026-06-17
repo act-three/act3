@@ -1,7 +1,10 @@
 package view
 
-import "ily.dev/act3/html"
+import (
+	"ily.dev/domi"
+	"ily.dev/domi/html"
+)
 
-func AppProfile() (string, html.Node) {
-	return "Profile", html.Div()(html.Text("Change Name"))
+func AppProfile() (string, domi.Node) {
+	return "Profile", html.Div()(domi.Text("Change Name"))
 }

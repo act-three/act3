@@ -5,18 +5,16 @@ import (
 	"net/http"
 	"strings"
 
-	"ily.dev/act3/html"
 	"ily.dev/act3/model"
 	"ily.dev/act3/video"
-	"ily.dev/act3/view"
 )
 
 // subtitleExts is the set of URL suffixes the subtitleFile handler
 // recognises.
 var subtitleExts = []string{".vtt", ".ass", ".srt"}
 
-func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		ctx := req.Context()
 		id, found := strings.CutSuffix(req.PathValue("id"), ".mp4")
 		if !found {
@@ -42,8 +40,8 @@ func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (html.Node,
 	})
 }
 
-func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		ctx := req.Context()
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
@@ -61,8 +59,8 @@ func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (h
 	})
 }
 
-func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		ctx := req.Context()
 		raw := req.PathValue("id")
 		var id, ext string
@@ -108,8 +106,8 @@ func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (html.No
 	})
 }
 
-func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		ctx := req.Context()
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
@@ -132,68 +130,6 @@ func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request)
 	})
 }
 
-// playerForEpisode and playerForMovie render the player frame.
-// ?a, ?s, and ?pin_audio are all optional — see PlayerForEpisode in
-// view/player.go for the defaults applied when they're absent.
-func (c *Config) playerForEpisode(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
-		ctx := req.Context()
-		v, err := tr.Video(ctx, req.PathValue("id"))
-		if err != nil {
-			return nil, err
-		}
-		ep, err := tr.EpisodeInEdition(ctx,
-			req.PathValue("epID"),
-			req.PathValue("sedID"),
-		)
-		if err != nil {
-			return nil, err
-		}
-		qualityOpts, err := tr.QualityOptions(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		captionsOpts, err := tr.SubtitleOptions(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		audioOpts, err := tr.AudioOptions(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		q := req.URL.Query()
-		return view.PlayerForEpisode(v, ep, qualityOpts, captionsOpts, audioOpts, q.Get("a"), q.Get("s"), q.Get("pin_audio") == "1"), nil
-	})
-}
-
-func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tr *model.TxR) (html.Node, error) {
-		ctx := req.Context()
-		v, err := tr.Video(ctx, req.PathValue("id"))
-		if err != nil {
-			return nil, err
-		}
-		med, err := tr.MovieEditionHead(ctx, req.PathValue("medID"))
-		if err != nil {
-			return nil, err
-		}
-		qualityOpts, err := tr.QualityOptions(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		captionsOpts, err := tr.SubtitleOptions(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		audioOpts, err := tr.AudioOptions(ctx, v)
-		if err != nil {
-			return nil, err
-		}
-		q := req.URL.Query()
-		return view.PlayerForMovie(v, med, qualityOpts, captionsOpts, audioOpts, q.Get("a"), q.Get("s"), q.Get("pin_audio") == "1"), nil
-	})
-}
-
 // videoPlaylist serves the multivariant HLS playlist for a video,
 // optionally narrowed via ?q=<videoRendID>&a=<audioRendID> query
 // params. Both are optional; an absent or empty param includes the
@@ -201,8 +137,8 @@ func (c *Config) playerForMovie(_ http.ResponseWriter, req *http.Request) (html.
 // JS sends in Chrome (where source-swapping is the only way to
 // change audio); Safari uses ?q= alone and switches audio via the
 // native audioTracks API.
-func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		ctx := req.Context()
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
@@ -221,8 +157,8 @@ func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (html.N
 	})
 }
 
-func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		ctx := req.Context()
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
@@ -240,8 +176,8 @@ func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request
 	})
 }
 
-func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		ctx := req.Context()
 		id, found := strings.CutSuffix(req.PathValue("id"), ".mp4")
 		if !found {
@@ -267,8 +203,8 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (html.Nod
 	})
 }
 
-func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		dl, err := tx.VideoDownloadForEpisode(req.Context(),
 			req.PathValue("id"),
 			req.PathValue("epID"),
@@ -282,8 +218,8 @@ func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Reques
 	})
 }
 
-func (c *Config) videoDownloadForMovie(w http.ResponseWriter, req *http.Request) (html.Node, error) {
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+func (c *Config) videoDownloadForMovie(w http.ResponseWriter, req *http.Request) (node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		dl, err := tx.VideoDownloadForMovieEdition(req.Context(),
 			req.PathValue("id"),
 			req.PathValue("medID"),

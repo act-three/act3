@@ -152,23 +152,6 @@ func isReservedSlug(s string) bool {
 	return reservedSlugs[s]
 }
 
-type SlugKind string
-
-const (
-	SlugMovie      SlugKind = "movie"
-	SlugSeries     SlugKind = "series"
-	SlugCollection SlugKind = "collection"
-)
-
-// SlugResolve looks up a top-level slug and returns its kind.
-func (tx *TxR) SlugResolve(ctx Context, slug string) (SlugKind, error) {
-	s, err := tx.q.SlugGet(ctx, slug)
-	if err != nil {
-		return "", err
-	}
-	return SlugKind(s.Kind), nil
-}
-
 // seriesEnsureSlug aligns the Series' slug with its current title,
 // emitting EventSeriesSetSlug if it changes, and keeps the Slug table
 // row in sync. Safe to call on live series (title-change) or trashed
@@ -187,14 +170,19 @@ func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
 		return err
 	}
 	if slug != sr.Slug {
-		tx.onCommit(func() {
-			tx.m.emitEvent(&Event{
-				Type:    EventSeriesSetSlug,
-				ID:      id,
-				OldText: sr.Slug,
-				NewText: slug,
+		// Only a live rename is announced: a trashed series' pages
+		// have no viewers to follow it, and its former slug may
+		// meanwhile address something else entirely.
+		if sr.DeletedAt == nil {
+			tx.onCommit(func() {
+				tx.m.emitEvent(&Event{
+					Type:    EventSeriesSetSlug,
+					ID:      id,
+					OldText: sr.Slug,
+					NewText: slug,
+				})
 			})
-		})
+		}
 		if err := tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{Slug: slug, ID: id}); err != nil {
 			return err
 		}

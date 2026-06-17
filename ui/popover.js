@@ -1,5 +1,9 @@
 import { Controller } from "../web/stimulus.js";
 
+// popover positions the server-rendered panel near its trigger
+// element and keeps the trigger visible while the popover is open.
+// Opening and closing are app state; this controller is pure
+// presentation.
 export default class extends Controller {
 	static values = { trigger: String };
 
@@ -8,6 +12,8 @@ export default class extends Controller {
 		this.trigger = trigger;
 		const panel = this.element.querySelector(".u-popover-panel");
 		if (!trigger || !panel) return;
+		trigger.style.visibility = "visible";
+		trigger.setAttribute("aria-expanded", "true");
 		const anchor = trigger.getBoundingClientRect();
 		const gap = 4;
 		const pw = panel.offsetWidth, ph = panel.offsetHeight;
@@ -27,9 +33,5 @@ export default class extends Controller {
 			this.trigger.style.visibility = "";
 			this.trigger.removeAttribute("aria-expanded");
 		}
-	}
-
-	close() {
-		this.element.remove();
 	}
 }

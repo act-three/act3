@@ -346,14 +346,17 @@ func (tx *TxRW) movieEnsureSlug(ctx Context, id string) error {
 		return err
 	}
 	if slug != mo.Slug {
-		tx.onCommit(func() {
-			tx.m.emitEvent(&Event{
-				Type:    EventMovieSetSlug,
-				ID:      id,
-				OldText: mo.Slug,
-				NewText: slug,
+		// Only a live rename is announced; see seriesEnsureSlug.
+		if mo.DeletedAt == nil {
+			tx.onCommit(func() {
+				tx.m.emitEvent(&Event{
+					Type:    EventMovieSetSlug,
+					ID:      id,
+					OldText: mo.Slug,
+					NewText: slug,
+				})
 			})
-		})
+		}
 		if err := tx.q.MovieSlugSet(ctx, schema.MovieSlugSetParams{Slug: slug, ID: id}); err != nil {
 			return err
 		}

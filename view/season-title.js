@@ -5,7 +5,9 @@ export default class extends Controller {
 
 	edit() {
 		this.modeValue = "edit";
-		const input = this.element.querySelector("input[name=\"title\"]");
+		const input = this.element.querySelector(
+			".u-settings-text-field input:not([disabled])",
+		);
 		input.focus();
 		input.select();
 	}

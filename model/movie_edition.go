@@ -138,15 +138,15 @@ func (med *MovieEdition) Runtime() string {
 	return ""
 }
 
-func (med *MovieEdition) PlayerPath() string {
-	if v := med.ActiveVideo(); v != nil {
-		return med.VideoPlayerPath(v)
+func (med *MovieEdition) PlayIDs() PlayIDs {
+	v := med.ActiveVideo()
+	if v == nil {
+		return PlayIDs{}
 	}
-	return ""
-}
-
-func (med *MovieEdition) VideoPlayerPath(v *Video) string {
-	return "/-/player/" + v.ID() + "/" + med.med.ID
+	return PlayIDs{
+		VideoID:        v.ID(),
+		MovieEditionID: med.med.ID,
+	}
 }
 
 // ActiveVideo returns the video marked Active for this edition, or
@@ -315,14 +315,20 @@ func (tx *TxRW) movieEditionEnsureSlug(ctx Context, id string) error {
 	if slug == med.Slug {
 		return nil
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventMovieEditionSetSlug,
-			ID:      id,
-			NewText: slug,
-			OldText: med.Slug,
+	// Only a live rename is announced: a trashed edition's pages
+	// have no viewers to follow it.
+	if med.DeletedAt == nil {
+		mo, err := tx.q.MovieGet(ctx, med.MovieID)
+		if err != nil {
+			return err
+		}
+		tx.onCommit(func() {
+			tx.m.emitEvent(&Event{
+				Type: EventMovieEditionSetSlug, ID: id,
+				ParentSlug: mo.Slug, OldText: med.Slug, NewText: slug,
+			})
 		})
-	})
+	}
 	return tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
 		Slug: slug,
 		ID:   id,
@@ -448,12 +454,28 @@ func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
 	if err != nil {
 		return err
 	}
+	mo, err := tx.q.MovieGet(ctx, med.MovieID)
+	if err != nil {
+		return err
+	}
+	editions, err := tx.q.MovieEditionListByMovieID(ctx, med.MovieID)
+	if err != nil {
+		return err
+	}
+	var slugs []string
+	for _, ed := range editions {
+		if ed.Slug != "" {
+			slugs = append(slugs, ed.Slug)
+		}
+	}
 	tx.onCommit(func() {
 		tx.m.emitEvent(&Event{
-			Type: EventMovieEditionSetSlug, ID: old.ID, NewText: oldSlug,
+			Type: EventMovieEditionSetSlug, ID: old.ID,
+			ParentSlug: mo.Slug, EditionSlugs: slugs, OldText: "", NewText: oldSlug,
 		})
 		tx.m.emitEvent(&Event{
-			Type: EventMovieEditionSetSlug, ID: med.ID, OldText: med.Slug,
+			Type: EventMovieEditionSetSlug, ID: med.ID,
+			ParentSlug: mo.Slug, OldText: med.Slug, NewText: "",
 		})
 	})
 	err = tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{

@@ -4,34 +4,48 @@ import (
 	crand "crypto/rand"
 	"math/rand/v2"
 
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/web/static"
 )
 
-func browse(title string, washImages ...model.Image) html.Element {
-	return func(child ...html.Node) html.Node {
-		return base(title)(Style("padding:var(--nav-h) 0 8rem"))(
+func browse(uploads []model.Upload, washImages ...model.Image) domi.Element {
+	return func(child ...domi.Node) domi.Node {
+		return domi.Fragment(
 			browseWash(washImages),
-			browseContainer(child...),
-			browseNavigationMenu(),
+			// The padding kept content clear of the fixed nav by
+			// living on <body> pre-domi; domi owns <body> now.
+			html.Div(Style("padding:var(--nav-h) 0 8rem"))(
+				browseContainer(child...),
+			),
+			browseNavigationMenu(uploads),
 			browseDemoStamp(),
-			turbo.Frame("player"),
 		)
 	}
 }
 
-func browseContainer(child ...html.Node) html.Node {
+func browseDemoStamp() domi.Node {
+	return html.Img(
+		Style("position:absolute"),
+		Style("top:0"),
+		Style("left:50%"),
+		Style("transform:translateX(-50%)"),
+		Style("width:8em"),
+		attr.Src(static.Path("/static/demo.png")),
+	)
+}
+
+func browseContainer(child ...domi.Node) domi.Node {
 	return FlexCol(Class("v-media-container"))(
 		Group(child...),
 	)
 }
 
-func browseWash(images []model.Image) html.Node {
+func browseWash(images []model.Image) domi.Node {
 	var urls []string
 	for _, im := range images {
 		if im.IsPlaceholder() {
@@ -48,24 +62,14 @@ func browseWash(images []model.Image) html.Node {
 	)
 }
 
-func browseDemoStamp() html.Node {
-	return html.Img(
-		Style("position:absolute"),
-		Style("top:0"),
-		Style("left:50%"),
-		Style("transform:translateX(-50%)"),
-		Style("width:8em"),
-		attr.Src(static.Path("/static/demo.png")),
-	)
-}
-
-func browseDownloadButton(dls []*model.RenditionForDownload) html.Node {
+func browseDownloadButton(dls []*model.RenditionForDownload) domi.Node {
 	id := "dl-" + crand.Text()[:8]
 	anchor := "--" + id
 	return FlexCol()(
 		Button(ButtonGhost, ButtonSize3, ButtonCircle,
+			attr.Type("button"),
 			Disabled(len(dls) == 0),
-			attr.Popovertarget(id),
+			attr.PopoverTarget(id),
 			Style("anchor-name:"+anchor),
 		)(Icon("line/download-01")),
 		html.Div(
@@ -77,10 +81,10 @@ func browseDownloadButton(dls []*model.RenditionForDownload) html.Node {
 			Style("left:anchor(center)"),
 			Style("translate:-50% 0"),
 		)(
-			html.Range(dls, func(dl *model.RenditionForDownload) html.Node {
+			rangeNodes(dls, func(dl *model.RenditionForDownload) domi.Node {
 				return html.A(
 					Href(dl.Path()),
-					attr.Download,
+					attr.Download(""),
 					Class("u-menu-item"),
 				)(Text(dl.Label(), Size3))
 			}),
@@ -88,25 +92,21 @@ func browseDownloadButton(dls []*model.RenditionForDownload) html.Node {
 	)
 }
 
-func browseUploadProgress() html.Node {
+// browseUploadProgress shows the oldest in-flight upload's progress
+// in the theater nav, so an upload started in the editor stays
+// visible while browsing.
+func browseUploadProgress(uploads []model.Upload) domi.Node {
+	if len(uploads) == 0 {
+		return nil
+	}
 	return html.Div(
-		attr.Hidden,
 		Class("v-nav-upload-progress"),
-		stimulus.Controller("upload-progress"),
-		stimulus.Action("upload:start@document->upload-progress#start"),
-		stimulus.Action("upload:progress@document->upload-progress#progress"),
-		stimulus.Action("upload:end@document->upload-progress#end"),
 	)(
-		html.Div(Class("u-progress"))(
-			html.Div(
-				stimulus.Target("upload-progress", "fill"),
-				Class("u-progress-fill"),
-			),
-		),
+		Progress(uploads[0].Frac),
 	)
 }
 
-func browseNavigationMenu() html.Node {
+func browseNavigationMenu(uploads []model.Upload) domi.Node {
 	return FlexCol(
 		Class("v-media-nav"),
 	)(
@@ -118,11 +118,11 @@ func browseNavigationMenu() html.Node {
 					Class("v-media-nav-row"),
 				)(
 					Link("/")(wordmark()),
-					Button(Href("/collections"), ButtonGhost)(Text("Collections")),
+					ButtonLink("/collections", ButtonGhost)(Text("Collections")),
 					Box(Class("v-media-nav-spacer")),
-					browseUploadProgress(),
-					html.If(isUserAdmin(), func() html.Node {
-						return Button(Href("/app/profile"), ButtonGhost, ButtonCircle)(Icon("line/settings-01"))
+					browseUploadProgress(uploads),
+					iff(isUserAdmin(), func() domi.Node {
+						return ButtonLink("/app/profile", ButtonGhost, ButtonCircle)(Icon("line/settings-01"))
 					}),
 				),
 			),

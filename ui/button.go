@@ -1,20 +1,26 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
-func Button(attrs ...attr.Node) html.Element {
-	a := group(attrs...)
-	tag := "button"
-	if a.Has("href") {
-		tag = "a"
-	}
-	return func(nodes ...html.Node) html.Node {
-		return html.Tag(tag)(
+func Button(attrs ...domi.Attr) domi.Element {
+	return func(nodes ...domi.Node) domi.Node {
+		return html.Button(
 			Class("u-button"),
-			a,
+			group(attrs...),
+		)(nodes...)
+	}
+}
+
+// ButtonLink renders a button-styled link, as an <a> with the given href.
+func ButtonLink(href string, attrs ...domi.Attr) domi.Element {
+	return func(nodes ...domi.Node) domi.Node {
+		return html.A(
+			Class("u-button"),
+			Href(href),
+			group(attrs...),
 		)(nodes...)
 	}
 }
@@ -38,4 +44,4 @@ var (
 var ButtonCircle = Attr("data-radius")("circle")
 
 // ButtonSelected highlights a surface button as selected.
-var ButtonSelected = Attr("data-selected")
+var ButtonSelected = Attr("data-selected")("")

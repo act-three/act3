@@ -1,10 +1,11 @@
 package view
 
 import (
-	"ily.dev/act3/html"
+	"ily.dev/domi"
+
 	. "ily.dev/act3/ui"
 )
 
-func wordmark() html.Node {
+func wordmark() domi.Node {
 	return Box(Class("v-wordmark"))
 }

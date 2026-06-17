@@ -15,8 +15,8 @@
 // No HTML is returned — the controller owns the DOM.
 package ui
 
-import "ily.dev/act3/html"
+import "ily.dev/domi"
 
-func Group(nodes ...html.Node) html.Node {
-	return html.Group(nodes...)
+func Group(nodes ...domi.Node) domi.Node {
+	return domi.Fragment(nodes...)
 }

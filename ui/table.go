@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 var (
@@ -11,43 +11,43 @@ var (
 	TableSize3 = Attr("data-table-size")("3")
 )
 
-func TableRoot(attrs ...attr.Node) html.Element {
+func TableRoot(attrs ...domi.Attr) domi.Element {
 	return html.Table(
 		Class("u-table"),
 		group(attrs...),
 	)
 }
 
-func TableHeader(attrs ...attr.Node) html.Element {
-	return html.Thead(
+func TableHeader(attrs ...domi.Attr) domi.Element {
+	return html.THead(
 		Class("u-table-header"),
 		group(attrs...),
 	)
 }
 
-func TableBody(attrs ...attr.Node) html.Element {
-	return html.Tbody(
+func TableBody(attrs ...domi.Attr) domi.Element {
+	return html.TBody(
 		Class("u-table-body"),
 		group(attrs...),
 	)
 }
 
-func TableRow(attrs ...attr.Node) html.Element {
-	return html.Tr(
+func TableRow(attrs ...domi.Attr) domi.Element {
+	return html.TR(
 		Class("u-table-row"),
 		group(attrs...),
 	)
 }
 
-func TableHead(attrs ...attr.Node) html.Element {
-	return html.Th(
+func TableHead(attrs ...domi.Attr) domi.Element {
+	return html.TH(
 		Class("u-table-head"),
 		group(attrs...),
 	)
 }
 
-func TableCell(attrs ...attr.Node) html.Element {
-	return html.Td(
+func TableCell(attrs ...domi.Attr) domi.Element {
+	return html.TD(
 		Class("u-table-cell"),
 		group(attrs...),
 	)

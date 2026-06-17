@@ -1,8 +1,9 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
 )
 
 var (
@@ -11,14 +12,14 @@ var (
 	InputSize3 = Attr("data-input-size")("3")
 )
 
-func InputText(attrs ...attr.Node) html.Element {
+func InputText(attrs ...domi.Attr) domi.Element {
 	return html.Input(
 		Class("u-input"),
 		group(attrs...),
 	)
 }
 
-func InputSubmit(attrs ...attr.Node) html.Element {
+func InputSubmit(attrs ...domi.Attr) domi.Element {
 	return html.Input(
 		group(attrs...),
 		attr.Type("submit"),

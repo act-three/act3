@@ -3,13 +3,14 @@ package ui
 import (
 	"fmt"
 
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
 )
 
 // Progress displays a progress bar indicating the completion of a task.
 // The value is clamped to the range [0, 1].
-func Progress(value float64, attrs ...attr.Node) html.Node {
+func Progress(value float64, attrs ...domi.Attr) domi.Node {
 	value = min(max(value, 0), 1)
 	state := "loading"
 	if value >= 1 {

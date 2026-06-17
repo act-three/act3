@@ -1,7 +1,9 @@
 package view
 
 import (
-	"ily.dev/act3/html"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
@@ -10,13 +12,14 @@ import (
 func Home(
 	works []model.Work,
 	cols []*model.CollectionHead,
-) html.Node {
+	uploads []model.Upload,
+) (title string, n domi.Node) {
 	var washImages []model.Image
 	for _, w := range works {
 		im, _ := w.PosterField()
 		washImages = append(washImages, im)
 	}
-	return browse("Act Three", washImages...)(
+	return "", browse(uploads, washImages...)(
 		Box(
 			Class("v-home"),
 			stimulus.Controller("home"),
@@ -44,8 +47,8 @@ func Home(
 				),
 			),
 			FlexCol(Class("v-home-collections"))(
-				html.Range(cols, func(c *model.CollectionHead) html.Node {
-					return collectionBannerLink(c, Attr("data-search-hidden"))
+				rangeNodes(cols, func(c *model.CollectionHead) domi.Node {
+					return collectionBannerLink(c, Attr("data-search-hidden")(""))
 				}),
 			),
 			posterGrid(works),

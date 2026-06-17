@@ -1,59 +1,102 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 )
 
 const notePortController = "note-port"
 
-// Variants
-var (
-	NoteInfo    = Attr("data-variant")("info") // default
-	NoteSuccess = Attr("data-variant")("success")
-	NoteWarning = Attr("data-variant")("warning")
+// A NoteVariant selects a note's visual treatment.
+type NoteVariant string
+
+const (
+	NoteInfo    NoteVariant = ""
+	NoteSuccess NoteVariant = "success"
+	NoteWarning NoteVariant = "warning"
+	NoteError   NoteVariant = "error"
 )
 
-// NotePort is the fixed-position container where notes
-// appear. Place it once in the base app layout.
-func NotePort(attrs ...attr.Node) html.Node {
+// A Note is a transient notification queued for display.
+type Note struct {
+	ID          string
+	Variant     NoteVariant
+	Title       string
+	Description string
+}
+
+// NotePort renders the notification system: a fixed, client-owned
+// port where notes appear, and a hidden server-owned outbox that
+// delivers server-rendered notes into it. The note-port controller
+// clones each new outbox entry into the port, where it receives the
+// standard mount, auto-dismiss, and swipe treatment. An entry only
+// needs to reach the client once, so callers should render each note
+// for a single update cycle and then drop it from notes.
+// Client-origin notes (see notify in note-port.js) append directly
+// into the port and never involve the server.
+//
+// Place NotePort once in the base layout.
+func NotePort(notes []Note) domi.Node {
+	return domi.Keyed("div")(
+		stimulus.Controller(notePortController),
+		stimulus.Action("visibilitychange@document->note-port#togglePaused"),
+	)(func(yield func(string, domi.Node) bool) {
+		_ = yield("port", notePort()) &&
+			yield("outbox", noteOutbox(notes))
+	})
+}
+
+func notePort() domi.Node {
 	return html.Div(
+		domi.Opaque,
 		attr.ID("note-port"),
 		Class("u-note-port"),
 		attr.Role("region"),
 		Attr("aria-label")("Notifications"),
-		stimulus.Controller(notePortController),
+		stimulus.Target(notePortController, "port"),
 		stimulus.Action("mouseenter->note-port#pause"),
 		stimulus.Action("mouseleave->note-port#resume"),
-		stimulus.Action("visibilitychange@document->note-port#togglePaused"),
-		group(attrs...),
 	)()
 }
 
-// Note renders a notification as a Turbo Streams action.
-// Use NoteIcon, NoteTitle, NoteDescription, and
-// NoteAction as children.
-func Note(attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
-		return turbo.Append("note-port",
-			html.Div(
-				Class("u-note"),
-				attr.Role("status"),
-				Attr("aria-live")("polite"),
-				stimulus.Target(notePortController, "note"),
-				stimulus.Action("pointerdown->note-port#swipeStart"),
-				stimulus.Action("pointermove->note-port#swipeMove"),
-				stimulus.Action("pointerup->note-port#swipeEnd"),
-				group(attrs...),
-			)(nodes...),
-		)
+func noteOutbox(notes []Note) domi.Node {
+	return domi.Keyed("div")(attr.Hidden(true))(func(yield func(string, domi.Node) bool) {
+		for _, n := range notes {
+			entry := html.Div(
+				stimulus.Target(notePortController, "outbox"),
+			)(noteView(n))
+			if !yield(n.ID, entry) {
+				return
+			}
+		}
+	})
+}
+
+// noteView renders a single note.
+func noteView(n Note) domi.Node {
+	attrs := []domi.Attr{
+		Class("u-note"),
+		attr.Role("status"),
+		Attr("aria-live")("polite"),
 	}
+	if n.Variant != NoteInfo {
+		attrs = append(attrs, Attr("data-variant")(string(n.Variant)))
+	}
+	if n.Variant == NoteError {
+		attrs = append(attrs, Destructive)
+	}
+	children := []domi.Node{NoteTitle()(domi.Text(n.Title))}
+	if n.Description != "" {
+		children = append(children, NoteDescription()(domi.Text(n.Description)))
+	}
+	return html.Div(attrs...)(children...)
 }
 
 // NoteTitle renders the title line of a note.
-func NoteTitle(attrs ...attr.Node) html.Element {
+func NoteTitle(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-note-title"),
 		group(attrs...),
@@ -61,7 +104,7 @@ func NoteTitle(attrs ...attr.Node) html.Element {
 }
 
 // NoteDescription renders the body text of a note.
-func NoteDescription(attrs ...attr.Node) html.Element {
+func NoteDescription(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-note-description"),
 		group(attrs...),
@@ -70,22 +113,25 @@ func NoteDescription(attrs ...attr.Node) html.Element {
 
 // NoteIcon renders the leading icon of a note. The icon
 // height matches the text line-height for alignment.
-func NoteIcon(children ...html.Node) html.Node {
+func NoteIcon(children ...domi.Node) domi.Node {
 	return html.Div(
 		Class("u-note-icon"),
 	)(children...)
 }
 
 // NoteAction renders an action button inside a note.
-// It renders as <a> if an href attr is provided.
-func NoteAction(attrs ...attr.Node) html.Element {
-	a := group(attrs...)
-	tag := "button"
-	if a.Has("href") {
-		tag = "a"
-	}
-	return html.Tag(tag)(
+func NoteAction(attrs ...domi.Attr) domi.Element {
+	return html.Button(
 		Class("u-note-action"),
-		a,
+		group(attrs...),
+	)
+}
+
+// NoteActionLink renders a note action as an <a> with the given href.
+func NoteActionLink(href string, attrs ...domi.Attr) domi.Element {
+	return html.A(
+		Class("u-note-action"),
+		Href(href),
+		group(attrs...),
 	)
 }

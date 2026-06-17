@@ -5,7 +5,6 @@
 	"excludes": [
 		"web/static/static/",
 		"web/stimulus.js",
-		"web/turbo.es2017-esm.js",
 		"database/schema/",
 		"**/*.sql"
 	],
@@ -30,8 +29,12 @@
 		"commands": [
 			{
 				"command": "shfmt -i 0 -ci -bn",
-				"exts": ["sh"],
-				"fileNames": ["mk"]
+				"exts": [
+					"sh"
+				],
+				"fileNames": [
+					"mk"
+				]
 			}
 		]
 	}

@@ -1,6 +1,9 @@
 package ui
 
-import "ily.dev/act3/html"
+import (
+	"ily.dev/domi"
+	"ily.dev/domi/html"
+)
 
 // truncTailRunes is how many trailing runes TruncTail keeps visible.
 const truncTailRunes = 10
@@ -17,15 +20,15 @@ const truncTailRunes = 10
 // plain text, with no tooltip. The caller is responsible for placing
 // the result in a width-constrained context (e.g. a flex item with a
 // max-width); on its own TruncTail only describes how to give way.
-func TruncTail(s string) html.Node {
+func TruncTail(s string) domi.Node {
 	r := []rune(s)
 	if len(r) <= truncTailRunes {
-		return html.Text(s)
+		return domi.Text(s)
 	}
 	head := string(r[:len(r)-truncTailRunes])
 	tail := string(r[len(r)-truncTailRunes:])
 	return html.Span(Class("u-trunc"), Attr("title")(s))(
-		html.Span(Class("u-trunc-head"))(html.Text(head)),
-		html.Span(Class("u-trunc-tail"))(html.Text(tail)),
+		html.Span(Class("u-trunc-head"))(domi.Text(head)),
+		html.Span(Class("u-trunc-tail"))(domi.Text(tail)),
 	)
 }

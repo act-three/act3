@@ -1,14 +1,14 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 var SettingsHover = Class("u-settings-item-hover")
 
-func SettingsPage() html.Element {
-	return func(nodes ...html.Node) html.Node {
+func SettingsPage() domi.Element {
+	return func(nodes ...domi.Node) domi.Node {
 		return html.Div(Class("u-settings-page"))(
 			FlexCol()(
 				Group(nodes...),
@@ -17,34 +17,34 @@ func SettingsPage() html.Element {
 	}
 }
 
-func SettingsContent() html.Element {
+func SettingsContent() domi.Element {
 	return FlexCol(Class("u-settings-content"))
 }
 
-func SettingsGroup(attrs ...attr.Node) html.Element {
+func SettingsGroup(attrs ...domi.Attr) domi.Element {
 	return FlexCol(Class("u-settings-group"), group(attrs...))
 }
 
-func SettingsGroupHead(attrs ...attr.Node) html.Element {
+func SettingsGroupHead(attrs ...domi.Attr) domi.Element {
 	return FlexRow(Class("u-settings-group-head"), group(attrs...))
 }
 
-func SettingsItem(attrs ...attr.Node) html.Element {
+func SettingsItem(attrs ...domi.Attr) domi.Element {
 	return FlexRow(Class("u-settings-item"), group(attrs...))
 }
 
-func SettingsItemLabel(attrs ...attr.Node) html.Element {
+func SettingsItemLabel(attrs ...domi.Attr) domi.Element {
 	return FlexCol(Style("gap:3px"), group(attrs...))
 }
 
-func SettingsItemLabelTitle(s string) html.Node {
+func SettingsItemLabelTitle(s string) domi.Node {
 	return Text(s, Size2)
 }
 
-func SettingsItemLabelDescription(s string) html.Node {
+func SettingsItemLabelDescription(s string) domi.Node {
 	return Text(s, Size1, Class("u-settings-label-description"))
 }
 
-func SettingsItemLabelIcon() html.Element {
+func SettingsItemLabelIcon() domi.Element {
 	return FlexRow(Class("u-settings-label-icon"))
 }

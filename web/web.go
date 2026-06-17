@@ -2,23 +2,26 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 	"strings"
 
-	"ily.dev/act3/html"
+	"ily.dev/domi"
+
 	"ily.dev/act3/http/timing"
 	"ily.dev/act3/model"
+	"ily.dev/act3/msg"
 	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/service/tvmaze"
-	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/icon"
-	"ily.dev/act3/ui/turbo"
+	"ily.dev/act3/view"
 	"ily.dev/act3/web/jassub"
 	"ily.dev/act3/web/static"
 )
@@ -31,7 +34,7 @@ var errNotFound = errors.New("not found")
 // Max request body for all requests except video uploads.
 const maxReqBody = 10 * 1000 * 1000
 
-type handlerFunc func(http.ResponseWriter, *http.Request) (html.Node, error)
+type handlerFunc func(http.ResponseWriter, *http.Request) (node, error)
 
 type Config struct {
 	Model  *model.Model
@@ -41,113 +44,41 @@ type Config struct {
 }
 
 func Handle(mux *http.ServeMux, c *Config) {
-	// Keep routes alphabetized (with e.g. `sort`).
+	mux.Handle("/", domi.Handler(
+		func(ctx context.Context, u *url.URL) (*app, cmd) {
+			return newApp(ctx, c, u)
+		},
+		msg.OnURLRequest,
+		msg.OnURLChange,
+		domi.Document(view.Document),
+		domi.InternalURLPrefix("/-/domi"),
+	))
+
+	for req, dest := range redirects {
+		h := http.RedirectHandler(dest, http.StatusSeeOther)
+		mux.Handle("GET "+path.Clean(req), h)
+		mux.Handle("GET "+path.Join(req, "{$}"), h)
+	}
+
+	// Keep this block alphabetized (with e.g. `sort`).
 	handle(mux, "GET /-/aud/{id}", c.audioFile)
 	handle(mux, "GET /-/audpls/{id}", c.audioMediaPlaylist)
-	handle(mux, "GET /-/dialog/collection-banner/{id}", c.dialogCollectionBanner)
-	handle(mux, "GET /-/dialog/collection-movie-add/{id}", c.dialogCollectionMovieAdd)
-	handle(mux, "GET /-/dialog/collection-series-add/{id}", c.dialogCollectionSeriesAdd)
-	handle(mux, "GET /-/dialog/download-file-attach", c.dialogDownloadFileAttach)
-	handle(mux, "GET /-/dialog/episode-thumbnail/{id}", c.dialogEpisodeThumbnail)
-	handle(mux, "GET /-/dialog/movie-add", c.movieAddDialogReq)
-	handle(mux, "GET /-/dialog/movie-poster/{id}", c.dialogMoviePoster)
-	handle(mux, "GET /-/dialog/series-add", c.seriesAddDialogReq)
-	handle(mux, "GET /-/dialog/series-edition-poster/{id}", c.dialogSeriesEditionPoster)
 	handle(mux, "GET /-/dl/{id}/{epID}/{sedID}", c.videoDownloadForEpisode)
 	handle(mux, "GET /-/dl/{id}/{medID}", c.videoDownloadForMovie)
 	handle(mux, "GET /-/img/{id}/{width}", c.image)
-	handle(mux, "GET /-/part/collection-movie-search", c.collectionMovieSearch)
-	handle(mux, "GET /-/part/collection-overview/{id}", c.collectionOverview)
-	handle(mux, "GET /-/part/collection-playlist/{id}", c.collectionPlaylist)
-	handle(mux, "GET /-/part/collection-series-search", c.collectionSeriesSearch)
-	handle(mux, "GET /-/part/movie-search", c.movieSearch)
-	handle(mux, "GET /-/part/series-search", c.seriesSearch)
-	handle(mux, "GET /-/player/{id}/{epID}/{sedID}", c.playerForEpisode)
-	handle(mux, "GET /-/player/{id}/{medID}", c.playerForMovie)
 	handle(mux, "GET /-/plr/{id}", c.videoPlaylist)
 	handle(mux, "GET /-/pls/{id}", c.videoRenditionPlaylist)
 	handle(mux, "GET /-/status", c.status)
 	handle(mux, "GET /-/sub/{id}", c.subtitleFile)
 	handle(mux, "GET /-/subpls/{id}", c.subtitleMediaPlaylist)
 	handle(mux, "GET /-/vid/{id}", c.videoStream)
-	handle(mux, "GET /app", c.appIndex)
-	handle(mux, "GET /app/collections", c.appCollections)
-	handle(mux, "GET /app/collections/{slug}", c.appCollectionsDetail)
-	handle(mux, "GET /app/downloads", c.appDownloads)
-	handle(mux, "GET /app/downloads/{id}", c.appDownloadsDetail)
-	handle(mux, "GET /app/movies", c.appMovies)
-	handle(mux, "GET /app/movies/{slug}", c.appMoviesDetail)
-	handle(mux, "GET /app/movies/{slug}/{edslug}", c.appMoviesDetail)
-	handle(mux, "GET /app/profile", c.appProfile)
-	handle(mux, "GET /app/security", c.appSecurity)
-	handle(mux, "GET /app/series", c.appSeries)
-	handle(mux, "GET /app/series/{slug}", c.appSeriesDetail)
-	handle(mux, "GET /app/series/{slug}/{edslug}/{epslug}", c.appEpisodeDetail)
-	handle(mux, "GET /app/series/{slug}/{slug2}", c.appSeriesDetail)
-	handle(mux, "GET /app/storage", c.appStorage)
-	handle(mux, "GET /app/tasks", c.appTasks)
-	handle(mux, "GET /app/tmdb", c.appTMDB)
-	handle(mux, "GET /app/transmission", c.appTransmission)
-	handle(mux, "GET /app/trash", c.appTrash)
-	handle(mux, "GET /app/trash/{id}", c.appTrashDetail)
-	handle(mux, "GET /app/{$}", c.appIndex)
-	handle(mux, "GET /collections", c.collections)
-	handle(mux, "GET /{$}", c.home)
-	handle(mux, "GET /{slug0}", c.browseWork)
-	handle(mux, "GET /{slug0}/{slug1}", c.browseWork)
-	handle(mux, "GET /{slug0}/{slug1}/{slug2}", c.browseWork)
-	handle(mux, "POST /-/do/collection-add", c.doCollectionAdd)
-	handle(mux, "POST /-/do/collection-movie-add", c.doCollectionMovieAdd)
-	handle(mux, "POST /-/do/collection-movie-remove", c.doCollectionMovieRemove)
-	handle(mux, "POST /-/do/collection-series-add", c.doCollectionSeriesAdd)
-	handle(mux, "POST /-/do/collection-series-remove", c.doCollectionSeriesRemove)
-	handle(mux, "POST /-/do/collection-set-title", c.doCollectionSetTitle)
-	handle(mux, "POST /-/do/download-auto-import", c.doDownloadAutoImport)
-	handle(mux, "POST /-/do/download-import", c.doDownloadImport)
-	handle(mux, "POST /-/do/episode-move", c.doEpisodeMove)
-	handle(mux, "POST /-/do/episode-set-airdate", c.doEpisodeSetAirdate)
-	handle(mux, "POST /-/do/episode-set-summary", c.doEpisodeSetSummary)
-	handle(mux, "POST /-/do/episode-set-title", c.doEpisodeSetTitle)
-	handle(mux, "POST /-/do/episode-set-type", c.doEpisodeSetType)
-	handle(mux, "POST /-/do/episode-video-set", c.doEpisodeVideoSet)
-	handle(mux, "POST /-/do/episode-video-set-active/{episodeID}/{videoID}", c.doEpisodeVideoSetActive)
-	handle(mux, "POST /-/do/movie-add", c.doMovieAdd)
-	handle(mux, "POST /-/do/movie-add-by-tmdb", c.doMovieAddByTMDB)
-	handle(mux, "POST /-/do/movie-edition-add", c.doMovieEditionAdd)
-	handle(mux, "POST /-/do/movie-edition-set-default", c.doMovieEditionSetDefault)
-	handle(mux, "POST /-/do/movie-edition-set-label", c.doMovieEditionSetLabel)
-	handle(mux, "POST /-/do/movie-edition-set-release-date", c.doMovieEditionSetReleaseDate)
-	handle(mux, "POST /-/do/movie-edition-set-runtime", c.doMovieEditionSetRuntime)
-	handle(mux, "POST /-/do/movie-edition-set-summary", c.doMovieEditionSetSummary)
-	handle(mux, "POST /-/do/movie-edition-set-title", c.doMovieEditionSetTitle)
-	handle(mux, "POST /-/do/movie-video-set-active/{movieEditionID}/{videoID}", c.doMovieVideoSetActive)
-	handle(mux, "POST /-/do/purge", c.doPurge)
-	handle(mux, "POST /-/do/restore", c.doRestore)
-	handle(mux, "POST /-/do/season-add", c.doSeasonAdd)
-	handle(mux, "POST /-/do/season-add-episode/{seasonID}/{episodeID}/{sortKey}", c.doSeasonAddEpisode)
-	handle(mux, "POST /-/do/season-remove-episode/{seasonID}/{episodeID}", c.doSeasonRemoveEpisode)
-	handle(mux, "POST /-/do/season-set-title", c.doSeasonSetTitle)
-	handle(mux, "POST /-/do/series-add", c.doSeriesAdd)
-	handle(mux, "POST /-/do/series-edition-add", c.doSeriesEditionAdd)
-	handle(mux, "POST /-/do/series-edition-set-label", c.doSeriesEditionSetLabel)
-	handle(mux, "POST /-/do/series-edition-set-summary", c.doSeriesEditionSetSummary)
-	handle(mux, "POST /-/do/series-episode-add", c.doSeriesEpisodeAdd)
-	handle(mux, "POST /-/do/series-set-title", c.doSeriesSetTitle)
-	handle(mux, "POST /-/do/task-delete/{id}", c.doTaskDelete)
-	handle(mux, "POST /-/do/task-kill/{id}", c.doTaskKill)
-	handle(mux, "POST /-/do/task-run/{id}", c.doTaskRun)
-	handle(mux, "POST /-/do/tmdb-settings-update", c.doTMDBSettingsUpdate)
 	handle(mux, "POST /-/do/torrent-add", c.doTorrentAdd)
-	handle(mux, "POST /-/do/transmission-settings-update", c.doTransmissionSettingsUpdate)
-	handle(mux, "POST /-/do/trash", c.doTrash)
 	handle(mux, "POST /-/do/upload", c.doUpload)
-	handle(mux, "POST /-/do/video-reencode/{id}", c.doVideoReencode)
-	handle(mux, "POST /-/do/video-reimport/{id}", c.doVideoReimport)
 	handleStreaming(mux, "POST /-/do/video-upload", c.doVideoUpload)
 	mux.Handle("GET /-/icon/{type}/{name}", http.StripPrefix("/-/icon", icon.Handler()))
 	mux.Handle("GET /-/static/{name}", static.Handler())
 	mux.Handle("GET /-/jassub/{name}", jassub.Handler())
-	mux.HandleFunc("GET /-/events", c.events)
+
 	// Landing point after the degraded server resets the DB and
 	// hands control back to the normal server. The browser arrives
 	// here via a Refresh-header reload of the original POST URL.
@@ -156,14 +87,14 @@ func Handle(mux *http.ServeMux, c *Config) {
 	})
 }
 
-func (c *Config) image(w http.ResponseWriter, req *http.Request) (html.Node, error) {
+func (c *Config) image(w http.ResponseWriter, req *http.Request) (node, error) {
 	ctx := req.Context()
 	id := req.PathValue("id")
 	width, err := strconv.Atoi(req.PathValue("width"))
 	if err != nil || width <= 0 {
 		return nil, errNotFound
 	}
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
+	return c.withTxR(func(tx *model.TxR) (node, error) {
 		key, err := tx.ImageVariantKey(ctx, id, width)
 		if err != nil {
 			return nil, errNotFound
@@ -184,7 +115,7 @@ func (c *Config) image(w http.ResponseWriter, req *http.Request) (html.Node, err
 	})
 }
 
-func (c *Config) withTxR(f func(*model.TxR) (html.Node, error)) (n html.Node, err error) {
+func (c *Config) withTxR(f func(*model.TxR) (node, error)) (n node, err error) {
 	err = c.Model.WithTxR(func(tx *model.TxR) error {
 		n, err = f(tx)
 		return err
@@ -192,7 +123,7 @@ func (c *Config) withTxR(f func(*model.TxR) (html.Node, error)) (n html.Node, er
 	return n, err
 }
 
-func (c *Config) withTxRW(f func(*model.TxRW) (html.Node, error)) (n html.Node, err error) {
+func (c *Config) withTxRW(f func(*model.TxRW) (node, error)) (n node, err error) {
 	err = c.Model.WithTxRW(func(tx *model.TxRW) error {
 		n, err = f(tx)
 		return err
@@ -217,7 +148,7 @@ func makeHandler(hf handlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		slog.InfoContext(ctx, "request", "url", req.URL)
-		var node html.Node
+		var node node
 		var err error
 		timing.Measure(ctx, "page", func() {
 			node, err = hf(w, req)
@@ -240,17 +171,14 @@ func makeHandler(hf handlerFunc) http.Handler {
 	})
 }
 
-func rawHandler(code int, node ...html.Node) http.Handler {
+func rawHandler(code int, node ...node) http.Handler {
 	buf := &bytes.Buffer{}
-	err := html.Render(buf, html.Group(node...))
+	err := domi.RenderTo(buf, domi.Fragment(node...))
 	if err != nil {
 		panic(err)
 	}
 	body := buf.Bytes()
 	contentType := "text/html; charset=utf-8"
-	if turbo.SniffStream(body) {
-		contentType = "text/vnd.turbo-stream.html; charset=utf-8"
-	}
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		w.Header().Set("Content-Type", contentType)
@@ -276,32 +204,15 @@ func stringHandler(contentType, body string) http.HandlerFunc {
 }
 
 func handleBadRequest(w http.ResponseWriter, req *http.Request, title, desc string) {
-	h := rawHandler(400,
-		Note(Destructive)(
-			NoteTitle()(html.Text(title)),
-			NoteDescription()(html.Text(desc)),
-		),
-	)
-	h.ServeHTTP(w, req)
+	http.Error(w, title+": "+desc, http.StatusBadRequest)
 }
 
 func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
-	h := rawHandler(404,
-		Note(Destructive)(
-			NoteTitle()(html.Text("Not Found")),
-			NoteDescription()(html.Text(path)),
-		),
-	)
-	h.ServeHTTP(w, req)
+	http.Error(w, "not found: "+path, http.StatusNotFound)
 }
 
 func handleInternal(w http.ResponseWriter, req *http.Request) {
-	h := rawHandler(500,
-		Note(Destructive)(
-			NoteTitle()(html.Text("Internal Error")),
-		),
-	)
-	h.ServeHTTP(w, req)
+	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
 func urlPathHasPrefix(req *http.Request, prefix string) bool {

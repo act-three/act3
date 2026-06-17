@@ -35,7 +35,7 @@ export function notify(msg, variant = "error") {
 }
 
 export default class extends Controller {
-	static targets = ["note"];
+	static targets = ["note", "port", "outbox"];
 
 	togglePaused() {
 		if (document.hidden) {
@@ -43,6 +43,30 @@ export default class extends Controller {
 		} else {
 			this.#resumeAllTimers();
 		}
+	}
+
+	// outboxTargetConnected drains a server-rendered note from the
+	// outbox: clone it into the client-owned port, where it becomes a
+	// note target and gets the standard mount/dismiss treatment. The
+	// original is the server's to drop; cloning (never moving) keeps
+	// domi's keyed child map in sync. See DOM-37.
+	outboxTargetConnected(el) {
+		const note = el.firstElementChild;
+		if (!note) return;
+		const clone = note.cloneNode(true);
+		clone.setAttribute("data-note-port-target", "note");
+		clone.setAttribute(
+			"data-action",
+			"pointerdown->note-port#swipeStart "
+				+ "pointermove->note-port#swipeMove "
+				+ "pointerup->note-port#swipeEnd",
+		);
+		// Deferred out of the observer pass: a target appended while
+		// Stimulus is processing mutations never registers, so the
+		// clone's noteTargetConnected would not fire. A microtask
+		// still runs before the next SSE task, so the clone keeps its
+		// head start on any removal frame (see DOM-37).
+		queueMicrotask(() => this.portTarget.appendChild(clone));
 	}
 
 	noteTargetConnected(el) {
@@ -239,12 +263,12 @@ export default class extends Controller {
 		}
 
 		if (expanded) {
-			this.element.style.setProperty(
+			this.portTarget.style.setProperty(
 				"--port-height",
 				(heightsBefore + 24) + "px",
 			);
 		} else {
-			this.element.style.setProperty(
+			this.portTarget.style.setProperty(
 				"--port-height",
 				(frontHeight + VISIBLE * GAP + 24) + "px",
 			);

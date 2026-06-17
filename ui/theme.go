@@ -1,14 +1,14 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 // Theme renders a div with display:contents that sets CSS
 // custom properties (accent color) inherited by all children.
 // Use the exported class attrs to configure it.
-func Theme(attrs ...attr.Node) html.Element {
+func Theme(attrs ...domi.Attr) domi.Element {
 	return html.Div(
 		Class("u-theme"),
 		group(attrs...),

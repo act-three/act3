@@ -1,12 +1,11 @@
 package view
 
 import (
-	"strings"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 
-	"ily.dev/act3/html"
 	"ily.dev/act3/model/progress"
 	. "ily.dev/act3/ui"
-	"ily.dev/act3/ui/turbo"
 )
 
 func progressItemClass(pi *progress.Item) string {
@@ -17,35 +16,15 @@ func progressContainerClass(key string) string {
 	return "progress-container-" + key
 }
 
-func ProgressItemAppend(pi *progress.Item) html.Node {
-	var a []string
-	for k := range pi.Parents() {
-		a = append(a, "."+progressContainerClass(k))
-	}
-	return turbo.AppendTargets(strings.Join(a, ","),
-		progressItem(pi),
-	)
-}
-
-func ProgressItemUpdate(pi *progress.Item) html.Node {
-	return turbo.ReplaceTargets("."+progressItemClass(pi), turbo.Morph)(
-		progressItem(pi),
-	)
-}
-
-func ProgressItemRemove(pi *progress.Item) html.Node {
-	return turbo.RemoveTargets("." + progressItemClass(pi))
-}
-
-func progressContainer(key string, items []*progress.Item) html.Node {
+func progressContainer(key string, items []*progress.Item) domi.Node {
 	return html.Div(Contents, Class(progressContainerClass(key)))(
-		html.Range(items, progressItem),
+		rangeNodes(items, progressItem),
 	)
 }
 
 // progressItem renders a single progress item with
 // description, status, ETA, and a progress bar.
-func progressItem(pi *progress.Item) html.Node {
+func progressItem(pi *progress.Item) domi.Node {
 	if err := pi.Error(); err != nil {
 		return FlexCol(
 			Class(progressItemClass(pi)),
@@ -57,7 +36,7 @@ func progressItem(pi *progress.Item) html.Node {
 			),
 		)
 	}
-	var etaNode html.Node
+	var etaNode domi.Node
 	if eta := pi.ETA(); eta > 0 {
 		etaNode = html.Div(Class("v-progress-muted"))(
 			Text(formatDuration(eta)),

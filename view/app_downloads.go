@@ -2,27 +2,35 @@ package view
 
 import (
 	"cmp"
+	"fmt"
+	"hash/fnv"
+	"io"
 	"iter"
 	"path"
 	"slices"
 
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/expr"
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 	"ily.dev/act3/xslices"
 )
 
 const AppDownloadsListItems = "download-list-items"
 
 func AppDownloads(
-	title string,
 	items []*model.DownloadInfo,
 	selected *model.Download,
-) (string, html.Node) {
+) (title string, n domi.Node) {
+	title = "Downloads"
+	if selected != nil {
+		title = selected.Title()
+	}
 	return title, FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
 			Box(),
@@ -32,52 +40,36 @@ func AppDownloads(
 			Box(),
 		),
 		Split()(
-			List("/app/downloads/", "detail",
-				Style("flex: 1"),
-			)(
-				turbo.StreamTarget(AppDownloadsListItems)(
-					ListItems(items, appDownloadsListItem),
-				),
+			List(Style("flex: 1"))(
+				ListItems(items, func(dl *model.DownloadInfo) bool {
+					return selected != nil && dl.InfoHash() == selected.InfoHash()
+				}, appDownloadsListItem),
 			),
-			turbo.Frame("detail", turbo.Advance())(
-				expr.IfElse(selected != nil,
-					func() html.Node {
-						return appDownloadsDetail(selected)
-					},
-					func() html.Node {
-						return Center(Class("v-media-muted"))(
-							html.Text("No Download Selected"),
-						)
-					},
-				),
+			expr.IfElse(selected != nil,
+				func() domi.Node {
+					return appDownloadsDetail(selected)
+				},
+				func() domi.Node {
+					return Center(Class("v-media-muted"))(
+						domi.Text("No Download Selected"),
+					)
+				},
 			),
 		),
 	)
 }
 
-func AppDownloadsDetailFrame(title string, dl *model.Download) html.Node {
-	return PageFrame(title, "detail", appDownloadsDetail(dl))
-}
-
-func AppDownloadsStream(dls []*model.DownloadHead, edID string) html.Node {
-	return turbo.Prepend("edition-torrents-"+edID,
-		html.Range(dls, appDownloadsStreamItem),
-	)
-}
-
-func appDownloadsSearchBar() html.Node {
+func appDownloadsSearchBar() domi.Node {
 	return Text("Download Searchbar")
 }
 
-func appDownloadsListItem(dl *model.DownloadInfo, attrs ...attr.Node) html.Node {
-	return Card(CardGhost,
+func appDownloadsListItem(dl *model.DownloadInfo, attrs ...domi.Attr) domi.Node {
+	return CardLink(dl.EditorPath(), CardGhost,
 		group(attrs...),
-		ListID(dl.InfoHash()),
-		ListURL(dl.EditorPath()),
 	)(
 		CardContent()(
 			expr.IfElse(dl.State() == "error",
-				func() html.Node {
+				func() domi.Node {
 					return Group(
 						CardTitle()(Text(dl.Title())),
 						CardDescription(LineClamp2)(
@@ -85,7 +77,7 @@ func appDownloadsListItem(dl *model.DownloadInfo, attrs ...attr.Node) html.Node 
 						),
 					)
 				},
-				func() html.Node {
+				func() domi.Node {
 					return Group(
 						appDownloadsWorkLabel(dl),
 						CardTitle(TextNormal)(Text(dl.Title())),
@@ -102,16 +94,16 @@ func appDownloadsListItem(dl *model.DownloadInfo, attrs ...attr.Node) html.Node 
 	)
 }
 
-func appDownloadsWorkLabel(dl *model.DownloadInfo) html.Node {
+func appDownloadsWorkLabel(dl *model.DownloadInfo) domi.Node {
 	return expr.IfElse(dl.MovieWork() != nil,
-		func() html.Node {
+		func() domi.Node {
 			return Label(
 				"line/film-01",
 				dl.MovieWork().Title(),
 				Size3, LineClamp1,
 			)
 		},
-		func() html.Node {
+		func() domi.Node {
 			return Label(
 				"line/tv-03",
 				dl.SeriesWork().Title(),
@@ -121,18 +113,13 @@ func appDownloadsWorkLabel(dl *model.DownloadInfo) html.Node {
 	)
 }
 
-func appDownloadsStreamItem(dl *model.DownloadHead) html.Node {
-	return downloadListItem(dl)
-}
-
 // downloadListItem renders a single download as a clickable link.
 // Shared by the series, movie, and download views.
-func downloadListItem(dl *model.DownloadHead) html.Node {
+func downloadListItem(dl *model.DownloadHead) domi.Node {
 	return SettingsItem()(
 		SettingsItemLabel()(
 			html.A(
 				Href(dl.EditorPath()),
-				turbo.DataFrame("main"),
 			)(
 				Text(dl.Title(), Size2),
 			),
@@ -143,14 +130,13 @@ func downloadListItem(dl *model.DownloadHead) html.Node {
 // addTorrentButton renders a file-upload form for adding a
 // torrent to an edition.
 // Shared by the series and movie edit views.
-func addTorrentButton(inputName, inputValue string) html.Node {
+func addTorrentButton(inputName, inputValue string) domi.Node {
 	return html.Form(
 		Class("v-media-torrent-form"),
 		attr.Method("POST"),
 		attr.Enctype("multipart/form-data"),
 		attr.Action("/-/do/torrent-add"),
 		stimulus.Controller("upload"),
-		stimulus.Action("turbo:submit-end->upload#reset"),
 	)(
 		Hidden(inputName, inputValue),
 		html.Input(
@@ -162,38 +148,33 @@ func addTorrentButton(inputName, inputValue string) html.Node {
 		),
 		Button(
 			ButtonGhost,
-			stimulus.Target("upload", "button"),
 			stimulus.Action("click->upload#open:prevent"),
 		)(
-			html.Text("Add Torrent"),
+			domi.Text("Add Torrent"),
 		),
 	)
 }
 
-// uploadMovieVideoButton renders a file-upload form that streams a
-// video file directly into the library and attaches it to the
-// given movie edition.
-func uploadMovieVideoButton(medID string) html.Node {
-	return uploadVideoForm("med-id", medID)
+// uploadVideoControl renders the video upload control for the
+// target (an episode or movie edition, named by targetName's form
+// field): an upload button, or the upload's progress while one is
+// in flight for this target.
+func uploadVideoControl(targetName, targetID string, uploads []model.Upload) domi.Node {
+	for _, u := range uploads {
+		if u.TargetID == targetID {
+			return uploadProgressBar(u)
+		}
+	}
+	return uploadVideoForm(targetName, targetID)
 }
 
-// uploadEpisodeVideoButton renders a file-upload form that streams a
-// video file directly into the library and attaches it to the given
-// episode.
-func uploadEpisodeVideoButton(epID string) html.Node {
-	return uploadVideoForm("ep-id", epID)
-}
-
-func uploadVideoForm(targetName, targetValue string) html.Node {
+func uploadVideoForm(targetName, targetValue string) domi.Node {
 	return html.Form(
 		Class("v-media-torrent-form"),
 		attr.Method("POST"),
 		attr.Enctype("multipart/form-data"),
 		attr.Action("/-/do/video-upload"),
-		Attr("data-upload-target")(targetValue),
 		stimulus.Controller("upload"),
-		stimulus.Action("upload:start@document->upload#onUploadStart"),
-		stimulus.Action("upload:end@document->upload#onUploadEnd"),
 	)(
 		Hidden(targetName, targetValue),
 		html.Input(
@@ -206,36 +187,22 @@ func uploadVideoForm(targetName, targetValue string) html.Node {
 		),
 		Button(
 			ButtonGhost,
-			stimulus.Target("upload", "button"),
 			stimulus.Action("click->upload#open:prevent"),
 		)(
-			html.Text("Upload Video"),
+			domi.Text("Upload Video"),
 		),
 	)
 }
 
-// uploadProgress renders an upload-progress controller slot bound
-// to the given target. Starts hidden; the controller un-hides it
-// when an upload to that target is active.
-func uploadProgress(target string) html.Node {
-	return html.Div(
-		attr.Hidden,
-		Attr("data-upload-target")(target),
-		stimulus.Controller("upload-progress"),
-		stimulus.Action("upload:start@document->upload-progress#start"),
-		stimulus.Action("upload:progress@document->upload-progress#progress"),
-		stimulus.Action("upload:end@document->upload-progress#end"),
-		Class("v-upload-progress u-progress"),
-		attr.Role("progressbar"),
-	)(
-		html.Div(
-			stimulus.Target("upload-progress", "fill"),
-			Class("u-progress-fill"),
-		),
+// uploadProgressBar renders an in-flight upload's name and progress.
+func uploadProgressBar(u model.Upload) domi.Node {
+	return FlexRow(Gap2, Style("align-items:center"))(
+		Text(u.Name, Size2),
+		Progress(u.Frac, Class("v-upload-progress")),
 	)
 }
 
-func appDownloadsDetail(dl *model.Download) html.Node {
+func appDownloadsDetail(dl *model.Download) domi.Node {
 	return FlexCol(Class("v-media-detail"))(
 		ScrollY(Class("v-media-detail-body"))(
 			SettingsPage()(
@@ -243,27 +210,25 @@ func appDownloadsDetail(dl *model.Download) html.Node {
 					SettingsContent()(
 						FlexCol(Gap6)(
 							FlexCol(Gap1)(
-								TextNode(Size5)(html.Text(dl.Title())),
+								TextNode(Size5)(domi.Text(dl.Title())),
 								expr.IfElse(dl.State() == "error",
-									func() html.Node {
+									func() domi.Node {
 										return Label("line/alert-triangle", dl.Error(), Size3)
 									},
-									func() html.Node {
+									func() domi.Node {
 										return TextNode(Size3)(
-											html.Textf("%d/%d assigned", dl.PlanLen(), dl.FilesLen()),
+											domi.Textf("%d/%d assigned", dl.PlanLen(), dl.FilesLen()),
 										)
 									},
 								),
 							),
-							Link(dl.Work().EditorPath(), Size4,
-								turbo.DataFrame("_top"),
-							)(
+							Link(dl.Work().EditorPath(), Size4)(
 								Text(dl.Work().Title()),
 							),
 						),
 					),
 
-					html.If(dl.State() != "error", func() html.Node {
+					iff(dl.State() != "error", func() domi.Node {
 						return SettingsGroup()(
 							appDownloadsImportControl(dl),
 						)
@@ -286,7 +251,7 @@ func appDownloadsDetail(dl *model.Download) html.Node {
 	)
 }
 
-func appDownloadsImportControl(dl *model.Download) html.Node {
+func appDownloadsImportControl(dl *model.Download) domi.Node {
 	switch dl.State() {
 	case "downloaded":
 		return SettingsItem()(
@@ -294,13 +259,9 @@ func appDownloadsImportControl(dl *model.Download) html.Node {
 				SettingsItemLabelTitle("Import"),
 				SettingsItemLabelDescription("Import downloaded files into the library"),
 			),
-			html.Form(
-				attr.Method("POST"),
-				attr.Action("/-/do/download-import"),
-			)(
-				Hidden("id", dl.InfoHash()),
-				Button(ButtonGhost, ButtonSize2)(html.Text("Import")),
-			),
+			Button(onClick(&msg.DownloadImport{ID: dl.InfoHash()}),
+				ButtonGhost, ButtonSize2,
+			)(domi.Text("Import")),
 		)
 	case "queued", "downloading":
 		return SettingsItem()(
@@ -308,45 +269,68 @@ func appDownloadsImportControl(dl *model.Download) html.Node {
 				SettingsItemLabelTitle("Auto-Import"),
 				SettingsItemLabelDescription("Automatically import when download completes"),
 			),
-			SettingsToggle("/-/do/download-auto-import", "auto-import", dl.AutoImport(),
-				map[string]string{"id": dl.InfoHash()},
-			),
+			settingsToggle(dl.AutoImport(), &msg.DownloadSetAutoImport{
+				ID: dl.InfoHash(),
+				On: !dl.AutoImport(),
+			}),
 		)
 	default: // "imported", "error"
 		return Group()
 	}
 }
 
+// downloadFileAttachTriggerID derives a stable element ID for the
+// file's Attach button, anchoring the popover to it.
+func downloadFileAttachTriggerID(infoHash, path string) string {
+	h := fnv.New32a()
+	io.WriteString(h, infoHash)
+	io.WriteString(h, "\x00")
+	io.WriteString(h, path)
+	return fmt.Sprintf("attach-%08x", h.Sum32())
+}
+
+// AppDownloadFileAttachPopover renders the episode picker for
+// attaching a downloaded file, anchored to the file's Attach
+// button: a client-side filter over the edition's episodes, each
+// with an attach toggle. Clicking elsewhere in an unattached row
+// attaches and closes the picker. The group at the top lists the
+// episodes in attached — those attached when the picker opened —
+// so the list keeps its shape as episodes are toggled.
 func AppDownloadFileAttachPopover(
-	triggerID string,
 	sed *model.SeriesEdition,
 	infoHash, filePath, currentVideoID string,
+	attached []string,
 	linked map[string]bool,
-) html.Node {
+) domi.Node {
+	pinned := map[string]bool{}
+	for _, epID := range attached {
+		pinned[epID] = true
+	}
 	var attachedEps []*model.Episode
 	for ep := range sed.Episodes(model.AnyEpisode) {
-		if linked[ep.ID()] {
+		if pinned[ep.ID()] {
 			attachedEps = append(attachedEps, ep)
 		}
 	}
-	return PopoverStream(triggerID,
+	return popover(&msg.DialogClose{}, downloadFileAttachTriggerID(infoHash, filePath))(
 		FlexCol(
 			Style("width: 300px; height: 350px"),
 			stimulus.Controller("picker"),
 		)(
 			InputText(
-				attr.Autofocus,
+				attr.Autofocus(true),
 				attr.Placeholder("Filter..."),
 				Class("u-picker-filter"),
 				stimulus.Action("input->picker#filter"),
 			),
 			ScrollY()(
-				html.If(len(attachedEps) > 0, func() html.Node {
+				iff(len(attachedEps) > 0, func() domi.Node {
 					return PickerGroup()(
 						downloadAttachPickerEpisodes(slices.Values(attachedEps), infoHash, filePath, currentVideoID, linked),
 					)
 				}),
-				html.RangeSeq(sed.Seasons(), func(sn *model.Season) html.Node {
+
+				rangeSeq(sed.Seasons(), func(sn *model.Season) domi.Node {
 					return PickerGroup()(
 						PickerGroupHead()(
 							PickerItemLabel()(Text(sn.Title(), Size2)),
@@ -363,8 +347,8 @@ func downloadAttachPickerEpisodes(
 	eps iter.Seq[*model.Episode],
 	infoHash, filePath, currentVideoID string,
 	linked map[string]bool,
-) html.Node {
-	return html.RangeSeq(eps, func(ep *model.Episode) html.Node {
+) domi.Node {
+	return rangeSeq(eps, func(ep *model.Episode) domi.Node {
 		attached := linked[ep.ID()]
 		label := ep.SnnEnn() + " " + ep.Title()
 		imported := slices.ContainsFunc(ep.Videos(), func(v *model.Video) bool {
@@ -373,48 +357,53 @@ func downloadAttachPickerEpisodes(
 		return PickerItem(
 			Style("isolation: isolate"),
 			Attr("data-filter-text")(label),
-			stimulus.Controller("episode-attach"),
-			stimulus.Action("settings-toggle:commit->episode-attach#commit"),
 		)(
 			PickerItemLabel()(
 				Text(label, Size2),
 			),
 			FlexRow(Gap2, Style("align-items:center"))(
-				html.If(imported, func() html.Node {
+				iff(imported, func() domi.Node {
 					return Theme(Style("color:var(--text-3)"))(Icon("line/paperclip"))
 				}),
-				SettingsToggle("/-/do/episode-video-set", "attach", attached,
-					map[string]string{
-						"infohash":   infoHash,
-						"path":       filePath,
-						"episode-id": ep.ID(),
-					},
-					LiveAddr(model.EpisodeAttachToggleAddr(infoHash, filePath, ep.ID())),
-					Style("position: relative; z-index: 1"),
-				),
-				html.Button(
-					attr.Type("button"),
-					Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
-					stimulus.Action("click->episode-attach#attach"),
-				),
+
+				settingsToggle(attached, &msg.EpisodeVideoSet{
+					InfoHash:  infoHash,
+					Path:      filePath,
+					EpisodeID: ep.ID(),
+					Attach:    !attached,
+				}, Style("position: relative; z-index: 1")),
+				// The rest of an unattached row is one big attach
+				// target, which also closes the picker.
+				iff(!attached, func() domi.Node {
+					return html.Button(
+						attr.Type("button"),
+						Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
+						onClick(&msg.DownloadFileAttachPick{
+							InfoHash:  infoHash,
+							Path:      filePath,
+							EpisodeID: ep.ID(),
+						}),
+					)
+				}),
 			),
 		)
 	})
+
 }
 
-func appDownloadsFileList(files []*model.DownloadFile) html.Node {
+func appDownloadsFileList(files []*model.DownloadFile) domi.Node {
 	slices.SortStableFunc(files, func(a, b *model.DownloadFile) int {
 		return cmp.Compare(path.Dir(a.Path()), path.Dir(b.Path()))
 	})
-	return html.RangeSeq2(
+	return rangeSeq2(
 		xslices.GroupBy(files, func(df *model.DownloadFile) string {
 			return path.Dir(df.Path())
 		}),
-		appDownloadsFileGroup,
-	)
+		appDownloadsFileGroup)
+
 }
 
-func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
+func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) domi.Node {
 	found := false
 	for _, df := range dfs {
 		found = found || df.HasVideoExtension()
@@ -423,14 +412,15 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
 		return Group()
 	}
 	return SettingsGroup()(
-		html.If(dir != ".", func() html.Node {
+		iff(dir != ".", func() domi.Node {
 			return SettingsGroupHead()(
 				SettingsItemLabel()(
 					SettingsItemLabelTitle("/" + dir),
 				),
 			)
 		}),
-		html.Range(dfs, func(df *model.DownloadFile) html.Node {
+
+		rangeNodes(dfs, func(df *model.DownloadFile) domi.Node {
 			if !df.HasVideoExtension() {
 				return Group()
 			}
@@ -439,43 +429,34 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) html.Node {
 					SettingsItemLabelTitle(path.Base(df.Path())),
 					downloadFileEpisodes(df),
 					expr.IfElse(df.Progress() >= 0,
-						func() html.Node {
+						func() domi.Node {
 							return Progress(df.Progress(), ProgressSM)
 						},
-						func() html.Node {
+						func() domi.Node {
 							return Group()
 						},
 					),
 				),
-				html.If(df.SeriesEdition() != nil, func() html.Node {
-					// Disabled when the Video is gone — e.g. merged
-					// away into a duplicate during ingest.
-					return PopoverButton("/-/dialog/download-file-attach",
-						Text("Attach"),
+				iff(df.SeriesEdition() != nil, func() domi.Node {
+					return Button(
+						attr.ID(downloadFileAttachTriggerID(df.InfoHash(), df.Path())),
+						onClick(&msg.DownloadFileAttachOpen{
+							InfoHash: df.InfoHash(),
+							Path:     df.Path(),
+						}),
 						Disabled(df.VideoID() == ""),
 						SettingsHover, ButtonGhost, ButtonSize2,
-					)(
-						Hidden("infohash", df.InfoHash()),
-						Hidden("path", df.Path()),
-					)
+					)(Text("Attach"))
 				}),
 			)
 		}),
 	)
 }
 
-func downloadFileEpisodes(df *model.DownloadFile) html.Node {
-	return turbo.StreamTarget("dl-file-episodes-" + df.VideoID())(
-		html.Range(df.Episodes(), func(ep *model.Episode) html.Node {
-			return SettingsItemLabelDescription(
-				ep.SnnEnn() + " " + ep.Title(),
-			)
-		}),
-	)
-}
-
-func DownloadFileEpisodesUpdate(df *model.DownloadFile) html.Node {
-	return turbo.Replace("dl-file-episodes-" + df.VideoID())(
-		downloadFileEpisodes(df),
-	)
+func downloadFileEpisodes(df *model.DownloadFile) domi.Node {
+	return rangeNodes(df.Episodes(), func(ep *model.Episode) domi.Node {
+		return SettingsItemLabelDescription(
+			ep.SnnEnn() + " " + ep.Title(),
+		)
+	})
 }

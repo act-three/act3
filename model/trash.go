@@ -744,11 +744,12 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 	return tx.q.TrashDelete(ctx, id)
 }
 
-// restoreSlug regenerates the slug for a restored entity, emitting a
-// set-slug event if it changed and reinserting the Slug table row for
-// top-level entities. Dispatches to the kind-specific ensureSlug
-// helper, which handles both the live (title/label-change) and
-// trashed (restore) cases via the entity's DeletedAt.
+// restoreSlug regenerates the slug for a restored entity,
+// reinserting the Slug table row for top-level entities. Dispatches
+// to the kind-specific ensureSlug helper, which handles both the
+// live (title/label-change) and trashed (restore) cases via the
+// entity's DeletedAt; only the live case announces the change, since
+// a trashed entity's pages have no viewers to follow it.
 func (tx *TxRW) restoreSlug(ctx Context, id string) error {
 	switch KindOf(id) {
 	case TrashKindMovie:

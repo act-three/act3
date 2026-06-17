@@ -60,6 +60,9 @@ type Model struct {
 	downloadDirMu sync.Mutex
 	downloadDir   map[string]string // Transmission DownloadDir → local path
 
+	uploadMu sync.Mutex
+	uploads  []*upload
+
 	subMu sync.Mutex
 	sub   map[chan *Event]struct{}
 }

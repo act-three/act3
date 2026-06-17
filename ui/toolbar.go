@@ -1,18 +1,18 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
-func ToolbarPrimary(attrs ...attr.Node) html.Element {
+func ToolbarPrimary(attrs ...domi.Attr) domi.Element {
 	return html.Header(
 		Class("u-toolbar-primary"),
 		group(attrs...),
 	)
 }
 
-func ToolbarSecondary(attrs ...attr.Node) html.Element {
+func ToolbarSecondary(attrs ...domi.Attr) domi.Element {
 	return html.Header(
 		Class("u-toolbar-secondary"),
 		group(attrs...),

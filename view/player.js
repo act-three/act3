@@ -15,6 +15,7 @@ export default class extends Controller {
 		"captionsMenu",
 		"captionsTemplate",
 		"audioMenu",
+		"dismiss",
 	];
 	static values = {
 		title: String,
@@ -130,7 +131,7 @@ export default class extends Controller {
 	}
 
 	dismiss() {
-		this.element.remove();
+		this.dismissTarget?.click();
 	}
 
 	handleControls(e) {

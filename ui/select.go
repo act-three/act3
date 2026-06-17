@@ -1,18 +1,21 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/ui/stimulus"
 )
 
 // SelectValue sets the currently selected item value.
 var SelectValue = stimulus.Value("select", "current")
 
-func Select(attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
-		return html.Div(
+func Select(attrs ...domi.Attr) domi.Element {
+	return func(nodes ...domi.Node) domi.Node {
+		return html.Output(
 			Class("u-select"),
+			attr.Role("presentation"),
 			stimulus.Controller("select"),
 			stimulus.Action("keydown->select#keydown"),
 			group(attrs...),
@@ -20,9 +23,10 @@ func Select(attrs ...attr.Node) html.Element {
 	}
 }
 
-func SelectTrigger(attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
+func SelectTrigger(attrs ...domi.Attr) domi.Element {
+	return func(nodes ...domi.Node) domi.Node {
 		return html.Button(
+			attr.Type("button"),
 			Class("u-select-trigger"),
 			stimulus.Target("select", "trigger"),
 			group(attrs...),
@@ -30,8 +34,8 @@ func SelectTrigger(attrs ...attr.Node) html.Element {
 	}
 }
 
-func SelectContent(attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
+func SelectContent(attrs ...domi.Attr) domi.Element {
+	return func(nodes ...domi.Node) domi.Node {
 		return html.Div(
 			Class("u-select-content"),
 			stimulus.Target("select", "content"),
@@ -42,8 +46,8 @@ func SelectContent(attrs ...attr.Node) html.Element {
 	}
 }
 
-func SelectItem(value string, attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
+func SelectItem(value string, attrs ...domi.Attr) domi.Element {
+	return func(nodes ...domi.Node) domi.Node {
 		return html.Div(
 			Class("u-select-item"),
 			stimulus.Target("select", "item"),
@@ -58,15 +62,15 @@ func SelectItem(value string, attrs ...attr.Node) html.Element {
 // SelectLabel renders the text label inside a trigger.
 // The initial text is for SSR; the JS controller keeps it
 // in sync with the selected item.
-func SelectLabel(label string) html.Node {
+func SelectLabel(label string) domi.Node {
 	return html.Span(
 		Class("u-select-label"),
 		stimulus.Target("select", "label"),
-	)(html.Text(label))
+	)(domi.Text(label))
 }
 
 // SelectItemSelected marks an item as initially selected.
-var SelectItemSelected = Attr("data-selected")
+var SelectItemSelected = Attr("data-selected")("")
 
 var (
 	SelectSize1 = Attr("data-select-size")("1")

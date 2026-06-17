@@ -1,42 +1,30 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
-	"ily.dev/act3/ui/stimulus"
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+	"ily.dev/domi/event"
+	"ily.dev/domi/html"
 )
 
 // SettingsButtonRow renders a row of buttons where one is selected.
-// It POSTs to action with a form field named name
-// carrying the value of the clicked button.
-// The selected button is determined by matching value
-// against each button's data-settings-button-row-value-param.
-// Children become hidden inputs inside the form (for context like IDs).
-//
-// When addr is non-empty, the component receives live:update events
-// and updates the selection accordingly.
-func SettingsButtonRow(action, name, value string, attrs ...attr.Node) html.Element {
-	return func(nodes ...html.Node) html.Node {
-		return html.Div(
-			Class("u-settings-button-row"),
-			Attr("data-optimistic")(""),
-			stimulus.Controller("settings-button-row"),
-			stimulus.Value("settings-button-row", "url")(action),
-			stimulus.Value("settings-button-row", "name")(name),
-			stimulus.Value("settings-button-row", "selected")(value),
-			group(attrs...),
-		)(nodes...)
-	}
+// Build the buttons with [SettingsButtonRowItem].
+func SettingsButtonRow(attrs ...domi.Attr) domi.Element {
+	return html.Div(
+		Class("u-settings-button-row"),
+		group(attrs...),
+	)
 }
 
-// SettingsButtonRowItem renders a single button within a SettingsButtonRow.
-func SettingsButtonRowItem(value string, nodes ...html.Node) html.Node {
+// SettingsButtonRowItem renders a single button within a
+// SettingsButtonRow. Clicking delivers commit, which should carry
+// the item's value; the selection re-renders from server state.
+func SettingsButtonRowItem[Msg any](selected bool, commit Msg, nodes ...domi.Node) domi.Node {
 	return Button(
 		ButtonSurface,
 		ButtonSize2,
 		attr.Type("button"),
-		stimulus.Target("settings-button-row", "button"),
-		stimulus.Action("click->settings-button-row#select"),
-		Attr("data-value")(value),
+		domi.Bool("data-selected")(selected),
+		event.Click(commit),
 	)(nodes...)
 }

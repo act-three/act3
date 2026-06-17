@@ -1,0 +1,109 @@
+package web
+
+import (
+	"context"
+
+	"ily.dev/act3/model"
+	"ily.dev/act3/view"
+)
+
+// viewTheater renders a theater object page from its descriptor.
+func viewTheater(ctx context.Context, tx *model.TxR, odesc map[string]string) (title string, n node) {
+	switch odesc["kind"] {
+	case model.KindMovieEdition:
+		return viewTheaterMovie(ctx, tx, odesc["med"])
+	case model.KindSeriesEdition:
+		return viewTheaterSeries(ctx, tx, odesc["sed"])
+	case model.KindEpisode:
+		return viewTheaterEpisode(ctx, tx, odesc["sed"], odesc["ep"])
+	case model.KindCollectionOverview:
+		return viewTheaterCollection(ctx, tx, odesc["col"], false)
+	case model.KindCollectionPlaylist:
+		return viewTheaterCollection(ctx, tx, odesc["col"], true)
+	}
+	return "Not Found", notFound
+}
+
+func viewTheaterSeries(ctx context.Context, tx *model.TxR, sedID string) (title string, n node) {
+	sed, err := tx.SeriesEdition(ctx, sedID)
+	if err != nil {
+		return "Not Found", notFound
+	}
+	editions, err := tx.SeriesEditionList(ctx, sed.SeriesHead())
+	if err != nil {
+		return "", viewError(err)
+	}
+	return view.BrowseSeriesEdition(sed, editions, tx.Uploads())
+}
+
+func viewTheaterMovie(ctx context.Context, tx *model.TxR, medID string) (title string, n node) {
+	med, err := tx.MovieEdition(ctx, medID)
+	if err != nil {
+		return "Not Found", notFound
+	}
+	editions, err := tx.MovieEditionList(ctx, med.MovieHead())
+	if err != nil {
+		return "", viewError(err)
+	}
+	dls, err := tx.MovieDownloadList(ctx, med)
+	if err != nil {
+		return "", viewError(err)
+	}
+	var audioOpts []model.AudioOption
+	var subOpts []model.SubtitleOption
+	if v := med.ActiveVideo(); v != nil {
+		audioOpts, err = tx.AudioOptions(ctx, v)
+		if err != nil {
+			return "", viewError(err)
+		}
+		subOpts, err = tx.SubtitleOptions(ctx, v)
+		if err != nil {
+			return "", viewError(err)
+		}
+	}
+	return view.BrowseMovieEdition(med, editions, dls, audioOpts, subOpts, tx.Uploads())
+}
+
+func viewTheaterEpisode(ctx context.Context, tx *model.TxR, sedID, epID string) (title string, n node) {
+	ep, err := tx.EpisodeInEdition(ctx, epID, sedID)
+	if err != nil {
+		return "Not Found", notFound
+	}
+	dls, err := tx.EpisodeDownloadList(ctx, ep)
+	if err != nil {
+		return "", viewError(err)
+	}
+	var audioOpts []model.AudioOption
+	var subOpts []model.SubtitleOption
+	if v := ep.ActiveVideo(); v != nil {
+		audioOpts, err = tx.AudioOptions(ctx, v)
+		if err != nil {
+			return "", viewError(err)
+		}
+		subOpts, err = tx.SubtitleOptions(ctx, v)
+		if err != nil {
+			return "", viewError(err)
+		}
+	}
+	return view.BrowseEpisode(ep, dls, audioOpts, subOpts, tx.Uploads())
+}
+
+// viewTheaterCollection renders a collection overview or playlist.
+func viewTheaterCollection(ctx context.Context, tx *model.TxR, colID string, playlist bool) (title string, n node) {
+	col, err := tx.Collection(ctx, colID)
+	if err != nil {
+		return "Not Found", notFound
+	}
+	itemCount, runtimeMinutes, err := tx.CollectionStats(ctx, col.ID())
+	if err != nil {
+		return "", viewError(err)
+	}
+	var ps []model.Playable
+	if playlist {
+		ps, err = tx.CollectionPlayables(ctx, col.ID())
+		if err != nil {
+			return "", viewError(err)
+		}
+	}
+	return view.TheaterCollection(col, itemCount, runtimeMinutes, playlist, ps, tx.Uploads())
+}

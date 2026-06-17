@@ -1,21 +1,34 @@
 package web
 
 import (
+	"bytes"
 	"io"
+	"log/slog"
 	"net/http"
 
-	"ily.dev/act3/html"
+	"ily.dev/act3/view"
 	"ily.dev/act3/web/static"
+	"ily.dev/domi"
 )
 
 // HandleDegraded registers routes for the degraded mode UI
 // shown when the database schema does not match. The reset
 // callback must remove the database files and stop the
 // degraded server.
-func HandleDegraded(mux *http.ServeMux, page html.Node, reset func()) {
+func HandleDegraded(mux *http.ServeMux, page node, reset func()) {
 	mux.Handle("GET /-/static/", static.Handler())
 
-	mux.Handle("GET /", rawHandler(200, page))
+	buf := &bytes.Buffer{}
+	domi.RenderTo(buf, view.Document("Schema Mismatch", page))
+	body := buf.Bytes()
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, req *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, err := w.Write(body)
+		if err != nil {
+			slog.WarnContext(req.Context(), err.Error())
+			return
+		}
+	})
 
 	mux.HandleFunc("POST /-/do/database-reset",
 		func(w http.ResponseWriter, req *http.Request) {

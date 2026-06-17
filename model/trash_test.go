@@ -579,7 +579,8 @@ func TestTrashPurgeOrdering(t *testing.T) {
 
 // TestTrashSlugCollisionOnRestore covers scenario 3: a trashed
 // Movie's slug can be claimed by a new Movie; restoring the original
-// auto-renames it and emits EventMovieSetSlug.
+// auto-renames it, without announcing a slug change — the trashed
+// pages had no viewers, and the old slug now addresses the claimant.
 func TestTrashSlugCollisionOnRestore(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
@@ -644,16 +645,12 @@ func TestTrashSlugCollisionOnRestore(t *testing.T) {
 		t.Errorf("slug %q points to %q, want movie A %q", slugA, targetRenamed, movieA)
 	}
 
-	// Should have seen a movie-set-slug event for movie A.
-	seen := false
+	// The restore must not announce a slug change: a session viewing
+	// /dune is on movie B's page, and following would hijack it.
 	for _, ev := range events.drain() {
-		if ev.Type == EventMovieSetSlug && ev.ID == movieA && ev.NewText == slugA {
-			seen = true
-			break
+		if ev.Type == EventMovieSetSlug && ev.ID == movieA {
+			t.Errorf("EventMovieSetSlug for movie A on restore (NewText=%q)", ev.NewText)
 		}
-	}
-	if !seen {
-		t.Errorf("no EventMovieSetSlug for movie A with NewText=%q", slugA)
 	}
 }
 
@@ -2843,8 +2840,10 @@ func TestTrashSlugCollisionOnRestoreSeries(t *testing.T) {
 	if slugB != "breaking-bad" {
 		t.Errorf("srB slug = %q, want breaking-bad", slugB)
 	}
-	if !hasSlugEvent(events.drain(), EventSeriesSetSlug, srA, slugA) {
-		t.Errorf("no EventSeriesSetSlug for srA with NewText=%q", slugA)
+	// No slug-change announcement on restore; see
+	// TestTrashSlugCollisionOnRestore.
+	if hasSlugEvent(events.drain(), EventSeriesSetSlug, srA, slugA) {
+		t.Errorf("EventSeriesSetSlug for srA on restore (NewText=%q)", slugA)
 	}
 }
 
@@ -2889,8 +2888,10 @@ func TestTrashSlugCollisionOnRestoreCollection(t *testing.T) {
 	if slugB != "classics" {
 		t.Errorf("cB slug = %q, want classics", slugB)
 	}
-	if !hasSlugEvent(events.drain(), EventCollectionSetSlug, cA, slugA) {
-		t.Errorf("no EventCollectionSetSlug for cA with NewText=%q", slugA)
+	// No slug-change announcement on restore; see
+	// TestTrashSlugCollisionOnRestore.
+	if hasSlugEvent(events.drain(), EventCollectionSetSlug, cA, slugA) {
+		t.Errorf("EventCollectionSetSlug for cA on restore (NewText=%q)", slugA)
 	}
 }
 

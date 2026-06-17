@@ -1,22 +1,20 @@
 package stimulus
 
-import (
-	"ily.dev/act3/html/attr"
-)
+import "ily.dev/domi"
 
 var (
-	Action     = attr.Attr("data-action")
-	Controller = attr.Attr("data-controller")
+	Action     = domi.Name("data-action")
+	Controller = domi.Name("data-controller")
 )
 
 func init() {
-	attr.RegisterCombining("data-action", " ")
+	domi.RegisterCombining("data-action", " ")
 }
 
-func Target(controller, name string) attr.Node {
-	return attr.Attr("data-" + controller + "-target")(name)
+func Target(controller, name string) domi.Attr {
+	return domi.Name("data-" + controller + "-target")(name)
 }
 
-func Value(controller, name string) attr.AttrName {
-	return attr.Attr("data-" + controller + "-" + name + "-value")
+func Value(controller, name string) func(string) domi.Attr {
+	return domi.Name("data-" + controller + "-" + name + "-value")
 }

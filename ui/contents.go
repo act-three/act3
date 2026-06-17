@@ -1,5 +1,5 @@
 package ui
 
-import "ily.dev/act3/html/attr"
+import "ily.dev/domi"
 
-var Contents attr.Node = Class("u-contents")
+var Contents domi.Attr = Class("u-contents")

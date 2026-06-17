@@ -1,53 +1,54 @@
 import { Controller } from "../web/stimulus.js";
-import { active, start } from "./video-upload.js";
+import { notify } from "../ui/note-port.js";
+
+// upload drives the image and video upload forms: the visible
+// button opens the hidden file picker, and a chosen file is sent
+// with fetch — a native form submission would navigate the page and
+// tear down the domi connection. Upload progress and button state
+// are rendered by the server from the model's upload registry; the
+// only client-owned state is a beforeunload guard while uploads are
+// in flight.
+
+let inflight = 0;
+
+function onBeforeUnload(e) {
+	e.preventDefault();
+	e.returnValue = "";
+}
 
 export default class extends Controller {
-	static targets = ["picker", "button"];
-
-	connect() {
-		const state = active();
-		if (state) this.#apply(state.target);
-	}
+	static targets = ["picker"];
 
 	open() {
 		this.pickerTarget.click();
 	}
 
-	upload(event) {
-		const isVideo = !!this.element.querySelector("input[name='video']");
-		if (!isVideo) {
-			this.element.requestSubmit(this.buttonTarget);
-			return;
+	upload() {
+		const form = this.element;
+		// Copy the form's entries, inserting the file's exact size
+		// just before the file itself so the server knows the total
+		// when the bytes start arriving (the request Content-Length
+		// includes multipart framing).
+		const body = new FormData();
+		for (const [name, value] of new FormData(form)) {
+			if (value instanceof File) body.append("size", value.size);
+			body.append(name, value);
 		}
-		event?.preventDefault?.();
-		start(this.element);
-		this.element.reset();
-	}
-
-	reset() {
-		this.element.reset();
-	}
-
-	// onUploadStart and onUploadEnd are wired up by video upload
-	// forms (see uploadVideoForm) to keep the picker button in sync
-	// with the global upload state. Torrent and image forms have no
-	// data-upload-target and don't subscribe.
-	onUploadStart({ detail }) {
-		this.#apply(detail.target);
-	}
-
-	onUploadEnd() {
-		this.buttonTarget.hidden = false;
-		this.buttonTarget.disabled = false;
-	}
-
-	#apply(activeTarget) {
-		const mine = this.element.dataset.uploadTarget;
-		if (!mine) return;
-		if (mine === activeTarget) {
-			this.buttonTarget.hidden = true;
-		} else {
-			this.buttonTarget.disabled = true;
+		form.reset();
+		if (inflight++ === 0) {
+			window.addEventListener("beforeunload", onBeforeUnload);
 		}
+		fetch(form.action, { method: "POST", body })
+			.then(
+				(res) => {
+					if (!res.ok) notify("Upload failed");
+				},
+				() => notify("Could not reach the server"),
+			)
+			.finally(() => {
+				if (--inflight === 0) {
+					window.removeEventListener("beforeunload", onBeforeUnload);
+				}
+			});
 	}
 }

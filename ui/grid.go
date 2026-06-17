@@ -1,11 +1,8 @@
 package ui
 
-import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
-)
+import "ily.dev/domi"
 
-func grid(n int, attrs []attr.Node) html.Element {
+func grid(n int, attrs []domi.Attr) domi.Element {
 	return Box(
 		Class("u-grid"),
 		Stylef("--cols:%d", n),
@@ -13,17 +10,17 @@ func grid(n int, attrs []attr.Node) html.Element {
 	)
 }
 
-func Grid2(attrs ...attr.Node) html.Element  { return grid(2, attrs) }
-func Grid3(attrs ...attr.Node) html.Element  { return grid(3, attrs) }
-func Grid4(attrs ...attr.Node) html.Element  { return grid(4, attrs) }
-func Grid5(attrs ...attr.Node) html.Element  { return grid(5, attrs) }
-func Grid6(attrs ...attr.Node) html.Element  { return grid(6, attrs) }
-func Grid7(attrs ...attr.Node) html.Element  { return grid(7, attrs) }
-func Grid8(attrs ...attr.Node) html.Element  { return grid(8, attrs) }
-func Grid9(attrs ...attr.Node) html.Element  { return grid(9, attrs) }
-func Grid10(attrs ...attr.Node) html.Element { return grid(10, attrs) }
-func Grid11(attrs ...attr.Node) html.Element { return grid(11, attrs) }
-func Grid12(attrs ...attr.Node) html.Element { return grid(12, attrs) }
+func Grid2(attrs ...domi.Attr) domi.Element  { return grid(2, attrs) }
+func Grid3(attrs ...domi.Attr) domi.Element  { return grid(3, attrs) }
+func Grid4(attrs ...domi.Attr) domi.Element  { return grid(4, attrs) }
+func Grid5(attrs ...domi.Attr) domi.Element  { return grid(5, attrs) }
+func Grid6(attrs ...domi.Attr) domi.Element  { return grid(6, attrs) }
+func Grid7(attrs ...domi.Attr) domi.Element  { return grid(7, attrs) }
+func Grid8(attrs ...domi.Attr) domi.Element  { return grid(8, attrs) }
+func Grid9(attrs ...domi.Attr) domi.Element  { return grid(9, attrs) }
+func Grid10(attrs ...domi.Attr) domi.Element { return grid(10, attrs) }
+func Grid11(attrs ...domi.Attr) domi.Element { return grid(11, attrs) }
+func Grid12(attrs ...domi.Attr) domi.Element { return grid(12, attrs) }
 
 var (
 	ColSpan2  = Class("u-col-span-2")

@@ -1,69 +1,54 @@
 package ui
 
 import (
-	"ily.dev/act3/html"
-	"ily.dev/act3/html/attr"
+	"ily.dev/domi"
+	"ily.dev/domi/event"
+	"ily.dev/domi/html"
+
 	"ily.dev/act3/ui/stimulus"
-	"ily.dev/act3/ui/turbo"
 )
 
 const dialogController = "dialog"
 
-// DialogButton renders a button that GETs url as a turbo stream.
-// The server responds with a turbo stream that appends
-// the dialog to the [Port],
-// keeping it outside any replaceable content regions.
-func DialogButton(url string, attrs ...attr.Node) html.Element {
-	return func(children ...html.Node) html.Node {
-		return Button(
-			stimulus.Controller("dialog-trigger"),
-			stimulus.Value("dialog-trigger", "url")(url),
-			stimulus.Action("click->dialog-trigger#open"),
-			group(attrs...),
-		)(children...)
-	}
+// Dialog renders a modal dialog. A dialog is open exactly while the
+// view renders it: close is delivered by the dialog's X button and
+// by the Escape key, and should remove the dialog from the app
+// state.
+func Dialog[Msg any](close Msg, attrs ...domi.Attr) domi.Element {
+	return dialog(close, html.Div(Class("u-dialog-panel")), attrs)
 }
 
-// DialogStream renders a dialog and wraps it in a turbo stream
-// append to the [Port].
-func DialogStream(children ...html.Node) html.Node {
-	return dialogStream(html.Div(Class("u-dialog-panel")), children)
-}
-
-// ImageDialogStream renders a dialog whose panel is sized to the
-// largest box of the given aspect ratio that fits the viewport
-// (minus a 3rem gutter on each side). Use for dialogs whose contents
-// are a single image of known intrinsic aspect.
-func ImageDialogStream(a Aspect) html.Element {
+// ImageDialog is [Dialog] with its panel sized to the largest box of
+// the given aspect ratio that fits the viewport (minus a 3rem gutter
+// on each side). Use for dialogs whose contents are a single image
+// of known intrinsic aspect.
+func ImageDialog[Msg any](close Msg, a Aspect, attrs ...domi.Attr) domi.Element {
 	panel := html.Div(
 		Class("u-dialog-panel-image"),
 		Stylef("--aspect-w: %d; --aspect-h: %d", a.W, a.H),
 	)
-	return func(children ...html.Node) html.Node {
-		return dialogStream(panel, children)
-	}
+	return dialog(close, panel, attrs)
 }
 
-func dialogStream(panel html.Element, children []html.Node) html.Node {
-	return turbo.Append("port",
-		html.Dialog(
+func dialog[Msg any](close Msg, panel domi.Element, attrs []domi.Attr) domi.Element {
+	return func(children ...domi.Node) domi.Node {
+		return html.Dialog(
 			Class("u-dialog"),
 			stimulus.Controller(dialogController),
-			stimulus.Action("click->dialog#close:self"),
-			stimulus.Action("keydown.esc@document->dialog#close"),
-			stimulus.Action("turbo:before-visit@document->dialog#close"),
+			onEscape(close),
+			group(attrs...),
 		)(
 			html.Div(Class("u-dialog-positioner"))(
 				panel(
 					Group(children...),
 					html.Div(
 						Class("u-dialog-close"),
-						stimulus.Action("click->dialog#close"),
+						event.Click(close),
 					)(
 						Icon("line/x-close"),
 					),
 				),
 			),
-		),
-	)
+		)
+	}
 }
