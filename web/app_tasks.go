@@ -9,9 +9,9 @@ import (
 )
 
 func (c *Config) appTasks(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
-	running := c.Model.RunningTasks()
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
+		running := tx.RunningTasks()
 		tasks, err := tx.TaskList(ctx)
 		if err != nil {
 			return nil, err
