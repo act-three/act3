@@ -6,8 +6,5 @@ set -eo pipefail
 
 domi=$(go list -m -f '{{.Dir}}' ily.dev/domi)/client.js
 
-go tool esbuild\
-	--alias:domi="$domi"\
-	--bundle\
-	--outfile=web/static/static/bundle.js\
-	main.js
+go tool esbuild --alias:domi="$domi" \
+	--bundle --outfile=web/static/static/bundle.js main.js
