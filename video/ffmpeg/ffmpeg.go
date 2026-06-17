@@ -771,7 +771,7 @@ var allowedMP4Brands = map[string]bool{
 // be told apart at the demuxer level but differ in the ftyp box's
 // major_brand, which the caller gates on via checkMP4Brand.
 func isISOBMFF(formatName string) bool {
-	for _, tok := range strings.Split(formatName, ",") {
+	for tok := range strings.SplitSeq(formatName, ",") {
 		if tok == "mov" || tok == "mp4" {
 			return true
 		}

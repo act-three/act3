@@ -90,8 +90,7 @@ func Open(name string) (dbr, dbw *sql.DB, err error) {
 	dbw.SetMaxOpenConns(1)
 	err = updateSchema(dbw)
 	if err != nil {
-		var sme *SchemaMismatchError
-		if errors.As(err, &sme) {
+		if sme, ok := errors.AsType[*SchemaMismatchError](err); ok {
 			sme.DBPath = name
 			dbw.Close()
 			return nil, nil, sme
