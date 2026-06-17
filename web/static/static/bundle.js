@@ -1,5 +1,5 @@
 (() => {
-  // ../../lib/go/pkg/mod/ily.dev/domi@v0.1.0/client.js
+  // domi/client.js
   function fragmentFromHTML(html) {
     const tmpl = document.createElement("template");
     tmpl.innerHTML = html;
