@@ -224,7 +224,9 @@ func TestActiveVideoLockedAgainstReencode(t *testing.T) {
 	makeVideoPlayable(t, m, v1)
 	makeVideoPlayable(t, m, v2)
 
-	err := m.ReencodeVideo(ctx, v1)
+	err := m.WithTxRW(func(tx *TxRW) error {
+		return tx.ReencodeVideo(ctx, v1)
+	})
 	if !errors.Is(err, ErrActiveVideoLocked) {
 		t.Fatalf("expected ErrActiveVideoLocked, got %v", err)
 	}
