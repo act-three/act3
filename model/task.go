@@ -468,9 +468,12 @@ func (tq *taskQueue) runningTasks() []*RunningTask {
 	return out
 }
 
-func (m *Model) RunningTasks() []*RunningTask {
+// RunningTasks reports the tasks currently executing.
+// It reflects live queue state at the time of the call,
+// not state as of the transaction's snapshot.
+func (tx *TxR) RunningTasks() []*RunningTask {
 	var out []*RunningTask
-	for _, tq := range m.tasks {
+	for _, tq := range tx.m.tasks {
 		out = append(out, tq.runningTasks()...)
 	}
 	return out
@@ -500,7 +503,7 @@ func (tx *TxR) TaskStats(ctx Context) (TaskStats, error) {
 	}
 	return TaskStats{
 		Queued:     int(queued),
-		Running:    len(tx.m.RunningTasks()),
+		Running:    len(tx.RunningTasks()),
 		CountError: int(countError),
 	}, nil
 }
