@@ -6,14 +6,11 @@ import (
 	"crypto/sha3"
 	"database/sql"
 	"database/sql/driver"
-	"embed"
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log/slog"
 	"math"
-	"path"
 	"strings"
 
 	"kr.dev/errorfmt"
@@ -26,9 +23,6 @@ import (
 )
 
 //go:generate sqlc generate
-
-//go:embed ddl/*_*.up.sql
-var ddl embed.FS
 
 const (
 	// Per-connection pragmas.
@@ -118,38 +112,27 @@ func updateSchema(db *sql.DB) (err error) {
 		cur.Digest = "00000000"
 	}
 	log.Info("loaded", "version", cur.Version, "digest", cur.Digest)
-	ent, err := fs.ReadDir(ddl, "ddl")
+	updates, err := readUpdates()
 	if err != nil {
 		return err
 	}
-	computedDigest := ""
-	for _, d := range ent {
-		if d.IsDir() {
-			panic("directory in ddl: " + d.Name())
-		}
-		version, _, _ := strings.Cut(d.Name(), "_")
-		b, err := fs.ReadFile(ddl, path.Join("ddl", d.Name()))
-		if err != nil {
-			panic("cannot read ddl: " + d.Name())
-		}
-		update := string(b)
-		computedDigest = hash(computedDigest, update)
-		if cur.Version == version && cur.Digest != computedDigest {
+	for _, u := range updates {
+		if cur.Version == u.version && cur.Digest != u.digest {
 			return &SchemaMismatchError{
-				Version:        version,
+				Version:        u.version,
 				StoredDigest:   cur.Digest,
-				ExpectedDigest: computedDigest,
+				ExpectedDigest: u.digest,
 			}
 		}
-		if cur.Version >= version {
+		if cur.Version >= u.version {
 			continue
 		}
-		err = applySchemaUpdate(log, db, d.Name(), version, computedDigest, update)
+		err = applySchemaUpdate(log, db, u.name, u.version, u.digest, string(u.ddl))
 		if err != nil {
 			return err
 		}
-		cur.Version = version
-		cur.Digest = computedDigest
+		cur.Version = u.version
+		cur.Digest = u.digest
 	}
 	return nil
 }
@@ -186,14 +169,14 @@ func newID(ctx *sqlite.FunctionContext, args []driver.Value) (driver.Value, erro
 	return flurry.NewID(), nil
 }
 
-func hash(prevDigest, query string) string {
+func hash(prevDigest string, query []byte) string {
 	if len(prevDigest) > math.MaxUint8 {
 		panic("prev digest too long")
 	}
 	h := sha3.New256()
 	h.Write([]uint8{uint8(len(prevDigest))})
 	io.WriteString(h, prevDigest)
-	io.WriteString(h, query)
+	h.Write(query)
 	sum := h.Sum(nil)
 	return strings.ToLower(base32c.EncodeToString(sum)[:16])
 }
