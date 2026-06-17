@@ -58,13 +58,13 @@ func main() {
 
 func bench(a algo, buf []byte) {
 	h := a.mk()
-	for i := 0; i < warmupIter; i++ {
+	for range warmupIter {
 		h.Write(buf)
 	}
 	h.Reset()
 
 	start := time.Now()
-	for i := 0; i < iters; i++ {
+	for range iters {
 		h.Write(buf)
 	}
 	sum := h.Sum(nil)
