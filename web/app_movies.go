@@ -2,7 +2,6 @@ package web
 
 import (
 	"database/sql"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -229,22 +228,16 @@ func (c *Config) doMovieAddByTMDB(_ http.ResponseWriter, req *http.Request) (htm
 	if err != nil {
 		return nil, &model.ValidationError{Op: "TMDB ID", Err: err}
 	}
-	movie, err := c.TMDB.GetMovie(ctx, id)
+	mo, err := c.Model.AddMovieByTMDBID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-		mo, err := tx.MovieCreateByTMDBID(ctx, movie)
-		if err != nil {
-			return nil, err
-		}
-		return turbo.Frame("tmdb-"+strconv.FormatInt(*mo.TMDBID(), 10))(
-			view.MovieResultLink(mo.EditorPath()),
-			turbo.Prepend(view.AppMoviesListItems,
-				ListItems([]*model.MovieWork{mo}, view.AppMoviesListItem),
-			),
-		), nil
-	})
+	return turbo.Frame("tmdb-"+strconv.FormatInt(*mo.TMDBID(), 10))(
+		view.MovieResultLink(mo.EditorPath()),
+		turbo.Prepend(view.AppMoviesListItems,
+			ListItems([]*model.MovieWork{mo}, view.AppMoviesListItem),
+		),
+	), nil
 }
 
 func (c *Config) movieAddDialogReq(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
@@ -269,38 +262,12 @@ func (c *Config) dialogMoviePoster(_ http.ResponseWriter, req *http.Request) (ht
 func (c *Config) movieSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	query := req.FormValue("q")
-	slog.InfoContext(ctx, "movie search", "q", query)
 	if strings.TrimSpace(query) == "" {
 		return turbo.Frame("results"), nil
 	}
-	movies, err := c.TMDB.Search(ctx, query)
+	results, err := c.Model.SearchMovies(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	slog.InfoContext(ctx, "movie results",
-		"len", len(movies))
-	ids := make([]*int64, len(movies))
-	for i := range movies {
-		id := int64(movies[i].ID)
-		ids[i] = &id
-	}
-
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
-		existing, err := tx.MovieHeadListByTMDBID(ctx, ids)
-		if err != nil {
-			return nil, err
-		}
-		m := make(map[int64]*model.MovieHead)
-		for _, mo := range existing {
-			m[*mo.TMDBID()] = mo
-		}
-		results := make([]view.MovieSearchResult, len(movies))
-		for i, res := range movies {
-			results[i] = view.MovieSearchResult{
-				TMDB:  res,
-				Local: m[int64(res.ID)],
-			}
-		}
-		return view.AppMovieSearchResults(results), nil
-	})
+	return view.AppMovieSearchResults(results), nil
 }

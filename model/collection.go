@@ -6,6 +6,7 @@ import (
 	"path"
 	"slices"
 	"strconv"
+	"strings"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/xstrings"
@@ -117,6 +118,83 @@ func (tx *TxR) Collection(ctx Context, id string) (*Collection, error) {
 		return nil, err
 	}
 	return tx.collectionFromData(ctx, colData)
+}
+
+// CollectionMovieSearchResult pairs a library movie matching a
+// picker search with whether it is already in the collection.
+type CollectionMovieSearchResult struct {
+	Movie        *MovieWork
+	InCollection bool
+}
+
+// CollectionMovieSearch lists library movies whose titles contain
+// query, case-insensitively, marking those already in collection
+// colID. A blank query matches nothing.
+func (tx *TxR) CollectionMovieSearch(ctx Context, colID, query string) ([]CollectionMovieSearchResult, error) {
+	if strings.TrimSpace(query) == "" {
+		return nil, nil
+	}
+	col, err := tx.Collection(ctx, colID)
+	if err != nil {
+		return nil, err
+	}
+	existing := make(map[string]bool, len(col.Movies()))
+	for _, mo := range col.Movies() {
+		existing[mo.MovieHead.ID()] = true
+	}
+	all, err := tx.MovieWorkList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	query = strings.ToLower(query)
+	var matches []CollectionMovieSearchResult
+	for _, mw := range all {
+		if strings.Contains(strings.ToLower(mw.Title()), query) {
+			matches = append(matches, CollectionMovieSearchResult{
+				Movie:        mw,
+				InCollection: existing[mw.MovieHead.ID()],
+			})
+		}
+	}
+	return matches, nil
+}
+
+// CollectionSeriesSearchResult pairs a library series matching a
+// picker search with whether it is already in the collection.
+type CollectionSeriesSearchResult struct {
+	Series       *SeriesWork
+	InCollection bool
+}
+
+// CollectionSeriesSearch is the series analog of
+// CollectionMovieSearch.
+func (tx *TxR) CollectionSeriesSearch(ctx Context, colID, query string) ([]CollectionSeriesSearchResult, error) {
+	if strings.TrimSpace(query) == "" {
+		return nil, nil
+	}
+	col, err := tx.Collection(ctx, colID)
+	if err != nil {
+		return nil, err
+	}
+	existing := make(map[string]bool, len(col.Series()))
+	for _, sr := range col.Series() {
+		existing[sr.SeriesHead.ID()] = true
+	}
+	all, err := tx.SeriesWorkList(ctx)
+	if err != nil {
+		return nil, err
+	}
+	query = strings.ToLower(query)
+	var matches []CollectionSeriesSearchResult
+	for _, sw := range all {
+		if strings.Contains(strings.ToLower(sw.Title()), query) {
+			matches = append(matches, CollectionSeriesSearchResult{
+				Series:       sw,
+				InCollection: existing[sw.SeriesHead.ID()],
+			})
+		}
+	}
+	return matches, nil
 }
 
 func (tx *TxR) CollectionBySlug(ctx Context, slug string) (*Collection, error) {

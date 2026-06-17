@@ -2,7 +2,6 @@ package web
 
 import (
 	"database/sql"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -310,39 +309,14 @@ func (c *Config) doVideoReencode(w http.ResponseWriter, req *http.Request) (html
 func (c *Config) seriesSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	ctx := req.Context()
 	query := req.FormValue("q")
-	slog.InfoContext(ctx, "search", "q", query)
 	if strings.TrimSpace(query) == "" {
 		return turbo.Frame("results"), nil
 	}
-	series, err := c.TVmaze.Search(ctx, query)
+	results, err := c.Model.SearchSeries(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	slog.InfoContext(ctx, "results", "len", len(series))
-	ids := make([]*int64, len(series))
-	for i := range series {
-		id := int64(series[i].Show.ID)
-		ids[i] = &id
-	}
-
-	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
-		summaries, err := tx.SeriesHeadListByTVmazeID(ctx, ids)
-		if err != nil {
-			return nil, err
-		}
-		m := make(map[int64]*model.SeriesHead)
-		for _, s := range summaries {
-			m[*s.TVmazeID()] = s
-		}
-		results := make([]view.SeriesSearchResult, len(series))
-		for i, res := range series {
-			results[i] = view.SeriesSearchResult{
-				TVmaze: res.Show,
-				Local:  m[int64(res.Show.ID)],
-			}
-		}
-		return view.AppSeriesSearchResults(results), nil
-	})
+	return view.AppSeriesSearchResults(results), nil
 }
 
 func (c *Config) doSeasonAdd(w http.ResponseWriter, req *http.Request) (html.Node, error) {
@@ -455,20 +429,14 @@ func (c *Config) doSeriesAdd(_ http.ResponseWriter, req *http.Request) (html.Nod
 	if err != nil {
 		return nil, &model.ValidationError{Op: "TVmaze ID", Err: err}
 	}
-	show, err := c.TVmaze.GetShow(ctx, id)
+	ss, err := c.Model.AddSeriesByTVmazeID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	return c.withTxRW(func(tx *model.TxRW) (html.Node, error) {
-		ss, err := tx.SeriesCreateByTVmazeID(ctx, show)
-		if err != nil {
-			return nil, err
-		}
-		return turbo.Frame("tvmaze-"+strconv.FormatInt(*ss.TVmazeID(), 10))(
-			view.SeriesResultLink(ss.EditorPath()),
-			turbo.Prepend(view.AppSeriesListItems,
-				ListItems([]*model.SeriesWork{ss}, view.AppSeriesListItem),
-			),
-		), nil
-	})
+	return turbo.Frame("tvmaze-"+strconv.FormatInt(*ss.TVmazeID(), 10))(
+		view.SeriesResultLink(ss.EditorPath()),
+		turbo.Prepend(view.AppSeriesListItems,
+			ListItems([]*model.SeriesWork{ss}, view.AppSeriesListItem),
+		),
+	), nil
 }

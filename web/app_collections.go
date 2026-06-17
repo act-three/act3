@@ -3,7 +3,6 @@ package web
 import (
 	"database/sql"
 	"net/http"
-	"strings"
 
 	"ily.dev/act3/html"
 	"ily.dev/act3/model"
@@ -55,32 +54,10 @@ func (c *Config) dialogCollectionMovieAdd(_ http.ResponseWriter, req *http.Reque
 func (c *Config) collectionMovieSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		query := req.FormValue("q")
 		colID := req.FormValue("col-id")
-		if strings.TrimSpace(query) == "" {
-			return turbo.Frame("results"), nil
-		}
-		col, err := tx.Collection(ctx, colID)
+		matches, err := tx.CollectionMovieSearch(ctx, colID, req.FormValue("q"))
 		if err != nil {
 			return nil, err
-		}
-		all, err := tx.MovieWorkList(ctx)
-		if err != nil {
-			return nil, err
-		}
-		existing := make(map[string]bool, len(col.Movies()))
-		for _, mo := range col.Movies() {
-			existing[mo.MovieHead.ID()] = true
-		}
-		query = strings.ToLower(query)
-		var matches []view.CollectionMovieSearchResult
-		for _, mw := range all {
-			if strings.Contains(strings.ToLower(mw.Title()), query) {
-				matches = append(matches, view.CollectionMovieSearchResult{
-					Movie:        mw,
-					InCollection: existing[mw.MovieHead.ID()],
-				})
-			}
 		}
 		return view.AppCollectionMovieSearchResults(colID, matches), nil
 	})
@@ -127,32 +104,10 @@ func (c *Config) dialogCollectionSeriesAdd(_ http.ResponseWriter, req *http.Requ
 func (c *Config) collectionSeriesSearch(_ http.ResponseWriter, req *http.Request) (html.Node, error) {
 	return c.withTxR(func(tx *model.TxR) (html.Node, error) {
 		ctx := req.Context()
-		query := req.FormValue("q")
 		colID := req.FormValue("col-id")
-		if strings.TrimSpace(query) == "" {
-			return turbo.Frame("results"), nil
-		}
-		col, err := tx.Collection(ctx, colID)
+		matches, err := tx.CollectionSeriesSearch(ctx, colID, req.FormValue("q"))
 		if err != nil {
 			return nil, err
-		}
-		all, err := tx.SeriesWorkList(ctx)
-		if err != nil {
-			return nil, err
-		}
-		existing := make(map[string]bool, len(col.Series()))
-		for _, sr := range col.Series() {
-			existing[sr.SeriesHead.ID()] = true
-		}
-		query = strings.ToLower(query)
-		var matches []view.CollectionSeriesSearchResult
-		for _, sw := range all {
-			if strings.Contains(strings.ToLower(sw.Title()), query) {
-				matches = append(matches, view.CollectionSeriesSearchResult{
-					Series:       sw,
-					InCollection: existing[sw.SeriesHead.ID()],
-				})
-			}
 		}
 		return view.AppCollectionSeriesSearchResults(colID, matches), nil
 	})
