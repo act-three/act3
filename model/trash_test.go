@@ -647,10 +647,8 @@ func TestTrashSlugCollisionOnRestore(t *testing.T) {
 
 	// The restore must not announce a slug change: a session viewing
 	// /dune is on movie B's page, and following would hijack it.
-	for _, ev := range events.drain() {
-		if ev.Type == EventMovieSetSlug && ev.ID == movieA {
-			t.Errorf("EventMovieSetSlug for movie A on restore (NewText=%q)", ev.NewText)
-		}
+	if hasSlugDetail(events.drain(), movieA) {
+		t.Errorf("slug change announced for movie A on restore")
 	}
 }
 
@@ -1022,10 +1020,10 @@ func getMovieSlug(t *testing.T, m *Model, id string) string {
 	return slug
 }
 
-// eventSink collects events fired via Model.emitEvent so tests can
-// assert on them after commit hooks have run. drain reads directly
-// from the channel, avoiding a race with emitEvent's non-blocking
-// send into the buffered channel.
+// eventSink collects events emitted via Model.emit so tests can assert
+// on them after commit hooks have run. drain reads directly from the
+// channel, avoiding a race with emit's non-blocking send into the
+// buffered channel.
 type eventSink struct {
 	m  *Model
 	ch chan *Event
@@ -1130,13 +1128,13 @@ func TestTrashDefaultMovieEditionPromotesSuccessor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !hasSlugEvent(events, EventMovieEditionSetSlug, ed2, "") {
-		t.Fatalf("expected EventMovieEditionSetSlug for promoted successor %s with NewText=\"\", got %+v", ed2, events)
+	if !hasSlugDetail(events, ed2) {
+		t.Fatalf("expected slug-change detail for promoted successor %s, got %+v", ed2, events)
 	}
-	// The demoted default also picks up a label-derived slug; verify an
-	// event fired for it with OldText="".
-	if !hasSlugEventWithOldText(events, EventMovieEditionSetSlug, ed1, "") {
-		t.Fatalf("expected EventMovieEditionSetSlug for demoted default %s with OldText=\"\", got %+v", ed1, events)
+	// The demoted default also picks up a label-derived slug; verify a
+	// slug-change detail fired for it too.
+	if !hasSlugDetail(events, ed1) {
+		t.Fatalf("expected slug-change detail for demoted default %s, got %+v", ed1, events)
 	}
 
 	if err := m.WithTxRW(func(tx *TxRW) error {
@@ -1359,19 +1357,14 @@ func TestTrashRestoreEpisodePullsUpTrashedSeries(t *testing.T) {
 	}
 }
 
-func hasSlugEventWithOldText(events []*Event, evType, id, wantOldText string) bool {
+// hasSlugDetail reports whether any event announced a slug change for
+// the object addressed by id.
+func hasSlugDetail(events []*Event, id string) bool {
 	for _, ev := range events {
-		if ev.Type == evType && ev.ID == id && ev.OldText == wantOldText {
-			return true
-		}
-	}
-	return false
-}
-
-func hasSlugEvent(events []*Event, evType, id, wantNewText string) bool {
-	for _, ev := range events {
-		if ev.Type == evType && ev.ID == id && ev.NewText == wantNewText {
-			return true
+		for _, d := range ev.Details {
+			if d.SlugChangeID == id {
+				return true
+			}
 		}
 	}
 	return false
@@ -2801,8 +2794,8 @@ func TestTrashSlugCollisionOnRestoreSeries(t *testing.T) {
 	}
 	// No slug-change announcement on restore; see
 	// TestTrashSlugCollisionOnRestore.
-	if hasSlugEvent(events.drain(), EventSeriesSetSlug, srA, slugA) {
-		t.Errorf("EventSeriesSetSlug for srA on restore (NewText=%q)", slugA)
+	if hasSlugDetail(events.drain(), srA) {
+		t.Errorf("slug change announced for srA on restore")
 	}
 }
 
@@ -2849,8 +2842,8 @@ func TestTrashSlugCollisionOnRestoreCollection(t *testing.T) {
 	}
 	// No slug-change announcement on restore; see
 	// TestTrashSlugCollisionOnRestore.
-	if hasSlugEvent(events.drain(), EventCollectionSetSlug, cA, slugA) {
-		t.Errorf("EventCollectionSetSlug for cA on restore (NewText=%q)", slugA)
+	if hasSlugDetail(events.drain(), cA) {
+		t.Errorf("slug change announced for cA on restore")
 	}
 }
 
@@ -2908,8 +2901,8 @@ func TestTrashDefaultSeriesEditionPromotesSuccessor(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if !hasSlugEvent(events, EventSeriesEditionSetSlug, ed2, "") {
-		t.Errorf("expected EventSeriesEditionSetSlug promoting ed2 to \"\"")
+	if !hasSlugDetail(events, ed2) {
+		t.Errorf("expected slug-change detail promoting ed2 to default")
 	}
 }
 

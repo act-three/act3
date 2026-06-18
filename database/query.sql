@@ -1322,9 +1322,6 @@ INSERT INTO Trash (ID, Title, Subtitle, DeletedAt, CascadeOf) VALUES (?, ?, ?, ?
 -- name: TrashList :many
 SELECT * FROM Trash WHERE CascadeOf IS NULL ORDER BY DeletedAt DESC;
 
--- name: TrashListByRoot :many
-SELECT * FROM Trash WHERE CascadeOf = ? ORDER BY DeletedAt;
-
 -- name: TrashRootsBefore :many
 SELECT ID FROM Trash WHERE CascadeOf IS NULL AND DeletedAt < ?;
 

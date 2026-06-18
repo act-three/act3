@@ -153,9 +153,9 @@ func isReservedSlug(s string) bool {
 }
 
 // seriesEnsureSlug aligns the Series' slug with its current title,
-// emitting EventSeriesSetSlug if it changes, and keeps the Slug table
-// row in sync. Safe to call on live series (title-change) or trashed
-// ones (restore).
+// announcing the change on a live rename so a viewer can follow it,
+// and keeps the Slug table row in sync. Safe to call on live series
+// (title-change) or trashed ones (restore).
 func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
 	sr, err := tx.q.SeriesGet(ctx, id)
 	if err != nil {
@@ -174,14 +174,7 @@ func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
 		// have no viewers to follow it, and its former slug may
 		// meanwhile address something else entirely.
 		if sr.DeletedAt == nil {
-			tx.onCommit(func() {
-				tx.m.emitEvent(&Event{
-					Type:    EventSeriesSetSlug,
-					ID:      id,
-					OldText: sr.Slug,
-					NewText: slug,
-				})
-			})
+			tx.emitDetail(Detail{SlugChangeID: id})
 		}
 		if err := tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{Slug: slug, ID: id}); err != nil {
 			return err
@@ -236,25 +229,16 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title, premiered, id string, all
 }
 
 func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
-	sr, err := tx.q.SeriesGet(ctx, id)
-	if err != nil {
+	if _, err := tx.q.SeriesGet(ctx, id); err != nil {
 		return err
 	}
-	err = tx.q.SeriesTitleSet(ctx, schema.SeriesTitleSetParams{
+	err := tx.q.SeriesTitleSet(ctx, schema.SeriesTitleSetParams{
 		Title: title,
 		ID:    id,
 	})
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&SeriesHead{sr}).TitleAddr(),
-			NewText: title,
-			OldText: sr.Title,
-		})
-	})
 	return tx.seriesEnsureSlug(ctx, id)
 }
 

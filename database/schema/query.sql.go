@@ -5931,39 +5931,6 @@ func (q *Queries) TrashList(ctx context.Context) ([]Trash, error) {
 	return items, nil
 }
 
-const trashListByRoot = `-- name: TrashListByRoot :many
-SELECT id, title, subtitle, deletedat, cascadeof FROM Trash WHERE CascadeOf = ? ORDER BY DeletedAt
-`
-
-func (q *Queries) TrashListByRoot(ctx context.Context, cascadeof *string) ([]Trash, error) {
-	rows, err := q.db.QueryContext(ctx, trashListByRoot, cascadeof)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Trash
-	for rows.Next() {
-		var i Trash
-		if err := rows.Scan(
-			&i.ID,
-			&i.Title,
-			&i.Subtitle,
-			&i.DeletedAt,
-			&i.CascadeOf,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const trashRootsBefore = `-- name: TrashRootsBefore :many
 SELECT ID FROM Trash WHERE CascadeOf IS NULL AND DeletedAt < ?
 `

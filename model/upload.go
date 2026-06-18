@@ -42,8 +42,8 @@ func (m *Model) Uploads() []Upload {
 func (tx *TxR) Uploads() []Upload { return tx.m.Uploads() }
 
 // An upload tracks one in-flight video upload's received bytes. It
-// announces progress with EventUploadProgress as bytes arrive, at
-// most about twice a second.
+// emits an Event as bytes arrive, at most about twice a second, so a
+// client re-renders the upload's progress.
 type upload struct {
 	m        *Model
 	targetID string
@@ -75,7 +75,7 @@ func (u *upload) Read(p []byte) (int, error) {
 	}
 	u.mu.Unlock()
 	if announce {
-		u.m.emitEvent(&Event{Type: EventUploadProgress})
+		u.m.emit(nil)
 	}
 	return n, err
 }
@@ -86,7 +86,7 @@ func (m *Model) uploadBegin(targetID, name string, size int64, r io.Reader) *upl
 	m.uploadMu.Lock()
 	m.uploads = append(m.uploads, u)
 	m.uploadMu.Unlock()
-	m.emitEvent(&Event{Type: EventUploadProgress})
+	m.emit(nil)
 	return u
 }
 
@@ -95,7 +95,7 @@ func (m *Model) uploadEnd(u *upload) {
 	m.uploadMu.Lock()
 	m.uploads = slices.DeleteFunc(m.uploads, func(v *upload) bool { return v == u })
 	m.uploadMu.Unlock()
-	m.emitEvent(&Event{Type: EventUploadProgress})
+	m.emit(nil)
 }
 
 // VideoUploadCreate streams r into the CAS store and registers it as

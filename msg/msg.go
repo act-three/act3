@@ -121,12 +121,7 @@ type (
 	}
 
 	// ModelEvent reports a change to shared model state.
-	// It carries no detail; it exists to trigger a re-render.
-	ModelEvent struct{}
-
-	// SlugChange reports that a slug changed for an object
-	// that depends on ID (including ID itself).
-	SlugChange struct{ ID string }
+	ModelEvent model.Event
 
 	// Error reports a failed action, surfaced to the user as a note.
 	Error struct{ Err error }
@@ -284,7 +279,6 @@ func (*SeriesSearch) msg()               {}
 func (*SeriesSearchError) msg()          {}
 func (*SeriesSearched) msg()             {}
 func (*SeriesSetTitle) msg()             {}
-func (*SlugChange) msg()                 {}
 func (*TMDBSetToken) msg()               {}
 func (*TaskDelete) msg()                 {}
 func (*TaskKill) msg()                   {}
