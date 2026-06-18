@@ -2,17 +2,18 @@ package model
 
 import "iter"
 
-// Event reports that model state changed. One Event is emitted at the
-// commit of every read-write transaction, and others are emitted out of
-// band by progress notifiers such as uploads and the task queue. A
-// client re-renders on every Event; Details carry the facts a client
-// must act on beyond re-rendering.
+// Event reports that model state changed.
+// Emitters include the database (after each read-write transaction),
+// the upload tracker (periodically as bytes are received),
+// and the task queue (when a task begins or ends).
+//
+// Details contains additional information a client might need.
 type Event struct {
 	Details []Detail
 }
 
-// Detail is a consequence of an Event that a client must act on beyond
-// re-rendering.
+// Detail is extra information about an Event
+// that a client might find useful.
 type Detail struct {
 	// SlugChangeID, when set, is the ID of an object whose slug
 	// changed, so a client viewing that object can follow the rename.
