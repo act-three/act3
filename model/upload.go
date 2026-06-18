@@ -41,9 +41,8 @@ func (m *Model) Uploads() []Upload {
 // oldest first.
 func (tx *TxR) Uploads() []Upload { return tx.m.Uploads() }
 
-// An upload tracks one in-flight video upload's received bytes. It
-// emits an Event as bytes arrive, at most about twice a second, so a
-// client re-renders the upload's progress.
+// An upload tracks one in-flight video upload's received bytes.
+// It emits events periodically as bytes arrive.
 type upload struct {
 	m        *Model
 	targetID string
