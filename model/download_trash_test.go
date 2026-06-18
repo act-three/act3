@@ -23,8 +23,8 @@ func createTrashableDownload(
 ) {
 	t.Helper()
 	ctx := context.Background()
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		if _, err := tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		if _, err := tx.q.DownloadCreate(schema.DownloadCreateParams{
 			InfoHash:        infoHash,
 			State:           state,
 			Title:           "Test Torrent",
@@ -52,14 +52,15 @@ func createTrashableMovieDownload(
 ) {
 	t.Helper()
 	ctx := context.Background()
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		_, err := tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		_, err := tx.q.DownloadCreate(schema.DownloadCreateParams{
 			InfoHash:       infoHash,
 			State:          state,
 			Title:          "Test Torrent",
 			Torrent:        []byte("stub"),
 			MovieEditionID: &medID,
 		})
+
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -77,14 +78,15 @@ func downloadLive(t *testing.T, m *Model, infoHash string) bool {
 	t.Helper()
 	ctx := context.Background()
 	var live bool
-	err := m.WithTxR(func(tx *TxR) error {
-		dl, err := tx.q.DownloadGet(ctx, infoHash)
+	err := m.WithTxR(ctx, func(tx *TxR) error {
+		dl, err := tx.q.DownloadGet(infoHash)
 		if err != nil {
 			return err
 		}
 		live = dl.DeletedAt == nil
 		return nil
 	})
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,7 +138,7 @@ func TestDownloadTrashAnyState(t *testing.T) {
 		_, _, sedID, _, _, _ := createSeriesRow(t, m, "dl-"+state, state)
 		infoHash := fortyCharHex(byte(len(state)))
 		createTrashableDownload(t, m, infoHash, state, sedID)
-		if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
+		if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
 			t.Errorf("Trash(%s) state=%s: %v", infoHash, state, err)
 		}
 	}
@@ -151,7 +153,7 @@ func TestDownloadTrashReapsOrphanVideos(t *testing.T) {
 	vidID := createVideoRow(t, m, "orphan.mkv", "", nil)
 	attachVideoToDownload(t, m, vidID, infoHash)
 
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	// Video had no EV/MV junctions; its only pin was the Download. After
@@ -172,7 +174,7 @@ func TestDownloadTrashKeepsJunctionedVideos(t *testing.T) {
 	attachVideoToDownload(t, m, vidID, infoHash)
 	// Video is already EV-linked to the episode via createSeriesRow.
 
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	if !videoLive(t, m, vidID) {
@@ -189,13 +191,13 @@ func TestDownloadRestoreRehydratesOrphanVideos(t *testing.T) {
 	vidID := createVideoRow(t, m, "restore.mkv", "", nil)
 	attachVideoToDownload(t, m, vidID, infoHash)
 
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	if videoLive(t, m, vidID) {
 		t.Fatal("precondition: video should be trashed")
 	}
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Restore(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Restore(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	if !videoLive(t, m, vidID) {
@@ -211,15 +213,15 @@ func TestDownloadPurgeNullsSurvivingVideoInfoHash(t *testing.T) {
 	createTrashableDownload(t, m, infoHash, "imported", sedID)
 	attachVideoToDownload(t, m, vidID, infoHash)
 
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Purge(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Purge(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := m.WithTxR(func(tx *TxR) error {
-		v, err := tx.q.VideoGet(ctx, vidID)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		v, err := tx.q.VideoGet(vidID)
 		if err != nil {
 			return err
 		}
@@ -240,14 +242,14 @@ func TestDownloadCreateOnTrashedRestores(t *testing.T) {
 	createTrashableDownload(t, m, infoHash, "imported", sedID)
 
 	// Trash the Download.
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 
 	// Simulate re-add: DownloadCreate finds the trashed row and restores
 	// it rather than creating a duplicate.
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		dl, err := tx.q.DownloadGet(ctx, infoHash)
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		dl, err := tx.q.DownloadGet(infoHash)
 		if err != nil {
 			return err
 		}
@@ -257,7 +259,7 @@ func TestDownloadCreateOnTrashedRestores(t *testing.T) {
 		if err := tx.Restore(ctx, infoHash); err != nil {
 			return err
 		}
-		dl, err = tx.q.DownloadGet(ctx, infoHash)
+		dl, err = tx.q.DownloadGet(infoHash)
 		if err != nil {
 			return err
 		}
@@ -278,8 +280,8 @@ func TestDownloadUpdateProgressBumpsActivity(t *testing.T) {
 	createTrashableDownload(t, m, infoHash, "queued", sedID)
 
 	var before int64
-	if err := m.WithTxR(func(tx *TxR) error {
-		dl, err := tx.q.DownloadGet(ctx, infoHash)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		dl, err := tx.q.DownloadGet(infoHash)
 		before = dl.LastActivityAt
 		return err
 	}); err != nil {
@@ -291,20 +293,21 @@ func TestDownloadUpdateProgressBumpsActivity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		_, err := tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		_, err := tx.q.DownloadUpdateProgress(schema.DownloadUpdateProgressParams{
 			State:          "downloading",
 			Progress:       0.5,
 			LastActivityAt: time.Now().UnixMilli(),
 			InfoHash:       infoHash,
 		})
+
 		return err
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := m.WithTxR(func(tx *TxR) error {
-		dl, err := tx.q.DownloadGet(ctx, infoHash)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		dl, err := tx.q.DownloadGet(infoHash)
 		if err != nil {
 			return err
 		}
@@ -340,13 +343,13 @@ func TestEpisodeVideoSetBumpsDownloadActivity(t *testing.T) {
 	}
 
 	// Detach from the episode: should bump LastActivityAt.
-	if err := m.WithTxRW(func(tx *TxRW) error {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.EpisodeVideoSet(ctx, infoHash, "ev-bump.mkv", epID, false)
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.WithTxR(func(tx *TxR) error {
-		dl, err := tx.q.DownloadGet(ctx, infoHash)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		dl, err := tx.q.DownloadGet(infoHash)
 		if err != nil {
 			return err
 		}
@@ -368,7 +371,7 @@ func TestDownloadRestoreBumpsActivity(t *testing.T) {
 
 	// Trash; then backdate the still-live-column to simulate a stale
 	// restore candidate.
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	stale := time.Now().Add(-30 * 24 * time.Hour).UnixMilli()
@@ -376,11 +379,11 @@ func TestDownloadRestoreBumpsActivity(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Restore(ctx, infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Restore(ctx, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.WithTxR(func(tx *TxR) error {
-		dl, err := tx.q.DownloadGet(ctx, infoHash)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		dl, err := tx.q.DownloadGet(infoHash)
 		if err != nil {
 			return err
 		}
@@ -407,8 +410,8 @@ func TestDownloadAutoTrashStaleTerminal(t *testing.T) {
 		if err := m.autoTrashDownloadsOnce(ctx); err != nil {
 			t.Fatal(err)
 		}
-		if err := m.WithTxR(func(tx *TxR) error {
-			dl, err := tx.q.DownloadGet(ctx, infoHash)
+		if err := m.WithTxR(ctx, func(tx *TxR) error {
+			dl, err := tx.q.DownloadGet(infoHash)
 			if err != nil {
 				return err
 			}
@@ -435,8 +438,8 @@ func TestDownloadAutoTrashSkipsActive(t *testing.T) {
 		if err := m.autoTrashDownloadsOnce(ctx); err != nil {
 			t.Fatal(err)
 		}
-		if err := m.WithTxR(func(tx *TxR) error {
-			dl, err := tx.q.DownloadGet(ctx, infoHash)
+		if err := m.WithTxR(ctx, func(tx *TxR) error {
+			dl, err := tx.q.DownloadGet(infoHash)
 			if err != nil {
 				return err
 			}
@@ -461,8 +464,8 @@ func TestVideoListOrphansExcludesDownloadPinned(t *testing.T) {
 
 	// Video has no EV/MV junctions but is pinned by live Download. It
 	// must NOT appear in the orphan list.
-	if err := m.WithTxR(func(tx *TxR) error {
-		ids, err := tx.q.VideoListOrphans(ctx)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		ids, err := tx.q.VideoListOrphans()
 		if err != nil {
 			return err
 		}
@@ -484,7 +487,7 @@ func TestTrashMovieCascadesToDownload(t *testing.T) {
 	infoHash := fortyCharHex(12)
 	createTrashableMovieDownload(t, m, infoHash, "downloading", medID)
 
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, movieID) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, movieID) }); err != nil {
 		t.Fatal(err)
 	}
 	if downloadLive(t, m, infoHash) {
@@ -500,7 +503,7 @@ func TestTrashSeriesEditionCascadesToDownload(t *testing.T) {
 	infoHash := fortyCharHex(13)
 	createTrashableDownload(t, m, infoHash, "downloading", sedID)
 
-	if err := m.WithTxRW(func(tx *TxRW) error { return tx.Trash(ctx, sedID) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(ctx, sedID) }); err != nil {
 		t.Fatal(err)
 	}
 	if downloadLive(t, m, infoHash) {

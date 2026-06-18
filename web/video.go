@@ -14,8 +14,8 @@ import (
 var subtitleExts = []string{".vtt", ".ass", ".srt"}
 
 func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
-		ctx := req.Context()
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		id, found := strings.CutSuffix(req.PathValue("id"), ".mp4")
 		if !found {
 			return nil, errNotFound
@@ -41,8 +41,8 @@ func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (node, erro
 }
 
 func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
-		ctx := req.Context()
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
 			return nil, errNotFound
@@ -60,8 +60,8 @@ func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (n
 }
 
 func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
-		ctx := req.Context()
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		raw := req.PathValue("id")
 		var id, ext string
 		for _, e := range subtitleExts {
@@ -107,8 +107,8 @@ func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (node, e
 }
 
 func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
-		ctx := req.Context()
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
 			return nil, errNotFound
@@ -138,8 +138,8 @@ func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request)
 // change audio); Safari uses ?q= alone and switches audio via the
 // native audioTracks API.
 func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
-		ctx := req.Context()
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
 			return nil, errNotFound
@@ -158,8 +158,8 @@ func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (node, 
 }
 
 func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
-		ctx := req.Context()
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		id, found := strings.CutSuffix(req.PathValue("id"), ".m3u8")
 		if !found {
 			return nil, errNotFound
@@ -177,8 +177,8 @@ func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request
 }
 
 func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
-		ctx := req.Context()
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		id, found := strings.CutSuffix(req.PathValue("id"), ".mp4")
 		if !found {
 			return nil, errNotFound
@@ -204,7 +204,8 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, er
 }
 
 func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		dl, err := tx.VideoDownloadForEpisode(req.Context(),
 			req.PathValue("id"),
 			req.PathValue("epID"),
@@ -219,7 +220,8 @@ func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Reques
 }
 
 func (c *Config) videoDownloadForMovie(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxR(func(tx *model.TxR) (node, error) {
+	ctx := req.Context()
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		dl, err := tx.VideoDownloadForMovieEdition(req.Context(),
 			req.PathValue("id"),
 			req.PathValue("medID"),

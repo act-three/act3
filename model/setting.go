@@ -175,7 +175,7 @@ func (s *Setting) mustType(want SettingType) {
 func (tx *TxR) SettingGetByGroup(ctx Context, group string) (Settings, error) {
 	var err error
 	defer errorfmt.Handlef("setting list by group %q: %w", group, &err)
-	rows, err := tx.q.SettingListByGroup(ctx, group)
+	rows, err := tx.q.SettingListByGroup(group)
 	if err != nil {
 		return nil, err
 	}
@@ -229,11 +229,12 @@ func (tx *TxRW) SettingSet(ctx Context, key string, rawJSON string) (err error) 
 	if err := validateSettingJSON(def.Type, rawJSON); err != nil {
 		return err
 	}
-	err = tx.q.SettingSet(ctx, schema.SettingSetParams{
+	err = tx.q.SettingSet(schema.SettingSetParams{
 		Key:   key,
 		Group: def.Group,
 		Value: rawJSON,
 	})
+
 	if err != nil {
 		return err
 	}

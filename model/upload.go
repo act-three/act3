@@ -149,8 +149,8 @@ func (m *Model) VideoUploadCreate(
 	}
 
 	var merged bool
-	err = m.WithTxRW(func(tx *TxRW) error {
-		dups, err := tx.q.VideoListByContentHash(ctx, sum)
+	err = m.WithTxRW(ctx, func(tx *TxRW) error {
+		dups, err := tx.q.VideoListByContentHash(sum)
 		if err != nil {
 			return err
 		}
@@ -165,15 +165,16 @@ func (m *Model) VideoUploadCreate(
 			})
 			return tx.attachUploadedVideo(ctx, vid.ID, medID, epID)
 		}
-		v, err := tx.q.VideoCreate(ctx, schema.VideoCreateParams{Name: base})
+		v, err := tx.q.VideoCreate(schema.VideoCreateParams{Name: base})
 		if err != nil {
 			return err
 		}
-		v, err = tx.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+		v, err = tx.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
 			ID:          v.ID,
 			OriginalKey: key,
 			ContentHash: sum,
 		})
+
 		if err != nil {
 			return err
 		}
@@ -194,7 +195,7 @@ func (m *Model) VideoUploadCreate(
 		m.prog.AddEdge(*medID, vid.ID)
 	}
 	m.prog.Open(vid.ID, vid.Name, "Probing")
-	err = m.WithTxR(func(tx *TxR) error {
+	err = m.WithTxR(ctx, func(tx *TxR) error {
 		return tx.planAndCreateRenditions(ctx, vid)
 	})
 	return vid, err
@@ -206,15 +207,17 @@ func (m *Model) VideoUploadCreate(
 func (tx *TxRW) attachUploadedVideo(ctx Context, videoID string, medID, epID *string) error {
 	switch {
 	case epID != nil:
-		return tx.q.EpisodeVideoEnsure(ctx, schema.EpisodeVideoEnsureParams{
+		return tx.q.EpisodeVideoEnsure(schema.EpisodeVideoEnsureParams{
 			EpisodeID: *epID,
 			VideoID:   videoID,
 		})
+
 	case medID != nil:
-		return tx.q.MovieVideoEnsure(ctx, schema.MovieVideoEnsureParams{
+		return tx.q.MovieVideoEnsure(schema.MovieVideoEnsureParams{
 			MovieEditionID: *medID,
 			VideoID:        videoID,
 		})
+
 	}
 	return fmt.Errorf("attachUploadedVideo: no target")
 }

@@ -25,7 +25,7 @@ func (a *app) follow(ctx context.Context, id string) cmd {
 		return nil
 	}
 	var dest string
-	a.doR(func(tx *model.TxR) (err error) {
+	a.doR(ctx, func(tx *model.TxR) (err error) {
 		dest, err = leafPath(ctx, tx, a.odesc)
 		return err
 	})

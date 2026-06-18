@@ -10,7 +10,7 @@ type AudioRendition struct {
 
 // AudioRendition returns the AudioRendition row for the given ID.
 func (tx *TxR) AudioRendition(ctx Context, id string) (schema.AudioRendition, error) {
-	return tx.q.AudioRenditionGet(ctx, id)
+	return tx.q.AudioRenditionGet(id)
 }
 
 func (a *AudioRendition) ID() string           { return a.ar.ID }
@@ -41,11 +41,11 @@ type AudioOption struct {
 // order as the MV playlist's EXT-X-MEDIA AUDIO group. The first entry
 // is the HLS DEFAULT.
 func (tx *TxR) AudioOptions(ctx Context, v *Video) ([]AudioOption, error) {
-	rends, err := tx.q.AudioRenditionListEncodedForMV(ctx, v.ID())
+	rends, err := tx.q.AudioRenditionListEncodedForMV(v.ID())
 	if err != nil {
 		return nil, err
 	}
-	tracks, err := tx.q.AudioTrackListByVideoID(ctx, v.ID())
+	tracks, err := tx.q.AudioTrackListByVideoID(v.ID())
 	if err != nil {
 		return nil, err
 	}

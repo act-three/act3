@@ -71,7 +71,7 @@ func (sw *SeriesWork) EditorPath() string {
 }
 
 func (tx *TxR) SeriesHead(ctx Context, id string) (*SeriesHead, error) {
-	srData, err := tx.q.SeriesGet(ctx, id)
+	srData, err := tx.q.SeriesGet(id)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (tx *TxR) SeriesHead(ctx Context, id string) (*SeriesHead, error) {
 }
 
 func (tx *TxR) SeriesHeadListByTVmazeID(ctx Context, id []*int64) ([]*SeriesHead, error) {
-	a, err := tx.q.SeriesListByTVmazeID(ctx, id)
+	a, err := tx.q.SeriesListByTVmazeID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (m *Model) SearchSeries(ctx Context, query string) (results []SeriesSearchR
 		id := int64(r.Show.ID)
 		ids[i] = &id
 	}
-	err = m.WithTxR(func(tx *TxR) error {
+	err = m.WithTxR(ctx, func(tx *TxR) error {
 		heads, err := tx.SeriesHeadListByTVmazeID(ctx, ids)
 		if err != nil {
 			return err
@@ -134,7 +134,7 @@ func (m *Model) AddSeriesByTVmazeID(ctx Context, id int) (sw *SeriesWork, err er
 	if err != nil {
 		return nil, err
 	}
-	err = m.WithTxRW(func(tx *TxRW) error {
+	err = m.WithTxRW(ctx, func(tx *TxRW) error {
 		var err error
 		sw, err = tx.SeriesCreateByTVmazeID(ctx, show)
 		return err
@@ -157,7 +157,7 @@ func isReservedSlug(s string) bool {
 // and keeps the Slug table row in sync. Safe to call on live series
 // (title-change) or trashed ones (restore).
 func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
-	sr, err := tx.q.SeriesGet(ctx, id)
+	sr, err := tx.q.SeriesGet(id)
 	if err != nil {
 		return err
 	}
@@ -176,14 +176,15 @@ func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
 		if sr.DeletedAt == nil {
 			tx.emitDetail(Detail{SlugChangeID: id})
 		}
-		if err := tx.q.SeriesSlugSet(ctx, schema.SeriesSlugSetParams{Slug: slug, ID: id}); err != nil {
+		if err := tx.q.SeriesSlugSet(schema.SeriesSlugSetParams{Slug: slug, ID: id}); err != nil {
 			return err
 		}
 	}
 	if sr.DeletedAt != nil || slug != sr.Slug {
-		return tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
+		return tx.q.SlugUpsert(schema.SlugUpsertParams{
 			Slug: slug, Kind: "series", Target: id,
 		})
+
 	}
 	return nil
 }
@@ -197,7 +198,7 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title, premiered, id string, all
 		if slices.Contains(allow, slug) {
 			return slug, nil
 		}
-		n, err := tx.q.SlugExists(ctx, slug)
+		n, err := tx.q.SlugExists(slug)
 		if err != nil {
 			return "", err
 		}
@@ -214,7 +215,7 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title, premiered, id string, all
 			if slices.Contains(allow, candidate) {
 				return candidate, nil
 			}
-			n, err := tx.q.SlugExists(ctx, candidate)
+			n, err := tx.q.SlugExists(candidate)
 			if err != nil {
 				return "", err
 			}
@@ -229,13 +230,14 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title, premiered, id string, all
 }
 
 func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
-	if _, err := tx.q.SeriesGet(ctx, id); err != nil {
+	if _, err := tx.q.SeriesGet(id); err != nil {
 		return err
 	}
-	err := tx.q.SeriesTitleSet(ctx, schema.SeriesTitleSetParams{
+	err := tx.q.SeriesTitleSet(schema.SeriesTitleSetParams{
 		Title: title,
 		ID:    id,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -259,7 +261,7 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		return nil, err
 	}
 
-	srData, err := tx.q.SeriesCreate(ctx, schema.SeriesCreateParams{
+	srData, err := tx.q.SeriesCreate(schema.SeriesCreateParams{
 		ID:          srID,
 		Slug:        slug,
 		Title:       show.Name,
@@ -272,14 +274,16 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 		TVDBID:   show.Externals.TheTVDB,
 		TVRageID: show.Externals.TVRage,
 	})
+
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugUpsert(ctx, schema.SlugUpsertParams{
+	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
 		Slug:   slug,
 		Kind:   "series",
 		Target: srID,
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -306,11 +310,11 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 
 // SeriesWorkList returns the default edition of each series.
 func (tx *TxR) SeriesWorkList(ctx Context) ([]*SeriesWork, error) {
-	editions, err := tx.q.SeriesEditionListDefault(ctx)
+	editions, err := tx.q.SeriesEditionListDefault()
 	if err != nil {
 		return nil, err
 	}
-	series, err := tx.q.SeriesList(ctx)
+	series, err := tx.q.SeriesList()
 	if err != nil {
 		return nil, err
 	}

@@ -148,7 +148,7 @@ func (sed *SeriesEdition) Episodes(include EpisodeType) iter.Seq[*Episode] {
 }
 
 func (tx *TxR) SeriesEditionHead(ctx Context, id string) (*SeriesEditionHead, error) {
-	sedData, err := tx.q.SeriesEditionGet(ctx, id)
+	sedData, err := tx.q.SeriesEditionGet(id)
 	if err != nil {
 		return nil, err
 	}
@@ -156,31 +156,31 @@ func (tx *TxR) SeriesEditionHead(ctx Context, id string) (*SeriesEditionHead, er
 }
 
 func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
-	sedData, err := tx.q.SeriesEditionGet(ctx, id)
+	sedData, err := tx.q.SeriesEditionGet(id)
 	if err != nil {
 		return nil, err
 	}
-	srData, err := tx.q.SeriesGetByEditionID(ctx, id)
+	srData, err := tx.q.SeriesGetByEditionID(id)
 	if err != nil {
 		return nil, err
 	}
-	sns, err := tx.q.SeasonListByEditionID(ctx, id)
+	sns, err := tx.q.SeasonListByEditionID(id)
 	if err != nil {
 		return nil, err
 	}
-	sneps, err := tx.q.SeasonEpisodeListByEditionID(ctx, id)
+	sneps, err := tx.q.SeasonEpisodeListByEditionID(id)
 	if err != nil {
 		return nil, err
 	}
-	eps, err := tx.q.EpisodeListByEditionID(ctx, id)
+	eps, err := tx.q.EpisodeListByEditionID(id)
 	if err != nil {
 		return nil, err
 	}
-	evs, err := tx.q.EpisodeVideoListByEditionID(ctx, id)
+	evs, err := tx.q.EpisodeVideoListByEditionID(id)
 	if err != nil {
 		return nil, err
 	}
-	vids, err := tx.q.VideoListByEditionID(ctx, id)
+	vids, err := tx.q.VideoListByEditionID(id)
 	if err != nil {
 		return nil, err
 	}
@@ -199,10 +199,11 @@ func (tx *TxR) SeriesEdition(ctx Context, id string) (*SeriesEdition, error) {
 // and returns the edition matching edSlug
 // (empty string for the default edition).
 func (tx *TxR) SeriesEditionBySlug(ctx Context, slug, edSlug string) (*SeriesEdition, error) {
-	sedData, err := tx.q.SeriesEditionGetBySlug(ctx, schema.SeriesEditionGetBySlugParams{
+	sedData, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
 		SeriesSlug:  slug,
 		EditionSlug: edSlug,
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +211,7 @@ func (tx *TxR) SeriesEditionBySlug(ctx Context, slug, edSlug string) (*SeriesEdi
 }
 
 func (tx *TxR) SeriesEditionList(ctx Context, sr *SeriesHead) ([]*SeriesWork, error) {
-	seds, err := tx.q.SeriesEditionListBySeriesID(ctx, sr.ID())
+	seds, err := tx.q.SeriesEditionListBySeriesID(sr.ID())
 	if err != nil {
 		return nil, err
 	}
@@ -229,19 +230,20 @@ func (tx *TxRW) seriesEditionCreate(ctx Context, label, seriesID, summary string
 	if err != nil {
 		return schema.SeriesEdition{}, err
 	}
-	return tx.q.SeriesEditionCreate(ctx, schema.SeriesEditionCreateParams{
+	return tx.q.SeriesEditionCreate(schema.SeriesEditionCreateParams{
 		Label:    label,
 		Slug:     slug,
 		SeriesID: seriesID,
 		Summary:  summary,
 	})
+
 }
 
 // SeriesEditionClone creates a new edition by copying metadata,
 // seasons, and season-episode mappings from the edition with the given srcID.
 // Episodes themselves are shared, not copied.
 func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesWork, error) {
-	src, err := tx.q.SeriesEditionGet(ctx, srcID)
+	src, err := tx.q.SeriesEditionGet(srcID)
 	if err != nil {
 		return nil, err
 	}
@@ -250,27 +252,28 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesWork, erro
 	if err != nil {
 		return nil, err
 	}
-	sns, err := tx.q.SeasonListByEditionID(ctx, srcID)
+	sns, err := tx.q.SeasonListByEditionID(srcID)
 	if err != nil {
 		return nil, err
 	}
-	sneps, err := tx.q.SeasonEpisodeListByEditionID(ctx, srcID)
+	sneps, err := tx.q.SeasonEpisodeListByEditionID(srcID)
 	if err != nil {
 		return nil, err
 	}
 	snepsBySeason := snepMapBySeasonID(sneps)
 	for _, sn := range sns {
-		newSn, err := tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
+		newSn, err := tx.q.SeasonCreate(schema.SeasonCreateParams{
 			EditionID: newSed.ID,
 			SortKey:   sn.SortKey,
 			Title:     sn.Title,
 			Number:    sn.Number,
 		})
+
 		if err != nil {
 			return nil, err
 		}
 		for _, snep := range snepsBySeason[sn.ID] {
-			err := tx.q.SeasonEpisodeCreate(ctx, schema.SeasonEpisodeCreateParams{
+			err := tx.q.SeasonEpisodeCreate(schema.SeasonEpisodeCreateParams{
 				EditionID: newSed.ID,
 				SeasonID:  newSn.ID,
 				EpisodeID: snep.EpisodeID,
@@ -279,12 +282,13 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesWork, erro
 				Number:    snep.Number,
 				Slug:      snep.Slug,
 			})
+
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
-	srData, err := tx.q.SeriesGet(ctx, src.SeriesID)
+	srData, err := tx.q.SeriesGet(src.SeriesID)
 	if err != nil {
 		return nil, err
 	}
@@ -295,13 +299,14 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesWork, erro
 }
 
 func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
-	if _, err := tx.q.SeriesEditionGet(ctx, id); err != nil {
+	if _, err := tx.q.SeriesEditionGet(id); err != nil {
 		return err
 	}
-	err := tx.q.SeriesEditionLabelSet(ctx, schema.SeriesEditionLabelSetParams{
+	err := tx.q.SeriesEditionLabelSet(schema.SeriesEditionLabelSetParams{
 		Label: label,
 		ID:    id,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -311,7 +316,7 @@ func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
 // seriesEditionEnsureSlug is the SeriesEdition analog of
 // movieEditionEnsureSlug.
 func (tx *TxRW) seriesEditionEnsureSlug(ctx Context, id string) error {
-	sed, err := tx.q.SeriesEditionGet(ctx, id)
+	sed, err := tx.q.SeriesEditionGet(id)
 	if err != nil {
 		return err
 	}
@@ -331,20 +336,22 @@ func (tx *TxRW) seriesEditionEnsureSlug(ctx Context, id string) error {
 	if sed.DeletedAt == nil {
 		tx.emitDetail(Detail{SlugChangeID: id})
 	}
-	return tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
+	return tx.q.SeriesEditionSlugSet(schema.SeriesEditionSlugSetParams{
 		Slug: slug, ID: id,
 	})
+
 }
 
 func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error {
-	sed, err := tx.q.SeriesEditionGet(ctx, id)
+	sed, err := tx.q.SeriesEditionGet(id)
 	if err != nil {
 		return err
 	}
-	err = tx.q.SeriesEditionPosterIDSet(ctx, schema.SeriesEditionPosterIDSetParams{
+	err = tx.q.SeriesEditionPosterIDSet(schema.SeriesEditionPosterIDSetParams{
 		PosterID: posterID,
 		ID:       id,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -355,24 +362,25 @@ func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error
 }
 
 func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
-	return tx.q.SeriesEditionSummarySet(ctx, schema.SeriesEditionSummarySetParams{
+	return tx.q.SeriesEditionSummarySet(schema.SeriesEditionSummarySetParams{
 		Summary: summary,
 		ID:      id,
 	})
+
 }
 
 // SeriesEditionSetDefault promotes the given edition to be
 // the default (Slug="") for its series.
 // The previous default gets a slug generated from its label.
 func (tx *TxRW) SeriesEditionSetDefault(ctx Context, id string) error {
-	sed, err := tx.q.SeriesEditionGet(ctx, id)
+	sed, err := tx.q.SeriesEditionGet(id)
 	if err != nil {
 		return err
 	}
 	if sed.Slug == "" {
 		return nil // already default
 	}
-	old, err := tx.q.SeriesEditionGetDefault(ctx, sed.SeriesID)
+	old, err := tx.q.SeriesEditionGetDefault(sed.SeriesID)
 	if err != nil {
 		return err
 	}
@@ -382,14 +390,15 @@ func (tx *TxRW) SeriesEditionSetDefault(ctx Context, id string) error {
 	}
 	tx.emitDetail(Detail{SlugChangeID: old.ID})
 	tx.emitDetail(Detail{SlugChangeID: sed.ID})
-	if err := tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
+	if err := tx.q.SeriesEditionSlugSet(schema.SeriesEditionSlugSetParams{
 		Slug: oldSlug, ID: old.ID,
 	}); err != nil {
 		return err
 	}
-	return tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
+	return tx.q.SeriesEditionSlugSet(schema.SeriesEditionSlugSetParams{
 		Slug: "", ID: sed.ID,
 	})
+
 }
 
 func (tx *TxRW) generateSeriesEditionSlug(ctx Context, label, seriesID string, allow ...string) (string, error) {
@@ -397,10 +406,11 @@ func (tx *TxRW) generateSeriesEditionSlug(ctx Context, label, seriesID string, a
 		if slices.Contains(allow, slug) {
 			return slug, nil
 		}
-		n, err := tx.q.SeriesEditionSlugExists(ctx, schema.SeriesEditionSlugExistsParams{
+		n, err := tx.q.SeriesEditionSlugExists(schema.SeriesEditionSlugExistsParams{
 			SeriesID: seriesID,
 			Slug:     slug,
 		})
+
 		if err != nil {
 			return "", err
 		}

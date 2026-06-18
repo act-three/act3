@@ -7,8 +7,8 @@ import (
 )
 
 func (c *Config) doTorrentAdd(w http.ResponseWriter, req *http.Request) (node, error) {
-	return c.withTxRW(func(tx *model.TxRW) (node, error) {
-		ctx := req.Context()
+	ctx := req.Context()
+	return c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
 		file, _, err := req.FormFile("torrent")
 		if err != nil {
 			return nil, err

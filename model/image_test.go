@@ -111,8 +111,8 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	// (300 and 600). The 600 variant is unscaled native, which we
 	// then decode and pixel-compare against the centered crop.
 	var stored []schema.ImageRendition
-	if err := m.WithTxR(func(tx *TxR) error {
-		stored, err = tx.q.ImageRenditionListByImageID(ctx, originalID)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		stored, err = tx.q.ImageRenditionListByImageID(originalID)
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -126,7 +126,7 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	}
 
 	var largestKey string
-	if err := m.WithTxR(func(tx *TxR) error {
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
 		var err error
 		largestKey, err = tx.ImageVariantKey(ctx, originalID, 600)
 		return err

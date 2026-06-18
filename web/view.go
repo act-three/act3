@@ -17,7 +17,7 @@ var notFound = domi.Text("Not Found")
 
 func (a *app) View(ctx context.Context) (title string, n node) {
 	var dlg node
-	err := a.model.WithTxR(func(tx *model.TxR) error {
+	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
 		title, n = a.view(ctx, tx, splitPath(a.path))
 		dlg = a.viewDialog(ctx, tx)
 		return nil

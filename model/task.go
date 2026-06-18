@@ -289,7 +289,7 @@ func (tq *taskQueue) wake() {
 func (tq *taskQueue) next() (*schema.Task, error) {
 	ctx := context.Background()
 	now := time.Now().UnixMilli()
-	task, err := schema.New(tq.m.dbr).TaskNext(ctx, schema.TaskNextParams{
+	task, err := schema.New(ctx, tq.m.dbr).TaskNext(schema.TaskNextParams{
 		Queue:   tq.name,
 		NextRun: now,
 	})
@@ -304,7 +304,7 @@ func (tq *taskQueue) next() (*schema.Task, error) {
 
 func (tq *taskQueue) lock(id, ttype, args string, cancel context.CancelFunc) (string, error) {
 	ctx := context.Background()
-	_, err := schema.New(tq.m.dbw).TaskLock(ctx, id)
+	_, err := schema.New(ctx, tq.m.dbw).TaskLock(id)
 	if err == sql.ErrNoRows {
 		return "", nil // someone else locked it
 	}
@@ -331,7 +331,7 @@ func (tq *taskQueue) unlock(id, key string) {
 	delete(tq.running, id)
 	tq.used -= e.weight
 	ctx := context.Background()
-	err := schema.New(tq.m.dbw).TaskUnlock(ctx, id)
+	err := schema.New(ctx, tq.m.dbw).TaskUnlock(id)
 	if err != nil {
 		slog.Error("task-unlock", "id", id, "error", err)
 	}
@@ -397,8 +397,8 @@ func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 		return fmt.Errorf("task %s %s: bad args: %w", task.Type, task.ID, err)
 	}
 
-	return tq.m.WithTxR(func(tx *TxR) error {
-		task, err = tx.q.TaskGet(ctx, task.ID)
+	return tq.m.WithTxR(ctx, func(tx *TxR) error {
+		task, err = tx.q.TaskGet(task.ID)
 		if err == sql.ErrNoRows {
 			return nil
 		} else if err != nil {
@@ -409,8 +409,8 @@ func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 		if err != nil {
 			return err
 		}
-		return tq.m.WithTxRW(func(t *TxRW) error {
-			return t.q.TaskDelete(ctx, task.ID)
+		return tq.m.WithTxRW(ctx, func(t *TxRW) error {
+			return t.q.TaskDelete(task.ID)
 		})
 	})
 }
@@ -418,7 +418,7 @@ func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 func (tq *taskQueue) reschedule(ctx Context, task schema.Task, failure string) error {
 	delay := taskFailDelay(task.Failures)
 	delay += time.Duration(rand.Int64N(int64(delay)))
-	_, err := schema.New(tq.m.dbw).TaskReschedule(ctx, schema.TaskRescheduleParams{
+	_, err := schema.New(ctx, tq.m.dbw).TaskReschedule(schema.TaskRescheduleParams{
 		ID:          task.ID,
 		Failures:    task.Failures + 1,
 		NextRun:     time.Now().Add(delay).UnixMilli(),
@@ -428,7 +428,7 @@ func (tq *taskQueue) reschedule(ctx Context, task schema.Task, failure string) e
 }
 
 func (tq *taskQueue) markFailed(ctx Context, task schema.Task, failure string) error {
-	return schema.New(tq.m.dbw).TaskMarkFailed(ctx, schema.TaskMarkFailedParams{
+	return schema.New(ctx, tq.m.dbw).TaskMarkFailed(schema.TaskMarkFailedParams{
 		ID:          task.ID,
 		FailureDesc: &failure,
 	})
@@ -436,7 +436,7 @@ func (tq *taskQueue) markFailed(ctx Context, task schema.Task, failure string) e
 
 func (m *Model) RunTaskNow(ctx Context, id string) (err error) {
 	defer errorfmt.Handlef("run task %s now: %w", id, &err)
-	err = schema.New(m.dbw).TaskRunNow(ctx, schema.TaskRunNowParams{
+	err = schema.New(ctx, m.dbw).TaskRunNow(schema.TaskRunNowParams{
 		NextRun: time.Now().UnixMilli(),
 		ID:      id,
 	})
@@ -493,11 +493,11 @@ type TaskStats struct {
 }
 
 func (tx *TxR) TaskStats(ctx Context) (TaskStats, error) {
-	queued, err := tx.q.TaskCountQueued(ctx)
+	queued, err := tx.q.TaskCountQueued()
 	if err != nil {
 		return TaskStats{}, err
 	}
-	countError, err := tx.q.TaskCountError(ctx)
+	countError, err := tx.q.TaskCountError()
 	if err != nil {
 		return TaskStats{}, err
 	}
@@ -509,7 +509,7 @@ func (tx *TxR) TaskStats(ctx Context) (TaskStats, error) {
 }
 
 func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
-	list, err := tx.q.TaskList(ctx)
+	list, err := tx.q.TaskList()
 	if err != nil {
 		return nil, err
 	}
@@ -521,7 +521,7 @@ func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
 }
 
 func (tx *TxRW) TaskDelete(ctx Context, id string) error {
-	return tx.q.TaskDelete(ctx, id)
+	return tx.q.TaskDelete(id)
 }
 
 func (t *TxRW) addTask(ctx Context, ttype string, args ...string) error {
@@ -545,7 +545,7 @@ func (t *TxRW) addTaskOpts(ctx Context, ttype string, delay time.Duration, pri i
 	if delay > 0 {
 		nextRun = time.Now().Add(delay).UnixMilli()
 	}
-	_, err = t.q.TaskCreate(ctx, schema.TaskCreateParams{
+	_, err = t.q.TaskCreate(schema.TaskCreateParams{
 		Type:     ttype,
 		Args:     string(b),
 		Priority: pri,

@@ -21,21 +21,21 @@ var ErrActiveVideoLocked = errors.New("active video is locked while another play
 func (tx *TxRW) ensureActiveVideoForVideoID(ctx Context, videoID string) (err error) {
 	defer errorfmt.Handlef("ensureActiveVideoForVideoID: %w", &err)
 
-	epIDs, err := tx.q.EpisodeVideoDistinctEpisodesByVideo(ctx, videoID)
+	epIDs, err := tx.q.EpisodeVideoDistinctEpisodesByVideo(videoID)
 	if err != nil {
 		return err
 	}
 	for _, epID := range epIDs {
-		if err := tx.q.EpisodeVideoActivePromote(ctx, epID); err != nil {
+		if err := tx.q.EpisodeVideoActivePromote(epID); err != nil {
 			return err
 		}
 	}
-	medIDs, err := tx.q.MovieVideoDistinctEditionsByVideo(ctx, videoID)
+	medIDs, err := tx.q.MovieVideoDistinctEditionsByVideo(videoID)
 	if err != nil {
 		return err
 	}
 	for _, medID := range medIDs {
-		if err := tx.q.MovieVideoActivePromote(ctx, medID); err != nil {
+		if err := tx.q.MovieVideoActivePromote(medID); err != nil {
 			return err
 		}
 	}
@@ -48,13 +48,14 @@ func (tx *TxRW) ensureActiveVideoForVideoID(ctx Context, videoID string) (err er
 func (tx *TxRW) EpisodeVideoSetActive(ctx Context, episodeID, videoID string) (err error) {
 	defer errorfmt.Handlef("EpisodeVideoSetActive: %w", &err)
 
-	if err := tx.q.EpisodeVideoSetInactiveByEpisodeID(ctx, episodeID); err != nil {
+	if err := tx.q.EpisodeVideoSetInactiveByEpisodeID(episodeID); err != nil {
 		return err
 	}
-	n, err := tx.q.EpisodeVideoMarkActive(ctx, schema.EpisodeVideoMarkActiveParams{
+	n, err := tx.q.EpisodeVideoMarkActive(schema.EpisodeVideoMarkActiveParams{
 		EpisodeID: episodeID,
 		VideoID:   videoID,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -70,13 +71,14 @@ func (tx *TxRW) EpisodeVideoSetActive(ctx Context, episodeID, videoID string) (e
 func (tx *TxRW) MovieVideoSetActive(ctx Context, medID, videoID string) (err error) {
 	defer errorfmt.Handlef("MovieVideoSetActive: %w", &err)
 
-	if err := tx.q.MovieVideoSetInactiveByMovieEditionID(ctx, medID); err != nil {
+	if err := tx.q.MovieVideoSetInactiveByMovieEditionID(medID); err != nil {
 		return err
 	}
-	n, err := tx.q.MovieVideoMarkActive(ctx, schema.MovieVideoMarkActiveParams{
+	n, err := tx.q.MovieVideoMarkActive(schema.MovieVideoMarkActiveParams{
 		MovieEditionID: medID,
 		VideoID:        videoID,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -92,7 +94,7 @@ func (tx *TxRW) MovieVideoSetActive(ctx Context, medID, videoID string) (err err
 func (tx *TxRW) guardActiveVideo(ctx Context, videoID string) (err error) {
 	defer errorfmt.Handlef("guardActiveVideo: %w", &err)
 
-	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, videoID)
+	evs, err := tx.q.EpisodeVideoListByVideoID(videoID)
 	if err != nil {
 		return err
 	}
@@ -100,7 +102,7 @@ func (tx *TxRW) guardActiveVideo(ctx Context, videoID string) (err error) {
 		if ev.DeletedAt != nil || ev.Active == 0 {
 			continue
 		}
-		n, err := tx.q.EpisodeVideoCountPlayable(ctx, ev.EpisodeID)
+		n, err := tx.q.EpisodeVideoCountPlayable(ev.EpisodeID)
 		if err != nil {
 			return err
 		}
@@ -108,7 +110,7 @@ func (tx *TxRW) guardActiveVideo(ctx Context, videoID string) (err error) {
 			return ErrActiveVideoLocked
 		}
 	}
-	mvs, err := tx.q.MovieVideoListByVideoID(ctx, videoID)
+	mvs, err := tx.q.MovieVideoListByVideoID(videoID)
 	if err != nil {
 		return err
 	}
@@ -116,7 +118,7 @@ func (tx *TxRW) guardActiveVideo(ctx Context, videoID string) (err error) {
 		if mv.DeletedAt != nil || mv.Active == 0 {
 			continue
 		}
-		n, err := tx.q.MovieVideoCountPlayable(ctx, mv.MovieEditionID)
+		n, err := tx.q.MovieVideoCountPlayable(mv.MovieEditionID)
 		if err != nil {
 			return err
 		}

@@ -29,7 +29,7 @@ type QualityOption struct {
 // the source already satisfies the cap), so the actual output is
 // MaxHeight when set and the source height otherwise.
 func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
-	rends, err := tx.q.RenditionListStreamingByVideoID(ctx, v.ID())
+	rends, err := tx.q.RenditionListStreamingByVideoID(v.ID())
 	if err != nil {
 		return nil, err
 	}
@@ -91,11 +91,11 @@ func videoExtensionForContentType(ct string) string {
 }
 
 func (tx *TxR) Rendition(ctx Context, id string) (schema.Rendition, error) {
-	return tx.q.RenditionGet(ctx, id)
+	return tx.q.RenditionGet(id)
 }
 
 func (tx *TxR) RenditionListStreamingByEpisodeID(ctx Context, epID string) ([]schema.Rendition, error) {
-	return tx.q.RenditionListStreamingByEpisodeID(ctx, epID)
+	return tx.q.RenditionListStreamingByEpisodeID(epID)
 }
 
 // VideoDownload bundles everything the download handler needs to
@@ -136,7 +136,7 @@ func (tx *TxR) VideoDownloadForMovieEdition(ctx Context, id, medID string) (Vide
 // has a matching row, or if a matching Rendition exists but has not
 // yet been encoded.
 func (tx *TxR) videoDownloadFor(ctx Context, id, basename string) (VideoDownload, error) {
-	rend, err := tx.q.RenditionGet(ctx, id)
+	rend, err := tx.q.RenditionGet(id)
 	if err == nil {
 		if rend.Key == "" {
 			return VideoDownload{}, sql.ErrNoRows
@@ -150,7 +150,7 @@ func (tx *TxR) videoDownloadFor(ctx Context, id, basename string) (VideoDownload
 	if !errors.Is(err, sql.ErrNoRows) {
 		return VideoDownload{}, err
 	}
-	vid, err := tx.q.VideoGet(ctx, id)
+	vid, err := tx.q.VideoGet(id)
 	if err != nil {
 		return VideoDownload{}, err
 	}

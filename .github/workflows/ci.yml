@@ -32,6 +32,9 @@ jobs:
             - name: Install sqlc
               run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 
+            - name: Install goimports
+              run: go install golang.org/x/tools/cmd/goimports@v0.44.0
+
             - name: Install shfmt
               run: go install mvdan.cc/sh/v3/cmd/shfmt@latest
 

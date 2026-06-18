@@ -45,7 +45,7 @@ func newApp(ctx context.Context, c *Config, u *url.URL) (*app, cmd) {
 	a := &app{
 		model: c.Model,
 	}
-	a.setPath(u)
+	a.setPath(ctx, u)
 	return a, nil
 }
 

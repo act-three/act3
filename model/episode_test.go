@@ -9,11 +9,11 @@ import (
 
 func TestEpisodeTypeByNameMatchesSchema(t *testing.T) {
 	m := newTestModel(t)
-	q := schema.New(m.dbw)
 	ctx := context.Background()
+	q := schema.New(ctx, m.dbw)
 
 	for name := range episodeTypeByName {
-		_, err := q.EpisodeCreate(ctx, schema.EpisodeCreateParams{
+		_, err := q.EpisodeCreate(schema.EpisodeCreateParams{
 			Type: name,
 		})
 		if err != nil {

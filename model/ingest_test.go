@@ -198,16 +198,16 @@ func TestReencodeReplansAfterDelete(t *testing.T) {
 
 	vidID := createVideoRow(t, m, "v.mkv", "fakekey", []string{"rendkey1"})
 
-	err := m.WithTxR(func(tx *TxR) error {
+	err := m.WithTxR(ctx, func(tx *TxR) error {
 		return tx.taskReencode(ctx, []string{vidID})
 	})
 
 	// The inner WithTxRW commits the delete regardless of what runs
 	// afterward; both pre- and post-fix the rendition row is gone here.
 	var renditions []schema.Rendition
-	if rerr := m.WithTxR(func(tx *TxR) error {
+	if rerr := m.WithTxR(ctx, func(tx *TxR) error {
 		var e error
-		renditions, e = tx.q.RenditionListByVideoID(ctx, vidID)
+		renditions, e = tx.q.RenditionListByVideoID(vidID)
 		return e
 	}); rerr != nil {
 		t.Fatal(rerr)
@@ -234,33 +234,37 @@ func TestEncodeTaskNoOps(t *testing.T) {
 	vidID := createVideoRow(t, m, "v.mkv", "fakekey", []string{"rendkey1"})
 
 	var rendID, audioRendID string
-	err := m.WithTxRW(func(tx *TxRW) error {
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		var e error
-		rends, e := tx.q.RenditionListByVideoID(ctx, vidID)
+		rends, e := tx.q.RenditionListByVideoID(vidID)
 		if e != nil {
 			return e
 		}
 		rendID = rends[0].ID
-		at, e := tx.q.AudioTrackCreate(ctx, schema.AudioTrackCreateParams{
+		at, e := tx.q.AudioTrackCreate(schema.AudioTrackCreateParams{
 			VideoID: vidID, Channels: 2, ChannelLayout: "stereo",
 			SampleRate: 48000, Codec: "aac", Profile: "LC",
 		})
+
 		if e != nil {
 			return e
 		}
-		ar, e := tx.q.AudioRenditionCreate(ctx, schema.AudioRenditionCreateParams{
+		ar, e := tx.q.AudioRenditionCreate(schema.AudioRenditionCreateParams{
 			VideoID: vidID, AudioTrackID: at.ID,
 			Channels: 2, Bitrate: 128, Codec: "aac", Priority: 1,
 		})
+
 		if e != nil {
 			return e
 		}
 		audioRendID = ar.ID
-		_, e = tx.q.AudioRenditionUpdateEncode(ctx, schema.AudioRenditionUpdateEncodeParams{
+		_, e = tx.q.AudioRenditionUpdateEncode(schema.AudioRenditionUpdateEncodeParams{
 			ID: ar.ID, Key: "audiokey1",
 		})
+
 		return e
 	})
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,9 +283,10 @@ func TestEncodeTaskNoOps(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := m.WithTxR(func(tx *TxR) error {
+			err := m.WithTxR(ctx, func(tx *TxR) error {
 				return tt.f(tx, ctx, tt.args)
 			})
+
 			if err != nil {
 				t.Fatalf("want no-op, got error: %v", err)
 			}

@@ -45,19 +45,19 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (node, error
 
 	switch {
 	case medID != "":
-		_, err = c.withTxRW(func(tx *model.TxRW) (node, error) {
+		_, err = c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
 			return nil, tx.MovieEditionPosterIDSet(ctx, medID, originalID)
 		})
 	case sedID != "":
-		_, err = c.withTxRW(func(tx *model.TxRW) (node, error) {
+		_, err = c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
 			return nil, tx.SeriesEditionPosterIDSet(ctx, sedID, originalID)
 		})
 	case epID != "":
-		_, err = c.withTxRW(func(tx *model.TxRW) (node, error) {
+		_, err = c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
 			return nil, tx.EpisodeThumbnailIDSet(ctx, epID, originalID)
 		})
 	case colID != "":
-		_, err = c.withTxRW(func(tx *model.TxRW) (node, error) {
+		_, err = c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
 			return nil, tx.CollectionBannerIDSet(ctx, colID, originalID)
 		})
 	}

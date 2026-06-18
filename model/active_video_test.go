@@ -12,10 +12,11 @@ import (
 func attachEpisodeVideo(t *testing.T, m *Model, episodeID, videoID string) {
 	t.Helper()
 	ctx := context.Background()
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		_, err := tx.q.EpisodeVideoCreate(ctx, schema.EpisodeVideoCreateParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		_, err := tx.q.EpisodeVideoCreate(schema.EpisodeVideoCreateParams{
 			EpisodeID: episodeID, VideoID: videoID,
 		})
+
 		return err
 	}); err != nil {
 		t.Fatalf("attach %s→%s: %v", videoID, episodeID, err)
@@ -27,8 +28,8 @@ func attachEpisodeVideo(t *testing.T, m *Model, episodeID, videoID string) {
 func makeVideoPlayable(t *testing.T, m *Model, videoID string) {
 	t.Helper()
 	ctx := context.Background()
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		if _, err := tx.q.VideoUpdatePlayable(ctx, schema.VideoUpdatePlayableParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		if _, err := tx.q.VideoUpdatePlayable(schema.VideoUpdatePlayableParams{
 			ID: videoID, Playable: 1,
 		}); err != nil {
 			return err
@@ -43,8 +44,8 @@ func episodeVideoActive(t *testing.T, m *Model, episodeID, videoID string) bool 
 	t.Helper()
 	ctx := context.Background()
 	var active bool
-	err := m.WithTxR(func(tx *TxR) error {
-		evs, err := tx.q.EpisodeVideoListByEpisodeID(ctx, episodeID)
+	err := m.WithTxR(ctx, func(tx *TxR) error {
+		evs, err := tx.q.EpisodeVideoListByEpisodeID(episodeID)
 		if err != nil {
 			return err
 		}
@@ -56,6 +57,7 @@ func episodeVideoActive(t *testing.T, m *Model, episodeID, videoID string) bool 
 		}
 		return nil
 	})
+
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +112,7 @@ func TestEpisodeVideoSetActiveSwitches(t *testing.T) {
 	makeVideoPlayable(t, m, v1)
 	makeVideoPlayable(t, m, v2)
 
-	if err := m.WithTxRW(func(tx *TxRW) error {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.EpisodeVideoSetActive(ctx, fx.episodeID, v2)
 	}); err != nil {
 		t.Fatalf("SetActive: %v", err)
@@ -137,9 +139,10 @@ func TestEpisodeVideoSetActiveRejectsUnplayable(t *testing.T) {
 	makeVideoPlayable(t, m, v1)
 	// v2 is not playable.
 
-	err := m.WithTxRW(func(tx *TxRW) error {
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.EpisodeVideoSetActive(ctx, fx.episodeID, v2)
 	})
+
 	if err == nil {
 		t.Fatal("expected error setting unplayable video active")
 	}
@@ -159,9 +162,10 @@ func TestActiveVideoLockedAgainstTrash(t *testing.T) {
 	makeVideoPlayable(t, m, v1)
 	makeVideoPlayable(t, m, v2)
 
-	err := m.WithTxRW(func(tx *TxRW) error {
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.Trash(ctx, v1)
 	})
+
 	if !errors.Is(err, ErrActiveVideoLocked) {
 		t.Fatalf("expected ErrActiveVideoLocked, got %v", err)
 	}
@@ -178,7 +182,7 @@ func TestActiveVideoSoleAllowsTrash(t *testing.T) {
 	attachEpisodeVideo(t, m, fx.episodeID, v1)
 	makeVideoPlayable(t, m, v1)
 
-	if err := m.WithTxRW(func(tx *TxRW) error {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.Trash(ctx, v1)
 	}); err != nil {
 		t.Fatalf("Trash sole active: %v", err)
@@ -200,7 +204,7 @@ func TestActiveVideoNonActiveTrashAllowed(t *testing.T) {
 	makeVideoPlayable(t, m, v2)
 	// v1 became playable first → Active; v2 → not Active.
 
-	if err := m.WithTxRW(func(tx *TxRW) error {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.Trash(ctx, v2)
 	}); err != nil {
 		t.Fatalf("trash non-active: %v", err)
@@ -224,9 +228,10 @@ func TestActiveVideoLockedAgainstReencode(t *testing.T) {
 	makeVideoPlayable(t, m, v1)
 	makeVideoPlayable(t, m, v2)
 
-	err := m.WithTxRW(func(tx *TxRW) error {
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.ReencodeVideo(ctx, v1)
 	})
+
 	if !errors.Is(err, ErrActiveVideoLocked) {
 		t.Fatalf("expected ErrActiveVideoLocked, got %v", err)
 	}
@@ -248,12 +253,14 @@ func TestActiveVideoUniqueIndex(t *testing.T) {
 
 	// v1 is already Active. Attempting to mark v2 Active without first
 	// clearing v1 must fail at the partial unique index.
-	err := m.WithTxRW(func(tx *TxRW) error {
-		_, err := tx.q.EpisodeVideoMarkActive(ctx, schema.EpisodeVideoMarkActiveParams{
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		_, err := tx.q.EpisodeVideoMarkActive(schema.EpisodeVideoMarkActiveParams{
 			EpisodeID: fx.episodeID, VideoID: v2,
 		})
+
 		return err
 	})
+
 	if err == nil {
 		t.Fatal("expected unique-index violation when marking second Active without clearing first")
 	}

@@ -94,7 +94,7 @@ func (c *Config) image(w http.ResponseWriter, req *http.Request) (node, error) {
 	if err != nil || width <= 0 {
 		return nil, errNotFound
 	}
-	return c.withTxR(func(tx *model.TxR) (node, error) {
+	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
 		key, err := tx.ImageVariantKey(ctx, id, width)
 		if err != nil {
 			return nil, errNotFound
@@ -115,16 +115,16 @@ func (c *Config) image(w http.ResponseWriter, req *http.Request) (node, error) {
 	})
 }
 
-func (c *Config) withTxR(f func(*model.TxR) (node, error)) (n node, err error) {
-	err = c.Model.WithTxR(func(tx *model.TxR) error {
+func (c *Config) withTxR(ctx context.Context, f func(*model.TxR) (node, error)) (n node, err error) {
+	err = c.Model.WithTxR(ctx, func(tx *model.TxR) error {
 		n, err = f(tx)
 		return err
 	})
 	return n, err
 }
 
-func (c *Config) withTxRW(f func(*model.TxRW) (node, error)) (n node, err error) {
-	err = c.Model.WithTxRW(func(tx *model.TxRW) error {
+func (c *Config) withTxRW(ctx context.Context, f func(*model.TxRW) (node, error)) (n node, err error) {
+	err = c.Model.WithTxRW(ctx, func(tx *model.TxRW) error {
 		n, err = f(tx)
 		return err
 	})
