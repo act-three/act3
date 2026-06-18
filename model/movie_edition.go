@@ -272,33 +272,24 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 }
 
 func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
-	med, err := tx.q.MovieEditionGet(ctx, id)
-	if err != nil {
+	if _, err := tx.q.MovieEditionGet(ctx, id); err != nil {
 		return err
 	}
-	err = tx.q.MovieEditionLabelSet(ctx, schema.MovieEditionLabelSetParams{
+	err := tx.q.MovieEditionLabelSet(ctx, schema.MovieEditionLabelSetParams{
 		Label: label,
 		ID:    id,
 	})
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{med: med}).LabelAddr(),
-			NewText: label,
-			OldText: med.Label,
-		})
-	})
 	return tx.movieEditionEnsureSlug(ctx, id)
 }
 
 // movieEditionEnsureSlug aligns the edition's slug with its current
-// label, emitting EventMovieEditionSetSlug if it changes. Safe to call
-// when the edition is live (e.g. after a label change) or trashed
-// (during restore); when live, the current slug is held in reserve so
-// findSlug doesn't reject it as self-collision.
+// label, announcing the change on a live rename so a viewer can follow
+// it. Safe to call when the edition is live (e.g. after a label change)
+// or trashed (during restore); when live, the current slug is held in
+// reserve so findSlug doesn't reject it as self-collision.
 func (tx *TxRW) movieEditionEnsureSlug(ctx Context, id string) error {
 	med, err := tx.q.MovieEditionGet(ctx, id)
 	if err != nil {
@@ -318,16 +309,7 @@ func (tx *TxRW) movieEditionEnsureSlug(ctx Context, id string) error {
 	// Only a live rename is announced: a trashed edition's pages
 	// have no viewers to follow it.
 	if med.DeletedAt == nil {
-		mo, err := tx.q.MovieGet(ctx, med.MovieID)
-		if err != nil {
-			return err
-		}
-		tx.onCommit(func() {
-			tx.m.emitEvent(&Event{
-				Type: EventMovieEditionSetSlug, ID: id,
-				ParentSlug: mo.Slug, OldText: med.Slug, NewText: slug,
-			})
-		})
+		tx.emitDetail(Detail{SlugChangeID: id})
 	}
 	return tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
 		Slug: slug,
@@ -347,14 +329,6 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{med: med}).TitleAddr(),
-			NewText: title,
-			OldText: med.Title,
-		})
-	})
 	if med.Slug != "" {
 		return nil // not the default edition
 	}
@@ -366,13 +340,6 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 }
 
 func (tx *TxRW) MovieEditionReleaseDateSet(ctx Context, id, date string) error {
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).ReleaseDateAddr(),
-			NewText: date,
-		})
-	})
 	return tx.q.MovieEditionReleaseDateSet(ctx, schema.MovieEditionReleaseDateSetParams{
 		ReleaseDate: date,
 		ID:          id,
@@ -380,13 +347,6 @@ func (tx *TxRW) MovieEditionReleaseDateSet(ctx Context, id, date string) error {
 }
 
 func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) error {
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).RuntimeAddr(),
-			NewText: fmt.Sprintf("%d", runtime),
-		})
-	})
 	return tx.q.MovieEditionRuntimeSet(ctx, schema.MovieEditionRuntimeSetParams{
 		Runtime: runtime,
 		ID:      id,
@@ -394,21 +354,10 @@ func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) er
 }
 
 func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
-	err := tx.q.MovieEditionSummarySet(ctx, schema.MovieEditionSummarySetParams{
+	return tx.q.MovieEditionSummarySet(ctx, schema.MovieEditionSummarySetParams{
 		Summary: summary,
 		ID:      id,
 	})
-	if err != nil {
-		return err
-	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&MovieEditionHead{med: schema.MovieEdition{ID: id}}).SummaryAddr(),
-			NewText: summary,
-		})
-	})
-	return nil
 }
 
 func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error {
@@ -416,12 +365,6 @@ func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error 
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type: EventMovieEditionChangePoster,
-			ID:   id,
-		})
-	})
 	err = tx.q.MovieEditionPosterIDSet(ctx, schema.MovieEditionPosterIDSetParams{
 		PosterID: posterID,
 		ID:       id,
@@ -454,30 +397,8 @@ func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
 	if err != nil {
 		return err
 	}
-	mo, err := tx.q.MovieGet(ctx, med.MovieID)
-	if err != nil {
-		return err
-	}
-	editions, err := tx.q.MovieEditionListByMovieID(ctx, med.MovieID)
-	if err != nil {
-		return err
-	}
-	var slugs []string
-	for _, ed := range editions {
-		if ed.Slug != "" {
-			slugs = append(slugs, ed.Slug)
-		}
-	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type: EventMovieEditionSetSlug, ID: old.ID,
-			ParentSlug: mo.Slug, EditionSlugs: slugs, OldText: "", NewText: oldSlug,
-		})
-		tx.m.emitEvent(&Event{
-			Type: EventMovieEditionSetSlug, ID: med.ID,
-			ParentSlug: mo.Slug, OldText: med.Slug, NewText: "",
-		})
-	})
+	tx.emitDetail(Detail{SlugChangeID: old.ID})
+	tx.emitDetail(Detail{SlugChangeID: med.ID})
 	err = tx.q.MovieEditionSlugSet(ctx, schema.MovieEditionSlugSetParams{
 		Slug: oldSlug,
 		ID:   old.ID,

@@ -325,9 +325,9 @@ func (m *Model) AddMovieByTMDBID(ctx Context, id int) (mw *MovieWork, err error)
 }
 
 // movieEnsureSlug aligns the Movie's slug with its current (default
-// edition) title, emitting EventMovieSetSlug if it changes, and keeps
-// the Slug table row in sync. Safe to call on live movies (label-/
-// title-change) or trashed ones (restore).
+// edition) title, announcing the change on a live rename so a viewer
+// can follow it, and keeps the Slug table row in sync. Safe to call on
+// live movies (label-/title-change) or trashed ones (restore).
 func (tx *TxRW) movieEnsureSlug(ctx Context, id string) error {
 	mo, err := tx.q.MovieGet(ctx, id)
 	if err != nil {
@@ -348,14 +348,7 @@ func (tx *TxRW) movieEnsureSlug(ctx Context, id string) error {
 	if slug != mo.Slug {
 		// Only a live rename is announced; see seriesEnsureSlug.
 		if mo.DeletedAt == nil {
-			tx.onCommit(func() {
-				tx.m.emitEvent(&Event{
-					Type:    EventMovieSetSlug,
-					ID:      id,
-					OldText: mo.Slug,
-					NewText: slug,
-				})
-			})
+			tx.emitDetail(Detail{SlugChangeID: id})
 		}
 		if err := tx.q.MovieSlugSet(ctx, schema.MovieSlugSetParams{Slug: slug, ID: id}); err != nil {
 			return err

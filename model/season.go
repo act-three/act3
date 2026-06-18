@@ -120,13 +120,6 @@ func (tx *TxR) SeasonInEdition(ctx Context, seasonID string) (*Season, error) {
 }
 
 func (tx *TxRW) SeasonTitleSet(ctx Context, id, title string) error {
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&SeasonHead{schema.Season{ID: id}}).TitleAddr(),
-			NewText: title,
-		})
-	})
 	return tx.q.SeasonTitleSet(ctx, schema.SeasonTitleSetParams{
 		Title: title,
 		ID:    id,
@@ -155,22 +148,13 @@ func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
 		maxNumber = max(maxNumber, sn.Number)
 	}
 	next := maxNumber + 1
-	sn, err := tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
+	_, err = tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
 		EditionID: editionID,
 		SortKey:   fmt.Sprintf("%03d", next),
 		Title:     fmt.Sprintf("Season %d", next),
 		Number:    next,
 	})
-	if err != nil {
-		return err
-	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type: EventSeasonAdd,
-			ID:   sn.ID,
-		})
-	})
-	return nil
+	return err
 }
 
 // renumberSeason derives Number, Label, and Slug for every episode
@@ -209,12 +193,7 @@ func (tx *TxRW) renumberSeason(ctx Context, seasonID string) error {
 		eps[snep.EpisodeID] = ep
 	}
 
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type: EventSeasonRenumber,
-			ID:   sn.ID,
-		})
-	})
+	tx.emitDetail(Detail{SlugChangeID: sn.ID})
 
 	var num int64
 	for _, snep := range all {

@@ -196,19 +196,6 @@ func (tx *TxRW) Trash(ctx Context, id string) (err error) {
 		return ErrAlreadyTrashed
 	}
 
-	var cascaded []TrashItem
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{Type: EventTrash, ID: id, TrashKind: kind})
-		if len(cascaded) > 0 {
-			tx.m.emitEvent(&Event{
-				Type:       EventTrashCascade,
-				ID:         id,
-				TrashKind:  kind,
-				TrashItems: cascaded,
-			})
-		}
-	})
-
 	now := time.Now()
 	switch kind {
 	case TrashKindMovie:
@@ -238,9 +225,7 @@ func (tx *TxRW) Trash(ctx Context, id string) (err error) {
 	if err != nil {
 		return err
 	}
-
-	cascaded, err = tx.trashListByRoot(ctx, id)
-	return err
+	return nil
 }
 
 func (tx *TxRW) trashMovie(ctx Context, id, root string, now time.Time) error {
@@ -624,18 +609,6 @@ func (tx *TxRW) ensureLive(ctx Context, id string) error {
 
 func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 	kind := KindOf(id)
-	cascaded, err := tx.trashListByRoot(ctx, id)
-	if err != nil {
-		return err
-	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:       EventRestore,
-			ID:         id,
-			TrashKind:  kind,
-			TrashItems: cascaded,
-		})
-	})
 
 	var sneps []schema.SeasonEpisode
 	switch kind {
@@ -675,10 +648,11 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 		if err := tx.q.EpisodeRestore(ctx, id); err != nil {
 			return err
 		}
-		sneps, err = tx.q.SeasonEpisodeListRestorableByEpisode(ctx, id)
+		restorable, err := tx.q.SeasonEpisodeListRestorableByEpisode(ctx, id)
 		if err != nil {
 			return err
 		}
+		sneps = restorable
 		for _, snep := range sneps {
 			if err := tx.seasonEpisodeSortKeyBump(ctx, snep.SeasonID, snep.SortKey); err != nil {
 				return err
@@ -769,7 +743,6 @@ func (tx *TxRW) restoreSlug(ctx Context, id string) error {
 // Purge hard-deletes a trashed item and all rows in its cascade
 // subtree. Returns ErrNotTrashed if the target is currently live.
 func (tx *TxRW) Purge(ctx Context, id string) (err error) {
-	kind := KindOf(id)
 	defer errorfmt.Handlef("purge %s: %w", id, &err)
 
 	state, err := tx.trashState(ctx, id)
@@ -782,14 +755,6 @@ func (tx *TxRW) Purge(ctx Context, id string) (err error) {
 	if state.cascadeOf != "" {
 		return ErrCascadeTrashed
 	}
-
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:      EventPurge,
-			ID:        id,
-			TrashKind: kind,
-		})
-	})
 
 	cascadeOf := &id
 	vids, err := tx.q.VideoListPurgeByCascade(ctx, cascadeOf)
@@ -856,24 +821,6 @@ func (tx *TxR) TrashItem(ctx Context, id string) (TrashItem, error) {
 // ordered newest-trashed first.
 func (tx *TxR) TrashList(ctx Context) ([]TrashItem, error) {
 	rows, err := tx.q.TrashList(ctx)
-	if err != nil {
-		return nil, err
-	}
-	items := make([]TrashItem, len(rows))
-	for i, r := range rows {
-		items[i] = TrashItem{
-			Kind:      KindOf(r.ID),
-			ID:        r.ID,
-			Title:     r.Title,
-			Subtitle:  r.Subtitle,
-			DeletedAt: time.UnixMilli(r.DeletedAt),
-		}
-	}
-	return items, nil
-}
-
-func (tx *TxR) trashListByRoot(ctx Context, rootID string) ([]TrashItem, error) {
-	rows, err := tx.q.TrashListByRoot(ctx, &rootID)
 	if err != nil {
 		return nil, err
 	}

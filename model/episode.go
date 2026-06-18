@@ -363,12 +363,6 @@ func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type: EventEpisodeChangeThumbnail,
-			ID:   id,
-		})
-	})
 	err = tx.q.EpisodeThumbnailIDSet(ctx, schema.EpisodeThumbnailIDSetParams{
 		ThumbnailID: thumbnailID,
 		ID:          id,
@@ -383,18 +377,9 @@ func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error
 }
 
 func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {
-	ep, err := tx.q.EpisodeGet(ctx, id)
-	if err != nil {
+	if _, err := tx.q.EpisodeGet(ctx, id); err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).SummaryAddr(),
-			NewText: summary,
-			OldText: ep.Summary,
-		})
-	})
 	return tx.q.EpisodeSummarySet(ctx, schema.EpisodeSummarySetParams{
 		Summary: summary,
 		ID:      id,
@@ -402,18 +387,9 @@ func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {
 }
 
 func (tx *TxRW) EpisodeAirdateSet(ctx Context, id, airdate string) error {
-	ep, err := tx.q.EpisodeGet(ctx, id)
-	if err != nil {
+	if _, err := tx.q.EpisodeGet(ctx, id); err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).AirdateAddr(),
-			NewText: airdate,
-			OldText: ep.Airdate,
-		})
-	})
 	return tx.q.EpisodeAirdateSet(ctx, schema.EpisodeAirdateSetParams{
 		Airdate: airdate,
 		ID:      id,
@@ -421,19 +397,10 @@ func (tx *TxRW) EpisodeAirdateSet(ctx Context, id, airdate string) error {
 }
 
 func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
-	ep, err := tx.q.EpisodeGet(ctx, id)
-	if err != nil {
+	if _, err := tx.q.EpisodeGet(ctx, id); err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).TypeAddr(),
-			NewText: typ,
-			OldText: ep.Type,
-		})
-	})
-	err = tx.q.EpisodeTypeSet(ctx, schema.EpisodeTypeSetParams{
+	err := tx.q.EpisodeTypeSet(ctx, schema.EpisodeTypeSetParams{
 		Type: typ,
 		ID:   id,
 	})
@@ -453,19 +420,10 @@ func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
 }
 
 func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
-	ep, err := tx.q.EpisodeGet(ctx, id)
-	if err != nil {
+	if _, err := tx.q.EpisodeGet(ctx, id); err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&Episode{EpisodeHead: EpisodeHead{ep: ep}}).TitleAddr(),
-			NewText: title,
-			OldText: ep.Title,
-		})
-	})
-	err = tx.q.EpisodeTitleSet(ctx, schema.EpisodeTitleSetParams{
+	err := tx.q.EpisodeTitleSet(ctx, schema.EpisodeTitleSetParams{
 		Title: title,
 		ID:    id,
 	})
@@ -486,9 +444,7 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 			return err
 		}
 		if slug != snep.Slug {
-			tx.onCommit(func() {
-				tx.m.emitEvent(&Event{Type: EventEpisodeSetSlug, ID: id})
-			})
+			tx.emitDetail(Detail{SlugChangeID: id})
 			err = tx.q.SeasonEpisodeSlugSet(ctx, schema.SeasonEpisodeSlugSetParams{
 				Slug:      slug,
 				SeasonID:  snep.SeasonID,
@@ -631,22 +587,13 @@ func (tx *TxRW) SeasonEpisodeCreate(ctx Context, seasonID string) error {
 func (tx *TxRW) SeasonEpisodeRemove(ctx Context, seasonID, episodeID string) (err error) {
 	defer errorfmt.Handlef("season episode remove: %w", &err)
 
-	snep, err := tx.q.SeasonEpisodeGet(ctx, schema.SeasonEpisodeGetParams{
+	if _, err := tx.q.SeasonEpisodeGet(ctx, schema.SeasonEpisodeGetParams{
 		SeasonID:  seasonID,
 		EpisodeID: episodeID,
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventSeasonEpisodeRemove,
-			ID:      seasonID,
-			NewText: episodeID,
-			OldText: strconv.FormatInt(snep.SortKey, 10),
-		})
-	})
 	if err := tx.q.SeasonEpisodeDelete(ctx, schema.SeasonEpisodeDeleteParams{
 		SeasonID:  seasonID,
 		EpisodeID: episodeID,
@@ -677,13 +624,6 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID, episodeID string, sortKe
 		return err
 	}
 
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventSeasonEpisodeAdd,
-			ID:      seasonID,
-			NewText: episodeID,
-		})
-	})
 	if err := tx.seasonEpisodeSortKeyBump(ctx, sn.ID, sortKey); err != nil {
 		return err
 	}

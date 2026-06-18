@@ -349,8 +349,8 @@ func (tq *taskQueue) kill(id string) bool {
 }
 
 func (tq *taskQueue) run(ctx Context, task schema.Task) {
-	tq.m.emitEvent(&Event{Type: EventTaskStatsChange})
-	defer tq.m.emitEvent(&Event{Type: EventTaskStatsChange})
+	tq.m.emit(nil)
+	defer tq.m.emit(nil)
 	err := tq.run1(ctx, task)
 	if err != nil {
 		slog.ErrorContext(ctx, "error", "error", err)
@@ -521,9 +521,6 @@ func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
 }
 
 func (tx *TxRW) TaskDelete(ctx Context, id string) error {
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{Type: EventTaskStatsChange})
-	})
 	return tx.q.TaskDelete(ctx, id)
 }
 
@@ -560,7 +557,6 @@ func (t *TxRW) addTaskOpts(ctx Context, ttype string, delay time.Duration, pri i
 	}
 	t.onCommit(func() {
 		t.m.wake(ttype)
-		t.m.emitEvent(&Event{Type: EventTaskStatsChange})
 	})
 	return nil
 }

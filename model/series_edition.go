@@ -295,25 +295,16 @@ func (tx *TxRW) SeriesEditionClone(ctx Context, srcID string) (*SeriesWork, erro
 }
 
 func (tx *TxRW) SeriesEditionLabelSet(ctx Context, id, label string) error {
-	sed, err := tx.q.SeriesEditionGet(ctx, id)
-	if err != nil {
+	if _, err := tx.q.SeriesEditionGet(ctx, id); err != nil {
 		return err
 	}
-	err = tx.q.SeriesEditionLabelSet(ctx, schema.SeriesEditionLabelSetParams{
+	err := tx.q.SeriesEditionLabelSet(ctx, schema.SeriesEditionLabelSetParams{
 		Label: label,
 		ID:    id,
 	})
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&SeriesEditionHead{sed: sed}).LabelAddr(),
-			NewText: label,
-			OldText: sed.Label,
-		})
-	})
 	return tx.seriesEditionEnsureSlug(ctx, id)
 }
 
@@ -338,16 +329,7 @@ func (tx *TxRW) seriesEditionEnsureSlug(ctx Context, id string) error {
 	// Only a live rename is announced: a trashed edition's pages
 	// have no viewers to follow it.
 	if sed.DeletedAt == nil {
-		sr, err := tx.q.SeriesGet(ctx, sed.SeriesID)
-		if err != nil {
-			return err
-		}
-		tx.onCommit(func() {
-			tx.m.emitEvent(&Event{
-				Type: EventSeriesEditionSetSlug, ID: id,
-				ParentSlug: sr.Slug, OldText: sed.Slug, NewText: slug,
-			})
-		})
+		tx.emitDetail(Detail{SlugChangeID: id})
 	}
 	return tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
 		Slug: slug, ID: id,
@@ -359,12 +341,6 @@ func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type: EventSeriesEditionChangePoster,
-			ID:   id,
-		})
-	})
 	err = tx.q.SeriesEditionPosterIDSet(ctx, schema.SeriesEditionPosterIDSetParams{
 		PosterID: posterID,
 		ID:       id,
@@ -379,21 +355,10 @@ func (tx *TxRW) SeriesEditionPosterIDSet(ctx Context, id, posterID string) error
 }
 
 func (tx *TxRW) SeriesEditionSummarySet(ctx Context, id, summary string) error {
-	err := tx.q.SeriesEditionSummarySet(ctx, schema.SeriesEditionSummarySetParams{
+	return tx.q.SeriesEditionSummarySet(ctx, schema.SeriesEditionSummarySetParams{
 		Summary: summary,
 		ID:      id,
 	})
-	if err != nil {
-		return err
-	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&SeriesEditionHead{sed: schema.SeriesEdition{ID: id}}).SummaryAddr(),
-			NewText: summary,
-		})
-	})
-	return nil
 }
 
 // SeriesEditionSetDefault promotes the given edition to be
@@ -415,30 +380,8 @@ func (tx *TxRW) SeriesEditionSetDefault(ctx Context, id string) error {
 	if err != nil {
 		return err
 	}
-	sr, err := tx.q.SeriesGet(ctx, sed.SeriesID)
-	if err != nil {
-		return err
-	}
-	editions, err := tx.q.SeriesEditionListBySeriesID(ctx, sed.SeriesID)
-	if err != nil {
-		return err
-	}
-	var slugs []string
-	for _, ed := range editions {
-		if ed.Slug != "" {
-			slugs = append(slugs, ed.Slug)
-		}
-	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type: EventSeriesEditionSetSlug, ID: old.ID,
-			ParentSlug: sr.Slug, EditionSlugs: slugs, OldText: "", NewText: oldSlug,
-		})
-		tx.m.emitEvent(&Event{
-			Type: EventSeriesEditionSetSlug, ID: sed.ID,
-			ParentSlug: sr.Slug, OldText: sed.Slug, NewText: "",
-		})
-	})
+	tx.emitDetail(Detail{SlugChangeID: old.ID})
+	tx.emitDetail(Detail{SlugChangeID: sed.ID})
 	if err := tx.q.SeriesEditionSlugSet(ctx, schema.SeriesEditionSlugSetParams{
 		Slug: oldSlug, ID: old.ID,
 	}); err != nil {

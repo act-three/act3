@@ -39,9 +39,18 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		}
 		return domi.PushURL[msg.Msg](req)
 	case *msg.ModelEvent:
-		return nil // DB state changed. Nothing to do here, just re-render.
-	case *msg.SlugChange:
-		return a.follow(ctx, m.ID)
+		// DB state changed, so this frame re-renders. If a slug
+		// changed for an object this session is viewing, also follow
+		// the rename.
+		for _, d := range m.Details {
+			if d.SlugChangeID == "" {
+				continue
+			}
+			if c := a.follow(ctx, d.SlugChangeID); c != nil {
+				return c
+			}
+		}
+		return nil
 	case *msg.Error:
 		a.notify(ui.NoteError, m.Err.Error())
 		return nil

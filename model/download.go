@@ -14,7 +14,6 @@ import (
 	"log/slog"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -437,18 +436,6 @@ func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID strin
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventDownloadFileAttach,
-			ID:      infoHash,
-			NewText: filePath,
-		})
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    EpisodeAttachToggleAddr(infoHash, filePath, episodeID),
-			NewText: strconv.FormatBool(attach),
-		})
-	})
 	if attach {
 		if err := tx.q.EpisodeVideoEnsure(ctx, schema.EpisodeVideoEnsureParams{
 			EpisodeID: episodeID,

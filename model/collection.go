@@ -328,13 +328,6 @@ func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, er
 }
 
 func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) error {
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventCollectionMovieAdd,
-			ID:      collectionID,
-			NewText: movieID,
-		})
-	})
 	return tx.q.CollectionMovieAdd(ctx, schema.CollectionMovieAddParams{
 		CollectionID: collectionID,
 		MovieID:      movieID,
@@ -342,13 +335,6 @@ func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) er
 }
 
 func (tx *TxRW) CollectionMovieRemove(ctx Context, collectionID, movieID string) error {
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventCollectionMovieRemove,
-			ID:      collectionID,
-			NewText: movieID,
-		})
-	})
 	return tx.q.CollectionMovieDelete(ctx, schema.CollectionMovieDeleteParams{
 		CollectionID: collectionID,
 		MovieID:      movieID,
@@ -356,13 +342,6 @@ func (tx *TxRW) CollectionMovieRemove(ctx Context, collectionID, movieID string)
 }
 
 func (tx *TxRW) CollectionSeriesAdd(ctx Context, collectionID, seriesID string) error {
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventCollectionSeriesAdd,
-			ID:      collectionID,
-			NewText: seriesID,
-		})
-	})
 	return tx.q.CollectionSeriesAdd(ctx, schema.CollectionSeriesAddParams{
 		CollectionID: collectionID,
 		SeriesID:     seriesID,
@@ -370,13 +349,6 @@ func (tx *TxRW) CollectionSeriesAdd(ctx Context, collectionID, seriesID string) 
 }
 
 func (tx *TxRW) CollectionSeriesRemove(ctx Context, collectionID, seriesID string) error {
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventCollectionSeriesRemove,
-			ID:      collectionID,
-			NewText: seriesID,
-		})
-	})
 	return tx.q.CollectionSeriesDelete(ctx, schema.CollectionSeriesDeleteParams{
 		CollectionID: collectionID,
 		SeriesID:     seriesID,
@@ -388,12 +360,6 @@ func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type: EventCollectionChangeBanner,
-			ID:   id,
-		})
-	})
 	err = tx.q.CollectionBannerIDSet(ctx, schema.CollectionBannerIDSetParams{
 		BannerID: bannerID,
 		ID:       id,
@@ -408,32 +374,23 @@ func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 }
 
 func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
-	col, err := tx.q.CollectionGet(ctx, id)
-	if err != nil {
+	if _, err := tx.q.CollectionGet(ctx, id); err != nil {
 		return err
 	}
-	err = tx.q.CollectionSetTitle(ctx, schema.CollectionSetTitleParams{
+	err := tx.q.CollectionSetTitle(ctx, schema.CollectionSetTitleParams{
 		Title: title,
 		ID:    id,
 	})
 	if err != nil {
 		return err
 	}
-	tx.onCommit(func() {
-		tx.m.emitEvent(&Event{
-			Type:    EventLiveUpdate,
-			Addr:    (&CollectionHead{col: col}).TitleAddr(),
-			NewText: title,
-			OldText: col.Title,
-		})
-	})
 	return tx.collectionEnsureSlug(ctx, id)
 }
 
 // collectionEnsureSlug aligns the Collection's slug with its current
-// title, emitting EventCollectionSetSlug if it changes, and keeps the
-// Slug table row in sync. Safe to call on live collections (title-
-// change) or trashed ones (restore).
+// title, announcing the change on a live rename so a viewer can follow
+// it, and keeps the Slug table row in sync. Safe to call on live
+// collections (title-change) or trashed ones (restore).
 func (tx *TxRW) collectionEnsureSlug(ctx Context, id string) error {
 	col, err := tx.q.CollectionGet(ctx, id)
 	if err != nil {
@@ -450,14 +407,7 @@ func (tx *TxRW) collectionEnsureSlug(ctx Context, id string) error {
 	if slug != col.Slug {
 		// Only a live rename is announced; see seriesEnsureSlug.
 		if col.DeletedAt == nil {
-			tx.onCommit(func() {
-				tx.m.emitEvent(&Event{
-					Type:    EventCollectionSetSlug,
-					ID:      id,
-					OldText: col.Slug,
-					NewText: slug,
-				})
-			})
+			tx.emitDetail(Detail{SlugChangeID: id})
 		}
 		if err := tx.q.CollectionSetSlug(ctx, schema.CollectionSetSlugParams{Slug: slug, ID: id}); err != nil {
 			return err
