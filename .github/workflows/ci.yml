@@ -20,6 +20,9 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
+              with:
+                  # Full history so frozencheck can reach the merge base.
+                  fetch-depth: 0
 
             - uses: actions/setup-go@v5
               with:
@@ -67,6 +70,19 @@ jobs:
               run: |
                   go build -o /tmp/act3vet ./cmd/act3vet
                   go vet -vettool=/tmp/act3vet ./...
+
+            # frozen.txt records published schema updates and may only
+            # grow: existing entries are immutable. Compare against the
+            # merge base so a PR is judged from where it branched, not
+            # the moving tip of main.
+            - name: frozen.txt append-only
+              run: |
+                  if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+                    base=$(git merge-base '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}')
+                  else
+                    base='${{ github.event.before }}'
+                  fi
+                  git show "$base:database/frozen.txt" | go run ./cmd/frozencheck database/frozen.txt
 
             - name: go mod tidy
               run: |
