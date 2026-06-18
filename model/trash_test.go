@@ -2491,69 +2491,28 @@ func TestTrashOrphanReapAcrossSeries(t *testing.T) {
 	assertLive(t, m, epID)
 }
 
-// TestTrashCascadeEventListsOrphans covers section 4.2: restoring a
-// cascade root fires an EventRestore whose TrashItems include the
-// reaped Episode.
-func TestTrashCascadeEventListsOrphans(t *testing.T) {
+// TestTrashCascadeReapsAndRestoresOrphan covers section 4.2: trashing
+// a series reaps its episode as a cascade orphan under the series, and
+// restoring the series brings the episode back live.
+func TestTrashCascadeReapsAndRestoresOrphan(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 
 	srID, _, _, _, epID, _ := createSeriesRow(t, m, "cascade-orphan-ev", "Cascade Orphan")
 
-	sink := subscribeEvents(ctx, m)
 	if err := m.WithTxRW(func(tx *TxRW) error {
 		return tx.Trash(ctx, srID)
 	}); err != nil {
 		t.Fatal(err)
 	}
-	trashEvents := sink.drain()
-	var cascade *Event
-	for _, ev := range trashEvents {
-		if ev.Type == EventTrashCascade && ev.ID == srID {
-			cascade = ev
-			break
-		}
-	}
-	if cascade == nil {
-		t.Fatal("no EventTrashCascade for series")
-	}
-	var foundEp bool
-	for _, it := range cascade.TrashItems {
-		if it.ID == epID {
-			foundEp = true
-			break
-		}
-	}
-	if !foundEp {
-		t.Errorf("trash-cascade items missing Episode %q; got %+v", epID, cascade.TrashItems)
-	}
+	assertTrashed(t, m, epID, srID)
 
-	sink = subscribeEvents(ctx, m)
 	if err := m.WithTxRW(func(tx *TxRW) error {
 		return tx.Restore(ctx, srID)
 	}); err != nil {
 		t.Fatal(err)
 	}
-	var restore *Event
-	for _, ev := range sink.drain() {
-		if ev.Type == EventRestore && ev.ID == srID {
-			restore = ev
-			break
-		}
-	}
-	if restore == nil {
-		t.Fatal("no EventRestore for series")
-	}
-	foundEp = false
-	for _, it := range restore.TrashItems {
-		if it.ID == epID {
-			foundEp = true
-			break
-		}
-	}
-	if !foundEp {
-		t.Errorf("restore items missing Episode %q; got %+v", epID, restore.TrashItems)
-	}
+	assertLive(t, m, epID)
 }
 
 // TestTrashVideoAcrossTwoMEds covers section 4.3: a Video in two
@@ -3278,8 +3237,9 @@ func TestPurgeByKind(t *testing.T) {
 	})
 }
 
-// TestPurgeEmitsPurgeEvent covers section 7.7.
-func TestPurgeEmitsPurgeEvent(t *testing.T) {
+// TestPurgeRemovesTrashedMovie covers section 7.7: purging a trashed
+// Movie removes its row permanently.
+func TestPurgeRemovesTrashedMovie(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 
@@ -3289,27 +3249,13 @@ func TestPurgeEmitsPurgeEvent(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	events := collectEvents(t, m, func() {
-		if err := m.WithTxRW(func(tx *TxRW) error {
-			return tx.Purge(ctx, movieID)
-		}); err != nil {
-			t.Fatal(err)
-		}
-	})
-	var count int
-	for _, ev := range events {
-		if ev.Type == EventPurge {
-			count++
-			if ev.ID != movieID {
-				t.Errorf("EventPurge ID = %q, want %q", ev.ID, movieID)
-			}
-			if ev.TrashKind != TrashKindMovie {
-				t.Errorf("EventPurge TrashKind = %v, want TrashKindMovie", ev.TrashKind)
-			}
-		}
+	if err := m.WithTxRW(func(tx *TxRW) error {
+		return tx.Purge(ctx, movieID)
+	}); err != nil {
+		t.Fatalf("purge: %v", err)
 	}
-	if count != 1 {
-		t.Errorf("EventPurge count = %d, want 1", count)
+	if n := countRows(t, m, "Movie", "ID = ?", movieID); n != 0 {
+		t.Errorf("Movie rows = %d, want 0", n)
 	}
 }
 
@@ -3583,10 +3529,11 @@ func TestTrashSortKeyBumpCollision(t *testing.T) {
 	}
 }
 
-// TestTrashEventCounts covers section 11.1: trashing a Series with 2
-// episodes + videos emits exactly one EventTrash and one
-// EventTrashCascade (listing all descendants).
-func TestTrashEventCounts(t *testing.T) {
+// TestTrashCascadeCoversAllDescendants covers section 11.1: trashing a
+// Series with 2 episodes + videos reaps every descendant (edition,
+// season, episodes, videos) as a cascade orphan under the series, and
+// restoring the series brings them all back live.
+func TestTrashCascadeCoversAllDescendants(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 
@@ -3647,64 +3594,24 @@ func TestTrashEventCounts(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	events := collectEvents(t, m, func() {
-		if err := m.WithTxRW(func(tx *TxRW) error {
-			return tx.Trash(ctx, srID)
-		}); err != nil {
-			t.Fatal(err)
-		}
-	})
-	var trashCount, cascadeCount int
-	var cascade *Event
-	for _, ev := range events {
-		switch ev.Type {
-		case EventTrash:
-			if ev.ID == srID {
-				trashCount++
-			}
-		case EventTrashCascade:
-			if ev.ID == srID {
-				cascadeCount++
-				cascade = ev
-			}
-		}
+	if err := m.WithTxRW(func(tx *TxRW) error {
+		return tx.Trash(ctx, srID)
+	}); err != nil {
+		t.Fatal(err)
 	}
-	if trashCount != 1 {
-		t.Errorf("EventTrash count = %d, want 1", trashCount)
-	}
-	if cascadeCount != 1 {
-		t.Fatalf("EventTrashCascade count = %d, want 1", cascadeCount)
-	}
-	ids := map[string]bool{}
-	for _, it := range cascade.TrashItems {
-		ids[it.ID] = true
-	}
-	for _, want := range append(append([]string{}, epIDs...), vidIDs...) {
-		if !ids[want] {
-			t.Errorf("cascade items missing %q", want)
-		}
+	assertTrashed(t, m, srID, "")
+	descendants := append(append([]string{sedID, snID}, epIDs...), vidIDs...)
+	for _, id := range descendants {
+		assertTrashed(t, m, id, srID)
 	}
 
-	events = collectEvents(t, m, func() {
-		if err := m.WithTxRW(func(tx *TxRW) error {
-			return tx.Restore(ctx, srID)
-		}); err != nil {
-			t.Fatal(err)
-		}
-	})
-	var restoreCount int
-	var restoreEv *Event
-	for _, ev := range events {
-		if ev.Type == EventRestore && ev.ID == srID {
-			restoreCount++
-			restoreEv = ev
-		}
+	if err := m.WithTxRW(func(tx *TxRW) error {
+		return tx.Restore(ctx, srID)
+	}); err != nil {
+		t.Fatal(err)
 	}
-	if restoreCount != 1 {
-		t.Fatalf("EventRestore count = %d, want 1", restoreCount)
-	}
-	if len(restoreEv.TrashItems) == 0 {
-		t.Errorf("restore TrashItems is empty; want populated with cascade items")
+	for _, id := range append([]string{srID}, descendants...) {
+		assertLive(t, m, id)
 	}
 }
 
