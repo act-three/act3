@@ -2,7 +2,7 @@ package model
 
 import "iter"
 
-// Event reports that model state changed.
+// An Event reports that model state has changed.
 // Emitters include the database (after each read-write transaction),
 // the upload tracker (periodically as bytes are received),
 // and the task queue (when a task begins or ends).
