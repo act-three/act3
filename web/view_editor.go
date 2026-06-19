@@ -7,10 +7,10 @@ import (
 	"ily.dev/act3/view"
 )
 
-func viewEditor(tx *model.TxR, current string, body node) node {
+func viewEditor(tx *model.TxR, path string, body node) node {
 	stats, _ := tx.TaskStats()
 	return view.Editor(body, view.AppConfig{
-		Path:           current,
+		Path:           path,
 		TaskCount:      stats.Queued + stats.Running,
 		TaskCountError: stats.CountError,
 		Uploads:        tx.Uploads(),
