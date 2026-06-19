@@ -5759,6 +5759,7 @@ UPDATE Task SET
 	State = 'queued',
 	Failures = ?,
 	NextRun = ?,
+	Priority = ?,
 	FailureDesc = ?
 WHERE ID = ?
 RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, state
@@ -5767,6 +5768,7 @@ RETURNING id, type, args, failures, nextrun, failuredesc, priority, queue, state
 type TaskRescheduleParams struct {
 	Failures    int64
 	NextRun     int64
+	Priority    int64
 	FailureDesc *string
 	ID          string
 }
@@ -5775,6 +5777,7 @@ func (q *Queries) TaskReschedule(arg TaskRescheduleParams) (Task, error) {
 	row := q.db.QueryRowContext(q.ctx, taskReschedule,
 		arg.Failures,
 		arg.NextRun,
+		arg.Priority,
 		arg.FailureDesc,
 		arg.ID,
 	)
