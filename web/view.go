@@ -16,8 +16,13 @@ type node = domi.Node
 var notFound = domi.Text("Not Found")
 
 func (a *app) Preview(ctx context.Context, u *url.URL) (dest, title string, n node) {
-	// TODO: render previews. For now, we just deny all preview requests.
-	return "", "", nil
+	a = new(*a)
+	u = new(*u)
+	u.Path = redirect(u.Path)
+	a.notes = nil
+	a.setPath(ctx, u)
+	title, n = a.View(ctx)
+	return u.String(), title, n
 }
 
 func (a *app) View(ctx context.Context) (title string, n node) {
