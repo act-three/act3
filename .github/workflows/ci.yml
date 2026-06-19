@@ -74,6 +74,9 @@ jobs:
                   go build -o /tmp/act3vet ./cmd/act3vet
                   go vet -vettool=/tmp/act3vet ./...
 
+            - name: go-check-sumtype
+              run: go tool go-check-sumtype ./...
+
             # frozen.txt records published schema updates and may only
             # grow: existing entries are immutable. Compare against the
             # merge base so a PR is judged from where it branched, not

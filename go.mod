@@ -19,6 +19,7 @@ require (
 )
 
 require (
+	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
 	github.com/anacrolix/generics v0.1.0 // indirect
 	github.com/anacrolix/missinggo v1.3.0 // indirect
 	github.com/anacrolix/missinggo/v2 v2.10.0 // indirect
@@ -42,11 +43,16 @@ require (
 	github.com/tetratelabs/wazero v1.9.0 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546 // indirect
+	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.44.0 // indirect
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
 
-tool github.com/evanw/esbuild/cmd/esbuild
+tool (
+	github.com/alecthomas/go-check-sumtype/cmd/go-check-sumtype
+	github.com/evanw/esbuild/cmd/esbuild
+)

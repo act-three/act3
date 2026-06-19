@@ -6,6 +6,7 @@ import (
 	"ily.dev/act3/model"
 )
 
+//sumtype:decl
 type Msg interface{ msg() }
 
 // Dialog messages.
