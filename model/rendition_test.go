@@ -112,23 +112,24 @@ func TestQualityOptions(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			m := newTestModel(t)
 			var v *Video
-			err := m.WithTxRW(func(tx *TxRW) error {
-				vid, err := tx.q.VideoCreate(ctx, schema.VideoCreateParams{Name: c.name})
+			err := m.WithTxRW(ctx, func(tx *TxRW) error {
+				vid, err := tx.q.VideoCreate(schema.VideoCreateParams{Name: c.name})
 				if err != nil {
 					return err
 				}
-				err = tx.q.VideoUpdateProbe(ctx, schema.VideoUpdateProbeParams{
+				err = tx.q.VideoUpdateProbe(schema.VideoUpdateProbeParams{
 					ID:           vid.ID,
 					Width:        1920,
 					Height:       c.srcHeight,
 					FrameRateNum: c.srcFRNum,
 					FrameRateDen: c.srcFRDen,
 				})
+
 				if err != nil {
 					return err
 				}
 				for _, r := range c.rends {
-					rend, err := tx.q.RenditionCreate(ctx, schema.RenditionCreateParams{
+					rend, err := tx.q.RenditionCreate(schema.RenditionCreateParams{
 						VideoID:       vid.ID,
 						Purpose:       "streaming",
 						Codec:         "h264",
@@ -136,32 +137,36 @@ func TestQualityOptions(t *testing.T) {
 						MaxHeight:     r.maxHeight,
 						MaxFPS:        r.maxFPS,
 					})
+
 					if err != nil {
 						return err
 					}
-					_, err = tx.q.RenditionUpdateEncode(ctx, schema.RenditionUpdateEncodeParams{
+					_, err = tx.q.RenditionUpdateEncode(schema.RenditionUpdateEncodeParams{
 						ID: rend.ID, Key: "k", Playlist: "#EXTM3U\n",
 					})
+
 					if err != nil {
 						return err
 					}
 				}
-				vid, err = tx.q.VideoGet(ctx, vid.ID)
+				vid, err = tx.q.VideoGet(vid.ID)
 				if err != nil {
 					return err
 				}
 				v = &Video{v: vid}
 				return nil
 			})
+
 			if err != nil {
 				t.Fatal(err)
 			}
 
 			var got []QualityOption
-			err = m.WithTxR(func(tx *TxR) error {
+			err = m.WithTxR(ctx, func(tx *TxR) error {
 				got, err = tx.QualityOptions(ctx, v)
 				return err
 			})
+
 			if err != nil {
 				t.Fatal(err)
 			}

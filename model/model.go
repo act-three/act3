@@ -97,7 +97,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	if err != nil {
 		return nil, err
 	}
-	err = schema.New(dbw).TaskResetRunning(ctx)
+	err = schema.New(ctx, dbw).TaskResetRunning()
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ var configLoaders = []func(*TxR, Context) error{
 
 func (m *Model) loadConfig(ctx Context) (err error) {
 	defer errorfmt.Handlef("load config: %w", &err)
-	return m.WithTxR(func(t *TxR) error {
+	return m.WithTxR(ctx, func(t *TxR) error {
 		for _, f := range configLoaders {
 			err = f(t, ctx)
 			if err != nil {
@@ -130,8 +130,8 @@ func (m *Model) loadConfig(ctx Context) (err error) {
 	})
 }
 
-func (m *Model) WithTxR(f func(*TxR) error) error {
-	tx, err := m.dbr.Begin()
+func (m *Model) WithTxR(ctx Context, f func(*TxR) error) error {
+	tx, err := m.dbr.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return err
 	}
@@ -139,13 +139,13 @@ func (m *Model) WithTxR(f func(*TxR) error) error {
 	return f(&TxR{
 		m:  m,
 		tx: tx,
-		q:  schema.New(tx),
+		q:  schema.New(ctx, tx),
 	})
 }
 
 // Non-nil error will roll back the transation.
-func (m *Model) WithTxRW(f func(*TxRW) error) error {
-	tx, err := m.dbw.Begin()
+func (m *Model) WithTxRW(ctx Context, f func(*TxRW) error) error {
+	tx, err := m.dbw.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (m *Model) WithTxRW(f func(*TxRW) error) error {
 	mt := &TxRW{TxR: TxR{
 		m:  m,
 		tx: tx,
-		q:  schema.New(tx),
+		q:  schema.New(ctx, tx),
 	}}
 	err = f(mt)
 	if err != nil {

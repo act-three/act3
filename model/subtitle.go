@@ -62,7 +62,7 @@ type SubtitleOption struct {
 // SubtitleOptions returns the captions menu entries for a video.
 // Tracks whose extraction has not completed (no WebVTTKey) are skipped.
 func (tx *TxR) SubtitleOptions(ctx Context, v *Video) ([]SubtitleOption, error) {
-	tracks, err := tx.q.SubtitleTrackListByVideoID(ctx, v.ID())
+	tracks, err := tx.q.SubtitleTrackListByVideoID(v.ID())
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func SubtitleContentType(codec string) string {
 
 // Subtitle returns the SubtitleTrack row for the given ID.
 func (tx *TxR) Subtitle(ctx Context, id string) (schema.SubtitleTrack, error) {
-	return tx.q.SubtitleTrackGet(ctx, id)
+	return tx.q.SubtitleTrackGet(id)
 }
 
 // taskIngestExtractSubs extracts each subtitle track of a video to CAS:
@@ -138,11 +138,11 @@ func (tx *TxR) Subtitle(ctx Context, id string) (schema.SubtitleTrack, error) {
 func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 	defer errorfmt.Handlef("extract subtitles for video %s: %w", args[0], &err)
 
-	vid, err := tx.q.VideoGet(ctx, args[0])
+	vid, err := tx.q.VideoGet(args[0])
 	if err != nil {
 		return err
 	}
-	tracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
+	tracks, err := tx.q.SubtitleTrackListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -179,12 +179,13 @@ func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 			}
 		}
 
-		err = tx.m.WithTxRW(func(txw *TxRW) error {
-			_, err := txw.q.SubtitleTrackUpdateKeys(ctx, schema.SubtitleTrackUpdateKeysParams{
+		err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
+			_, err := txw.q.SubtitleTrackUpdateKeys(schema.SubtitleTrackUpdateKeysParams{
 				ID:          track.ID,
 				OriginalKey: originalKey,
 				WebVTTKey:   webvttKey,
 			})
+
 			return err
 		})
 		if err != nil {
@@ -198,7 +199,7 @@ func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 	// One rebuild per task keeps DB writes minimal; for text-only
 	// extraction the per-track latency cost is microseconds.
 	if updated {
-		err = tx.m.WithTxRW(func(txw *TxRW) error {
+		err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
 			return txw.recomputePlayable(ctx, vid)
 		})
 		if err != nil {

@@ -206,18 +206,19 @@ func TestDownloadCreateRejectsTraversal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = m.WithTxRW(func(tx *TxRW) error {
+	err = m.WithTxRW(t.Context(), func(tx *TxRW) error {
 		_, err := tx.DownloadCreate(t.Context(), bytes.NewReader(buf.Bytes()), nil, nil)
 		return err
 	})
+
 	var ve *ValidationError
 	if !errors.As(err, &ve) {
 		t.Fatalf("DownloadCreate: err = %v (%T), want *ValidationError", err, err)
 	}
 
 	// No Download row should have been persisted.
-	if err := m.WithTxR(func(tx *TxR) error {
-		dls, err := tx.q.DownloadList(t.Context())
+	if err := m.WithTxR(t.Context(), func(tx *TxR) error {
+		dls, err := tx.q.DownloadList()
 		if err != nil {
 			return err
 		}

@@ -159,7 +159,7 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 	d.info = *info
 	d.filesLen = filesLen(info)
 
-	d.videos, err = tx.q.VideoListByInfoHash(ctx, &dl.InfoHash)
+	d.videos, err = tx.q.VideoListByInfoHash(&dl.InfoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +169,7 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 	}
 	d.planLen = len(d.videos)
 
-	evs, err := tx.q.EpisodeVideoListByInfoHash(ctx, &dl.InfoHash)
+	evs, err := tx.q.EpisodeVideoListByInfoHash(&dl.InfoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func (tx *TxR) newDownload(ctx Context, dl schema.Download) (*Download, error) {
 		d.epIDByVideoID[ev.VideoID] = append(d.epIDByVideoID[ev.VideoID], ev.EpisodeID)
 	}
 
-	mvs, err := tx.q.MovieVideoListByInfoHash(ctx, &dl.InfoHash)
+	mvs, err := tx.q.MovieVideoListByInfoHash(&dl.InfoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -232,10 +232,11 @@ func (d *Download) EpisodeIDsByVideoID(videoID string) []string {
 }
 
 func (tx *TxR) VideoGetByName(ctx Context, infoHash, name string) (*Video, error) {
-	v, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
+	v, err := tx.q.VideoGetByName(schema.VideoGetByNameParams{
 		InfoHash: &infoHash,
 		Name:     name,
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +284,7 @@ func (tx *TxR) newDownloadHeadList(dls []schema.Download, err error) ([]*Downloa
 	}
 	res := make([]*DownloadHead, len(dls))
 	for i := range dls {
-		n, err := tx.q.VideoCountByInfoHash(context.Background(), &dls[i].InfoHash)
+		n, err := tx.q.VideoCountByInfoHash(&dls[i].InfoHash)
 		if err != nil {
 			return nil, err
 		}
@@ -297,7 +298,7 @@ func (tx *TxR) newDownloadHeadList(dls []schema.Download, err error) ([]*Downloa
 }
 
 func (tx *TxR) DownloadHeadList(ctx Context) ([]*DownloadHead, error) {
-	return tx.newDownloadHeadList(tx.q.DownloadList(ctx))
+	return tx.newDownloadHeadList(tx.q.DownloadList())
 }
 
 func (tx *TxR) DownloadInfoList(ctx Context) ([]*DownloadInfo, error) {
@@ -305,11 +306,11 @@ func (tx *TxR) DownloadInfoList(ctx Context) ([]*DownloadInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	sedList, err := tx.q.SeriesEditionListByDownload(ctx)
+	sedList, err := tx.q.SeriesEditionListByDownload()
 	if err != nil {
 		return nil, err
 	}
-	srList, err := tx.q.SeriesListByDownload(ctx)
+	srList, err := tx.q.SeriesListByDownload()
 	if err != nil {
 		return nil, err
 	}
@@ -325,11 +326,11 @@ func (tx *TxR) DownloadInfoList(ctx Context) ([]*DownloadInfo, error) {
 			SeriesEditionHead: *sed,
 		}
 	}
-	medList, err := tx.q.MovieEditionListByDownload(ctx)
+	medList, err := tx.q.MovieEditionListByDownload()
 	if err != nil {
 		return nil, err
 	}
-	moList, err := tx.q.MovieListByDownload(ctx)
+	moList, err := tx.q.MovieListByDownload()
 	if err != nil {
 		return nil, err
 	}
@@ -360,15 +361,15 @@ func (tx *TxR) DownloadInfoList(ctx Context) ([]*DownloadInfo, error) {
 }
 
 func (tx *TxR) DownloadHeadListBySeriesEditionID(ctx Context, id string) ([]*DownloadHead, error) {
-	return tx.newDownloadHeadList(tx.q.DownloadListBySeriesEditionID(ctx, &id))
+	return tx.newDownloadHeadList(tx.q.DownloadListBySeriesEditionID(&id))
 }
 
 func (tx *TxR) DownloadHeadListByMovieEditionID(ctx Context, id string) ([]*DownloadHead, error) {
-	return tx.newDownloadHeadList(tx.q.DownloadListByMovieEditionID(ctx, &id))
+	return tx.newDownloadHeadList(tx.q.DownloadListByMovieEditionID(&id))
 }
 
 func (tx *TxR) Download(ctx Context, infoHash string) (*Download, error) {
-	dl, err := tx.q.DownloadGet(ctx, infoHash)
+	dl, err := tx.q.DownloadGet(infoHash)
 	if err != nil {
 		return nil, err
 	}
@@ -402,11 +403,12 @@ func (tx *TxRW) DownloadAutoImportSet(ctx Context, infoHash string, auto bool) (
 	if auto {
 		v = 1
 	}
-	_, err = tx.q.DownloadUpdateAutoImport(ctx, schema.DownloadUpdateAutoImportParams{
+	_, err = tx.q.DownloadUpdateAutoImport(schema.DownloadUpdateAutoImportParams{
 		Autoimport:     v,
 		LastActivityAt: time.Now().UnixMilli(),
 		InfoHash:       infoHash,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -426,10 +428,11 @@ func EpisodeAttachToggleAddr(infoHash, filePath, episodeID string) []string {
 // message rather than a raw sqlite miss.
 func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID string, attach bool) (err error) {
 	defer errorfmt.Handlef("EpisodeVideoSet: %w", &err)
-	vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
+	vid, err := tx.q.VideoGetByName(schema.VideoGetByNameParams{
 		InfoHash: &infoHash,
 		Name:     filePath,
 	})
+
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("no video for %s/%s (merged into another duplicate?)", infoHash, filePath)
 	}
@@ -437,14 +440,14 @@ func (tx *TxRW) EpisodeVideoSet(ctx Context, infoHash, filePath, episodeID strin
 		return err
 	}
 	if attach {
-		if err := tx.q.EpisodeVideoEnsure(ctx, schema.EpisodeVideoEnsureParams{
+		if err := tx.q.EpisodeVideoEnsure(schema.EpisodeVideoEnsureParams{
 			EpisodeID: episodeID,
 			VideoID:   vid.ID,
 		}); err != nil {
 			return err
 		}
 	} else {
-		if err := tx.q.EpisodeVideoDelete(ctx, schema.EpisodeVideoDeleteParams{
+		if err := tx.q.EpisodeVideoDelete(schema.EpisodeVideoDeleteParams{
 			EpisodeID: episodeID,
 			VideoID:   vid.ID,
 		}); err != nil {
@@ -463,10 +466,11 @@ func (tx *TxRW) bumpDownloadActivity(ctx Context, infoHash string) error {
 	if infoHash == "" {
 		return nil
 	}
-	return tx.q.DownloadBumpActivity(ctx, schema.DownloadBumpActivityParams{
+	return tx.q.DownloadBumpActivity(schema.DownloadBumpActivityParams{
 		LastActivityAt: time.Now().UnixMilli(),
 		InfoHash:       infoHash,
 	})
+
 }
 
 // DownloadImport is the manual import action: it enables auto-import,
@@ -504,10 +508,11 @@ func (tx *TxRW) processDownload(ctx Context, infoHash string) (err error) {
 			if v.State != "pending" || !done[v.Name] {
 				continue
 			}
-			err = tx.q.VideoUpdateState(ctx, schema.VideoUpdateStateParams{
+			err = tx.q.VideoUpdateState(schema.VideoUpdateStateParams{
 				State: "importing",
 				ID:    v.ID,
 			})
+
 			if err != nil {
 				return err
 			}
@@ -527,12 +532,13 @@ func (tx *TxRW) processDownload(ctx Context, infoHash string) (err error) {
 	if t.PercentDone != nil {
 		progress = *t.PercentDone
 	}
-	_, err = tx.q.DownloadUpdateProgress(ctx, schema.DownloadUpdateProgressParams{
+	_, err = tx.q.DownloadUpdateProgress(schema.DownloadUpdateProgressParams{
 		State:          state,
 		Progress:       progress,
 		LastActivityAt: time.Now().UnixMilli(),
 		InfoHash:       infoHash,
 	})
+
 	return err
 }
 
@@ -566,7 +572,7 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader, sedID, medID *str
 		}
 	}
 	infoHash := mi.HashInfoBytes().HexString()
-	dl, err := tx.q.DownloadGet(ctx, infoHash)
+	dl, err := tx.q.DownloadGet(infoHash)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, err
 	}
@@ -582,20 +588,20 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader, sedID, medID *str
 		if err := tx.Restore(ctx, infoHash); err != nil {
 			return nil, err
 		}
-		if err := tx.q.DownloadUpdateTargeting(ctx, schema.DownloadUpdateTargetingParams{
+		if err := tx.q.DownloadUpdateTargeting(schema.DownloadUpdateTargetingParams{
 			SeriesEditionID: sedID,
 			MovieEditionID:  medID,
 			InfoHash:        infoHash,
 		}); err != nil {
 			return nil, err
 		}
-		dl, err = tx.q.DownloadGet(ctx, infoHash)
+		dl, err = tx.q.DownloadGet(infoHash)
 		if err != nil {
 			return nil, err
 		}
 		return tx.newDownload(ctx, dl)
 	}
-	dl, err = tx.q.DownloadCreate(ctx, schema.DownloadCreateParams{
+	dl, err = tx.q.DownloadCreate(schema.DownloadCreateParams{
 		InfoHash:        infoHash,
 		State:           "queued",
 		Title:           info.Name,
@@ -603,6 +609,7 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader, sedID, medID *str
 		SeriesEditionID: sedID,
 		MovieEditionID:  medID,
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -610,10 +617,11 @@ func (tx *TxRW) DownloadCreate(ctx Context, torrent io.Reader, sedID, medID *str
 		if !hasVideoExtension(path) {
 			return nil
 		}
-		_, err := tx.q.VideoCreate(ctx, schema.VideoCreateParams{
+		_, err := tx.q.VideoCreate(schema.VideoCreateParams{
 			InfoHash: &dl.InfoHash,
 			Name:     path,
 		})
+
 		return err
 	}
 	if !info.IsDir() {
@@ -640,7 +648,7 @@ func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) error {
 		return fmt.Errorf("no transmission client available")
 	}
 
-	dl, err := tx.q.DownloadGet(ctx, args[0])
+	dl, err := tx.q.DownloadGet(args[0])
 	if err != nil {
 		return err
 	}
@@ -658,7 +666,7 @@ func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) error {
 	} else if len(ts) != 1 {
 		return fmt.Errorf("%s: got %d torrents, wanted 1", *t.HashString, len(ts))
 	}
-	return tx.m.WithTxRW(func(tx *TxRW) error {
+	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.updateDownload(ctx, &ts[0])
 	})
 }
@@ -667,7 +675,7 @@ func (tx *TxR) taskAddDownloadToTransmission(ctx Context, args []string) error {
 // can still be planned (not already done/error),
 // then parses the torrent info.
 func (tx *TxRW) downloadForPlanning(ctx Context, infoHash string) (schema.Download, *metainfo.Info, error) {
-	dl, err := tx.q.DownloadGet(ctx, infoHash)
+	dl, err := tx.q.DownloadGet(infoHash)
 	if err != nil {
 		return dl, nil, err
 	}
@@ -712,18 +720,20 @@ func (tx *TxRW) DownloadCreatePlanSeries(ctx Context, infoHash, sedID string) (d
 		if len(epIDs) == 0 {
 			continue
 		}
-		vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
+		vid, err := tx.q.VideoGetByName(schema.VideoGetByNameParams{
 			InfoHash: &dl.InfoHash,
 			Name:     p,
 		})
+
 		if err != nil {
 			return nil, err
 		}
 		for _, epID := range epIDs {
-			_, err = tx.q.EpisodeVideoCreate(ctx, schema.EpisodeVideoCreateParams{
+			_, err = tx.q.EpisodeVideoCreate(schema.EpisodeVideoCreateParams{
 				EpisodeID: epID,
 				VideoID:   vid.ID,
 			})
+
 			if err != nil {
 				return nil, err
 			}
@@ -745,17 +755,19 @@ func (tx *TxRW) DownloadCreatePlanMovie(ctx Context, infoHash, medID string) (d 
 		if !hasVideoExtension(path) {
 			return nil
 		}
-		vid, err := tx.q.VideoGetByName(ctx, schema.VideoGetByNameParams{
+		vid, err := tx.q.VideoGetByName(schema.VideoGetByNameParams{
 			InfoHash: &dl.InfoHash,
 			Name:     path,
 		})
+
 		if err != nil {
 			return err
 		}
-		_, err = tx.q.MovieVideoCreate(ctx, schema.MovieVideoCreateParams{
+		_, err = tx.q.MovieVideoCreate(schema.MovieVideoCreateParams{
 			MovieEditionID: medID,
 			VideoID:        vid.ID,
 		})
+
 		return err
 	}
 	if !info.IsDir() {
@@ -781,11 +793,12 @@ func (tx *TxRW) updateDownload(ctx Context, t *transmissionrpc.Torrent) error {
 	slog.InfoContext(ctx, "update-download", "hash", infoHash)
 
 	if t.ErrorString != nil && *t.ErrorString != "" {
-		_, err := tx.q.DownloadUpdateError(ctx, schema.DownloadUpdateErrorParams{
+		_, err := tx.q.DownloadUpdateError(schema.DownloadUpdateErrorParams{
 			Error:          *t.ErrorString,
 			LastActivityAt: time.Now().UnixMilli(),
 			InfoHash:       infoHash,
 		})
+
 		return err
 	}
 
@@ -853,8 +866,8 @@ func (m *Model) autoTrashDownloadsLoop() {
 
 func (m *Model) autoTrashDownloadsOnce(ctx Context) error {
 	threshold := time.Now().Add(-downloadIdleTimeout).UnixMilli()
-	return m.WithTxRW(func(tx *TxRW) error {
-		infoHashes, err := tx.q.DownloadListAutoTrashCandidates(ctx, threshold)
+	return m.WithTxRW(ctx, func(tx *TxRW) error {
+		infoHashes, err := tx.q.DownloadListAutoTrashCandidates(threshold)
 		if err != nil {
 			return err
 		}
@@ -874,9 +887,9 @@ func (m *Model) pollTransmissionOnce() error {
 		return nil
 	}
 	var active []string
-	if err := m.WithTxR(func(tx *TxR) error {
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
 		var err error
-		active, err = tx.q.DownloadListInfoHashesActive(ctx)
+		active, err = tx.q.DownloadListInfoHashesActive()
 		return err
 	}); err != nil {
 		return err
@@ -889,7 +902,7 @@ func (m *Model) pollTransmissionOnce() error {
 	if err != nil {
 		return err
 	}
-	return m.WithTxRW(func(tx *TxRW) error {
+	return m.WithTxRW(ctx, func(tx *TxRW) error {
 		for i := range ts {
 			if ts[i].HashString == nil {
 				continue

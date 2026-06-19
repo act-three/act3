@@ -23,6 +23,8 @@ import (
 )
 
 //go:generate sqlc generate
+//go:generate go run ./internal/sqlcctx schema
+//go:generate goimports -w schema/db.go schema/query.sql.go
 
 const (
 	// Per-connection pragmas.
@@ -103,8 +105,8 @@ func Open(name string) (dbr, dbw *sql.DB, err error) {
 func updateSchema(db *sql.DB) (err error) {
 	defer errorfmt.Handlef("update schema: %w", &err)
 	log := slog.Default().WithGroup("schema")
-	q := schema.New(db)
-	cur, _ := q.SchemaVersionGet(context.Background())
+	q := schema.New(context.Background(), db)
+	cur, _ := q.SchemaVersionGet()
 	if cur.Version == "" {
 		cur.Version = "###"
 	}
@@ -154,8 +156,8 @@ func applySchemaUpdate(log *slog.Logger, db *sql.DB, name, version, digest, upda
 	if err != nil {
 		return err
 	}
-	q := schema.New(tx)
-	err = q.SchemaVersionSet(context.Background(), schema.SchemaVersionSetParams{
+	q := schema.New(context.Background(), tx)
+	err = q.SchemaVersionSet(schema.SchemaVersionSetParams{
 		Version: version,
 		Digest:  digest,
 	})

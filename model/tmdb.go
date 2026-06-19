@@ -32,7 +32,7 @@ func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	return tx.m.WithTxRW(func(tx *TxRW) error {
+	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.MovieEditionPosterIDSet(ctx, medID, posterID)
 	})
 }

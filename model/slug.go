@@ -23,7 +23,7 @@ const (
 // SlugResolve returns nil when no object is found.
 func (tx *TxR) SlugResolve(ctx Context, path []string) map[string]string {
 	slug := getSlug(0, path)
-	s, err := tx.q.SlugGet(ctx, slug)
+	s, err := tx.q.SlugGet(slug)
 	if err != nil {
 		return nil
 	}
@@ -93,17 +93,19 @@ func (tx *TxR) resolveSeries(ctx Context, seriesSlug string, rest []string) map[
 }
 
 func (tx *TxR) resolveEpisode(ctx Context, seriesSlug, edSlug, epSlug string) map[string]string {
-	sed, err := tx.q.SeriesEditionGetBySlug(ctx, schema.SeriesEditionGetBySlugParams{
+	sed, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
 		SeriesSlug:  seriesSlug,
 		EditionSlug: edSlug,
 	})
+
 	if err != nil {
 		return nil
 	}
-	snep, err := tx.q.SeasonEpisodeGetBySlug(ctx, schema.SeasonEpisodeGetBySlugParams{
+	snep, err := tx.q.SeasonEpisodeGetBySlug(schema.SeasonEpisodeGetBySlugParams{
 		EditionID: sed.ID,
 		Slug:      epSlug,
 	})
+
 	if err != nil {
 		return nil
 	}

@@ -179,7 +179,7 @@ func (im Image) Srcset() string {
 // originalID.
 func (tx *TxR) ImageVariantKey(ctx Context, originalID string, width int) (key string, err error) {
 	defer errorfmt.Handlef("image variant key: %w", &err)
-	vs, err := tx.q.ImageRenditionListByImageID(ctx, originalID)
+	vs, err := tx.q.ImageRenditionListByImageID(originalID)
 	if err != nil {
 		return "", err
 	}
@@ -257,22 +257,23 @@ func (m *Model) ImageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind
 // the row is created with id (used for boot-time placeholders,
 // whose IDs are fixed so parent FK DEFAULTs can reference them).
 func (m *Model) insertImage(ctx context.Context, id, mime string, raw []byte, variants []encodedVariant) (originalID string, err error) {
-	err = m.WithTxRW(func(tx *TxRW) error {
+	err = m.WithTxRW(ctx, func(tx *TxRW) error {
 		originalKey, err := m.store.Copy(bytes.NewReader(raw))
 		if err != nil {
 			return err
 		}
 		if id == "" {
-			io_, err := tx.q.ImageCreate(ctx, schema.ImageCreateParams{
+			io_, err := tx.q.ImageCreate(schema.ImageCreateParams{
 				OriginalKey: originalKey,
 				Type:        mime,
 			})
+
 			if err != nil {
 				return err
 			}
 			originalID = io_.ID
 		} else {
-			if err := tx.q.ImageCreateWithID(ctx, schema.ImageCreateWithIDParams{
+			if err := tx.q.ImageCreateWithID(schema.ImageCreateWithIDParams{
 				ID:          id,
 				OriginalKey: originalKey,
 				Type:        mime,
@@ -286,7 +287,7 @@ func (m *Model) insertImage(ctx context.Context, id, mime string, raw []byte, va
 			if err != nil {
 				return err
 			}
-			if err := tx.q.ImageRenditionCreate(ctx, schema.ImageRenditionCreateParams{
+			if err := tx.q.ImageRenditionCreate(schema.ImageRenditionCreateParams{
 				Key:     variantKey,
 				ImageID: originalID,
 				Type:    "image/webp",
@@ -443,8 +444,8 @@ func (m *Model) insertPlaceholderImages(ctx context.Context) error {
 // exists it returns nil without touching the store or the
 // Image / ImageRendition tables.
 func (m *Model) insertPlaceholder(ctx context.Context, b *placeholderBlobs) error {
-	err := m.WithTxR(func(tx *TxR) error {
-		_, err := tx.q.ImageGet(ctx, b.id)
+	err := m.WithTxR(ctx, func(tx *TxR) error {
+		_, err := tx.q.ImageGet(b.id)
 		return err
 	})
 	if err == nil {
@@ -469,11 +470,11 @@ func (m *Model) insertPlaceholder(ctx context.Context, b *placeholderBlobs) erro
 // reachable from anywhere and can be removed without ref
 // counting.
 func (tx *TxRW) imageDelete(ctx Context, imageID string) error {
-	renditionKeys, err := tx.q.ImageRenditionDeleteByImageID(ctx, imageID)
+	renditionKeys, err := tx.q.ImageRenditionDeleteByImageID(imageID)
 	if err != nil {
 		return err
 	}
-	imageKey, err := tx.q.ImageDelete(ctx, imageID)
+	imageKey, err := tx.q.ImageDelete(imageID)
 	if err != nil {
 		return err
 	}

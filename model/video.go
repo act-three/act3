@@ -31,7 +31,7 @@ func (v *Video) Active() bool { return v.active }
 func (v *Video) Playable() bool { return v.v.Playable != 0 }
 
 func (tx *TxR) Video(ctx Context, id string) (*Video, error) {
-	v, err := tx.q.VideoGet(ctx, id)
+	v, err := tx.q.VideoGet(id)
 	if err != nil {
 		return nil, err
 	}
@@ -54,23 +54,23 @@ type MVFilter struct {
 // video, or any source audio track without an encoded rendition), or
 // when a filter pins to a rendition that doesn't belong to this video.
 func (tx *TxR) MVPlaylist(ctx Context, videoID string, filter MVFilter) (string, error) {
-	vid, err := tx.q.VideoGet(ctx, videoID)
+	vid, err := tx.q.VideoGet(videoID)
 	if err != nil {
 		return "", err
 	}
-	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(ctx, videoID)
+	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(videoID)
 	if err != nil {
 		return "", err
 	}
-	encodedAudio, err := tx.q.AudioRenditionListEncodedForMV(ctx, videoID)
+	encodedAudio, err := tx.q.AudioRenditionListEncodedForMV(videoID)
 	if err != nil {
 		return "", err
 	}
-	tracks, err := tx.q.AudioTrackListByVideoID(ctx, videoID)
+	tracks, err := tx.q.AudioTrackListByVideoID(videoID)
 	if err != nil {
 		return "", err
 	}
-	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, videoID)
+	subTracks, err := tx.q.SubtitleTrackListByVideoID(videoID)
 	if err != nil {
 		return "", err
 	}
@@ -111,7 +111,7 @@ func filterAudioByRenditionID(rends []schema.AudioRendition, id string) []schema
 }
 
 func (tx *TxR) VideoListByEpisodeID(ctx Context, epID string) ([]schema.Video, error) {
-	return tx.q.VideoListByEpisodeID(ctx, epID)
+	return tx.q.VideoListByEpisodeID(epID)
 }
 
 func vidMapByID(vids []schema.Video) map[string]*Video {

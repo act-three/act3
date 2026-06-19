@@ -27,18 +27,20 @@ func TestMergeDuplicateVideoMovesJunctions(t *testing.T) {
 	// Second episode in the same edition so the loser has a distinct
 	// junction the reassign must preserve.
 	var epSecondID string
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		ep, err := tx.q.EpisodeCreate(ctx, schema.EpisodeCreateParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		ep, err := tx.q.EpisodeCreate(schema.EpisodeCreateParams{
 			Title: "E2", Type: "regular", Runtime: 30,
 		})
+
 		if err != nil {
 			return err
 		}
 		epSecondID = ep.ID
-		return tx.q.SeasonEpisodeCreate(ctx, schema.SeasonEpisodeCreateParams{
+		return tx.q.SeasonEpisodeCreate(schema.SeasonEpisodeCreateParams{
 			EditionID: sedID, SeasonID: snID,
 			EpisodeID: epSecondID, SortKey: 2, Label: "2", Number: 2, Slug: "s1e2-e2",
 		})
+
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -66,10 +68,11 @@ func TestMergeDuplicateVideoMovesJunctions(t *testing.T) {
 	attachVideoToDownload(t, m, vidWinnerID, infoHash1)
 
 	// Set winner's OriginalKey + ContentHash.
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		_, err := tx.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		_, err := tx.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
 			ID: vidWinnerID, OriginalKey: winnerKey, ContentHash: contentHash,
 		})
+
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -79,29 +82,31 @@ func TestMergeDuplicateVideoMovesJunctions(t *testing.T) {
 	// It also gets pinned to Download #2 so bumpDownloadActivity has
 	// something to update.
 	var vidLoserID string
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		vid, err := tx.q.VideoCreate(ctx, schema.VideoCreateParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		vid, err := tx.q.VideoCreate(schema.VideoCreateParams{
 			InfoHash: &infoHash2, Name: "pilot.mkv",
 		})
+
 		if err != nil {
 			return err
 		}
 		vidLoserID = vid.ID
-		_, err = tx.q.EpisodeVideoCreate(ctx, schema.EpisodeVideoCreateParams{
+		_, err = tx.q.EpisodeVideoCreate(schema.EpisodeVideoCreateParams{
 			EpisodeID: epSecondID, VideoID: vidLoserID,
 		})
+
 		return err
 	}); err != nil {
 		t.Fatal(err)
 	}
 
 	// Drive the merge.
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		loser, err := tx.q.VideoGet(ctx, vidLoserID)
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		loser, err := tx.q.VideoGet(vidLoserID)
 		if err != nil {
 			return err
 		}
-		winner, err := tx.q.VideoGet(ctx, vidWinnerID)
+		winner, err := tx.q.VideoGet(vidWinnerID)
 		if err != nil {
 			return err
 		}
@@ -111,19 +116,19 @@ func TestMergeDuplicateVideoMovesJunctions(t *testing.T) {
 	}
 
 	// Loser is gone; winner's junctions now cover both episodes.
-	if err := m.WithTxR(func(tx *TxR) error {
-		_, err := tx.q.VideoGet(ctx, vidLoserID)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		_, err := tx.q.VideoGet(vidLoserID)
 		if !errors.Is(err, sql.ErrNoRows) {
 			t.Errorf("loser Video should be gone: err=%v", err)
 		}
-		winner, err := tx.q.VideoGet(ctx, vidWinnerID)
+		winner, err := tx.q.VideoGet(vidWinnerID)
 		if err != nil {
 			return err
 		}
 		if winner.OriginalKey != winnerKey {
 			t.Errorf("winner OriginalKey changed: got %q, want %q", winner.OriginalKey, winnerKey)
 		}
-		evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vidWinnerID)
+		evs, err := tx.q.EpisodeVideoListByVideoID(vidWinnerID)
 		if err != nil {
 			return err
 		}
@@ -134,7 +139,7 @@ func TestMergeDuplicateVideoMovesJunctions(t *testing.T) {
 		if !seen[epWinID] || !seen[epSecondID] {
 			t.Errorf("winner junctions = %+v, want both %s and %s", evs, epWinID, epSecondID)
 		}
-		loserEvs, err := tx.q.EpisodeVideoListByVideoID(ctx, vidLoserID)
+		loserEvs, err := tx.q.EpisodeVideoListByVideoID(vidLoserID)
 		if err != nil {
 			return err
 		}
@@ -185,32 +190,35 @@ func TestMergeDuplicateVideoRestoresSoftDeletedJunction(t *testing.T) {
 	contentHash := h.Sum(nil)
 	deletedAt := int64(1)
 
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		if _, err := tx.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		if _, err := tx.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
 			ID: vidWinnerID, OriginalKey: winnerKey, ContentHash: contentHash,
 		}); err != nil {
 			return err
 		}
-		return tx.q.EpisodeVideoSoftDelete(ctx, schema.EpisodeVideoSoftDeleteParams{
+		return tx.q.EpisodeVideoSoftDelete(schema.EpisodeVideoSoftDeleteParams{
 			EpisodeID: epID, VideoID: vidWinnerID, DeletedAt: &deletedAt,
 		})
+
 	}); err != nil {
 		t.Fatal(err)
 	}
 
 	// Create loser Video with a LIVE junction to the same episode.
 	var vidLoserID string
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		vid, err := tx.q.VideoCreate(ctx, schema.VideoCreateParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		vid, err := tx.q.VideoCreate(schema.VideoCreateParams{
 			InfoHash: &infoHash2, Name: "pilot.mkv",
 		})
+
 		if err != nil {
 			return err
 		}
 		vidLoserID = vid.ID
-		_, err = tx.q.EpisodeVideoCreate(ctx, schema.EpisodeVideoCreateParams{
+		_, err = tx.q.EpisodeVideoCreate(schema.EpisodeVideoCreateParams{
 			EpisodeID: epID, VideoID: vidLoserID,
 		})
+
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -221,12 +229,12 @@ func TestMergeDuplicateVideoRestoresSoftDeletedJunction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		loser, err := tx.q.VideoGet(ctx, vidLoserID)
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		loser, err := tx.q.VideoGet(vidLoserID)
 		if err != nil {
 			return err
 		}
-		winner, err := tx.q.VideoGet(ctx, vidWinnerID)
+		winner, err := tx.q.VideoGet(vidWinnerID)
 		if err != nil {
 			return err
 		}
@@ -237,8 +245,8 @@ func TestMergeDuplicateVideoRestoresSoftDeletedJunction(t *testing.T) {
 
 	// The winner's junction is back to live (DeletedAt cleared); the
 	// episode has a live attachment again.
-	if err := m.WithTxR(func(tx *TxR) error {
-		evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vidWinnerID)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		evs, err := tx.q.EpisodeVideoListByVideoID(vidWinnerID)
 		if err != nil {
 			return err
 		}
@@ -269,18 +277,19 @@ func TestVideoListByContentHashFiltersDeleted(t *testing.T) {
 	h.Write([]byte("some bytes"))
 	sum := h.Sum(nil)
 
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		_, err := tx.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		_, err := tx.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
 			ID: vidID, OriginalKey: "key", ContentHash: sum,
 		})
+
 		return err
 	}); err != nil {
 		t.Fatal(err)
 	}
 
 	// Live video is returned.
-	if err := m.WithTxR(func(tx *TxR) error {
-		got, err := tx.q.VideoListByContentHash(ctx, sum)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		got, err := tx.q.VideoListByContentHash(sum)
 		if err != nil {
 			return err
 		}
@@ -293,15 +302,16 @@ func TestVideoListByContentHashFiltersDeleted(t *testing.T) {
 	}
 
 	// After soft-delete, the query excludes it.
-	if err := m.WithTxRW(func(tx *TxRW) error {
-		return tx.q.VideoSoftDelete(ctx, schema.VideoSoftDeleteParams{
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		return tx.q.VideoSoftDelete(schema.VideoSoftDeleteParams{
 			ID: vidID, DeletedAt: &[]int64{1}[0],
 		})
+
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.WithTxR(func(tx *TxR) error {
-		got, err := tx.q.VideoListByContentHash(ctx, sum)
+	if err := m.WithTxR(ctx, func(tx *TxR) error {
+		got, err := tx.q.VideoListByContentHash(sum)
 		if err != nil {
 			return err
 		}

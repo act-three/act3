@@ -30,8 +30,8 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 
 	sedID := args[1]
 
-	return tx.m.WithTxRW(func(tx *TxRW) error {
-		_, err := tx.q.SeriesGetByTVmazeID(ctx, &id)
+	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
+		_, err := tx.q.SeriesGetByTVmazeID(&id)
 		if err != nil {
 			return err
 		}
@@ -42,12 +42,13 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 			if title == "" {
 				title = fmt.Sprintf("Season %d", ts.Number)
 			}
-			season, err := tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
+			season, err := tx.q.SeasonCreate(schema.SeasonCreateParams{
 				EditionID: sedID,
 				SortKey:   fmt.Sprintf("%03d", ts.Number),
 				Title:     title,
 				Number:    int64(ts.Number),
 			})
+
 			if err != nil {
 				return err
 			}
@@ -56,14 +57,14 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 
 		neps := norm.TVmazeEpisodes(eps)
 		for _, ne := range neps {
-			ep, err := tx.q.EpisodeCreate(ctx, ne.Episode)
+			ep, err := tx.q.EpisodeCreate(ne.Episode)
 			if err != nil {
 				return err
 			}
 			ne.SeasonEpisode.EditionID = sedID
 			ne.SeasonEpisode.SeasonID = sns[ne.Season].ID
 			ne.SeasonEpisode.EpisodeID = ep.ID
-			err = tx.q.SeasonEpisodeCreate(ctx, ne.SeasonEpisode)
+			err = tx.q.SeasonEpisodeCreate(ne.SeasonEpisode)
 			if err != nil {
 				return err
 			}
@@ -91,7 +92,7 @@ func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) err
 	if err != nil {
 		return err
 	}
-	return tx.m.WithTxRW(func(tx *TxRW) error {
+	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.EpisodeThumbnailIDSet(ctx, epID, thumbnailID)
 	})
 }
@@ -103,7 +104,7 @@ func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
-	return tx.m.WithTxRW(func(tx *TxRW) error {
+	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.SeriesEditionPosterIDSet(ctx, sedID, posterID)
 	})
 }

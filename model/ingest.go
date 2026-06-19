@@ -62,7 +62,7 @@ func boolToInt64(b bool) int64 {
 }
 
 func (tx *TxR) taskIngest(ctx Context, args []string) error {
-	vid, err := tx.q.VideoGet(ctx, args[0])
+	vid, err := tx.q.VideoGet(args[0])
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	retryIngest := func() error {
 		slog.InfoContext(ctx, "ingest: file not yet available, retrying",
 			"vid", vid.ID, "dir", remoteDir, "name", name)
-		return tx.m.WithTxRW(func(txw *TxRW) error {
+		return tx.m.WithTxRW(ctx, func(txw *TxRW) error {
 			return txw.addTaskAfter(ctx, 5*time.Second, taskIngest, args...)
 		})
 	}
@@ -100,7 +100,7 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	}
 	defer src.Close()
 
-	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	evs, err := tx.q.EpisodeVideoListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -115,11 +115,11 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 	}
 
 	merged := false
-	err = tx.m.WithTxRW(func(txw *TxRW) error {
+	err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
 		// If another live Video already has these exact bytes, merge
 		// the current (freshly-copied) Video into it: re-point the
 		// junctions, drop the duplicate bytes, hard-delete our row.
-		dups, err := txw.q.VideoListByContentHash(ctx, sum)
+		dups, err := txw.q.VideoListByContentHash(sum)
 		if err != nil {
 			return err
 		}
@@ -130,11 +130,12 @@ func (tx *TxR) taskIngest(ctx Context, args []string) error {
 			merged = true
 			return txw.mergeDuplicateVideo(ctx, vid, winner, key)
 		}
-		vid, err = txw.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+		vid, err = txw.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
 			ID:          vid.ID,
 			OriginalKey: key,
 			ContentHash: sum,
 		})
+
 		return err
 	})
 	if err != nil {
@@ -159,34 +160,34 @@ func (tx *TxRW) mergeDuplicateVideo(ctx Context, loser schema.Video, winner sche
 	// collide with live loser junctions on reassign. The loser's
 	// live junction represents current user intent and supersedes
 	// the older detach.
-	if err := tx.q.EpisodeVideoRestoreForReassign(ctx, schema.EpisodeVideoRestoreForReassignParams{
+	if err := tx.q.EpisodeVideoRestoreForReassign(schema.EpisodeVideoRestoreForReassignParams{
 		FromVideoID: loser.ID,
 		ToVideoID:   winner.ID,
 	}); err != nil {
 		return err
 	}
-	if err := tx.q.EpisodeVideoReassign(ctx, schema.EpisodeVideoReassignParams{
+	if err := tx.q.EpisodeVideoReassign(schema.EpisodeVideoReassignParams{
 		FromVideoID: loser.ID,
 		ToVideoID:   winner.ID,
 	}); err != nil {
 		return err
 	}
-	if err := tx.q.EpisodeVideoDeleteByVideoID(ctx, loser.ID); err != nil {
+	if err := tx.q.EpisodeVideoDeleteByVideoID(loser.ID); err != nil {
 		return err
 	}
-	if err := tx.q.MovieVideoRestoreForReassign(ctx, schema.MovieVideoRestoreForReassignParams{
+	if err := tx.q.MovieVideoRestoreForReassign(schema.MovieVideoRestoreForReassignParams{
 		FromVideoID: loser.ID,
 		ToVideoID:   winner.ID,
 	}); err != nil {
 		return err
 	}
-	if err := tx.q.MovieVideoReassign(ctx, schema.MovieVideoReassignParams{
+	if err := tx.q.MovieVideoReassign(schema.MovieVideoReassignParams{
 		FromVideoID: loser.ID,
 		ToVideoID:   winner.ID,
 	}); err != nil {
 		return err
 	}
-	if err := tx.q.MovieVideoDeleteByVideoID(ctx, loser.ID); err != nil {
+	if err := tx.q.MovieVideoDeleteByVideoID(loser.ID); err != nil {
 		return err
 	}
 	if loser.InfoHash != nil {
@@ -199,7 +200,7 @@ func (tx *TxRW) mergeDuplicateVideo(ctx Context, loser schema.Video, winner sche
 			return err
 		}
 	}
-	if err := tx.q.VideoHardDelete(ctx, loser.ID); err != nil {
+	if err := tx.q.VideoHardDelete(loser.ID); err != nil {
 		return err
 	}
 	tx.onCommit(func() {
@@ -217,7 +218,7 @@ func (tx *TxRW) mergeDuplicateVideo(ctx Context, loser schema.Video, winner sche
 // opened progress tracking for vid.ID.
 func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error) {
 	defer func() { tx.m.prog.Close(vid.ID, err) }()
-	existing, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
+	existing, err := tx.q.RenditionListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -323,8 +324,8 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 	}
 
 	tx.m.prog.UpdateStatus(vid.ID, "Queued")
-	return tx.m.WithTxRW(func(txw *TxRW) error {
-		err = txw.q.VideoUpdateProbe(ctx, schema.VideoUpdateProbeParams{
+	return tx.m.WithTxRW(ctx, func(txw *TxRW) error {
+		err = txw.q.VideoUpdateProbe(schema.VideoUpdateProbeParams{
 			ID:                 vid.ID,
 			Duration:           probe.Duration.Milliseconds(),
 			OriginalType:       probe.ContentType(),
@@ -341,25 +342,26 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			DolbyVisionProfile: int64(probe.Video.DolbyVisionProfile),
 			ColorTransfer:      probe.Video.ColorTransfer,
 		})
+
 		if err != nil {
 			return err
 		}
 		streamIndexToTrackID := make(map[int]string, len(atParams))
 		for _, at := range atParams {
-			created, err := txw.q.AudioTrackCreate(ctx, at)
+			created, err := txw.q.AudioTrackCreate(at)
 			if err != nil {
 				return err
 			}
 			streamIndexToTrackID[int(created.StreamIndex)] = created.ID
 		}
 		for _, st := range stParams {
-			_, err = txw.q.SubtitleTrackCreate(ctx, st)
+			_, err = txw.q.SubtitleTrackCreate(st)
 			if err != nil {
 				return err
 			}
 		}
 		for _, rp := range rendParams {
-			_, err = txw.q.RenditionCreate(ctx, rp)
+			_, err = txw.q.RenditionCreate(rp)
 			if err != nil {
 				return err
 			}
@@ -370,7 +372,7 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 			if !ok {
 				return fmt.Errorf("audio rendition: no AudioTrack for source stream %d", ar.SourceStreamIndex)
 			}
-			created, err := txw.q.AudioRenditionCreate(ctx, schema.AudioRenditionCreateParams{
+			created, err := txw.q.AudioRenditionCreate(schema.AudioRenditionCreateParams{
 				VideoID:      vid.ID,
 				AudioTrackID: trackID,
 				Channels:     int64(ar.Channels),
@@ -379,6 +381,7 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 				Priority:     int64(ar.Priority),
 				SortKey:      int64(ar.SortKey),
 			})
+
 			if err != nil {
 				return err
 			}
@@ -399,13 +402,13 @@ func (tx *TxR) planAndCreateRenditions(ctx Context, vid schema.Video) (err error
 // renditions of a video, saves the stats blobs to the DB, then queues
 // per-rendition encode tasks.
 func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
-	vid, err := tx.q.VideoGet(ctx, args[0])
+	vid, err := tx.q.VideoGet(args[0])
 	if err != nil {
 		return err
 	}
 
 	// Re-derive episode→video edges for progress tracking.
-	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	evs, err := tx.q.EpisodeVideoListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -415,7 +418,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 	tx.m.prog.Open(vid.ID, vid.Name, "Starting")
 	defer func() { tx.m.prog.Close(vid.ID, err) }()
 
-	renditions, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
+	renditions, err := tx.q.RenditionListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -493,7 +496,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 
 	// Queue one encode task per rendition.
 	tx.m.prog.UpdateStatus(vid.ID, "Queuing renditions")
-	return tx.m.WithTxRW(func(txw *TxRW) error {
+	return tx.m.WithTxRW(ctx, func(txw *TxRW) error {
 		for _, r := range renditions {
 			ttype := taskIngestEncodeRend
 			if r.Purpose == "download" {
@@ -508,7 +511,7 @@ func (tx *TxR) taskIngestPass1(ctx Context, args []string) (err error) {
 // taskIngestEncodeAudio encodes the audio rendition named in args
 // and rebuilds the MV playlist.
 func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
-	ar, err := tx.q.AudioRenditionGet(ctx, args[0])
+	ar, err := tx.q.AudioRenditionGet(args[0])
 	if err == sql.ErrNoRows {
 		return nil // rendition deleted (reencode or trash)
 	}
@@ -519,18 +522,18 @@ func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
 		return nil // already encoded (retried task)
 	}
 
-	vid, err := tx.q.VideoGet(ctx, ar.VideoID)
+	vid, err := tx.q.VideoGet(ar.VideoID)
 	if err != nil {
 		return err
 	}
 
-	at, err := tx.q.AudioTrackGet(ctx, ar.AudioTrackID)
+	at, err := tx.q.AudioTrackGet(ar.AudioTrackID)
 	if err != nil {
 		return err
 	}
 
 	progKey := "aud-" + ar.ID
-	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	evs, err := tx.q.EpisodeVideoListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -580,13 +583,14 @@ func (tx *TxR) taskIngestEncodeAudio(ctx Context, args []string) error {
 	playlist = video.FixupMediaPlaylist(playlist, ffmpeg.MediaName(0), "/-/aud/"+ar.ID+".mp4")
 
 	tx.m.prog.UpdateStatus(progKey, desc+": saving")
-	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		_, err := txw.q.AudioRenditionUpdateEncode(ctx,
+	err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
+		_, err := txw.q.AudioRenditionUpdateEncode(
 			schema.AudioRenditionUpdateEncodeParams{
 				ID:       ar.ID,
 				Key:      hash,
 				Playlist: playlist,
 			})
+
 		if err != nil {
 			return err
 		}
@@ -603,7 +607,7 @@ func audioRendDesc(ar schema.AudioRendition) string {
 // taskIngestEncodeRend encodes the streaming rendition named in args
 // and rebuilds the MV playlist.
 func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
-	rfs, err := tx.q.RenditionGet(ctx, args[0])
+	rfs, err := tx.q.RenditionGet(args[0])
 	if err == sql.ErrNoRows {
 		return nil // rendition deleted (reencode or trash)
 	}
@@ -614,7 +618,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 		return nil // already encoded (retried task)
 	}
 
-	vid, err := tx.q.VideoGet(ctx, rfs.VideoID)
+	vid, err := tx.q.VideoGet(rfs.VideoID)
 	if err != nil {
 		return err
 	}
@@ -622,7 +626,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 	// Determine whether any rendition is a stream-copy remux: that
 	// decides whether segment boundaries must follow source keyframes
 	// or can be on a synthetic grid.
-	all, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
+	all, err := tx.q.RenditionListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -636,7 +640,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 
 	// Progress tracking: use rendition ID as key, link to video.
 	progKey := "rfs-" + rfs.ID
-	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	evs, err := tx.q.EpisodeVideoListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -705,14 +709,14 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 
 	tx.m.prog.UpdateStatus(progKey, desc+": saving")
 	var allDone bool
-	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		_, err := txw.q.RenditionUpdateEncode(ctx,
+	err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
+		_, err := txw.q.RenditionUpdateEncode(
 			schema.RenditionUpdateEncodeParams{
 				ID:       rfs.ID,
 				Key:      hash,
 				Playlist: playlist,
-			},
-		)
+			})
+
 		if err != nil {
 			return err
 		}
@@ -734,7 +738,7 @@ func (tx *TxR) taskIngestEncodeRend(ctx Context, args []string) error {
 // taskIngestEncodeDownloadRend encodes the download rendition named
 // in args as a plain MP4 with faststart.
 func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
-	rfd, err := tx.q.RenditionGet(ctx, args[0])
+	rfd, err := tx.q.RenditionGet(args[0])
 	if err == sql.ErrNoRows {
 		return nil // rendition deleted (reencode or trash)
 	}
@@ -745,13 +749,13 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 		return nil // already encoded (retried task)
 	}
 
-	vid, err := tx.q.VideoGet(ctx, rfd.VideoID)
+	vid, err := tx.q.VideoGet(rfd.VideoID)
 	if err != nil {
 		return err
 	}
 
 	progKey := "rfd-" + rfd.ID
-	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	evs, err := tx.q.EpisodeVideoListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -801,13 +805,13 @@ func (tx *TxR) taskIngestEncodeDownloadRend(ctx Context, args []string) error {
 
 	tx.m.prog.UpdateStatus(progKey, "download mp4: saving")
 	var allDone bool
-	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		_, err := txw.q.RenditionUpdateEncode(ctx,
+	err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
+		_, err := txw.q.RenditionUpdateEncode(
 			schema.RenditionUpdateEncodeParams{
 				ID:  rfd.ID,
 				Key: hash,
-			},
-		)
+			})
+
 		if err != nil {
 			return err
 		}
@@ -837,7 +841,7 @@ func (tx *TxRW) ReimportVideo(ctx Context, videoID string) error {
 // Existing renditions remain playable until taskReencode tears them
 // down, minimizing the window during which the video is unwatchable.
 func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
-	vid, err := tx.q.VideoGet(ctx, args[0])
+	vid, err := tx.q.VideoGet(args[0])
 	if err != nil {
 		return err
 	}
@@ -856,7 +860,7 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	if len(ts) != 1 {
 		return fmt.Errorf("torrent %s: got %d results, wanted 1", *vid.InfoHash, len(ts))
 	}
-	dl, err := tx.q.DownloadGet(ctx, *vid.InfoHash)
+	dl, err := tx.q.DownloadGet(*vid.InfoHash)
 	if err != nil {
 		return err
 	}
@@ -874,7 +878,7 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	}
 	defer src.Close()
 
-	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	evs, err := tx.q.EpisodeVideoListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -890,13 +894,14 @@ func (tx *TxR) taskReimport(ctx Context, args []string) (err error) {
 	}
 	oldKey := vid.OriginalKey
 
-	return tx.m.WithTxRW(func(txw *TxRW) error {
+	return tx.m.WithTxRW(ctx, func(txw *TxRW) error {
 		txw.onCommit(func() { tx.m.store.Remove(oldKey) })
-		_, err := txw.q.VideoUpdateOriginalKey(ctx, schema.VideoUpdateOriginalKeyParams{
+		_, err := txw.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
 			ID:          vid.ID,
 			OriginalKey: newKey,
 			ContentHash: newSum,
 		})
+
 		if err != nil {
 			return err
 		}
@@ -918,7 +923,7 @@ func (tx *TxRW) ReencodeVideo(ctx Context, videoID string) error {
 // taskReencode deletes all existing renditions for a video
 // and restarts the ingestion pipeline from the probe step.
 func (tx *TxR) taskReencode(ctx Context, args []string) error {
-	vid, err := tx.q.VideoGet(ctx, args[0])
+	vid, err := tx.q.VideoGet(args[0])
 	if err != nil {
 		return err
 	}
@@ -928,7 +933,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 
 	// Delete existing rendition CAS blobs and any stale pass1 data
 	// left behind by a prior cycle.
-	renditions, err := tx.q.RenditionListByVideoID(ctx, vid.ID)
+	renditions, err := tx.q.RenditionListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -937,7 +942,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 			tx.m.store.Remove(r.Key)
 		}
 	}
-	audioRends, err := tx.q.AudioRenditionListByVideoID(ctx, vid.ID)
+	audioRends, err := tx.q.AudioRenditionListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -946,7 +951,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 			tx.m.store.Remove(ar.Key)
 		}
 	}
-	subTracks, err := tx.q.SubtitleTrackListByVideoID(ctx, vid.ID)
+	subTracks, err := tx.q.SubtitleTrackListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -962,27 +967,28 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 
 	// Delete rendition, audio track, and subtitle track DB records;
 	// clear the playable flag.
-	err = tx.m.WithTxRW(func(txw *TxRW) error {
-		err := txw.q.AudioRenditionDeleteByVideoIDList(ctx, []string{vid.ID})
+	err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
+		err := txw.q.AudioRenditionDeleteByVideoIDList([]string{vid.ID})
 		if err != nil {
 			return err
 		}
-		err = txw.q.AudioTrackDeleteByVideoID(ctx, vid.ID)
+		err = txw.q.AudioTrackDeleteByVideoID(vid.ID)
 		if err != nil {
 			return err
 		}
-		err = txw.q.SubtitleTrackDeleteByVideoID(ctx, vid.ID)
+		err = txw.q.SubtitleTrackDeleteByVideoID(vid.ID)
 		if err != nil {
 			return err
 		}
-		err = txw.q.RenditionDeleteByVideoID(ctx, vid.ID)
+		err = txw.q.RenditionDeleteByVideoID(vid.ID)
 		if err != nil {
 			return err
 		}
-		_, err = txw.q.VideoUpdatePlayable(ctx, schema.VideoUpdatePlayableParams{
+		_, err = txw.q.VideoUpdatePlayable(schema.VideoUpdatePlayableParams{
 			ID:       vid.ID,
 			Playable: 0,
 		})
+
 		return err
 	})
 	if err != nil {
@@ -990,7 +996,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	}
 
 	// Set up progress tracking.
-	evs, err := tx.q.EpisodeVideoListByVideoID(ctx, vid.ID)
+	evs, err := tx.q.EpisodeVideoListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -1003,7 +1009,7 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 	// existing-rendition guard observes the post-delete state. Reusing
 	// the outer tx would still see the pre-delete snapshot pinned by
 	// our earlier reads, and the guard would short-circuit.
-	return tx.m.WithTxR(func(tx *TxR) error {
+	return tx.m.WithTxR(ctx, func(tx *TxR) error {
 		return tx.planAndCreateRenditions(ctx, vid)
 	})
 }
@@ -1014,15 +1020,15 @@ func (tx *TxR) taskReencode(ctx Context, args []string) error {
 // so explicitly. The MV playlist itself is built on demand by
 // (TxR).MVPlaylist.
 func (tx *TxRW) recomputePlayable(ctx Context, vid schema.Video) error {
-	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(ctx, vid.ID)
+	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
-	encodedAudio, err := tx.q.AudioRenditionListEncodedForMV(ctx, vid.ID)
+	encodedAudio, err := tx.q.AudioRenditionListEncodedForMV(vid.ID)
 	if err != nil {
 		return err
 	}
-	tracks, err := tx.q.AudioTrackListByVideoID(ctx, vid.ID)
+	tracks, err := tx.q.AudioTrackListByVideoID(vid.ID)
 	if err != nil {
 		return err
 	}
@@ -1031,10 +1037,11 @@ func (tx *TxRW) recomputePlayable(ctx Context, vid schema.Video) error {
 		return nil
 	}
 
-	_, err = tx.q.VideoUpdatePlayable(ctx, schema.VideoUpdatePlayableParams{
+	_, err = tx.q.VideoUpdatePlayable(schema.VideoUpdatePlayableParams{
 		ID:       vid.ID,
 		Playable: 1,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -1276,7 +1283,7 @@ func codedFrameRate(vid schema.Video) ffmpeg.FrameRate {
 // has a storage key, meaning no further encode task will need the
 // pass-1 stats directory.
 func (tx *TxRW) allRenditionsEncoded(ctx Context, videoID string) (bool, error) {
-	rends, err := tx.q.RenditionListByVideoID(ctx, videoID)
+	rends, err := tx.q.RenditionListByVideoID(videoID)
 	if err != nil {
 		return false, err
 	}

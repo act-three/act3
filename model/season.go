@@ -103,7 +103,7 @@ func (sn *Season) episodeByID(id string) *Episode {
 
 // SeasonInEdition loads a full Season (with episodes) by season ID.
 func (tx *TxR) SeasonInEdition(ctx Context, seasonID string) (*Season, error) {
-	snData, err := tx.q.SeasonGet(ctx, seasonID)
+	snData, err := tx.q.SeasonGet(seasonID)
 	if err != nil {
 		return nil, err
 	}
@@ -120,10 +120,11 @@ func (tx *TxR) SeasonInEdition(ctx Context, seasonID string) (*Season, error) {
 }
 
 func (tx *TxRW) SeasonTitleSet(ctx Context, id, title string) error {
-	return tx.q.SeasonTitleSet(ctx, schema.SeasonTitleSetParams{
+	return tx.q.SeasonTitleSet(schema.SeasonTitleSetParams{
 		Title: title,
 		ID:    id,
 	})
+
 }
 
 func (sn *Season) episodeByNumber(n int) *Episode {
@@ -139,7 +140,7 @@ func (sn *Season) episodeByNumber(n int) *Episode {
 // SeasonAdd creates a new empty season after all existing ones
 // in the given edition.
 func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
-	sns, err := tx.q.SeasonListByEditionID(ctx, editionID)
+	sns, err := tx.q.SeasonListByEditionID(editionID)
 	if err != nil {
 		return err
 	}
@@ -148,12 +149,13 @@ func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
 		maxNumber = max(maxNumber, sn.Number)
 	}
 	next := maxNumber + 1
-	_, err = tx.q.SeasonCreate(ctx, schema.SeasonCreateParams{
+	_, err = tx.q.SeasonCreate(schema.SeasonCreateParams{
 		EditionID: editionID,
 		SortKey:   fmt.Sprintf("%03d", next),
 		Title:     fmt.Sprintf("Season %d", next),
 		Number:    next,
 	})
+
 	return err
 }
 
@@ -167,26 +169,26 @@ func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
 // SortKey) WHERE DeletedAt IS NULL rejects the transient duplicate a
 // single-statement +1 UPDATE would produce.
 func (tx *TxRW) seasonEpisodeSortKeyBump(ctx Context, seasonID string, sortKey int64) error {
-	if err := tx.q.SeasonEpisodeSortKeyBump(ctx, schema.SeasonEpisodeSortKeyBumpParams{
+	if err := tx.q.SeasonEpisodeSortKeyBump(schema.SeasonEpisodeSortKeyBumpParams{
 		SeasonID: seasonID, SortKey: sortKey,
 	}); err != nil {
 		return err
 	}
-	return tx.q.SeasonEpisodeSortKeyBumpFinish(ctx, seasonID)
+	return tx.q.SeasonEpisodeSortKeyBumpFinish(seasonID)
 }
 
 func (tx *TxRW) renumberSeason(ctx Context, seasonID string) error {
-	sn, err := tx.q.SeasonGet(ctx, seasonID)
+	sn, err := tx.q.SeasonGet(seasonID)
 	if err != nil {
 		return err
 	}
-	all, err := tx.q.SeasonEpisodeListBySeasonID(ctx, sn.ID)
+	all, err := tx.q.SeasonEpisodeListBySeasonID(sn.ID)
 	if err != nil {
 		return err
 	}
 	eps := make(map[string]schema.Episode, len(all))
 	for _, snep := range all {
-		ep, err := tx.q.EpisodeGet(ctx, snep.EpisodeID)
+		ep, err := tx.q.EpisodeGet(snep.EpisodeID)
 		if err != nil {
 			return err
 		}
@@ -217,13 +219,14 @@ func (tx *TxRW) renumberSeason(ctx Context, seasonID string) error {
 		if snep.Number == wantNum && snep.Label == wantLabel && snep.Slug == wantSlug {
 			continue
 		}
-		err = tx.q.SeasonEpisodeNumberingSet(ctx, schema.SeasonEpisodeNumberingSetParams{
+		err = tx.q.SeasonEpisodeNumberingSet(schema.SeasonEpisodeNumberingSetParams{
 			Number:    wantNum,
 			Label:     wantLabel,
 			Slug:      wantSlug,
 			SeasonID:  sn.ID,
 			EpisodeID: snep.EpisodeID,
 		})
+
 		if err != nil {
 			return err
 		}
