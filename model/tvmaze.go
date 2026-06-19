@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -11,26 +10,26 @@ import (
 	"ily.dev/act3/priority"
 )
 
-func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
+func (tx *TxR) taskFetchEpisodes(args []string) error {
 	// TODO(em): pull info from Client
 	id, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
 		return err
 	}
-	slog.InfoContext(ctx, "got id", "TVmazeID", id)
+	slog.InfoContext(tx.ctx, "got id", "TVmazeID", id)
 
-	seasons, err := tx.m.tvmaze.ListShowSeasons(ctx, id)
+	seasons, err := tx.m.tvmaze.ListShowSeasons(tx.ctx, id)
 	if err != nil {
 		return err
 	}
-	eps, err := tx.m.tvmaze.ListShowEpisodes(ctx, id)
+	eps, err := tx.m.tvmaze.ListShowEpisodes(tx.ctx, id)
 	if err != nil {
 		return err
 	}
 
 	sedID := args[1]
 
-	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
+	return tx.m.WithTxRW(tx.ctx, func(tx *TxRW) error {
 		_, err := tx.q.SeriesGetByTVmazeID(&id)
 		if err != nil {
 			return err
@@ -69,14 +68,14 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 				return err
 			}
 			if ne.ImageURL != "" {
-				err = tx.addTaskWithPriority(ctx, priority.FetchThumbnail, taskFetchEpisodeThumbnail, ep.ID, ne.ImageURL)
+				err = tx.addTaskWithPriority(priority.FetchThumbnail, taskFetchEpisodeThumbnail, ep.ID, ne.ImageURL)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		for _, sn := range sns {
-			err = tx.renumberSeason(ctx, sn.ID)
+			err = tx.renumberSeason(sn.ID)
 			if err != nil {
 				return err
 			}
@@ -85,26 +84,26 @@ func (tx *TxR) taskFetchEpisodes(ctx context.Context, args []string) error {
 	})
 }
 
-func (tx *TxR) taskFetchEpisodeThumbnail(ctx context.Context, args []string) error {
+func (tx *TxR) taskFetchEpisodeThumbnail(args []string) error {
 	epID := args[0]
 	url := args[1]
-	thumbnailID, err := tx.m.imageFetch(ctx, url, ImageThumbnail)
+	thumbnailID, err := tx.m.imageFetch(tx.ctx, url, ImageThumbnail)
 	if err != nil {
 		return err
 	}
-	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.EpisodeThumbnailIDSet(ctx, epID, thumbnailID)
+	return tx.m.WithTxRW(tx.ctx, func(tx *TxRW) error {
+		return tx.EpisodeThumbnailIDSet(epID, thumbnailID)
 	})
 }
 
-func (tx *TxR) taskFetchSeriesPoster(ctx context.Context, args []string) error {
+func (tx *TxR) taskFetchSeriesPoster(args []string) error {
 	sedID := args[0]
 	url := args[1]
-	posterID, err := tx.m.imageFetch(ctx, url, ImagePoster)
+	posterID, err := tx.m.imageFetch(tx.ctx, url, ImagePoster)
 	if err != nil {
 		return err
 	}
-	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.SeriesEditionPosterIDSet(ctx, sedID, posterID)
+	return tx.m.WithTxRW(tx.ctx, func(tx *TxRW) error {
+		return tx.SeriesEditionPosterIDSet(sedID, posterID)
 	})
 }

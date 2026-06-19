@@ -26,7 +26,7 @@ func (a *app) follow(ctx context.Context, id string) cmd {
 	}
 	var dest string
 	a.doR(ctx, func(tx *model.TxR) (err error) {
-		dest, err = leafPath(ctx, tx, a.odesc)
+		dest, err = leafPath(tx, a.odesc)
 		return err
 	})
 	if dest == "" {
@@ -37,11 +37,11 @@ func (a *app) follow(ctx context.Context, id string) cmd {
 
 // leafPath loads the object the descriptor addresses and returns its
 // URL in the descriptor's section.
-func leafPath(ctx context.Context, tx *model.TxR, odesc map[string]string) (string, error) {
+func leafPath(tx *model.TxR, odesc map[string]string) (string, error) {
 	theater := odesc["section"] == sectionTheater
 	switch odesc["kind"] {
 	case model.KindMovieEdition:
-		med, err := tx.MovieEdition(ctx, odesc["med"])
+		med, err := tx.MovieEdition(odesc["med"])
 		if err != nil {
 			return "", err
 		}
@@ -50,7 +50,7 @@ func leafPath(ctx context.Context, tx *model.TxR, odesc map[string]string) (stri
 		}
 		return med.EditorPath(), nil
 	case model.KindSeriesEdition:
-		sed, err := tx.SeriesEdition(ctx, odesc["sed"])
+		sed, err := tx.SeriesEdition(odesc["sed"])
 		if err != nil {
 			return "", err
 		}
@@ -59,7 +59,7 @@ func leafPath(ctx context.Context, tx *model.TxR, odesc map[string]string) (stri
 		}
 		return sed.EditorPath(), nil
 	case model.KindEpisode:
-		ep, err := tx.EpisodeInEdition(ctx, odesc["ep"], odesc["sed"])
+		ep, err := tx.EpisodeInEdition(odesc["ep"], odesc["sed"])
 		if err != nil {
 			return "", err
 		}
@@ -68,7 +68,7 @@ func leafPath(ctx context.Context, tx *model.TxR, odesc map[string]string) (stri
 		}
 		return ep.EditorPath(), nil
 	case model.KindCollectionOverview:
-		col, err := tx.CollectionHead(ctx, odesc["col"])
+		col, err := tx.CollectionHead(odesc["col"])
 		if err != nil {
 			return "", err
 		}
@@ -77,7 +77,7 @@ func leafPath(ctx context.Context, tx *model.TxR, odesc map[string]string) (stri
 		}
 		return col.EditorPath(), nil
 	case model.KindCollectionPlaylist:
-		col, err := tx.CollectionHead(ctx, odesc["col"])
+		col, err := tx.CollectionHead(odesc["col"])
 		if err != nil {
 			return "", err
 		}

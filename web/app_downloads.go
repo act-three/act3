@@ -22,14 +22,14 @@ func (c *Config) doTorrentAdd(w http.ResponseWriter, req *http.Request) (node, e
 		} else if v := req.FormValue("med-id"); v != "" {
 			medID = &v
 		}
-		dl, err := tx.DownloadCreate(ctx, file, sedID, medID)
+		dl, err := tx.DownloadCreate(file, sedID, medID)
 		if err != nil {
 			return nil, err
 		}
 		if sedID != nil {
-			_, err = tx.DownloadCreatePlanSeries(ctx, dl.InfoHash(), *sedID)
+			_, err = tx.DownloadCreatePlanSeries(dl.InfoHash(), *sedID)
 		} else if medID != nil {
-			_, err = tx.DownloadCreatePlanMovie(ctx, dl.InfoHash(), *medID)
+			_, err = tx.DownloadCreatePlanMovie(dl.InfoHash(), *medID)
 		}
 		if err != nil {
 			return nil, err

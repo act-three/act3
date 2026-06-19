@@ -20,7 +20,7 @@ func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (node, erro
 		if !found {
 			return nil, errNotFound
 		}
-		ar, err := tx.AudioRendition(ctx, id)
+		ar, err := tx.AudioRendition(id)
 		if err != nil {
 			return nil, errNotFound
 		}
@@ -47,7 +47,7 @@ func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (n
 		if !found {
 			return nil, errNotFound
 		}
-		ar, err := tx.AudioRendition(ctx, id)
+		ar, err := tx.AudioRendition(id)
 		if err != nil {
 			return nil, errNotFound
 		}
@@ -74,7 +74,7 @@ func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (node, e
 		if id == "" {
 			return nil, errNotFound
 		}
-		st, err := tx.Subtitle(ctx, id)
+		st, err := tx.Subtitle(id)
 		if err != nil {
 			return nil, errNotFound
 		}
@@ -113,14 +113,14 @@ func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request)
 		if !found {
 			return nil, errNotFound
 		}
-		st, err := tx.Subtitle(ctx, id)
+		st, err := tx.Subtitle(id)
 		if err != nil {
 			return nil, errNotFound
 		}
 		if st.WebVTTKey == "" {
 			return nil, errNotFound
 		}
-		vid, err := tx.Video(ctx, st.VideoID)
+		vid, err := tx.Video(st.VideoID)
 		if err != nil {
 			return nil, errNotFound
 		}
@@ -148,7 +148,7 @@ func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (node, 
 			VideoRenditionID: req.URL.Query().Get("q"),
 			AudioRenditionID: req.URL.Query().Get("a"),
 		}
-		pl, err := tx.MVPlaylist(ctx, id, filter)
+		pl, err := tx.MVPlaylist(id, filter)
 		if err != nil || pl == "" {
 			return nil, errNotFound
 		}
@@ -164,7 +164,7 @@ func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request
 		if !found {
 			return nil, errNotFound
 		}
-		rend, err := tx.Rendition(ctx, id)
+		rend, err := tx.Rendition(id)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +183,7 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, er
 		if !found {
 			return nil, errNotFound
 		}
-		rend, err := tx.Rendition(ctx, id)
+		rend, err := tx.Rendition(id)
 		if err != nil {
 			return nil, errNotFound
 		}
@@ -206,7 +206,7 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, er
 func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Request) (node, error) {
 	ctx := req.Context()
 	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
-		dl, err := tx.VideoDownloadForEpisode(req.Context(),
+		dl, err := tx.VideoDownloadForEpisode(
 			req.PathValue("id"),
 			req.PathValue("epID"),
 			req.PathValue("sedID"),
@@ -222,7 +222,7 @@ func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Reques
 func (c *Config) videoDownloadForMovie(w http.ResponseWriter, req *http.Request) (node, error) {
 	ctx := req.Context()
 	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
-		dl, err := tx.VideoDownloadForMovieEdition(req.Context(),
+		dl, err := tx.VideoDownloadForMovieEdition(
 			req.PathValue("id"),
 			req.PathValue("medID"),
 		)

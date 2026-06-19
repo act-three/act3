@@ -163,7 +163,7 @@ func TestQualityOptions(t *testing.T) {
 
 			var got []QualityOption
 			err = m.WithTxR(ctx, func(tx *TxR) error {
-				got, err = tx.QualityOptions(ctx, v)
+				got, err = tx.QualityOptions(v)
 				return err
 			})
 

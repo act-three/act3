@@ -199,7 +199,7 @@ func TestReencodeReplansAfterDelete(t *testing.T) {
 	vidID := createVideoRow(t, m, "v.mkv", "fakekey", []string{"rendkey1"})
 
 	err := m.WithTxR(ctx, func(tx *TxR) error {
-		return tx.taskReencode(ctx, []string{vidID})
+		return tx.taskReencode([]string{vidID})
 	})
 
 	// The inner WithTxRW commits the delete regardless of what runs
@@ -271,7 +271,7 @@ func TestEncodeTaskNoOps(t *testing.T) {
 
 	tests := []struct {
 		name string
-		f    func(*TxR, Context, []string) error
+		f    func(*TxR, []string) error
 		args []string
 	}{
 		{"rend already encoded", (*TxR).taskIngestEncodeRend, []string{rendID}},
@@ -284,7 +284,7 @@ func TestEncodeTaskNoOps(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := m.WithTxR(ctx, func(tx *TxR) error {
-				return tt.f(tx, ctx, tt.args)
+				return tt.f(tx, tt.args)
 			})
 
 			if err != nil {

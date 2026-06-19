@@ -110,7 +110,7 @@ func TestMergeDuplicateVideoMovesJunctions(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return tx.mergeDuplicateVideo(ctx, loser, winner, loserKey)
+		return tx.mergeDuplicateVideo(loser, winner, loserKey)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +238,7 @@ func TestMergeDuplicateVideoRestoresSoftDeletedJunction(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return tx.mergeDuplicateVideo(ctx, loser, winner, loserKey)
+		return tx.mergeDuplicateVideo(loser, winner, loserKey)
 	}); err != nil {
 		t.Fatal(err)
 	}

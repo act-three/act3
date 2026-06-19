@@ -102,12 +102,12 @@ func (sn *Season) episodeByID(id string) *Episode {
 }
 
 // SeasonInEdition loads a full Season (with episodes) by season ID.
-func (tx *TxR) SeasonInEdition(ctx Context, seasonID string) (*Season, error) {
+func (tx *TxR) SeasonInEdition(seasonID string) (*Season, error) {
 	snData, err := tx.q.SeasonGet(seasonID)
 	if err != nil {
 		return nil, err
 	}
-	sed, err := tx.SeriesEdition(ctx, snData.EditionID)
+	sed, err := tx.SeriesEdition(snData.EditionID)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (tx *TxR) SeasonInEdition(ctx Context, seasonID string) (*Season, error) {
 	return nil, fmt.Errorf("season %s not found in edition %s", seasonID, snData.EditionID)
 }
 
-func (tx *TxRW) SeasonTitleSet(ctx Context, id, title string) error {
+func (tx *TxRW) SeasonTitleSet(id, title string) error {
 	return tx.q.SeasonTitleSet(schema.SeasonTitleSetParams{
 		Title: title,
 		ID:    id,
@@ -139,7 +139,7 @@ func (sn *Season) episodeByNumber(n int) *Episode {
 
 // SeasonAdd creates a new empty season after all existing ones
 // in the given edition.
-func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
+func (tx *TxRW) SeasonAdd(editionID string) error {
 	sns, err := tx.q.SeasonListByEditionID(editionID)
 	if err != nil {
 		return err
@@ -168,7 +168,7 @@ func (tx *TxRW) SeasonAdd(ctx Context, editionID string) error {
 // un-negate) because SQLite's partial unique index on (SeasonID,
 // SortKey) WHERE DeletedAt IS NULL rejects the transient duplicate a
 // single-statement +1 UPDATE would produce.
-func (tx *TxRW) seasonEpisodeSortKeyBump(ctx Context, seasonID string, sortKey int64) error {
+func (tx *TxRW) seasonEpisodeSortKeyBump(seasonID string, sortKey int64) error {
 	if err := tx.q.SeasonEpisodeSortKeyBump(schema.SeasonEpisodeSortKeyBumpParams{
 		SeasonID: seasonID, SortKey: sortKey,
 	}); err != nil {
@@ -177,7 +177,7 @@ func (tx *TxRW) seasonEpisodeSortKeyBump(ctx Context, seasonID string, sortKey i
 	return tx.q.SeasonEpisodeSortKeyBumpFinish(seasonID)
 }
 
-func (tx *TxRW) renumberSeason(ctx Context, seasonID string) error {
+func (tx *TxRW) renumberSeason(seasonID string) error {
 	sn, err := tx.q.SeasonGet(seasonID)
 	if err != nil {
 		return err
@@ -212,7 +212,7 @@ func (tx *TxRW) renumberSeason(ctx Context, seasonID string) error {
 			wantLabel = strconv.FormatInt(num, 10)
 		}
 
-		wantSlug, err := tx.episodeFindSlug(ctx, snep.EditionID, sn.Number, wantNum, ep.Title, snep.Slug)
+		wantSlug, err := tx.episodeFindSlug(snep.EditionID, sn.Number, wantNum, ep.Title, snep.Slug)
 		if err != nil {
 			return err
 		}

@@ -19,9 +19,9 @@ func (m *Model) registerTransmissionSettingHooks() {
 	})
 }
 
-func (tx *TxR) loadTransmissionConfig(ctx Context) (err error) {
+func (tx *TxR) loadTransmissionConfig() (err error) {
 	defer errorfmt.Handlef("transmission: %w", &err)
-	settings, err := tx.SettingGetByGroup(ctx, "transmission")
+	settings, err := tx.SettingGetByGroup("transmission")
 	if err != nil {
 		return err
 	}

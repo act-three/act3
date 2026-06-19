@@ -128,7 +128,7 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	var largestKey string
 	if err := m.WithTxR(ctx, func(tx *TxR) error {
 		var err error
-		largestKey, err = tx.ImageVariantKey(ctx, originalID, 600)
+		largestKey, err = tx.ImageVariantKey(originalID, 600)
 		return err
 	}); err != nil {
 		t.Fatal(err)

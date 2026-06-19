@@ -48,12 +48,12 @@ func (p PlayIDs) Playable() bool { return p.VideoID != "" }
 
 // WorkList returns all movies and series as a unified list,
 // sorted by title.
-func (tx *TxR) WorkList(ctx Context) ([]Work, error) {
-	mws, err := tx.MovieWorkList(ctx)
+func (tx *TxR) WorkList() ([]Work, error) {
+	mws, err := tx.MovieWorkList()
 	if err != nil {
 		return nil, err
 	}
-	sws, err := tx.SeriesWorkList(ctx)
+	sws, err := tx.SeriesWorkList()
 	if err != nil {
 		return nil, err
 	}

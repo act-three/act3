@@ -18,7 +18,7 @@ var ErrActiveVideoLocked = errors.New("active video is locked while another play
 // every work it's attached to that doesn't already have an Active
 // junction. Run after a video transitions to playable (MVPlaylist set)
 // or after a junction set changes.
-func (tx *TxRW) ensureActiveVideoForVideoID(ctx Context, videoID string) (err error) {
+func (tx *TxRW) ensureActiveVideoForVideoID(videoID string) (err error) {
 	defer errorfmt.Handlef("ensureActiveVideoForVideoID: %w", &err)
 
 	epIDs, err := tx.q.EpisodeVideoDistinctEpisodesByVideo(videoID)
@@ -45,7 +45,7 @@ func (tx *TxRW) ensureActiveVideoForVideoID(ctx Context, videoID string) (err er
 // EpisodeVideoSetActive marks (episodeID, videoID) as the active
 // junction for the episode. The target video must be live, attached,
 // and playable (MVPlaylist non-empty).
-func (tx *TxRW) EpisodeVideoSetActive(ctx Context, episodeID, videoID string) (err error) {
+func (tx *TxRW) EpisodeVideoSetActive(episodeID, videoID string) (err error) {
 	defer errorfmt.Handlef("EpisodeVideoSetActive: %w", &err)
 
 	if err := tx.q.EpisodeVideoSetInactiveByEpisodeID(episodeID); err != nil {
@@ -68,7 +68,7 @@ func (tx *TxRW) EpisodeVideoSetActive(ctx Context, episodeID, videoID string) (e
 // MovieVideoSetActive marks (medID, videoID) as the active junction
 // for the movie edition. The target video must be live, attached, and
 // playable.
-func (tx *TxRW) MovieVideoSetActive(ctx Context, medID, videoID string) (err error) {
+func (tx *TxRW) MovieVideoSetActive(medID, videoID string) (err error) {
 	defer errorfmt.Handlef("MovieVideoSetActive: %w", &err)
 
 	if err := tx.q.MovieVideoSetInactiveByMovieEditionID(medID); err != nil {
@@ -91,7 +91,7 @@ func (tx *TxRW) MovieVideoSetActive(ctx Context, medID, videoID string) (err err
 // guardActiveVideo rejects a destructive op on videoID when it is the
 // Active junction for any work that has another playable video. Used
 // by delete, re-import, and re-encode flows.
-func (tx *TxRW) guardActiveVideo(ctx Context, videoID string) (err error) {
+func (tx *TxRW) guardActiveVideo(videoID string) (err error) {
 	defer errorfmt.Handlef("guardActiveVideo: %w", &err)
 
 	evs, err := tx.q.EpisodeVideoListByVideoID(videoID)

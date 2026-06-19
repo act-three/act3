@@ -95,7 +95,7 @@ func (c *Config) image(w http.ResponseWriter, req *http.Request) (node, error) {
 		return nil, errNotFound
 	}
 	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
-		key, err := tx.ImageVariantKey(ctx, id, width)
+		key, err := tx.ImageVariantKey(id, width)
 		if err != nil {
 			return nil, errNotFound
 		}

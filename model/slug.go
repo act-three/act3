@@ -21,7 +21,7 @@ const (
 // such as "med" for a movie edition, "ep" for an episode, etc.
 //
 // SlugResolve returns nil when no object is found.
-func (tx *TxR) SlugResolve(ctx Context, path []string) map[string]string {
+func (tx *TxR) SlugResolve(path []string) map[string]string {
 	slug := getSlug(0, path)
 	s, err := tx.q.SlugGet(slug)
 	if err != nil {
@@ -32,7 +32,7 @@ func (tx *TxR) SlugResolve(ctx Context, path []string) map[string]string {
 		if len(path) > 2 {
 			return nil
 		}
-		med, err := tx.MovieEditionBySlug(ctx, slug, getSlug(1, path))
+		med, err := tx.MovieEditionBySlug(slug, getSlug(1, path))
 		if err != nil {
 			return nil
 		}
@@ -42,7 +42,7 @@ func (tx *TxR) SlugResolve(ctx Context, path []string) map[string]string {
 			"mo":   med.MovieHead().ID(),
 		}
 	case "series":
-		return tx.resolveSeries(ctx, slug, path[1:])
+		return tx.resolveSeries(slug, path[1:])
 	case "collection":
 		var kind string
 		switch {
@@ -53,7 +53,7 @@ func (tx *TxR) SlugResolve(ctx Context, path []string) map[string]string {
 		default:
 			return nil
 		}
-		col, err := tx.CollectionBySlug(ctx, slug)
+		col, err := tx.CollectionBySlug(slug)
 		if err != nil {
 			return nil
 		}
@@ -65,10 +65,10 @@ func (tx *TxR) SlugResolve(ctx Context, path []string) map[string]string {
 // resolveSeries resolves the segments under a series slug: nothing (the
 // default edition), an edition slug, an episode of the default edition,
 // or an edition slug followed by an episode slug.
-func (tx *TxR) resolveSeries(ctx Context, seriesSlug string, rest []string) map[string]string {
+func (tx *TxR) resolveSeries(seriesSlug string, rest []string) map[string]string {
 	switch len(rest) {
 	case 0:
-		sed, err := tx.SeriesEditionBySlug(ctx, seriesSlug, "")
+		sed, err := tx.SeriesEditionBySlug(seriesSlug, "")
 		if err != nil {
 			return nil
 		}
@@ -78,21 +78,21 @@ func (tx *TxR) resolveSeries(ctx Context, seriesSlug string, rest []string) map[
 			"sed":  sed.ID(),
 		}
 	case 1:
-		if sed, err := tx.SeriesEditionBySlug(ctx, seriesSlug, rest[0]); err == nil {
+		if sed, err := tx.SeriesEditionBySlug(seriesSlug, rest[0]); err == nil {
 			return map[string]string{
 				"kind": KindSeriesEdition,
 				"sr":   sed.SeriesHead().ID(),
 				"sed":  sed.ID(),
 			}
 		}
-		return tx.resolveEpisode(ctx, seriesSlug, "", rest[0])
+		return tx.resolveEpisode(seriesSlug, "", rest[0])
 	case 2:
-		return tx.resolveEpisode(ctx, seriesSlug, rest[0], rest[1])
+		return tx.resolveEpisode(seriesSlug, rest[0], rest[1])
 	}
 	return nil
 }
 
-func (tx *TxR) resolveEpisode(ctx Context, seriesSlug, edSlug, epSlug string) map[string]string {
+func (tx *TxR) resolveEpisode(seriesSlug, edSlug, epSlug string) map[string]string {
 	sed, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
 		SeriesSlug:  seriesSlug,
 		EditionSlug: edSlug,

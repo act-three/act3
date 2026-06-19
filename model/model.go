@@ -32,8 +32,6 @@ import (
 	"ily.dev/act3/storage"
 )
 
-type Context = context.Context
-
 type Config struct {
 	Store    *storage.Dir
 	Pass1Dir string
@@ -112,16 +110,16 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	return m, nil
 }
 
-var configLoaders = []func(*TxR, Context) error{
+var configLoaders = []func(*TxR) error{
 	(*TxR).loadTMDBConfig,
 	(*TxR).loadTransmissionConfig,
 }
 
-func (m *Model) loadConfig(ctx Context) (err error) {
+func (m *Model) loadConfig(ctx context.Context) (err error) {
 	defer errorfmt.Handlef("load config: %w", &err)
 	return m.WithTxR(ctx, func(t *TxR) error {
 		for _, f := range configLoaders {
-			err = f(t, ctx)
+			err = f(t)
 			if err != nil {
 				return err
 			}
@@ -130,30 +128,32 @@ func (m *Model) loadConfig(ctx Context) (err error) {
 	})
 }
 
-func (m *Model) WithTxR(ctx Context, f func(*TxR) error) error {
+func (m *Model) WithTxR(ctx context.Context, f func(*TxR) error) error {
 	tx, err := m.dbr.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 	return f(&TxR{
-		m:  m,
-		tx: tx,
-		q:  schema.New(ctx, tx),
+		m:   m,
+		tx:  tx,
+		q:   schema.New(ctx, tx),
+		ctx: ctx,
 	})
 }
 
 // Non-nil error will roll back the transation.
-func (m *Model) WithTxRW(ctx Context, f func(*TxRW) error) error {
+func (m *Model) WithTxRW(ctx context.Context, f func(*TxRW) error) error {
 	tx, err := m.dbw.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 	mt := &TxRW{TxR: TxR{
-		m:  m,
-		tx: tx,
-		q:  schema.New(ctx, tx),
+		m:   m,
+		tx:  tx,
+		q:   schema.New(ctx, tx),
+		ctx: ctx,
 	}}
 	err = f(mt)
 	if err != nil {
@@ -171,9 +171,10 @@ func (m *Model) WithTxRW(ctx Context, f func(*TxRW) error) error {
 }
 
 type TxR struct {
-	m  *Model
-	tx *sql.Tx
-	q  *schema.Queries
+	m   *Model
+	tx  *sql.Tx
+	q   *schema.Queries
+	ctx context.Context
 }
 
 type TxRW struct {

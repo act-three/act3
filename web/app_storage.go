@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"path"
 	"path/filepath"
 
@@ -16,7 +15,7 @@ var excludeFSType = map[string]bool{
 	"tmpfs":    true,
 }
 
-func viewEditorStorage(ctx context.Context, tx *model.TxR) (title string, n node) {
+func viewEditorStorage(tx *model.TxR) (title string, n node) {
 	fsList, err := fsinfo.GetInfo()
 	if err != nil {
 		return "", viewError(err)

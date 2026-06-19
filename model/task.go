@@ -44,7 +44,7 @@ const (
 	queueCPU  = "cpu"
 )
 
-type taskFunc func(*TxR, Context, []string) error
+type taskFunc func(*TxR, []string) error
 
 var taskTab = map[string]taskFunc{
 	taskAddDownloadToTransmission: (*TxR).taskAddDownloadToTransmission,
@@ -245,7 +245,7 @@ type taskIDKey struct{}
 // reweighTask replaces the admission weight of the running task
 // that owns ctx, for use once a task learns its true width (e.g.
 // which rendition it drew). No-op when ctx carries no task ID.
-func (m *Model) reweighTask(ctx Context, weight int) {
+func (m *Model) reweighTask(ctx context.Context, weight int) {
 	id, ok := ctx.Value(taskIDKey{}).(string)
 	if !ok {
 		return
@@ -348,7 +348,7 @@ func (tq *taskQueue) kill(id string) bool {
 	return ok
 }
 
-func (tq *taskQueue) run(ctx Context, task schema.Task) {
+func (tq *taskQueue) run(ctx context.Context, task schema.Task) {
 	tq.m.emit(nil)
 	defer tq.m.emit(nil)
 	err := tq.run1(ctx, task)
@@ -365,7 +365,7 @@ func (tq *taskQueue) run(ctx Context, task schema.Task) {
 	}
 }
 
-func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
+func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error) {
 	defer func() {
 		// run1's only ctx-cancel source is tq.kill, so if ctx.Err() is
 		// non-nil here the user explicitly killed the task.
@@ -405,7 +405,7 @@ func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 			return err
 		}
 
-		err = f(tx, ctx, args)
+		err = f(tx, args)
 		if err != nil {
 			return err
 		}
@@ -415,7 +415,7 @@ func (tq *taskQueue) run1(ctx Context, task schema.Task) (err error) {
 	})
 }
 
-func (tq *taskQueue) reschedule(ctx Context, task schema.Task, failure string) error {
+func (tq *taskQueue) reschedule(ctx context.Context, task schema.Task, failure string) error {
 	delay := taskFailDelay(task.Failures)
 	delay += time.Duration(rand.Int64N(int64(delay)))
 	_, err := schema.New(ctx, tq.m.dbw).TaskReschedule(schema.TaskRescheduleParams{
@@ -427,14 +427,14 @@ func (tq *taskQueue) reschedule(ctx Context, task schema.Task, failure string) e
 	return err
 }
 
-func (tq *taskQueue) markFailed(ctx Context, task schema.Task, failure string) error {
+func (tq *taskQueue) markFailed(ctx context.Context, task schema.Task, failure string) error {
 	return schema.New(ctx, tq.m.dbw).TaskMarkFailed(schema.TaskMarkFailedParams{
 		ID:          task.ID,
 		FailureDesc: &failure,
 	})
 }
 
-func (m *Model) RunTaskNow(ctx Context, id string) (err error) {
+func (m *Model) RunTaskNow(ctx context.Context, id string) (err error) {
 	defer errorfmt.Handlef("run task %s now: %w", id, &err)
 	err = schema.New(ctx, m.dbw).TaskRunNow(schema.TaskRunNowParams{
 		NextRun: time.Now().UnixMilli(),
@@ -492,7 +492,7 @@ type TaskStats struct {
 	CountError int
 }
 
-func (tx *TxR) TaskStats(ctx Context) (TaskStats, error) {
+func (tx *TxR) TaskStats() (TaskStats, error) {
 	queued, err := tx.q.TaskCountQueued()
 	if err != nil {
 		return TaskStats{}, err
@@ -508,7 +508,7 @@ func (tx *TxR) TaskStats(ctx Context) (TaskStats, error) {
 	}, nil
 }
 
-func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
+func (tx *TxR) TaskList() ([]*Task, error) {
 	list, err := tx.q.TaskList()
 	if err != nil {
 		return nil, err
@@ -520,23 +520,23 @@ func (tx *TxR) TaskList(ctx Context) ([]*Task, error) {
 	return tasks, nil
 }
 
-func (tx *TxRW) TaskDelete(ctx Context, id string) error {
+func (tx *TxRW) TaskDelete(id string) error {
 	return tx.q.TaskDelete(id)
 }
 
-func (t *TxRW) addTask(ctx Context, ttype string, args ...string) error {
-	return t.addTaskOpts(ctx, ttype, 0, priority.Default, args...)
+func (t *TxRW) addTask(ttype string, args ...string) error {
+	return t.addTaskOpts(ttype, 0, priority.Default, args...)
 }
 
-func (t *TxRW) addTaskAfter(ctx Context, delay time.Duration, ttype string, args ...string) error {
-	return t.addTaskOpts(ctx, ttype, delay, priority.Default, args...)
+func (t *TxRW) addTaskAfter(delay time.Duration, ttype string, args ...string) error {
+	return t.addTaskOpts(ttype, delay, priority.Default, args...)
 }
 
-func (t *TxRW) addTaskWithPriority(ctx Context, priority int64, ttype string, args ...string) error {
-	return t.addTaskOpts(ctx, ttype, 0, priority, args...)
+func (t *TxRW) addTaskWithPriority(priority int64, ttype string, args ...string) error {
+	return t.addTaskOpts(ttype, 0, priority, args...)
 }
 
-func (t *TxRW) addTaskOpts(ctx Context, ttype string, delay time.Duration, pri int64, args ...string) error {
+func (t *TxRW) addTaskOpts(ttype string, delay time.Duration, pri int64, args ...string) error {
 	b, err := json.Marshal(args)
 	if err != nil {
 		return err

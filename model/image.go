@@ -177,7 +177,7 @@ func (im Image) Srcset() string {
 // smaller than the smallest stored variant), the smallest variant
 // is returned. Returns sql.ErrNoRows if no variants exist for
 // originalID.
-func (tx *TxR) ImageVariantKey(ctx Context, originalID string, width int) (key string, err error) {
+func (tx *TxR) ImageVariantKey(originalID string, width int) (key string, err error) {
 	defer errorfmt.Handlef("image variant key: %w", &err)
 	vs, err := tx.q.ImageRenditionListByImageID(originalID)
 	if err != nil {
@@ -469,7 +469,7 @@ func (m *Model) insertPlaceholder(ctx context.Context, b *placeholderBlobs) erro
 // row's image FK is updated, the previous image is no longer
 // reachable from anywhere and can be removed without ref
 // counting.
-func (tx *TxRW) imageDelete(ctx Context, imageID string) error {
+func (tx *TxRW) imageDelete(imageID string) error {
 	renditionKeys, err := tx.q.ImageRenditionDeleteByImageID(imageID)
 	if err != nil {
 		return err

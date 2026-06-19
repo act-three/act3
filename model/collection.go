@@ -96,7 +96,7 @@ func (c *Collection) SeriesCountField() (string, []string) {
 	return fmt.Sprintf("%d Series", len(c.series)), c.SeriesCountAddr()
 }
 
-func (tx *TxR) CollectionHead(ctx Context, id string) (*CollectionHead, error) {
+func (tx *TxR) CollectionHead(id string) (*CollectionHead, error) {
 	colData, err := tx.q.CollectionGet(id)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (tx *TxR) CollectionHead(ctx Context, id string) (*CollectionHead, error) {
 	return &CollectionHead{col: colData}, nil
 }
 
-func (tx *TxR) CollectionHeadList(ctx Context) ([]*CollectionHead, error) {
+func (tx *TxR) CollectionHeadList() ([]*CollectionHead, error) {
 	a, err := tx.q.CollectionList()
 	if err != nil {
 		return nil, err
@@ -116,12 +116,12 @@ func (tx *TxR) CollectionHeadList(ctx Context) ([]*CollectionHead, error) {
 	return cols, nil
 }
 
-func (tx *TxR) Collection(ctx Context, id string) (*Collection, error) {
+func (tx *TxR) Collection(id string) (*Collection, error) {
 	colData, err := tx.q.CollectionGet(id)
 	if err != nil {
 		return nil, err
 	}
-	return tx.collectionFromData(ctx, colData)
+	return tx.collectionFromData(colData)
 }
 
 // CollectionMovieSearchResult pairs a library movie matching a
@@ -134,11 +134,11 @@ type CollectionMovieSearchResult struct {
 // CollectionMovieSearch lists library movies whose titles contain
 // query, case-insensitively, marking those already in collection
 // colID. A blank query matches nothing.
-func (tx *TxR) CollectionMovieSearch(ctx Context, colID, query string) ([]CollectionMovieSearchResult, error) {
+func (tx *TxR) CollectionMovieSearch(colID, query string) ([]CollectionMovieSearchResult, error) {
 	if strings.TrimSpace(query) == "" {
 		return nil, nil
 	}
-	col, err := tx.Collection(ctx, colID)
+	col, err := tx.Collection(colID)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func (tx *TxR) CollectionMovieSearch(ctx Context, colID, query string) ([]Collec
 	for _, mo := range col.Movies() {
 		existing[mo.MovieHead.ID()] = true
 	}
-	all, err := tx.MovieWorkList(ctx)
+	all, err := tx.MovieWorkList()
 	if err != nil {
 		return nil, err
 	}
@@ -172,11 +172,11 @@ type CollectionSeriesSearchResult struct {
 
 // CollectionSeriesSearch is the series analog of
 // CollectionMovieSearch.
-func (tx *TxR) CollectionSeriesSearch(ctx Context, colID, query string) ([]CollectionSeriesSearchResult, error) {
+func (tx *TxR) CollectionSeriesSearch(colID, query string) ([]CollectionSeriesSearchResult, error) {
 	if strings.TrimSpace(query) == "" {
 		return nil, nil
 	}
-	col, err := tx.Collection(ctx, colID)
+	col, err := tx.Collection(colID)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ func (tx *TxR) CollectionSeriesSearch(ctx Context, colID, query string) ([]Colle
 	for _, sr := range col.Series() {
 		existing[sr.SeriesHead.ID()] = true
 	}
-	all, err := tx.SeriesWorkList(ctx)
+	all, err := tx.SeriesWorkList()
 	if err != nil {
 		return nil, err
 	}
@@ -201,20 +201,20 @@ func (tx *TxR) CollectionSeriesSearch(ctx Context, colID, query string) ([]Colle
 	return matches, nil
 }
 
-func (tx *TxR) CollectionBySlug(ctx Context, slug string) (*Collection, error) {
+func (tx *TxR) CollectionBySlug(slug string) (*Collection, error) {
 	colData, err := tx.q.CollectionGetBySlug(slug)
 	if err != nil {
 		return nil, err
 	}
-	return tx.collectionFromData(ctx, colData)
+	return tx.collectionFromData(colData)
 }
 
-func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Collection, error) {
+func (tx *TxR) collectionFromData(colData schema.Collection) (*Collection, error) {
 	movieIDs, err := tx.q.CollectionMovieList(colData.ID)
 	if err != nil {
 		return nil, err
 	}
-	allWorks, err := tx.MovieWorkList(ctx)
+	allWorks, err := tx.MovieWorkList()
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +232,7 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 	if err != nil {
 		return nil, err
 	}
-	allSeries, err := tx.SeriesWorkList(ctx)
+	allSeries, err := tx.SeriesWorkList()
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +261,7 @@ func (tx *TxR) collectionFromData(ctx Context, colData schema.Collection) (*Coll
 
 // CollectionStats returns the total number of playable items
 // and their combined runtime in minutes.
-func (tx *TxR) CollectionStats(ctx Context, id string) (itemCount, runtimeMinutes int64, err error) {
+func (tx *TxR) CollectionStats(id string) (itemCount, runtimeMinutes int64, err error) {
 	row, err := tx.q.CollectionGetStats(id)
 	if err != nil {
 		return 0, 0, err
@@ -272,14 +272,14 @@ func (tx *TxR) CollectionStats(ctx Context, id string) (itemCount, runtimeMinute
 // CollectionPlayables returns the default movie editions and
 // all episodes from default series editions in the collection,
 // sorted by release date.
-func (tx *TxR) CollectionPlayables(ctx Context, id string) ([]Playable, error) {
+func (tx *TxR) CollectionPlayables(id string) ([]Playable, error) {
 	movieIDs, err := tx.q.CollectionMovieList(id)
 	if err != nil {
 		return nil, err
 	}
 	var playables []Playable
 	for _, mo := range movieIDs {
-		med, err := tx.MovieEditionBySlug(ctx, mo.Slug, "")
+		med, err := tx.MovieEditionBySlug(mo.Slug, "")
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +290,7 @@ func (tx *TxR) CollectionPlayables(ctx Context, id string) ([]Playable, error) {
 		return nil, err
 	}
 	for _, sr := range seriesIDs {
-		sed, err := tx.SeriesEditionBySlug(ctx, sr.Slug, "")
+		sed, err := tx.SeriesEditionBySlug(sr.Slug, "")
 		if err != nil {
 			return nil, err
 		}
@@ -304,8 +304,8 @@ func (tx *TxR) CollectionPlayables(ctx Context, id string) ([]Playable, error) {
 	return playables, nil
 }
 
-func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, error) {
-	slug, err := tx.collectionFindSlug(ctx, title)
+func (tx *TxRW) CollectionCreate(title string) (*CollectionHead, error) {
+	slug, err := tx.collectionFindSlug(title)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func (tx *TxRW) CollectionCreate(ctx Context, title string) (*CollectionHead, er
 	return &CollectionHead{col: colData}, nil
 }
 
-func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) error {
+func (tx *TxRW) CollectionMovieAdd(collectionID, movieID string) error {
 	return tx.q.CollectionMovieAdd(schema.CollectionMovieAddParams{
 		CollectionID: collectionID,
 		MovieID:      movieID,
@@ -337,7 +337,7 @@ func (tx *TxRW) CollectionMovieAdd(ctx Context, collectionID, movieID string) er
 
 }
 
-func (tx *TxRW) CollectionMovieRemove(ctx Context, collectionID, movieID string) error {
+func (tx *TxRW) CollectionMovieRemove(collectionID, movieID string) error {
 	return tx.q.CollectionMovieDelete(schema.CollectionMovieDeleteParams{
 		CollectionID: collectionID,
 		MovieID:      movieID,
@@ -345,7 +345,7 @@ func (tx *TxRW) CollectionMovieRemove(ctx Context, collectionID, movieID string)
 
 }
 
-func (tx *TxRW) CollectionSeriesAdd(ctx Context, collectionID, seriesID string) error {
+func (tx *TxRW) CollectionSeriesAdd(collectionID, seriesID string) error {
 	return tx.q.CollectionSeriesAdd(schema.CollectionSeriesAddParams{
 		CollectionID: collectionID,
 		SeriesID:     seriesID,
@@ -353,7 +353,7 @@ func (tx *TxRW) CollectionSeriesAdd(ctx Context, collectionID, seriesID string) 
 
 }
 
-func (tx *TxRW) CollectionSeriesRemove(ctx Context, collectionID, seriesID string) error {
+func (tx *TxRW) CollectionSeriesRemove(collectionID, seriesID string) error {
 	return tx.q.CollectionSeriesDelete(schema.CollectionSeriesDeleteParams{
 		CollectionID: collectionID,
 		SeriesID:     seriesID,
@@ -361,7 +361,7 @@ func (tx *TxRW) CollectionSeriesRemove(ctx Context, collectionID, seriesID strin
 
 }
 
-func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
+func (tx *TxRW) CollectionBannerIDSet(id, bannerID string) error {
 	col, err := tx.q.CollectionGet(id)
 	if err != nil {
 		return err
@@ -377,10 +377,10 @@ func (tx *TxRW) CollectionBannerIDSet(ctx Context, id, bannerID string) error {
 	if isPlaceholderImageID(col.BannerID) {
 		return nil
 	}
-	return tx.imageDelete(ctx, col.BannerID)
+	return tx.imageDelete(col.BannerID)
 }
 
-func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
+func (tx *TxRW) CollectionTitleSet(id, title string) error {
 	if _, err := tx.q.CollectionGet(id); err != nil {
 		return err
 	}
@@ -392,14 +392,14 @@ func (tx *TxRW) CollectionTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
-	return tx.collectionEnsureSlug(ctx, id)
+	return tx.collectionEnsureSlug(id)
 }
 
 // collectionEnsureSlug aligns the Collection's slug with its current
 // title, announcing the change on a live rename so a viewer can follow
 // it, and keeps the Slug table row in sync. Safe to call on live
 // collections (title-change) or trashed ones (restore).
-func (tx *TxRW) collectionEnsureSlug(ctx Context, id string) error {
+func (tx *TxRW) collectionEnsureSlug(id string) error {
 	col, err := tx.q.CollectionGet(id)
 	if err != nil {
 		return err
@@ -408,7 +408,7 @@ func (tx *TxRW) collectionEnsureSlug(ctx Context, id string) error {
 	if col.DeletedAt == nil {
 		allow = []string{col.Slug}
 	}
-	slug, err := tx.collectionFindSlug(ctx, col.Title, allow...)
+	slug, err := tx.collectionFindSlug(col.Title, allow...)
 	if err != nil {
 		return err
 	}
@@ -430,7 +430,7 @@ func (tx *TxRW) collectionEnsureSlug(ctx Context, id string) error {
 	return nil
 }
 
-func (tx *TxRW) collectionFindSlug(ctx Context, title string, allow ...string) (string, error) {
+func (tx *TxRW) collectionFindSlug(title string, allow ...string) (string, error) {
 	base := xstrings.ToSlug(title)
 	if base == "" {
 		base = "collection"
