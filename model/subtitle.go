@@ -61,7 +61,7 @@ type SubtitleOption struct {
 
 // SubtitleOptions returns the captions menu entries for a video.
 // Tracks whose extraction has not completed (no WebVTTKey) are skipped.
-func (tx *TxR) SubtitleOptions(ctx Context, v *Video) ([]SubtitleOption, error) {
+func (tx *TxR) SubtitleOptions(v *Video) ([]SubtitleOption, error) {
 	tracks, err := tx.q.SubtitleTrackListByVideoID(v.ID())
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func SubtitleContentType(codec string) string {
 }
 
 // Subtitle returns the SubtitleTrack row for the given ID.
-func (tx *TxR) Subtitle(ctx Context, id string) (schema.SubtitleTrack, error) {
+func (tx *TxR) Subtitle(id string) (schema.SubtitleTrack, error) {
 	return tx.q.SubtitleTrackGet(id)
 }
 
@@ -135,7 +135,7 @@ func (tx *TxR) Subtitle(ctx Context, id string) (schema.SubtitleTrack, error) {
 // that have a standalone on-disk format (everything except mov_text).
 // Idempotent per-track: a track whose WebVTTKey is already set is
 // skipped, so retries after a partial failure resume cleanly.
-func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
+func (tx *TxR) taskIngestExtractSubs(args []string) (err error) {
 	defer errorfmt.Handlef("extract subtitles for video %s: %w", args[0], &err)
 
 	vid, err := tx.q.VideoGet(args[0])
@@ -163,7 +163,7 @@ func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 		}
 
 		webvttKey, err := tx.m.store.CreateFunc(func(dst *os.File) error {
-			return ffmpeg.ExtractSubtitleWebVTT(ctx, src, vid.Format, int(track.StreamIndex), dst)
+			return ffmpeg.ExtractSubtitleWebVTT(tx.ctx, src, vid.Format, int(track.StreamIndex), dst)
 		})
 		if err != nil {
 			return err
@@ -172,14 +172,14 @@ func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 		var originalKey string
 		if track.OriginalCodec != "mov_text" {
 			originalKey, err = tx.m.store.CreateFunc(func(dst *os.File) error {
-				return ffmpeg.ExtractSubtitleOriginal(ctx, src, vid.Format, int(track.StreamIndex), track.OriginalCodec, dst)
+				return ffmpeg.ExtractSubtitleOriginal(tx.ctx, src, vid.Format, int(track.StreamIndex), track.OriginalCodec, dst)
 			})
 			if err != nil {
 				return err
 			}
 		}
 
-		err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
+		err = tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
 			_, err := txw.q.SubtitleTrackUpdateKeys(schema.SubtitleTrackUpdateKeysParams{
 				ID:          track.ID,
 				OriginalKey: originalKey,
@@ -199,8 +199,8 @@ func (tx *TxR) taskIngestExtractSubs(ctx Context, args []string) (err error) {
 	// One rebuild per task keeps DB writes minimal; for text-only
 	// extraction the per-track latency cost is microseconds.
 	if updated {
-		err = tx.m.WithTxRW(ctx, func(txw *TxRW) error {
-			return txw.recomputePlayable(ctx, vid)
+		err = tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
+			return txw.recomputePlayable(vid)
 		})
 		if err != nil {
 			return err

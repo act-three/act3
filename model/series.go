@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"path"
 	"slices"
 	"strconv"
@@ -70,7 +71,7 @@ func (sw *SeriesWork) EditorPath() string {
 	return SeriesEditionEditorPath(&sw.SeriesHead, &sw.SeriesEditionHead)
 }
 
-func (tx *TxR) SeriesHead(ctx Context, id string) (*SeriesHead, error) {
+func (tx *TxR) SeriesHead(id string) (*SeriesHead, error) {
 	srData, err := tx.q.SeriesGet(id)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (tx *TxR) SeriesHead(ctx Context, id string) (*SeriesHead, error) {
 	return &SeriesHead{srData}, nil
 }
 
-func (tx *TxR) SeriesHeadListByTVmazeID(ctx Context, id []*int64) ([]*SeriesHead, error) {
+func (tx *TxR) SeriesHeadListByTVmazeID(id []*int64) ([]*SeriesHead, error) {
 	a, err := tx.q.SeriesListByTVmazeID(id)
 	if err != nil {
 		return nil, err
@@ -95,7 +96,7 @@ type SeriesSearchResult struct {
 
 // SearchSeries searches TVmaze for shows matching query and pairs
 // each result with the local series created from it, if any.
-func (m *Model) SearchSeries(ctx Context, query string) (results []SeriesSearchResult, err error) {
+func (m *Model) SearchSeries(ctx context.Context, query string) (results []SeriesSearchResult, err error) {
 	defer errorfmt.Handlef("search series: %w", &err)
 	found, err := m.tvmaze.Search(ctx, query)
 	if err != nil {
@@ -107,7 +108,7 @@ func (m *Model) SearchSeries(ctx Context, query string) (results []SeriesSearchR
 		ids[i] = &id
 	}
 	err = m.WithTxR(ctx, func(tx *TxR) error {
-		heads, err := tx.SeriesHeadListByTVmazeID(ctx, ids)
+		heads, err := tx.SeriesHeadListByTVmazeID(ids)
 		if err != nil {
 			return err
 		}
@@ -128,7 +129,7 @@ func (m *Model) SearchSeries(ctx Context, query string) (results []SeriesSearchR
 
 // AddSeriesByTVmazeID fetches show id from TVmaze
 // and creates a local series from it.
-func (m *Model) AddSeriesByTVmazeID(ctx Context, id int) (sw *SeriesWork, err error) {
+func (m *Model) AddSeriesByTVmazeID(ctx context.Context, id int) (sw *SeriesWork, err error) {
 	defer errorfmt.Handlef("add series: %w", &err)
 	show, err := m.tvmaze.GetShow(ctx, id)
 	if err != nil {
@@ -136,7 +137,7 @@ func (m *Model) AddSeriesByTVmazeID(ctx Context, id int) (sw *SeriesWork, err er
 	}
 	err = m.WithTxRW(ctx, func(tx *TxRW) error {
 		var err error
-		sw, err = tx.SeriesCreateByTVmazeID(ctx, show)
+		sw, err = tx.SeriesCreateByTVmazeID(show)
 		return err
 	})
 	return sw, err
@@ -156,7 +157,7 @@ func isReservedSlug(s string) bool {
 // announcing the change on a live rename so a viewer can follow it,
 // and keeps the Slug table row in sync. Safe to call on live series
 // (title-change) or trashed ones (restore).
-func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
+func (tx *TxRW) seriesEnsureSlug(id string) error {
 	sr, err := tx.q.SeriesGet(id)
 	if err != nil {
 		return err
@@ -165,7 +166,7 @@ func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
 	if sr.DeletedAt == nil {
 		allow = []string{sr.Slug}
 	}
-	slug, err := tx.generateSeriesSlug(ctx, sr.Title, sr.PremieredOn, id, allow...)
+	slug, err := tx.generateSeriesSlug(sr.Title, sr.PremieredOn, id, allow...)
 	if err != nil {
 		return err
 	}
@@ -189,7 +190,7 @@ func (tx *TxRW) seriesEnsureSlug(ctx Context, id string) error {
 	return nil
 }
 
-func (tx *TxRW) generateSeriesSlug(ctx Context, title, premiered, id string, allow ...string) (string, error) {
+func (tx *TxRW) generateSeriesSlug(title, premiered, id string, allow ...string) (string, error) {
 	slug := xstrings.ToSlug(title)
 	if slug == "" {
 		slug = id
@@ -229,7 +230,7 @@ func (tx *TxRW) generateSeriesSlug(ctx Context, title, premiered, id string, all
 	return slug + "-" + id, nil
 }
 
-func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
+func (tx *TxRW) SeriesTitleSet(id, title string) error {
 	if _, err := tx.q.SeriesGet(id); err != nil {
 		return err
 	}
@@ -241,10 +242,10 @@ func (tx *TxRW) SeriesTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
-	return tx.seriesEnsureSlug(ctx, id)
+	return tx.seriesEnsureSlug(id)
 }
 
-func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesWork, error) {
+func (tx *TxRW) SeriesCreateByTVmazeID(show *tvmaze.Show) (*SeriesWork, error) {
 	id64 := int64(show.ID)
 
 	srID := "sr" + flurry.NewID()
@@ -255,8 +256,7 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 	if show.Ended != nil {
 		ended = *show.Ended
 	}
-	slug, err := tx.generateSeriesSlug(ctx,
-		show.Name, premiered, srID)
+	slug, err := tx.generateSeriesSlug(show.Name, premiered, srID)
 	if err != nil {
 		return nil, err
 	}
@@ -287,17 +287,17 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 	if err != nil {
 		return nil, err
 	}
-	sedData, err := tx.seriesEditionCreate(ctx, "Air Date", srID, show.Summary)
+	sedData, err := tx.seriesEditionCreate("Air Date", srID, show.Summary)
 	if err != nil {
 		return nil, err
 	}
 	if show.Image != nil {
-		err = tx.addTaskWithPriority(ctx, priority.FetchPoster, taskFetchSeriesPoster, sedData.ID, show.Image.OriginalURL)
+		err = tx.addTaskWithPriority(priority.FetchPoster, taskFetchSeriesPoster, sedData.ID, show.Image.OriginalURL)
 		if err != nil {
 			return nil, err
 		}
 	}
-	err = tx.addTask(ctx, taskFetchEpisodes,
+	err = tx.addTask(taskFetchEpisodes,
 		strconv.FormatInt(id64, 10), sedData.ID)
 	if err != nil {
 		return nil, err
@@ -309,7 +309,7 @@ func (tx *TxRW) SeriesCreateByTVmazeID(ctx Context, show *tvmaze.Show) (*SeriesW
 }
 
 // SeriesWorkList returns the default edition of each series.
-func (tx *TxR) SeriesWorkList(ctx Context) ([]*SeriesWork, error) {
+func (tx *TxR) SeriesWorkList() ([]*SeriesWork, error) {
 	editions, err := tx.q.SeriesEditionListDefault()
 	if err != nil {
 		return nil, err

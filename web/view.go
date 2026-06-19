@@ -18,8 +18,8 @@ var notFound = domi.Text("Not Found")
 func (a *app) View(ctx context.Context) (title string, n node) {
 	var dlg node
 	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
-		title, n = a.view(ctx, tx, splitPath(a.path))
-		dlg = a.viewDialog(ctx, tx)
+		title, n = a.view(tx, splitPath(a.path))
+		dlg = viewDialog(tx, a.dialog)
 		return nil
 	})
 	if err != nil {
@@ -51,39 +51,39 @@ func (a *app) viewPlayer(ps *player) (string, node) {
 }
 
 // viewDialog renders the open dialog, if any.
-func (a *app) viewDialog(ctx context.Context, tx *model.TxR) node {
-	switch d := a.dialog.(type) {
+func viewDialog(tx *model.TxR, d dialog) node {
+	switch d := d.(type) {
 	case *seriesAddDialog:
 		return view.AppSeriesAddDialog(d.query, d.searching, d.results)
 	case *movieAddDialog:
 		return view.AppMovieAddDialog(d.query, d.searching, d.results)
 	case *collectionMovieAddDialog:
-		results, err := tx.CollectionMovieSearch(ctx, d.colID, d.query)
+		results, err := tx.CollectionMovieSearch(d.colID, d.query)
 		if err != nil {
 			return viewError(err)
 		}
 		return view.AppCollectionMovieAddDialog(d.colID, d.query, results)
 	case *collectionSeriesAddDialog:
-		results, err := tx.CollectionSeriesSearch(ctx, d.colID, d.query)
+		results, err := tx.CollectionSeriesSearch(d.colID, d.query)
 		if err != nil {
 			return viewError(err)
 		}
 		return view.AppCollectionSeriesAddDialog(d.colID, d.query, results)
 	case *imageDialog:
-		return viewImageDialog(ctx, tx, d.id)
+		return viewImageDialog(tx, d.id)
 	case *downloadFileAttachPopover:
-		return viewDownloadFileAttach(ctx, tx, d)
+		return viewDownloadFileAttach(tx, d)
 	}
 	return nil
 }
 
 // viewDownloadFileAttach renders the episode picker for attaching a
 // downloaded file, once the attached-set snapshot has arrived.
-func viewDownloadFileAttach(ctx context.Context, tx *model.TxR, d *downloadFileAttachPopover) node {
+func viewDownloadFileAttach(tx *model.TxR, d *downloadFileAttachPopover) node {
 	if !d.ready {
 		return nil
 	}
-	dl, err := tx.Download(ctx, d.infoHash)
+	dl, err := tx.Download(d.infoHash)
 	if err != nil {
 		return viewError(err)
 	}
@@ -91,7 +91,7 @@ func viewDownloadFileAttach(ctx context.Context, tx *model.TxR, d *downloadFileA
 	if sed == nil {
 		return viewError(fmt.Errorf("download %s is not planned for a series", d.infoHash))
 	}
-	vid, err := tx.VideoGetByName(ctx, d.infoHash, d.path)
+	vid, err := tx.VideoGetByName(d.infoHash, d.path)
 	if err != nil {
 		return viewError(err)
 	}
@@ -104,12 +104,12 @@ func viewDownloadFileAttach(ctx context.Context, tx *model.TxR, d *downloadFileA
 
 // downloadAttachedEpisodes lists the episodes the downloaded file is
 // currently attached to.
-func downloadAttachedEpisodes(ctx context.Context, tx *model.TxR, infoHash, path string) ([]string, error) {
-	dl, err := tx.Download(ctx, infoHash)
+func downloadAttachedEpisodes(tx *model.TxR, infoHash, path string) ([]string, error) {
+	dl, err := tx.Download(infoHash)
 	if err != nil {
 		return nil, err
 	}
-	vid, err := tx.VideoGetByName(ctx, infoHash, path)
+	vid, err := tx.VideoGetByName(infoHash, path)
 	if err != nil {
 		return nil, err
 	}
@@ -118,28 +118,28 @@ func downloadAttachedEpisodes(ctx context.Context, tx *model.TxR, infoHash, path
 
 // viewImageDialog renders the image-edit dialog for the item the ID
 // identifies.
-func viewImageDialog(ctx context.Context, tx *model.TxR, id string) node {
+func viewImageDialog(tx *model.TxR, id string) node {
 	switch model.KindOf(id) {
 	case model.TrashKindMovieEdition:
-		med, err := tx.MovieEdition(ctx, id)
+		med, err := tx.MovieEdition(id)
 		if err != nil {
 			return viewError(err)
 		}
 		return view.AppMoviePosterDialog(med)
 	case model.TrashKindSeriesEdition:
-		sed, err := tx.SeriesEdition(ctx, id)
+		sed, err := tx.SeriesEdition(id)
 		if err != nil {
 			return viewError(err)
 		}
 		return view.AppSeriesEditionPosterDialog(sed)
 	case model.TrashKindEpisode:
-		ep, err := tx.EpisodeHead(ctx, id)
+		ep, err := tx.EpisodeHead(id)
 		if err != nil {
 			return viewError(err)
 		}
 		return view.AppEpisodeThumbnailDialog(ep)
 	case model.TrashKindCollection:
-		col, err := tx.CollectionHead(ctx, id)
+		col, err := tx.CollectionHead(id)
 		if err != nil {
 			return viewError(err)
 		}
@@ -153,49 +153,49 @@ func (a *app) Preview(ctx context.Context, u *url.URL) (dest, title string, n no
 	return "", "", nil
 }
 
-func (a *app) view(ctx context.Context, tx *model.TxR, path []string) (title string, n node) {
+func (a *app) view(tx *model.TxR, path []string) (title string, n node) {
 	if a.odesc != nil {
-		return viewObject(ctx, tx, a.path, a.odesc)
+		return viewObject(tx, a.path, a.odesc)
 	}
 	m := &matcher{path: path}
 	switch {
 	case m.match(""):
-		return viewHome(ctx, tx)
+		return viewHome(tx)
 	case m.match("collections"):
-		return viewCollections(ctx, tx)
+		return viewCollections(tx)
 	case path[0] == "app":
-		title, body := viewEditorPage(ctx, tx, path[1:])
-		return title, viewEditor(ctx, tx, a.path, body)
+		title, body := viewEditorPage(tx, path[1:])
+		return title, viewEditor(tx, a.path, body)
 	}
 	return "Not Found", notFound
 }
 
 // viewObject renders the editor or theater page for odesc.
-func viewObject(ctx context.Context, tx *model.TxR, current string, odesc map[string]string) (title string, n node) {
+func viewObject(tx *model.TxR, current string, odesc map[string]string) (title string, n node) {
 	switch odesc["section"] {
 	case sectionEditor:
-		title, body := viewEditorObject(ctx, tx, odesc)
-		return title, viewEditor(ctx, tx, current, body)
+		title, body := viewEditorObject(tx, odesc)
+		return title, viewEditor(tx, current, body)
 	case sectionTheater:
-		return viewTheater(ctx, tx, odesc)
+		return viewTheater(tx, odesc)
 	}
 	return "Not Found", notFound
 }
 
-func viewHome(ctx context.Context, tx *model.TxR) (title string, n node) {
-	works, err := tx.WorkList(ctx)
+func viewHome(tx *model.TxR) (title string, n node) {
+	works, err := tx.WorkList()
 	if err != nil {
 		return "", viewError(err)
 	}
-	cols, err := tx.CollectionHeadList(ctx)
+	cols, err := tx.CollectionHeadList()
 	if err != nil {
 		return "", viewError(err)
 	}
 	return view.Home(works, cols, tx.Uploads())
 }
 
-func viewCollections(ctx context.Context, tx *model.TxR) (title string, n node) {
-	cols, err := tx.CollectionHeadList(ctx)
+func viewCollections(tx *model.TxR) (title string, n node) {
+	cols, err := tx.CollectionHeadList()
 	if err != nil {
 		return "", viewError(err)
 	}

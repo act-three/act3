@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -113,7 +114,7 @@ func (m *Model) uploadEnd(u *upload) {
 // write transaction to kick off the HLS rendition pipeline, joining
 // the same downstream encoding path used by torrent ingest.
 func (m *Model) VideoUploadCreate(
-	ctx Context,
+	ctx context.Context,
 	r io.Reader,
 	name string,
 	size int64,
@@ -163,7 +164,7 @@ func (m *Model) VideoUploadCreate(
 						"key", key, "err", err)
 				}
 			})
-			return tx.attachUploadedVideo(ctx, vid.ID, medID, epID)
+			return tx.attachUploadedVideo(vid.ID, medID, epID)
 		}
 		v, err := tx.q.VideoCreate(schema.VideoCreateParams{Name: base})
 		if err != nil {
@@ -179,7 +180,7 @@ func (m *Model) VideoUploadCreate(
 			return err
 		}
 		vid = v
-		return tx.attachUploadedVideo(ctx, v.ID, medID, epID)
+		return tx.attachUploadedVideo(v.ID, medID, epID)
 	})
 	if err != nil {
 		return vid, err
@@ -196,7 +197,7 @@ func (m *Model) VideoUploadCreate(
 	}
 	m.prog.Open(vid.ID, vid.Name, "Probing")
 	err = m.WithTxR(ctx, func(tx *TxR) error {
-		return tx.planAndCreateRenditions(ctx, vid)
+		return tx.planAndCreateRenditions(vid)
 	})
 	return vid, err
 }
@@ -204,7 +205,7 @@ func (m *Model) VideoUploadCreate(
 // attachUploadedVideo wires a Video into either an Episode or a
 // MovieEdition. Uses ensure-style inserts so a re-upload of an
 // already-attached file is idempotent.
-func (tx *TxRW) attachUploadedVideo(ctx Context, videoID string, medID, epID *string) error {
+func (tx *TxRW) attachUploadedVideo(videoID string, medID, epID *string) error {
 	switch {
 	case epID != nil:
 		return tx.q.EpisodeVideoEnsure(schema.EpisodeVideoEnsureParams{

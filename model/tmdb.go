@@ -1,8 +1,6 @@
 package model
 
 import (
-	"context"
-
 	"kr.dev/errorfmt"
 )
 
@@ -12,9 +10,9 @@ func (m *Model) registerTMDBSettingHooks() {
 	})
 }
 
-func (tx *TxR) loadTMDBConfig(ctx Context) (err error) {
+func (tx *TxR) loadTMDBConfig() (err error) {
 	defer errorfmt.Handlef("tmdb: %w", &err)
-	settings, err := tx.SettingGetByGroup(ctx, "tmdb")
+	settings, err := tx.SettingGetByGroup("tmdb")
 	if err != nil {
 		return err
 	}
@@ -25,14 +23,14 @@ func (tx *TxR) loadTMDBConfig(ctx Context) (err error) {
 	return nil
 }
 
-func (tx *TxR) taskFetchMoviePoster(ctx context.Context, args []string) error {
+func (tx *TxR) taskFetchMoviePoster(args []string) error {
 	medID := args[0]
 	url := args[1]
-	posterID, err := tx.m.imageFetch(ctx, url, ImagePoster)
+	posterID, err := tx.m.imageFetch(tx.ctx, url, ImagePoster)
 	if err != nil {
 		return err
 	}
-	return tx.m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.MovieEditionPosterIDSet(ctx, medID, posterID)
+	return tx.m.WithTxRW(tx.ctx, func(tx *TxRW) error {
+		return tx.MovieEditionPosterIDSet(medID, posterID)
 	})
 }

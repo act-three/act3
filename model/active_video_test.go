@@ -34,7 +34,7 @@ func makeVideoPlayable(t *testing.T, m *Model, videoID string) {
 		}); err != nil {
 			return err
 		}
-		return tx.ensureActiveVideoForVideoID(ctx, videoID)
+		return tx.ensureActiveVideoForVideoID(videoID)
 	}); err != nil {
 		t.Fatalf("make %s playable: %v", videoID, err)
 	}
@@ -113,7 +113,7 @@ func TestEpisodeVideoSetActiveSwitches(t *testing.T) {
 	makeVideoPlayable(t, m, v2)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.EpisodeVideoSetActive(ctx, fx.episodeID, v2)
+		return tx.EpisodeVideoSetActive(fx.episodeID, v2)
 	}); err != nil {
 		t.Fatalf("SetActive: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestEpisodeVideoSetActiveRejectsUnplayable(t *testing.T) {
 	// v2 is not playable.
 
 	err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.EpisodeVideoSetActive(ctx, fx.episodeID, v2)
+		return tx.EpisodeVideoSetActive(fx.episodeID, v2)
 	})
 
 	if err == nil {
@@ -163,7 +163,7 @@ func TestActiveVideoLockedAgainstTrash(t *testing.T) {
 	makeVideoPlayable(t, m, v2)
 
 	err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(ctx, v1)
+		return tx.Trash(v1)
 	})
 
 	if !errors.Is(err, ErrActiveVideoLocked) {
@@ -183,7 +183,7 @@ func TestActiveVideoSoleAllowsTrash(t *testing.T) {
 	makeVideoPlayable(t, m, v1)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(ctx, v1)
+		return tx.Trash(v1)
 	}); err != nil {
 		t.Fatalf("Trash sole active: %v", err)
 	}
@@ -205,7 +205,7 @@ func TestActiveVideoNonActiveTrashAllowed(t *testing.T) {
 	// v1 became playable first → Active; v2 → not Active.
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(ctx, v2)
+		return tx.Trash(v2)
 	}); err != nil {
 		t.Fatalf("trash non-active: %v", err)
 	}
@@ -229,7 +229,7 @@ func TestActiveVideoLockedAgainstReencode(t *testing.T) {
 	makeVideoPlayable(t, m, v2)
 
 	err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.ReencodeVideo(ctx, v1)
+		return tx.ReencodeVideo(v1)
 	})
 
 	if !errors.Is(err, ErrActiveVideoLocked) {

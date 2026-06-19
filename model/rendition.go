@@ -28,7 +28,7 @@ type QualityOption struct {
 // pixel height — the planner stores the cap as MaxHeight (0 when
 // the source already satisfies the cap), so the actual output is
 // MaxHeight when set and the source height otherwise.
-func (tx *TxR) QualityOptions(ctx Context, v *Video) ([]QualityOption, error) {
+func (tx *TxR) QualityOptions(v *Video) ([]QualityOption, error) {
 	rends, err := tx.q.RenditionListStreamingByVideoID(v.ID())
 	if err != nil {
 		return nil, err
@@ -90,11 +90,11 @@ func videoExtensionForContentType(ct string) string {
 	}
 }
 
-func (tx *TxR) Rendition(ctx Context, id string) (schema.Rendition, error) {
+func (tx *TxR) Rendition(id string) (schema.Rendition, error) {
 	return tx.q.RenditionGet(id)
 }
 
-func (tx *TxR) RenditionListStreamingByEpisodeID(ctx Context, epID string) ([]schema.Rendition, error) {
+func (tx *TxR) RenditionListStreamingByEpisodeID(epID string) ([]schema.Rendition, error) {
 	return tx.q.RenditionListStreamingByEpisodeID(epID)
 }
 
@@ -112,22 +112,22 @@ type VideoDownload struct {
 // identified by epID within the series edition identified by sedID.
 // The filename is derived from the episode's basename in that
 // edition, matching the browse-page download listing.
-func (tx *TxR) VideoDownloadForEpisode(ctx Context, id, epID, sedID string) (VideoDownload, error) {
-	ep, err := tx.EpisodeInEdition(ctx, epID, sedID)
+func (tx *TxR) VideoDownloadForEpisode(id, epID, sedID string) (VideoDownload, error) {
+	ep, err := tx.EpisodeInEdition(epID, sedID)
 	if err != nil {
 		return VideoDownload{}, err
 	}
-	return tx.videoDownloadFor(ctx, id, ep.basename())
+	return tx.videoDownloadFor(id, ep.basename())
 }
 
 // VideoDownloadForMovieEdition is the movie-edition counterpart to
 // VideoDownloadForEpisode.
-func (tx *TxR) VideoDownloadForMovieEdition(ctx Context, id, medID string) (VideoDownload, error) {
-	med, err := tx.MovieEditionHead(ctx, medID)
+func (tx *TxR) VideoDownloadForMovieEdition(id, medID string) (VideoDownload, error) {
+	med, err := tx.MovieEditionHead(medID)
 	if err != nil {
 		return VideoDownload{}, err
 	}
-	return tx.videoDownloadFor(ctx, id, med.basename())
+	return tx.videoDownloadFor(id, med.basename())
 }
 
 // videoDownloadFor tries the given id as a Rendition first, then as
@@ -135,7 +135,7 @@ func (tx *TxR) VideoDownloadForMovieEdition(ctx Context, id, medID string) (Vide
 // owner-derived basename. Returns sql.ErrNoRows if neither table
 // has a matching row, or if a matching Rendition exists but has not
 // yet been encoded.
-func (tx *TxR) videoDownloadFor(ctx Context, id, basename string) (VideoDownload, error) {
+func (tx *TxR) videoDownloadFor(id, basename string) (VideoDownload, error) {
 	rend, err := tx.q.RenditionGet(id)
 	if err == nil {
 		if rend.Key == "" {

@@ -9,7 +9,7 @@ type AudioRendition struct {
 }
 
 // AudioRendition returns the AudioRendition row for the given ID.
-func (tx *TxR) AudioRendition(ctx Context, id string) (schema.AudioRendition, error) {
+func (tx *TxR) AudioRendition(id string) (schema.AudioRendition, error) {
 	return tx.q.AudioRenditionGet(id)
 }
 
@@ -40,7 +40,7 @@ type AudioOption struct {
 // AudioOptions returns the audio-menu entries for a video, in the same
 // order as the MV playlist's EXT-X-MEDIA AUDIO group. The first entry
 // is the HLS DEFAULT.
-func (tx *TxR) AudioOptions(ctx Context, v *Video) ([]AudioOption, error) {
+func (tx *TxR) AudioOptions(v *Video) ([]AudioOption, error) {
 	rends, err := tx.q.AudioRenditionListEncodedForMV(v.ID())
 	if err != nil {
 		return nil, err

@@ -63,7 +63,7 @@ type trashState struct {
 
 func (s trashState) live() bool { return !s.trashed }
 
-func (tx *TxR) trashState(ctx Context, id string) (trashState, error) {
+func (tx *TxR) trashState(id string) (trashState, error) {
 	row, err := tx.q.TrashGet(id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return trashState{}, nil
@@ -78,9 +78,9 @@ func (tx *TxR) trashState(ctx Context, id string) (trashState, error) {
 	return trashState{trashed: true, cascadeOf: cascadeOf}, nil
 }
 
-func (tx *TxRW) insertTrashRow(ctx Context, id, root string, now time.Time) error {
+func (tx *TxRW) insertTrashRow(id, root string, now time.Time) error {
 	kind := KindOf(id)
-	title, subtitle, err := tx.computeTrashTitle(ctx, id, kind)
+	title, subtitle, err := tx.computeTrashTitle(id, kind)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (tx *TxRW) insertTrashRow(ctx Context, id, root string, now time.Time) erro
 	return tx.q.TrashInsert(params)
 }
 
-func (tx *TxRW) computeTrashTitle(ctx Context, id string, kind TrashKind) (title, subtitle string, err error) {
+func (tx *TxRW) computeTrashTitle(id string, kind TrashKind) (title, subtitle string, err error) {
 	switch kind {
 	case TrashKindMovie:
 		r, err := tx.q.MovieEditionGetDefault(id)
@@ -184,11 +184,11 @@ func (tx *TxRW) computeTrashTitle(ctx Context, id string, kind TrashKind) (title
 // Trash soft-deletes the item and cascades the trash down its owned
 // sub-tree, orphan-reaping shared Episode/Video rows that lose their
 // last live reference.
-func (tx *TxRW) Trash(ctx Context, id string) (err error) {
+func (tx *TxRW) Trash(id string) (err error) {
 	kind := KindOf(id)
 	defer errorfmt.Handlef("trash %s: %w", id, &err)
 
-	state, err := tx.trashState(ctx, id)
+	state, err := tx.trashState(id)
 	if err != nil {
 		return err
 	}
@@ -199,26 +199,26 @@ func (tx *TxRW) Trash(ctx Context, id string) (err error) {
 	now := time.Now()
 	switch kind {
 	case TrashKindMovie:
-		err = tx.trashMovie(ctx, id, id, now)
+		err = tx.trashMovie(id, id, now)
 	case TrashKindMovieEdition:
-		err = tx.trashMovieEdition(ctx, id, id, now)
+		err = tx.trashMovieEdition(id, id, now)
 	case TrashKindSeries:
-		err = tx.trashSeries(ctx, id, id, now)
+		err = tx.trashSeries(id, id, now)
 	case TrashKindSeriesEdition:
-		err = tx.trashSeriesEdition(ctx, id, id, now)
+		err = tx.trashSeriesEdition(id, id, now)
 	case TrashKindSeason:
-		err = tx.trashSeason(ctx, id, id, now)
+		err = tx.trashSeason(id, id, now)
 	case TrashKindEpisode:
-		err = tx.trashEpisode(ctx, id, id, now)
+		err = tx.trashEpisode(id, id, now)
 	case TrashKindVideo:
-		if err := tx.guardActiveVideo(ctx, id); err != nil {
+		if err := tx.guardActiveVideo(id); err != nil {
 			return err
 		}
-		err = tx.trashVideo(ctx, id, id, now)
+		err = tx.trashVideo(id, id, now)
 	case TrashKindCollection:
-		err = tx.trashCollection(ctx, id, id, now)
+		err = tx.trashCollection(id, id, now)
 	case TrashKindDownload:
-		err = tx.trashDownload(ctx, id, id, now)
+		err = tx.trashDownload(id, id, now)
 	default:
 		return fmt.Errorf("no trashable kind for ID %q", id)
 	}
@@ -228,8 +228,8 @@ func (tx *TxRW) Trash(ctx Context, id string) (err error) {
 	return nil
 }
 
-func (tx *TxRW) trashMovie(ctx Context, id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+func (tx *TxRW) trashMovie(id, root string, now time.Time) error {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	meds, err := tx.q.MovieEditionListByMovieID(id)
@@ -237,7 +237,7 @@ func (tx *TxRW) trashMovie(ctx Context, id, root string, now time.Time) error {
 		return err
 	}
 	for _, med := range meds {
-		if err := tx.trashMovieEdition(ctx, med.ID, root, now); err != nil {
+		if err := tx.trashMovieEdition(med.ID, root, now); err != nil {
 			return err
 		}
 	}
@@ -254,7 +254,7 @@ func (tx *TxRW) trashMovie(ctx Context, id, root string, now time.Time) error {
 	return tx.q.SlugDelete(id)
 }
 
-func (tx *TxRW) trashMovieEdition(ctx Context, id, root string, now time.Time) error {
+func (tx *TxRW) trashMovieEdition(id, root string, now time.Time) error {
 	if id == root {
 		// Directly trashed: if this was the default edition, promote a
 		// sibling to default before trashing so the movie retains one.
@@ -267,12 +267,12 @@ func (tx *TxRW) trashMovieEdition(ctx Context, id, root string, now time.Time) e
 			if err != nil {
 				return err
 			}
-			if err := tx.MovieEditionSetDefault(ctx, succ.ID); err != nil {
+			if err := tx.MovieEditionSetDefault(succ.ID); err != nil {
 				return err
 			}
 		}
 	}
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	dls, err := tx.q.DownloadListByMovieEditionID(&id)
@@ -280,7 +280,7 @@ func (tx *TxRW) trashMovieEdition(ctx Context, id, root string, now time.Time) e
 		return err
 	}
 	for _, dl := range dls {
-		if err := tx.trashDownload(ctx, dl.InfoHash, root, now); err != nil {
+		if err := tx.trashDownload(dl.InfoHash, root, now); err != nil {
 			return err
 		}
 	}
@@ -294,11 +294,11 @@ func (tx *TxRW) trashMovieEdition(ctx Context, id, root string, now time.Time) e
 	}); err != nil {
 		return err
 	}
-	return tx.reapOrphanVideos(ctx, root, now)
+	return tx.reapOrphanVideos(root, now)
 }
 
-func (tx *TxRW) trashSeries(ctx Context, id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+func (tx *TxRW) trashSeries(id, root string, now time.Time) error {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	seds, err := tx.q.SeriesEditionListBySeriesID(id)
@@ -306,7 +306,7 @@ func (tx *TxRW) trashSeries(ctx Context, id, root string, now time.Time) error {
 		return err
 	}
 	for _, sed := range seds {
-		if err := tx.trashSeriesEdition(ctx, sed.ID, root, now); err != nil {
+		if err := tx.trashSeriesEdition(sed.ID, root, now); err != nil {
 			return err
 		}
 	}
@@ -323,7 +323,7 @@ func (tx *TxRW) trashSeries(ctx Context, id, root string, now time.Time) error {
 	return tx.q.SlugDelete(id)
 }
 
-func (tx *TxRW) trashSeriesEdition(ctx Context, id, root string, now time.Time) error {
+func (tx *TxRW) trashSeriesEdition(id, root string, now time.Time) error {
 	if id == root {
 		sed, err := tx.q.SeriesEditionGet(id)
 		if err != nil {
@@ -334,12 +334,12 @@ func (tx *TxRW) trashSeriesEdition(ctx Context, id, root string, now time.Time) 
 			if err != nil {
 				return err
 			}
-			if err := tx.SeriesEditionSetDefault(ctx, succ.ID); err != nil {
+			if err := tx.SeriesEditionSetDefault(succ.ID); err != nil {
 				return err
 			}
 		}
 	}
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	dls, err := tx.q.DownloadListBySeriesEditionID(&id)
@@ -347,7 +347,7 @@ func (tx *TxRW) trashSeriesEdition(ctx Context, id, root string, now time.Time) 
 		return err
 	}
 	for _, dl := range dls {
-		if err := tx.trashDownload(ctx, dl.InfoHash, root, now); err != nil {
+		if err := tx.trashDownload(dl.InfoHash, root, now); err != nil {
 			return err
 		}
 	}
@@ -356,7 +356,7 @@ func (tx *TxRW) trashSeriesEdition(ctx Context, id, root string, now time.Time) 
 		return err
 	}
 	for _, sn := range sns {
-		if err := tx.trashSeason(ctx, sn.ID, root, now); err != nil {
+		if err := tx.trashSeason(sn.ID, root, now); err != nil {
 			return err
 		}
 	}
@@ -366,8 +366,8 @@ func (tx *TxRW) trashSeriesEdition(ctx Context, id, root string, now time.Time) 
 
 }
 
-func (tx *TxRW) trashSeason(ctx Context, id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+func (tx *TxRW) trashSeason(id, root string, now time.Time) error {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.SeasonEpisodeSoftDeleteBySeasonID(schema.SeasonEpisodeSoftDeleteBySeasonIDParams{
@@ -380,10 +380,10 @@ func (tx *TxRW) trashSeason(ctx Context, id, root string, now time.Time) error {
 	}); err != nil {
 		return err
 	}
-	return tx.reapOrphanEpisodes(ctx, root, now)
+	return tx.reapOrphanEpisodes(root, now)
 }
 
-func (tx *TxRW) trashEpisode(ctx Context, id, root string, now time.Time) error {
+func (tx *TxRW) trashEpisode(id, root string, now time.Time) error {
 	var sneps []schema.SeasonEpisode
 	if id == root {
 		// Directly trashed: collect live junctions so we can renumber
@@ -394,7 +394,7 @@ func (tx *TxRW) trashEpisode(ctx Context, id, root string, now time.Time) error 
 			return err
 		}
 	}
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.SeasonEpisodeSoftDeleteByEpisodeID(schema.SeasonEpisodeSoftDeleteByEpisodeIDParams{
@@ -412,19 +412,19 @@ func (tx *TxRW) trashEpisode(ctx Context, id, root string, now time.Time) error 
 	}); err != nil {
 		return err
 	}
-	if err := tx.reapOrphanVideos(ctx, root, now); err != nil {
+	if err := tx.reapOrphanVideos(root, now); err != nil {
 		return err
 	}
 	for _, snep := range sneps {
-		if err := tx.renumberSeason(ctx, snep.SeasonID); err != nil {
+		if err := tx.renumberSeason(snep.SeasonID); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (tx *TxRW) trashVideo(ctx Context, id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+func (tx *TxRW) trashVideo(id, root string, now time.Time) error {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.EpisodeVideoSoftDeleteByVideoID(schema.EpisodeVideoSoftDeleteByVideoIDParams{
@@ -443,8 +443,8 @@ func (tx *TxRW) trashVideo(ctx Context, id, root string, now time.Time) error {
 
 }
 
-func (tx *TxRW) trashCollection(ctx Context, id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+func (tx *TxRW) trashCollection(id, root string, now time.Time) error {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.CollectionMovieSoftDeleteByCollectionID(schema.CollectionMovieSoftDeleteByCollectionIDParams{
@@ -465,8 +465,8 @@ func (tx *TxRW) trashCollection(ctx Context, id, root string, now time.Time) err
 	return tx.q.SlugDelete(id)
 }
 
-func (tx *TxRW) trashDownload(ctx Context, id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(ctx, id, root, now); err != nil {
+func (tx *TxRW) trashDownload(id, root string, now time.Time) error {
+	if err := tx.insertTrashRow(id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.DownloadSoftDelete(schema.DownloadSoftDeleteParams{
@@ -474,19 +474,19 @@ func (tx *TxRW) trashDownload(ctx Context, id, root string, now time.Time) error
 	}); err != nil {
 		return err
 	}
-	return tx.reapOrphanVideos(ctx, root, now)
+	return tx.reapOrphanVideos(root, now)
 }
 
 // reapOrphanEpisodes trashes every live Episode with no live
 // SeasonEpisode junction, under the given cascade root. Called after
 // a cascade soft-deletes its SeasonEpisode junctions.
-func (tx *TxRW) reapOrphanEpisodes(ctx Context, root string, now time.Time) error {
+func (tx *TxRW) reapOrphanEpisodes(root string, now time.Time) error {
 	epIDs, err := tx.q.EpisodeListOrphans()
 	if err != nil {
 		return err
 	}
 	for _, epID := range epIDs {
-		if err := tx.trashEpisode(ctx, epID, root, now); err != nil {
+		if err := tx.trashEpisode(epID, root, now); err != nil {
 			return err
 		}
 	}
@@ -496,13 +496,13 @@ func (tx *TxRW) reapOrphanEpisodes(ctx Context, root string, now time.Time) erro
 // reapOrphanVideos trashes every live Video with no live EpisodeVideo
 // or MovieVideo junction, under the given cascade root. Called after
 // a cascade soft-deletes its video junctions.
-func (tx *TxRW) reapOrphanVideos(ctx Context, root string, now time.Time) error {
+func (tx *TxRW) reapOrphanVideos(root string, now time.Time) error {
 	vidIDs, err := tx.q.VideoListOrphans()
 	if err != nil {
 		return err
 	}
 	for _, vidID := range vidIDs {
-		if err := tx.trashVideo(ctx, vidID, root, now); err != nil {
+		if err := tx.trashVideo(vidID, root, now); err != nil {
 			return err
 		}
 	}
@@ -513,10 +513,10 @@ func (tx *TxRW) reapOrphanVideos(ctx Context, root string, now time.Time) error 
 // structural ancestors first so it's reachable. Cascade-trashed items
 // (CascadeOf set) aren't individually restorable and return
 // ErrCascadeTrashed.
-func (tx *TxRW) Restore(ctx Context, id string) (err error) {
+func (tx *TxRW) Restore(id string) (err error) {
 	defer errorfmt.Handlef("restore %s: %w", id, &err)
 
-	state, err := tx.trashState(ctx, id)
+	state, err := tx.trashState(id)
 	if err != nil {
 		return err
 	}
@@ -526,7 +526,7 @@ func (tx *TxRW) Restore(ctx Context, id string) (err error) {
 	if state.cascadeOf != "" {
 		return ErrCascadeTrashed
 	}
-	return tx.ensureLive(ctx, id)
+	return tx.ensureLive(id)
 }
 
 // ensureParentsLive makes every immediate structural parent of the
@@ -534,33 +534,33 @@ func (tx *TxRW) Restore(ctx Context, id string) (err error) {
 // climbs as far as needed. For an Episode whose containing Series
 // was separately trashed after the episode itself, this walks the
 // junctions up to the Seasons and ensureLive pulls the rest back.
-func (tx *TxRW) ensureParentsLive(ctx Context, id string) error {
+func (tx *TxRW) ensureParentsLive(id string) error {
 	switch KindOf(id) {
 	case TrashKindMovieEdition:
 		med, err := tx.q.MovieEditionGet(id)
 		if err != nil {
 			return err
 		}
-		return tx.ensureLive(ctx, med.MovieID)
+		return tx.ensureLive(med.MovieID)
 	case TrashKindSeriesEdition:
 		sed, err := tx.q.SeriesEditionGet(id)
 		if err != nil {
 			return err
 		}
-		return tx.ensureLive(ctx, sed.SeriesID)
+		return tx.ensureLive(sed.SeriesID)
 	case TrashKindSeason:
 		sn, err := tx.q.SeasonGet(id)
 		if err != nil {
 			return err
 		}
-		return tx.ensureLive(ctx, sn.EditionID)
+		return tx.ensureLive(sn.EditionID)
 	case TrashKindEpisode:
 		seasonIDs, err := tx.q.SeasonEpisodeDistinctSeasonsByEpisode(id)
 		if err != nil {
 			return err
 		}
 		for _, snID := range seasonIDs {
-			if err := tx.ensureLive(ctx, snID); err != nil {
+			if err := tx.ensureLive(snID); err != nil {
 				return err
 			}
 		}
@@ -570,7 +570,7 @@ func (tx *TxRW) ensureParentsLive(ctx Context, id string) error {
 			return err
 		}
 		for _, epID := range epIDs {
-			if err := tx.ensureLive(ctx, epID); err != nil {
+			if err := tx.ensureLive(epID); err != nil {
 				return err
 			}
 		}
@@ -579,7 +579,7 @@ func (tx *TxRW) ensureParentsLive(ctx Context, id string) error {
 			return err
 		}
 		for _, medID := range medIDs {
-			if err := tx.ensureLive(ctx, medID); err != nil {
+			if err := tx.ensureLive(medID); err != nil {
 				return err
 			}
 		}
@@ -592,8 +592,8 @@ func (tx *TxRW) ensureParentsLive(ctx Context, id string) error {
 // brings the target along). Directly-trashed targets walk their own
 // ancestor chain before being restored via restoreRoot. No-op if
 // already live.
-func (tx *TxRW) ensureLive(ctx Context, id string) error {
-	state, err := tx.trashState(ctx, id)
+func (tx *TxRW) ensureLive(id string) error {
+	state, err := tx.trashState(id)
 	if err != nil {
 		return err
 	}
@@ -601,42 +601,42 @@ func (tx *TxRW) ensureLive(ctx Context, id string) error {
 		return nil
 	}
 	if state.cascadeOf != "" {
-		return tx.ensureLive(ctx, state.cascadeOf)
+		return tx.ensureLive(state.cascadeOf)
 	}
-	if err := tx.ensureParentsLive(ctx, id); err != nil {
+	if err := tx.ensureParentsLive(id); err != nil {
 		return err
 	}
-	return tx.restoreRoot(ctx, id)
+	return tx.restoreRoot(id)
 }
 
-func (tx *TxRW) restoreRoot(ctx Context, id string) error {
+func (tx *TxRW) restoreRoot(id string) error {
 	kind := KindOf(id)
 
 	var sneps []schema.SeasonEpisode
 	switch kind {
 	case TrashKindMovie:
-		if err := tx.restoreSlug(ctx, id); err != nil {
+		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.MovieRestore(id); err != nil {
 			return err
 		}
 	case TrashKindMovieEdition:
-		if err := tx.restoreSlug(ctx, id); err != nil {
+		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.MovieEditionRestore(id); err != nil {
 			return err
 		}
 	case TrashKindSeries:
-		if err := tx.restoreSlug(ctx, id); err != nil {
+		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.SeriesRestore(id); err != nil {
 			return err
 		}
 	case TrashKindSeriesEdition:
-		if err := tx.restoreSlug(ctx, id); err != nil {
+		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.SeriesEditionRestore(id); err != nil {
@@ -656,7 +656,7 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 		}
 		sneps = restorable
 		for _, snep := range sneps {
-			if err := tx.seasonEpisodeSortKeyBump(ctx, snep.SeasonID, snep.SortKey); err != nil {
+			if err := tx.seasonEpisodeSortKeyBump(snep.SeasonID, snep.SortKey); err != nil {
 				return err
 			}
 		}
@@ -665,7 +665,7 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 			return err
 		}
 	case TrashKindCollection:
-		if err := tx.restoreSlug(ctx, id); err != nil {
+		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.CollectionRestore(id); err != nil {
@@ -712,7 +712,7 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 	}
 
 	for _, snep := range sneps {
-		if err := tx.renumberSeason(ctx, snep.SeasonID); err != nil {
+		if err := tx.renumberSeason(snep.SeasonID); err != nil {
 			return err
 		}
 	}
@@ -726,28 +726,28 @@ func (tx *TxRW) restoreRoot(ctx Context, id string) error {
 // live (title/label-change) and trashed (restore) cases via the
 // entity's DeletedAt; only the live case announces the change, since
 // a trashed entity's pages have no viewers to follow it.
-func (tx *TxRW) restoreSlug(ctx Context, id string) error {
+func (tx *TxRW) restoreSlug(id string) error {
 	switch KindOf(id) {
 	case TrashKindMovie:
-		return tx.movieEnsureSlug(ctx, id)
+		return tx.movieEnsureSlug(id)
 	case TrashKindSeries:
-		return tx.seriesEnsureSlug(ctx, id)
+		return tx.seriesEnsureSlug(id)
 	case TrashKindCollection:
-		return tx.collectionEnsureSlug(ctx, id)
+		return tx.collectionEnsureSlug(id)
 	case TrashKindMovieEdition:
-		return tx.movieEditionEnsureSlug(ctx, id)
+		return tx.movieEditionEnsureSlug(id)
 	case TrashKindSeriesEdition:
-		return tx.seriesEditionEnsureSlug(ctx, id)
+		return tx.seriesEditionEnsureSlug(id)
 	}
 	return nil
 }
 
 // Purge hard-deletes a trashed item and all rows in its cascade
 // subtree. Returns ErrNotTrashed if the target is currently live.
-func (tx *TxRW) Purge(ctx Context, id string) (err error) {
+func (tx *TxRW) Purge(id string) (err error) {
 	defer errorfmt.Handlef("purge %s: %w", id, &err)
 
-	state, err := tx.trashState(ctx, id)
+	state, err := tx.trashState(id)
 	if err != nil {
 		return err
 	}
@@ -770,7 +770,7 @@ func (tx *TxRW) Purge(ctx Context, id string) (err error) {
 			origKeys = append(origKeys, v.OriginalKey)
 		}
 	}
-	if err := tx.purgeVideoBlobs(ctx, vidIDs, origKeys); err != nil {
+	if err := tx.purgeVideoBlobs(vidIDs, origKeys); err != nil {
 		return err
 	}
 
@@ -805,7 +805,7 @@ func (tx *TxRW) Purge(ctx Context, id string) (err error) {
 	return tx.q.TrashDelete(id)
 }
 
-func (tx *TxR) TrashItem(ctx Context, id string) (TrashItem, error) {
+func (tx *TxR) TrashItem(id string) (TrashItem, error) {
 	row, err := tx.q.TrashGet(id)
 	if err != nil {
 		return TrashItem{}, err
@@ -821,7 +821,7 @@ func (tx *TxR) TrashItem(ctx Context, id string) (TrashItem, error) {
 
 // TrashList returns every directly-trashed entity (roots only),
 // ordered newest-trashed first.
-func (tx *TxR) TrashList(ctx Context) ([]TrashItem, error) {
+func (tx *TxR) TrashList() ([]TrashItem, error) {
 	rows, err := tx.q.TrashList()
 	if err != nil {
 		return nil, err
@@ -839,14 +839,14 @@ func (tx *TxR) TrashList(ctx Context) ([]TrashItem, error) {
 	return items, nil
 }
 
-func (tx *TxRW) trashPurge(ctx Context, threshold time.Time) (err error) {
+func (tx *TxRW) trashPurge(threshold time.Time) (err error) {
 	defer errorfmt.Handlef("trash purge: %w", &err)
 	roots, err := tx.q.TrashRootsBefore(threshold.UnixMilli())
 	if err != nil {
 		return err
 	}
 	for _, rootID := range roots {
-		if err := tx.Purge(ctx, rootID); err != nil {
+		if err := tx.Purge(rootID); err != nil {
 			return err
 		}
 	}
@@ -856,7 +856,7 @@ func (tx *TxRW) trashPurge(ctx Context, threshold time.Time) (err error) {
 // purgeVideoBlobs deletes AudioTrack, SubtitleTrack and Rendition rows
 // for the given videos and schedules their CAS blob keys for removal on
 // commit.
-func (tx *TxRW) purgeVideoBlobs(ctx Context, vidIDs, origKeys []string) error {
+func (tx *TxRW) purgeVideoBlobs(vidIDs, origKeys []string) error {
 	if len(vidIDs) == 0 {
 		return nil
 	}
@@ -903,10 +903,10 @@ func (tx *TxRW) purgeVideoBlobs(ctx Context, vidIDs, origKeys []string) error {
 	return tx.q.RenditionDeleteByVideoIDList(vidIDs)
 }
 
-func (m *Model) purgeTrashOnce(ctx Context) error {
+func (m *Model) purgeTrashOnce(ctx context.Context) error {
 	threshold := time.Now().Add(-trashRetention)
 	return m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.trashPurge(ctx, threshold)
+		return tx.trashPurge(threshold)
 	})
 }
 

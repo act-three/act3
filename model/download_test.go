@@ -207,7 +207,7 @@ func TestDownloadCreateRejectsTraversal(t *testing.T) {
 	}
 
 	err = m.WithTxRW(t.Context(), func(tx *TxRW) error {
-		_, err := tx.DownloadCreate(t.Context(), bytes.NewReader(buf.Bytes()), nil, nil)
+		_, err := tx.DownloadCreate(bytes.NewReader(buf.Bytes()), nil, nil)
 		return err
 	})
 

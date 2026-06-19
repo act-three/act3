@@ -132,7 +132,7 @@ func TestSlugResolve(t *testing.T) {
 			ctx := context.Background()
 			var got map[string]string
 			err := m.WithTxR(ctx, func(tx *TxR) error {
-				got = tx.SlugResolve(ctx, tt.components)
+				got = tx.SlugResolve(tt.components)
 				return nil
 			})
 

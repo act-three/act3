@@ -161,7 +161,7 @@ func (med *MovieEdition) ActiveVideo() *Video {
 	return nil
 }
 
-func (tx *TxR) MovieEditionHead(ctx Context, id string) (*MovieEditionHead, error) {
+func (tx *TxR) MovieEditionHead(id string) (*MovieEditionHead, error) {
 	medData, err := tx.q.MovieEditionGet(id)
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (tx *TxR) MovieEditionHead(ctx Context, id string) (*MovieEditionHead, erro
 	return &MovieEditionHead{med: medData}, nil
 }
 
-func (tx *TxR) MovieEdition(ctx Context, id string) (*MovieEdition, error) {
+func (tx *TxR) MovieEdition(id string) (*MovieEdition, error) {
 	medData, err := tx.q.MovieEditionGet(id)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ type movieEditionParams struct {
 	Runtime     int64
 }
 
-func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error) {
+func (tx *TxR) MovieEditionList(mo *MovieHead) ([]*MovieWork, error) {
 	meds, err := tx.q.MovieEditionListByMovieID(mo.ID())
 	if err != nil {
 		return nil, err
@@ -224,8 +224,8 @@ func (tx *TxR) MovieEditionList(ctx Context, mo *MovieHead) ([]*MovieWork, error
 	return works, nil
 }
 
-func (tx *TxRW) movieEditionCreate(ctx Context, label, movieID string, p movieEditionParams) (*MovieEditionHead, error) {
-	slug, err := tx.movieEditionFindSlug(ctx, label, movieID)
+func (tx *TxRW) movieEditionCreate(label, movieID string, p movieEditionParams) (*MovieEditionHead, error) {
+	slug, err := tx.movieEditionFindSlug(label, movieID)
 	if err != nil {
 		return nil, err
 	}
@@ -248,12 +248,12 @@ func (tx *TxRW) movieEditionCreate(ctx Context, label, movieID string, p movieEd
 // MovieEditionClone creates a new edition by copying metadata
 // from the edition with the given srcID.
 // The new edition is labeled "Copy of {original label}".
-func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error) {
-	src, err := tx.MovieEditionHead(ctx, srcID)
+func (tx *TxRW) MovieEditionClone(srcID string) (*MovieWork, error) {
+	src, err := tx.MovieEditionHead(srcID)
 	if err != nil {
 		return nil, err
 	}
-	med, err := tx.movieEditionCreate(ctx, "Copy of "+src.Label(), src.med.MovieID, movieEditionParams{
+	med, err := tx.movieEditionCreate("Copy of "+src.Label(), src.med.MovieID, movieEditionParams{
 		Title:       src.med.Title,
 		Summary:     src.med.Summary,
 		ReleaseDate: src.med.ReleaseDate,
@@ -272,7 +272,7 @@ func (tx *TxRW) MovieEditionClone(ctx Context, srcID string) (*MovieWork, error)
 	}, nil
 }
 
-func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
+func (tx *TxRW) MovieEditionLabelSet(id, label string) error {
 	if _, err := tx.q.MovieEditionGet(id); err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 	if err != nil {
 		return err
 	}
-	return tx.movieEditionEnsureSlug(ctx, id)
+	return tx.movieEditionEnsureSlug(id)
 }
 
 // movieEditionEnsureSlug aligns the edition's slug with its current
@@ -292,7 +292,7 @@ func (tx *TxRW) MovieEditionLabelSet(ctx Context, id, label string) error {
 // it. Safe to call when the edition is live (e.g. after a label change)
 // or trashed (during restore); when live, the current slug is held in
 // reserve so findSlug doesn't reject it as self-collision.
-func (tx *TxRW) movieEditionEnsureSlug(ctx Context, id string) error {
+func (tx *TxRW) movieEditionEnsureSlug(id string) error {
 	med, err := tx.q.MovieEditionGet(id)
 	if err != nil {
 		return err
@@ -301,7 +301,7 @@ func (tx *TxRW) movieEditionEnsureSlug(ctx Context, id string) error {
 	if med.DeletedAt == nil {
 		allow = []string{med.Slug}
 	}
-	slug, err := tx.movieEditionFindSlug(ctx, med.Label, med.MovieID, allow...)
+	slug, err := tx.movieEditionFindSlug(med.Label, med.MovieID, allow...)
 	if err != nil {
 		return err
 	}
@@ -320,7 +320,7 @@ func (tx *TxRW) movieEditionEnsureSlug(ctx Context, id string) error {
 
 }
 
-func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
+func (tx *TxRW) MovieEditionTitleSet(id, title string) error {
 	med, err := tx.q.MovieEditionGet(id)
 	if err != nil {
 		return err
@@ -340,10 +340,10 @@ func (tx *TxRW) MovieEditionTitleSet(ctx Context, id, title string) error {
 	if err != nil {
 		return err
 	}
-	return tx.movieEnsureSlug(ctx, mo.ID)
+	return tx.movieEnsureSlug(mo.ID)
 }
 
-func (tx *TxRW) MovieEditionReleaseDateSet(ctx Context, id, date string) error {
+func (tx *TxRW) MovieEditionReleaseDateSet(id, date string) error {
 	return tx.q.MovieEditionReleaseDateSet(schema.MovieEditionReleaseDateSetParams{
 		ReleaseDate: date,
 		ID:          id,
@@ -351,7 +351,7 @@ func (tx *TxRW) MovieEditionReleaseDateSet(ctx Context, id, date string) error {
 
 }
 
-func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) error {
+func (tx *TxRW) MovieEditionRuntimeSet(id string, runtime int64) error {
 	return tx.q.MovieEditionRuntimeSet(schema.MovieEditionRuntimeSetParams{
 		Runtime: runtime,
 		ID:      id,
@@ -359,7 +359,7 @@ func (tx *TxRW) MovieEditionRuntimeSet(ctx Context, id string, runtime int64) er
 
 }
 
-func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
+func (tx *TxRW) MovieEditionSummarySet(id, summary string) error {
 	return tx.q.MovieEditionSummarySet(schema.MovieEditionSummarySetParams{
 		Summary: summary,
 		ID:      id,
@@ -367,7 +367,7 @@ func (tx *TxRW) MovieEditionSummarySet(ctx Context, id, summary string) error {
 
 }
 
-func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error {
+func (tx *TxRW) MovieEditionPosterIDSet(id, posterID string) error {
 	med, err := tx.q.MovieEditionGet(id)
 	if err != nil {
 		return err
@@ -383,13 +383,13 @@ func (tx *TxRW) MovieEditionPosterIDSet(ctx Context, id, posterID string) error 
 	if isPlaceholderImageID(med.PosterID) {
 		return nil
 	}
-	return tx.imageDelete(ctx, med.PosterID)
+	return tx.imageDelete(med.PosterID)
 }
 
 // MovieEditionSetDefault promotes the given edition to be
 // the default (Slug="") for its movie.
 // The previous default gets a slug generated from its label.
-func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
+func (tx *TxRW) MovieEditionSetDefault(id string) error {
 	med, err := tx.q.MovieEditionGet(id)
 	if err != nil {
 		return err
@@ -401,7 +401,7 @@ func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
 	if err != nil {
 		return err
 	}
-	oldSlug, err := tx.movieEditionFindSlug(ctx, old.Label, med.MovieID)
+	oldSlug, err := tx.movieEditionFindSlug(old.Label, med.MovieID)
 	if err != nil {
 		return err
 	}
@@ -422,7 +422,7 @@ func (tx *TxRW) MovieEditionSetDefault(ctx Context, id string) error {
 
 }
 
-func (tx *TxRW) movieEditionFindSlug(ctx Context, label, movieID string, allow ...string) (string, error) {
+func (tx *TxRW) movieEditionFindSlug(label, movieID string, allow ...string) (string, error) {
 	for slug := range editionSlugCandidates(label) {
 		if slices.Contains(allow, slug) {
 			return slug, nil

@@ -30,7 +30,7 @@ func (v *Video) Active() bool { return v.active }
 // and active-video promotion.
 func (v *Video) Playable() bool { return v.v.Playable != 0 }
 
-func (tx *TxR) Video(ctx Context, id string) (*Video, error) {
+func (tx *TxR) Video(id string) (*Video, error) {
 	v, err := tx.q.VideoGet(id)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ type MVFilter struct {
 // filter. Returns "" when the video is not yet playable (no encoded
 // video, or any source audio track without an encoded rendition), or
 // when a filter pins to a rendition that doesn't belong to this video.
-func (tx *TxR) MVPlaylist(ctx Context, videoID string, filter MVFilter) (string, error) {
+func (tx *TxR) MVPlaylist(videoID string, filter MVFilter) (string, error) {
 	vid, err := tx.q.VideoGet(videoID)
 	if err != nil {
 		return "", err
@@ -110,7 +110,7 @@ func filterAudioByRenditionID(rends []schema.AudioRendition, id string) []schema
 	return nil
 }
 
-func (tx *TxR) VideoListByEpisodeID(ctx Context, epID string) ([]schema.Video, error) {
+func (tx *TxR) VideoListByEpisodeID(epID string) ([]schema.Video, error) {
 	return tx.q.VideoListByEpisodeID(epID)
 }
 

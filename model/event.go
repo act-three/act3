@@ -1,6 +1,9 @@
 package model
 
-import "iter"
+import (
+	"context"
+	"iter"
+)
 
 // An Event reports that model state has changed.
 // Emitters include the database (after each read-write transaction),
@@ -34,7 +37,7 @@ func (m *Model) emit(details []Detail) {
 	}
 }
 
-func (m *Model) Events(ctx Context) iter.Seq[*Event] {
+func (m *Model) Events(ctx context.Context) iter.Seq[*Event] {
 	ch := make(chan *Event, 64)
 	m.subMu.Lock()
 	m.sub[ch] = struct{}{}

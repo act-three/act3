@@ -238,7 +238,7 @@ func (ep *Episode) TheaterPath() string {
 	return path.Join("/", ep.sr.Slug(), ep.so.Slug(), ep.Slug())
 }
 
-func (tx *TxR) EpisodeHead(ctx Context, id string) (*EpisodeHead, error) {
+func (tx *TxR) EpisodeHead(id string) (*EpisodeHead, error) {
 	ep, err := tx.q.EpisodeGet(id)
 	if err != nil {
 		return nil, err
@@ -248,7 +248,7 @@ func (tx *TxR) EpisodeHead(ctx Context, id string) (*EpisodeHead, error) {
 
 // EpisodeBySlug looks up an episode by its slug components.
 // edSlug selects the edition; empty string selects the default.
-func (tx *TxR) EpisodeBySlug(ctx Context, seriesSlug, edSlug, epSlug string) (*Episode, error) {
+func (tx *TxR) EpisodeBySlug(seriesSlug, edSlug, epSlug string) (*Episode, error) {
 	sed, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
 		SeriesSlug:  seriesSlug,
 		EditionSlug: edSlug,
@@ -265,10 +265,10 @@ func (tx *TxR) EpisodeBySlug(ctx Context, seriesSlug, edSlug, epSlug string) (*E
 	if err != nil {
 		return nil, err
 	}
-	return tx.EpisodeInEdition(ctx, snep.EpisodeID, sed.ID)
+	return tx.EpisodeInEdition(snep.EpisodeID, sed.ID)
 }
 
-func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) {
+func (tx *TxR) EpisodeInEdition(id, edID string) (*Episode, error) {
 	epRec, err := tx.q.EpisodeGet(id)
 	if err != nil {
 		return nil, err
@@ -325,7 +325,7 @@ func (tx *TxR) EpisodeInEdition(ctx Context, id, edID string) (*Episode, error) 
 }
 
 // EpisodeEditions returns the episode as it appears in each edition.
-func (tx *TxR) EpisodeEditions(ctx Context, episodeID string) ([]*Episode, error) {
+func (tx *TxR) EpisodeEditions(episodeID string) ([]*Episode, error) {
 	epRec, err := tx.q.EpisodeGet(episodeID)
 	if err != nil {
 		return nil, err
@@ -360,7 +360,7 @@ func (tx *TxR) EpisodeEditions(ctx Context, episodeID string) ([]*Episode, error
 	return eps, nil
 }
 
-func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error {
+func (tx *TxRW) EpisodeThumbnailIDSet(id, thumbnailID string) error {
 	ep, err := tx.q.EpisodeGet(id)
 	if err != nil {
 		return err
@@ -376,10 +376,10 @@ func (tx *TxRW) EpisodeThumbnailIDSet(ctx Context, id, thumbnailID string) error
 	if isPlaceholderImageID(ep.ThumbnailID) {
 		return nil
 	}
-	return tx.imageDelete(ctx, ep.ThumbnailID)
+	return tx.imageDelete(ep.ThumbnailID)
 }
 
-func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {
+func (tx *TxRW) EpisodeSummarySet(id, summary string) error {
 	if _, err := tx.q.EpisodeGet(id); err != nil {
 		return err
 	}
@@ -390,7 +390,7 @@ func (tx *TxRW) EpisodeSummarySet(ctx Context, id, summary string) error {
 
 }
 
-func (tx *TxRW) EpisodeAirdateSet(ctx Context, id, airdate string) error {
+func (tx *TxRW) EpisodeAirdateSet(id, airdate string) error {
 	if _, err := tx.q.EpisodeGet(id); err != nil {
 		return err
 	}
@@ -401,7 +401,7 @@ func (tx *TxRW) EpisodeAirdateSet(ctx Context, id, airdate string) error {
 
 }
 
-func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
+func (tx *TxRW) EpisodeTypeSet(id, typ string) error {
 	if _, err := tx.q.EpisodeGet(id); err != nil {
 		return err
 	}
@@ -418,14 +418,14 @@ func (tx *TxRW) EpisodeTypeSet(ctx Context, id, typ string) error {
 		return err
 	}
 	for _, snep := range sneps {
-		if err := tx.renumberSeason(ctx, snep.SeasonID); err != nil {
+		if err := tx.renumberSeason(snep.SeasonID); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
+func (tx *TxRW) EpisodeTitleSet(id, title string) error {
 	if _, err := tx.q.EpisodeGet(id); err != nil {
 		return err
 	}
@@ -446,7 +446,7 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 		if err != nil {
 			return err
 		}
-		slug, err := tx.episodeFindSlug(ctx, snep.EditionID, sn.Number, snep.Number, title, snep.Slug)
+		slug, err := tx.episodeFindSlug(snep.EditionID, sn.Number, snep.Number, title, snep.Slug)
 		if err != nil {
 			return err
 		}
@@ -468,7 +468,7 @@ func (tx *TxRW) EpisodeTitleSet(ctx Context, id, title string) error {
 
 // EpisodeMove moves an episode to a given position within a
 // (possibly different) season and renumbers affected seasons.
-func (tx *TxRW) EpisodeMove(ctx Context, episodeID, fromSeasonID, targetSeasonID string, index int) (err error) {
+func (tx *TxRW) EpisodeMove(episodeID, fromSeasonID, targetSeasonID string, index int) (err error) {
 	defer errorfmt.Handlef("episode move: %w", &err)
 
 	src, err := tx.q.SeasonEpisodeGet(schema.SeasonEpisodeGetParams{
@@ -514,7 +514,7 @@ func (tx *TxRW) EpisodeMove(ctx Context, episodeID, fromSeasonID, targetSeasonID
 		}); err != nil {
 			return err
 		}
-		if err := tx.renumberSeason(ctx, src.SeasonID); err != nil {
+		if err := tx.renumberSeason(src.SeasonID); err != nil {
 			return err
 		}
 	}
@@ -538,12 +538,12 @@ func (tx *TxRW) EpisodeMove(ctx Context, episodeID, fromSeasonID, targetSeasonID
 			return err
 		}
 	}
-	return tx.renumberSeason(ctx, targetSeasonID)
+	return tx.renumberSeason(targetSeasonID)
 }
 
 // SeasonEpisodeCreate creates a new regular episode at the end of the
 // given season with reasonable defaults.
-func (tx *TxRW) SeasonEpisodeCreate(ctx Context, seasonID string) error {
+func (tx *TxRW) SeasonEpisodeCreate(seasonID string) error {
 	sn, err := tx.q.SeasonGet(seasonID)
 	if err != nil {
 		return err
@@ -575,7 +575,7 @@ func (tx *TxRW) SeasonEpisodeCreate(ctx Context, seasonID string) error {
 		return err
 	}
 
-	slug, err := tx.episodeFindSlug(ctx, sn.EditionID, sn.Number, num, title)
+	slug, err := tx.episodeFindSlug(sn.EditionID, sn.Number, num, title)
 	if err != nil {
 		return err
 	}
@@ -596,7 +596,7 @@ func (tx *TxRW) SeasonEpisodeCreate(ctx Context, seasonID string) error {
 // leaving the Episode row intact so other editions are unaffected.
 // The emitted event carries the episode's prior SortKey so a later
 // SeasonEpisodeAdd can restore it to the same position.
-func (tx *TxRW) SeasonEpisodeRemove(ctx Context, seasonID, episodeID string) (err error) {
+func (tx *TxRW) SeasonEpisodeRemove(seasonID, episodeID string) (err error) {
 	defer errorfmt.Handlef("season episode remove: %w", &err)
 
 	if _, err := tx.q.SeasonEpisodeGet(schema.SeasonEpisodeGetParams{
@@ -612,13 +612,13 @@ func (tx *TxRW) SeasonEpisodeRemove(ctx Context, seasonID, episodeID string) (er
 	}); err != nil {
 		return err
 	}
-	return tx.renumberSeason(ctx, seasonID)
+	return tx.renumberSeason(seasonID)
 }
 
 // SeasonEpisodeAdd links an existing Episode into a season at the
 // given SortKey, bumping existing episodes at or after that key by 1.
 // Numbering is assigned by renumberSeason.
-func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID, episodeID string, sortKey int64) (err error) {
+func (tx *TxRW) SeasonEpisodeAdd(seasonID, episodeID string, sortKey int64) (err error) {
 	defer errorfmt.Handlef("season episode add: %w", &err)
 
 	sn, err := tx.q.SeasonGet(seasonID)
@@ -631,12 +631,12 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID, episodeID string, sortKe
 	}
 
 	// Placeholder slug; renumberSeason assigns final Number/Label/Slug.
-	slug, err := tx.episodeFindSlug(ctx, sn.EditionID, sn.Number, sortKey+1, ep.Title)
+	slug, err := tx.episodeFindSlug(sn.EditionID, sn.Number, sortKey+1, ep.Title)
 	if err != nil {
 		return err
 	}
 
-	if err := tx.seasonEpisodeSortKeyBump(ctx, sn.ID, sortKey); err != nil {
+	if err := tx.seasonEpisodeSortKeyBump(sn.ID, sortKey); err != nil {
 		return err
 	}
 	if err := tx.q.SeasonEpisodeCreate(schema.SeasonEpisodeCreateParams{
@@ -648,14 +648,14 @@ func (tx *TxRW) SeasonEpisodeAdd(ctx Context, seasonID, episodeID string, sortKe
 	}); err != nil {
 		return err
 	}
-	return tx.renumberSeason(ctx, sn.ID)
+	return tx.renumberSeason(sn.ID)
 }
 
 // episodeFindSlug builds an episode slug from the season number,
 // episode number (0 for specials), and title.
 // Slugs in allow are accepted without a uniqueness check;
 // otherwise deduplication appends "-2", "-3", etc.
-func (tx *TxRW) episodeFindSlug(ctx Context, editionID string, seasonNum, episodeNum int64, title string, allow ...string) (string, error) {
+func (tx *TxRW) episodeFindSlug(editionID string, seasonNum, episodeNum int64, title string, allow ...string) (string, error) {
 	var base string
 	if episodeNum == 0 {
 		base = fmt.Sprintf("s%d-special", seasonNum)
@@ -688,7 +688,7 @@ func (tx *TxRW) episodeFindSlug(ctx Context, editionID string, seasonNum, episod
 	}
 }
 
-func (tx *TxR) EpisodeDownloadList(ctx Context, ep *Episode) ([]*RenditionForDownload, error) {
+func (tx *TxR) EpisodeDownloadList(ep *Episode) ([]*RenditionForDownload, error) {
 	active := ep.ActiveVideo()
 	if active == nil {
 		return nil, nil

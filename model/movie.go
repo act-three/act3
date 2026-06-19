@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"path"
@@ -99,7 +100,7 @@ func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
 	return nil
 }
 
-func (tx *TxR) MovieHead(ctx Context, id string) (*MovieHead, error) {
+func (tx *TxR) MovieHead(id string) (*MovieHead, error) {
 	moData, err := tx.q.MovieGet(id)
 	if err != nil {
 		return nil, err
@@ -107,7 +108,7 @@ func (tx *TxR) MovieHead(ctx Context, id string) (*MovieHead, error) {
 	return &MovieHead{moData}, nil
 }
 
-func (tx *TxR) MovieHeadByEditionID(ctx Context, editionID string) (*MovieHead, error) {
+func (tx *TxR) MovieHeadByEditionID(editionID string) (*MovieHead, error) {
 	moData, err := tx.q.MovieGetByEditionID(editionID)
 	if err != nil {
 		return nil, err
@@ -118,7 +119,7 @@ func (tx *TxR) MovieHeadByEditionID(ctx Context, editionID string) (*MovieHead, 
 // MovieEditionBySlug looks up a movie by its slug
 // and returns the edition matching edSlug
 // (empty string for the default edition).
-func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEdition, error) {
+func (tx *TxR) MovieEditionBySlug(slug, edSlug string) (*MovieEdition, error) {
 	// TODO(april): avoid loading other editions here.
 	moData, err := tx.q.MovieGetBySlug(slug)
 	if err != nil {
@@ -148,7 +149,7 @@ func (tx *TxR) MovieEditionBySlug(ctx Context, slug, edSlug string) (*MovieEditi
 	return med, nil
 }
 
-func (tx *TxR) MovieDownloadList(ctx Context, med *MovieEdition) ([]*RenditionForDownload, error) {
+func (tx *TxR) MovieDownloadList(med *MovieEdition) ([]*RenditionForDownload, error) {
 	active := med.ActiveVideo()
 	if active == nil {
 		return nil, nil
@@ -174,9 +175,9 @@ func (tx *TxR) MovieDownloadList(ctx Context, med *MovieEdition) ([]*RenditionFo
 	return rends, nil
 }
 
-func (tx *TxRW) MovieCreate(ctx Context, title, releaseDate string) (*MovieWork, error) {
+func (tx *TxRW) MovieCreate(title, releaseDate string) (*MovieWork, error) {
 	moID := "mo" + flurry.NewID()
-	slug, err := tx.movieFindSlug(ctx, title, yearFromReleaseDate(releaseDate), moID)
+	slug, err := tx.movieFindSlug(title, yearFromReleaseDate(releaseDate), moID)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +198,7 @@ func (tx *TxRW) MovieCreate(ctx Context, title, releaseDate string) (*MovieWork,
 	if err != nil {
 		return nil, err
 	}
-	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
+	medHead, err := tx.movieEditionCreate(DefaultEdition, moID, movieEditionParams{
 		Title:       title,
 		ReleaseDate: releaseDate,
 	})
@@ -210,13 +211,11 @@ func (tx *TxRW) MovieCreate(ctx Context, title, releaseDate string) (*MovieWork,
 	}, nil
 }
 
-func (tx *TxRW) MovieCreateByTMDBID(
-	ctx Context, movie *tmdb.Movie,
-) (*MovieWork, error) {
+func (tx *TxRW) MovieCreateByTMDBID(movie *tmdb.Movie) (*MovieWork, error) {
 	id64 := int64(movie.ID)
 
 	moID := "mo" + flurry.NewID()
-	slug, err := tx.movieFindSlug(ctx, movie.Title, yearFromReleaseDate(movie.ReleaseDate), moID)
+	slug, err := tx.movieFindSlug(movie.Title, yearFromReleaseDate(movie.ReleaseDate), moID)
 	if err != nil {
 		return nil, err
 	}
@@ -241,7 +240,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	if err != nil {
 		return nil, err
 	}
-	medHead, err := tx.movieEditionCreate(ctx, DefaultEdition, moID, movieEditionParams{
+	medHead, err := tx.movieEditionCreate(DefaultEdition, moID, movieEditionParams{
 		Title:       movie.Title,
 		Summary:     movie.Overview,
 		ReleaseDate: movie.ReleaseDate,
@@ -252,7 +251,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	}
 	if movie.PosterPath != nil {
 		u := tmdb.PosterURL(*movie.PosterPath)
-		err = tx.addTaskWithPriority(ctx, priority.FetchPoster, taskFetchMoviePoster, medHead.ID(), u)
+		err = tx.addTaskWithPriority(priority.FetchPoster, taskFetchMoviePoster, medHead.ID(), u)
 		if err != nil {
 			return nil, err
 		}
@@ -263,9 +262,7 @@ func (tx *TxRW) MovieCreateByTMDBID(
 	}, nil
 }
 
-func (tx *TxR) MovieHeadListByTMDBID(
-	ctx Context, ids []*int64,
-) ([]*MovieHead, error) {
+func (tx *TxR) MovieHeadListByTMDBID(ids []*int64) ([]*MovieHead, error) {
 	a, err := tx.q.MovieListByTMDBID(ids)
 	if err != nil {
 		return nil, err
@@ -282,7 +279,7 @@ type MovieSearchResult struct {
 
 // SearchMovies searches TMDB for movies matching query, marking
 // results that are already in the library.
-func (m *Model) SearchMovies(ctx Context, query string) (results []MovieSearchResult, err error) {
+func (m *Model) SearchMovies(ctx context.Context, query string) (results []MovieSearchResult, err error) {
 	defer errorfmt.Handlef("search movies: %w", &err)
 	found, err := m.tmdb.Search(ctx, query)
 	if err != nil {
@@ -294,7 +291,7 @@ func (m *Model) SearchMovies(ctx Context, query string) (results []MovieSearchRe
 		ids[i] = &id
 	}
 	err = m.WithTxR(ctx, func(tx *TxR) error {
-		heads, err := tx.MovieHeadListByTMDBID(ctx, ids)
+		heads, err := tx.MovieHeadListByTMDBID(ids)
 		if err != nil {
 			return err
 		}
@@ -314,7 +311,7 @@ func (m *Model) SearchMovies(ctx Context, query string) (results []MovieSearchRe
 }
 
 // AddMovieByTMDBID creates a local movie from a TMDB entry.
-func (m *Model) AddMovieByTMDBID(ctx Context, id int) (mw *MovieWork, err error) {
+func (m *Model) AddMovieByTMDBID(ctx context.Context, id int) (mw *MovieWork, err error) {
 	defer errorfmt.Handlef("add movie: %w", &err)
 	movie, err := m.tmdb.GetMovie(ctx, id)
 	if err != nil {
@@ -322,7 +319,7 @@ func (m *Model) AddMovieByTMDBID(ctx Context, id int) (mw *MovieWork, err error)
 	}
 	err = m.WithTxRW(ctx, func(tx *TxRW) error {
 		var err error
-		mw, err = tx.MovieCreateByTMDBID(ctx, movie)
+		mw, err = tx.MovieCreateByTMDBID(movie)
 		return err
 	})
 	return mw, err
@@ -332,7 +329,7 @@ func (m *Model) AddMovieByTMDBID(ctx Context, id int) (mw *MovieWork, err error)
 // edition) title, announcing the change on a live rename so a viewer
 // can follow it, and keeps the Slug table row in sync. Safe to call on
 // live movies (label-/title-change) or trashed ones (restore).
-func (tx *TxRW) movieEnsureSlug(ctx Context, id string) error {
+func (tx *TxRW) movieEnsureSlug(id string) error {
 	mo, err := tx.q.MovieGet(id)
 	if err != nil {
 		return err
@@ -345,7 +342,7 @@ func (tx *TxRW) movieEnsureSlug(ctx Context, id string) error {
 	if mo.DeletedAt == nil {
 		allow = []string{mo.Slug}
 	}
-	slug, err := tx.movieFindSlug(ctx, med.Title, yearFromReleaseDate(med.ReleaseDate), id, allow...)
+	slug, err := tx.movieFindSlug(med.Title, yearFromReleaseDate(med.ReleaseDate), id, allow...)
 	if err != nil {
 		return err
 	}
@@ -367,7 +364,7 @@ func (tx *TxRW) movieEnsureSlug(ctx Context, id string) error {
 	return nil
 }
 
-func (tx *TxRW) movieFindSlug(ctx Context, title, year, id string, allow ...string) (string, error) {
+func (tx *TxRW) movieFindSlug(title, year, id string, allow ...string) (string, error) {
 	slug := xstrings.ToSlug(title)
 	if slug == "" {
 		slug = id
@@ -405,7 +402,7 @@ func (tx *TxRW) movieFindSlug(ctx Context, title, year, id string, allow ...stri
 }
 
 // MovieWorkList returns the default edition of each movie.
-func (tx *TxR) MovieWorkList(ctx Context) ([]*MovieWork, error) {
+func (tx *TxR) MovieWorkList() ([]*MovieWork, error) {
 	editions, err := tx.q.MovieEditionListDefault()
 	if err != nil {
 		return nil, err

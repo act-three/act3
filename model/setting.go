@@ -172,7 +172,7 @@ func (s *Setting) mustType(want SettingType) {
 // SettingGetByGroup returns all settings belonging to the given group,
 // keyed by setting key.
 // Settings not present in the database are included with their default values.
-func (tx *TxR) SettingGetByGroup(ctx Context, group string) (Settings, error) {
+func (tx *TxR) SettingGetByGroup(group string) (Settings, error) {
 	var err error
 	defer errorfmt.Handlef("setting list by group %q: %w", group, &err)
 	rows, err := tx.q.SettingListByGroup(group)
@@ -196,18 +196,18 @@ func (tx *TxR) SettingGetByGroup(ctx Context, group string) (Settings, error) {
 }
 
 // SettingSetInt sets a setting to the given int value.
-func (tx *TxRW) SettingSetInt(ctx Context, key string, n int) error {
-	return tx.SettingSet(ctx, key, mustMarshalJSON(n))
+func (tx *TxRW) SettingSetInt(key string, n int) error {
+	return tx.SettingSet(key, mustMarshalJSON(n))
 }
 
 // SettingSetString sets a setting to the given string value.
-func (tx *TxRW) SettingSetString(ctx Context, key string, v string) error {
-	return tx.SettingSet(ctx, key, mustMarshalJSON(v))
+func (tx *TxRW) SettingSetString(key string, v string) error {
+	return tx.SettingSet(key, mustMarshalJSON(v))
 }
 
 // SettingSetBool sets a setting to the given bool value.
-func (tx *TxRW) SettingSetBool(ctx Context, key string, v bool) error {
-	return tx.SettingSet(ctx, key, mustMarshalJSON(v))
+func (tx *TxRW) SettingSetBool(key string, v bool) error {
+	return tx.SettingSet(key, mustMarshalJSON(v))
 }
 
 func mustMarshalJSON(v any) string {
@@ -220,7 +220,7 @@ func mustMarshalJSON(v any) string {
 
 // SettingSet stores a pre-encoded JSON value for the given key,
 // validating that the JSON decodes to the correct type for that key.
-func (tx *TxRW) SettingSet(ctx Context, key string, rawJSON string) (err error) {
+func (tx *TxRW) SettingSet(key string, rawJSON string) (err error) {
 	defer errorfmt.Handlef("setting set %q: %w", key, &err)
 	def, ok := settingDefs[key]
 	if !ok {
