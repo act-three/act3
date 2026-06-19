@@ -1,6 +1,52 @@
 package xstrings
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
+
+func TestCompareNatural(t *testing.T) {
+	// Each group lists strings in their expected sorted order.
+	groups := [][]string{
+		{"file8.mkv", "file9.mkv", "file10.mkv", "file100.mkv"},
+		{"file08.mkv", "file9.mkv", "file10.mkv"},
+		{"S01E01", "S01E02", "S01E10", "S02E01"},
+		{"a", "a1", "a2", "a10", "b"},
+		{"", "a", "b"},
+		{"1", "2", "10", "a"},
+		{"img2", "img10", "img12"},
+		{"v1.2", "v1.10", "v2.1"},
+	}
+	for _, want := range groups {
+		got := slices.Clone(want)
+		slices.SortStableFunc(got, CompareNatural)
+		if !slices.Equal(got, want) {
+			t.Errorf("CompareNatural sort\n got %q\nwant %q", got, want)
+		}
+	}
+
+	// CompareNatural is symmetric and consistent with itself.
+	tests := []struct {
+		a, b string
+		want int
+	}{
+		{"file9.mkv", "file10.mkv", -1},
+		{"file10.mkv", "file9.mkv", 1},
+		{"file9.mkv", "file9.mkv", 0},
+		{"file08", "file8", 0}, // equal numeric value, ignoring zero padding
+		{"a10b", "a10c", -1},
+		{"a2b", "a10b", -1},
+		// A longer non-digit run must compare whole against the
+		// shorter one, not compare its non-digit tail with a digit.
+		{"abcd$4", "abcd4", 1},
+		{"abcd4", "abcd$4", -1},
+	}
+	for _, tt := range tests {
+		if got := CompareNatural(tt.a, tt.b); got != tt.want {
+			t.Errorf("CompareNatural(%q, %q) = %d, want %d", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
 
 func TestToSlug(t *testing.T) {
 	tests := []struct {

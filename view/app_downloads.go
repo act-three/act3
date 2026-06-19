@@ -1,7 +1,6 @@
 package view
 
 import (
-	"cmp"
 	"fmt"
 	"hash/fnv"
 	"io"
@@ -19,6 +18,7 @@ import (
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
 	"ily.dev/act3/xslices"
+	"ily.dev/act3/xstrings"
 )
 
 const AppDownloadsListItems = "download-list-items"
@@ -393,7 +393,7 @@ func downloadAttachPickerEpisodes(
 
 func appDownloadsFileList(files []*model.DownloadFile) domi.Node {
 	slices.SortStableFunc(files, func(a, b *model.DownloadFile) int {
-		return cmp.Compare(path.Dir(a.Path()), path.Dir(b.Path()))
+		return xstrings.CompareNatural(a.Path(), b.Path())
 	})
 	return rangeSeq2(
 		xslices.GroupBy(files, func(df *model.DownloadFile) string {

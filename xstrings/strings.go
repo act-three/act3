@@ -1,6 +1,7 @@
 package xstrings
 
 import (
+	"cmp"
 	"iter"
 	"regexp"
 	"slices"
@@ -74,4 +75,51 @@ func LongestCommonPrefix(it iter.Seq[string]) string {
 		}
 	}
 	return min
+}
+
+// CompareNatural compares a and b with a "natural" ordering in which
+// maximal runs of ASCII digits are compared by numeric value rather
+// than lexically, so that "file9" sorts before "file10".
+// Non-digit runs compare as in [strings.Compare].
+// The result will be 0 if a == b, -1 if a < b, and +1 if a > b.
+func CompareNatural(a, b string) int {
+	for a != "" && b != "" {
+		var ac, bc string
+		ac, a = chunk(a)
+		bc, b = chunk(b)
+		var c int
+		if isDigit(ac[0]) && isDigit(bc[0]) {
+			c = compareDigits(ac, bc)
+		} else {
+			c = strings.Compare(ac, bc)
+		}
+		if c != 0 {
+			return c
+		}
+	}
+	return cmp.Compare(len(a), len(b))
+}
+
+func isDigit(b byte) bool { return '0' <= b && b <= '9' }
+
+// chunk splits off the leading run of s consisting entirely of ASCII
+// digits or entirely of non-digits, returning it and the remainder.
+func chunk(s string) (head, rest string) {
+	num := isDigit(s[0])
+	i := 1
+	for i < len(s) && isDigit(s[i]) == num {
+		i++
+	}
+	return s[:i], s[i:]
+}
+
+// compareDigits orders two runs of ASCII digits by numeric value,
+// ignoring leading zeros so that "08" and "8" compare equal.
+func compareDigits(a, b string) int {
+	a = strings.TrimLeft(a, "0")
+	b = strings.TrimLeft(b, "0")
+	if len(a) != len(b) {
+		return cmp.Compare(len(a), len(b))
+	}
+	return strings.Compare(a, b)
 }
