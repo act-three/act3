@@ -4,7 +4,6 @@ import (
 	"context"
 	"maps"
 	"net/url"
-	"path"
 	"strconv"
 	"strings"
 
@@ -26,16 +25,12 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 	switch m := m.(type) {
 	case *msg.URLChange:
 		a.setPath(ctx, m.URL)
-		a.dialog = nil // navigating away closes any open dialog
-		a.player = nil // and the player
 		return nil
 	case *msg.URLRequest:
 		if !m.Internal {
 			return domi.Load[msg.Msg](m.URL.String())
 		}
-		if dest := redirects[strings.TrimRight(path.Clean(m.URL.Path), "/")]; dest != "" {
-			m.URL.Path = dest
-		}
+		m.URL.Path = redirect(m.URL.Path)
 		return domi.PushURL[msg.Msg](m.URL.String())
 	case *msg.ModelEvent:
 		for _, d := range m.Details {
@@ -465,7 +460,12 @@ func (a *app) notify(variant ui.NoteVariant, title string) {
 	})
 }
 
+// setPath is used by both Update *and* Preview (and newApp).
+// It can set fields on a but must not mutate deeper structures
+// or write to the db.
 func (a *app) setPath(ctx context.Context, u *url.URL) {
+	a.dialog = nil // navigating away closes any open dialog
+	a.player = nil // and the player
 	a.path = u.Path
 	a.odesc = nil
 	if section, slugs := slugs(splitPath(a.path)); section != "" {
