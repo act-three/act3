@@ -30,14 +30,13 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		a.player = nil // and the player
 		return nil
 	case *msg.URLRequest:
-		req := m.URL.String()
 		if !m.Internal {
-			return domi.Load[msg.Msg](req)
+			return domi.Load[msg.Msg](m.URL.String())
 		}
-		if dest := redirects[strings.TrimRight(path.Clean(req), "/")]; dest != "" {
-			return domi.PushURL[msg.Msg](dest)
+		if dest := redirects[strings.TrimRight(path.Clean(m.URL.Path), "/")]; dest != "" {
+			m.URL.Path = dest
 		}
-		return domi.PushURL[msg.Msg](req)
+		return domi.PushURL[msg.Msg](m.URL.String())
 	case *msg.ModelEvent:
 		for _, d := range m.Details {
 			if d.SlugChangeID == "" {
