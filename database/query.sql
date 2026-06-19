@@ -1286,6 +1286,7 @@ UPDATE Task SET
 	State = 'queued',
 	Failures = ?,
 	NextRun = ?,
+	Priority = ?,
 	FailureDesc = ?
 WHERE ID = ?
 RETURNING *;

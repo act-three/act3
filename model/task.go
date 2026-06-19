@@ -422,6 +422,7 @@ func (tq *taskQueue) reschedule(ctx context.Context, task schema.Task, failure s
 		ID:          task.ID,
 		Failures:    task.Failures + 1,
 		NextRun:     time.Now().Add(delay).UnixMilli(),
+		Priority:    task.Priority + 1, // minimize interference with other work
 		FailureDesc: &failure,
 	})
 	return err
