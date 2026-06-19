@@ -15,10 +15,15 @@ type node = domi.Node
 
 var notFound = domi.Text("Not Found")
 
+func (a *app) Preview(ctx context.Context, u *url.URL) (dest, title string, n node) {
+	// TODO: render previews. For now, we just deny all preview requests.
+	return "", "", nil
+}
+
 func (a *app) View(ctx context.Context) (title string, n node) {
 	var dlg node
 	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
-		title, n = a.view(tx, splitPath(a.path))
+		title, n = viewRoot(tx, a.path, a.odesc)
 		dlg = viewDialog(tx, a.dialog)
 		return nil
 	})
@@ -34,6 +39,23 @@ func (a *app) View(ctx context.Context) (title string, n node) {
 		return "Act Three", n
 	}
 	return title + " — Act Three", n
+}
+
+func viewRoot(tx *model.TxR, path string, odesc map[string]string) (title string, n node) {
+	if odesc != nil {
+		return viewObject(tx, path, odesc)
+	}
+	m := &matcher{path: splitPath(path)}
+	switch {
+	case m.match(""):
+		return viewHome(tx)
+	case m.match("collections"):
+		return viewCollections(tx)
+	case m.path[0] == "app":
+		title, body := viewEditorPage(tx, m.path[1:])
+		return title, viewEditor(tx, path, body)
+	}
+	return "Not Found", notFound
 }
 
 // viewPlayer renders the open player, or an empty slot when none is open.
@@ -146,28 +168,6 @@ func viewImageDialog(tx *model.TxR, id string) node {
 		return view.AppCollectionBannerDialog(col)
 	}
 	return nil
-}
-
-func (a *app) Preview(ctx context.Context, u *url.URL) (dest, title string, n node) {
-	// TODO: render previews. For now, we just deny all preview requests.
-	return "", "", nil
-}
-
-func (a *app) view(tx *model.TxR, path []string) (title string, n node) {
-	if a.odesc != nil {
-		return viewObject(tx, a.path, a.odesc)
-	}
-	m := &matcher{path: path}
-	switch {
-	case m.match(""):
-		return viewHome(tx)
-	case m.match("collections"):
-		return viewCollections(tx)
-	case path[0] == "app":
-		title, body := viewEditorPage(tx, path[1:])
-		return title, viewEditor(tx, a.path, body)
-	}
-	return "Not Found", notFound
 }
 
 // viewObject renders the editor or theater page for odesc.
