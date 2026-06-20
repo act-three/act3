@@ -174,12 +174,12 @@ func run() error {
 	// while jassub.pages.dev's Vite-bundled worker (which omits it)
 	// works fine. Vite's Worker entry treatment drops dead exports
 	// for the same reason; we replicate that here.
-	exportIdx := bytes.LastIndex(patched, []byte("export{"))
-	if exportIdx < 0 {
+	// Replace with nothing (and ensure preceding char terminates).
+	before, _, found := bytes.CutLast(patched, []byte("export{"))
+	if !found {
 		return fmt.Errorf("worker bundle missing trailing export statement")
 	}
-	// Replace with nothing (and ensure preceding char terminates).
-	patched = patched[:exportIdx]
+	patched = before
 	if err := os.WriteFile(filepath.Join(absOut, "jassub-worker.js"), patched, 0o644); err != nil {
 		return err
 	}

@@ -11,17 +11,6 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// LastCut slices s around the last instance of sep,
-// returning the text before and after sep.
-// The found result reports whether sep appears in s.
-// If sep does not appear in s, LastCut returns "", s, false.
-func LastCut(s, sep string) (before, after string, found bool) {
-	if i := strings.LastIndex(s, sep); i >= 0 {
-		return s[:i], s[i+len(sep):], true
-	}
-	return "", s, false
-}
-
 var hyphens = regexp.MustCompile(`-+`)
 
 func mapSlug(r rune) rune {
