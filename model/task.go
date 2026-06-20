@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"sync"
@@ -351,11 +352,11 @@ func (tq *taskQueue) kill(id string) bool {
 func (tq *taskQueue) run(ctx context.Context, task schema.Task) {
 	tq.m.emit(nil)
 	defer tq.m.emit(nil)
-	err := tq.run1(ctx, task)
+	err, stack := tq.run1(ctx, task)
 	if err != nil {
 		slog.ErrorContext(ctx, "error", "error", err)
 		if errors.Is(err, ErrPermanent) {
-			err = tq.markFailed(ctx, task, err.Error())
+			err = tq.markFailed(ctx, task, err.Error(), stack)
 		} else {
 			err = tq.reschedule(ctx, task, err.Error())
 		}
@@ -365,7 +366,7 @@ func (tq *taskQueue) run(ctx context.Context, task schema.Task) {
 	}
 }
 
-func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error) {
+func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error, stack []byte) {
 	defer func() {
 		// run1's only ctx-cancel source is tq.kill, so if ctx.Err() is
 		// non-nil here the user explicitly killed the task.
@@ -375,26 +376,26 @@ func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error) {
 	defer tlog.Elapsed(ctx, "task", "type", task.Type, "args", task.Args)()
 
 	defer func() {
-		r := recover()
-		if e1, ok := r.(error); ok {
-			slog.ErrorContext(ctx, "panic", "error", e1)
-			debug.PrintStack()
-			err = nil
-		} else if r != nil {
-			slog.ErrorContext(ctx, "panic", "value", r)
-			debug.PrintStack()
-			err = nil
+		if r := recover(); r != nil {
+			slog.ErrorContext(ctx, "panic", "error", r)
+			stack = debug.Stack()
+			os.Stderr.Write(stack)
+			e1, ok := r.(error)
+			if !ok {
+				e1 = fmt.Errorf("%v", r)
+			}
+			err = Permanent(fmt.Errorf("task recovered panic: %w", e1))
 		}
 	}()
 
 	f := taskTab[task.Type]
 	if f == nil {
-		return errors.New("unknown task type: " + task.Type)
+		return errors.New("unknown task type: " + task.Type), nil
 	}
 	var args []string
 	err = json.Unmarshal([]byte(task.Args), &args)
 	if err != nil {
-		return fmt.Errorf("task %s %s: bad args: %w", task.Type, task.ID, err)
+		return fmt.Errorf("task %s %s: bad args: %w", task.Type, task.ID, err), nil
 	}
 
 	return tq.m.WithTxR(ctx, func(tx *TxR) error {
@@ -412,7 +413,7 @@ func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error) {
 		return tq.m.WithTxRW(ctx, func(t *TxRW) error {
 			return t.q.TaskDelete(task.ID)
 		})
-	})
+	}), nil
 }
 
 func (tq *taskQueue) reschedule(ctx context.Context, task schema.Task, failure string) error {
@@ -428,7 +429,10 @@ func (tq *taskQueue) reschedule(ctx context.Context, task schema.Task, failure s
 	return err
 }
 
-func (tq *taskQueue) markFailed(ctx context.Context, task schema.Task, failure string) error {
+func (tq *taskQueue) markFailed(ctx context.Context, task schema.Task, failure string, stack []byte) error {
+	if len(stack) > 0 {
+		failure = failure + "\n\n" + string(stack)
+	}
 	return schema.New(ctx, tq.m.dbw).TaskMarkFailed(schema.TaskMarkFailedParams{
 		ID:          task.ID,
 		FailureDesc: &failure,
