@@ -1,6 +1,6 @@
 module ily.dev/act3
 
-go 1.26.3
+go 1.27rc1
 
 require (
 	github.com/Eyevinn/hls-m3u8 v0.6.4
@@ -11,7 +11,7 @@ require (
 	golang.org/x/text v0.37.0
 	golang.org/x/time v0.15.0
 	golang.org/x/tools v0.44.0
-	ily.dev/domi v0.1.0
+	ily.dev/domi v0.2.0
 	kr.dev/errorfmt v0.1.1
 	kr.dev/walk v0.1.0
 	lukechampine.com/blake3 v1.4.1

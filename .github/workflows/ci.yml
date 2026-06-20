@@ -26,7 +26,11 @@ jobs:
 
             - uses: actions/setup-go@v5
               with:
-                  go-version-file: go.mod
+                  # setup-go can't resolve the "1.27rc1" toolchain
+                  # directive in go.mod; pin the release candidate
+                  # explicitly. Revert to go-version-file once Go 1.27
+                  # ships.
+                  go-version: 1.27.0-rc.1
                   cache: true
 
             - name: Install sqlc
@@ -125,7 +129,7 @@ jobs:
 
             - uses: actions/setup-go@v5
               with:
-                  go-version-file: go.mod
+                  go-version: 1.27.0-rc.1 # see ci job above
                   cache: true
 
             - name: go test -race -short
@@ -141,7 +145,7 @@ jobs:
 
             - uses: actions/setup-go@v5
               with:
-                  go-version-file: go.mod
+                  go-version: 1.27.0-rc.1 # see ci job above
                   cache: true
 
             - name: go test (full)
