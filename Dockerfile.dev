@@ -50,7 +50,6 @@ RUN curl -fsSL https://dprint.dev/install.sh | DPRINT_INSTALL=/usr/local sh
 # System-wide environment for login shells (/etc/profile sources this)
 RUN printf '%s\n' \
 	'export PATH=$HOME/.local/bin:/usr/local/go/bin:$PATH' \
-	'export GOEXPERIMENT=jsonv2' \
 	'export A3STORAGE=/home/dev/.local/act3' \
 	> /etc/profile.d/act3.sh
 
