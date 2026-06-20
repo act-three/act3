@@ -5842,15 +5842,6 @@ func (q *Queries) TaskSaveOneOff(arg TaskSaveOneOffParams) error {
 	return err
 }
 
-const taskUnlock = `-- name: TaskUnlock :exec
-UPDATE Task SET State = 'queued' WHERE ID = ?
-`
-
-func (q *Queries) TaskUnlock(id string) error {
-	_, err := q.db.ExecContext(q.ctx, taskUnlock, id)
-	return err
-}
-
 const trashDelete = `-- name: TrashDelete :exec
 DELETE FROM Trash WHERE ID = ?
 `

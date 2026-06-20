@@ -321,6 +321,10 @@ func (tq *taskQueue) lock(id, ttype, args string, cancel context.CancelFunc) (st
 	return key, nil
 }
 
+// unlock releases the in-memory admission slot held by a finished
+// task. It writes no DB state: run already moved the task to its
+// terminal state (deleted, failed, or requeued), and any task left in
+// 'running' by a crash is requeued by TaskResetRunning at startup.
 func (tq *taskQueue) unlock(id, key string) {
 	tq.runningMu.Lock()
 	defer tq.runningMu.Unlock()
@@ -331,11 +335,6 @@ func (tq *taskQueue) unlock(id, key string) {
 	e.cancel()
 	delete(tq.running, id)
 	tq.used -= e.weight
-	ctx := context.Background()
-	err := schema.New(ctx, tq.m.dbw).TaskUnlock(id)
-	if err != nil {
-		slog.Error("task-unlock", "id", id, "error", err)
-	}
 	tq.wake()
 }
 
@@ -355,6 +354,9 @@ func (tq *taskQueue) run(ctx context.Context, task schema.Task) {
 	err, stack := tq.run1(ctx, task)
 	if err != nil {
 		slog.ErrorContext(ctx, "error", "error", err)
+		// A killed task arrives here with ctx already canceled.
+		// Detach so the failure write does not itself fail.
+		ctx := context.WithoutCancel(ctx)
 		if errors.Is(err, ErrPermanent) {
 			err = tq.markFailed(ctx, task, err.Error(), stack)
 		} else {
