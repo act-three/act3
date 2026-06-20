@@ -1308,9 +1308,6 @@ UPDATE Task SET
 	FailureDesc = ?
 WHERE ID = ?;
 
--- name: TaskUnlock :exec
-UPDATE Task SET State = 'queued' WHERE ID = ?;
-
 -- name: TrashDelete :exec
 DELETE FROM Trash WHERE ID = ?;
 
