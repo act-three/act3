@@ -88,7 +88,7 @@
         break;
       }
       case "SetText": {
-        walk(root, p.Path).nodeValue = p.Value ?? "";
+        walk(root, p.Path).nodeValue = p.Value;
         break;
       }
       case "SetAttr": {
