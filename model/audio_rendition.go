@@ -4,9 +4,26 @@ import (
 	"ily.dev/act3/database/schema"
 )
 
-// AudioRendition returns the AudioRendition row for the given ID.
-func (tx *TxR) AudioRendition(id string) (schema.AudioRendition, error) {
-	return tx.q.AudioRenditionGet(id)
+// AudioRenditionMediaKey returns the CAS key of the fMP4 blob for the
+// audio rendition with the given ID. The key is empty until the
+// rendition has been encoded.
+func (tx *TxR) AudioRenditionMediaKey(id string) (string, error) {
+	ar, err := tx.q.AudioRenditionGet(id)
+	if err != nil {
+		return "", err
+	}
+	return ar.Key, nil
+}
+
+// AudioRenditionPlaylist returns the HLS media playlist for the audio
+// rendition with the given ID. The playlist is empty until the
+// rendition has been encoded.
+func (tx *TxR) AudioRenditionPlaylist(id string) (string, error) {
+	ar, err := tx.q.AudioRenditionGet(id)
+	if err != nil {
+		return "", err
+	}
+	return ar.Playlist, nil
 }
 
 // AudioOption describes one entry in the player audio-track menu.

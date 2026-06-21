@@ -90,8 +90,26 @@ func videoExtensionForContentType(ct string) string {
 	}
 }
 
-func (tx *TxR) Rendition(id string) (schema.Rendition, error) {
-	return tx.q.RenditionGet(id)
+// RenditionMediaKey returns the CAS key of the fMP4 blob for the video
+// rendition with the given ID. The key is empty until the rendition
+// has been encoded.
+func (tx *TxR) RenditionMediaKey(id string) (string, error) {
+	rend, err := tx.q.RenditionGet(id)
+	if err != nil {
+		return "", err
+	}
+	return rend.Key, nil
+}
+
+// RenditionPlaylist returns the HLS media playlist for the video
+// rendition with the given ID. The playlist is empty until the
+// rendition has been encoded.
+func (tx *TxR) RenditionPlaylist(id string) (string, error) {
+	rend, err := tx.q.RenditionGet(id)
+	if err != nil {
+		return "", err
+	}
+	return rend.Playlist, nil
 }
 
 func (tx *TxR) RenditionListStreamingByEpisodeID(epID string) ([]schema.Rendition, error) {

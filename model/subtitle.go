@@ -7,6 +7,7 @@ import (
 	"kr.dev/errorfmt"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/video"
 	"ily.dev/act3/video/ffmpeg"
 )
 
@@ -94,17 +95,11 @@ func subtitleOriginalExt(codec string) string {
 	return codec
 }
 
-// SubtitleOriginalExt is the exported counterpart to subtitleOriginalExt
-// for use by the web layer when matching a request URL suffix to a track.
-func SubtitleOriginalExt(codec string) string {
-	return subtitleOriginalExt(codec)
-}
-
-// SubtitleContentType returns the response Content-Type to pin when
+// subtitleContentType returns the response Content-Type to pin when
 // serving the original-format subtitle blob for a given codec. WebVTT
 // is text/vtt; ASS/SSA share text/x-ssa; SubRip is application/x-subrip.
 // All formats are UTF-8 (we transcode at extraction time).
-func SubtitleContentType(codec string) string {
+func subtitleContentType(codec string) string {
 	switch codec {
 	case "ass", "ssa":
 		return "text/x-ssa; charset=utf-8"
@@ -116,9 +111,42 @@ func SubtitleContentType(codec string) string {
 	return "application/octet-stream"
 }
 
-// Subtitle returns the SubtitleTrack row for the given ID.
-func (tx *TxR) Subtitle(id string) (schema.SubtitleTrack, error) {
-	return tx.q.SubtitleTrackGet(id)
+// SubtitleFile resolves the CAS key and Content-Type for serving the
+// subtitle track with the given ID in the requested format. ext is the
+// URL suffix without a leading dot ("vtt", "ass", "srt"). The returned
+// key is empty when the requested format is unavailable — either the
+// track has no such artifact, or ext doesn't match the track's
+// original codec.
+func (tx *TxR) SubtitleFile(id, ext string) (key, contentType string, err error) {
+	st, err := tx.q.SubtitleTrackGet(id)
+	if err != nil {
+		return "", "", err
+	}
+	switch {
+	case ext == "vtt":
+		return st.WebVTTKey, "text/vtt; charset=utf-8", nil
+	case ext == subtitleOriginalExt(st.OriginalCodec):
+		return st.OriginalKey, subtitleContentType(st.OriginalCodec), nil
+	}
+	return "", "", nil
+}
+
+// SubtitleMediaPlaylist returns the HLS media playlist for the subtitle
+// track with the given ID. It is empty when the track's WebVTT artifact
+// has not been extracted yet.
+func (tx *TxR) SubtitleMediaPlaylist(id string) (string, error) {
+	st, err := tx.q.SubtitleTrackGet(id)
+	if err != nil {
+		return "", err
+	}
+	if st.WebVTTKey == "" {
+		return "", nil
+	}
+	vid, err := tx.Video(st.VideoID)
+	if err != nil {
+		return "", err
+	}
+	return video.GenerateSubtitleMediaPlaylist(vid.Duration(), "/-/sub/"+st.ID+".vtt"), nil
 }
 
 // taskIngestExtractSubs extracts each subtitle track of a video to CAS:
