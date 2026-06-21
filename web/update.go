@@ -155,6 +155,14 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 			}
 		}
 		return nil
+	case *msg.MovieCreate:
+		return a.doNav(ctx, func(tx *model.TxRW) (string, error) {
+			mw, err := tx.MovieCreate("New Movie", "")
+			if err != nil {
+				return "", err
+			}
+			return mw.EditorPath(), nil
+		})
 
 	case *msg.TaskRun:
 		if err := a.model.RunTaskNow(ctx, m.ID); err != nil {

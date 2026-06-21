@@ -29,6 +29,9 @@ func AppMovies(
 			Button(onClick(&msg.MovieAddOpen{}), ButtonSurface)(
 				Text("Add Movie"),
 			),
+			Button(onClick(&msg.MovieCreate{}), ButtonSurface)(
+				Text("New Movie"),
+			),
 		),
 		Split()(
 			List()(
