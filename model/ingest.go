@@ -20,7 +20,7 @@ import (
 	"ily.dev/act3/video/ffmpeg"
 )
 
-// copyToStoreHashed streams r into the CAS store and returns the
+// copyToStoreHashed streams r into the blob store and returns the
 // storage key alongside a blake3-256 digest of the bytes. Used by
 // ingest-style paths to enable duplicate-content detection.
 func (m *Model) copyToStoreHashed(r io.Reader) (key string, sum []byte, err error) {
@@ -212,7 +212,7 @@ func (tx *TxRW) mergeDuplicateVideo(loser schema.Video, winner schema.Video, los
 	return nil
 }
 
-// planAndCreateRenditions probes the source in CAS, plans a
+// planAndCreateRenditions probes the source in the blob store, plans a
 // rendition ladder, creates the rendition DB records, and queues
 // pass1. The caller must have already set vid.OriginalKey and
 // opened progress tracking for vid.ID.
@@ -827,7 +827,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(args []string) error {
 
 // ReimportVideo queues a reimport task for the given video.
 // The task will delete all existing renditions and the original
-// CAS blob, re-copy the source from the download path, and
+// blob, re-copy the source from the download path, and
 // restart the full ingestion pipeline.
 func (tx *TxRW) ReimportVideo(videoID string) error {
 	if err := tx.guardActiveVideo(videoID); err != nil {
@@ -910,7 +910,7 @@ func (tx *TxR) taskReimport(args []string) (err error) {
 }
 
 // ReencodeVideo queues a reencode task for the given video.
-// The task will delete all existing renditions (CAS blobs and DB
+// The task will delete all existing renditions (blobs and DB
 // records), re-probe the original source, plan new renditions,
 // and restart the encoding pipeline.
 func (tx *TxRW) ReencodeVideo(videoID string) error {
@@ -931,7 +931,7 @@ func (tx *TxR) taskReencode(args []string) error {
 		return fmt.Errorf("video %s has no original hash", vid.ID)
 	}
 
-	// Delete existing rendition CAS blobs and any stale pass1 data
+	// Delete existing rendition blobs and any stale pass1 data
 	// left behind by a prior cycle.
 	renditions, err := tx.q.RenditionListByVideoID(vid.ID)
 	if err != nil {

@@ -720,11 +720,11 @@ func TestTrashPartialUniqueIndexAllowsReuse(t *testing.T) {
 	}
 }
 
-// TestTrashPurgeRemovesCASKeys covers scenario 5: a Video's
+// TestTrashPurgeRemovesBlobKeys covers scenario 5: a Video's
 // OriginalKey and Rendition keys are passed to store.Remove when
 // purged. Uses the real storage.Dir backing the test Model; the
 // files must actually disappear from the filesystem.
-func TestTrashPurgeRemovesCASKeys(t *testing.T) {
+func TestTrashPurgeRemovesBlobKeys(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 
@@ -770,7 +770,7 @@ func TestTrashPurgeRemovesCASKeys(t *testing.T) {
 		f, err := m.store.Open(k)
 		if err == nil {
 			f.Close()
-			t.Errorf("CAS blob %q still exists after purge", k)
+			t.Errorf("blob %q still exists after purge", k)
 		}
 	}
 }
@@ -3714,10 +3714,10 @@ func TestTrashCascadeCoversAllDescendants(t *testing.T) {
 	}
 }
 
-// TestTrashCASBlobsRemovedByPurge covers explicit-Purge CAS cleanup:
+// TestTrashBlobsRemovedByPurge covers explicit-Purge blob cleanup:
 // Trash a Video with an OriginalKey and a rendition, Purge, assert
 // both blobs are removed.
-func TestTrashCASBlobsRemovedByPurge(t *testing.T) {
+func TestTrashBlobsRemovedByPurge(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 
@@ -3741,10 +3741,10 @@ func TestTrashCASBlobsRemovedByPurge(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("purge: %v", err)
 	}
-	if casBlobExists(t, m, origKey) {
+	if blobExists(t, m, origKey) {
 		t.Errorf("original blob %q still exists", origKey)
 	}
-	if casBlobExists(t, m, rendKey) {
+	if blobExists(t, m, rendKey) {
 		t.Errorf("rendition blob %q still exists", rendKey)
 	}
 }
@@ -3925,8 +3925,8 @@ func countRows(t *testing.T, m *Model, table, where string, args ...any) int {
 	return n
 }
 
-// casBlobExists reports whether the CAS store still has the given key.
-func casBlobExists(t *testing.T, m *Model, key string) bool {
+// blobExists reports whether the blob store still has the given key.
+func blobExists(t *testing.T, m *Model, key string) bool {
 	t.Helper()
 	if key == "" {
 		return false

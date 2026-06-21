@@ -4,7 +4,7 @@ import (
 	"ily.dev/act3/database/schema"
 )
 
-// AudioRenditionMediaKey returns the CAS key of the fMP4 blob for the
+// AudioRenditionMediaKey returns the blob key of the fMP4 media for the
 // audio rendition with the given ID. The key is empty until the
 // rendition has been encoded.
 func (tx *TxR) AudioRenditionMediaKey(id string) (string, error) {

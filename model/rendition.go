@@ -90,7 +90,7 @@ func videoExtensionForContentType(ct string) string {
 	}
 }
 
-// RenditionMediaKey returns the CAS key of the fMP4 blob for the video
+// RenditionMediaKey returns the blob key of the fMP4 media for the video
 // rendition with the given ID. The key is empty until the rendition
 // has been encoded.
 func (tx *TxR) RenditionMediaKey(id string) (string, error) {
@@ -117,7 +117,7 @@ func (tx *TxR) RenditionListStreamingByEpisodeID(epID string) ([]schema.Renditio
 }
 
 // VideoDownload bundles everything the download handler needs to
-// serve a response: the CAS blob key, the Content-Type to pin, and
+// serve a response: the blob key, the Content-Type to pin, and
 // the server-generated filename for Content-Disposition.
 type VideoDownload struct {
 	Key         string

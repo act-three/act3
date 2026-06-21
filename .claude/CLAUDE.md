@@ -38,7 +38,7 @@ Feel free to start and stop your own server on port 4445 as you see fit.
 
 Environment variables:
 - `A3DATABASE` — dir for SQLite DB (default `.`)
-- `A3STORAGE` — CAS root (default `/var/lib/act3`)
+- `A3STORAGE` — blob store root (default `/var/lib/act3`)
 - `A3TMDBTOKEN` - The Movie DB personal access token
 - `A3TRANSMISSION` — Transmission RPC URL
 - `A3FFMPEGVIDEOPRESET` — override ffmpeg preset (e.g. `ultrafast` for dev)
