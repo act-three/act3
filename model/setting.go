@@ -195,19 +195,9 @@ func (tx *TxR) SettingGetByGroup(group string) (Settings, error) {
 	return m, nil
 }
 
-// SettingSetInt sets a setting to the given int value.
-func (tx *TxRW) SettingSetInt(key string, n int) error {
-	return tx.SettingSet(key, mustMarshalJSON(n))
-}
-
 // SettingSetString sets a setting to the given string value.
 func (tx *TxRW) SettingSetString(key string, v string) error {
-	return tx.SettingSet(key, mustMarshalJSON(v))
-}
-
-// SettingSetBool sets a setting to the given bool value.
-func (tx *TxRW) SettingSetBool(key string, v bool) error {
-	return tx.SettingSet(key, mustMarshalJSON(v))
+	return tx.settingSet(key, mustMarshalJSON(v))
 }
 
 func mustMarshalJSON(v any) string {
@@ -218,9 +208,9 @@ func mustMarshalJSON(v any) string {
 	return string(b)
 }
 
-// SettingSet stores a pre-encoded JSON value for the given key,
+// settingSet stores a pre-encoded JSON value for the given key,
 // validating that the JSON decodes to the correct type for that key.
-func (tx *TxRW) SettingSet(key string, rawJSON string) (err error) {
+func (tx *TxRW) settingSet(key string, rawJSON string) (err error) {
 	defer errorfmt.Handlef("setting set %q: %w", key, &err)
 	def, ok := settingDefs[key]
 	if !ok {

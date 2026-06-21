@@ -334,7 +334,7 @@ func (tx *TxRW) trashSeriesEdition(id, root string, now time.Time) error {
 			if err != nil {
 				return err
 			}
-			if err := tx.SeriesEditionSetDefault(succ.ID); err != nil {
+			if err := tx.seriesEditionSetDefault(succ.ID); err != nil {
 				return err
 			}
 		}

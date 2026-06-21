@@ -195,10 +195,10 @@ func (tx *TxR) SeriesEdition(id string) (*SeriesEdition, error) {
 	return sed, nil
 }
 
-// SeriesEditionBySlug looks up a series by its slug
+// seriesEditionBySlug looks up a series by its slug
 // and returns the edition matching edSlug
 // (empty string for the default edition).
-func (tx *TxR) SeriesEditionBySlug(slug, edSlug string) (*SeriesEdition, error) {
+func (tx *TxR) seriesEditionBySlug(slug, edSlug string) (*SeriesEdition, error) {
 	sedData, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
 		SeriesSlug:  slug,
 		EditionSlug: edSlug,
@@ -368,10 +368,10 @@ func (tx *TxRW) SeriesEditionSummarySet(id, summary string) error {
 
 }
 
-// SeriesEditionSetDefault promotes the given edition to be
+// seriesEditionSetDefault promotes the given edition to be
 // the default (Slug="") for its series.
 // The previous default gets a slug generated from its label.
-func (tx *TxRW) SeriesEditionSetDefault(id string) error {
+func (tx *TxRW) seriesEditionSetDefault(id string) error {
 	sed, err := tx.q.SeriesEditionGet(id)
 	if err != nil {
 		return err

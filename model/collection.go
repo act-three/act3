@@ -201,7 +201,7 @@ func (tx *TxR) CollectionSeriesSearch(colID, query string) ([]CollectionSeriesSe
 	return matches, nil
 }
 
-func (tx *TxR) CollectionBySlug(slug string) (*Collection, error) {
+func (tx *TxR) collectionBySlug(slug string) (*Collection, error) {
 	colData, err := tx.q.CollectionGetBySlug(slug)
 	if err != nil {
 		return nil, err
@@ -279,7 +279,7 @@ func (tx *TxR) CollectionPlayables(id string) ([]Playable, error) {
 	}
 	var playables []Playable
 	for _, mo := range movieIDs {
-		med, err := tx.MovieEditionBySlug(mo.Slug, "")
+		med, err := tx.movieEditionBySlug(mo.Slug, "")
 		if err != nil {
 			return nil, err
 		}
@@ -290,7 +290,7 @@ func (tx *TxR) CollectionPlayables(id string) ([]Playable, error) {
 		return nil, err
 	}
 	for _, sr := range seriesIDs {
-		sed, err := tx.SeriesEditionBySlug(sr.Slug, "")
+		sed, err := tx.seriesEditionBySlug(sr.Slug, "")
 		if err != nil {
 			return nil, err
 		}

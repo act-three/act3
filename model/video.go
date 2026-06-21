@@ -110,7 +110,7 @@ func filterAudioByRenditionID(rends []schema.AudioRendition, id string) []schema
 	return nil
 }
 
-func (tx *TxR) VideoListByEpisodeID(epID string) ([]schema.Video, error) {
+func (tx *TxR) videoListByEpisodeID(epID string) ([]schema.Video, error) {
 	return tx.q.VideoListByEpisodeID(epID)
 }
 

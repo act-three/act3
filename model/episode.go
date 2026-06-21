@@ -246,9 +246,9 @@ func (tx *TxR) EpisodeHead(id string) (*EpisodeHead, error) {
 	return &EpisodeHead{ep: ep}, nil
 }
 
-// EpisodeBySlug looks up an episode by its slug components.
+// episodeBySlug looks up an episode by its slug components.
 // edSlug selects the edition; empty string selects the default.
-func (tx *TxR) EpisodeBySlug(seriesSlug, edSlug, epSlug string) (*Episode, error) {
+func (tx *TxR) episodeBySlug(seriesSlug, edSlug, epSlug string) (*Episode, error) {
 	sed, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
 		SeriesSlug:  seriesSlug,
 		EditionSlug: edSlug,
