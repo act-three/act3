@@ -74,7 +74,7 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (node, error
 const maxUploadFormField = 1 << 10
 
 // doVideoUpload streams a video file multipart upload directly into
-// the CAS store via model.VideoUploadCreate. Registered on the
+// the blob store via model.VideoUploadCreate. Registered on the
 // streaming path so the global request-body cap doesn't apply; we
 // rely on req.MultipartReader to avoid spooling the upload through
 // req.FormFile's default /tmp file.

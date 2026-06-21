@@ -22,7 +22,7 @@ const audioGroupID = "aud"
 // FixupMediaPlaylist replaces all occurrences of oldName in the
 // HLS media playlist text with newName.
 // This is used to replace the temporary media filename produced
-// by ffmpeg with the content-addressed storage hash.
+// by ffmpeg with the rendition's playback URL.
 func FixupMediaPlaylist(playlist, oldName, newName string) string {
 	return strings.ReplaceAll(playlist, oldName, newName)
 }

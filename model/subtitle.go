@@ -111,7 +111,7 @@ func subtitleContentType(codec string) string {
 	return "application/octet-stream"
 }
 
-// SubtitleFile resolves the CAS key and Content-Type for serving the
+// SubtitleFile resolves the blob key and Content-Type for serving the
 // subtitle track with the given ID in the requested format. ext is the
 // URL suffix without a leading dot ("vtt", "ass", "srt"). The returned
 // key is empty when the requested format is unavailable — either the
@@ -149,7 +149,7 @@ func (tx *TxR) SubtitleMediaPlaylist(id string) (string, error) {
 	return video.GenerateSubtitleMediaPlaylist(vid.Duration(), "/-/sub/"+st.ID+".vtt"), nil
 }
 
-// taskIngestExtractSubs extracts each subtitle track of a video to CAS:
+// taskIngestExtractSubs extracts each subtitle track of a video to the blob store:
 // always a WebVTT artifact, plus an original-codec artifact for codecs
 // that have a standalone on-disk format (everything except mov_text).
 // Idempotent per-track: a track whose WebVTTKey is already set is

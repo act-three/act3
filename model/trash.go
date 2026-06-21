@@ -854,7 +854,7 @@ func (tx *TxRW) trashPurge(threshold time.Time) (err error) {
 }
 
 // purgeVideoBlobs deletes AudioTrack, SubtitleTrack and Rendition rows
-// for the given videos and schedules their CAS blob keys for removal on
+// for the given videos and schedules their blob keys for removal on
 // commit.
 func (tx *TxRW) purgeVideoBlobs(vidIDs, origKeys []string) error {
 	if len(vidIDs) == 0 {

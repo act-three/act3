@@ -98,7 +98,7 @@ func (m *Model) uploadEnd(u *upload) {
 	m.emit(nil)
 }
 
-// VideoUploadCreate streams r into the CAS store and registers it as
+// VideoUploadCreate streams r into the blob store and registers it as
 // a new Video not associated with any Download. Exactly one target
 // must be specified: an episode (epID) or a movie edition (medID).
 // While the upload is in flight it is listed by Uploads, with its
