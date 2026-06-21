@@ -422,8 +422,8 @@ func (tx *TxR) MovieWorkList() ([]*MovieWork, error) {
 			continue // no default edition; skip
 		}
 		works = append(works, &MovieWork{
-			MovieHead:        MovieHead{mo},
-			MovieEditionHead: MovieEditionHead{med: ed},
+			MovieHead: MovieHead{mo},
+			med:       ed,
 		})
 	}
 	return works, nil

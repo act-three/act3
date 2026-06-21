@@ -149,12 +149,12 @@ func (m *Model) WithTxRW(ctx context.Context, f func(*TxRW) error) error {
 		return err
 	}
 	defer tx.Rollback()
-	mt := &TxRW{TxR: TxR{
+	mt := &TxRW{
 		m:   m,
 		tx:  tx,
 		q:   schema.New(ctx, tx),
 		ctx: ctx,
-	}}
+	}
 	err = f(mt)
 	if err != nil {
 		return err

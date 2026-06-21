@@ -103,9 +103,9 @@ func newMovieEdition(
 	videosByEditionID map[string][]*Video,
 ) *MovieEdition {
 	med := &MovieEdition{
-		MovieEditionHead: MovieEditionHead{med: medData},
-		mo:               mo,
-		videos:           videosByEditionID[medData.ID],
+		med:    medData,
+		mo:     mo,
+		videos: videosByEditionID[medData.ID],
 	}
 	return med
 }
@@ -217,8 +217,8 @@ func (tx *TxR) MovieEditionList(mo *MovieHead) ([]*MovieWork, error) {
 	works := make([]*MovieWork, len(meds))
 	for i := range meds {
 		works[i] = &MovieWork{
-			MovieHead:        *mo,
-			MovieEditionHead: MovieEditionHead{med: meds[i]},
+			MovieHead: *mo,
+			med:       meds[i],
 		}
 	}
 	return works, nil

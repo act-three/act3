@@ -84,14 +84,14 @@ func newEpisode(
 	videos []*Video,
 ) *Episode {
 	return &Episode{
-		EpisodeHead: EpisodeHead{ep: epData},
-		snep:        snepData,
-		type_:       episodeTypeByName[epData.Type],
-		sn:          sn,
-		so:          so,
-		sr:          sr,
-		prog:        prog,
-		videos:      videos,
+		ep:     epData,
+		snep:   snepData,
+		type_:  episodeTypeByName[epData.Type],
+		sn:     sn,
+		so:     so,
+		sr:     sr,
+		prog:   prog,
+		videos: videos,
 	}
 }
 
@@ -296,8 +296,8 @@ func (tx *TxR) EpisodeInEdition(id, edID string) (*Episode, error) {
 		videos = append(videos, &Video{v: vids[i], active: activeByVID[vids[i].ID]})
 	}
 	ep := &Episode{
-		EpisodeHead: EpisodeHead{ep: epRec},
-		videos:      videos,
+		ep:     epRec,
+		videos: videos,
 	}
 	for i, snep := range sneps {
 		sn, err := tx.q.SeasonGet(snep.SeasonID)
@@ -349,12 +349,12 @@ func (tx *TxR) EpisodeEditions(episodeID string) ([]*Episode, error) {
 			return nil, err
 		}
 		eps = append(eps, &Episode{
-			EpisodeHead: EpisodeHead{ep: epRec},
-			snep:        snep,
-			type_:       episodeTypeByName[epRec.Type],
-			sn:          &SeasonHead{sn},
-			so:          &SeriesEditionHead{sed: sed},
-			sr:          &SeriesHead{sr},
+			ep:    epRec,
+			snep:  snep,
+			type_: episodeTypeByName[epRec.Type],
+			sn:    &SeasonHead{sn},
+			so:    &SeriesEditionHead{sed: sed},
+			sr:    &SeriesHead{sr},
 		})
 	}
 	return eps, nil

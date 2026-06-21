@@ -59,9 +59,9 @@ func newSeriesEdition(
 	videosByEpisodeID map[string][]*Video,
 ) *SeriesEdition {
 	sed := &SeriesEdition{
-		SeriesEditionHead: SeriesEditionHead{sed: soData},
-		sr:                sr,
-		snByID:            map[string]*Season{},
+		sed:    soData,
+		sr:     sr,
+		snByID: map[string]*Season{},
 	}
 	for _, snData := range sns {
 		sneps := snepBySeasonID[snData.ID]
@@ -218,8 +218,8 @@ func (tx *TxR) SeriesEditionList(sr *SeriesHead) ([]*SeriesWork, error) {
 	works := make([]*SeriesWork, len(seds))
 	for i := range seds {
 		works[i] = &SeriesWork{
-			SeriesHead:        *sr,
-			SeriesEditionHead: SeriesEditionHead{sed: seds[i]},
+			SeriesHead: *sr,
+			sed:        seds[i],
 		}
 	}
 	return works, nil
@@ -292,8 +292,8 @@ func (tx *TxRW) SeriesEditionClone(srcID string) (*SeriesWork, error) {
 		return nil, err
 	}
 	return &SeriesWork{
-		SeriesHead:        SeriesHead{srData},
-		SeriesEditionHead: SeriesEditionHead{sed: newSed},
+		SeriesHead: SeriesHead{srData},
+		sed:        newSed,
 	}, nil
 }
 

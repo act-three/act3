@@ -153,8 +153,7 @@ func makeHandler(hf handlerFunc) http.Handler {
 		timing.Measure(ctx, "page", func() {
 			node, err = hf(w, req)
 		})
-		var ve *model.ValidationError
-		if errors.As(err, &ve) {
+		if ve, ok := errors.AsType[*model.ValidationError](err); ok {
 			handleBadRequest(w, req, ve.Op, ve.Err.Error())
 			return
 		} else if errors.Is(err, errNotFound) {

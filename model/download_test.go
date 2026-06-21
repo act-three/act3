@@ -211,8 +211,7 @@ func TestDownloadCreateRejectsTraversal(t *testing.T) {
 		return err
 	})
 
-	var ve *ValidationError
-	if !errors.As(err, &ve) {
+	if _, ok := errors.AsType[*ValidationError](err); !ok {
 		t.Fatalf("DownloadCreate: err = %v (%T), want *ValidationError", err, err)
 	}
 
