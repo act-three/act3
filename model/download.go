@@ -187,16 +187,10 @@ func (tx *TxR) newDownload(dl schema.Download) (*Download, error) {
 	}
 
 	if dl.SeriesEditionID != nil {
-		d.planEd, err = tx.SeriesEdition(*dl.SeriesEditionID)
-		if err != nil {
-			return nil, err
-		}
+		d.planEd = tx.SeriesEdition(*dl.SeriesEditionID)
 	}
 	if dl.MovieEditionID != nil {
-		d.planMovieEd, err = tx.MovieEdition(*dl.MovieEditionID)
-		if err != nil {
-			return nil, err
-		}
+		d.planMovieEd = tx.MovieEdition(*dl.MovieEditionID)
 	}
 	items := tx.m.prog.List("dl-" + dl.InfoHash)
 	if len(items) > 0 {
@@ -230,16 +224,12 @@ func (d *Download) EpisodeIDsByVideoID(videoID string) []string {
 	return d.epIDByVideoID[videoID]
 }
 
-func (tx *TxR) VideoGetByName(infoHash, name string) (*Video, error) {
-	v, err := tx.q.VideoGetByName(schema.VideoGetByNameParams{
+func (tx *TxR) VideoGetByName(infoHash, name string) *Video {
+	v := txmust1(tx.q.VideoGetByName(schema.VideoGetByNameParams{
 		InfoHash: &infoHash,
 		Name:     name,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return &Video{v: v}, nil
+	}))
+	return &Video{v: v}
 }
 
 func (d *Download) PlanFor(path string) []string {
@@ -300,19 +290,10 @@ func (tx *TxR) downloadHeadList() ([]*DownloadHead, error) {
 	return tx.newDownloadHeadList(tx.q.DownloadList())
 }
 
-func (tx *TxR) DownloadInfoList() ([]*DownloadInfo, error) {
-	heads, err := tx.downloadHeadList()
-	if err != nil {
-		return nil, err
-	}
-	sedList, err := tx.q.SeriesEditionListByDownload()
-	if err != nil {
-		return nil, err
-	}
-	srList, err := tx.q.SeriesListByDownload()
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) DownloadInfoList() []*DownloadInfo {
+	heads := txmust1(tx.downloadHeadList())
+	sedList := txmust1(tx.q.SeriesEditionListByDownload())
+	srList := txmust1(tx.q.SeriesListByDownload())
 	srs := make(map[string]*SeriesHead, len(srList))
 	for i := range srList {
 		srs[srList[i].ID] = &SeriesHead{srList[i]}
@@ -325,14 +306,8 @@ func (tx *TxR) DownloadInfoList() ([]*DownloadInfo, error) {
 			SeriesEditionHead: *sed,
 		}
 	}
-	medList, err := tx.q.MovieEditionListByDownload()
-	if err != nil {
-		return nil, err
-	}
-	moList, err := tx.q.MovieListByDownload()
-	if err != nil {
-		return nil, err
-	}
+	medList := txmust1(tx.q.MovieEditionListByDownload())
+	moList := txmust1(tx.q.MovieListByDownload())
 	mos := make(map[string]*MovieHead, len(moList))
 	for i := range moList {
 		mos[moList[i].ID] = &MovieHead{mo: moList[i]}
@@ -356,23 +331,28 @@ func (tx *TxR) DownloadInfoList() ([]*DownloadInfo, error) {
 		}
 		res[i] = di
 	}
-	return res, nil
+	return res
 }
 
-func (tx *TxR) DownloadHeadListBySeriesEditionID(id string) ([]*DownloadHead, error) {
-	return tx.newDownloadHeadList(tx.q.DownloadListBySeriesEditionID(&id))
+func (tx *TxR) DownloadHeadListBySeriesEditionID(id string) []*DownloadHead {
+	return txmust1(tx.newDownloadHeadList(tx.q.DownloadListBySeriesEditionID(&id)))
 }
 
-func (tx *TxR) DownloadHeadListByMovieEditionID(id string) ([]*DownloadHead, error) {
-	return tx.newDownloadHeadList(tx.q.DownloadListByMovieEditionID(&id))
+func (tx *TxR) DownloadHeadListByMovieEditionID(id string) []*DownloadHead {
+	return txmust1(tx.newDownloadHeadList(tx.q.DownloadListByMovieEditionID(&id)))
 }
 
-func (tx *TxR) Download(infoHash string) (*Download, error) {
-	dl, err := tx.q.DownloadGet(infoHash)
-	if err != nil {
-		return nil, err
-	}
-	return tx.newDownload(dl)
+func (tx *TxR) Download(infoHash string) *Download {
+	dl := txmust1(tx.q.DownloadGet(infoHash))
+	return txmust1(tx.newDownload(dl))
+}
+
+// DownloadAttachedEpisodes lists the episodes the downloaded file is
+// currently attached to.
+func (tx *TxR) DownloadAttachedEpisodes(infoHash, path string) []string {
+	dl := tx.Download(infoHash)
+	vid := tx.VideoGetByName(infoHash, path)
+	return dl.EpisodeIDsByVideoID(vid.ID())
 }
 
 func (tx *TxRW) DownloadAutoImportSet(infoHash string, auto bool) (err error) {
@@ -468,10 +448,7 @@ func (tx *TxRW) processDownload(infoHash string) (err error) {
 		return nil
 	}
 
-	d, err := tx.Download(infoHash)
-	if err != nil {
-		return err
-	}
+	d := tx.Download(infoHash)
 	done := torrentDone(t)
 
 	if d.AutoImport() {
@@ -674,10 +651,7 @@ func (tx *TxRW) DownloadCreatePlanSeries(infoHash, sedID string) (d *Download, e
 	if err != nil {
 		return nil, err
 	}
-	sed, err := tx.SeriesEdition(sedID)
-	if err != nil {
-		return nil, err
-	}
+	sed := tx.SeriesEdition(sedID)
 	var planEps []plan.Episode
 	for ep := range sed.Episodes(AnyEpisode) {
 		planEps = append(planEps, ep)
@@ -714,7 +688,7 @@ func (tx *TxRW) DownloadCreatePlanSeries(infoHash, sedID string) (d *Download, e
 	if err := tx.bumpDownloadActivity(dl.InfoHash); err != nil {
 		return nil, err
 	}
-	return tx.Download(dl.InfoHash)
+	return tx.Download(dl.InfoHash), nil
 }
 
 func (tx *TxRW) DownloadCreatePlanMovie(infoHash, medID string) (d *Download, err error) {
@@ -756,7 +730,7 @@ func (tx *TxRW) DownloadCreatePlanMovie(infoHash, medID string) (d *Download, er
 	if err := tx.bumpDownloadActivity(dl.InfoHash); err != nil {
 		return nil, err
 	}
-	return tx.Download(dl.InfoHash)
+	return tx.Download(dl.InfoHash), nil
 }
 
 func (tx *TxRW) updateDownload(t *transmissionrpc.Torrent) error {
@@ -879,13 +853,9 @@ func (m *Model) pollTransmissionOnce() error {
 			if ts[i].HashString == nil {
 				continue
 			}
-			dl, err := tx.Download(*ts[i].HashString)
-			if err != nil {
-				return err
-			}
+			dl := tx.Download(*ts[i].HashString)
 			m.updateFileProgress(&ts[i], dl)
-			err = tx.updateDownload(&ts[i])
-			if err != nil {
+			if err := tx.updateDownload(&ts[i]); err != nil {
 				return err
 			}
 		}

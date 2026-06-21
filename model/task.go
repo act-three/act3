@@ -499,32 +499,23 @@ type TaskStats struct {
 	CountError int
 }
 
-func (tx *TxR) TaskStats() (TaskStats, error) {
-	queued, err := tx.q.TaskCountQueued()
-	if err != nil {
-		return TaskStats{}, err
-	}
-	countError, err := tx.q.TaskCountError()
-	if err != nil {
-		return TaskStats{}, err
-	}
+func (tx *TxR) TaskStats() TaskStats {
+	queued := txmust1(tx.q.TaskCountQueued())
+	countError := txmust1(tx.q.TaskCountError())
 	return TaskStats{
 		Queued:     int(queued),
 		Running:    len(tx.RunningTasks()),
 		CountError: int(countError),
-	}, nil
+	}
 }
 
-func (tx *TxR) TaskList() ([]*Task, error) {
-	list, err := tx.q.TaskList()
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) TaskList() []*Task {
+	list := txmust1(tx.q.TaskList())
 	var tasks []*Task
 	for _, t := range list {
 		tasks = append(tasks, &Task{t})
 	}
-	return tasks, nil
+	return tasks
 }
 
 func (tx *TxRW) TaskDelete(id string) error {

@@ -19,8 +19,8 @@ func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (node, erro
 		if !found {
 			return nil, errNotFound
 		}
-		key, err := tx.AudioRenditionMediaKey(id)
-		if err != nil || key == "" {
+		key := tx.FindAudioRenditionMediaKey(id)
+		if key == "" {
 			return nil, errNotFound
 		}
 		// Every audio rendition is fMP4; pin the Content-Type so
@@ -43,8 +43,8 @@ func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (n
 		if !found {
 			return nil, errNotFound
 		}
-		pl, err := tx.AudioRenditionPlaylist(id)
-		if err != nil || pl == "" {
+		pl := tx.FindAudioRenditionPlaylist(id)
+		if pl == "" {
 			return nil, errNotFound
 		}
 		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
@@ -67,8 +67,8 @@ func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (node, e
 		if id == "" {
 			return nil, errNotFound
 		}
-		key, contentType, err := tx.SubtitleFile(id, ext)
-		if err != nil || key == "" {
+		key, contentType := tx.FindSubtitleFile(id, ext)
+		if key == "" {
 			return nil, errNotFound
 		}
 
@@ -91,8 +91,8 @@ func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request)
 		if !found {
 			return nil, errNotFound
 		}
-		pl, err := tx.SubtitleMediaPlaylist(id)
-		if err != nil || pl == "" {
+		pl := tx.FindSubtitleMediaPlaylist(id)
+		if pl == "" {
 			return nil, errNotFound
 		}
 		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
@@ -118,8 +118,8 @@ func (c *Config) videoPlaylist(w http.ResponseWriter, req *http.Request) (node, 
 			VideoRenditionID: req.URL.Query().Get("q"),
 			AudioRenditionID: req.URL.Query().Get("a"),
 		}
-		pl, err := tx.MVPlaylist(id, filter)
-		if err != nil || pl == "" {
+		pl := tx.FindMVPlaylist(id, filter)
+		if pl == "" {
 			return nil, errNotFound
 		}
 		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
@@ -134,10 +134,7 @@ func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request
 		if !found {
 			return nil, errNotFound
 		}
-		pl, err := tx.RenditionPlaylist(id)
-		if err != nil {
-			return nil, err
-		}
+		pl := tx.FindRenditionPlaylist(id)
 		if pl == "" {
 			return nil, errNotFound
 		}
@@ -153,8 +150,8 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, er
 		if !found {
 			return nil, errNotFound
 		}
-		key, err := tx.RenditionMediaKey(id)
-		if err != nil || key == "" {
+		key := tx.FindRenditionMediaKey(id)
+		if key == "" {
 			return nil, errNotFound
 		}
 		// Every streaming rendition is fMP4; pin the Content-Type
@@ -173,12 +170,12 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, er
 func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Request) (node, error) {
 	ctx := req.Context()
 	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
-		dl, err := tx.VideoDownloadForEpisode(
+		dl, ok := tx.FindVideoDownloadForEpisode(
 			req.PathValue("id"),
 			req.PathValue("epID"),
 			req.PathValue("sedID"),
 		)
-		if err != nil {
+		if !ok {
 			return nil, errNotFound
 		}
 		c.serveDownload(w, req, dl)
@@ -189,11 +186,11 @@ func (c *Config) videoDownloadForEpisode(w http.ResponseWriter, req *http.Reques
 func (c *Config) videoDownloadForMovie(w http.ResponseWriter, req *http.Request) (node, error) {
 	ctx := req.Context()
 	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
-		dl, err := tx.VideoDownloadForMovieEdition(
+		dl, ok := tx.FindVideoDownloadForMovieEdition(
 			req.PathValue("id"),
 			req.PathValue("medID"),
 		)
-		if err != nil {
+		if !ok {
 			return nil, errNotFound
 		}
 		c.serveDownload(w, req, dl)

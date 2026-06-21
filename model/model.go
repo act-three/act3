@@ -18,6 +18,7 @@ package model
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -128,7 +129,11 @@ func (m *Model) loadConfig(ctx context.Context) (err error) {
 	})
 }
 
-func (m *Model) WithTxR(ctx context.Context, f func(*TxR) error) error {
+// WithTxR calls f with a read-only transaction object.
+// Most TxR methods abort the tx on error (including lookup failures).
+// WithTxR returns any such aborts. Otherwise, it returns the error from f.
+func (m *Model) WithTxR(ctx context.Context, f func(*TxR) error) (err error) {
+	defer txrecover(&err)
 	tx, err := m.dbr.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return err
@@ -142,8 +147,12 @@ func (m *Model) WithTxR(ctx context.Context, f func(*TxR) error) error {
 	})
 }
 
-// Non-nil error will roll back the transation.
-func (m *Model) WithTxRW(ctx context.Context, f func(*TxRW) error) error {
+// WithTxRW calls f with a read-write transaction object.
+// Most read-only TxR methods abort the tx on error (including lookup failures).
+// WithTxRW returns any such aborts. Otherwise, it returns the error from f.
+// If f returns a non-nil error, WithTxRW rolls back the transaction.
+func (m *Model) WithTxRW(ctx context.Context, f func(*TxRW) error) (err error) {
+	defer txrecover(&err)
 	tx, err := m.dbw.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -203,4 +212,40 @@ func (e *ValidationError) Error() string {
 
 func (e *ValidationError) Unwrap() error {
 	return e.Err
+}
+
+type txError struct{ err error }
+
+func (e *txError) Error() string { return e.err.Error() }
+func (e *txError) Unwrap() error { return e.err }
+
+func txrecover(err *error) {
+	r := recover()
+	e, _ := r.(error)
+	if _, ok := errors.AsType[*txError](e); ok {
+		*err = e
+		return
+	}
+	if r != nil {
+		panic(r)
+	}
+}
+
+func txmust(err error) {
+	if err != nil {
+		panic(&txError{err})
+	}
+}
+
+func txmust1[T any](v T, err error) T {
+	txmust(err)
+	return v
+}
+
+func txfind1[T any](v T, err error) (z T, found bool) {
+	if errors.Is(err, sql.ErrNoRows) {
+		return z, false
+	}
+	txmust(err)
+	return v, true
 }

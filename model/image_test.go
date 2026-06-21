@@ -126,12 +126,15 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	}
 
 	var largestKey string
+	var found bool
 	if err := m.WithTxR(ctx, func(tx *TxR) error {
-		var err error
-		largestKey, err = tx.ImageVariantKey(originalID, 600)
-		return err
+		largestKey, found = tx.FindImageVariantKey(originalID, 600)
+		return nil
 	}); err != nil {
 		t.Fatal(err)
+	}
+	if !found {
+		t.Fatal("image variant not found")
 	}
 	f, err := m.store.Open(largestKey)
 	if err != nil {

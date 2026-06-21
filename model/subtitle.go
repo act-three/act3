@@ -53,11 +53,8 @@ type SubtitleOption struct {
 
 // SubtitleOptions returns the captions menu entries for a video.
 // Tracks whose extraction has not completed (no WebVTTKey) are skipped.
-func (tx *TxR) SubtitleOptions(v *Video) ([]SubtitleOption, error) {
-	tracks, err := tx.q.SubtitleTrackListByVideoID(v.ID())
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) SubtitleOptions(v *Video) []SubtitleOption {
+	tracks := txmust1(tx.q.SubtitleTrackListByVideoID(v.ID()))
 	var opts []SubtitleOption
 	for _, st := range tracks {
 		if st.WebVTTKey == "" {
@@ -76,7 +73,7 @@ func (tx *TxR) SubtitleOptions(v *Video) ([]SubtitleOption, error) {
 		}
 		opts = append(opts, opt)
 	}
-	return opts, nil
+	return opts
 }
 
 // subtitleOriginalExt maps an original-codec name to the URL extension
@@ -111,42 +108,33 @@ func subtitleContentType(codec string) string {
 	return "application/octet-stream"
 }
 
-// SubtitleFile resolves the blob key and Content-Type for serving the
+// FindSubtitleFile resolves the blob key and Content-Type for serving the
 // subtitle track with the given ID in the requested format. ext is the
 // URL suffix without a leading dot ("vtt", "ass", "srt"). The returned
 // key is empty when the requested format is unavailable — either the
 // track has no such artifact, or ext doesn't match the track's
 // original codec.
-func (tx *TxR) SubtitleFile(id, ext string) (key, contentType string, err error) {
-	st, err := tx.q.SubtitleTrackGet(id)
-	if err != nil {
-		return "", "", err
-	}
+func (tx *TxR) FindSubtitleFile(id, ext string) (key, contentType string) {
+	st, _ := txfind1(tx.q.SubtitleTrackGet(id))
 	switch {
 	case ext == "vtt":
-		return st.WebVTTKey, "text/vtt; charset=utf-8", nil
+		return st.WebVTTKey, "text/vtt; charset=utf-8"
 	case ext == subtitleOriginalExt(st.OriginalCodec):
-		return st.OriginalKey, subtitleContentType(st.OriginalCodec), nil
+		return st.OriginalKey, subtitleContentType(st.OriginalCodec)
 	}
-	return "", "", nil
+	return "", ""
 }
 
-// SubtitleMediaPlaylist returns the HLS media playlist for the subtitle
+// FindSubtitleMediaPlaylist returns the HLS media playlist for the subtitle
 // track with the given ID. It is empty when the track's WebVTT artifact
 // has not been extracted yet.
-func (tx *TxR) SubtitleMediaPlaylist(id string) (string, error) {
-	st, err := tx.q.SubtitleTrackGet(id)
-	if err != nil {
-		return "", err
+func (tx *TxR) FindSubtitleMediaPlaylist(id string) string {
+	st, ok := txfind1(tx.q.SubtitleTrackGet(id))
+	if st.WebVTTKey == "" || !ok {
+		return ""
 	}
-	if st.WebVTTKey == "" {
-		return "", nil
-	}
-	vid, err := tx.Video(st.VideoID)
-	if err != nil {
-		return "", err
-	}
-	return video.GenerateSubtitleMediaPlaylist(vid.Duration(), "/-/sub/"+st.ID+".vtt"), nil
+	vid := tx.Video(st.VideoID)
+	return video.GenerateSubtitleMediaPlaylist(vid.Duration(), "/-/sub/"+st.ID+".vtt")
 }
 
 // taskIngestExtractSubs extracts each subtitle track of a video to the blob store:

@@ -161,31 +161,23 @@ func (med *MovieEdition) ActiveVideo() *Video {
 	return nil
 }
 
-func (tx *TxR) MovieEditionHead(id string) (*MovieEditionHead, error) {
-	medData, err := tx.q.MovieEditionGet(id)
-	if err != nil {
-		return nil, err
-	}
-	return &MovieEditionHead{med: medData}, nil
+func (tx *TxR) MovieEditionHead(id string) *MovieEditionHead {
+	return &MovieEditionHead{txmust1(tx.q.MovieEditionGet(id))}
 }
 
-func (tx *TxR) MovieEdition(id string) (*MovieEdition, error) {
-	medData, err := tx.q.MovieEditionGet(id)
-	if err != nil {
-		return nil, err
+func (tx *TxR) findMovieEditionHead(id string) (*MovieEditionHead, bool) {
+	medData, ok := txfind1(tx.q.MovieEditionGet(id))
+	if !ok {
+		return nil, false
 	}
-	moData, err := tx.q.MovieGetByEditionID(id)
-	if err != nil {
-		return nil, err
-	}
-	vids, err := tx.q.VideoListByMovieEditionID(id)
-	if err != nil {
-		return nil, err
-	}
-	mvs, err := tx.q.MovieVideoListByMovieEditionID(id)
-	if err != nil {
-		return nil, err
-	}
+	return &MovieEditionHead{medData}, true
+}
+
+func (tx *TxR) MovieEdition(id string) *MovieEdition {
+	medData := txmust1(tx.q.MovieEditionGet(id))
+	moData := txmust1(tx.q.MovieGetByEditionID(id))
+	vids := txmust1(tx.q.VideoListByMovieEditionID(id))
+	mvs := txmust1(tx.q.MovieVideoListByMovieEditionID(id))
 	activeByVID := map[string]bool{}
 	for _, mv := range mvs {
 		if mv.Active != 0 {
@@ -198,7 +190,7 @@ func (tx *TxR) MovieEdition(id string) (*MovieEdition, error) {
 	for i := range vids {
 		videos = append(videos, &Video{v: vids[i], active: activeByVID[vids[i].ID]})
 	}
-	return newMovieEdition(mo, medData, map[string][]*Video{id: videos}), nil
+	return newMovieEdition(mo, medData, map[string][]*Video{id: videos})
 }
 
 // movieEditionParams holds metadata for a new movie edition.
@@ -209,11 +201,8 @@ type movieEditionParams struct {
 	Runtime     int64
 }
 
-func (tx *TxR) MovieEditionList(mo *MovieHead) ([]*MovieWork, error) {
-	meds, err := tx.q.MovieEditionListByMovieID(mo.ID())
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) MovieEditionList(mo *MovieHead) []*MovieWork {
+	meds := txmust1(tx.q.MovieEditionListByMovieID(mo.ID()))
 	works := make([]*MovieWork, len(meds))
 	for i := range meds {
 		works[i] = &MovieWork{
@@ -221,7 +210,7 @@ func (tx *TxR) MovieEditionList(mo *MovieHead) ([]*MovieWork, error) {
 			med:       meds[i],
 		}
 	}
-	return works, nil
+	return works
 }
 
 func (tx *TxRW) movieEditionCreate(label, movieID string, p movieEditionParams) (*MovieEditionHead, error) {
@@ -249,10 +238,7 @@ func (tx *TxRW) movieEditionCreate(label, movieID string, p movieEditionParams) 
 // from the edition with the given srcID.
 // The new edition is labeled "Copy of {original label}".
 func (tx *TxRW) MovieEditionClone(srcID string) (*MovieWork, error) {
-	src, err := tx.MovieEditionHead(srcID)
-	if err != nil {
-		return nil, err
-	}
+	src := tx.MovieEditionHead(srcID)
 	med, err := tx.movieEditionCreate("Copy of "+src.Label(), src.med.MovieID, movieEditionParams{
 		Title:       src.med.Title,
 		Summary:     src.med.Summary,

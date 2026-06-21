@@ -96,31 +96,24 @@ func (c *Collection) SeriesCountField() (string, []string) {
 	return fmt.Sprintf("%d Series", len(c.series)), c.SeriesCountAddr()
 }
 
-func (tx *TxR) CollectionHead(id string) (*CollectionHead, error) {
-	colData, err := tx.q.CollectionGet(id)
-	if err != nil {
-		return nil, err
-	}
-	return &CollectionHead{col: colData}, nil
+func (tx *TxR) CollectionHead(id string) *CollectionHead {
+	colData := txmust1(tx.q.CollectionGet(id))
+	return &CollectionHead{col: colData}
 }
 
-func (tx *TxR) CollectionHeadList() ([]*CollectionHead, error) {
-	a, err := tx.q.CollectionList()
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) CollectionHeadList() []*CollectionHead {
+	a := txmust1(tx.q.CollectionList())
 	cols := make([]*CollectionHead, len(a))
 	for i := range a {
 		cols[i] = &CollectionHead{col: a[i]}
 	}
-	return cols, nil
+	return cols
 }
 
-func (tx *TxR) Collection(id string) (*Collection, error) {
-	colData, err := tx.q.CollectionGet(id)
-	if err != nil {
-		return nil, err
-	}
+// Collection returns the collection for id.
+// If id is not found, Collection aborts the tx.
+func (tx *TxR) Collection(id string) *Collection {
+	colData := txmust1(tx.q.CollectionGet(id))
 	return tx.collectionFromData(colData)
 }
 
@@ -134,22 +127,16 @@ type CollectionMovieSearchResult struct {
 // CollectionMovieSearch lists library movies whose titles contain
 // query, case-insensitively, marking those already in collection
 // colID. A blank query matches nothing.
-func (tx *TxR) CollectionMovieSearch(colID, query string) ([]CollectionMovieSearchResult, error) {
+func (tx *TxR) CollectionMovieSearch(colID, query string) []CollectionMovieSearchResult {
+	col := tx.Collection(colID)
 	if strings.TrimSpace(query) == "" {
-		return nil, nil
-	}
-	col, err := tx.Collection(colID)
-	if err != nil {
-		return nil, err
+		return nil
 	}
 	existing := make(map[string]bool, len(col.Movies()))
 	for _, mo := range col.Movies() {
 		existing[mo.MovieHead.ID()] = true
 	}
-	all, err := tx.MovieWorkList()
-	if err != nil {
-		return nil, err
-	}
+	all := tx.MovieWorkList()
 	query = strings.ToLower(query)
 	var matches []CollectionMovieSearchResult
 	for _, mw := range all {
@@ -160,7 +147,7 @@ func (tx *TxR) CollectionMovieSearch(colID, query string) ([]CollectionMovieSear
 			})
 		}
 	}
-	return matches, nil
+	return matches
 }
 
 // CollectionSeriesSearchResult pairs a library series matching a
@@ -172,22 +159,16 @@ type CollectionSeriesSearchResult struct {
 
 // CollectionSeriesSearch is the series analog of
 // CollectionMovieSearch.
-func (tx *TxR) CollectionSeriesSearch(colID, query string) ([]CollectionSeriesSearchResult, error) {
+func (tx *TxR) CollectionSeriesSearch(colID, query string) []CollectionSeriesSearchResult {
+	col := tx.Collection(colID)
 	if strings.TrimSpace(query) == "" {
-		return nil, nil
-	}
-	col, err := tx.Collection(colID)
-	if err != nil {
-		return nil, err
+		return nil
 	}
 	existing := make(map[string]bool, len(col.Series()))
 	for _, sr := range col.Series() {
 		existing[sr.SeriesHead.ID()] = true
 	}
-	all, err := tx.SeriesWorkList()
-	if err != nil {
-		return nil, err
-	}
+	all := tx.SeriesWorkList()
 	query = strings.ToLower(query)
 	var matches []CollectionSeriesSearchResult
 	for _, sw := range all {
@@ -198,26 +179,20 @@ func (tx *TxR) CollectionSeriesSearch(colID, query string) ([]CollectionSeriesSe
 			})
 		}
 	}
-	return matches, nil
+	return matches
 }
 
-func (tx *TxR) collectionBySlug(slug string) (*Collection, error) {
-	colData, err := tx.q.CollectionGetBySlug(slug)
-	if err != nil {
-		return nil, err
+func (tx *TxR) collectionBySlug(slug string) (*Collection, bool) {
+	colData, ok := txfind1(tx.q.CollectionGetBySlug(slug))
+	if !ok {
+		return nil, false
 	}
-	return tx.collectionFromData(colData)
+	return tx.collectionFromData(colData), true
 }
 
-func (tx *TxR) collectionFromData(colData schema.Collection) (*Collection, error) {
-	movieIDs, err := tx.q.CollectionMovieList(colData.ID)
-	if err != nil {
-		return nil, err
-	}
-	allWorks, err := tx.MovieWorkList()
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) collectionFromData(colData schema.Collection) *Collection {
+	movieIDs := txmust1(tx.q.CollectionMovieList(colData.ID))
+	allWorks := tx.MovieWorkList()
 	memberIDs := make(map[string]bool, len(movieIDs))
 	for _, mo := range movieIDs {
 		memberIDs[mo.ID] = true
@@ -228,14 +203,8 @@ func (tx *TxR) collectionFromData(colData schema.Collection) (*Collection, error
 			movies = append(movies, mw)
 		}
 	}
-	seriesIDs, err := tx.q.CollectionSeriesList(colData.ID)
-	if err != nil {
-		return nil, err
-	}
-	allSeries, err := tx.SeriesWorkList()
-	if err != nil {
-		return nil, err
-	}
+	seriesIDs := txmust1(tx.q.CollectionSeriesList(colData.ID))
+	allSeries := tx.SeriesWorkList()
 	seriesMemberIDs := make(map[string]bool, len(seriesIDs))
 	for _, sr := range seriesIDs {
 		seriesMemberIDs[sr.ID] = true
@@ -256,44 +225,29 @@ func (tx *TxR) collectionFromData(colData schema.Collection) (*Collection, error
 		col:    colData,
 		movies: movies,
 		series: series,
-	}, nil
+	}
 }
 
 // CollectionStats returns the total number of playable items
 // and their combined runtime in minutes.
-func (tx *TxR) CollectionStats(id string) (itemCount, runtimeMinutes int64, err error) {
-	row, err := tx.q.CollectionGetStats(id)
-	if err != nil {
-		return 0, 0, err
-	}
-	return row.Itemcount, row.Runtimeminutes, nil
+func (tx *TxR) CollectionStats(id string) (itemCount, runtimeMinutes int64) {
+	row := txmust1(tx.q.CollectionGetStats(id))
+	return row.Itemcount, row.Runtimeminutes
 }
 
 // CollectionPlayables returns the default movie editions and
 // all episodes from default series editions in the collection,
 // sorted by release date.
-func (tx *TxR) CollectionPlayables(id string) ([]Playable, error) {
-	movieIDs, err := tx.q.CollectionMovieList(id)
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) CollectionPlayables(id string) []Playable {
+	movieIDs := txmust1(tx.q.CollectionMovieList(id))
 	var playables []Playable
 	for _, mo := range movieIDs {
-		med, err := tx.movieEditionBySlug(mo.Slug, "")
-		if err != nil {
-			return nil, err
-		}
+		med := txmust1(tx.movieEditionBySlug(mo.Slug, ""))
 		playables = append(playables, med)
 	}
-	seriesIDs, err := tx.q.CollectionSeriesList(id)
-	if err != nil {
-		return nil, err
-	}
+	seriesIDs := txmust1(tx.q.CollectionSeriesList(id))
 	for _, sr := range seriesIDs {
-		sed, err := tx.seriesEditionBySlug(sr.Slug, "")
-		if err != nil {
-			return nil, err
-		}
+		sed := txmust1(tx.seriesEditionBySlug(sr.Slug, ""))
 		for ep := range sed.Episodes(Significant) {
 			playables = append(playables, ep)
 		}
@@ -301,7 +255,7 @@ func (tx *TxR) CollectionPlayables(id string) ([]Playable, error) {
 	slices.SortFunc(playables, func(a, b Playable) int {
 		return cmp.Compare(a.ReleaseDate(), b.ReleaseDate())
 	})
-	return playables, nil
+	return playables
 }
 
 func (tx *TxRW) CollectionCreate(title string) (*CollectionHead, error) {

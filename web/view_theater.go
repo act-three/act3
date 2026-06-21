@@ -23,85 +23,43 @@ func viewTheater(tx *model.TxR, odesc map[string]string) (title string, n node) 
 }
 
 func viewTheaterSeries(tx *model.TxR, sedID string) (title string, n node) {
-	sed, err := tx.SeriesEdition(sedID)
-	if err != nil {
-		return "Not Found", notFound
-	}
-	editions, err := tx.SeriesEditionList(sed.SeriesHead())
-	if err != nil {
-		return "", viewError(err)
-	}
+	sed := tx.SeriesEdition(sedID)
+	editions := tx.SeriesEditionList(sed.SeriesHead())
 	return view.BrowseSeriesEdition(sed, editions, tx.Uploads())
 }
 
 func viewTheaterMovie(tx *model.TxR, medID string) (title string, n node) {
-	med, err := tx.MovieEdition(medID)
-	if err != nil {
-		return "Not Found", notFound
-	}
-	editions, err := tx.MovieEditionList(med.MovieHead())
-	if err != nil {
-		return "", viewError(err)
-	}
-	dls, err := tx.MovieDownloadList(med)
-	if err != nil {
-		return "", viewError(err)
-	}
+	med := tx.MovieEdition(medID)
+	editions := tx.MovieEditionList(med.MovieHead())
+	dls := tx.MovieDownloadList(med)
 	var audioOpts []model.AudioOption
 	var subOpts []model.SubtitleOption
 	if v := med.ActiveVideo(); v != nil {
-		audioOpts, err = tx.AudioOptions(v)
-		if err != nil {
-			return "", viewError(err)
-		}
-		subOpts, err = tx.SubtitleOptions(v)
-		if err != nil {
-			return "", viewError(err)
-		}
+		audioOpts = tx.AudioOptions(v)
+		subOpts = tx.SubtitleOptions(v)
 	}
 	return view.BrowseMovieEdition(med, editions, dls, audioOpts, subOpts, tx.Uploads())
 }
 
 func viewTheaterEpisode(tx *model.TxR, sedID, epID string) (title string, n node) {
-	ep, err := tx.EpisodeInEdition(epID, sedID)
-	if err != nil {
-		return "Not Found", notFound
-	}
-	dls, err := tx.EpisodeDownloadList(ep)
-	if err != nil {
-		return "", viewError(err)
-	}
+	ep := tx.EpisodeInEdition(epID, sedID)
+	dls := tx.EpisodeDownloadList(ep)
 	var audioOpts []model.AudioOption
 	var subOpts []model.SubtitleOption
 	if v := ep.ActiveVideo(); v != nil {
-		audioOpts, err = tx.AudioOptions(v)
-		if err != nil {
-			return "", viewError(err)
-		}
-		subOpts, err = tx.SubtitleOptions(v)
-		if err != nil {
-			return "", viewError(err)
-		}
+		audioOpts = tx.AudioOptions(v)
+		subOpts = tx.SubtitleOptions(v)
 	}
 	return view.BrowseEpisode(ep, dls, audioOpts, subOpts, tx.Uploads())
 }
 
 // viewTheaterCollection renders a collection overview or playlist.
 func viewTheaterCollection(tx *model.TxR, colID string, playlist bool) (title string, n node) {
-	col, err := tx.Collection(colID)
-	if err != nil {
-		return "Not Found", notFound
-	}
-	itemCount, runtimeMinutes, err := tx.CollectionStats(col.ID())
-	if err != nil {
-		return "", viewError(err)
-	}
+	col := tx.Collection(colID)
+	itemCount, runtimeMinutes := tx.CollectionStats(col.ID())
 	var ps []model.Playable
 	if playlist {
-		ps, err = tx.CollectionPlayables(col.ID())
-		if err != nil {
-			return "", viewError(err)
-		}
+		ps = tx.CollectionPlayables(col.ID())
 	}
 	return view.TheaterCollection(col, itemCount, runtimeMinutes, playlist, ps, tx.Uploads())
 }

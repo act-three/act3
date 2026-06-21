@@ -53,8 +53,8 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 		default:
 			return nil
 		}
-		col, err := tx.collectionBySlug(slug)
-		if err != nil {
+		col, ok := tx.collectionBySlug(slug)
+		if !ok {
 			return nil
 		}
 		return map[string]string{"kind": kind, "col": col.ID()}
