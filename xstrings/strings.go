@@ -2,9 +2,7 @@ package xstrings
 
 import (
 	"cmp"
-	"iter"
 	"regexp"
-	"slices"
 	"strings"
 	"unicode"
 
@@ -49,21 +47,6 @@ func SanitizeFilename(s string) string {
 	}, s)
 	s = strings.TrimRight(s, ". ")
 	return s
-}
-
-func LongestCommonPrefix(it iter.Seq[string]) string {
-	s := slices.Collect(it)
-	if len(s) == 0 {
-		return ""
-	}
-	min := slices.Min(s)
-	max := slices.Max(s)
-	for i := range min {
-		if i >= len(max) || min[i] != max[i] {
-			return min[:i]
-		}
-	}
-	return min
 }
 
 // CompareNatural compares a and b with a "natural" ordering in which

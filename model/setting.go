@@ -36,15 +36,6 @@ var settingDefs = map[string]settingDef{
 	SettingKeyTMDBAccessToken:     {Group: "tmdb", Type: SettingTypeString},
 }
 
-// SettingDefaultInt sets the default value for an int setting.
-// It panics if the key is not defined or its type is not int.
-//
-// All calls to SettingDefaultInt must happen before any calls to
-// TxR.SettingGetByGroup or TxRW.SettingSet.
-func SettingDefaultInt(key string, n int) {
-	setDefault(key, SettingTypeInt, n)
-}
-
 // SettingDefaultString sets the default value for a string setting.
 // It panics if the key is not defined or its type is not string.
 //
@@ -52,15 +43,6 @@ func SettingDefaultInt(key string, n int) {
 // TxR.SettingGetByGroup or TxRW.SettingSet.
 func SettingDefaultString(key string, v string) {
 	setDefault(key, SettingTypeString, v)
-}
-
-// SettingDefaultBool sets the default value for a bool setting.
-// It panics if the key is not defined or its type is not bool.
-//
-// All calls to SettingDefaultBool must happen before any calls to
-// TxR.SettingGetByGroup or TxRW.SettingSet.
-func SettingDefaultBool(key string, v bool) {
-	setDefault(key, SettingTypeBool, v)
 }
 
 func setDefault(key string, typ SettingType, val any) {

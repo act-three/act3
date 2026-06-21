@@ -2001,17 +2001,6 @@
     border-bottom: 1px solid var(--border);
     padding-inline: 1rem;
   }
-  .u-toolbar-secondary {
-    display: flex;
-    height: 3rem;
-    flex-shrink: 0;
-    align-items: center;
-    align-content: center;
-    justify-content: space-between;
-    gap: 1rem;
-    border-bottom-width: 1px;
-    padding-inline: 1rem;
-  }
 }
 
 /* ui/trunc.css */

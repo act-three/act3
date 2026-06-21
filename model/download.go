@@ -375,27 +375,6 @@ func (tx *TxR) Download(infoHash string) (*Download, error) {
 	return tx.newDownload(dl)
 }
 
-func (tx *TxR) downloadInfo(infoHash string) (*DownloadInfo, error) {
-	dl, err := tx.Download(infoHash)
-	if err != nil {
-		return nil, err
-	}
-	di := &DownloadInfo{DownloadHead: &dl.DownloadHead}
-	if dl.planMovieEd != nil {
-		di.mw = &MovieWork{
-			MovieHead:        *dl.planMovieEd.MovieHead(),
-			MovieEditionHead: dl.planMovieEd.MovieEditionHead,
-		}
-	}
-	if dl.planEd != nil {
-		di.sw = &SeriesWork{
-			SeriesHead:        *dl.planEd.SeriesHead(),
-			SeriesEditionHead: dl.planEd.SeriesEditionHead,
-		}
-	}
-	return di, nil
-}
-
 func (tx *TxRW) DownloadAutoImportSet(infoHash string, auto bool) (err error) {
 	defer errorfmt.Handlef("DownloadAutoImportSet(%s, %v): %w", infoHash, auto, &err)
 	v := int64(0)
@@ -412,12 +391,6 @@ func (tx *TxRW) DownloadAutoImportSet(infoHash string, auto bool) (err error) {
 		return err
 	}
 	return tx.processDownload(infoHash)
-}
-
-// EpisodeAttachToggleAddr returns the live-update addr for the
-// SettingsToggle that attaches an episode to a download file.
-func EpisodeAttachToggleAddr(infoHash, filePath, episodeID string) []string {
-	return []string{"episode-attach", infoHash, filePath, episodeID}
 }
 
 // EpisodeVideoSet adds or removes the link between a download file

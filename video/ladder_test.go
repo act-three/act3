@@ -484,32 +484,6 @@ func TestPlanVideoRenditions_synthesizedDTSReencode(t *testing.T) {
 	}
 }
 
-func TestFFmpegCodec(t *testing.T) {
-	tests := []struct {
-		codec string
-		want  string
-	}{
-		{"h264", "libx264"},
-		{"hevc", "libx265"},
-		{"unknown", "libx265"},
-	}
-	for _, tt := range tests {
-		r := &Rendition{Codec: tt.codec}
-		if got := r.FFmpegCodec(); got != tt.want {
-			t.Errorf("FFmpegCodec(%s) = %s, want %s", tt.codec, got, tt.want)
-		}
-	}
-}
-
-func TestVideoTag(t *testing.T) {
-	if got := (&Rendition{Codec: "hevc"}).VideoTag(); got != "hvc1" {
-		t.Errorf("VideoTag(hevc) = %q, want hvc1", got)
-	}
-	if got := (&Rendition{Codec: "h264"}).VideoTag(); got != "" {
-		t.Errorf("VideoTag(h264) = %q, want empty", got)
-	}
-}
-
 func TestHLSCodecs(t *testing.T) {
 	got := (&Rendition{Codec: "h264"}).HLSCodecs()
 	if got != "avc1.640028,mp4a.40.2" {

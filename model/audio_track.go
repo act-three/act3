@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"strings"
 
 	"ily.dev/act3/database/schema"
 )
@@ -10,16 +9,6 @@ import (
 type AudioTrack struct {
 	at schema.AudioTrack
 }
-
-func (a *AudioTrack) ID() string            { return a.at.ID }
-func (a *AudioTrack) StreamIndex() int      { return int(a.at.StreamIndex) }
-func (a *AudioTrack) Language() string      { return a.at.Language }
-func (a *AudioTrack) Title() string         { return a.at.Title }
-func (a *AudioTrack) Channels() int         { return int(a.at.Channels) }
-func (a *AudioTrack) ChannelLayout() string { return a.at.ChannelLayout }
-func (a *AudioTrack) SampleRate() int       { return int(a.at.SampleRate) }
-func (a *AudioTrack) Codec() string         { return a.at.Codec }
-func (a *AudioTrack) Profile() string       { return a.at.Profile }
 
 // Name returns the human-readable name of the track without any
 // channel-layout suffix: the source title, falling back to a
@@ -35,16 +24,6 @@ func (a *AudioTrack) Name() string {
 	return name
 }
 
-// Label returns a human-readable label like
-// "English (5.1)" or "Track 1 (Stereo)" describing the source
-// track's channel layout. For an output rendition's display label,
-// compose Name() with OutputChannelLabel(rendition.Channels) so the
-// suffix reflects the rendition rather than the source.
-func (a *AudioTrack) Label() string {
-	layout := layoutLabel(a.at.Channels, a.at.ChannelLayout)
-	return a.Name() + " (" + layout + ")"
-}
-
 // OutputChannelLabel returns a human-readable label for an output
 // rendition's channel count: "Mono", "Stereo", "5.1".
 func OutputChannelLabel(channels int) string {
@@ -57,21 +36,6 @@ func OutputChannelLabel(channels int) string {
 		return "5.1"
 	}
 	return fmt.Sprintf("%dch", channels)
-}
-
-func layoutLabel(channels int64, layout string) string {
-	switch {
-	case strings.Contains(layout, "5.1"):
-		return "5.1"
-	case strings.Contains(layout, "7.1"):
-		return "7.1"
-	case channels <= 1:
-		return "Mono"
-	case channels == 2:
-		return "Stereo"
-	default:
-		return fmt.Sprintf("%dch", channels)
-	}
 }
 
 func langName(code string) string {

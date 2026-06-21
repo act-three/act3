@@ -91,23 +91,6 @@ func SeriesEditionEditorPath(sr *SeriesHead, sed *SeriesEditionHead) string {
 	return path.Join(sr.EditorPath(), sed.Slug())
 }
 
-// seasonByNumber returns season n in the order defined by sed.
-func (sed *SeriesEdition) seasonByNumber(n int) *Season {
-	if i := n - 1; i >= 0 && i < len(sed.sns) {
-		return sed.sns[i]
-	}
-	return nil
-}
-
-func (sed *SeriesEdition) seasonByEpisodeID(id string) *Season {
-	for sn := range sed.Seasons() {
-		if ep := sn.episodeByID(id); ep != nil {
-			return sn
-		}
-	}
-	return nil
-}
-
 func (sed *SeriesEdition) episodeByID(id string) *Episode {
 	for sn := range sed.Seasons() {
 		if ep := sn.episodeByID(id); ep != nil {
@@ -115,24 +98,6 @@ func (sed *SeriesEdition) episodeByID(id string) *Episode {
 		}
 	}
 	return nil
-}
-
-// episodeByNumber finds an episode by number:
-// episode number e within season number s.
-// In this numbering convention, all specials appear in season 0.
-// (See https://www.tvmaze.com/faq/15/episodes for more.)
-// These numbers commonly appear in torrent filenames in the form SnnEnn.
-func (sed *SeriesEdition) episodeByNumber(s, e int) *Episode {
-	if s == 0 {
-		i := 1
-		for ep := range sed.Episodes(AnySpecial) {
-			if i == e {
-				return ep
-			}
-			i++
-		}
-	}
-	return sed.seasonByNumber(s).episodeByNumber(e)
 }
 
 func (sed *SeriesEdition) Episodes(include EpisodeType) iter.Seq[*Episode] {
