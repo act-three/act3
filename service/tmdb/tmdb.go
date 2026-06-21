@@ -141,8 +141,7 @@ func (c *Client) getf(ctx context.Context, v any, format string, args ...any) (e
 }
 
 func (c *Client) urlf(format string, args ...any) *url.URL {
-	var u url.URL
-	u = baseURL
+	u := baseURL.Clone()
 	if len(args) > 0 {
 		switch v := args[len(args)-1].(type) {
 		case url.Values:
@@ -151,7 +150,7 @@ func (c *Client) urlf(format string, args ...any) *url.URL {
 		}
 	}
 	u.Path = path.Join(baseURL.Path, fmt.Sprintf(format, args...))
-	return &u
+	return u
 }
 
 func params(s ...string) url.Values {

@@ -25,7 +25,6 @@ import (
 	"ily.dev/act3/log/logcontext"
 	"ily.dev/act3/model/plan"
 	"ily.dev/act3/tlog"
-	"ily.dev/act3/xstrings"
 )
 
 type DownloadHead struct {
@@ -1005,6 +1004,6 @@ var videoExtensions = map[string]bool{
 }
 
 func hasVideoExtension(s string) bool {
-	_, ext, found := xstrings.LastCut(s, ".")
+	_, ext, found := strings.CutLast(s, ".")
 	return found && videoExtensions[ext]
 }

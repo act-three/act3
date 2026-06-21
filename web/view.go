@@ -17,7 +17,7 @@ var notFound = domi.Text("Not Found")
 
 func (a *app) Preview(ctx context.Context, u *url.URL) (dest, title string, n node) {
 	a = new(*a)
-	u = new(*u)
+	u = u.Clone()
 	u.Path = redirect(u.Path)
 	a.notes = nil
 	a.setPath(ctx, u)
