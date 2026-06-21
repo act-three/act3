@@ -147,7 +147,7 @@ type Download struct {
 }
 
 func (tx *TxR) newDownload(dl schema.Download) (*Download, error) {
-	d := &Download{DownloadHead: DownloadHead{d: dl}}
+	d := &Download{d: dl}
 
 	var err error
 	mi, info, err := parseTorrent(dl.Torrent)

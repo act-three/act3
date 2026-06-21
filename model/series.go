@@ -303,8 +303,8 @@ func (tx *TxRW) SeriesCreateByTVmazeID(show *tvmaze.Show) (*SeriesWork, error) {
 		return nil, err
 	}
 	return &SeriesWork{
-		SeriesHead:        SeriesHead{srData},
-		SeriesEditionHead: SeriesEditionHead{sed: sedData},
+		SeriesHead: SeriesHead{srData},
+		sed:        sedData,
 	}, nil
 }
 
@@ -329,8 +329,8 @@ func (tx *TxR) SeriesWorkList() ([]*SeriesWork, error) {
 			continue // no default edition; skip
 		}
 		works = append(works, &SeriesWork{
-			SeriesHead:        SeriesHead{sr},
-			SeriesEditionHead: SeriesEditionHead{sed: ed},
+			SeriesHead: SeriesHead{sr},
+			sed:        ed,
 		})
 	}
 	return works, nil

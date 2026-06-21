@@ -253,9 +253,9 @@ func (tx *TxR) collectionFromData(colData schema.Collection) (*Collection, error
 		return cmp.Compare(a.PremieredOn(), b.PremieredOn())
 	})
 	return &Collection{
-		CollectionHead: CollectionHead{col: colData},
-		movies:         movies,
-		series:         series,
+		col:    colData,
+		movies: movies,
+		series: series,
 	}, nil
 }
 

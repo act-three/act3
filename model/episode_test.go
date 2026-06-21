@@ -46,7 +46,7 @@ func TestEpisodeHasType(t *testing.T) {
 		{"insignificant_special", Regular, false},
 	}
 	for _, tt := range tests {
-		ep := &Episode{EpisodeHead: EpisodeHead{ep: schema.Episode{Type: tt.dbType}}}
+		ep := &Episode{ep: schema.Episode{Type: tt.dbType}}
 		ep.type_ = episodeTypeByName[tt.dbType]
 		got := ep.HasType(tt.include)
 		if got != tt.want {

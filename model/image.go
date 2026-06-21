@@ -231,8 +231,7 @@ func (m *Model) ImageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind
 	// overflow distinguishable from a generic read error.
 	raw, err := io.ReadAll(http.MaxBytesReader(nil, r, maxImageBytes))
 	if err != nil {
-		var mbe *http.MaxBytesError
-		if errors.As(err, &mbe) {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
 			return "", &ValidationError{
 				Op:  "image too large",
 				Err: fmt.Errorf("max %d bytes", maxImageBytes),
