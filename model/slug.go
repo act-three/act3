@@ -32,7 +32,7 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 		if len(path) > 2 {
 			return nil
 		}
-		med, err := tx.MovieEditionBySlug(slug, getSlug(1, path))
+		med, err := tx.movieEditionBySlug(slug, getSlug(1, path))
 		if err != nil {
 			return nil
 		}
@@ -53,7 +53,7 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 		default:
 			return nil
 		}
-		col, err := tx.CollectionBySlug(slug)
+		col, err := tx.collectionBySlug(slug)
 		if err != nil {
 			return nil
 		}
@@ -68,7 +68,7 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 func (tx *TxR) resolveSeries(seriesSlug string, rest []string) map[string]string {
 	switch len(rest) {
 	case 0:
-		sed, err := tx.SeriesEditionBySlug(seriesSlug, "")
+		sed, err := tx.seriesEditionBySlug(seriesSlug, "")
 		if err != nil {
 			return nil
 		}
@@ -78,7 +78,7 @@ func (tx *TxR) resolveSeries(seriesSlug string, rest []string) map[string]string
 			"sed":  sed.ID(),
 		}
 	case 1:
-		if sed, err := tx.SeriesEditionBySlug(seriesSlug, rest[0]); err == nil {
+		if sed, err := tx.seriesEditionBySlug(seriesSlug, rest[0]); err == nil {
 			return map[string]string{
 				"kind": KindSeriesEdition,
 				"sr":   sed.SeriesHead().ID(),

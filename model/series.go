@@ -79,7 +79,7 @@ func (tx *TxR) SeriesHead(id string) (*SeriesHead, error) {
 	return &SeriesHead{srData}, nil
 }
 
-func (tx *TxR) SeriesHeadListByTVmazeID(id []*int64) ([]*SeriesHead, error) {
+func (tx *TxR) seriesHeadListByTVmazeID(id []*int64) ([]*SeriesHead, error) {
 	a, err := tx.q.SeriesListByTVmazeID(id)
 	if err != nil {
 		return nil, err
@@ -108,7 +108,7 @@ func (m *Model) SearchSeries(ctx context.Context, query string) (results []Serie
 		ids[i] = &id
 	}
 	err = m.WithTxR(ctx, func(tx *TxR) error {
-		heads, err := tx.SeriesHeadListByTVmazeID(ids)
+		heads, err := tx.seriesHeadListByTVmazeID(ids)
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func (m *Model) AddSeriesByTVmazeID(ctx context.Context, id int) (sw *SeriesWork
 	}
 	err = m.WithTxRW(ctx, func(tx *TxRW) error {
 		var err error
-		sw, err = tx.SeriesCreateByTVmazeID(show)
+		sw, err = tx.seriesCreateByTVmazeID(show)
 		return err
 	})
 	return sw, err
@@ -245,7 +245,7 @@ func (tx *TxRW) SeriesTitleSet(id, title string) error {
 	return tx.seriesEnsureSlug(id)
 }
 
-func (tx *TxRW) SeriesCreateByTVmazeID(show *tvmaze.Show) (*SeriesWork, error) {
+func (tx *TxRW) seriesCreateByTVmazeID(show *tvmaze.Show) (*SeriesWork, error) {
 	id64 := int64(show.ID)
 
 	srID := "sr" + flurry.NewID()

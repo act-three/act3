@@ -101,8 +101,8 @@ func (sn *Season) episodeByID(id string) *Episode {
 	return sn.epByID[id]
 }
 
-// SeasonInEdition loads a full Season (with episodes) by season ID.
-func (tx *TxR) SeasonInEdition(seasonID string) (*Season, error) {
+// seasonInEdition loads a full Season (with episodes) by season ID.
+func (tx *TxR) seasonInEdition(seasonID string) (*Season, error) {
 	snData, err := tx.q.SeasonGet(seasonID)
 	if err != nil {
 		return nil, err

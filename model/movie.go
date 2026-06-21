@@ -116,10 +116,10 @@ func (tx *TxR) MovieHeadByEditionID(editionID string) (*MovieHead, error) {
 	return &MovieHead{moData}, nil
 }
 
-// MovieEditionBySlug looks up a movie by its slug
+// movieEditionBySlug looks up a movie by its slug
 // and returns the edition matching edSlug
 // (empty string for the default edition).
-func (tx *TxR) MovieEditionBySlug(slug, edSlug string) (*MovieEdition, error) {
+func (tx *TxR) movieEditionBySlug(slug, edSlug string) (*MovieEdition, error) {
 	// TODO(april): avoid loading other editions here.
 	moData, err := tx.q.MovieGetBySlug(slug)
 	if err != nil {
@@ -211,7 +211,7 @@ func (tx *TxRW) MovieCreate(title, releaseDate string) (*MovieWork, error) {
 	}, nil
 }
 
-func (tx *TxRW) MovieCreateByTMDBID(movie *tmdb.Movie) (*MovieWork, error) {
+func (tx *TxRW) movieCreateByTMDBID(movie *tmdb.Movie) (*MovieWork, error) {
 	id64 := int64(movie.ID)
 
 	moID := "mo" + flurry.NewID()
@@ -262,7 +262,7 @@ func (tx *TxRW) MovieCreateByTMDBID(movie *tmdb.Movie) (*MovieWork, error) {
 	}, nil
 }
 
-func (tx *TxR) MovieHeadListByTMDBID(ids []*int64) ([]*MovieHead, error) {
+func (tx *TxR) movieHeadListByTMDBID(ids []*int64) ([]*MovieHead, error) {
 	a, err := tx.q.MovieListByTMDBID(ids)
 	if err != nil {
 		return nil, err
@@ -291,7 +291,7 @@ func (m *Model) SearchMovies(ctx context.Context, query string) (results []Movie
 		ids[i] = &id
 	}
 	err = m.WithTxR(ctx, func(tx *TxR) error {
-		heads, err := tx.MovieHeadListByTMDBID(ids)
+		heads, err := tx.movieHeadListByTMDBID(ids)
 		if err != nil {
 			return err
 		}
@@ -319,7 +319,7 @@ func (m *Model) AddMovieByTMDBID(ctx context.Context, id int) (mw *MovieWork, er
 	}
 	err = m.WithTxRW(ctx, func(tx *TxRW) error {
 		var err error
-		mw, err = tx.MovieCreateByTMDBID(movie)
+		mw, err = tx.movieCreateByTMDBID(movie)
 		return err
 	})
 	return mw, err

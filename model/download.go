@@ -296,12 +296,12 @@ func (tx *TxR) newDownloadHeadList(dls []schema.Download, err error) ([]*Downloa
 	return res, nil
 }
 
-func (tx *TxR) DownloadHeadList() ([]*DownloadHead, error) {
+func (tx *TxR) downloadHeadList() ([]*DownloadHead, error) {
 	return tx.newDownloadHeadList(tx.q.DownloadList())
 }
 
 func (tx *TxR) DownloadInfoList() ([]*DownloadInfo, error) {
-	heads, err := tx.DownloadHeadList()
+	heads, err := tx.downloadHeadList()
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +375,7 @@ func (tx *TxR) Download(infoHash string) (*Download, error) {
 	return tx.newDownload(dl)
 }
 
-func (tx *TxR) DownloadInfo(infoHash string) (*DownloadInfo, error) {
+func (tx *TxR) downloadInfo(infoHash string) (*DownloadInfo, error) {
 	dl, err := tx.Download(infoHash)
 	if err != nil {
 		return nil, err
