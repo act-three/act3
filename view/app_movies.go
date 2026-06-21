@@ -26,8 +26,13 @@ func AppMovies(
 	}
 	return title, FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
-			Button(onClick(&msg.MovieAddOpen{}), ButtonSurface)(
-				Text("Add Movie"),
+			FlexRow(Gap4)(
+				Button(onClick(&msg.MovieAddOpen{}), ButtonSurface)(
+					Text("Add Movie"),
+				),
+				Button(onClick(&msg.MovieCreate{}), ButtonSurface)(
+					Text("New Movie"),
+				),
 			),
 		),
 		Split()(

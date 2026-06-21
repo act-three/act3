@@ -68,6 +68,9 @@ type (
 		Local  *model.MovieHead
 	}
 
+	// MovieCreate creates a new, empty movie.
+	MovieCreate struct{}
+
 	// CollectionMovieAddOpen opens the add-movie picker for the
 	// collection.
 	CollectionMovieAddOpen struct{ CollectionID string }
@@ -251,6 +254,7 @@ func (*ModelEvent) msg()                 {}
 func (*MovieAdd) msg()                   {}
 func (*MovieAddOpen) msg()               {}
 func (*MovieAdded) msg()                 {}
+func (*MovieCreate) msg()                {}
 func (*MovieEditionAdd) msg()            {}
 func (*MovieEditionSetDefault) msg()     {}
 func (*MovieEditionSetLabel) msg()       {}
