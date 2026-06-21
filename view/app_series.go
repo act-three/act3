@@ -598,10 +598,6 @@ func AppEpisodeEditionButton(seasonID, episodeID string, inEdition bool, undoSor
 	)
 }
 
-func appEpisodeEditionButtonID(seasonID, episodeID string) string {
-	return "episode-edition-button-" + seasonID + "-" + episodeID
-}
-
 func appEpisodeDialogVideo(ep *model.Episode, v *model.Video) domi.Node {
 	return html.Div(
 		Class("v-media-indent"),

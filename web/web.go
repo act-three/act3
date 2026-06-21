@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"path"
 	"strconv"
-	"strings"
 
 	"ily.dev/domi"
 
@@ -212,12 +211,4 @@ func handleNotFound(w http.ResponseWriter, req *http.Request, path string) {
 
 func handleInternal(w http.ResponseWriter, req *http.Request) {
 	http.Error(w, "internal error", http.StatusInternalServerError)
-}
-
-func urlPathHasPrefix(req *http.Request, prefix string) bool {
-	prefix = path.Clean(prefix)
-	if prefix == "/" {
-		return true
-	}
-	return req.URL.Path == prefix || strings.HasPrefix(req.URL.Path, prefix+"/")
 }

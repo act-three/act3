@@ -7,7 +7,6 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/model/progress"
-	"ily.dev/act3/xiter"
 )
 
 type SeasonHead struct {
@@ -101,40 +100,12 @@ func (sn *Season) episodeByID(id string) *Episode {
 	return sn.epByID[id]
 }
 
-// seasonInEdition loads a full Season (with episodes) by season ID.
-func (tx *TxR) seasonInEdition(seasonID string) (*Season, error) {
-	snData, err := tx.q.SeasonGet(seasonID)
-	if err != nil {
-		return nil, err
-	}
-	sed, err := tx.SeriesEdition(snData.EditionID)
-	if err != nil {
-		return nil, err
-	}
-	for sn := range sed.Seasons() {
-		if sn.ID() == seasonID {
-			return sn, nil
-		}
-	}
-	return nil, fmt.Errorf("season %s not found in edition %s", seasonID, snData.EditionID)
-}
-
 func (tx *TxRW) SeasonTitleSet(id, title string) error {
 	return tx.q.SeasonTitleSet(schema.SeasonTitleSetParams{
 		Title: title,
 		ID:    id,
 	})
 
-}
-
-func (sn *Season) episodeByNumber(n int) *Episode {
-	if sn == nil {
-		return nil
-	}
-	for ep := range xiter.Drop(sn.Episodes(Regular), n-1) {
-		return ep
-	}
-	return nil
 }
 
 // SeasonAdd creates a new empty season after all existing ones

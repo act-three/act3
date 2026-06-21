@@ -11,10 +11,3 @@ func ToolbarPrimary(attrs ...domi.Attr) domi.Element {
 		group(attrs...),
 	)
 }
-
-func ToolbarSecondary(attrs ...domi.Attr) domi.Element {
-	return html.Header(
-		Class("u-toolbar-secondary"),
-		group(attrs...),
-	)
-}

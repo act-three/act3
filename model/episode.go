@@ -246,28 +246,6 @@ func (tx *TxR) EpisodeHead(id string) (*EpisodeHead, error) {
 	return &EpisodeHead{ep: ep}, nil
 }
 
-// episodeBySlug looks up an episode by its slug components.
-// edSlug selects the edition; empty string selects the default.
-func (tx *TxR) episodeBySlug(seriesSlug, edSlug, epSlug string) (*Episode, error) {
-	sed, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
-		SeriesSlug:  seriesSlug,
-		EditionSlug: edSlug,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	snep, err := tx.q.SeasonEpisodeGetBySlug(schema.SeasonEpisodeGetBySlugParams{
-		EditionID: sed.ID,
-		Slug:      epSlug,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return tx.EpisodeInEdition(snep.EpisodeID, sed.ID)
-}
-
 func (tx *TxR) EpisodeInEdition(id, edID string) (*Episode, error) {
 	epRec, err := tx.q.EpisodeGet(id)
 	if err != nil {

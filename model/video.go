@@ -110,10 +110,6 @@ func filterAudioByRenditionID(rends []schema.AudioRendition, id string) []schema
 	return nil
 }
 
-func (tx *TxR) videoListByEpisodeID(epID string) ([]schema.Video, error) {
-	return tx.q.VideoListByEpisodeID(epID)
-}
-
 func vidMapByID(vids []schema.Video) map[string]*Video {
 	m := map[string]*Video{}
 	for i := range vids {

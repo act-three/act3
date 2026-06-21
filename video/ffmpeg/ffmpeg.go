@@ -807,10 +807,6 @@ func playlistName(i int) string {
 	return fmt.Sprintf("stream%d.m3u8", i)
 }
 
-func passlogPath(tmpDir string, i int) string {
-	return filepath.Join(tmpDir, fmt.Sprintf("passlog%d", i))
-}
-
 // Pass1Combined runs a single ffmpeg command that performs first-pass
 // analysis for every reencode rendition in dsts (those with Remux
 // false), reading the source once. For each such rendition, stats

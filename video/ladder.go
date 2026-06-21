@@ -21,25 +21,6 @@ type Rendition struct {
 	HDR           string // output dynamic range as an HLS VIDEO-RANGE label ("PQ" or "HLG"); empty = SDR
 }
 
-// FFmpegCodec returns the ffmpeg encoder name for the rendition codec.
-func (r *Rendition) FFmpegCodec() string {
-	switch r.Codec {
-	case "h264":
-		return "libx264"
-	case "hevc":
-		return "libx265"
-	}
-	return "libx265"
-}
-
-// VideoTag returns the fMP4 video tag for the codec ("hvc1" for HEVC).
-func (r *Rendition) VideoTag() string {
-	if r.Codec == "hevc" {
-		return "hvc1"
-	}
-	return ""
-}
-
 // HLSCodecs returns a CODECS string suitable for an HLS
 // multivariant playlist EXT-X-STREAM-INF tag.
 func (r *Rendition) HLSCodecs() string {

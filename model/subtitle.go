@@ -14,15 +14,6 @@ type SubtitleTrack struct {
 	st schema.SubtitleTrack
 }
 
-func (s *SubtitleTrack) ID() string            { return s.st.ID }
-func (s *SubtitleTrack) StreamIndex() int      { return int(s.st.StreamIndex) }
-func (s *SubtitleTrack) Language() string      { return s.st.Language }
-func (s *SubtitleTrack) Title() string         { return s.st.Title }
-func (s *SubtitleTrack) OriginalCodec() string { return s.st.OriginalCodec }
-func (s *SubtitleTrack) OriginalKey() string   { return s.st.OriginalKey }
-func (s *SubtitleTrack) WebVTTKey() string     { return s.st.WebVTTKey }
-func (s *SubtitleTrack) Forced() bool          { return s.st.Forced != 0 }
-
 // Name returns a human-readable name without any forced-narrative
 // suffix. Use this when an out-of-band signal already conveys the
 // forced flag (e.g. HLS FORCED=YES).
