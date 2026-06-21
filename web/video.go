@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"ily.dev/act3/model"
-	"ily.dev/act3/video"
 )
 
 // subtitleExts is the set of URL suffixes the subtitleFile handler
@@ -20,11 +19,8 @@ func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (node, erro
 		if !found {
 			return nil, errNotFound
 		}
-		ar, err := tx.AudioRendition(id)
-		if err != nil {
-			return nil, errNotFound
-		}
-		if ar.Key == "" {
+		key, err := tx.AudioRenditionMediaKey(id)
+		if err != nil || key == "" {
 			return nil, errNotFound
 		}
 		// Every audio rendition is fMP4; pin the Content-Type so
@@ -35,7 +31,7 @@ func (c *Config) audioFile(w http.ResponseWriter, req *http.Request) (node, erro
 		w.Header().Set("Content-Type", "audio/mp4")
 		w.Header().Set("Content-Security-Policy",
 			"default-src 'none'; media-src 'self'; sandbox")
-		http.ServeFileFS(w, req, c.Store, ar.Key)
+		http.ServeFileFS(w, req, c.Store, key)
 		return nil, nil
 	})
 }
@@ -47,14 +43,11 @@ func (c *Config) audioMediaPlaylist(w http.ResponseWriter, req *http.Request) (n
 		if !found {
 			return nil, errNotFound
 		}
-		ar, err := tx.AudioRendition(id)
-		if err != nil {
+		pl, err := tx.AudioRenditionPlaylist(id)
+		if err != nil || pl == "" {
 			return nil, errNotFound
 		}
-		if ar.Playlist == "" {
-			return nil, errNotFound
-		}
-		stringHandler("application/vnd.apple.mpegurl", ar.Playlist).ServeHTTP(w, req)
+		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
 		return nil, nil
 	})
 }
@@ -74,23 +67,8 @@ func (c *Config) subtitleFile(w http.ResponseWriter, req *http.Request) (node, e
 		if id == "" {
 			return nil, errNotFound
 		}
-		st, err := tx.Subtitle(id)
-		if err != nil {
-			return nil, errNotFound
-		}
-
-		var key, contentType string
-		switch {
-		case ext == "vtt":
-			key = st.WebVTTKey
-			contentType = "text/vtt; charset=utf-8"
-		case ext == model.SubtitleOriginalExt(st.OriginalCodec):
-			key = st.OriginalKey
-			contentType = model.SubtitleContentType(st.OriginalCodec)
-		default:
-			return nil, errNotFound
-		}
-		if key == "" {
+		key, contentType, err := tx.SubtitleFile(id, ext)
+		if err != nil || key == "" {
 			return nil, errNotFound
 		}
 
@@ -113,19 +91,11 @@ func (c *Config) subtitleMediaPlaylist(w http.ResponseWriter, req *http.Request)
 		if !found {
 			return nil, errNotFound
 		}
-		st, err := tx.Subtitle(id)
-		if err != nil {
+		pl, err := tx.SubtitleMediaPlaylist(id)
+		if err != nil || pl == "" {
 			return nil, errNotFound
 		}
-		if st.WebVTTKey == "" {
-			return nil, errNotFound
-		}
-		vid, err := tx.Video(st.VideoID)
-		if err != nil {
-			return nil, errNotFound
-		}
-		body := video.GenerateSubtitleMediaPlaylist(vid.Duration(), "/-/sub/"+st.ID+".vtt")
-		stringHandler("application/vnd.apple.mpegurl", body).ServeHTTP(w, req)
+		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
 		return nil, nil
 	})
 }
@@ -164,14 +134,14 @@ func (c *Config) videoRenditionPlaylist(w http.ResponseWriter, req *http.Request
 		if !found {
 			return nil, errNotFound
 		}
-		rend, err := tx.Rendition(id)
+		pl, err := tx.RenditionPlaylist(id)
 		if err != nil {
 			return nil, err
 		}
-		if rend.Playlist == "" {
+		if pl == "" {
 			return nil, errNotFound
 		}
-		stringHandler("application/vnd.apple.mpegurl", rend.Playlist).ServeHTTP(w, req)
+		stringHandler("application/vnd.apple.mpegurl", pl).ServeHTTP(w, req)
 		return nil, nil
 	})
 }
@@ -183,11 +153,8 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, er
 		if !found {
 			return nil, errNotFound
 		}
-		rend, err := tx.Rendition(id)
-		if err != nil {
-			return nil, errNotFound
-		}
-		if rend.Key == "" {
+		key, err := tx.RenditionMediaKey(id)
+		if err != nil || key == "" {
 			return nil, errNotFound
 		}
 		// Every streaming rendition is fMP4; pin the Content-Type
@@ -198,7 +165,7 @@ func (c *Config) videoStream(w http.ResponseWriter, req *http.Request) (node, er
 		w.Header().Set("Content-Type", "video/mp4")
 		w.Header().Set("Content-Security-Policy",
 			"default-src 'none'; media-src 'self'; sandbox")
-		http.ServeFileFS(w, req, c.Store, rend.Key)
+		http.ServeFileFS(w, req, c.Store, key)
 		return nil, nil
 	})
 }
