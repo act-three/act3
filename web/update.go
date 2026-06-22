@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"maps"
 	"net/url"
 	"strconv"
 	"strings"
@@ -468,8 +467,7 @@ func (a *app) setPath(ctx context.Context, u *url.URL) {
 	a.odesc = nil
 	if section, slugs := slugs(splitPath(a.path)); section != "" {
 		a.model.WithTxR(ctx, func(tx *model.TxR) error {
-			a.odesc = map[string]string{"section": section}
-			maps.Copy(a.odesc, tx.SlugResolve(slugs))
+			a.odesc = tx.SlugResolve(slugs)
 			return nil
 		})
 	}
