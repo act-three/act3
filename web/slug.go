@@ -11,7 +11,7 @@ import (
 	"ily.dev/act3/xiter"
 )
 
-// Sections a resolved object page can live in, for odesc["section"].
+// Sections a resolved object page can live in.
 const (
 	sectionTheater = "theater"
 	sectionEditor  = "editor"
@@ -26,7 +26,8 @@ func (a *app) follow(ctx context.Context, id string) cmd {
 	}
 	var dest string
 	a.doR(ctx, func(tx *model.TxR) error {
-		dest = leafPath(tx, a.odesc)
+		section, _ := slugs(splitPath(a.path))
+		dest = leafPath(tx, section, a.odesc)
 		return nil
 	})
 	if dest == "" {
@@ -37,8 +38,8 @@ func (a *app) follow(ctx context.Context, id string) cmd {
 
 // leafPath loads the object the descriptor addresses and returns its
 // URL in the descriptor's section.
-func leafPath(tx *model.TxR, odesc map[string]string) string {
-	theater := odesc["section"] == sectionTheater
+func leafPath(tx *model.TxR, section string, odesc map[string]string) string {
+	theater := section == sectionTheater
 	switch odesc["kind"] {
 	case model.KindMovieEdition:
 		med := tx.MovieEdition(odesc["med"])

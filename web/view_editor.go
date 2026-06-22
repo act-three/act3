@@ -15,7 +15,7 @@ func viewEditor(tx *model.TxR, path string, body node) node {
 	})
 }
 
-func viewEditorPage(tx *model.TxR, path []string) (title string, n node) {
+func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (title string, n node) {
 	m := &matcher{path: path}
 	switch {
 	case m.match(""):
@@ -26,6 +26,8 @@ func viewEditorPage(tx *model.TxR, path []string) (title string, n node) {
 		return view.AppSecurity()
 	case m.match("collections"):
 		return viewEditorCollection(tx, "")
+	case path[0] == "collections" && odesc["kind"] == model.KindCollectionOverview:
+		return viewEditorCollection(tx, odesc["col"])
 	case m.match("downloads"):
 		return viewEditorDownloads(tx, "")
 	case m.match("downloads/{id}"):
@@ -33,8 +35,17 @@ func viewEditorPage(tx *model.TxR, path []string) (title string, n node) {
 
 	case m.match("movies"):
 		return viewEditorMovie(tx, "")
+	case path[0] == "movies" && odesc["kind"] == model.KindMovieEdition:
+		return viewEditorMovie(tx, odesc["med"])
 	case m.match("series"):
 		return viewEditorSeries(tx, "")
+	case path[0] == "series":
+		switch odesc["kind"] {
+		case model.KindSeriesEdition:
+			return viewEditorSeries(tx, odesc["sed"])
+		case model.KindEpisode:
+			return viewEditorEpisode(tx, odesc["sed"], odesc["ep"])
+		}
 
 	case m.match("storage"):
 		return viewEditorStorage(tx)
@@ -48,21 +59,6 @@ func viewEditorPage(tx *model.TxR, path []string) (title string, n node) {
 		return viewEditorTrash(tx, "")
 	case m.match("trash/{id}"):
 		return viewEditorTrash(tx, m.get("id"))
-	}
-	return "", notFound
-}
-
-// viewEditorObject renders the editor page for odesc.
-func viewEditorObject(tx *model.TxR, odesc map[string]string) (title string, n node) {
-	switch odesc["kind"] {
-	case model.KindMovieEdition:
-		return viewEditorMovie(tx, odesc["med"])
-	case model.KindSeriesEdition:
-		return viewEditorSeries(tx, odesc["sed"])
-	case model.KindEpisode:
-		return viewEditorEpisode(tx, odesc["sed"], odesc["ep"])
-	case model.KindCollectionOverview:
-		return viewEditorCollection(tx, odesc["col"])
 	}
 	return "", notFound
 }

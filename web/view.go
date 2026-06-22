@@ -47,9 +47,6 @@ func (a *app) View(ctx context.Context) (title string, n node) {
 }
 
 func viewRoot(tx *model.TxR, path string, odesc map[string]string) (title string, n node) {
-	if odesc != nil {
-		return viewObject(tx, path, odesc)
-	}
 	m := &matcher{path: splitPath(path)}
 	switch {
 	case m.match(""):
@@ -57,10 +54,10 @@ func viewRoot(tx *model.TxR, path string, odesc map[string]string) (title string
 	case m.match("collections"):
 		return viewCollections(tx)
 	case m.path[0] == "app":
-		title, body := viewEditorPage(tx, m.path[1:])
+		title, body := viewEditorPage(tx, m.path[1:], odesc)
 		return title, viewEditor(tx, path, body)
 	}
-	return "Not Found", notFound
+	return viewTheater(tx, odesc)
 }
 
 // viewPlayer renders the open player, or an empty slot when none is open.
@@ -135,18 +132,6 @@ func viewImageDialog(tx *model.TxR, id string) node {
 		return view.AppCollectionBannerDialog(tx.CollectionHead(id))
 	}
 	return nil
-}
-
-// viewObject renders the editor or theater page for odesc.
-func viewObject(tx *model.TxR, current string, odesc map[string]string) (title string, n node) {
-	switch odesc["section"] {
-	case sectionEditor:
-		title, body := viewEditorObject(tx, odesc)
-		return title, viewEditor(tx, current, body)
-	case sectionTheater:
-		return viewTheater(tx, odesc)
-	}
-	return "Not Found", notFound
 }
 
 func viewHome(tx *model.TxR) (title string, n node) {
