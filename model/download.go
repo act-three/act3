@@ -342,6 +342,14 @@ func (tx *TxR) DownloadHeadListByMovieEditionID(id string) []*DownloadHead {
 	return txmust1(tx.newDownloadHeadList(tx.q.DownloadListByMovieEditionID(&id)))
 }
 
+func (tx *TxR) FindDownload(infoHash string) (*Download, bool) {
+	dl, ok := txfind1(tx.q.DownloadGet(infoHash))
+	if !ok {
+		return nil, false
+	}
+	return txmust1(tx.newDownload(dl)), true
+}
+
 func (tx *TxR) Download(infoHash string) *Download {
 	dl := txmust1(tx.q.DownloadGet(infoHash))
 	return txmust1(tx.newDownload(dl))

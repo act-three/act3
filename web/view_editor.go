@@ -76,23 +76,21 @@ func viewEditorCollection(tx *model.TxR, id string, notFound bool) (title string
 func viewEditorDownloads(tx *model.TxR, id string) (title string, n node) {
 	dls := tx.DownloadInfoList()
 	var selected *model.Download
+	found := true
 	if id != "" {
-		// TODO: make download urls part of slug resolution,
-		// and/or redirect away when an item is trashed.
-		selected = tx.Download(id)
+		selected, found = tx.FindDownload(id)
 	}
-	return view.AppDownloads(dls, selected)
+	return view.AppDownloads(dls, selected, !found)
 }
 
 func viewEditorTrash(tx *model.TxR, id string) (title string, n node) {
 	items := tx.TrashList()
 	var selected *model.TrashItem
+	found := true
 	if id != "" {
-		// TODO: make trash urls part of slug resolution,
-		// and/or redirect away when an item is purged.
-		selected = tx.TrashItem(id)
+		selected, found = tx.FindTrashItem(id)
 	}
-	return view.AppTrash(items, selected)
+	return view.AppTrash(items, selected, !found)
 }
 
 func viewEditorTasks(tx *model.TxR) (title string, n node) {

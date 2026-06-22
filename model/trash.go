@@ -807,6 +807,18 @@ func (tx *TxRW) Purge(id string) (err error) {
 
 func (tx *TxR) TrashItem(id string) *TrashItem {
 	row := txmust1(tx.q.TrashGet(id))
+	return newTrashItem(row)
+}
+
+func (tx *TxR) FindTrashItem(id string) (*TrashItem, bool) {
+	row, ok := txfind1(tx.q.TrashGet(id))
+	if !ok {
+		return nil, false
+	}
+	return newTrashItem(row), true
+}
+
+func newTrashItem(row schema.Trash) *TrashItem {
 	return &TrashItem{
 		Kind:      KindOf(row.ID),
 		ID:        row.ID,
@@ -822,13 +834,7 @@ func (tx *TxR) TrashList() []TrashItem {
 	rows := txmust1(tx.q.TrashList())
 	items := make([]TrashItem, len(rows))
 	for i, r := range rows {
-		items[i] = TrashItem{
-			Kind:      KindOf(r.ID),
-			ID:        r.ID,
-			Title:     r.Title,
-			Subtitle:  r.Subtitle,
-			DeletedAt: time.UnixMilli(r.DeletedAt),
-		}
+		items[i] = *newTrashItem(r)
 	}
 	return items
 }
