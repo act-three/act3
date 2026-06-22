@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -465,28 +466,40 @@ func (a *app) setPath(ctx context.Context, u *url.URL) {
 	a.player = nil // and the player
 	a.path = u.Path
 	a.odesc = nil
-	if section, slugs := slugs(splitPath(a.path)); section != "" {
+	if section, slugs, allowed := slugs(splitPath(a.path)); section != "" {
 		a.model.WithTxR(ctx, func(tx *model.TxR) error {
-			a.odesc = tx.SlugResolve(slugs)
+			a.odesc = slugResolve(tx, slugs, allowed)
 			return nil
 		})
 	}
 }
 
+func slugResolve(tx *model.TxR, slugs, allowed []string) map[string]string {
+	odesc := tx.SlugResolve(slugs)
+	if len(allowed) == 0 || slices.Contains(allowed, odesc["kind"]) {
+		return odesc
+	}
+	return nil
+}
+
 // slugs returns the section ("theater" or "editor") and slugs
 // for the given path, if any.
-func slugs(path []string) (section string, slugs []string) {
+func slugs(path []string) (section string, slugs, allowed []string) {
 	if len(path) == 0 || path[0] == "collections" {
-		return "", nil
+		return "", nil, nil
 	}
 	if path[0] != "app" {
-		return sectionTheater, path
+		return sectionTheater, path, nil // all allowed
 	}
 	if len(path) >= 3 {
 		switch path[1] {
-		case "movies", "series", "collections":
-			return sectionEditor, path[2:]
+		case "movies":
+			return sectionEditor, path[2:], []string{model.KindMovieEdition}
+		case "series":
+			return sectionEditor, path[2:], []string{model.KindSeriesEdition, model.KindEpisode}
+		case "collections":
+			return sectionEditor, path[2:], []string{model.KindCollectionOverview}
 		}
 	}
-	return "", nil
+	return "", nil, nil
 }

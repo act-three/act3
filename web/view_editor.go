@@ -27,10 +27,7 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (titl
 	case m.match("collections"):
 		return viewEditorCollection(tx, "", false)
 	case path[0] == "collections":
-		if odesc["kind"] == model.KindCollectionOverview {
-			return viewEditorCollection(tx, odesc["col"], false)
-		}
-		return viewEditorCollection(tx, "", true)
+		return viewEditorCollection(tx, odesc["col"], odesc == nil)
 	case m.match("downloads"):
 		return viewEditorDownloads(tx, "")
 	case m.match("downloads/{id}"):
@@ -39,7 +36,7 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (titl
 	case m.match("movies"):
 		return viewEditorMovie(tx, "", false)
 	case path[0] == "movies":
-		return viewEditorMovie(tx, odesc["med"], odesc["kind"] != model.KindMovieEdition)
+		return viewEditorMovie(tx, odesc["med"], odesc == nil)
 	case m.match("series"):
 		return viewEditorSeries(tx, "", false)
 	case path[0] == "series":
