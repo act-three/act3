@@ -26,6 +26,7 @@ const AppDownloadsListItems = "download-list-items"
 func AppDownloads(
 	items []*model.DownloadInfo,
 	selected *model.Download,
+	notFound bool,
 ) (title string, n domi.Node) {
 	title = "Downloads"
 	if selected != nil {
@@ -45,17 +46,22 @@ func AppDownloads(
 					return selected != nil && dl.InfoHash() == selected.InfoHash()
 				}, appDownloadsListItem),
 			),
-			expr.IfElse(selected != nil,
-				func() domi.Node {
-					return appDownloadsDetail(selected)
-				},
-				func() domi.Node {
-					return Center(Class("v-media-muted"))(
-						domi.Text("No Download Selected"),
-					)
-				},
-			),
+			appDownloadSelection(selected, notFound),
 		),
+	)
+}
+
+func appDownloadSelection(selected *model.Download, notFound bool) domi.Node {
+	switch {
+	case selected != nil:
+		return appDownloadsDetail(selected)
+	case notFound:
+		return Center(Class("v-media-muted"))(
+			domi.Text("Not Found"),
+		)
+	}
+	return Center(Class("v-media-muted"))(
+		domi.Text("No Download Selected"),
 	)
 }
 

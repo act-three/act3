@@ -6,7 +6,6 @@ import (
 
 	"ily.dev/domi"
 
-	"ily.dev/act3/expr"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
@@ -15,6 +14,7 @@ import (
 func AppTrash(
 	items []model.TrashItem,
 	selected *model.TrashItem,
+	notFound bool,
 ) (title string, n domi.Node) {
 	title = "Trash"
 	if selected != nil {
@@ -38,17 +38,22 @@ func AppTrash(
 					return selected != nil && it.ID == selected.ID
 				}, AppTrashListItem),
 			),
-			expr.IfElse(selected != nil,
-				func() domi.Node {
-					return appTrashDetail(*selected)
-				},
-				func() domi.Node {
-					return Center(Class("v-media-muted"))(
-						domi.Text("No Item Selected"),
-					)
-				},
-			),
+			appTrashSelection(selected, notFound),
 		),
+	)
+}
+
+func appTrashSelection(selected *model.TrashItem, notFound bool) domi.Node {
+	switch {
+	case selected != nil:
+		return appTrashDetail(*selected)
+	case notFound:
+		return Center(Class("v-media-muted"))(
+			domi.Text("Not Found"),
+		)
+	}
+	return Center(Class("v-media-muted"))(
+		domi.Text("No Item Selected"),
 	)
 }
 
