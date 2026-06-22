@@ -268,11 +268,6 @@ func (tx *TxRW) seriesEditionEnsureSlug(id string) error {
 	if slug == sed.Slug {
 		return nil
 	}
-	// Only a live rename is announced: a trashed edition's pages
-	// have no viewers to follow it.
-	if sed.DeletedAt == nil {
-		tx.emitDetail(Detail{SlugChangeID: id})
-	}
 	return tx.q.SeriesEditionSlugSet(schema.SeriesEditionSlugSetParams{
 		Slug: slug, ID: id,
 	})
@@ -325,8 +320,6 @@ func (tx *TxRW) seriesEditionSetDefault(id string) error {
 	if err != nil {
 		return err
 	}
-	tx.emitDetail(Detail{SlugChangeID: old.ID})
-	tx.emitDetail(Detail{SlugChangeID: sed.ID})
 	if err := tx.q.SeriesEditionSlugSet(schema.SeriesEditionSlugSetParams{
 		Slug: oldSlug, ID: old.ID,
 	}); err != nil {

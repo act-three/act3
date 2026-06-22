@@ -166,8 +166,6 @@ func (tx *TxRW) renumberSeason(seasonID string) error {
 		eps[snep.EpisodeID] = ep
 	}
 
-	tx.emitDetail(Detail{SlugChangeID: sn.ID})
-
 	var num int64
 	for _, snep := range all {
 		ep := eps[snep.EpisodeID]

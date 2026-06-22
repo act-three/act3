@@ -84,7 +84,7 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 		sub:         map[chan *Event]struct{}{},
 	}
 	m.prog.SetHook(func(string, *progress.Item) {
-		m.emit(nil)
+		m.emit()
 	})
 	m.registerTMDBSettingHooks()
 	m.registerTransmissionSettingHooks()
@@ -175,7 +175,7 @@ func (m *Model) WithTxRW(ctx context.Context, f func(*TxRW) error) (err error) {
 	for _, f := range mt.commitHook {
 		f()
 	}
-	m.emit(mt.details)
+	m.emit()
 	return nil
 }
 
@@ -189,16 +189,10 @@ type TxR struct {
 type TxRW struct {
 	TxR
 	commitHook []func()
-	details    []Detail
 }
 
 func (mt *TxRW) onCommit(f func()) {
 	mt.commitHook = append(mt.commitHook, f)
-}
-
-// emitDetail adds d to the Event emitted when this transaction commits.
-func (mt *TxRW) emitDetail(d Detail) {
-	mt.details = append(mt.details, d)
 }
 
 type ValidationError struct {

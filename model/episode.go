@@ -402,7 +402,6 @@ func (tx *TxRW) EpisodeTitleSet(id, title string) error {
 			return err
 		}
 		if slug != snep.Slug {
-			tx.emitDetail(Detail{SlugChangeID: id})
 			err = tx.q.SeasonEpisodeSlugSet(schema.SeasonEpisodeSlugSetParams{
 				Slug:      slug,
 				SeasonID:  snep.SeasonID,

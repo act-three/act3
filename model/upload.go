@@ -75,7 +75,7 @@ func (u *upload) Read(p []byte) (int, error) {
 	}
 	u.mu.Unlock()
 	if announce {
-		u.m.emit(nil)
+		u.m.emit()
 	}
 	return n, err
 }
@@ -86,7 +86,7 @@ func (m *Model) uploadBegin(targetID, name string, size int64, r io.Reader) *upl
 	m.uploadMu.Lock()
 	m.uploads = append(m.uploads, u)
 	m.uploadMu.Unlock()
-	m.emit(nil)
+	m.emit()
 	return u
 }
 
@@ -95,7 +95,7 @@ func (m *Model) uploadEnd(u *upload) {
 	m.uploadMu.Lock()
 	m.uploads = slices.DeleteFunc(m.uploads, func(v *upload) bool { return v == u })
 	m.uploadMu.Unlock()
-	m.emit(nil)
+	m.emit()
 }
 
 // VideoUploadCreate streams r into the blob store and registers it as

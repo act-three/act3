@@ -349,8 +349,8 @@ func (tq *taskQueue) kill(id string) bool {
 }
 
 func (tq *taskQueue) run(ctx context.Context, task schema.Task) {
-	tq.m.emit(nil)
-	defer tq.m.emit(nil)
+	tq.m.emit()
+	defer tq.m.emit()
 	err, stack := tq.run1(ctx, task)
 	if err != nil {
 		slog.ErrorContext(ctx, "error", "error", err)
