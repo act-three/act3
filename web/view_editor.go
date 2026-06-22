@@ -25,27 +25,31 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (titl
 	case m.match("security"):
 		return view.AppSecurity()
 	case m.match("collections"):
-		return viewEditorCollection(tx, "")
-	case path[0] == "collections" && odesc["kind"] == model.KindCollectionOverview:
-		return viewEditorCollection(tx, odesc["col"])
+		return viewEditorCollection(tx, "", false)
+	case path[0] == "collections":
+		if odesc["kind"] == model.KindCollectionOverview {
+			return viewEditorCollection(tx, odesc["col"], false)
+		}
+		return viewEditorCollection(tx, "", true)
 	case m.match("downloads"):
 		return viewEditorDownloads(tx, "")
 	case m.match("downloads/{id}"):
 		return viewEditorDownloads(tx, m.get("id"))
 
 	case m.match("movies"):
-		return viewEditorMovie(tx, "")
-	case path[0] == "movies" && odesc["kind"] == model.KindMovieEdition:
-		return viewEditorMovie(tx, odesc["med"])
+		return viewEditorMovie(tx, "", false)
+	case path[0] == "movies":
+		return viewEditorMovie(tx, odesc["med"], odesc["kind"] != model.KindMovieEdition)
 	case m.match("series"):
-		return viewEditorSeries(tx, "")
+		return viewEditorSeries(tx, "", false)
 	case path[0] == "series":
 		switch odesc["kind"] {
 		case model.KindSeriesEdition:
-			return viewEditorSeries(tx, odesc["sed"])
+			return viewEditorSeries(tx, odesc["sed"], false)
 		case model.KindEpisode:
 			return viewEditorEpisode(tx, odesc["sed"], odesc["ep"])
 		}
+		return viewEditorSeries(tx, "", true)
 
 	case m.match("storage"):
 		return viewEditorStorage(tx)
@@ -63,13 +67,13 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (titl
 	return "", notFound
 }
 
-func viewEditorCollection(tx *model.TxR, id string) (title string, n node) {
+func viewEditorCollection(tx *model.TxR, id string, notFound bool) (title string, n node) {
 	cols := tx.CollectionHeadList()
 	var selected *model.Collection
 	if id != "" {
 		selected = tx.Collection(id)
 	}
-	return view.AppCollections(cols, selected)
+	return view.AppCollections(cols, selected, notFound)
 }
 
 func viewEditorDownloads(tx *model.TxR, id string) (title string, n node) {
@@ -108,7 +112,7 @@ func viewEditorTasks(tx *model.TxR) (title string, n node) {
 	return view.AppTasks(running, queued, failed)
 }
 
-func viewEditorMovie(tx *model.TxR, medID string) (title string, n node) {
+func viewEditorMovie(tx *model.TxR, medID string, notFound bool) (title string, n node) {
 	movies := tx.MovieWorkList()
 	var selected *model.MovieEdition
 	var editions []*model.MovieWork
@@ -119,10 +123,10 @@ func viewEditorMovie(tx *model.TxR, medID string) (title string, n node) {
 		dls = tx.DownloadHeadListByMovieEditionID(med.ID())
 		selected = med
 	}
-	return view.AppMovies(movies, selected, editions, dls, tx.Uploads())
+	return view.AppMovies(movies, selected, editions, dls, tx.Uploads(), notFound)
 }
 
-func viewEditorSeries(tx *model.TxR, sedID string) (title string, n node) {
+func viewEditorSeries(tx *model.TxR, sedID string, notFound bool) (title string, n node) {
 	series := tx.SeriesWorkList()
 	var selected *model.SeriesEdition
 	var editions []*model.SeriesWork
@@ -133,7 +137,7 @@ func viewEditorSeries(tx *model.TxR, sedID string) (title string, n node) {
 		dls = tx.DownloadHeadListBySeriesEditionID(sed.ID())
 		selected = sed
 	}
-	return view.AppSeries(series, selected, editions, dls)
+	return view.AppSeries(series, selected, editions, dls, notFound)
 }
 
 func viewEditorEpisode(tx *model.TxR, sedID, epID string) (title string, n node) {

@@ -22,12 +22,13 @@ func AppSeries(
 	selected *model.SeriesEdition,
 	editions []*model.SeriesWork,
 	dls []*model.DownloadHead,
+	notFound bool,
 ) (title string, n domi.Node) {
 	if selected == nil {
-		return "Edit Series", appSeries(s, "", nil)
+		return "Edit Series", appSeries(s, "", nil, notFound)
 	}
 	sr := selected.SeriesHead()
-	return sr.Title(), appSeries(s, sr.ID(), appSeriesDetail(selected, editions, dls))
+	return sr.Title(), appSeries(s, sr.ID(), appSeriesDetail(selected, editions, dls), false)
 }
 
 func AppSeriesEpisode(
@@ -37,10 +38,10 @@ func AppSeriesEpisode(
 	renditions []schema.Rendition,
 	uploads []model.Upload,
 ) (title string, n domi.Node) {
-	return ep.Title(), appSeries(s, ep.SeriesHead().ID(), appEpisodeDetail(ep, episodeEditions, renditions, uploads))
+	return ep.Title(), appSeries(s, ep.SeriesHead().ID(), appEpisodeDetail(ep, episodeEditions, renditions, uploads), false)
 }
 
-func appSeries(s []*model.SeriesWork, selectedID string, detail domi.Node) domi.Node {
+func appSeries(s []*model.SeriesWork, selectedID string, detail domi.Node, notFound bool) domi.Node {
 	return FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
 			Button(onClick(&msg.SeriesAddOpen{}), ButtonSurface)(
@@ -53,17 +54,22 @@ func appSeries(s []*model.SeriesWork, selectedID string, detail domi.Node) domi.
 					return ss.SeriesHead.ID() == selectedID
 				}, AppSeriesListItem),
 			),
-			expr.IfElse(detail != nil,
-				func() domi.Node {
-					return detail
-				},
-				func() domi.Node {
-					return Center(Class("v-media-muted"))(
-						domi.Text("No Series Selected"),
-					)
-				},
-			),
+			appSeriesSelection(detail, notFound),
 		),
+	)
+}
+
+func appSeriesSelection(detail domi.Node, notFound bool) domi.Node {
+	switch {
+	case detail != nil:
+		return detail
+	case notFound:
+		return Center(Class("v-media-muted"))(
+			domi.Text("Not Found"),
+		)
+	}
+	return Center(Class("v-media-muted"))(
+		domi.Text("No Series Selected"),
 	)
 }
 

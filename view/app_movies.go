@@ -19,6 +19,7 @@ func AppMovies(
 	editions []*model.MovieWork,
 	dls []*model.DownloadHead,
 	uploads []model.Upload,
+	notFound bool,
 ) (title string, n domi.Node) {
 	title = "All Movies"
 	if selected != nil {
@@ -41,17 +42,28 @@ func AppMovies(
 					return selected != nil && mo.MovieHead.ID() == selected.MovieHead().ID()
 				}, AppMoviesListItem),
 			),
-			expr.IfElse(selected != nil,
-				func() domi.Node {
-					return appMoviesDetail(selected, editions, dls, uploads)
-				},
-				func() domi.Node {
-					return Center(Class("v-media-muted"))(
-						domi.Text("No Movie Selected"),
-					)
-				},
-			),
+			appMovieSelection(selected, editions, dls, uploads, notFound),
 		),
+	)
+}
+
+func appMovieSelection(
+	selected *model.MovieEdition,
+	editions []*model.MovieWork,
+	dls []*model.DownloadHead,
+	uploads []model.Upload,
+	notFound bool,
+) domi.Node {
+	switch {
+	case selected != nil:
+		return appMoviesDetail(selected, editions, dls, uploads)
+	case notFound:
+		return Center(Class("v-media-muted"))(
+			domi.Text("Not Found"),
+		)
+	}
+	return Center(Class("v-media-muted"))(
+		domi.Text("No Movie Selected"),
 	)
 }
 

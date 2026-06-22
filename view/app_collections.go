@@ -7,7 +7,6 @@ import (
 	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
 
-	"ily.dev/act3/expr"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
@@ -16,6 +15,7 @@ import (
 func AppCollections(
 	s []*model.CollectionHead,
 	selected *model.Collection,
+	notFound bool,
 ) (title string, n domi.Node) {
 	return "Collections", FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
@@ -27,17 +27,22 @@ func AppCollections(
 					return selected != nil && c.ID() == selected.ID()
 				}, AppCollectionsListItem),
 			),
-			expr.IfElse(selected != nil,
-				func() domi.Node {
-					return appCollectionDetail(selected)
-				},
-				func() domi.Node {
-					return Center(Class("v-media-muted"))(
-						domi.Text("No Collection Selected"),
-					)
-				},
-			),
+			appCollectionSelection(selected, notFound),
 		),
+	)
+}
+
+func appCollectionSelection(selected *model.Collection, notFound bool) domi.Node {
+	switch {
+	case selected != nil:
+		return appCollectionDetail(selected)
+	case notFound:
+		return Center(Class("v-media-muted"))(
+			domi.Text("Not Found"),
+		)
+	}
+	return Center(Class("v-media-muted"))(
+		domi.Text("No Collection Selected"),
 	)
 }
 
