@@ -26,7 +26,7 @@ func (a *app) follow(ctx context.Context, id string) cmd {
 	}
 	var dest string
 	a.doR(ctx, func(tx *model.TxR) error {
-		section, _ := slugs(splitPath(a.path))
+		section, _, _ := slugs(splitPath(a.path))
 		dest = leafPath(tx, section, a.odesc)
 		return nil
 	})
