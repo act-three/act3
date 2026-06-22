@@ -1,6 +1,10 @@
 package model
 
-import "ily.dev/act3/database/schema"
+import (
+	"path"
+
+	"ily.dev/act3/database/schema"
+)
 
 // KindMovieEdition etc discriminate object pages.
 // Used as key "kind" in an object descriptor.
@@ -60,6 +64,79 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 		return map[string]string{"kind": kind, "col": col.ID()}
 	}
 	return nil
+}
+
+// SlugPath returns the canonical slug path for odesc,
+// or the empty string if odesc is stale, malformed, or no longer addressable.
+//
+// The returned path matches the paths returned
+// from method TheaterPath on individual object types:
+// /movie[/edition], /series[/edition][/episode], or /collection[/playlist].
+// Editor routes can add their own prefix to the same slug suffix.
+func (tx *TxR) SlugPath(odesc map[string]string) string {
+	if odesc == nil {
+		return ""
+	}
+	switch odesc["kind"] {
+	case KindMovieEdition:
+		med, ok := txfind1(tx.q.MovieEditionGet(odesc["med"]))
+		if !ok || med.DeletedAt != nil || med.MovieID != odesc["mo"] {
+			return ""
+		}
+		slug := tx.slugForTarget("movie", med.MovieID)
+		if slug == "" {
+			return ""
+		}
+		return path.Join("/", slug, med.Slug)
+	case KindSeriesEdition:
+		sed, ok := txfind1(tx.q.SeriesEditionGet(odesc["sed"]))
+		if !ok || sed.DeletedAt != nil || sed.SeriesID != odesc["sr"] {
+			return ""
+		}
+		slug := tx.slugForTarget("series", sed.SeriesID)
+		if slug == "" {
+			return ""
+		}
+		return path.Join("/", slug, sed.Slug)
+	case KindEpisode:
+		sed, ok := txfind1(tx.q.SeriesEditionGet(odesc["sed"]))
+		if !ok || sed.DeletedAt != nil || sed.SeriesID != odesc["sr"] {
+			return ""
+		}
+		snep, ok := txfind1(tx.q.SeasonEpisodeGet(schema.SeasonEpisodeGetParams{
+			SeasonID:  odesc["sn"],
+			EpisodeID: odesc["ep"],
+		}))
+		if !ok || snep.EditionID != sed.ID {
+			return ""
+		}
+		slug := tx.slugForTarget("series", sed.SeriesID)
+		if slug == "" {
+			return ""
+		}
+		return path.Join("/", slug, sed.Slug, snep.Slug)
+	case KindCollectionOverview:
+		slug := tx.slugForTarget("collection", odesc["col"])
+		if slug == "" {
+			return ""
+		}
+		return path.Join("/", slug)
+	case KindCollectionPlaylist:
+		slug := tx.slugForTarget("collection", odesc["col"])
+		if slug == "" {
+			return ""
+		}
+		return path.Join("/", slug, "playlist")
+	}
+	return ""
+}
+
+func (tx *TxR) slugForTarget(kind, target string) string {
+	s, ok := txfind1(tx.q.SlugGetByTarget(target))
+	if !ok || s.Kind != kind {
+		return ""
+	}
+	return s.Slug
 }
 
 // resolveSeries resolves the segments under a series slug: nothing (the

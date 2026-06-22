@@ -5384,6 +5384,17 @@ func (q *Queries) SlugGet(slug string) (Slug, error) {
 	return i, err
 }
 
+const slugGetByTarget = `-- name: SlugGetByTarget :one
+SELECT slug, kind, target FROM Slug WHERE Target = ?
+`
+
+func (q *Queries) SlugGetByTarget(target string) (Slug, error) {
+	row := q.db.QueryRowContext(q.ctx, slugGetByTarget, target)
+	var i Slug
+	err := row.Scan(&i.Slug, &i.Kind, &i.Target)
+	return i, err
+}
+
 const slugUpsert = `-- name: SlugUpsert :exec
 INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
 ON CONFLICT (Target) DO UPDATE SET Slug = ?1
