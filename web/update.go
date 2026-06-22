@@ -33,16 +33,7 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		m.URL.Path = redirect(m.URL.Path)
 		return domi.PushURL[msg.Msg](m.URL.String())
 	case *msg.ModelEvent:
-		for _, d := range m.Details {
-			if d.SlugChangeID == "" {
-				continue
-			}
-			// Regenerate the current page's URL if a relevant slug changed.
-			if c := a.follow(ctx, d.SlugChangeID); c != nil {
-				return c
-			}
-		}
-		return nil
+		return a.replaceURL(ctx)
 	case *msg.Error:
 		a.notify(ui.NoteError, m.Err.Error())
 		return nil

@@ -1213,6 +1213,9 @@ SELECT COUNT(*) FROM Slug WHERE Slug = ?;
 -- name: SlugGet :one
 SELECT * FROM Slug WHERE Slug = ?;
 
+-- name: SlugGetByTarget :one
+SELECT * FROM Slug WHERE Target = ?;
+
 -- name: SlugUpsert :exec
 INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
 ON CONFLICT (Target) DO UPDATE SET Slug = ?1;

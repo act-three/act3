@@ -2,13 +2,12 @@ package web
 
 import (
 	"context"
-	"maps"
+	"path"
 
 	"ily.dev/domi"
 
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
-	"ily.dev/act3/xiter"
 )
 
 // Sections a resolved object page can live in.
@@ -17,57 +16,34 @@ const (
 	sectionEditor  = "editor"
 )
 
-// follow returns a ReplaceURL cmd to update the current page's path.
-// If a.odesc doesn't contain id (the current page doesn't depend on id),
-// follow returns nil.
-func (a *app) follow(ctx context.Context, id string) cmd {
-	if !xiter.Contains(maps.Values(a.odesc), id) {
-		return nil
+// replaceURL returns a ReplaceURL cmd, if necessary,
+// to update the current page's path.
+// It derives the correct URL from a.path, a.odesc,
+// and the current slug set in the database,
+// and returns a non-nil cmd if the new path differs.
+func (a *app) replaceURL(ctx context.Context) (c cmd) {
+	if a.odesc == nil {
+		return nil // non-slug urls never update
 	}
-	var dest string
 	a.doR(ctx, func(tx *model.TxR) error {
-		section, _, _ := slugs(splitPath(a.path))
-		dest = leafPath(tx, section, a.odesc)
+		path := splitPath(a.path)
+		_, slugPath, _ := slugs(path)
+		dest := replaceSlugSuffix(path, slugPath, tx.SlugPath(a.odesc))
+		if dest != "" && dest != a.path {
+			c = domi.ReplaceURL[msg.Msg](dest)
+		}
 		return nil
 	})
-	if dest == "" {
-		return nil
-	}
-	return domi.ReplaceURL[msg.Msg](dest)
+	return c
 }
 
-// leafPath loads the object the descriptor addresses and returns its
-// URL in the descriptor's section.
-func leafPath(tx *model.TxR, section string, odesc map[string]string) string {
-	theater := section == sectionTheater
-	switch odesc["kind"] {
-	case model.KindMovieEdition:
-		med := tx.MovieEdition(odesc["med"])
-		if theater {
-			return med.TheaterPath()
-		}
-		return med.EditorPath()
-	case model.KindSeriesEdition:
-		sed := tx.SeriesEdition(odesc["sed"])
-		if theater {
-			return sed.TheaterPath()
-		}
-		return sed.EditorPath()
-	case model.KindEpisode:
-		ep := tx.EpisodeInEdition(odesc["ep"], odesc["sed"])
-		if theater {
-			return ep.TheaterPath()
-		}
-		return ep.EditorPath()
-	case model.KindCollectionOverview:
-		col := tx.CollectionHead(odesc["col"])
-		if theater {
-			return col.TheaterPath()
-		}
-		return col.EditorPath()
-	case model.KindCollectionPlaylist:
-		col := tx.CollectionHead(odesc["col"])
-		return col.PlaylistPath()
+func replaceSlugSuffix(p, oldsuf []string, newsuf string) string {
+	if newsuf == "" {
+		return ""
 	}
-	return ""
+	n := len(p) - len(oldsuf)
+	if n < 0 {
+		return ""
+	}
+	return path.Join("/", path.Join(p[:n]...), newsuf)
 }
