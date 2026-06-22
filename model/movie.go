@@ -100,20 +100,18 @@ func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
 	return nil
 }
 
-func (tx *TxR) MovieHead(id string) (*MovieHead, error) {
-	moData, err := tx.q.MovieGet(id)
-	if err != nil {
-		return nil, err
-	}
-	return &MovieHead{moData}, nil
+// MovieHead returns the MovieHead for id.
+// If id is not found, MovieHead aborts the tx.
+func (tx *TxR) MovieHead(id string) *MovieHead {
+	moData := txmust1(tx.q.MovieGet(id))
+	return &MovieHead{moData}
 }
 
-func (tx *TxR) MovieHeadByEditionID(editionID string) (*MovieHead, error) {
-	moData, err := tx.q.MovieGetByEditionID(editionID)
-	if err != nil {
-		return nil, err
-	}
-	return &MovieHead{moData}, nil
+// MovieHeadByEditionID returns the MovieHead for editionID.
+// If editionID is not found, MovieHeadByEditionID aborts the tx.
+func (tx *TxR) MovieHeadByEditionID(editionID string) *MovieHead {
+	moData := txmust1(tx.q.MovieGetByEditionID(editionID))
+	return &MovieHead{moData}
 }
 
 // movieEditionBySlug looks up a movie by its slug
@@ -149,18 +147,15 @@ func (tx *TxR) movieEditionBySlug(slug, edSlug string) (*MovieEdition, error) {
 	return med, nil
 }
 
-func (tx *TxR) MovieDownloadList(med *MovieEdition) ([]*RenditionForDownload, error) {
+func (tx *TxR) MovieDownloadList(med *MovieEdition) []*RenditionForDownload {
 	active := med.ActiveVideo()
 	if active == nil {
-		return nil, nil
+		return nil
 	}
 
 	var rends []*RenditionForDownload
-	rfd, err := tx.q.RenditionGetDownloadByVideoID(active.ID())
-	if err != nil && err != sql.ErrNoRows {
-		return nil, err
-	}
-	if err == nil && rfd.Key != "" {
+	rfd, ok := txfind1(tx.q.RenditionGetDownloadByVideoID(active.ID()))
+	if ok && rfd.Key != "" {
 		rends = append(rends, &RenditionForDownload{
 			path:  path.Join("/-/dl", rfd.ID, med.ID()),
 			label: "Best Quality MP4 (Recommended)",
@@ -172,7 +167,7 @@ func (tx *TxR) MovieDownloadList(med *MovieEdition) ([]*RenditionForDownload, er
 		path:  path.Join("/-/dl", active.ID(), med.ID()),
 		label: "Original " + strings.ToUpper(ext),
 	})
-	return rends, nil
+	return rends
 }
 
 func (tx *TxRW) MovieCreate(title, releaseDate string) (*MovieWork, error) {
@@ -402,15 +397,9 @@ func (tx *TxRW) movieFindSlug(title, year, id string, allow ...string) (string, 
 }
 
 // MovieWorkList returns the default edition of each movie.
-func (tx *TxR) MovieWorkList() ([]*MovieWork, error) {
-	editions, err := tx.q.MovieEditionListDefault()
-	if err != nil {
-		return nil, err
-	}
-	movies, err := tx.q.MovieList()
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) MovieWorkList() []*MovieWork {
+	editions := txmust1(tx.q.MovieEditionListDefault())
+	movies := txmust1(tx.q.MovieList())
 	edByMovieID := make(map[string]schema.MovieEdition, len(editions))
 	for _, ed := range editions {
 		edByMovieID[ed.MovieID] = ed
@@ -426,5 +415,5 @@ func (tx *TxR) MovieWorkList() ([]*MovieWork, error) {
 			med:       ed,
 		})
 	}
-	return works, nil
+	return works
 }

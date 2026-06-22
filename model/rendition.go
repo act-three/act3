@@ -28,11 +28,8 @@ type QualityOption struct {
 // pixel height — the planner stores the cap as MaxHeight (0 when
 // the source already satisfies the cap), so the actual output is
 // MaxHeight when set and the source height otherwise.
-func (tx *TxR) QualityOptions(v *Video) ([]QualityOption, error) {
-	rends, err := tx.q.RenditionListStreamingByVideoID(v.ID())
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) QualityOptions(v *Video) []QualityOption {
+	rends := txmust1(tx.q.RenditionListStreamingByVideoID(v.ID()))
 
 	// Sort by bitrate descending.
 	sort.Slice(rends, func(i, j int) bool {
@@ -56,7 +53,7 @@ func (tx *TxR) QualityOptions(v *Video) ([]QualityOption, error) {
 			TargetBitrate: int(r.TargetBitrate),
 		})
 	}
-	return opts, nil
+	return opts
 }
 
 type RenditionForDownload struct {
@@ -90,30 +87,24 @@ func videoExtensionForContentType(ct string) string {
 	}
 }
 
-// RenditionMediaKey returns the blob key of the fMP4 media for the video
+// FindRenditionMediaKey returns the blob key of the fMP4 media for the video
 // rendition with the given ID. The key is empty until the rendition
 // has been encoded.
-func (tx *TxR) RenditionMediaKey(id string) (string, error) {
-	rend, err := tx.q.RenditionGet(id)
-	if err != nil {
-		return "", err
-	}
-	return rend.Key, nil
+func (tx *TxR) FindRenditionMediaKey(id string) string {
+	rend, _ := txfind1(tx.q.RenditionGet(id))
+	return rend.Key
 }
 
-// RenditionPlaylist returns the HLS media playlist for the video
+// FindRenditionPlaylist returns the HLS media playlist for the video
 // rendition with the given ID. The playlist is empty until the
 // rendition has been encoded.
-func (tx *TxR) RenditionPlaylist(id string) (string, error) {
-	rend, err := tx.q.RenditionGet(id)
-	if err != nil {
-		return "", err
-	}
-	return rend.Playlist, nil
+func (tx *TxR) FindRenditionPlaylist(id string) string {
+	rend, _ := txfind1(tx.q.RenditionGet(id))
+	return rend.Playlist
 }
 
-func (tx *TxR) RenditionListStreamingByEpisodeID(epID string) ([]schema.Rendition, error) {
-	return tx.q.RenditionListStreamingByEpisodeID(epID)
+func (tx *TxR) RenditionListStreamingByEpisodeID(epID string) []schema.Rendition {
+	return txmust1(tx.q.RenditionListStreamingByEpisodeID(epID))
 }
 
 // VideoDownload bundles everything the download handler needs to
@@ -125,27 +116,28 @@ type VideoDownload struct {
 	Filename    string
 }
 
-// VideoDownloadForEpisode resolves the download response for id
-// (a Rendition ID or a Video ID) in the context of the episode
-// identified by epID within the series edition identified by sedID.
-// The filename is derived from the episode's basename in that
-// edition, matching the browse-page download listing.
-func (tx *TxR) VideoDownloadForEpisode(id, epID, sedID string) (VideoDownload, error) {
-	ep, err := tx.EpisodeInEdition(epID, sedID)
-	if err != nil {
-		return VideoDownload{}, err
+// FindVideoDownloadForEpisode resolves the download response for id
+// (a Rendition ID or a Video ID).
+// The filename is derived from the episode's code and title.
+// It returns false if the episode or download doesn't exist.
+func (tx *TxR) FindVideoDownloadForEpisode(id, epID, sedID string) (VideoDownload, bool) {
+	ep, ok := tx.findEpisodeInEdition(epID, sedID)
+	if !ok {
+		return VideoDownload{}, false
 	}
-	return tx.videoDownloadFor(id, ep.basename())
+	return txfind1(tx.videoDownloadFor(id, ep.basename()))
 }
 
-// VideoDownloadForMovieEdition is the movie-edition counterpart to
-// VideoDownloadForEpisode.
-func (tx *TxR) VideoDownloadForMovieEdition(id, medID string) (VideoDownload, error) {
-	med, err := tx.MovieEditionHead(medID)
-	if err != nil {
-		return VideoDownload{}, err
+// FindVideoDownloadForMovieEdition resolves the download response for id
+// (a Rendition ID or a Video ID).
+// The filename is derived from the edition's title.
+// It returns false if the episode or download doesn't exist.
+func (tx *TxR) FindVideoDownloadForMovieEdition(id, medID string) (VideoDownload, bool) {
+	med, ok := tx.findMovieEditionHead(medID)
+	if !ok {
+		return VideoDownload{}, false
 	}
-	return tx.videoDownloadFor(id, med.basename())
+	return txfind1(tx.videoDownloadFor(id, med.basename()))
 }
 
 // videoDownloadFor tries the given id as a Rendition first, then as

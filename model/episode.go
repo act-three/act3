@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"fmt"
 	"path"
 	"slices"
@@ -238,31 +237,28 @@ func (ep *Episode) TheaterPath() string {
 	return path.Join("/", ep.sr.Slug(), ep.so.Slug(), ep.Slug())
 }
 
-func (tx *TxR) EpisodeHead(id string) (*EpisodeHead, error) {
-	ep, err := tx.q.EpisodeGet(id)
-	if err != nil {
-		return nil, err
-	}
-	return &EpisodeHead{ep: ep}, nil
+func (tx *TxR) EpisodeHead(id string) *EpisodeHead {
+	ep := txmust1(tx.q.EpisodeGet(id))
+	return &EpisodeHead{ep: ep}
 }
 
-func (tx *TxR) EpisodeInEdition(id, edID string) (*Episode, error) {
-	epRec, err := tx.q.EpisodeGet(id)
-	if err != nil {
-		return nil, err
+func (tx *TxR) EpisodeInEdition(id, edID string) *Episode {
+	epRec := txmust1(tx.q.EpisodeGet(id))
+	return tx.episodeInEdition(epRec, id, edID)
+}
+
+func (tx *TxR) findEpisodeInEdition(id, edID string) (*Episode, bool) {
+	epRec, ok := txfind1(tx.q.EpisodeGet(id))
+	if !ok {
+		return nil, false
 	}
-	sneps, err := tx.q.SeasonEpisodeListByEpisodeID(id)
-	if err != nil {
-		return nil, err
-	}
-	vids, err := tx.q.VideoListByEpisodeID(id)
-	if err != nil {
-		return nil, err
-	}
-	evs, err := tx.q.EpisodeVideoListByEpisodeID(id)
-	if err != nil {
-		return nil, err
-	}
+	return tx.episodeInEdition(epRec, id, edID), true
+}
+
+func (tx *TxR) episodeInEdition(epRec schema.Episode, id, edID string) *Episode {
+	sneps := txmust1(tx.q.SeasonEpisodeListByEpisodeID(id))
+	vids := txmust1(tx.q.VideoListByEpisodeID(id))
+	evs := txmust1(tx.q.EpisodeVideoListByEpisodeID(id))
 	activeByVID := map[string]bool{}
 	for _, ev := range evs {
 		if ev.Active != 0 {
@@ -278,54 +274,31 @@ func (tx *TxR) EpisodeInEdition(id, edID string) (*Episode, error) {
 		videos: videos,
 	}
 	for i, snep := range sneps {
-		sn, err := tx.q.SeasonGet(snep.SeasonID)
-		if err != nil {
-			return nil, err
-		}
-		seq, err := tx.q.SeriesEditionGet(sn.EditionID)
-		if err != nil {
-			return nil, err
-		}
+		sn := txmust1(tx.q.SeasonGet(snep.SeasonID))
+		seq := txmust1(tx.q.SeriesEditionGet(sn.EditionID))
 		if seq.ID != edID && i < len(sneps)-1 {
 			continue
 		}
-		sr, err := tx.q.SeriesGet(seq.SeriesID)
-		if err != nil {
-			return nil, err
-		}
+		sr := txmust1(tx.q.SeriesGet(seq.SeriesID))
 		ep.snep = snep
 		ep.sn = &SeasonHead{sn}
 		ep.so = &SeriesEditionHead{sed: seq}
 		ep.sr = &SeriesHead{sr}
-		return ep, nil
+		return ep
 	}
-	return nil, fmt.Errorf("cannot load ep")
+	panic(&txError{fmt.Errorf("cannot load ep")})
 }
 
 // EpisodeEditions returns the episode as it appears in each edition.
-func (tx *TxR) EpisodeEditions(episodeID string) ([]*Episode, error) {
-	epRec, err := tx.q.EpisodeGet(episodeID)
-	if err != nil {
-		return nil, err
-	}
-	sneps, err := tx.q.SeasonEpisodeListByEpisodeID(episodeID)
-	if err != nil {
-		return nil, err
-	}
+// If episodeID is not found, EpisodeEditions aborts the tx.
+func (tx *TxR) EpisodeEditions(episodeID string) []*Episode {
+	epRec := txmust1(tx.q.EpisodeGet(episodeID))
+	sneps := txmust1(tx.q.SeasonEpisodeListByEpisodeID(episodeID))
 	var eps []*Episode
 	for _, snep := range sneps {
-		sn, err := tx.q.SeasonGet(snep.SeasonID)
-		if err != nil {
-			return nil, err
-		}
-		sed, err := tx.q.SeriesEditionGet(sn.EditionID)
-		if err != nil {
-			return nil, err
-		}
-		sr, err := tx.q.SeriesGet(sed.SeriesID)
-		if err != nil {
-			return nil, err
-		}
+		sn := txmust1(tx.q.SeasonGet(snep.SeasonID))
+		sed := txmust1(tx.q.SeriesEditionGet(sn.EditionID))
+		sr := txmust1(tx.q.SeriesGet(sed.SeriesID))
 		eps = append(eps, &Episode{
 			ep:    epRec,
 			snep:  snep,
@@ -335,7 +308,7 @@ func (tx *TxR) EpisodeEditions(episodeID string) ([]*Episode, error) {
 			sr:    &SeriesHead{sr},
 		})
 	}
-	return eps, nil
+	return eps
 }
 
 func (tx *TxRW) EpisodeThumbnailIDSet(id, thumbnailID string) error {
@@ -666,19 +639,16 @@ func (tx *TxRW) episodeFindSlug(editionID string, seasonNum, episodeNum int64, t
 	}
 }
 
-func (tx *TxR) EpisodeDownloadList(ep *Episode) ([]*RenditionForDownload, error) {
+func (tx *TxR) EpisodeDownloadList(ep *Episode) []*RenditionForDownload {
 	active := ep.ActiveVideo()
 	if active == nil {
-		return nil, nil
+		return nil
 	}
 	sedID := ep.SeriesEditionHead().ID()
 
 	var rends []*RenditionForDownload
-	rfd, err := tx.q.RenditionGetDownloadByVideoID(active.ID())
-	if err != nil && err != sql.ErrNoRows {
-		return nil, err
-	}
-	if err == nil && rfd.Key != "" {
+	rfd, ok := txfind1(tx.q.RenditionGetDownloadByVideoID(active.ID()))
+	if ok && rfd.Key != "" {
 		rends = append(rends, &RenditionForDownload{
 			path:  path.Join("/-/dl", rfd.ID, ep.ID(), sedID),
 			label: "Best Quality MP4 (Recommended)",
@@ -690,7 +660,7 @@ func (tx *TxR) EpisodeDownloadList(ep *Episode) ([]*RenditionForDownload, error)
 		path:  path.Join("/-/dl", active.ID(), ep.ID(), sedID),
 		label: "Original " + strings.ToUpper(ext),
 	})
-	return rends, nil
+	return rends
 }
 
 func epMapByID(eps []schema.Episode) map[string]*schema.Episode {

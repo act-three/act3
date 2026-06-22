@@ -170,21 +170,16 @@ func (im Image) Srcset() string {
 	return strings.Join(parts, ", ")
 }
 
-// ImageVariantKey returns the blob key of the best stored variant
+// FindImageVariantKey returns the blob key of the best stored variant
 // for the requested logical width. "Best" is the largest variant
 // whose physical width is at most the requested width; if every
 // stored variant is wider than requested (e.g. when requested is
 // smaller than the smallest stored variant), the smallest variant
-// is returned. Returns sql.ErrNoRows if no variants exist for
-// originalID.
-func (tx *TxR) ImageVariantKey(originalID string, width int) (key string, err error) {
-	defer errorfmt.Handlef("image variant key: %w", &err)
-	vs, err := tx.q.ImageRenditionListByImageID(originalID)
-	if err != nil {
-		return "", err
-	}
-	if len(vs) == 0 {
-		return "", sql.ErrNoRows
+// is returned.
+func (tx *TxR) FindImageVariantKey(originalID string, width int) (key string, found bool) {
+	vs, ok := txfind1(tx.q.ImageRenditionListByImageID(originalID))
+	if !ok || len(vs) == 0 {
+		return "", false
 	}
 	// vs is sorted ASC by Width. Walk forward and keep the last
 	// variant that still fits inside the requested width.
@@ -195,7 +190,7 @@ func (tx *TxR) ImageVariantKey(originalID string, width int) (key string, err er
 		}
 		chosen = v
 	}
-	return chosen.Key, nil
+	return chosen.Key, true
 }
 
 // ImageCreate reads an image from r, validates that it decodes

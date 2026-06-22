@@ -805,27 +805,21 @@ func (tx *TxRW) Purge(id string) (err error) {
 	return tx.q.TrashDelete(id)
 }
 
-func (tx *TxR) TrashItem(id string) (TrashItem, error) {
-	row, err := tx.q.TrashGet(id)
-	if err != nil {
-		return TrashItem{}, err
-	}
-	return TrashItem{
+func (tx *TxR) TrashItem(id string) *TrashItem {
+	row := txmust1(tx.q.TrashGet(id))
+	return &TrashItem{
 		Kind:      KindOf(row.ID),
 		ID:        row.ID,
 		Title:     row.Title,
 		Subtitle:  row.Subtitle,
 		DeletedAt: time.UnixMilli(row.DeletedAt),
-	}, nil
+	}
 }
 
 // TrashList returns every directly-trashed entity (roots only),
 // ordered newest-trashed first.
-func (tx *TxR) TrashList() ([]TrashItem, error) {
-	rows, err := tx.q.TrashList()
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) TrashList() []TrashItem {
+	rows := txmust1(tx.q.TrashList())
 	items := make([]TrashItem, len(rows))
 	for i, r := range rows {
 		items[i] = TrashItem{
@@ -836,7 +830,7 @@ func (tx *TxR) TrashList() ([]TrashItem, error) {
 			DeletedAt: time.UnixMilli(r.DeletedAt),
 		}
 	}
-	return items, nil
+	return items
 }
 
 func (tx *TxRW) trashPurge(threshold time.Time) (err error) {

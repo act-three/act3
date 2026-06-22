@@ -112,43 +112,19 @@ func (sed *SeriesEdition) Episodes(include EpisodeType) iter.Seq[*Episode] {
 	}
 }
 
-func (tx *TxR) SeriesEditionHead(id string) (*SeriesEditionHead, error) {
-	sedData, err := tx.q.SeriesEditionGet(id)
-	if err != nil {
-		return nil, err
-	}
-	return &SeriesEditionHead{sed: sedData}, nil
+func (tx *TxR) SeriesEditionHead(id string) *SeriesEditionHead {
+	sedData := txmust1(tx.q.SeriesEditionGet(id))
+	return &SeriesEditionHead{sed: sedData}
 }
 
-func (tx *TxR) SeriesEdition(id string) (*SeriesEdition, error) {
-	sedData, err := tx.q.SeriesEditionGet(id)
-	if err != nil {
-		return nil, err
-	}
-	srData, err := tx.q.SeriesGetByEditionID(id)
-	if err != nil {
-		return nil, err
-	}
-	sns, err := tx.q.SeasonListByEditionID(id)
-	if err != nil {
-		return nil, err
-	}
-	sneps, err := tx.q.SeasonEpisodeListByEditionID(id)
-	if err != nil {
-		return nil, err
-	}
-	eps, err := tx.q.EpisodeListByEditionID(id)
-	if err != nil {
-		return nil, err
-	}
-	evs, err := tx.q.EpisodeVideoListByEditionID(id)
-	if err != nil {
-		return nil, err
-	}
-	vids, err := tx.q.VideoListByEditionID(id)
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) SeriesEdition(id string) *SeriesEdition {
+	sedData := txmust1(tx.q.SeriesEditionGet(id))
+	srData := txmust1(tx.q.SeriesGetByEditionID(id))
+	sns := txmust1(tx.q.SeasonListByEditionID(id))
+	sneps := txmust1(tx.q.SeasonEpisodeListByEditionID(id))
+	eps := txmust1(tx.q.EpisodeListByEditionID(id))
+	evs := txmust1(tx.q.EpisodeVideoListByEditionID(id))
+	vids := txmust1(tx.q.VideoListByEditionID(id))
 
 	vidByID := vidMapByID(vids)
 	videosByEpisodeID := vidMapByEpisodeID(evs, vidByID)
@@ -157,7 +133,7 @@ func (tx *TxR) SeriesEdition(id string) (*SeriesEdition, error) {
 	epByID := epMapByID(eps)
 	snepBySeasonID := snepMapBySeasonID(sneps)
 	sed := newSeriesEdition(sr, sedData, sns, snepBySeasonID, epByID, tx.m.prog.List, videosByEpisodeID)
-	return sed, nil
+	return sed
 }
 
 // seriesEditionBySlug looks up a series by its slug
@@ -172,14 +148,11 @@ func (tx *TxR) seriesEditionBySlug(slug, edSlug string) (*SeriesEdition, error) 
 	if err != nil {
 		return nil, err
 	}
-	return tx.SeriesEdition(sedData.ID)
+	return tx.SeriesEdition(sedData.ID), nil
 }
 
-func (tx *TxR) SeriesEditionList(sr *SeriesHead) ([]*SeriesWork, error) {
-	seds, err := tx.q.SeriesEditionListBySeriesID(sr.ID())
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) SeriesEditionList(sr *SeriesHead) []*SeriesWork {
+	seds := txmust1(tx.q.SeriesEditionListBySeriesID(sr.ID()))
 	works := make([]*SeriesWork, len(seds))
 	for i := range seds {
 		works[i] = &SeriesWork{
@@ -187,7 +160,7 @@ func (tx *TxR) SeriesEditionList(sr *SeriesHead) ([]*SeriesWork, error) {
 			sed:        seds[i],
 		}
 	}
-	return works, nil
+	return works
 }
 
 func (tx *TxRW) seriesEditionCreate(label, seriesID, summary string) (schema.SeriesEdition, error) {

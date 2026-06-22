@@ -85,16 +85,10 @@ func viewDialog(tx *model.TxR, d dialog) node {
 	case *movieAddDialog:
 		return view.AppMovieAddDialog(d.query, d.searching, d.results)
 	case *collectionMovieAddDialog:
-		results, err := tx.CollectionMovieSearch(d.colID, d.query)
-		if err != nil {
-			return viewError(err)
-		}
+		results := tx.CollectionMovieSearch(d.colID, d.query)
 		return view.AppCollectionMovieAddDialog(d.colID, d.query, results)
 	case *collectionSeriesAddDialog:
-		results, err := tx.CollectionSeriesSearch(d.colID, d.query)
-		if err != nil {
-			return viewError(err)
-		}
+		results := tx.CollectionSeriesSearch(d.colID, d.query)
 		return view.AppCollectionSeriesAddDialog(d.colID, d.query, results)
 	case *imageDialog:
 		return viewImageDialog(tx, d.id)
@@ -110,18 +104,16 @@ func viewDownloadFileAttach(tx *model.TxR, d *downloadFileAttachPopover) node {
 	if !d.ready {
 		return nil
 	}
-	dl, err := tx.Download(d.infoHash)
-	if err != nil {
-		return viewError(err)
-	}
+	dl := tx.Download(d.infoHash)
 	sed := dl.SeriesEdition()
 	if sed == nil {
+		// TODO: viewError doesn't help in this context,
+		// we need an actual dialog or nothing.
+		// Ideally we use a TxR method to abort the tx
+		// if there's no SeriesEdition here.
 		return viewError(fmt.Errorf("download %s is not planned for a series", d.infoHash))
 	}
-	vid, err := tx.VideoGetByName(d.infoHash, d.path)
-	if err != nil {
-		return viewError(err)
-	}
+	vid := tx.VideoGetByName(d.infoHash, d.path)
 	linked := map[string]bool{}
 	for _, epID := range dl.EpisodeIDsByVideoID(vid.ID()) {
 		linked[epID] = true
@@ -129,48 +121,18 @@ func viewDownloadFileAttach(tx *model.TxR, d *downloadFileAttachPopover) node {
 	return view.AppDownloadFileAttachPopover(sed, d.infoHash, d.path, vid.ID(), d.attached, linked)
 }
 
-// downloadAttachedEpisodes lists the episodes the downloaded file is
-// currently attached to.
-func downloadAttachedEpisodes(tx *model.TxR, infoHash, path string) ([]string, error) {
-	dl, err := tx.Download(infoHash)
-	if err != nil {
-		return nil, err
-	}
-	vid, err := tx.VideoGetByName(infoHash, path)
-	if err != nil {
-		return nil, err
-	}
-	return dl.EpisodeIDsByVideoID(vid.ID()), nil
-}
-
 // viewImageDialog renders the image-edit dialog for the item the ID
 // identifies.
 func viewImageDialog(tx *model.TxR, id string) node {
 	switch model.KindOf(id) {
 	case model.TrashKindMovieEdition:
-		med, err := tx.MovieEdition(id)
-		if err != nil {
-			return viewError(err)
-		}
-		return view.AppMoviePosterDialog(med)
+		return view.AppMoviePosterDialog(tx.MovieEdition(id))
 	case model.TrashKindSeriesEdition:
-		sed, err := tx.SeriesEdition(id)
-		if err != nil {
-			return viewError(err)
-		}
-		return view.AppSeriesEditionPosterDialog(sed)
+		return view.AppSeriesEditionPosterDialog(tx.SeriesEdition(id))
 	case model.TrashKindEpisode:
-		ep, err := tx.EpisodeHead(id)
-		if err != nil {
-			return viewError(err)
-		}
-		return view.AppEpisodeThumbnailDialog(ep)
+		return view.AppEpisodeThumbnailDialog(tx.EpisodeHead(id))
 	case model.TrashKindCollection:
-		col, err := tx.CollectionHead(id)
-		if err != nil {
-			return viewError(err)
-		}
-		return view.AppCollectionBannerDialog(col)
+		return view.AppCollectionBannerDialog(tx.CollectionHead(id))
 	}
 	return nil
 }
@@ -188,22 +150,13 @@ func viewObject(tx *model.TxR, current string, odesc map[string]string) (title s
 }
 
 func viewHome(tx *model.TxR) (title string, n node) {
-	works, err := tx.WorkList()
-	if err != nil {
-		return "", viewError(err)
-	}
-	cols, err := tx.CollectionHeadList()
-	if err != nil {
-		return "", viewError(err)
-	}
+	works := tx.WorkList()
+	cols := tx.CollectionHeadList()
 	return view.Home(works, cols, tx.Uploads())
 }
 
 func viewCollections(tx *model.TxR) (title string, n node) {
-	cols, err := tx.CollectionHeadList()
-	if err != nil {
-		return "", viewError(err)
-	}
+	cols := tx.CollectionHeadList()
 	return view.Collections(cols, tx.Uploads())
 }
 

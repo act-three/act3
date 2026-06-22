@@ -30,12 +30,8 @@ func (v *Video) Active() bool { return v.active }
 // and active-video promotion.
 func (v *Video) Playable() bool { return v.v.Playable != 0 }
 
-func (tx *TxR) Video(id string) (*Video, error) {
-	v, err := tx.q.VideoGet(id)
-	if err != nil {
-		return nil, err
-	}
-	return &Video{v: v}, nil
+func (tx *TxR) Video(id string) *Video {
+	return &Video{v: txmust1(tx.q.VideoGet(id))}
 }
 
 // MVFilter optionally narrows the multivariant HLS playlist returned
@@ -48,48 +44,36 @@ type MVFilter struct {
 	AudioRenditionID string // empty = include all encoded audio renditions
 }
 
-// MVPlaylist builds the multivariant HLS playlist for a video on
+// FindMVPlaylist builds the multivariant HLS playlist for a video on
 // demand from the current rendition state, optionally narrowed per
 // filter. Returns "" when the video is not yet playable (no encoded
 // video, or any source audio track without an encoded rendition), or
 // when a filter pins to a rendition that doesn't belong to this video.
-func (tx *TxR) MVPlaylist(videoID string, filter MVFilter) (string, error) {
-	vid, err := tx.q.VideoGet(videoID)
-	if err != nil {
-		return "", err
+func (tx *TxR) FindMVPlaylist(videoID string, filter MVFilter) string {
+	vid, ok := txfind1(tx.q.VideoGet(videoID))
+	if !ok {
+		return ""
 	}
-	encoded, err := tx.q.RenditionListEncodedStreamingByVideoID(videoID)
-	if err != nil {
-		return "", err
-	}
-	encodedAudio, err := tx.q.AudioRenditionListEncodedForMV(videoID)
-	if err != nil {
-		return "", err
-	}
-	tracks, err := tx.q.AudioTrackListByVideoID(videoID)
-	if err != nil {
-		return "", err
-	}
-	subTracks, err := tx.q.SubtitleTrackListByVideoID(videoID)
-	if err != nil {
-		return "", err
-	}
+	encoded := txmust1(tx.q.RenditionListEncodedStreamingByVideoID(videoID))
+	encodedAudio := txmust1(tx.q.AudioRenditionListEncodedForMV(videoID))
+	tracks := txmust1(tx.q.AudioTrackListByVideoID(videoID))
+	subTracks := txmust1(tx.q.SubtitleTrackListByVideoID(videoID))
 	if !isPlayableMV(encoded, encodedAudio, tracks) {
-		return "", nil
+		return ""
 	}
 	if filter.VideoRenditionID != "" {
 		encoded = filterByRenditionID(encoded, filter.VideoRenditionID)
 		if len(encoded) == 0 {
-			return "", nil
+			return ""
 		}
 	}
 	if filter.AudioRenditionID != "" {
 		encodedAudio = filterAudioByRenditionID(encodedAudio, filter.AudioRenditionID)
 		if len(encodedAudio) == 0 {
-			return "", nil
+			return ""
 		}
 	}
-	return buildMVPlaylist(vid, encoded, encodedAudio, tracks, subTracks), nil
+	return buildMVPlaylist(vid, encoded, encodedAudio, tracks, subTracks)
 }
 
 func filterByRenditionID(rends []schema.Rendition, id string) []schema.Rendition {

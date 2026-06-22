@@ -178,10 +178,7 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 
 	case *msg.Trash:
 		return a.doNav(ctx, func(tx *model.TxRW) (string, error) {
-			dest, err := trashRedirectTarget(tx, m.ID)
-			if err != nil {
-				return "", err
-			}
+			dest := trashRedirectTarget(tx, m.ID)
 			return dest, tx.Trash(m.ID)
 		})
 	case *msg.Restore:
@@ -213,9 +210,8 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		return domi.Func(func() msg.Msg {
 			var attached []string
 			err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
-				var err error
-				attached, err = downloadAttachedEpisodes(tx, m.InfoHash, m.Path)
-				return err
+				attached = tx.DownloadAttachedEpisodes(m.InfoHash, m.Path)
+				return nil
 			})
 			if err != nil {
 				return &msg.Error{Err: err}
@@ -236,9 +232,9 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		return nil
 
 	case *msg.Play:
-		a.doR(ctx, func(tx *model.TxR) (err error) {
-			a.player, err = getPlayer(tx, m)
-			return err
+		a.doR(ctx, func(tx *model.TxR) error {
+			a.player = getPlayer(tx, m)
+			return nil
 		})
 		return nil
 	case *msg.PlayerClose:
@@ -399,30 +395,24 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 }
 
 // getPlayer resolves the video, its options, and the played content
-// for m. A lookup failure surfaces as a note and returns nil.
-func getPlayer(tx *model.TxR, m *msg.Play) (pl *player, err error) {
-	pl = &player{audio: m.Audio, subtitle: m.Subtitle, pinAudio: m.PinAudio}
-	if pl.video, err = tx.Video(m.IDs.VideoID); err != nil {
-		return nil, err
-	}
-	if pl.qualityOpts, err = tx.QualityOptions(pl.video); err != nil {
-		return nil, err
-	}
-	if pl.captionsOpts, err = tx.SubtitleOptions(pl.video); err != nil {
-		return nil, err
-	}
-	if pl.audioOpts, err = tx.AudioOptions(pl.video); err != nil {
-		return nil, err
+// for m. A lookup failure surfaces as a note.
+func getPlayer(tx *model.TxR, m *msg.Play) (pl *player) {
+	v := tx.Video(m.IDs.VideoID)
+	pl = &player{
+		audio:        m.Audio,
+		subtitle:     m.Subtitle,
+		pinAudio:     m.PinAudio,
+		video:        v,
+		qualityOpts:  tx.QualityOptions(v),
+		captionsOpts: tx.SubtitleOptions(v),
+		audioOpts:    tx.AudioOptions(v),
 	}
 	if m.IDs.EpisodeID != "" {
-		pl.episode, err = tx.EpisodeInEdition(m.IDs.EpisodeID, m.IDs.SeriesEditionID)
+		pl.episode = tx.EpisodeInEdition(m.IDs.EpisodeID, m.IDs.SeriesEditionID)
 	} else {
-		pl.movie, err = tx.MovieEditionHead(m.IDs.MovieEditionID)
+		pl.movie = tx.MovieEditionHead(m.IDs.MovieEditionID)
 	}
-	if err != nil {
-		return nil, err
-	}
-	return pl, nil
+	return pl
 }
 
 // doR runs f inside a readonly tx, and calls notify on error.

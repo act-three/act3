@@ -25,9 +25,9 @@ func (a *app) follow(ctx context.Context, id string) cmd {
 		return nil
 	}
 	var dest string
-	a.doR(ctx, func(tx *model.TxR) (err error) {
-		dest, err = leafPath(tx, a.odesc)
-		return err
+	a.doR(ctx, func(tx *model.TxR) error {
+		dest = leafPath(tx, a.odesc)
+		return nil
 	})
 	if dest == "" {
 		return nil
@@ -37,51 +37,36 @@ func (a *app) follow(ctx context.Context, id string) cmd {
 
 // leafPath loads the object the descriptor addresses and returns its
 // URL in the descriptor's section.
-func leafPath(tx *model.TxR, odesc map[string]string) (string, error) {
+func leafPath(tx *model.TxR, odesc map[string]string) string {
 	theater := odesc["section"] == sectionTheater
 	switch odesc["kind"] {
 	case model.KindMovieEdition:
-		med, err := tx.MovieEdition(odesc["med"])
-		if err != nil {
-			return "", err
-		}
+		med := tx.MovieEdition(odesc["med"])
 		if theater {
-			return med.TheaterPath(), nil
+			return med.TheaterPath()
 		}
-		return med.EditorPath(), nil
+		return med.EditorPath()
 	case model.KindSeriesEdition:
-		sed, err := tx.SeriesEdition(odesc["sed"])
-		if err != nil {
-			return "", err
-		}
+		sed := tx.SeriesEdition(odesc["sed"])
 		if theater {
-			return sed.TheaterPath(), nil
+			return sed.TheaterPath()
 		}
-		return sed.EditorPath(), nil
+		return sed.EditorPath()
 	case model.KindEpisode:
-		ep, err := tx.EpisodeInEdition(odesc["ep"], odesc["sed"])
-		if err != nil {
-			return "", err
-		}
+		ep := tx.EpisodeInEdition(odesc["ep"], odesc["sed"])
 		if theater {
-			return ep.TheaterPath(), nil
+			return ep.TheaterPath()
 		}
-		return ep.EditorPath(), nil
+		return ep.EditorPath()
 	case model.KindCollectionOverview:
-		col, err := tx.CollectionHead(odesc["col"])
-		if err != nil {
-			return "", err
-		}
+		col := tx.CollectionHead(odesc["col"])
 		if theater {
-			return col.TheaterPath(), nil
+			return col.TheaterPath()
 		}
-		return col.EditorPath(), nil
+		return col.EditorPath()
 	case model.KindCollectionPlaylist:
-		col, err := tx.CollectionHead(odesc["col"])
-		if err != nil {
-			return "", err
-		}
-		return col.PlaylistPath(), nil
+		col := tx.CollectionHead(odesc["col"])
+		return col.PlaylistPath()
 	}
-	return "", nil
+	return ""
 }

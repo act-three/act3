@@ -71,12 +71,9 @@ func (sw *SeriesWork) EditorPath() string {
 	return SeriesEditionEditorPath(&sw.SeriesHead, &sw.SeriesEditionHead)
 }
 
-func (tx *TxR) SeriesHead(id string) (*SeriesHead, error) {
-	srData, err := tx.q.SeriesGet(id)
-	if err != nil {
-		return nil, err
-	}
-	return &SeriesHead{srData}, nil
+func (tx *TxR) SeriesHead(id string) *SeriesHead {
+	srData := txmust1(tx.q.SeriesGet(id))
+	return &SeriesHead{srData}
 }
 
 func (tx *TxR) seriesHeadListByTVmazeID(id []*int64) ([]*SeriesHead, error) {
@@ -309,15 +306,9 @@ func (tx *TxRW) seriesCreateByTVmazeID(show *tvmaze.Show) (*SeriesWork, error) {
 }
 
 // SeriesWorkList returns the default edition of each series.
-func (tx *TxR) SeriesWorkList() ([]*SeriesWork, error) {
-	editions, err := tx.q.SeriesEditionListDefault()
-	if err != nil {
-		return nil, err
-	}
-	series, err := tx.q.SeriesList()
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) SeriesWorkList() []*SeriesWork {
+	editions := txmust1(tx.q.SeriesEditionListDefault())
+	series := txmust1(tx.q.SeriesList())
 	edBySeriesID := make(map[string]schema.SeriesEdition, len(editions))
 	for _, ed := range editions {
 		edBySeriesID[ed.SeriesID] = ed
@@ -333,5 +324,5 @@ func (tx *TxR) SeriesWorkList() ([]*SeriesWork, error) {
 			sed:        ed,
 		})
 	}
-	return works, nil
+	return works
 }

@@ -21,10 +21,7 @@ func (m *Model) registerTransmissionSettingHooks() {
 
 func (tx *TxR) loadTransmissionConfig() (err error) {
 	defer errorfmt.Handlef("transmission: %w", &err)
-	settings, err := tx.SettingGetByGroup("transmission")
-	if err != nil {
-		return err
-	}
+	settings := tx.SettingGetByGroup("transmission")
 	baseURL := settings[SettingKeyTransmissionBaseURL].String()
 	if baseURL == "" {
 		return nil

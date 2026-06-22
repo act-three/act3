@@ -1149,10 +1149,7 @@ func TestTrashDefaultMovieEditionPromotesSuccessor(t *testing.T) {
 	}
 
 	if err := m.WithTxR(ctx, func(tx *TxR) error {
-		works, err := tx.MovieWorkList()
-		if err != nil {
-			return err
-		}
+		works := tx.MovieWorkList()
 		for _, mw := range works {
 			if mw.MovieHead.ID() == moID {
 				return nil

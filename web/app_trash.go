@@ -9,37 +9,27 @@ import (
 // runs before tx.Trash so parent lookups see the live rows. Editions
 // redirect to their parent movie/series root, which re-routes to the
 // newly-promoted default edition.
-func trashRedirectTarget(tx *model.TxRW, id string) (string, error) {
+func trashRedirectTarget(tx *model.TxRW, id string) string {
 	switch model.KindOf(id) {
 	case model.TrashKindMovie:
-		return "/app/movies", nil
+		return "/app/movies"
 	case model.TrashKindSeries:
-		return "/app/series", nil
+		return "/app/series"
 	case model.TrashKindEpisode:
-		eps, err := tx.EpisodeEditions(id)
-		if err != nil {
-			return "", err
+		eps := tx.EpisodeEditions(id)
+		if len(eps) == 0 { // can't happen
+			return "/app/series"
 		}
-		if len(eps) == 0 {
-			return "/app/series", nil
-		}
-		return model.SeriesEditionEditorPath(eps[0].SeriesHead(), eps[0].SeriesEditionHead()), nil
+		return model.SeriesEditionEditorPath(
+			eps[0].SeriesHead(),
+			eps[0].SeriesEditionHead(),
+		)
 	case model.TrashKindMovieEdition:
-		mo, err := tx.MovieHeadByEditionID(id)
-		if err != nil {
-			return "", err
-		}
-		return mo.EditorPath(), nil
+		return tx.MovieHeadByEditionID(id).EditorPath()
 	case model.TrashKindSeriesEdition:
-		sed, err := tx.SeriesEditionHead(id)
-		if err != nil {
-			return "", err
-		}
-		sr, err := tx.SeriesHead(sed.SeriesID())
-		if err != nil {
-			return "", err
-		}
-		return sr.EditorPath(), nil
+		sed := tx.SeriesEditionHead(id)
+		sr := tx.SeriesHead(sed.SeriesID())
+		return sr.EditorPath()
 	}
-	return "", nil
+	return ""
 }

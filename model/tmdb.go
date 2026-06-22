@@ -12,10 +12,7 @@ func (m *Model) registerTMDBSettingHooks() {
 
 func (tx *TxR) loadTMDBConfig() (err error) {
 	defer errorfmt.Handlef("tmdb: %w", &err)
-	settings, err := tx.SettingGetByGroup("tmdb")
-	if err != nil {
-		return err
-	}
+	settings := tx.SettingGetByGroup("tmdb")
 	token := settings[SettingKeyTMDBAccessToken].String()
 	if token != "" {
 		tx.m.tmdb.SetToken(token)

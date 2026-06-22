@@ -154,13 +154,8 @@ func (s *Setting) mustType(want SettingType) {
 // SettingGetByGroup returns all settings belonging to the given group,
 // keyed by setting key.
 // Settings not present in the database are included with their default values.
-func (tx *TxR) SettingGetByGroup(group string) (Settings, error) {
-	var err error
-	defer errorfmt.Handlef("setting list by group %q: %w", group, &err)
-	rows, err := tx.q.SettingListByGroup(group)
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) SettingGetByGroup(group string) Settings {
+	rows := txmust1(tx.q.SettingListByGroup(group))
 	m := make(map[string]*Setting)
 	for i := range rows {
 		m[rows[i].Key] = &Setting{rows[i]}
@@ -174,7 +169,7 @@ func (tx *TxR) SettingGetByGroup(group string) (Settings, error) {
 			}}
 		}
 	}
-	return m, nil
+	return m
 }
 
 // SettingSetString sets a setting to the given string value.

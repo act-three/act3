@@ -94,8 +94,8 @@ func (c *Config) image(w http.ResponseWriter, req *http.Request) (node, error) {
 		return nil, errNotFound
 	}
 	return c.withTxR(ctx, func(tx *model.TxR) (node, error) {
-		key, err := tx.ImageVariantKey(id, width)
-		if err != nil {
+		key, ok := tx.FindImageVariantKey(id, width)
+		if !ok {
 			return nil, errNotFound
 		}
 		// Pin Content-Type so http.ServeFileFS doesn't fall

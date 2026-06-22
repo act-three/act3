@@ -48,15 +48,9 @@ func (p PlayIDs) Playable() bool { return p.VideoID != "" }
 
 // WorkList returns all movies and series as a unified list,
 // sorted by title.
-func (tx *TxR) WorkList() ([]Work, error) {
-	mws, err := tx.MovieWorkList()
-	if err != nil {
-		return nil, err
-	}
-	sws, err := tx.SeriesWorkList()
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) WorkList() []Work {
+	mws := tx.MovieWorkList()
+	sws := tx.SeriesWorkList()
 
 	works := make([]Work, 0, len(mws)+len(sws))
 	for _, mw := range mws {
@@ -68,5 +62,5 @@ func (tx *TxR) WorkList() ([]Work, error) {
 	slices.SortFunc(works, func(a, b Work) int {
 		return cmp.Compare(a.Title(), b.Title())
 	})
-	return works, nil
+	return works
 }

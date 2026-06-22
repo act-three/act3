@@ -4,26 +4,20 @@ import (
 	"ily.dev/act3/database/schema"
 )
 
-// AudioRenditionMediaKey returns the blob key of the fMP4 media for the
+// FindAudioRenditionMediaKey returns the blob key of the fMP4 media for the
 // audio rendition with the given ID. The key is empty until the
 // rendition has been encoded.
-func (tx *TxR) AudioRenditionMediaKey(id string) (string, error) {
-	ar, err := tx.q.AudioRenditionGet(id)
-	if err != nil {
-		return "", err
-	}
-	return ar.Key, nil
+func (tx *TxR) FindAudioRenditionMediaKey(id string) string {
+	ar, _ := txfind1(tx.q.AudioRenditionGet(id))
+	return ar.Key
 }
 
-// AudioRenditionPlaylist returns the HLS media playlist for the audio
+// FindAudioRenditionPlaylist returns the HLS media playlist for the audio
 // rendition with the given ID. The playlist is empty until the
 // rendition has been encoded.
-func (tx *TxR) AudioRenditionPlaylist(id string) (string, error) {
-	ar, err := tx.q.AudioRenditionGet(id)
-	if err != nil {
-		return "", err
-	}
-	return ar.Playlist, nil
+func (tx *TxR) FindAudioRenditionPlaylist(id string) string {
+	ar, _ := txfind1(tx.q.AudioRenditionGet(id))
+	return ar.Playlist
 }
 
 // AudioOption describes one entry in the player audio-track menu.
@@ -43,15 +37,9 @@ type AudioOption struct {
 // AudioOptions returns the audio-menu entries for a video, in the same
 // order as the MV playlist's EXT-X-MEDIA AUDIO group. The first entry
 // is the HLS DEFAULT.
-func (tx *TxR) AudioOptions(v *Video) ([]AudioOption, error) {
-	rends, err := tx.q.AudioRenditionListEncodedForMV(v.ID())
-	if err != nil {
-		return nil, err
-	}
-	tracks, err := tx.q.AudioTrackListByVideoID(v.ID())
-	if err != nil {
-		return nil, err
-	}
+func (tx *TxR) AudioOptions(v *Video) []AudioOption {
+	rends := txmust1(tx.q.AudioRenditionListEncodedForMV(v.ID()))
+	tracks := txmust1(tx.q.AudioTrackListByVideoID(v.ID()))
 	tracksByID := make(map[string]schema.AudioTrack, len(tracks))
 	for _, at := range tracks {
 		tracksByID[at.ID] = at
@@ -67,5 +55,5 @@ func (tx *TxR) AudioOptions(v *Video) ([]AudioOption, error) {
 			Default:  i == 0,
 		})
 	}
-	return opts, nil
+	return opts
 }
