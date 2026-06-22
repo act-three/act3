@@ -81,11 +81,23 @@ func (r *response) Write(p []byte) (int, error) {
 }
 
 func (r *response) WriteHeader(code int) {
-	if !r.wrote {
-		r.wrote = true
-		r.t.addTo(r.w.Header())
+	if r.wrote {
+		return
 	}
+	r.wrote = true
+	r.t.addTo(r.w.Header())
 	r.w.WriteHeader(code)
+}
+
+func (r *response) Flush() {
+	_ = r.FlushError()
+}
+
+func (r *response) FlushError() error {
+	if !r.wrote {
+		r.WriteHeader(http.StatusOK)
+	}
+	return http.NewResponseController(r.w).Flush()
 }
 
 func (r *response) Unwrap() http.ResponseWriter {
