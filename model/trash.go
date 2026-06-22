@@ -724,8 +724,7 @@ func (tx *TxRW) restoreRoot(id string) error {
 // reinserting the Slug table row for top-level entities. Dispatches
 // to the kind-specific ensureSlug helper, which handles both the
 // live (title/label-change) and trashed (restore) cases via the
-// entity's DeletedAt; only the live case announces the change, since
-// a trashed entity's pages have no viewers to follow it.
+// entity's DeletedAt.
 func (tx *TxRW) restoreSlug(id string) error {
 	switch KindOf(id) {
 	case TrashKindMovie:

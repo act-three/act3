@@ -605,13 +605,10 @@ func TestTrashPurgeOrdering(t *testing.T) {
 
 // TestTrashSlugCollisionOnRestore covers scenario 3: a trashed
 // Movie's slug can be claimed by a new Movie; restoring the original
-// auto-renames it, without announcing a slug change — the trashed
-// pages had no viewers, and the old slug now addresses the claimant.
+// auto-renames it; the old slug now addresses the claimant.
 func TestTrashSlugCollisionOnRestore(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
-
-	events := subscribeEvents(m)
 
 	movieA, err := createMovieViaPublicAPI(t, m, "Dune", "2021-01-01")
 	if err != nil {
@@ -670,12 +667,6 @@ func TestTrashSlugCollisionOnRestore(t *testing.T) {
 	}
 	if targetRenamed != movieA {
 		t.Errorf("slug %q points to %q, want movie A %q", slugA, targetRenamed, movieA)
-	}
-
-	// The restore must not announce a slug change: a session viewing
-	// /dune is on movie B's page, and following would hijack it.
-	if hasSlugDetail(events.drain(), movieA) {
-		t.Errorf("slug change announced for movie A on restore")
 	}
 }
 
@@ -1055,43 +1046,6 @@ func getMovieSlug(t *testing.T, m *Model, id string) string {
 	return slug
 }
 
-// eventSink collects events emitted via Model.emit so tests can assert
-// on them after commit hooks have run. drain reads directly from the
-// channel, avoiding a race with emit's non-blocking send into the
-// buffered channel.
-type eventSink struct {
-	m  *Model
-	ch chan *Event
-}
-
-func subscribeEvents(m *Model) *eventSink {
-	s := &eventSink{m: m, ch: make(chan *Event, 256)}
-	m.subMu.Lock()
-	if m.sub == nil {
-		m.sub = map[chan *Event]struct{}{}
-	}
-	m.sub[s.ch] = struct{}{}
-	m.subMu.Unlock()
-	return s
-}
-
-// drain unsubscribes and returns every event currently buffered on
-// the channel. Safe to call once.
-func (s *eventSink) drain() []*Event {
-	s.m.subMu.Lock()
-	delete(s.m.sub, s.ch)
-	s.m.subMu.Unlock()
-	var out []*Event
-	for {
-		select {
-		case ev := <-s.ch:
-			out = append(out, ev)
-		default:
-			return out
-		}
-	}
-}
-
 func TestTrashDefaultMovieEditionPromotesSuccessor(t *testing.T) {
 	m := newTestModel(t)
 	ctx := context.Background()
@@ -1128,13 +1082,11 @@ func TestTrashDefaultMovieEditionPromotesSuccessor(t *testing.T) {
 		t.Fatalf("cloned edition ID %q should sort after original %q", ed2, ed1)
 	}
 
-	sink := subscribeEvents(m)
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.Trash(ed1)
 	}); err != nil {
 		t.Fatal(err)
 	}
-	events := sink.drain()
 
 	var got schema.MovieEdition
 	if err := m.WithTxR(ctx, func(tx *TxR) error {
@@ -1158,15 +1110,6 @@ func TestTrashDefaultMovieEditionPromotesSuccessor(t *testing.T) {
 		return fmt.Errorf("movie %q missing from MovieWorkList after trashing default edition", moID)
 	}); err != nil {
 		t.Fatal(err)
-	}
-
-	if !hasSlugDetail(events, ed2) {
-		t.Fatalf("expected slug-change detail for promoted successor %s, got %+v", ed2, events)
-	}
-	// The demoted default also picks up a label-derived slug; verify a
-	// slug-change detail fired for it too.
-	if !hasSlugDetail(events, ed1) {
-		t.Fatalf("expected slug-change detail for demoted default %s, got %+v", ed1, events)
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
@@ -1396,19 +1339,6 @@ func TestTrashRestoreEpisodePullsUpTrashedSeries(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-}
-
-// hasSlugDetail reports whether any event announced a slug change for
-// the object addressed by id.
-func hasSlugDetail(events []*Event, id string) bool {
-	for _, ev := range events {
-		for _, d := range ev.Details {
-			if d.SlugChangeID == id {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // TestTrashRoundTripMovie covers section 1.1: trashing a Movie with
@@ -2834,8 +2764,6 @@ func TestTrashSlugCollisionOnRestoreSeries(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 
-	events := subscribeEvents(m)
-
 	srA, _, _, _, _, _ := createSeriesRow(t, m, "breaking-bad", "Breaking Bad")
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
 		return tx.Trash(srA)
@@ -2870,19 +2798,12 @@ func TestTrashSlugCollisionOnRestoreSeries(t *testing.T) {
 	if slugB != "breaking-bad" {
 		t.Errorf("srB slug = %q, want breaking-bad", slugB)
 	}
-	// No slug-change announcement on restore; see
-	// TestTrashSlugCollisionOnRestore.
-	if hasSlugDetail(events.drain(), srA) {
-		t.Errorf("slug change announced for srA on restore")
-	}
 }
 
 // TestTrashSlugCollisionOnRestoreCollection covers section 5.4.
 func TestTrashSlugCollisionOnRestoreCollection(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
-
-	events := subscribeEvents(m)
 
 	cA := createCollectionRow(t, m, "classics", "Classics")
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
@@ -2917,11 +2838,6 @@ func TestTrashSlugCollisionOnRestoreCollection(t *testing.T) {
 	}
 	if slugB != "classics" {
 		t.Errorf("cB slug = %q, want classics", slugB)
-	}
-	// No slug-change announcement on restore; see
-	// TestTrashSlugCollisionOnRestore.
-	if hasSlugDetail(events.drain(), cA) {
-		t.Errorf("slug change announced for cA on restore")
 	}
 }
 
@@ -2963,13 +2879,11 @@ func TestTrashDefaultSeriesEditionPromotesSuccessor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	events := collectEvents(t, m, func() {
-		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(ed1)
-		}); err != nil {
-			t.Fatal(err)
-		}
-	})
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		return tx.Trash(ed1)
+	}); err != nil {
+		t.Fatal(err)
+	}
 	if err := m.WithTxR(ctx, func(tx *TxR) error {
 		e2, err := tx.q.SeriesEditionGet(ed2)
 		if err != nil {
@@ -2981,9 +2895,6 @@ func TestTrashDefaultSeriesEditionPromotesSuccessor(t *testing.T) {
 		return nil
 	}); err != nil {
 		t.Fatal(err)
-	}
-	if !hasSlugDetail(events, ed2) {
-		t.Errorf("expected slug-change detail promoting ed2 to default")
 	}
 }
 
@@ -3894,14 +3805,6 @@ func assertTrashed(t *testing.T, m *Model, id, wantCascadeOf string) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-}
-
-// collectEvents subscribes, runs fn, then returns every event emitted.
-func collectEvents(t *testing.T, m *Model, fn func()) []*Event {
-	t.Helper()
-	sink := subscribeEvents(m)
-	fn()
-	return sink.drain()
 }
 
 // countRows returns the count of rows matching `where` (may be empty)

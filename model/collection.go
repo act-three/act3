@@ -350,8 +350,7 @@ func (tx *TxRW) CollectionTitleSet(id, title string) error {
 }
 
 // collectionEnsureSlug aligns the Collection's slug with its current
-// title, announcing the change on a live rename so a viewer can follow
-// it, and keeps the Slug table row in sync. Safe to call on live
+// title, and keeps the Slug table row in sync. Safe to call on live
 // collections (title-change) or trashed ones (restore).
 func (tx *TxRW) collectionEnsureSlug(id string) error {
 	col, err := tx.q.CollectionGet(id)
@@ -367,10 +366,6 @@ func (tx *TxRW) collectionEnsureSlug(id string) error {
 		return err
 	}
 	if slug != col.Slug {
-		// Only a live rename is announced; see seriesEnsureSlug.
-		if col.DeletedAt == nil {
-			tx.emitDetail(Detail{SlugChangeID: id})
-		}
 		if err := tx.q.CollectionSetSlug(schema.CollectionSetSlugParams{Slug: slug, ID: id}); err != nil {
 			return err
 		}

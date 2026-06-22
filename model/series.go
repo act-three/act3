@@ -151,7 +151,6 @@ func isReservedSlug(s string) bool {
 }
 
 // seriesEnsureSlug aligns the Series' slug with its current title,
-// announcing the change on a live rename so a viewer can follow it,
 // and keeps the Slug table row in sync. Safe to call on live series
 // (title-change) or trashed ones (restore).
 func (tx *TxRW) seriesEnsureSlug(id string) error {
@@ -168,12 +167,6 @@ func (tx *TxRW) seriesEnsureSlug(id string) error {
 		return err
 	}
 	if slug != sr.Slug {
-		// Only a live rename is announced: a trashed series' pages
-		// have no viewers to follow it, and its former slug may
-		// meanwhile address something else entirely.
-		if sr.DeletedAt == nil {
-			tx.emitDetail(Detail{SlugChangeID: id})
-		}
 		if err := tx.q.SeriesSlugSet(schema.SeriesSlugSetParams{Slug: slug, ID: id}); err != nil {
 			return err
 		}

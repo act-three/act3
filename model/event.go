@@ -9,24 +9,12 @@ import (
 // Emitters include the database (after each read-write transaction),
 // the upload tracker (periodically as bytes are received),
 // and the task queue (when a task begins or ends).
-//
-// Details contains additional information a client might need.
-type Event struct {
-	Details []Detail
-}
+type Event struct{}
 
-// Detail is extra information about an Event
-// that a client might find useful.
-type Detail struct {
-	// SlugChangeID, when set, is the ID of an object whose slug
-	// changed, so a client viewing that object can follow the rename.
-	SlugChangeID string
-}
-
-// emit broadcasts an Event carrying details (which may be nil) to every
-// subscriber, dropping it for any subscriber not keeping up.
-func (m *Model) emit(details []Detail) {
-	ev := &Event{Details: details}
+// emit broadcasts an Event to every subscriber, dropping it for any
+// subscriber not keeping up.
+func (m *Model) emit() {
+	ev := &Event{}
 	m.subMu.Lock()
 	defer m.subMu.Unlock()
 	for ch := range m.sub {

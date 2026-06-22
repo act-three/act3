@@ -274,10 +274,9 @@ func (tx *TxRW) MovieEditionLabelSet(id, label string) error {
 }
 
 // movieEditionEnsureSlug aligns the edition's slug with its current
-// label, announcing the change on a live rename so a viewer can follow
-// it. Safe to call when the edition is live (e.g. after a label change)
-// or trashed (during restore); when live, the current slug is held in
-// reserve so findSlug doesn't reject it as self-collision.
+// label. Safe to call when the edition is live (e.g. after a label
+// change) or trashed (during restore); when live, the current slug is
+// held in reserve so findSlug doesn't reject it as self-collision.
 func (tx *TxRW) movieEditionEnsureSlug(id string) error {
 	med, err := tx.q.MovieEditionGet(id)
 	if err != nil {
@@ -293,11 +292,6 @@ func (tx *TxRW) movieEditionEnsureSlug(id string) error {
 	}
 	if slug == med.Slug {
 		return nil
-	}
-	// Only a live rename is announced: a trashed edition's pages
-	// have no viewers to follow it.
-	if med.DeletedAt == nil {
-		tx.emitDetail(Detail{SlugChangeID: id})
 	}
 	return tx.q.MovieEditionSlugSet(schema.MovieEditionSlugSetParams{
 		Slug: slug,
@@ -391,8 +385,6 @@ func (tx *TxRW) MovieEditionSetDefault(id string) error {
 	if err != nil {
 		return err
 	}
-	tx.emitDetail(Detail{SlugChangeID: old.ID})
-	tx.emitDetail(Detail{SlugChangeID: med.ID})
 	err = tx.q.MovieEditionSlugSet(schema.MovieEditionSlugSetParams{
 		Slug: oldSlug,
 		ID:   old.ID,
