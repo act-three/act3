@@ -41,6 +41,23 @@ build_version() {
 	fi
 }
 
+gen_buildinfo() {
+	# The working copy (@) is usually empty at build time — we land
+	# changes on main, then build.  So stamp the commit that was
+	# actually built: the latest non-empty ancestor of @ (e.g. @
+	# itself when it holds changes, otherwise the commit it sits on).
+	rev=$(jj log -r 'latest(::@ ~ empty())' --no-graph --color=never -T change_id) || return 1
+	[ -n "$rev" ] || return 1
+
+	printf "%s" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >buildinfo/embed-date.txt
+	printf "%s" "$rev" >buildinfo/embed-changeid.txt
+	jj log -r "$rev" --no-graph --color=never -T commit_id \
+		>buildinfo/embed-commitid.txt
+	jj log --color=never -r "fork_point($rev | main)::($rev | main)" \
+		-T 'separate(" ", change_id.shortest(8), commit_id.shortest(8), bookmarks, description.first_line())' \
+		>buildinfo/embed-log.txt
+}
+
 case "${1:-}" in
 	deploy)
 		mkdir -p deploy
@@ -56,7 +73,8 @@ case "${1:-}" in
 		# and jassub.Path returns "" at runtime.
 		go run web/jassub/gen.go
 
-		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags prod,nodynamic -o $dir/act3
+		gen_buildinfo
+		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags prod,nodynamic,buildinfoembed -o $dir/act3
 
 		## Build ffmpeg and ffprobe from source via Docker.
 		## See Dockerfile.ffmpeg for the build configuration.
@@ -108,6 +126,14 @@ case "${1:-}" in
 		ssh root@pepper boxup act3
 		echo $image >deploy/latest
 		;;
+	run)
+		shift
+		gen_buildinfo
+		bin="$(mktemp -d /tmp/act3-run.XXXXXX)/act3"
+		trap 'rm -rf "$(dirname "$bin")"' EXIT
+		go build -tags buildinfoembed -o "$bin" .
+		"$bin" "$@"
+		;;
 	regen)
 		# Run go generate on each commit in the revset, so any drift in
 		# generated files (bundles, sqlc output, html/tag.go) lands on the
@@ -129,6 +155,7 @@ case "${1:-}" in
 		echo "Commands:"
 		echo
 		echo "    container  Build & run container for dev"
+		echo "    run        Run the server from the working copy, stamped with build info"
 		echo "    deploy     Deploy the image to the USB stick"
 		echo "    regen      Run go generate on each commit in revset (default: same as jj fix)"
 		echo
