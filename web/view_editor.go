@@ -1,6 +1,7 @@
 package web
 
 import (
+	"ily.dev/act3/buildinfo"
 	"ily.dev/act3/model"
 	"ily.dev/act3/view"
 )
@@ -20,6 +21,8 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (titl
 	switch {
 	case m.match(""):
 		return "", notFound
+	case m.match("about"):
+		return viewEditorAbout()
 	case m.match("profile"):
 		return view.AppProfile()
 	case m.match("security"):
@@ -62,6 +65,10 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (titl
 		return viewEditorTrash(tx, m.get("id"))
 	}
 	return "", notFound
+}
+
+func viewEditorAbout() (title string, n node) {
+	return view.AppAbout(buildinfo.Get())
 }
 
 func viewEditorCollection(tx *model.TxR, id string, notFound bool) (title string, n node) {

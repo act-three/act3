@@ -58,6 +58,7 @@ func sidebarData(c Config) []MenuSection {
 		{
 			Label: "System",
 			Items: []MenuItem{
+				{"line/info-circle", "/app/about", "About", "", "", nil, ""},
 				{"line/cloud-01", "/app/transmission", "Download Client", "", "", nil, ""},
 				{"line/database-01", "/app/tmdb", "TMDB", "", "", nil, ""},
 				{"line/hard-drive", "/app/storage", "Storage", "", "", nil, ""},

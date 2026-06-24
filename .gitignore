@@ -5,6 +5,7 @@
 /.claude/scheduled_tasks.lock
 /.mcp.json
 /.playwright-mcp/
+/buildinfo/embed-*.txt
 /deploy
 /node_modules
 /src
