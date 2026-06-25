@@ -107,6 +107,47 @@ func newSlugResolveFixture(t *testing.T, m *Model) slugResolveFixture {
 	return fx
 }
 
+// TestMovieEditionReleaseDateSetRecomputesSlug covers the manual
+// workflow where a duplicate-title movie first falls back to a
+// title-id slug and then, once a release date supplies a year, should
+// settle on the title-year form.
+func TestMovieEditionReleaseDateSetRecomputesSlug(t *testing.T) {
+	m := newTestModel(t)
+	ctx := context.Background()
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		// An existing movie claims the bare "dune" slug.
+		if _, err := tx.MovieCreate("Dune", "1984-12-14"); err != nil {
+			return err
+		}
+		// A new blank movie titled "Dune" can't reuse that slug and,
+		// lacking a year, falls back to the title-id form.
+		dup, err := tx.MovieCreate("", "")
+		if err != nil {
+			return err
+		}
+		moID := dup.MovieHead.ID()
+		if err := tx.MovieEditionTitleSet(dup.MovieEditionHead.ID(), "Dune"); err != nil {
+			return err
+		}
+		if got, want := tx.MovieHead(moID).Slug(), "dune-"+moID; got != want {
+			t.Fatalf("after title set, slug = %q, want %q", got, want)
+		}
+		// Setting the release date should recompute the slug to the
+		// title-year form now that a year is available.
+		if err := tx.MovieEditionReleaseDateSet(dup.MovieEditionHead.ID(), "2021-10-22"); err != nil {
+			return err
+		}
+		if got, want := tx.MovieHead(moID).Slug(), "dune-2021"; got != want {
+			t.Fatalf("after release date set, slug = %q, want %q", got, want)
+		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSlugResolve(t *testing.T) {
 	m := newTestModel(t)
 	fx := newSlugResolveFixture(t, m)
