@@ -324,11 +324,26 @@ func (tx *TxRW) MovieEditionTitleSet(id, title string) error {
 }
 
 func (tx *TxRW) MovieEditionReleaseDateSet(id, date string) error {
-	return tx.q.MovieEditionReleaseDateSet(schema.MovieEditionReleaseDateSetParams{
+	med, err := tx.q.MovieEditionGet(id)
+	if err != nil {
+		return err
+	}
+	err = tx.q.MovieEditionReleaseDateSet(schema.MovieEditionReleaseDateSetParams{
 		ReleaseDate: date,
 		ID:          id,
 	})
 
+	if err != nil {
+		return err
+	}
+	if med.Slug != "" {
+		return nil // not the default edition
+	}
+	mo, err := tx.q.MovieGetByEditionID(id)
+	if err != nil {
+		return err
+	}
+	return tx.movieEnsureSlug(mo.ID)
 }
 
 func (tx *TxRW) MovieEditionRuntimeSet(id string, runtime int64) error {
