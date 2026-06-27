@@ -58,33 +58,7 @@ func TestPendingUpdate(t *testing.T) {
 	})
 }
 
-func TestParseTouches(t *testing.T) {
-	tests := []struct {
-		name    string
-		ddl     string
-		want    []string
-		wantErr bool
-	}{
-		{"after description", "-- add slug to movie\n-- touches: movie\nALTER TABLE movie ...", []string{"movie"}, false},
-		{"multiple", "-- desc\n-- touches: movie, episode\nSQL", []string{"movie", "episode"}, false},
-		{"empty list", "-- desc\n-- touches:\nSQL", nil, false},
-		{"missing", "-- desc\nALTER TABLE movie ...", nil, true},
-		{"directive after sql is not found", "-- desc\nSQL\n-- touches: movie", nil, true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseTouches([]byte(tt.ddl))
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
-			}
-			if !equalStrings(got, tt.want) {
-				t.Fatalf("got %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSnapshotCounts(t *testing.T) {
+func TestSnapshotRows(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "snap.db")
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -103,33 +77,31 @@ func TestSnapshotCounts(t *testing.T) {
 	}
 	db.Close()
 
-	total, per, err := snapshotCounts(path, []string{"movie", "episode"})
+	total, err := snapshotRows(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if total != 4 {
 		t.Errorf("total = %d, want 4", total)
 	}
-	if per["movie"] != 3 || per["episode"] != 1 {
-		t.Errorf("per-table = %v", per)
-	}
-	if _, _, err := snapshotCounts(path, []string{"nope"}); err == nil {
-		t.Error("want error for a missing touched table")
-	}
 }
 
 // TestApplyAndRead exercises the real database.Open update path: it seeds a
-// database at schema version 000, then confirms applyAndRead applies 001
-// and reads back the rolling digest that frozen.txt records for it.
+// database at schema version 000, then confirms applyAndRead applies 001,
+// reads back the rolling digest that frozen.txt records for it, and reports
+// zero changed rows (001 is pure schema).
 func TestApplyAndRead(t *testing.T) {
 	path, frozen := seedAt000(t)
-	version, digest, err := applyAndRead(path)
+	version, digest, affected, err := applyAndRead(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if version != frozen[1].Version || digest != frozen[1].Digest {
 		t.Fatalf("applyAndRead = (%q, %q), want (%q, %q)",
 			version, digest, frozen[1].Version, frozen[1].Digest)
+	}
+	if affected != 0 {
+		t.Errorf("affected = %d, want 0 (001 changes no data rows)", affected)
 	}
 }
 
@@ -194,7 +166,7 @@ func TestMarshalReport(t *testing.T) {
 		Update:   entry{"002", "dd", "002_foo.up.sql"},
 		Base:     entry{"001", "d1", "001_init.up.sql"},
 		Snapshot: snapshot{Digest: "abc", Mtime: "2026-06-27T00:00:00Z", Size: 1024},
-		Rows:     rows{Total: 42, Touched: map[string]int{"movie": 3, "episode": 1}},
+		Rows:     rows{Total: 42, Affected: 7},
 		Result:   "ok",
 	}
 	a, err := marshalReport(rep)
@@ -215,19 +187,7 @@ func TestMarshalReport(t *testing.T) {
 	if err := json.Unmarshal(a, &got); err != nil {
 		t.Fatalf("report does not round-trip: %v", err)
 	}
-	if got.Update != rep.Update || got.Result != "ok" || got.Rows.Total != 42 {
+	if got.Update != rep.Update || got.Result != "ok" || got.Rows.Total != 42 || got.Rows.Affected != 7 {
 		t.Errorf("round-trip mismatch: %+v", got)
 	}
-}
-
-func equalStrings(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
