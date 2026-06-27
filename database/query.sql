@@ -412,26 +412,18 @@ UPDATE Episode SET Title = ? WHERE ID = ?;
 -- name: EpisodeTypeSet :exec
 UPDATE Episode SET Type = ? WHERE ID = ?;
 
--- EpisodeVideoActivePromote marks the lowest-VideoID live, playable
--- junction Active for the episode, but only if no Active live junction
--- already exists. No-op when an Active junction is already present or
--- when no playable candidate exists.
+-- EpisodeVideoActivePromote marks (EpisodeID, VideoID) Active when that
+-- video is live and playable and the episode has no Active live junction
+-- yet. No-op otherwise. Promotes a video the moment it becomes playable.
 -- name: EpisodeVideoActivePromote :exec
 UPDATE EpisodeVideo SET Active = 1
-WHERE EpisodeVideo.EpisodeID = ? AND EpisodeVideo.DeletedAt IS NULL
-AND EpisodeVideo.VideoID IN (
-	SELECT ev.VideoID FROM EpisodeVideo AS ev
-	JOIN Video ON Video.ID = ev.VideoID
+WHERE EpisodeID = sqlc.arg(EpisodeID) AND VideoID = sqlc.arg(VideoID)
+AND DeletedAt IS NULL
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND Playable != 0)
+AND NOT EXISTS (
+	SELECT 1 FROM EpisodeVideo AS ev
 	WHERE ev.EpisodeID = EpisodeVideo.EpisodeID
-	  AND ev.DeletedAt IS NULL
-	  AND Video.DeletedAt IS NULL
-	  AND Video.Playable != 0
-	  AND NOT EXISTS (
-		SELECT 1 FROM EpisodeVideo AS ev2
-		WHERE ev2.EpisodeID = ev.EpisodeID
-		  AND ev2.Active = 1 AND ev2.DeletedAt IS NULL
-	  )
-	ORDER BY ev.VideoID LIMIT 1
+	  AND ev.Active = 1 AND ev.DeletedAt IS NULL
 );
 
 -- EpisodeVideoCountPlayable counts live junctions for an episode whose
@@ -714,25 +706,19 @@ UPDATE Movie
 SET DeletedAt = sqlc.arg(DeletedAt)
 WHERE ID = sqlc.arg(ID) AND DeletedAt IS NULL;
 
--- MovieVideoActivePromote marks the lowest-VideoID live, playable
--- junction Active for the movie edition, but only if no Active live
--- junction already exists.
+-- MovieVideoActivePromote marks (MovieEditionID, VideoID) Active when
+-- that video is live and playable and the edition has no Active live
+-- junction yet. No-op otherwise. Promotes a video the moment it becomes
+-- playable.
 -- name: MovieVideoActivePromote :exec
 UPDATE MovieVideo SET Active = 1
-WHERE MovieVideo.MovieEditionID = ? AND MovieVideo.DeletedAt IS NULL
-AND MovieVideo.VideoID IN (
-	SELECT mv.VideoID FROM MovieVideo AS mv
-	JOIN Video ON Video.ID = mv.VideoID
+WHERE MovieEditionID = sqlc.arg(MovieEditionID) AND VideoID = sqlc.arg(VideoID)
+AND DeletedAt IS NULL
+AND VideoID IN (SELECT ID FROM Video WHERE DeletedAt IS NULL AND Playable != 0)
+AND NOT EXISTS (
+	SELECT 1 FROM MovieVideo AS mv
 	WHERE mv.MovieEditionID = MovieVideo.MovieEditionID
-	  AND mv.DeletedAt IS NULL
-	  AND Video.DeletedAt IS NULL
-	  AND Video.Playable != 0
-	  AND NOT EXISTS (
-		SELECT 1 FROM MovieVideo AS mv2
-		WHERE mv2.MovieEditionID = mv.MovieEditionID
-		  AND mv2.Active = 1 AND mv2.DeletedAt IS NULL
-	  )
-	ORDER BY mv.VideoID LIMIT 1
+	  AND mv.Active = 1 AND mv.DeletedAt IS NULL
 );
 
 -- MovieVideoCountPlayable counts live junctions for a movie edition

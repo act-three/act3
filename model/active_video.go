@@ -14,7 +14,7 @@ import (
 // video.
 var ErrActiveVideoLocked = errors.New("active video is locked while another playable video exists; switch active first")
 
-// ensureActiveVideoForVideoID promotes a playable video to Active for
+// ensureActiveVideoForVideoID promotes videoID to Active for
 // every work it's attached to that doesn't already have an Active
 // junction. Run after a video transitions to playable (MVPlaylist set)
 // or after a junction set changes.
@@ -26,7 +26,10 @@ func (tx *TxRW) ensureActiveVideoForVideoID(videoID string) (err error) {
 		return err
 	}
 	for _, epID := range epIDs {
-		if err := tx.q.EpisodeVideoActivePromote(epID); err != nil {
+		if err := tx.q.EpisodeVideoActivePromote(schema.EpisodeVideoActivePromoteParams{
+			EpisodeID: epID,
+			VideoID:   videoID,
+		}); err != nil {
 			return err
 		}
 	}
@@ -35,7 +38,10 @@ func (tx *TxRW) ensureActiveVideoForVideoID(videoID string) (err error) {
 		return err
 	}
 	for _, medID := range medIDs {
-		if err := tx.q.MovieVideoActivePromote(medID); err != nil {
+		if err := tx.q.MovieVideoActivePromote(schema.MovieVideoActivePromoteParams{
+			MovieEditionID: medID,
+			VideoID:        videoID,
+		}); err != nil {
 			return err
 		}
 	}
