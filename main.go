@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"flag"
@@ -25,7 +24,6 @@ import (
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/storage"
 	"ily.dev/act3/video/ffmpeg"
-	"ily.dev/act3/view"
 	"ily.dev/act3/web"
 )
 
@@ -99,12 +97,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		slog.Warn("schema mismatch, entering degraded mode",
-			"version", sme.Version,
-			"stored", sme.StoredDigest,
-			"expected", sme.ExpectedDigest,
-		)
-		serveDegraded(sme, dbPath)
+		handleSchemaMismatch(sme, dbPath)
 	}
 
 	datDir := filepath.Join(storageDir, "dat")
@@ -166,44 +159,6 @@ func main() {
 	h = secureheader.Handler(h)
 	slog.Info("listen", "listen", listen)
 	panic(http.ListenAndServe(listen, h))
-}
-
-func serveDegraded(sme *database.SchemaMismatchError, dbPath string) {
-	stats, err := database.TableStats(dbPath)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-
-	var dbFileSize int64
-	for _, suffix := range []string{"", "-wal", "-shm"} {
-		if info, err := os.Stat(dbPath + suffix); err == nil {
-			dbFileSize += info.Size()
-		}
-	}
-	page := view.Degraded(sme, stats, dbFileSize)
-
-	srv := &http.Server{Addr: listen}
-	mux := &http.ServeMux{}
-	web.HandleDegraded(mux, page, func() {
-		for _, suffix := range []string{"", "-wal", "-shm"} {
-			os.Remove(dbPath + suffix)
-		}
-		go srv.Shutdown(context.Background())
-	})
-	var h http.Handler = mux
-	h = primaryredirect.Handler(primaryURL, h)
-	h = panicstack.Handler(h)
-	h = timing.Handler(h)
-	h = requestid.Handler(h)
-	h = (&http.CrossOriginProtection{}).Handler(h)
-	h = secureheader.Handler(h)
-	srv.Handler = h
-	slog.Info("degraded mode", "listen", listen)
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
 }
 
 func must[T any](v T, err error) T {
