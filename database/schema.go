@@ -78,4 +78,5 @@ func checkUpdates(check []update) {
 	if len(check) > 1 { // newest update is still in development
 		panic(fmt.Errorf("ddl: %d unfrozen updates; only 1 allowed", len(check)))
 	}
+	checkProdUpdates(len(check))
 }
