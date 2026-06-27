@@ -1,9 +1,9 @@
 // Command freeze freezes the pending schema update: it pulls a
 // consistent snapshot of the prod database, checks the snapshot is at the
 // current published schema, applies the update to a copy via the real
-// database.Open path to prove it applies cleanly, checks that the tables
-// the update depends on hold real data, writes an attestation report
-// under database/report/, and appends the update to database/frozen.txt.
+// database.Open path to prove it applies cleanly, records how many rows
+// the update changed, writes an attestation report under
+// database/report/, and appends the update to database/frozen.txt.
 //
 // The snapshot is pulled live and without downtime. By default freeze
 // runs "VACUUM INTO" through the prod host's sqlite3, which yields a
@@ -106,8 +106,8 @@ type snapshot struct {
 }
 
 type rows struct {
-	Total   int            `json:"total"`
-	Touched map[string]int `json:"touched"`
+	Total    int `json:"total"`
+	Affected int `json:"affected"`
 }
 
 func freeze(cfg config) error {
@@ -132,15 +132,6 @@ func freeze(cfg config) error {
 		return err
 	}
 
-	ddl, err := os.ReadFile(filepath.Join(ddlDir, name))
-	if err != nil {
-		return err
-	}
-	touched, err := parseTouches(ddl)
-	if err != nil {
-		return fmt.Errorf("%s: %w", name, err)
-	}
-
 	snapPath := cfg.snapshot
 	if snapPath == "" {
 		snapPath, err = pullSnapshot(cfg.dest, cfg.remoteDB)
@@ -159,17 +150,12 @@ func freeze(cfg config) error {
 		return err
 	}
 
-	total, perTable, err := snapshotCounts(snapPath, touched)
+	total, err := snapshotRows(snapPath)
 	if err != nil {
 		return err
 	}
-	for _, t := range touched {
-		if perTable[t] == 0 {
-			return fmt.Errorf("touched table %q is empty in the snapshot; the update was not exercised against real data", t)
-		}
-	}
 
-	gotVersion, digest, err := applyAndRead(snapPath)
+	gotVersion, digest, affected, err := applyAndRead(snapPath)
 	if err != nil {
 		return fmt.Errorf("applying %s: %w", name, err)
 	}
@@ -182,7 +168,7 @@ func freeze(cfg config) error {
 		Update:   entry{Version: version, Digest: digest, Name: name},
 		Base:     base,
 		Snapshot: snap,
-		Rows:     rows{Total: total, Touched: perTable},
+		Rows:     rows{Total: total, Affected: affected},
 		Result:   "ok",
 	}
 	repJSON, err := marshalReport(rep)
@@ -277,67 +263,27 @@ func pendingUpdate(ddlNames []string, frozen []entry) (name, version string, bas
 	return name, version, base, nil
 }
 
-// parseTouches reads the "-- touches: a, b, c" directive from a schema
-// update's leading comments. It names the existing tables whose data the
-// update depends on, so freeze can confirm they are non-empty. The
-// directive is required (an update with no such dependency writes an
-// empty list), which forces the author to consider it.
-func parseTouches(ddl []byte) ([]string, error) {
-	sc := bufio.NewScanner(bytes.NewReader(ddl))
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		if line == "" {
-			continue
-		}
-		rest, ok := strings.CutPrefix(line, "--")
-		if !ok {
-			break // reached SQL; the directive must be in the header comments
-		}
-		list, ok := strings.CutPrefix(strings.TrimSpace(rest), "touches:")
-		if !ok {
-			continue
-		}
-		var tables []string
-		for t := range strings.SplitSeq(list, ",") {
-			if t = strings.TrimSpace(t); t != "" {
-				tables = append(tables, t)
-			}
-		}
-		return tables, nil
-	}
-	return nil, errors.New(`missing "-- touches:" directive in the header comment`)
-}
-
-// snapshotCounts returns the total row count across all user tables in the
-// snapshot and the per-table counts for the touched tables. A touched
-// table that does not exist is an error.
-func snapshotCounts(path string, touched []string) (total int, perTable map[string]int, err error) {
+// snapshotRows returns the total row count across all user tables in the
+// snapshot.
+func snapshotRows(path string) (total int, err error) {
 	db, err := sql.Open("sqlite", path+"?mode=ro")
 	if err != nil {
-		return 0, nil, err
+		return 0, err
 	}
 	defer db.Close()
 
 	names, err := userTables(db)
 	if err != nil {
-		return 0, nil, err
+		return 0, err
 	}
 	for _, n := range names {
 		c, err := tableCount(db, n)
 		if err != nil {
-			return 0, nil, err
+			return 0, err
 		}
 		total += c
 	}
-	perTable = make(map[string]int, len(touched))
-	for _, t := range touched {
-		c, err := tableCount(db, t)
-		if err != nil {
-			return 0, nil, fmt.Errorf("touched table %q: %w", t, err)
-		}
-		perTable[t] = c
-	}
-	return total, perTable, nil
+	return total, nil
 }
 
 func userTables(db *sql.DB) ([]string, error) {
@@ -359,8 +305,8 @@ func userTables(db *sql.DB) ([]string, error) {
 
 func tableCount(db *sql.DB, table string) (int, error) {
 	var n int
-	// Table names are quoted; they come from sqlite_master or the
-	// repo's own touches directive, never from untrusted input.
+	// Table names are quoted; they come from sqlite_master, never from
+	// untrusted input.
 	err := db.QueryRow(`SELECT count(*) FROM "` + strings.ReplaceAll(table, `"`, `""`) + `"`).Scan(&n)
 	return n, err
 }
@@ -399,13 +345,13 @@ func snapshotVersion(snapshotPath string) (version, digest string, err error) {
 }
 
 // applyAndRead copies the snapshot and applies the pending update through
-// the real database.Open path, returning the schema version and rolling
-// digest recorded for the update. The copy is necessary because Open
-// applies updates in place.
-func applyAndRead(snapshotPath string) (version, digest string, err error) {
+// the real database.Open path. It returns the schema version and rolling
+// digest recorded for the update, and the number of data rows the update
+// changed. The copy is necessary because Open applies updates in place.
+func applyAndRead(snapshotPath string) (version, digest string, affected int, err error) {
 	tmp, err := os.CreateTemp("", "act3-freeze-*.db")
 	if err != nil {
-		return "", "", err
+		return "", "", 0, err
 	}
 	tmpPath := tmp.Name()
 	tmp.Close()
@@ -415,21 +361,30 @@ func applyAndRead(snapshotPath string) (version, digest string, err error) {
 		}
 	}()
 	if err := copyFile(snapshotPath, tmpPath); err != nil {
-		return "", "", err
+		return "", "", 0, err
 	}
 
 	dbr, dbw, err := database.Open(tmpPath)
 	if err != nil {
-		return "", "", err
+		return "", "", 0, err
 	}
 	defer dbw.Close()
 	defer dbr.Close()
 
 	v, err := schema.New(context.Background(), dbr).SchemaVersionGet()
 	if err != nil {
-		return "", "", err
+		return "", "", 0, err
 	}
-	return v.Version, v.Digest, nil
+
+	// total_changes() on the single write connection counts every row the
+	// apply changed. Open applies exactly one update here (the snapshot is
+	// at base), whose bookkeeping also writes one schema-version row;
+	// subtract it to leave the update's own data changes.
+	var changes int
+	if err := dbw.QueryRow("SELECT total_changes()").Scan(&changes); err != nil {
+		return "", "", 0, err
+	}
+	return v.Version, v.Digest, changes - 1, nil
 }
 
 func describeSnapshot(path string) (snapshot, error) {

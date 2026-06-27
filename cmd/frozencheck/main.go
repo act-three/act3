@@ -84,7 +84,7 @@ type entry struct {
 
 // report is the subset of a database/report/<name>.json attestation that
 // CI can verify against the repository. The freeze tool writes more
-// (snapshot identity, per-table counts); those are the data claim it
+// (snapshot identity, rows changed); those are the data claim it
 // vouches for and are ignored here.
 type report struct {
 	Update entry `json:"update"`
