@@ -41,6 +41,24 @@ build_version() {
 	fi
 }
 
+check_all_ddl_frozen() {
+	# Refuse to ship an unfrozen schema tip: every DDL update must be
+	# recorded in database/frozen.txt before it reaches prod. Runtime
+	# digest validation and CI's append-only frozencheck cover
+	# correctness and history. This only asserts nothing is left unfrozen.
+	missing=""
+	for f in database/ddl/*.up.sql; do
+		name=$(basename "$f")
+		awk -v n="$name" '$3 == n {found = 1} END {exit !found}' \
+			database/frozen.txt || missing="$missing $name"
+	done
+	if [ -n "$missing" ]; then
+		echo "error: unfrozen schema update(s):$missing" >&2
+		echo "freeze them in database/frozen.txt before deploying" >&2
+		exit 1
+	fi
+}
+
 gen_buildinfo() {
 	# The working copy (@) is usually empty at build time — we land
 	# changes on main, then build.  So stamp the commit that was
@@ -60,6 +78,7 @@ gen_buildinfo() {
 
 case "${1:-}" in
 	deploy)
+		check_all_ddl_frozen
 		mkdir -p deploy
 		dir=$(mktemp -d /tmp/act3.XXXXXX)
 		trap "rm -rf '$dir'" EXIT
