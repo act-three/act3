@@ -6,6 +6,7 @@
 		"web/static/static/",
 		"web/stimulus.js",
 		"database/schema/",
+		"database/report/",
 		"**/*.sql"
 	],
 	"plugins": [
