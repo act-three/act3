@@ -119,6 +119,13 @@ jobs:
             - name: go test
               run: go test -short ./...
 
+            # The prod build tag compiles in the unfrozen-schema
+            # backstop (database/schema_prod.go). Exercise it on just
+            # the database package so the rest of the suite doesn't
+            # re-run under -tags prod.
+            - name: go test (prod backstop)
+              run: go test -tags prod ./database/
+
     # Race-detector pass on the same short subset (skips ffmpeg).
     # Not required to land: race regressions don't block, but they
     # show up as a failing check.
