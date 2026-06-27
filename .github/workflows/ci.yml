@@ -82,10 +82,11 @@ jobs:
               run: go tool go-check-sumtype ./...
 
             # frozen.txt records published schema updates and may only
-            # grow: existing entries are immutable. Compare against the
+            # grow: existing entries are immutable, and each newly-frozen
+            # update must carry an attestation report. Compare against the
             # merge base so a PR is judged from where it branched, not
             # the moving tip of main.
-            - name: frozen.txt append-only
+            - name: frozen.txt append-only + attestation
               run: |
                   if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
                     base=$(git merge-base '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}')
@@ -93,6 +94,18 @@ jobs:
                     base='${{ github.event.before }}'
                   fi
                   git show "$base:database/frozen.txt" | go run ./cmd/frozencheck database/frozen.txt
+
+                  # Committed reports are immutable, like frozen.txt
+                  # entries: a PR may add report files but never modify or
+                  # delete one. Otherwise it could lower an earlier
+                  # report's row count to weaken the floor that the
+                  # attestation check reads from the working tree.
+                  changed=$(git diff --diff-filter=MD --name-only "$base" HEAD -- database/report/)
+                  if [ -n "$changed" ]; then
+                    echo "error: attestation reports are immutable; do not modify or delete:" >&2
+                    echo "$changed" >&2
+                    exit 1
+                  fi
 
             - name: go mod tidy
               run: |
