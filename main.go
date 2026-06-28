@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"strings"
 
 	"ily.dev/act3/database"
 	"ily.dev/act3/http/panicstack"
@@ -67,25 +66,8 @@ func main() {
 		level = slog.LevelDebug
 	}
 	mainPackagePrefix := bi.Main.Path + "/"
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     level,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			switch a.Key {
-			case slog.TimeKey, slog.LevelKey:
-				return slog.Attr{}
-			case slog.SourceKey:
-				s := a.Value.Any().(*slog.Source).Function
-				s = strings.TrimPrefix(s, mainPackagePrefix)
-				s, _, _ = strings.Cut(s, ".")
-				return slog.String(a.Key, s)
-			}
-			return a
-		},
-	})))
-	slog.SetDefault(slog.New(logcontext.Handler(slog.Default().Handler(),
-		domiSessionLogAttrs,
-	)))
+	base := newLogHandler(os.Stderr, level, mainPackagePrefix)
+	slog.SetDefault(slog.New(logcontext.Handler(base, domiSessionLogAttrs)))
 	slog.Info("startup", "mod", bi.Main.Path, "version", bi.Main.Version)
 
 	dbPath := filepath.Join(databaseDir, "act3.db")

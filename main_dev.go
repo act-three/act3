@@ -5,9 +5,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+
+	charmlog "github.com/charmbracelet/log"
 
 	"ily.dev/act3/database"
 	"ily.dev/act3/http/panicstack"
@@ -18,6 +24,36 @@ import (
 	"ily.dev/act3/view"
 	"ily.dev/act3/web"
 )
+
+// newLogHandler returns the development slog backend: charmbracelet/log,
+// which renders colorized, human-readable log lines. Timestamps are
+// omitted to keep lines terse during local development, and the caller
+// is shown as a project-root-relative "path/to/file.go:line".
+//
+// mainPackagePrefix is unused here; the dev caller format is derived
+// from source file paths rather than package-qualified function names.
+func newLogHandler(w io.Writer, level slog.Level, _ string) slog.Handler {
+	root := projectRoot()
+	return charmlog.NewWithOptions(w, charmlog.Options{
+		Level:        charmlog.Level(level),
+		ReportCaller: true,
+		CallerFormatter: func(file string, line int, _ string) string {
+			return fmt.Sprintf("%s:%d", strings.TrimPrefix(file, root), line)
+		},
+	})
+}
+
+// projectRoot returns the module root as an absolute path with a
+// trailing separator, derived from the compile-time location of this
+// source file (which sits at the module root). It is used to render
+// caller locations relative to the project root.
+func projectRoot() string {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		return ""
+	}
+	return filepath.Dir(file) + string(filepath.Separator)
+}
 
 // handleSchemaMismatch serves the schema-mismatch UI
 // with a "reinitialize database" affordance.
