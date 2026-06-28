@@ -122,6 +122,7 @@ func TestKeyframeArgsPanicsOnZeroRate(t *testing.T) {
 // expects success.
 func TestPass1AcceptsManyCuts(t *testing.T) {
 	dir := setupDocker(t)
+	requireFFmpegEncoder(t, "libsvtav1")
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 
