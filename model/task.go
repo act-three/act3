@@ -370,9 +370,9 @@ func (tq *taskQueue) run(ctx context.Context, task schema.Task) {
 
 func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error, stack []byte) {
 	defer func() {
-		// run1's only ctx-cancel source is tq.kill, so if ctx.Err() is
-		// non-nil here the user explicitly killed the task.
-		err = errors.Join(err, Permanent(ctx.Err()))
+		// run1's only ctx-cancel source is tq.kill, so if the context
+		// is canceled here the user explicitly killed the task.
+		err = errors.Join(err, Permanent(context.Cause(ctx)))
 	}()
 
 	defer tlog.Elapsed(ctx, "task", "type", task.Type, "args", task.Args)()
