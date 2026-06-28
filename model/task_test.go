@@ -2,7 +2,9 @@ package model
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"testing/synctest"
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/priority"
@@ -64,7 +66,7 @@ func TestPanicTaskStaysFailed(t *testing.T) {
 
 	// Mirror dispatch's goroutine body: lock, run, then unlock via
 	// the deferred release.
-	_, cancel := context.WithCancel(ctx)
+	_, cancel := context.WithCancelCause(ctx)
 	key, err := tq.lock(task.ID, task.Type, task.Args, cancel)
 	if err != nil {
 		t.Fatal(err)
@@ -92,52 +94,63 @@ func TestPanicTaskStaysFailed(t *testing.T) {
 	}
 }
 
-// TestKilledTaskRecordsFailed checks that a task killed mid-run still
-// records its terminal 'failed' state. A kill cancels the run ctx, so
-// run must persist the failure with cancellation detached; otherwise
-// the write fails on the canceled ctx and the task is stranded in
-// 'running'.
+// TestKilledTaskRecordsFailed checks that killing a running task drives
+// it to a terminal 'failed' state, over the real dispatch and kill
+// paths: a task blocks until its context is canceled, tq.kill cancels
+// it with a permanent cause, and run persists the failure with
+// cancellation detached — otherwise the write fails on the canceled ctx
+// and the task is stranded in 'running'.
 func TestKilledTaskRecordsFailed(t *testing.T) {
-	m := newTestModel(t)
-	tq := newTaskQueue(queueNet, 1, m)
-
-	var task schema.Task
-	if err := m.WithTxRW(t.Context(), func(tx *TxRW) error {
-		var err error
-		task, err = tx.q.TaskCreate(schema.TaskCreateParams{
-			Type:     taskFetchSeriesPoster,
-			Args:     "[]",
-			Priority: priority.FetchPoster,
-			Queue:    queueNet,
+	synctest.Test(t, func(t *testing.T) {
+		const taskBlock = "test-block"
+		// Return the plain (transient-looking) cancellation error: the
+		// task is recorded permanent only because tq.kill set a
+		// permanent cancel cause that run propagates.
+		taskTab[taskBlock] = func(tx *TxR, _ []string) error {
+			<-tx.ctx.Done()
+			return errors.New("interrupted")
+		}
+		queueTab[taskBlock] = queueNet
+		t.Cleanup(func() {
+			delete(taskTab, taskBlock)
+			delete(queueTab, taskBlock)
 		})
-		return err
-	}); err != nil {
-		t.Fatal(err)
-	}
 
-	// Mirror dispatch's goroutine body, but with an already-canceled
-	// ctx, as after tq.kill canceled the running task's context.
-	ctx, cancel := context.WithCancel(t.Context())
-	key, err := tq.lock(task.ID, task.Type, task.Args, cancel)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cancel()
-	func() {
-		defer tq.unlock(task.ID, key)
-		tq.run(ctx, task)
-	}()
+		m := newTestModel(t)
+		tq := newTaskQueue(queueNet, 1, m)
 
-	if err := m.WithTxR(t.Context(), func(tx *TxR) error {
-		var err error
-		task, err = tx.q.TaskGet(task.ID)
-		return err
-	}); err != nil {
-		t.Fatal(err)
-	}
-	if task.State != "failed" {
-		t.Errorf("State = %q, want %q", task.State, "failed")
-	}
+		var task schema.Task
+		if err := m.WithTxRW(context.Background(), func(tx *TxRW) error {
+			var err error
+			task, err = tx.q.TaskCreate(schema.TaskCreateParams{
+				Type:     taskBlock,
+				Args:     "[]",
+				Priority: priority.FetchPoster,
+				Queue:    queueNet,
+			})
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		tq.dispatch(task)
+		synctest.Wait() // task is now running, blocked on its context
+		if !tq.kill(task.ID) {
+			t.Fatal("kill did not find the running task")
+		}
+		synctest.Wait() // run records the terminal state and exits
+
+		if err := m.WithTxR(context.Background(), func(tx *TxR) error {
+			var err error
+			task, err = tx.q.TaskGet(task.ID)
+			return err
+		}); err != nil {
+			t.Fatal(err)
+		}
+		if task.State != "failed" {
+			t.Errorf("State = %q, want %q", task.State, "failed")
+		}
+	})
 }
 
 // TestRescheduleLowersPriority checks that each failed retry drops the

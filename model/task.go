@@ -170,7 +170,7 @@ type runEntry struct {
 	ttype  string
 	args   string
 	weight int
-	cancel context.CancelFunc
+	cancel context.CancelCauseFunc
 }
 
 func newTaskQueue(name string, capacity int, m *Model) *taskQueue {
@@ -222,15 +222,15 @@ func (tq *taskQueue) dispatch(task schema.Task) {
 	ctx := context.Background()
 	ctx = logcontext.With(ctx, slog.Group("task", "id", task.ID))
 	ctx = context.WithValue(ctx, taskIDKey{}, task.ID)
-	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel := context.WithCancelCause(ctx)
 	key, err := tq.lock(task.ID, task.Type, task.Args, cancel)
 	if err != nil {
-		cancel()
+		cancel(err)
 		slog.Error("task-lock-error", "id", task.ID, "error", err)
 		return
 	}
 	if key == "" {
-		cancel()
+		cancel(errors.New("failed to acquire task lock"))
 		return // someone else locked it
 	}
 	go func() {
@@ -303,7 +303,7 @@ func (tq *taskQueue) next() (*schema.Task, error) {
 	return &task, nil
 }
 
-func (tq *taskQueue) lock(id, ttype, args string, cancel context.CancelFunc) (string, error) {
+func (tq *taskQueue) lock(id, ttype, args string, cancel context.CancelCauseFunc) (string, error) {
 	ctx := context.Background()
 	_, err := schema.New(ctx, tq.m.dbw).TaskLock(id)
 	if err == sql.ErrNoRows {
@@ -332,7 +332,7 @@ func (tq *taskQueue) unlock(id, key string) {
 	if e.key != key {
 		panic("bad lock structure: key mismatch")
 	}
-	e.cancel()
+	e.cancel(errors.New("unlocked"))
 	delete(tq.running, id)
 	tq.used -= e.weight
 	tq.wake()
@@ -343,7 +343,7 @@ func (tq *taskQueue) kill(id string) bool {
 	defer tq.runningMu.Unlock()
 	e, ok := tq.running[id]
 	if ok {
-		e.cancel()
+		e.cancel(Permanent(errors.New("killed")))
 	}
 	return ok
 }
@@ -370,9 +370,7 @@ func (tq *taskQueue) run(ctx context.Context, task schema.Task) {
 
 func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error, stack []byte) {
 	defer func() {
-		// run1's only ctx-cancel source is tq.kill, so if the context
-		// is canceled here the user explicitly killed the task.
-		err = errors.Join(err, Permanent(context.Cause(ctx)))
+		err = errors.Join(err, context.Cause(ctx))
 	}()
 
 	defer tlog.Elapsed(ctx, "task", "type", task.Type, "args", task.Args)()
