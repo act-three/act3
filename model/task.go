@@ -111,18 +111,18 @@ func weightFor(ttype string) int {
 	return 1
 }
 
-// ErrPermanent marks a task error as not retriable.
-// Task functions wrap an error with [Permanent] to signal this;
+// errPermanent marks a task error as not retriable.
+// Task functions wrap an error with [permanent] to signal this;
 // the task framework records the failure and stops scheduling retries.
-var ErrPermanent = errors.New("permanent failure")
+var errPermanent = errors.New("permanent failure")
 
-// Permanent wraps err so the task framework treats it as a permanent
+// permanent wraps err so the task framework treats it as a permanent
 // failure rather than rescheduling for retry.
-func Permanent(err error) error {
+func permanent(err error) error {
 	if err == nil {
 		return nil
 	}
-	return fmt.Errorf("%w: %w", ErrPermanent, err)
+	return fmt.Errorf("%w: %w", errPermanent, err)
 }
 
 type Task struct {
@@ -343,7 +343,7 @@ func (tq *taskQueue) kill(id string) bool {
 	defer tq.runningMu.Unlock()
 	e, ok := tq.running[id]
 	if ok {
-		e.cancel(Permanent(errors.New("killed")))
+		e.cancel(permanent(errors.New("killed")))
 	}
 	return ok
 }
@@ -357,7 +357,7 @@ func (tq *taskQueue) run(ctx context.Context, task schema.Task) {
 		// A killed task arrives here with ctx already canceled.
 		// Detach so the failure write does not itself fail.
 		ctx := context.WithoutCancel(ctx)
-		if errors.Is(err, ErrPermanent) {
+		if errors.Is(err, errPermanent) {
 			err = tq.markFailed(ctx, task, err.Error(), stack)
 		} else {
 			err = tq.reschedule(ctx, task, err.Error())
@@ -384,7 +384,7 @@ func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error, sta
 			if !ok {
 				e1 = fmt.Errorf("%v", r)
 			}
-			err = Permanent(fmt.Errorf("task recovered panic: %w", e1))
+			err = permanent(fmt.Errorf("task recovered panic: %w", e1))
 		}
 	}()
 
