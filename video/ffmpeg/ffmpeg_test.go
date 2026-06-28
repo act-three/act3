@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -25,26 +26,33 @@ func setupDocker(t *testing.T) string {
 	if testing.Short() {
 		t.Skip("ffmpeg test, skipped in -short mode")
 	}
-	dir := t.TempDir()
+	dir := ffmpegTestDir(t)
 
 	// Temp dirs created by production code (e.g. Pass2Single) must
 	// land under dir so they are accessible inside the container
 	// (and stay together for the host fallback too).
 	t.Setenv("TMPDIR", dir)
 
-	if _, err := exec.LookPath("docker"); err == nil {
-		if err := exec.Command("docker", "image", "inspect",
-			dockerImage).Run(); err == nil {
+	if docker, err := exec.LookPath("docker"); err == nil {
+		if out, err := exec.Command(docker, "image", "inspect",
+			dockerImage).CombinedOutput(); err == nil {
+			t.Logf("using Docker image %s for ffmpeg tests", dockerImage)
 			origCmd := newCmd
 			newCmd = dockerCmd(dir)
 			t.Cleanup(func() { newCmd = origCmd })
 			return dir
+		} else {
+			t.Logf("Docker image %s unavailable; falling back to host ffmpeg: %v\n%s",
+				dockerImage, err, out)
 		}
+	} else {
+		t.Logf("docker not in PATH; falling back to host ffmpeg")
 	}
 
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		t.Skip("neither docker+act3-ffmpeg nor host ffmpeg available")
 	}
+	t.Log("using host ffmpeg for ffmpeg tests")
 	return dir
 }
 
@@ -59,11 +67,28 @@ func setupHost(t *testing.T) string {
 	if testing.Short() {
 		t.Skip("ffmpeg test, skipped in -short mode")
 	}
-	dir := t.TempDir()
+	dir := ffmpegTestDir(t)
 	t.Setenv("TMPDIR", dir)
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		t.Skip("host ffmpeg not available")
 	}
+	return dir
+}
+
+func ffmpegTestDir(t *testing.T) string {
+	t.Helper()
+	if runtime.GOOS != "darwin" {
+		return t.TempDir()
+	}
+	// Docker Desktop/OrbStack reliably shares /private/tmp. Go's
+	// default macOS temp root under /var/folders can be visible to the
+	// host but not to Docker bind mounts, which makes Docker-backed
+	// ffprobe invocations fail after ffmpeg has written the output.
+	dir, err := os.MkdirTemp("/private/tmp", "act3-ffmpeg-test-*")
+	if err != nil {
+		t.Fatalf("create Docker-shareable temp dir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
 	return dir
 }
 
@@ -120,6 +145,19 @@ func generate(t *testing.T, args ...string) {
 	}
 }
 
+func requireFFmpegEncoder(t *testing.T, encoder string) {
+	t.Helper()
+	cmd := newCmd(t.Context(), "ffmpeg", "-hide_banner", "-encoders")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("list ffmpeg encoders: %v\n%s", err, out)
+	}
+	if !strings.Contains(string(out), " "+encoder+" ") {
+		t.Skipf("ffmpeg encoder %q not available; use Docker image %s or install a host ffmpeg with that encoder",
+			encoder, dockerImage)
+	}
+}
+
 func TestTwoPassArgsRejectsInjection(t *testing.T) {
 	for _, passlog := range []string{
 		"/foo/bar:crf=0",
@@ -143,6 +181,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	}
 
 	dir := setupDocker(t)
+	requireFFmpegEncoder(t, "libsvtav1")
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "source.mkv")
