@@ -1669,6 +1669,20 @@ func (q *Queries) EpisodeRestoreByCascade(cascadeof *string) error {
 	return err
 }
 
+const episodeRuntimeSet = `-- name: EpisodeRuntimeSet :exec
+UPDATE Episode SET Runtime = ? WHERE ID = ?
+`
+
+type EpisodeRuntimeSetParams struct {
+	Runtime int64
+	ID      string
+}
+
+func (q *Queries) EpisodeRuntimeSet(arg EpisodeRuntimeSetParams) error {
+	_, err := q.db.ExecContext(q.ctx, episodeRuntimeSet, arg.Runtime, arg.ID)
+	return err
+}
+
 const episodeSoftDelete = `-- name: EpisodeSoftDelete :exec
 UPDATE Episode
 SET DeletedAt = ?1
@@ -1741,7 +1755,7 @@ func (q *Queries) EpisodeTypeSet(arg EpisodeTypeSetParams) error {
 	return err
 }
 
-const episodeVideoActivePromote = `-- name: EpisodeVideoActivePromote :exec
+const episodeVideoActivePromote = `-- name: EpisodeVideoActivePromote :execrows
 UPDATE EpisodeVideo SET Active = 1
 WHERE EpisodeID = ?1 AND VideoID = ?2
 AND DeletedAt IS NULL
@@ -1761,9 +1775,13 @@ type EpisodeVideoActivePromoteParams struct {
 // EpisodeVideoActivePromote marks (EpisodeID, VideoID) Active when that
 // video is live and playable and the episode has no Active live junction
 // yet. No-op otherwise. Promotes a video the moment it becomes playable.
-func (q *Queries) EpisodeVideoActivePromote(arg EpisodeVideoActivePromoteParams) error {
-	_, err := q.db.ExecContext(q.ctx, episodeVideoActivePromote, arg.EpisodeID, arg.VideoID)
-	return err
+// Returns the number of junctions promoted (0 or 1).
+func (q *Queries) EpisodeVideoActivePromote(arg EpisodeVideoActivePromoteParams) (int64, error) {
+	result, err := q.db.ExecContext(q.ctx, episodeVideoActivePromote, arg.EpisodeID, arg.VideoID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const episodeVideoCountPlayable = `-- name: EpisodeVideoCountPlayable :one
@@ -6012,6 +6030,17 @@ func (q *Queries) VideoCreate(arg VideoCreateParams) (Video, error) {
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const videoDuration = `-- name: VideoDuration :one
+SELECT Duration FROM Video WHERE ID = ?
+`
+
+func (q *Queries) VideoDuration(id string) (int64, error) {
+	row := q.db.QueryRowContext(q.ctx, videoDuration, id)
+	var duration int64
+	err := row.Scan(&duration)
+	return duration, err
 }
 
 const videoGet = `-- name: VideoGet :one
