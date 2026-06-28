@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 	"slices"
 	"strconv"
@@ -453,6 +454,7 @@ func (a *app) notify(variant ui.NoteVariant, title string) {
 // It can set fields on a but must not mutate deeper structures
 // or write to the db.
 func (a *app) setPath(ctx context.Context, u *url.URL) {
+	slog.InfoContext(ctx, "navigate", "path", u.Path)
 	a.dialog = nil // navigating away closes any open dialog
 	a.player = nil // and the player
 	a.path = u.Path

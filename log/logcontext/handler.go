@@ -28,12 +28,25 @@ func WithGroup(ctx context.Context, name string) context.Context {
 	return context.WithValue(ctx, argsKey, stack)
 }
 
-func Handler(h slog.Handler) slog.Handler {
-	return handler{h}
+// AttrExtractor derives slog attributes from a context
+// at the moment a record is handled.
+// It lets ambient context values appear in log lines
+// without callers explicitly threading them through [With].
+// This is useful for values owned by packages
+// that cannot import this one.
+type AttrExtractor func(ctx context.Context) []slog.Attr
+
+// Handler wraps h so that attributes attached with [With]
+// are added to every record carrying their context.
+// Each extractor is also run for every record,
+// and the attributes it returns are added as well.
+func Handler(h slog.Handler, extractors ...AttrExtractor) slog.Handler {
+	return handler{underlying: h, extractors: extractors}
 }
 
 type handler struct {
 	underlying slog.Handler
+	extractors []AttrExtractor
 }
 
 func (h handler) Enabled(ctx context.Context, level slog.Level) bool {
@@ -44,15 +57,18 @@ func (h handler) Handle(ctx context.Context, r slog.Record) error {
 	stack, _ := ctx.Value(argsKey).(modStack)
 	r = r.Clone()
 	r.AddAttrs(conv(stack)...)
+	for _, extract := range h.extractors {
+		r.AddAttrs(extract(ctx)...)
+	}
 	return h.underlying.Handle(ctx, r)
 }
 
 func (h handler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return handler{h.underlying.WithAttrs(attrs)}
+	return handler{h.underlying.WithAttrs(attrs), h.extractors}
 }
 
 func (h handler) WithGroup(name string) slog.Handler {
-	return handler{h.underlying.WithGroup(name)}
+	return handler{h.underlying.WithGroup(name), h.extractors}
 }
 
 func conv(stack []mod) (a []slog.Attr) {

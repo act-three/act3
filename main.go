@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"flag"
@@ -25,6 +26,7 @@ import (
 	"ily.dev/act3/storage"
 	"ily.dev/act3/video/ffmpeg"
 	"ily.dev/act3/web"
+	"ily.dev/domi"
 )
 
 //go:generate sh -c "cp assets/*.png assets/*.jpeg assets/*.svg web/static/static"
@@ -81,7 +83,9 @@ func main() {
 			return a
 		},
 	})))
-	slog.SetDefault(slog.New(logcontext.Handler(slog.Default().Handler())))
+	slog.SetDefault(slog.New(logcontext.Handler(slog.Default().Handler(),
+		domiSessionLogAttrs,
+	)))
 	slog.Info("startup", "mod", bi.Main.Path, "version", bi.Main.Version)
 
 	dbPath := filepath.Join(databaseDir, "act3.db")
@@ -159,6 +163,16 @@ func main() {
 	h = secureheader.Handler(h)
 	slog.Info("listen", "listen", listen)
 	panic(http.ListenAndServe(listen, h))
+}
+
+// domiSessionLogAttrs is a logcontext extractor
+// that surfaces the domi session ID on log lines
+// emitted within an App or Cmd.
+func domiSessionLogAttrs(ctx context.Context) []slog.Attr {
+	if id := domi.SessionID(ctx); id != "" {
+		return []slog.Attr{slog.Group("domi", "sessionid", id)}
+	}
+	return nil
 }
 
 func must[T any](v T, err error) T {
