@@ -26,11 +26,17 @@ func (tx *TxRW) ensureActiveVideoForVideoID(videoID string) (err error) {
 		return err
 	}
 	for _, epID := range epIDs {
-		if err := tx.q.EpisodeVideoActivePromote(schema.EpisodeVideoActivePromoteParams{
+		promoted, err := tx.q.EpisodeVideoActivePromote(schema.EpisodeVideoActivePromoteParams{
 			EpisodeID: epID,
 			VideoID:   videoID,
-		}); err != nil {
+		})
+		if err != nil {
 			return err
+		}
+		if promoted > 0 {
+			if err := tx.episodeRuntimeSyncFromVideo(epID, videoID); err != nil {
+				return err
+			}
 		}
 	}
 	medIDs, err := tx.q.MovieVideoDistinctEditionsByVideo(videoID)
@@ -68,7 +74,25 @@ func (tx *TxRW) EpisodeVideoSetActive(episodeID, videoID string) (err error) {
 	if n == 0 {
 		return errors.New("video is not attached, not live, or not playable")
 	}
-	return nil
+	return tx.episodeRuntimeSyncFromVideo(episodeID, videoID)
+}
+
+// episodeRuntimeSyncFromVideo sets the episode's runtime from videoID's
+// duration, rounded to whole minutes.
+// Callers pass the video they just made active, so its ffmpeg-derived
+// duration overrides any runtime previously sourced from TVmaze.
+func (tx *TxRW) episodeRuntimeSyncFromVideo(episodeID, videoID string) (err error) {
+	defer errorfmt.Handlef("episodeRuntimeSyncFromVideo: %w", &err)
+
+	durMS, err := tx.q.VideoDuration(videoID)
+	if err != nil {
+		return err
+	}
+	minutes := (durMS + 30_000) / 60_000 // round to nearest minute
+	return tx.q.EpisodeRuntimeSet(schema.EpisodeRuntimeSetParams{
+		Runtime: minutes,
+		ID:      episodeID,
+	})
 }
 
 // MovieVideoSetActive marks (medID, videoID) as the active junction

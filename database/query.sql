@@ -395,6 +395,9 @@ WHERE ID = ?;
 UPDATE Episode SET DeletedAt = NULL
 WHERE ID IN (SELECT Trash.ID FROM Trash WHERE Trash.CascadeOf = ?);
 
+-- name: EpisodeRuntimeSet :exec
+UPDATE Episode SET Runtime = ? WHERE ID = ?;
+
 -- name: EpisodeSoftDelete :exec
 UPDATE Episode
 SET DeletedAt = sqlc.arg(DeletedAt)
@@ -415,7 +418,8 @@ UPDATE Episode SET Type = ? WHERE ID = ?;
 -- EpisodeVideoActivePromote marks (EpisodeID, VideoID) Active when that
 -- video is live and playable and the episode has no Active live junction
 -- yet. No-op otherwise. Promotes a video the moment it becomes playable.
--- name: EpisodeVideoActivePromote :exec
+-- Returns the number of junctions promoted (0 or 1).
+-- name: EpisodeVideoActivePromote :execrows
 UPDATE EpisodeVideo SET Active = 1
 WHERE EpisodeID = sqlc.arg(EpisodeID) AND VideoID = sqlc.arg(VideoID)
 AND DeletedAt IS NULL
@@ -1323,6 +1327,9 @@ INSERT INTO Video
 )
 VALUES (?, ?)
 RETURNING *;
+
+-- name: VideoDuration :one
+SELECT Duration FROM Video WHERE ID = ?;
 
 -- name: VideoGet :one
 SELECT * FROM Video WHERE ID = ?;

@@ -26,6 +26,9 @@ func BrowseEpisode(
 					Box(ColSpan2)(
 						Text(ep.Airdate(), Class("v-detail-muted")),
 					),
+					iff(ep.Runtime() != "", func() domi.Node {
+						return Text(ep.Runtime()+" min", Class("v-detail-muted"))
+					}),
 				),
 				Text(ep.Title(), Size7),
 				iff(isUserAdmin(), func() domi.Node {
