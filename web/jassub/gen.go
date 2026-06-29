@@ -25,6 +25,7 @@ import (
 	"crypto/sha3"
 	"crypto/sha512"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -273,7 +274,7 @@ func fetchAndExtract(p pkg, dst string) error {
 	tr := tar.NewReader(gz)
 	for {
 		h, err := tr.Next()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {

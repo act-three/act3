@@ -294,7 +294,7 @@ func (tq *taskQueue) next() (*schema.Task, error) {
 		Queue:   tq.name,
 		NextRun: now,
 	})
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -306,7 +306,7 @@ func (tq *taskQueue) next() (*schema.Task, error) {
 func (tq *taskQueue) lock(id, ttype, args string, cancel context.CancelCauseFunc) (string, error) {
 	ctx := context.Background()
 	_, err := schema.New(ctx, tq.m.dbw).TaskLock(id)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil // someone else locked it
 	}
 	if err != nil {
@@ -400,7 +400,7 @@ func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error, sta
 
 	return tq.m.WithTxR(ctx, func(tx *TxR) error {
 		task, err = tx.q.TaskGet(task.ID)
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil
 		} else if err != nil {
 			return err

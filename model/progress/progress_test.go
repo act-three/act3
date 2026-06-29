@@ -74,7 +74,7 @@ func TestCloseError(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("got %d items, want 1 (error tombstone)", len(items))
 	}
-	if items[0].Error() != e {
+	if !errors.Is(items[0].Error(), e) {
 		t.Errorf("error = %v, want %v", items[0].Error(), e)
 	}
 }
@@ -328,7 +328,7 @@ func TestHookOnCloseError(t *testing.T) {
 	if len(got) != 2 {
 		t.Fatalf("hook called %d times, want 2", len(got))
 	}
-	if got[1].Error() != e {
+	if !errors.Is(got[1].Error(), e) {
 		t.Errorf("error = %v, want %v", got[1].Error(), e)
 	}
 }
