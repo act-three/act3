@@ -14,6 +14,7 @@ concurrency:
 
 env:
     GOEXPERIMENT: jsonv2
+    PRODTAGS: prod,nodynamic,buildinfoembed
 
 jobs:
     ci:
@@ -70,13 +71,22 @@ jobs:
             - name: dprint check
               run: dprint check
 
+            - name: buildinfo placeholders
+              run: |
+                  for f in date changeid commitid log; do
+                    echo placeholder >buildinfo/embed-$f.txt
+                  done
+
             - name: go vet
-              run: go vet ./...
+              run: |
+                  go vet ./...
+                  go vet -tags $PRODTAGS ./...
 
             - name: act3vet
               run: |
                   go build -o /tmp/act3vet ./cmd/act3vet
                   go vet -vettool=/tmp/act3vet ./...
+                  go vet -tags $PRODTAGS -vettool=/tmp/act3vet ./...
 
             - name: go-check-sumtype
               run: go tool go-check-sumtype ./...
