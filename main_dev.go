@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -102,7 +103,7 @@ func handleSchemaMismatch(sme *database.SchemaMismatchError, dbPath string) {
 	h = secureheader.Handler(h)
 	srv.Handler = h
 	slog.Info("degraded mode", "listen", listen)
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+	if err := srv.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

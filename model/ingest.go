@@ -526,7 +526,7 @@ func (tx *TxR) taskIngestPass1(args []string) (err error) {
 // and rebuilds the MV playlist.
 func (tx *TxR) taskIngestEncodeAudio(args []string) error {
 	ar, err := tx.q.AudioRenditionGet(args[0])
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil // rendition deleted (reencode or trash)
 	}
 	if err != nil {
@@ -622,7 +622,7 @@ func audioRendDesc(ar schema.AudioRendition) string {
 // and rebuilds the MV playlist.
 func (tx *TxR) taskIngestEncodeRend(args []string) error {
 	rfs, err := tx.q.RenditionGet(args[0])
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil // rendition deleted (reencode or trash)
 	}
 	if err != nil {
@@ -753,7 +753,7 @@ func (tx *TxR) taskIngestEncodeRend(args []string) error {
 // in args as a plain MP4 with faststart.
 func (tx *TxR) taskIngestEncodeDownloadRend(args []string) error {
 	rfd, err := tx.q.RenditionGet(args[0])
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil // rendition deleted (reencode or trash)
 	}
 	if err != nil {

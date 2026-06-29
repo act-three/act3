@@ -530,7 +530,7 @@ func (tx *TxRW) DownloadCreate(torrent io.Reader, sedID, medID *string) (d *Down
 	}
 	infoHash := mi.HashInfoBytes().HexString()
 	dl, err := tx.q.DownloadGet(infoHash)
-	if err != nil && err != sql.ErrNoRows {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	if err == nil && dl.DeletedAt == nil {
