@@ -37,11 +37,12 @@ func TestEncodeAudioValidation(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := EncodeAudio(t.Context(), nil, "matroska,webm",
-				c.dst, 0, nil)
-			if err == nil {
-				t.Errorf("EncodeAudio(%+v) returned nil error", c.dst)
-			}
+			defer func() {
+				if recover() == nil {
+					t.Errorf("EncodeAudio(%+v) did not panic", c.dst)
+				}
+			}()
+			EncodeAudio(t.Context(), nil, "matroska,webm", c.dst, 0, nil)
 		})
 	}
 }

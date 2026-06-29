@@ -270,14 +270,15 @@ func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
 }
 
 // TestPass2ToMP4_RejectsEmptyStatsID verifies the precondition guard
-// at the top of Pass2ToMP4. Runs without Docker (returns before any
+// at the top of Pass2ToMP4. Runs without Docker (panics before any
 // ffmpeg invocation).
 func TestPass2ToMP4_RejectsEmptyStatsID(t *testing.T) {
-	err := Pass2ToMP4(t.Context(), nil, "", EncodeParams{StatsID: ""},
-		"", 0, nil)
-	if err == nil {
-		t.Fatal("expected error for empty StatsID, got nil")
-	}
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for empty StatsID, got none")
+		}
+	}()
+	Pass2ToMP4(t.Context(), nil, "", EncodeParams{StatsID: ""}, "", 0, nil)
 }
 
 // TestAudioMuxArgsForDownload exercises the per-stream argument

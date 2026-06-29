@@ -38,13 +38,13 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 	onProgress func(float64),
 ) (playlist string, err error) {
 	if dst.SourceStreamIndex < 0 {
-		return "", fmt.Errorf("ffmpeg.EncodeAudio: SourceStreamIndex %d < 0", dst.SourceStreamIndex)
+		panic(fmt.Sprintf("ffmpeg.EncodeAudio: SourceStreamIndex %d < 0", dst.SourceStreamIndex))
 	}
 	if dst.Channels < 1 {
-		return "", fmt.Errorf("ffmpeg.EncodeAudio: non-positive Channels %d", dst.Channels)
+		panic(fmt.Sprintf("ffmpeg.EncodeAudio: non-positive Channels %d", dst.Channels))
 	}
 	if !dst.StreamCopy && dst.Bitrate <= 0 {
-		return "", fmt.Errorf("ffmpeg.EncodeAudio: non-positive Bitrate %d", dst.Bitrate)
+		panic(fmt.Sprintf("ffmpeg.EncodeAudio: non-positive Bitrate %d", dst.Bitrate))
 	}
 
 	tmpDir, err := mkScratch("ffmpeg-audio-*")
