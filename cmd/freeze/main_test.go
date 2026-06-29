@@ -4,7 +4,9 @@ import (
 	"database/sql"
 	"encoding/json/v2"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -189,5 +191,52 @@ func TestMarshalReport(t *testing.T) {
 	}
 	if got.Update != rep.Update || got.Result != "ok" || got.Rows.Total != 42 || got.Rows.Affected != 7 {
 		t.Errorf("round-trip mismatch: %+v", got)
+	}
+}
+
+// TestSnapshotVacuumScript runs the generated remote script under a real
+// shell, with stub zfs and sqlite3 on PATH, to verify the shell logic:
+// the snapshot is taken and destroyed, and VACUUM INTO reads the
+// database through the snapshot's .zfs path (derived from the dataset
+// mountpoint) rather than the live file.
+func TestSnapshotVacuumScript(t *testing.T) {
+	bin := t.TempDir()
+	log := filepath.Join(t.TempDir(), "calls.log")
+	// The zfs stub reports a fixed mountpoint for "get mountpoint" so the
+	// script can derive the database's path relative to the dataset.
+	writeStub(t, filepath.Join(bin, "zfs"), `echo "zfs $*" >>"`+log+`"
+[ "$1" = get ] && echo /database
+exit 0`)
+	writeStub(t, filepath.Join(bin, "sqlite3"), `echo "sqlite3 $*" >>"`+log+`"`)
+
+	script := snapshotVacuumScript("tank/act3", "tank/act3@act3-freeze-1", "/database/act3.db", "/tmp/out.db")
+	cmd := exec.Command("sh", "-c", script)
+	cmd.Env = append(os.Environ(), "PATH="+bin)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("script failed: %v\n%s", err, out)
+	}
+
+	b, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(b)
+	for _, want := range []string{
+		"zfs snapshot tank/act3@act3-freeze-1",
+		"zfs get -H -o value mountpoint tank/act3",
+		"sqlite3 /database/.zfs/snapshot/act3-freeze-1/act3.db VACUUM INTO '/tmp/out.db'",
+		"zfs destroy tank/act3@act3-freeze-1",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("script calls missing %q; got:\n%s", want, got)
+		}
+	}
+}
+
+// writeStub writes an executable /bin/sh stub script at path.
+func writeStub(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body+"\n"), 0o755); err != nil {
+		t.Fatal(err)
 	}
 }

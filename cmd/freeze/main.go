@@ -5,11 +5,19 @@
 // the update changed, writes an attestation report under
 // database/report/, and appends the update to database/frozen.txt.
 //
-// The snapshot is pulled live and without downtime. By default freeze
-// runs "VACUUM INTO" through the prod host's sqlite3, which yields a
-// single consistent file; -snapshot uses an already-pulled file instead.
-// The ssh destination defaults to root@$A3PRODHOST and the remote
-// database path to $A3PRODHOSTDB, both overridable by flag.
+// The snapshot is pulled live and without downtime. act3 runs in a VM
+// on the prod host: the guest kernel holds act3.db open for writing,
+// while freeze reaches the same file through the host kernel. SQLite's
+// file locking does not span that boundary, so reading the live file
+// from the host — even via "VACUUM INTO" — can tear mid-transaction.
+// freeze instead takes an atomic ZFS snapshot of the dataset, capturing
+// the database and its -wal/-shm sidecars together, then runs "VACUUM
+// INTO" against the quiescent file inside that snapshot to produce one
+// clean compacted file, copies it back, and destroys the snapshot.
+// -snapshot uses an already-pulled file instead. The ssh destination
+// defaults to root@$A3PRODHOST, the ZFS dataset to $A3PRODHOSTDATASET,
+// and the remote database path to $A3PRODHOSTDB, all overridable by
+// flag.
 //
 // CI (cmd/frozencheck) re-checks the report against the repository, but
 // the data claim — that the snapshot was real and the update applied —
@@ -18,7 +26,10 @@
 //
 // Usage:
 //
-//	A3PRODHOST=box A3PRODHOSTDB=/var/lib/act3/act3.db freeze
+//	export A3PRODHOST=box
+//	export A3PRODHOSTDATASET=tank/act3
+//	export A3PRODHOSTDB=/database/act3.db
+//	freeze
 //	freeze -snapshot /tmp/prod.db   # use a local snapshot, no pull
 //	freeze -n                       # dry run; print, don't write
 package main
@@ -62,6 +73,7 @@ const databaseDir = "database"
 func main() {
 	snapshot := flag.String("snapshot", "", "use this local snapshot file instead of pulling from the prod host")
 	dest := flag.String("ssh", "root@"+prodHost, "ssh destination of the prod host")
+	dataset := flag.String("dataset", os.Getenv("A3PRODHOSTDATASET"), "ZFS dataset holding act3.db on the prod host (required unless -snapshot)")
 	remoteDB := flag.String("remote-db", os.Getenv("A3PRODHOSTDB"), "path to act3.db on the prod host (required unless -snapshot)")
 	dryRun := flag.Bool("n", false, "compute and print the report, but write nothing")
 	flag.Parse()
@@ -69,6 +81,7 @@ func main() {
 	if err := freeze(config{
 		snapshot: *snapshot,
 		dest:     *dest,
+		dataset:  *dataset,
 		remoteDB: *remoteDB,
 		dryRun:   *dryRun,
 	}); err != nil {
@@ -80,6 +93,7 @@ func main() {
 type config struct {
 	snapshot string
 	dest     string
+	dataset  string
 	remoteDB string
 	dryRun   bool
 }
@@ -134,7 +148,7 @@ func freeze(cfg config) error {
 
 	snapPath := cfg.snapshot
 	if snapPath == "" {
-		snapPath, err = pullSnapshot(cfg.dest, cfg.remoteDB)
+		snapPath, err = pullSnapshot(cfg.dest, cfg.dataset, cfg.remoteDB)
 		if err != nil {
 			return err
 		}
@@ -417,10 +431,18 @@ func fileDigest(path string) (string, error) {
 }
 
 // pullSnapshot fetches a consistent, downtime-free snapshot of the prod
-// database via "VACUUM INTO" run by the prod host's sqlite3, then copies
-// it back. VACUUM INTO yields a single compacted file with no -wal
-// sidecar. dest is an ssh destination such as root@host.
-func pullSnapshot(dest, remoteDB string) (string, error) {
+// database. act3 runs in a VM whose guest kernel holds act3.db open for
+// writing; SQLite's locking does not coordinate across the VM boundary,
+// so reading the live file from the host is unsafe even via VACUUM INTO.
+// pullSnapshot instead takes an atomic ZFS snapshot of dataset — which
+// captures the database together with its -wal/-shm sidecars — runs
+// VACUUM INTO against the quiescent file inside that snapshot to yield a
+// single compacted file with no sidecar, copies it back, and destroys
+// the snapshot. dest is an ssh destination such as root@host.
+func pullSnapshot(dest, dataset, remoteDB string) (string, error) {
+	if dataset == "" {
+		return "", errors.New("set A3PRODHOSTDATASET or -dataset (ZFS dataset holding act3.db on the prod host), or use -snapshot")
+	}
 	if remoteDB == "" {
 		return "", errors.New("set A3PRODHOSTDB or -remote-db (path to act3.db on the prod host), or use -snapshot")
 	}
@@ -431,10 +453,10 @@ func pullSnapshot(dest, remoteDB string) (string, error) {
 	local.Close()
 
 	remoteTmp := fmt.Sprintf("/tmp/act3-snapshot-%d.db", os.Getpid())
-	vacuum := fmt.Sprintf("sqlite3 %s \"VACUUM INTO '%s'\"", shellQuote(remoteDB), remoteTmp)
-	if err := run("ssh", dest, vacuum); err != nil {
+	snap := fmt.Sprintf("%s@act3-freeze-%d", dataset, os.Getpid())
+	if err := run("ssh", dest, snapshotVacuumScript(dataset, snap, remoteDB, remoteTmp)); err != nil {
 		os.Remove(local.Name())
-		return "", fmt.Errorf("remote VACUUM INTO: %w", err)
+		return "", fmt.Errorf("remote ZFS snapshot + VACUUM INTO: %w", err)
 	}
 	defer run("ssh", dest, "rm -f "+shellQuote(remoteTmp))
 	if err := run("scp", dest+":"+remoteTmp, local.Name()); err != nil {
@@ -442,6 +464,29 @@ func pullSnapshot(dest, remoteDB string) (string, error) {
 		return "", fmt.Errorf("copying snapshot: %w", err)
 	}
 	return local.Name(), nil
+}
+
+// snapshotVacuumScript builds the remote shell command that snapshots
+// the ZFS dataset, runs VACUUM INTO against act3.db as seen inside that
+// snapshot, and destroys the snapshot on exit. snap is the full
+// snapshot name (dataset@tag). The VACUUM output at out is an
+// independent file, so it survives the snapshot's destruction and
+// remains for the caller to copy back.
+func snapshotVacuumScript(dataset, snap, remoteDB, out string) string {
+	return fmt.Sprintf(`set -eu
+ds=%s
+snap=%s
+db=%s
+out=%s
+zfs snapshot "$snap"
+trap 'zfs destroy "$snap" 2>/dev/null || true' EXIT
+mp=$(zfs get -H -o value mountpoint "$ds")
+case "$db" in
+"$mp"/*) rel=${db#"$mp"/} ;;
+*) echo "freeze: remote-db $db is not under dataset $ds (mountpoint $mp)" >&2; exit 1 ;;
+esac
+sqlite3 "$mp/.zfs/snapshot/${snap#*@}/$rel" "VACUUM INTO '$out'"`,
+		shellQuote(dataset), shellQuote(snap), shellQuote(remoteDB), shellQuote(out))
 }
 
 func run(name string, args ...string) error {
