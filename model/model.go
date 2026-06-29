@@ -195,6 +195,8 @@ func (mt *TxRW) onCommit(f func()) {
 	mt.commitHook = append(mt.commitHook, f)
 }
 
+// ValidationError reports an input or precondition that is invalid:
+// a failure that re-running with the same input cannot resolve.
 type ValidationError struct {
 	Op  string
 	Err error
@@ -204,8 +206,10 @@ func (e *ValidationError) Error() string {
 	return fmt.Sprintf("%s: %v", e.Op, e.Err)
 }
 
-func (e *ValidationError) Unwrap() error {
-	return e.Err
+// Unwrap also yields errPermanent so the task framework treats a
+// validation failure as a permanent failure, not a retriable one.
+func (e *ValidationError) Unwrap() []error {
+	return []error{e.Err, errPermanent}
 }
 
 type txError struct{ err error }
