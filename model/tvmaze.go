@@ -1,6 +1,8 @@
 package model
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -92,7 +94,11 @@ func (tx *TxR) taskFetchEpisodeThumbnail(args []string) error {
 		return err
 	}
 	return tx.m.WithTxRW(tx.ctx, func(tx *TxRW) error {
-		return tx.EpisodeThumbnailIDSet(epID, thumbnailID)
+		err := tx.EpisodeThumbnailIDSet(epID, thumbnailID)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil // episode deleted between scheduling and run
+		}
+		return err
 	})
 }
 

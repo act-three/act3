@@ -3,7 +3,6 @@ package storage
 import (
 	"crypto/rand"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"log/slog"
@@ -18,6 +17,10 @@ const (
 	byteSize = 15
 	b32Size  = byteSize * 8 / 5
 )
+
+// ErrBadKey reports a key that is not a well-formed storage key, and
+// so could never name a stored blob.
+var ErrBadKey = errors.New("bad key")
 
 type Dir struct {
 	root *os.Root
@@ -139,7 +142,7 @@ func newID() string {
 func keyPath(key string, join func(...string) string) (string, error) {
 	_, err := base32c.DecodeString(key)
 	if len(key) != b32Size || err != nil {
-		return "", fmt.Errorf("bad key")
+		return "", ErrBadKey
 	}
 	return join(key[:2], key[2:4], key[4:]), nil
 }
