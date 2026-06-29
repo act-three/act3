@@ -395,7 +395,7 @@ func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error, sta
 	var args []string
 	err = json.Unmarshal([]byte(task.Args), &args)
 	if err != nil {
-		return fmt.Errorf("task %s %s: bad args: %w", task.Type, task.ID, err), nil
+		return permanent(fmt.Errorf("task %s %s: bad args: %w", task.Type, task.ID, err)), nil
 	}
 
 	return tq.m.WithTxR(ctx, func(tx *TxR) error {

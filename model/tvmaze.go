@@ -14,7 +14,7 @@ func (tx *TxR) taskFetchEpisodes(args []string) error {
 	// TODO(em): pull info from Client
 	id, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
-		return err
+		return permanent(err)
 	}
 	slog.InfoContext(tx.ctx, "got id", "TVmazeID", id)
 

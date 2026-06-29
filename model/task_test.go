@@ -33,6 +33,20 @@ func TestTaskFailDelay(t *testing.T) {
 	}
 }
 
+// TestValidationErrorIsPermanent checks that a ValidationError is
+// treated as a permanent task failure while still unwrapping to its
+// underlying cause.
+func TestValidationErrorIsPermanent(t *testing.T) {
+	cause := errors.New("max 10 bytes")
+	err := error(&ValidationError{Op: "image too large", Err: cause})
+	if !errors.Is(err, errPermanent) {
+		t.Error("ValidationError should be permanent")
+	}
+	if !errors.Is(err, cause) {
+		t.Error("ValidationError should still unwrap to its cause")
+	}
+}
+
 // TestPanicTaskStaysFailed checks that a task whose function panics is
 // recorded as permanently failed and not released back to the queue,
 // over the full dispatch flow: run records the failure, then the

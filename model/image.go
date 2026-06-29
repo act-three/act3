@@ -307,7 +307,7 @@ func (m *Model) imageFetch(ctx context.Context, url string, kind ImageKind) (str
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return "", err
+		return "", permanent(err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

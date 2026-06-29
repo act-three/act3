@@ -49,7 +49,7 @@ func openIngestSource(localDir, name string) (*os.File, error) {
 	}
 	if !fi.Mode().IsRegular() {
 		f.Close()
-		return nil, fmt.Errorf("ingest: %q is not a regular file (mode %s)", name, fi.Mode())
+		return nil, permanent(fmt.Errorf("ingest: %q is not a regular file (mode %s)", name, fi.Mode()))
 	}
 	return f, nil
 }
@@ -78,7 +78,7 @@ func (tx *TxR) taskIngest(args []string) error {
 	remoteDir := args[1]
 	name := args[2]
 	if !filepath.IsLocal(name) {
-		return fmt.Errorf("refusing ingest of non-local path %q", name)
+		return permanent(fmt.Errorf("refusing ingest of non-local path %q", name))
 	}
 	retryIngest := func() error {
 		slog.InfoContext(tx.ctx, "ingest: file not yet available, retrying",
@@ -256,10 +256,10 @@ func (tx *TxR) planAndCreateRenditions(vid schema.Video) (err error) {
 
 	planned, err := video.PlanVideoRenditions(probe, maxKeyframeGap)
 	if err != nil {
-		return err
+		return permanent(err)
 	}
 	if len(planned) == 0 {
-		return fmt.Errorf("no video stream found in source")
+		return permanent(fmt.Errorf("no video stream found in source"))
 	}
 	audioPlanned := video.PlanAudioRenditions(probe)
 
@@ -846,7 +846,7 @@ func (tx *TxR) taskReimport(args []string) (err error) {
 		return err
 	}
 	if vid.InfoHash == nil {
-		return fmt.Errorf("video %s has no info hash", vid.ID)
+		return permanent(fmt.Errorf("video %s has no info hash", vid.ID))
 	}
 
 	tm := tx.m.transmission.Load()
@@ -866,7 +866,7 @@ func (tx *TxR) taskReimport(args []string) (err error) {
 	}
 	name := torrentRelPath(dl.Title, vid.Name)
 	if !filepath.IsLocal(name) {
-		return fmt.Errorf("refusing reimport of non-local path %q", name)
+		return permanent(fmt.Errorf("refusing reimport of non-local path %q", name))
 	}
 	localDir, err := tx.m.resolveDownloadDir(*ts[0].DownloadDir, name)
 	if err != nil {
