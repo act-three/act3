@@ -824,7 +824,7 @@ func Pass1Combined(ctx context.Context, src *os.File, format string,
 	if i := slices.IndexFunc(dsts, func(p EncodeParams) bool {
 		return !p.Remux && p.StatsID == ""
 	}); i >= 0 {
-		return fmt.Errorf("ffmpeg.Pass1Combined: dsts[%d] missing StatsID", i)
+		panic(fmt.Sprintf("ffmpeg.Pass1Combined: dsts[%d] missing StatsID", i))
 	}
 	if !slices.ContainsFunc(dsts, func(p EncodeParams) bool { return !p.Remux }) {
 		return nil
@@ -863,7 +863,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	statsDir string, duration time.Duration, onProgress func(float64),
 ) (playlist string, err error) {
 	if dst.StatsID == "" {
-		return "", fmt.Errorf("ffmpeg.Pass2Single: dst.StatsID is empty")
+		panic("ffmpeg.Pass2Single: dst.StatsID is empty")
 	}
 	passlog := filepath.Join(statsDir, dst.StatsID)
 	presetBytes, err := os.ReadFile(filepath.Join(statsDir, pass1PresetFile))
@@ -1036,7 +1036,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	statsDir string, duration time.Duration, onProgress func(float64),
 ) (err error) {
 	if dst.StatsID == "" {
-		return fmt.Errorf("ffmpeg.Pass2ToMP4: dst.StatsID is empty")
+		panic("ffmpeg.Pass2ToMP4: dst.StatsID is empty")
 	}
 	probe, err := Probe(ctx, src)
 	if err != nil {
