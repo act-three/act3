@@ -16,6 +16,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/priority"
+	"ily.dev/act3/storage"
 	"ily.dev/act3/video"
 	"ily.dev/act3/video/ffmpeg"
 )
@@ -61,9 +62,22 @@ func boolToInt64(b bool) int64 {
 	return 0
 }
 
+// permanentIfGone marks err permanent when it reports a missing blob
+// (os.ErrNotExist) or a malformed key (storage.ErrBadKey): a source no
+// retry of the same task can restore. Other storage errors, which may
+// be transient, pass through unchanged.
+func permanentIfGone(err error) error {
+	if errors.Is(err, os.ErrNotExist) || errors.Is(err, storage.ErrBadKey) {
+		return permanent(err)
+	}
+	return err
+}
+
 func (tx *TxR) taskIngest(args []string) error {
 	vid, err := tx.q.VideoGet(args[0])
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil // video deleted (trash)
+	} else if err != nil {
 		return err
 	}
 	if vid.OriginalKey != "" {
@@ -229,7 +243,7 @@ func (tx *TxR) planAndCreateRenditions(vid schema.Video) (err error) {
 	tx.m.prog.UpdateStatus(vid.ID, "Probing")
 	f, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {
-		return err
+		return permanentIfGone(err)
 	}
 	defer f.Close()
 	probe, err := ffmpeg.Probe(tx.ctx, f)
@@ -445,7 +459,7 @@ func (tx *TxR) taskIngestPass1(args []string) (err error) {
 
 		src, err := tx.m.store.Open(vid.OriginalKey)
 		if err != nil {
-			return err
+			return permanentIfGone(err)
 		}
 		defer src.Close()
 
@@ -547,7 +561,7 @@ func (tx *TxR) taskIngestEncodeAudio(args []string) error {
 	src, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {
 		tx.m.prog.Close(progKey, err)
-		return err
+		return permanentIfGone(err)
 	}
 	defer src.Close()
 
@@ -653,7 +667,7 @@ func (tx *TxR) taskIngestEncodeRend(args []string) error {
 
 	src, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {
-		return err
+		return permanentIfGone(err)
 	}
 	defer src.Close()
 
@@ -768,7 +782,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(args []string) error {
 	src, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {
 		tx.m.prog.Close(progKey, err)
-		return err
+		return permanentIfGone(err)
 	}
 	defer src.Close()
 
@@ -861,7 +875,9 @@ func (tx *TxR) taskReimport(args []string) (err error) {
 		return fmt.Errorf("torrent %s: got %d results, wanted 1", *vid.InfoHash, len(ts))
 	}
 	dl, err := tx.q.DownloadGet(*vid.InfoHash)
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
+		return permanent(err)
+	} else if err != nil {
 		return err
 	}
 	name := torrentRelPath(dl.Title, vid.Name)
@@ -1257,7 +1273,7 @@ func sourceSegmentBoundaries(vid schema.Video, hasRemux bool) ([]int64, ffmpeg.F
 	}
 	var keyframes []int64
 	if err := json.Unmarshal([]byte(vid.VideoKeyframes), &keyframes); err != nil {
-		return nil, fps, fmt.Errorf("unmarshal video keyframes: %w", err)
+		return nil, fps, permanent(fmt.Errorf("unmarshal video keyframes: %w", err))
 	}
 	return ffmpeg.SegmentBoundaries(keyframes, fps, ffmpeg.MinSegmentDuration), fps, nil
 }

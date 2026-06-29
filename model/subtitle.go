@@ -159,7 +159,7 @@ func (tx *TxR) taskIngestExtractSubs(args []string) (err error) {
 
 	src, err := tx.m.store.Open(vid.OriginalKey)
 	if err != nil {
-		return err
+		return permanentIfGone(err)
 	}
 	defer src.Close()
 
