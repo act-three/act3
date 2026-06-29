@@ -15,9 +15,8 @@
 // INTO" against the quiescent file inside that snapshot to produce one
 // clean compacted file, copies it back, and destroys the snapshot.
 // -snapshot uses an already-pulled file instead. The ssh destination
-// defaults to root@$A3PRODHOST, the ZFS dataset to $A3PRODHOSTDATASET,
-// and the remote database path to $A3PRODHOSTDB, all overridable by
-// flag.
+// is root@$A3PRODHOST, the ZFS dataset $A3PRODHOSTDATASET, and the
+// remote database path $A3PRODHOSTDB.
 //
 // CI (cmd/frozencheck) re-checks the report against the repository, but
 // the data claim — that the snapshot was real and the update applied —
@@ -72,17 +71,14 @@ const databaseDir = "database"
 
 func main() {
 	snapshot := flag.String("snapshot", "", "use this local snapshot file instead of pulling from the prod host")
-	dest := flag.String("ssh", "root@"+prodHost, "ssh destination of the prod host")
-	dataset := flag.String("dataset", os.Getenv("A3PRODHOSTDATASET"), "ZFS dataset holding act3.db on the prod host (required unless -snapshot)")
-	remoteDB := flag.String("remote-db", os.Getenv("A3PRODHOSTDB"), "path to act3.db on the prod host (required unless -snapshot)")
 	dryRun := flag.Bool("n", false, "compute and print the report, but write nothing")
 	flag.Parse()
 
 	if err := freeze(config{
 		snapshot: *snapshot,
-		dest:     *dest,
-		dataset:  *dataset,
-		remoteDB: *remoteDB,
+		dest:     "root@" + prodHost,
+		dataset:  os.Getenv("A3PRODHOSTDATASET"),
+		remoteDB: os.Getenv("A3PRODHOSTDB"),
 		dryRun:   *dryRun,
 	}); err != nil {
 		fmt.Fprintln(os.Stderr, "freeze:", err)
@@ -441,10 +437,10 @@ func fileDigest(path string) (string, error) {
 // the snapshot. dest is an ssh destination such as root@host.
 func pullSnapshot(dest, dataset, remoteDB string) (string, error) {
 	if dataset == "" {
-		return "", errors.New("set A3PRODHOSTDATASET or -dataset (ZFS dataset holding act3.db on the prod host), or use -snapshot")
+		return "", errors.New("set A3PRODHOSTDATASET (ZFS dataset holding act3.db on the prod host), or use -snapshot")
 	}
 	if remoteDB == "" {
-		return "", errors.New("set A3PRODHOSTDB or -remote-db (path to act3.db on the prod host), or use -snapshot")
+		return "", errors.New("set A3PRODHOSTDB (path to act3.db on the prod host), or use -snapshot")
 	}
 	local, err := os.CreateTemp("", "act3-snapshot-*.db")
 	if err != nil {
