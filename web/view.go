@@ -88,7 +88,7 @@ func viewDialog(tx *model.TxR, d dialog) node {
 		results := tx.CollectionSeriesSearch(d.colID, d.query)
 		return view.AppCollectionSeriesAddDialog(d.colID, d.query, results)
 	case *imageDialog:
-		return viewImageDialog(tx, d.id)
+		return viewImageDialog(tx, d.kind, d.id)
 	case *downloadFileAttachPopover:
 		return viewDownloadFileAttach(tx, d)
 	}
@@ -120,15 +120,15 @@ func viewDownloadFileAttach(tx *model.TxR, d *downloadFileAttachPopover) node {
 
 // viewImageDialog renders the image-edit dialog for the item the ID
 // identifies.
-func viewImageDialog(tx *model.TxR, id string) node {
-	switch model.KindOf(id) {
-	case model.TrashKindMovieEdition:
+func viewImageDialog(tx *model.TxR, kind, id string) node {
+	switch kind {
+	case "med-id":
 		return view.AppMoviePosterDialog(tx.MovieEdition(id))
-	case model.TrashKindSeriesEdition:
+	case "sed-id":
 		return view.AppSeriesEditionPosterDialog(tx.SeriesEdition(id))
-	case model.TrashKindEpisode:
+	case "ep-id":
 		return view.AppEpisodeThumbnailDialog(tx.EpisodeHead(id))
-	case model.TrashKindCollection:
+	case "col-id":
 		return view.AppCollectionBannerDialog(tx.CollectionHead(id))
 	}
 	return nil

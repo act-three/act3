@@ -195,7 +195,7 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		a.dialog = &collectionSeriesAddDialog{colID: m.CollectionID}
 		return nil
 	case *msg.ImageDialogOpen:
-		a.dialog = &imageDialog{id: m.ID}
+		a.dialog = &imageDialog{kind: m.Kind, id: m.ID}
 		return nil
 	case *msg.DownloadFileAttachOpen:
 		a.dialog = &downloadFileAttachPopover{infoHash: m.InfoHash, path: m.Path}

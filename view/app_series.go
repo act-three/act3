@@ -249,7 +249,7 @@ func seriesPosterItem(sed *model.SeriesEdition) domi.Node {
 			SettingsItemLabelTitle("Poster"),
 		),
 		buttonImageEdit(
-			&msg.ImageDialogOpen{ID: sed.ID()},
+			&msg.ImageDialogOpen{Kind: "sed-id", ID: sed.ID()},
 			sed.Poster(),
 			AspectPoster,
 		),
@@ -503,7 +503,7 @@ func appEpisodeDetail(
 								SettingsItemLabelTitle("Thumbnail"),
 							),
 							buttonImageEdit(
-								&msg.ImageDialogOpen{ID: ep.ID()},
+								&msg.ImageDialogOpen{Kind: "ep-id", ID: ep.ID()},
 								ep.Thumbnail(),
 								AspectThumbnail,
 							),
