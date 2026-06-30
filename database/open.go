@@ -167,6 +167,14 @@ func applySchemaUpdate(log *slog.Logger, db *sql.DB, name, version, digest, upda
 	return tx.Commit()
 }
 
+// newID is the SQLite newID() function used by column DEFAULTs to
+// generate the body of an object ID. Each ID is a short per-table tag
+// (applied by the caller, via the DEFAULT expression or in package
+// model) followed by this body.
+//
+// The tags are prefix-free: no tag is a prefix of another, so an ID's
+// table can be recovered from its leading bytes (see model.KindOf).
+// Preserve this when adding tables.
 func newID(ctx *sqlite.FunctionContext, args []driver.Value) (driver.Value, error) {
 	return flurry.NewID(), nil
 }

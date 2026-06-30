@@ -919,9 +919,7 @@ func (m *Model) purgeTrashLoop() {
 }
 
 // KindOf returns the TrashKind implied by a flurry ID prefix, or
-// TrashKindInvalid if the ID doesn't match a known prefix. Longer
-// prefixes are checked first so "med" and "sed" don't collide with
-// "mo" and "sr".
+// TrashKindInvalid if the ID doesn't match a known prefix.
 func KindOf(id string) TrashKind {
 	switch {
 	case strings.HasPrefix(id, "med"):
