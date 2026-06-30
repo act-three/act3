@@ -256,15 +256,6 @@ func seriesPosterItem(sed *model.SeriesEdition) domi.Node {
 	)
 }
 
-func AppSeriesEditionPosterDialog(sed *model.SeriesEdition) domi.Node {
-	return imageDialog(&msg.DialogClose{}, AspectPoster)(
-		buttonUpload()(
-			Hidden("sed-id", sed.ID()),
-			PosterImg(AspectPoster, PosterFill, imgAttrs(sed.Poster())),
-		),
-	)
-}
-
 func seriesSummarySection(sed *model.SeriesEdition) domi.Node {
 	return FlexCol(Gap2)(
 		SettingsContent()(Text("Summary", Size2)),
@@ -761,15 +752,6 @@ func seriesTheaterPathText(sr *model.SeriesHead, sed *model.SeriesEditionHead) d
 	return Group(
 		domi.Text("/"), domi.Text(sr.Slug()),
 		domi.Text("/"), domi.Text(sed.Slug()),
-	)
-}
-
-func AppEpisodeThumbnailDialog(ep *model.EpisodeHead) domi.Node {
-	return imageDialog(&msg.DialogClose{}, AspectThumbnail)(
-		buttonUpload()(
-			Hidden("ep-id", ep.ID()),
-			PosterImg(AspectThumbnail, PosterFill, imgAttrs(ep.Thumbnail())),
-		),
 	)
 }
 

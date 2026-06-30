@@ -140,15 +140,6 @@ func appCollectionDetail(col *model.Collection) domi.Node {
 	)
 }
 
-func AppCollectionBannerDialog(col *model.CollectionHead) domi.Node {
-	return imageDialog(&msg.DialogClose{}, AspectBanner)(
-		buttonUpload()(
-			Hidden("col-id", col.ID()),
-			PosterImg(AspectBanner, PosterFill, imgAttrs(col.Banner())),
-		),
-	)
-}
-
 // AppCollectionMovieAddDialog renders the add-movie-to-collection
 // picker: a library search box and its results.
 func AppCollectionMovieAddDialog(colID, query string, results []model.CollectionMovieSearchResult) domi.Node {

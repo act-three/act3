@@ -88,7 +88,7 @@ func viewDialog(tx *model.TxR, d dialog) node {
 		results := tx.CollectionSeriesSearch(d.colID, d.query)
 		return view.AppCollectionSeriesAddDialog(d.colID, d.query, results)
 	case *imageDialog:
-		return viewImageDialog(tx, d.kind, d.id)
+		return view.AppImageDialog(d.kind, d.id, dialogImage(tx, d.kind, d.id))
 	case *downloadFileAttachPopover:
 		return viewDownloadFileAttach(tx, d)
 	}
@@ -118,20 +118,20 @@ func viewDownloadFileAttach(tx *model.TxR, d *downloadFileAttachPopover) node {
 	return view.AppDownloadFileAttachPopover(sed, d.infoHash, d.path, vid.ID(), d.attached, linked)
 }
 
-// viewImageDialog renders the image-edit dialog for the item the ID
-// identifies.
-func viewImageDialog(tx *model.TxR, kind, id string) node {
+// dialogImage returns the current image for the item the ID
+// identifies; kind selects how to resolve it.
+func dialogImage(tx *model.TxR, kind, id string) model.Image {
 	switch kind {
 	case "med-id":
-		return view.AppMoviePosterDialog(tx.MovieEdition(id))
+		return tx.MovieEdition(id).Poster()
 	case "sed-id":
-		return view.AppSeriesEditionPosterDialog(tx.SeriesEdition(id))
+		return tx.SeriesEdition(id).Poster()
 	case "ep-id":
-		return view.AppEpisodeThumbnailDialog(tx.EpisodeHead(id))
+		return tx.EpisodeHead(id).Thumbnail()
 	case "col-id":
-		return view.AppCollectionBannerDialog(tx.CollectionHead(id))
+		return tx.CollectionHead(id).Banner()
 	}
-	return nil
+	panic(fmt.Sprintf("unknown image dialog kind %q", kind))
 }
 
 func viewHome(tx *model.TxR) (title string, n node) {
