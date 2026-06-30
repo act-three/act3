@@ -178,32 +178,26 @@ func TestIsPlayableMV(t *testing.T) {
 	}
 }
 
-// TestReencodeReplansAfterDelete is a regression test for ACT-179.
-// taskReencode opens an inner WithTxRW to delete the existing
-// renditions, then re-plans. Before the fix, planAndCreateRenditions
-// ran on the outer (stale) TxR; its existing-rendition guard saw the
-// pre-delete snapshot and silently returned, leaving the video without
-// renditions and without queued encode tasks. With the fix, planning
-// runs in a fresh TxR — the guard sees the empty list and proceeds to
-// open the source. We pass a bogus OriginalKey so that step fails
-// noisily, which is what we assert on: pre-fix taskReencode returned
-// nil.
-//
-// Uses a file-backed DB because the snapshot pinning the bug depends
-// on only manifests in WAL mode; :memory: shared-cache falls back to
-// MEMORY journal, where the outer reader blocks the inner writer.
-func TestReencodeReplansAfterDelete(t *testing.T) {
+// TestReencodeKeepsRenditionsOnProbeFailure is a regression test for
+// ACT-268. taskReencode probes the original before tearing anything
+// down, so a probe failure (here, a bogus OriginalKey with no backing
+// blob) must leave the existing renditions in place. Before the fix the
+// delete committed in its own transaction ahead of the probe, so a
+// probe error left the video permanently stripped of renditions with
+// nothing queued to rebuild it.
+func TestReencodeKeepsRenditionsOnProbeFailure(t *testing.T) {
 	ctx := context.Background()
-	m := newFileBackedTestModel(t)
+	m := newTestModel(t)
 
 	vidID := createVideoRow(t, m, "v.mkv", "fakekey", []string{"rendkey1"})
 
 	err := m.WithTxR(ctx, func(tx *TxR) error {
 		return tx.taskReencode([]string{vidID})
 	})
+	if err == nil {
+		t.Fatal("expected probe of bogus OriginalKey to fail; got nil")
+	}
 
-	// The inner WithTxRW commits the delete regardless of what runs
-	// afterward; both pre- and post-fix the rendition row is gone here.
 	var renditions []schema.Rendition
 	if rerr := m.WithTxR(ctx, func(tx *TxR) error {
 		var e error
@@ -212,12 +206,8 @@ func TestReencodeReplansAfterDelete(t *testing.T) {
 	}); rerr != nil {
 		t.Fatal(rerr)
 	}
-	if len(renditions) != 0 {
-		t.Fatalf("renditions should be deleted, got %d", len(renditions))
-	}
-
-	if err == nil {
-		t.Fatal("expected planAndCreateRenditions to attempt the source open and fail; got nil — guard short-circuited on stale snapshot?")
+	if len(renditions) != 1 {
+		t.Fatalf("renditions should be preserved on probe failure, got %d", len(renditions))
 	}
 }
 

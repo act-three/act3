@@ -6,6 +6,9 @@ INSERT INTO AudioRendition (
 ) VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
+-- name: AudioRenditionDeleteByVideoID :many
+DELETE FROM AudioRendition WHERE VideoID = ? RETURNING Key;
+
 -- name: AudioRenditionDeleteByVideoIDList :exec
 DELETE FROM AudioRendition WHERE VideoID IN (sqlc.slice(ids));
 
@@ -832,8 +835,8 @@ INSERT INTO Rendition (
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
--- name: RenditionDeleteByVideoID :exec
-DELETE FROM Rendition WHERE VideoID = ?;
+-- name: RenditionDeleteByVideoID :many
+DELETE FROM Rendition WHERE VideoID = ? RETURNING Key;
 
 -- name: RenditionDeleteByVideoIDList :exec
 DELETE FROM Rendition WHERE VideoID IN (sqlc.slice(ids));
@@ -1217,8 +1220,8 @@ INSERT INTO SubtitleTrack (
 ) VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
--- name: SubtitleTrackDeleteByVideoID :exec
-DELETE FROM SubtitleTrack WHERE VideoID = ?;
+-- name: SubtitleTrackDeleteByVideoID :many
+DELETE FROM SubtitleTrack WHERE VideoID = ? RETURNING OriginalKey, WebVTTKey;
 
 -- name: SubtitleTrackDeleteByVideoIDList :exec
 DELETE FROM SubtitleTrack WHERE VideoID IN (sqlc.slice(ids));
