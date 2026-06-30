@@ -280,15 +280,6 @@ func AppMovieAddDialog(query string, searching bool, results []model.MovieSearch
 	)
 }
 
-func AppMoviePosterDialog(med *model.MovieEdition) domi.Node {
-	return imageDialog(&msg.DialogClose{}, AspectPoster)(
-		buttonUpload()(
-			Hidden("med-id", med.ID()),
-			PosterImg(AspectPoster, PosterFill, imgAttrs(med.Poster())),
-		),
-	)
-}
-
 func posterURL(p *string) string {
 	if p != nil {
 		return tmdb.PosterURL(*p)

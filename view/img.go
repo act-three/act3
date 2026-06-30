@@ -5,6 +5,8 @@ import (
 	"ily.dev/domi/attr"
 
 	"ily.dev/act3/model"
+	"ily.dev/act3/msg"
+	. "ily.dev/act3/ui"
 )
 
 // imgAttrs renders the standard set of <img> attributes from an
@@ -15,5 +17,19 @@ func imgAttrs(im model.Image) domi.Attr {
 	return group(
 		attr.Src(im.SmallestURL()),
 		attr.SrcSet(im.Srcset()),
+	)
+}
+
+// AppImageDialog renders the image-edit dialog: an upload control over
+// the item's current image, sized to its kind's aspect ratio. kind is
+// the upload form-field name carrying id.
+func AppImageDialog(kind, id string, im model.Image) domi.Node {
+	w, h := im.Kind.Aspect()
+	a := Aspect{W: w, H: h}
+	return imageDialog(&msg.DialogClose{}, a)(
+		buttonUpload()(
+			Hidden(kind, id),
+			PosterImg(a, PosterFill, imgAttrs(im)),
+		),
 	)
 }
