@@ -193,131 +193,224 @@ func (tx *TxR) FindImageVariantKey(originalID string, width int) (key string, fo
 	return chosen.Key, true
 }
 
-// ImageCreate reads an image from r, validates that it decodes
-// as one of the allowed formats (png/jpeg/webp), center-crops it
-// to the target aspect ratio for kind, and writes both the
-// original bytes and a set of downscaled WebP variants to the
-// blob store and the Image / ImageRendition tables. Returns
-// the new Image ID.
+// imageBlobs is a decoded, cropped, re-encoded image whose original
+// and variant blobs have already been written to the blob store. It
+// carries the keys and metadata needed to record the Image and its
+// ImageRendition rows; no pixel data remains in memory. Produce it
+// with [Model.imageStore] or [Model.imageFetch], and record it within
+// a transaction with [TxRW.imageInsert] — keeping the row writes
+// composable so the image commits together with the parent FK that
+// references it.
 //
-// Variants are generated at the per-density physical widths
-// declared in imageKindSpecs. Configured widths that would
-// upscale the cropped source are skipped. If the cropped source's
-// native width falls strictly inside the configured range, a
-// variant at the native size is added too so the best variant we
-// offer reflects the actual fidelity of the source. The output
-// never includes a width larger than the largest configured
-// width. If even the smallest configured width would upscale, a
-// single fallback variant at the cropped source's native size is
-// generated so every Image has at least one rendition.
+// A non-empty id forces the Image row to that primary key (used for
+// boot-time placeholders, whose IDs are fixed so parent FK DEFAULTs
+// can reference them); an empty id generates a fresh one.
+type imageBlobs struct {
+	id          string
+	mime        string
+	originalKey string
+	variants    []storedVariant
+}
+
+// storedVariant is one WebP variant already written to the blob store,
+// with the dimensions to record on its ImageRendition row.
+type storedVariant struct {
+	key           string
+	width, height int
+}
+
+// imageStore reads an image from r, validates that it decodes as one
+// of the allowed formats (png/jpeg/webp), center-crops it to the
+// target aspect ratio for kind, encodes a set of downscaled WebP
+// variants, and writes the original bytes and every variant to the
+// blob store. It writes no DB rows: the returned imageBlobs holds the
+// resulting keys so a caller can record them with imageInsert inside
+// the same transaction that binds the image to its parent.
 //
-// The "original" row keeps the bytes byte-for-byte as uploaded
-// so we can re-derive variants in the future without re-fetching
-// from TMDB/TVmaze or asking the user to re-upload. It is not
-// served to browsers — only the WebP variants are.
+// The read, decode, encode, and blob copies are all slow work that
+// must run before any write transaction is opened, so the single
+// write connection is never held during filesystem I/O.
 //
-// Decode failures are returned as ValidationError so callers at
-// the HTTP edge can return 400.
-func (m *Model) ImageCreate(ctx context.Context, r io.ReadCloser, kind ImageKind) (originalID string, err error) {
-	defer errorfmt.Handlef("image create: %w", &err)
+// Variants are generated at the per-density physical widths declared
+// in imageKindSpecs. Configured widths that would upscale the cropped
+// source are skipped. If the cropped source's native width falls
+// strictly inside the configured range, a variant at the native size
+// is added too so the best variant we offer reflects the actual
+// fidelity of the source. The output never includes a width larger
+// than the largest configured width. If even the smallest configured
+// width would upscale, a single fallback variant at the cropped
+// source's native size is generated so every Image has at least one
+// rendition.
+//
+// The "original" blob keeps the bytes byte-for-byte as uploaded so we
+// can re-derive variants in the future without re-fetching from
+// TMDB/TVmaze or asking the user to re-upload. It is not served to
+// browsers — only the WebP variants are.
+//
+// Decode failures are returned as ValidationError so callers at the
+// HTTP edge can return 400.
+func (m *Model) imageStore(r io.Reader, kind ImageKind) (_ imageBlobs, err error) {
+	defer errorfmt.Handlef("image store: %w", &err)
 
 	// Buffer the input so we can both store it byte-for-byte and
 	// hand it to the decoder. MaxBytesReader makes the cap
 	// overflow distinguishable from a generic read error.
-	raw, err := io.ReadAll(http.MaxBytesReader(nil, r, maxImageBytes))
+	raw, err := io.ReadAll(http.MaxBytesReader(nil, io.NopCloser(r), maxImageBytes))
 	if err != nil {
 		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
-			return "", &ValidationError{
+			return imageBlobs{}, &ValidationError{
 				Op:  "image too large",
 				Err: fmt.Errorf("max %d bytes", maxImageBytes),
 			}
 		}
-		return "", err
+		return imageBlobs{}, err
 	}
 
 	src, mime, err := decodeAllowedImage(raw)
 	if err != nil {
-		return "", &ValidationError{Op: "decode image", Err: err}
+		return imageBlobs{}, &ValidationError{Op: "decode image", Err: err}
 	}
 
 	cropped := centerCrop(src, kind)
-	encoded := encodeVariants(cropped, kind)
-	return m.insertImage(ctx, "", mime, raw, encoded)
+	return m.storeBlobs(mime, raw, encodeVariants(cropped, kind))
 }
 
-// insertImage writes raw + variants to the blob store and the
-// Image / ImageRendition tables in a single transaction. If id
-// is empty the Image row gets a freshly generated ID; otherwise
-// the row is created with id (used for boot-time placeholders,
-// whose IDs are fixed so parent FK DEFAULTs can reference them).
-func (m *Model) insertImage(ctx context.Context, id, mime string, raw []byte, variants []encodedVariant) (originalID string, err error) {
-	err = m.WithTxRW(ctx, func(tx *TxRW) error {
-		originalKey, err := m.store.Copy(bytes.NewReader(raw))
-		if err != nil {
-			return err
-		}
-		if id == "" {
-			io_, err := tx.q.ImageCreate(schema.ImageCreateParams{
-				OriginalKey: originalKey,
-				Type:        mime,
-			})
-
-			if err != nil {
-				return err
-			}
-			originalID = io_.ID
-		} else {
-			if err := tx.q.ImageCreateWithID(schema.ImageCreateWithIDParams{
-				ID:          id,
-				OriginalKey: originalKey,
-				Type:        mime,
-			}); err != nil {
-				return err
-			}
-			originalID = id
-		}
-		for _, v := range variants {
-			variantKey, err := m.store.Copy(bytes.NewReader(v.bytes))
-			if err != nil {
-				return err
-			}
-			if err := tx.q.ImageRenditionCreate(schema.ImageRenditionCreateParams{
-				Key:     variantKey,
-				ImageID: originalID,
-				Type:    "image/webp",
-				Width:   int64(v.width),
-				Height:  int64(v.height),
-			}); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
+// storeBlobs copies the original bytes and each encoded variant to
+// the blob store, returning their keys as an imageBlobs. It performs
+// filesystem I/O and must not run inside a write transaction.
+func (m *Model) storeBlobs(mime string, raw []byte, variants []encodedVariant) (imageBlobs, error) {
+	originalKey, err := m.store.Copy(bytes.NewReader(raw))
 	if err != nil {
-		return "", err
+		return imageBlobs{}, err
+	}
+	var stored []storedVariant
+	for _, v := range variants {
+		key, err := m.store.Copy(bytes.NewReader(v.bytes))
+		if err != nil {
+			return imageBlobs{}, err
+		}
+		stored = append(stored, storedVariant{key: key, width: v.width, height: v.height})
+	}
+	return imageBlobs{mime: mime, originalKey: originalKey, variants: stored}, nil
+}
+
+// imageInsert records an already-stored image — its original and
+// variant blobs are in the blob store — as Image and ImageRendition
+// rows, returning the new Image ID. A non-empty b.id forces that
+// primary key; otherwise one is generated. It writes only rows and
+// does no I/O, so callers run it in the same transaction that binds
+// the image to its parent, leaving no window in which the image row
+// exists unreferenced.
+func (tx *TxRW) imageInsert(b imageBlobs) (originalID string, err error) {
+	if b.id == "" {
+		im, err := tx.q.ImageCreate(schema.ImageCreateParams{
+			OriginalKey: b.originalKey,
+			Type:        b.mime,
+		})
+		if err != nil {
+			return "", err
+		}
+		originalID = im.ID
+	} else {
+		if err := tx.q.ImageCreateWithID(schema.ImageCreateWithIDParams{
+			ID:          b.id,
+			OriginalKey: b.originalKey,
+			Type:        b.mime,
+		}); err != nil {
+			return "", err
+		}
+		originalID = b.id
+	}
+	for _, v := range b.variants {
+		if err := tx.q.ImageRenditionCreate(schema.ImageRenditionCreateParams{
+			Key:     v.key,
+			ImageID: originalID,
+			Type:    "image/webp",
+			Width:   int64(v.width),
+			Height:  int64(v.height),
+		}); err != nil {
+			return "", err
+		}
 	}
 	return originalID, nil
 }
 
-// imageFetch GETs url and hands the body to ImageCreate. The ctx
+// ImageUploadCreate stores an uploaded image and attaches it to the
+// named parent in one transaction, so a failed association can never
+// leave the Image row orphaned. Exactly one of medID, sedID, epID,
+// colID must be non-empty; the image kind is derived from which one.
+// Returns the new Image's ID.
+//
+// Decode failures are returned as ValidationError so the HTTP edge
+// can return 400.
+func (m *Model) ImageUploadCreate(ctx context.Context, r io.Reader, medID, sedID, epID, colID string) (id string, err error) {
+	defer errorfmt.Handlef("ImageUploadCreate: %w", &err)
+
+	targets := slices.DeleteFunc([]string{medID, sedID, epID, colID}, func(s string) bool { return s == "" })
+	if len(targets) != 1 {
+		return "", &ValidationError{
+			Op:  "params",
+			Err: fmt.Errorf("exactly one target med-id, sed-id, ep-id, or col-id required"),
+		}
+	}
+
+	var kind ImageKind
+	var attach func(tx *TxRW, imageID string) error
+	switch {
+	case medID != "":
+		kind = ImagePoster
+		attach = func(tx *TxRW, imageID string) error { return tx.MovieEditionPosterIDSet(medID, imageID) }
+	case sedID != "":
+		kind = ImagePoster
+		attach = func(tx *TxRW, imageID string) error { return tx.SeriesEditionPosterIDSet(sedID, imageID) }
+	case epID != "":
+		kind = ImageThumbnail
+		attach = func(tx *TxRW, imageID string) error { return tx.EpisodeThumbnailIDSet(epID, imageID) }
+	case colID != "":
+		kind = ImageBanner
+		attach = func(tx *TxRW, imageID string) error { return tx.CollectionBannerIDSet(colID, imageID) }
+	}
+
+	// Fetch, decode, encode, and copy blobs before opening any write
+	// transaction, then record the rows and bind the parent FK in one
+	// commit.
+	b, err := m.imageStore(r, kind)
+	if err != nil {
+		return "", err
+	}
+	err = m.WithTxRW(ctx, func(tx *TxRW) error {
+		id, err = tx.imageInsert(b)
+		if err != nil {
+			return err
+		}
+		return attach(tx, id)
+	})
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
+// imageFetch GETs url and hands the body to imageStore, returning the
+// stored blobs for the caller to record with imageInsert. The ctx
 // timeout bounds the whole fetch so a slow or unresponsive upstream
 // cannot wedge the worker.
-func (m *Model) imageFetch(ctx context.Context, url string, kind ImageKind) (string, error) {
+func (m *Model) imageFetch(ctx context.Context, url string, kind ImageKind) (imageBlobs, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return "", permanent(err)
+		return imageBlobs{}, permanent(err)
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return imageBlobs{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode/100 != 2 {
-		return "", fmt.Errorf("bad status %d", resp.StatusCode)
+		return imageBlobs{}, fmt.Errorf("bad status %d", resp.StatusCode)
 	}
-	return m.ImageCreate(ctx, resp.Body, kind)
+	return m.imageStore(resp.Body, kind)
 }
 
 // encodedVariant holds an encoded WebP variant in memory before
@@ -448,8 +541,15 @@ func (m *Model) insertPlaceholder(ctx context.Context, b *placeholderBlobs) erro
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	_, err = m.insertImage(ctx, b.id, b.mime, b.raw, b.variants)
-	return err
+	blobs, err := m.storeBlobs(b.mime, b.raw, b.variants)
+	if err != nil {
+		return err
+	}
+	blobs.id = b.id
+	return m.WithTxRW(ctx, func(tx *TxRW) error {
+		_, err := tx.imageInsert(blobs)
+		return err
+	})
 }
 
 // imageDelete deletes an Image and its rendition rows + blobs

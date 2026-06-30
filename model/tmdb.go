@@ -23,11 +23,15 @@ func (tx *TxR) loadTMDBConfig() (err error) {
 func (tx *TxR) taskFetchMoviePoster(args []string) error {
 	medID := args[0]
 	url := args[1]
-	posterID, err := tx.m.imageFetch(tx.ctx, url, ImagePoster)
+	b, err := tx.m.imageFetch(tx.ctx, url, ImagePoster)
 	if err != nil {
 		return err
 	}
 	return tx.m.WithTxRW(tx.ctx, func(tx *TxRW) error {
-		return tx.MovieEditionPosterIDSet(medID, posterID)
+		id, err := tx.imageInsert(b)
+		if err != nil {
+			return err
+		}
+		return tx.MovieEditionPosterIDSet(medID, id)
 	})
 }

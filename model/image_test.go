@@ -7,7 +7,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io"
 	"path/filepath"
 	"testing"
 
@@ -19,8 +18,8 @@ import (
 )
 
 // newTestModel returns a minimal in-memory Model suitable for
-// tests that need to call ImageCreate or other methods that touch
-// both the storage and the database. Placeholder images are
+// tests that need to call methods that touch both the storage and
+// the database. Placeholder images are
 // installed before returning so parent inserts that rely on the
 // per-kind FK DEFAULTs can succeed.
 func newTestModel(t *testing.T) *Model {
@@ -58,14 +57,14 @@ func openTestModel(t *testing.T, dbPath string) *Model {
 	return m
 }
 
-// TestImageCreateNRGBARoundTrip is a regression test for a
+// TestImageStoreNRGBARoundTrip is a regression test for a
 // gen2brain/webp encoder bug that produced visibly corrupted output
 // when the input *image.NRGBA had non-zero-origin bounds — which is
 // exactly what centerCrop's old SubImage path produced. The fix
 // copies the cropped region into a fresh zero-origin NRGBA before
 // encoding; this test asserts the round-trip is faithful by
 // per-pixel comparison against the largest variant.
-func TestImageCreateNRGBARoundTrip(t *testing.T) {
+func TestImageStoreNRGBARoundTrip(t *testing.T) {
 	ctx := t.Context()
 
 	// 900x900 NRGBA with four solid-color quadrants. Cropped to 2:3
@@ -94,7 +93,7 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 		}
 	}
 
-	// Encode src to PNG so ImageCreate exercises the full
+	// Encode src to PNG so imageStore exercises the full
 	// decode → centerCrop → resize → webp.Encode path.
 	var pngBuf bytes.Buffer
 	if err := png.Encode(&pngBuf, src); err != nil {
@@ -102,8 +101,16 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	}
 
 	m := newTestModel(t)
-	originalID, err := m.ImageCreate(ctx, io.NopCloser(&pngBuf), ImagePoster)
+	b, err := m.imageStore(&pngBuf, ImagePoster)
 	if err != nil {
+		t.Fatal(err)
+	}
+	var originalID string
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		var err error
+		originalID, err = tx.imageInsert(b)
+		return err
+	}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -181,7 +188,7 @@ func TestImageCreateNRGBARoundTrip(t *testing.T) {
 	maeB := float64(sumB) / float64(n)
 	const maxMAE = 25.0
 	if maeR > maxMAE || maeG > maxMAE || maeB > maxMAE {
-		t.Errorf("ImageCreate round-trip MAE = (%.2f, %.2f, %.2f), want <= %.2f per channel "+
+		t.Errorf("imageStore round-trip MAE = (%.2f, %.2f, %.2f), want <= %.2f per channel "+
 			"(likely the gen2brain/webp non-zero-origin encode bug has regressed)",
 			maeR, maeG, maeB, maxMAE)
 	}
