@@ -57,7 +57,8 @@ func (*collectionSeriesAddDialog) isDialog() {}
 // control. The view resolves the item on each render, so an upload
 // refreshes the image in place.
 type imageDialog struct {
-	id string
+	kind string // upload form-field name
+	id   string
 }
 
 func (*imageDialog) isDialog() {}

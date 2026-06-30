@@ -86,7 +86,10 @@ type (
 	// ImageDialogOpen opens the image-edit dialog for the item ID
 	// identifies: the poster of a movie or series edition, the
 	// thumbnail of an episode, or the banner of a collection.
-	ImageDialogOpen struct{ ID string }
+	ImageDialogOpen struct {
+		Kind string // upload form-field name (med-id, ep-id, etc)
+		ID   string
+	}
 
 	// DownloadFileAttachOpen opens the episode picker for attaching
 	// the downloaded file to episodes.

@@ -89,7 +89,7 @@ func appCollectionDetail(col *model.Collection) domi.Node {
 								SettingsItemLabelTitle("Banner"),
 							),
 							buttonImageEdit(
-								&msg.ImageDialogOpen{ID: col.ID()},
+								&msg.ImageDialogOpen{Kind: "col-id", ID: col.ID()},
 								col.Banner(),
 								AspectBanner,
 							),
