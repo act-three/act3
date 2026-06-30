@@ -89,27 +89,36 @@ func (tx *TxR) taskFetchEpisodes(args []string) error {
 func (tx *TxR) taskFetchEpisodeThumbnail(args []string) error {
 	epID := args[0]
 	url := args[1]
-	thumbnailID, err := tx.m.imageFetch(tx.ctx, url, ImageThumbnail)
+	b, err := tx.m.imageFetch(tx.ctx, url, ImageThumbnail)
 	if err != nil {
 		return err
 	}
 	return tx.m.WithTxRW(tx.ctx, func(tx *TxRW) error {
-		err := tx.EpisodeThumbnailIDSet(epID, thumbnailID)
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil // episode deleted between scheduling and run
+		if _, err := tx.q.EpisodeGet(epID); errors.Is(err, sql.ErrNoRows) {
+			return nil
+		} else if err != nil {
+			return err
 		}
-		return err
+		id, err := tx.imageInsert(b)
+		if err != nil {
+			return err
+		}
+		return tx.EpisodeThumbnailIDSet(epID, id)
 	})
 }
 
 func (tx *TxR) taskFetchSeriesPoster(args []string) error {
 	sedID := args[0]
 	url := args[1]
-	posterID, err := tx.m.imageFetch(tx.ctx, url, ImagePoster)
+	b, err := tx.m.imageFetch(tx.ctx, url, ImagePoster)
 	if err != nil {
 		return err
 	}
 	return tx.m.WithTxRW(tx.ctx, func(tx *TxRW) error {
-		return tx.SeriesEditionPosterIDSet(sedID, posterID)
+		id, err := tx.imageInsert(b)
+		if err != nil {
+			return err
+		}
+		return tx.SeriesEditionPosterIDSet(sedID, id)
 	})
 }

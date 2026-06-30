@@ -23,45 +23,7 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (node, error
 	epID := req.FormValue("ep-id")
 	colID := req.FormValue("col-id")
 
-	var kind model.ImageKind
-	switch {
-	case medID != "", sedID != "":
-		kind = model.ImagePoster
-	case epID != "":
-		kind = model.ImageThumbnail
-	case colID != "":
-		kind = model.ImageBanner
-	default:
-		return nil, &model.ValidationError{
-			Op:  "params",
-			Err: fmt.Errorf("missing param med-id, sed-id, ep-id, or col-id"),
-		}
-	}
-
-	originalID, err := c.Model.ImageCreate(ctx, file, kind)
-	if err != nil {
-		return nil, err
-	}
-
-	switch {
-	case medID != "":
-		_, err = c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
-			return nil, tx.MovieEditionPosterIDSet(medID, originalID)
-		})
-	case sedID != "":
-		_, err = c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
-			return nil, tx.SeriesEditionPosterIDSet(sedID, originalID)
-		})
-	case epID != "":
-		_, err = c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
-			return nil, tx.EpisodeThumbnailIDSet(epID, originalID)
-		})
-	case colID != "":
-		_, err = c.withTxRW(ctx, func(tx *model.TxRW) (node, error) {
-			return nil, tx.CollectionBannerIDSet(colID, originalID)
-		})
-	}
-	if err != nil {
+	if _, err := c.Model.ImageUploadCreate(ctx, file, medID, sedID, epID, colID); err != nil {
 		return nil, err
 	}
 	w.WriteHeader(http.StatusNoContent)
