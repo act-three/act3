@@ -1,6 +1,7 @@
 package model
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json/v2"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"kr.dev/errorfmt"
@@ -128,7 +130,17 @@ func (tx *TxR) taskIngest(args []string) error {
 		return err
 	}
 
-	merged := false
+	// Probe the freshly copied blob before opening the write tx, so the
+	// slow ffmpeg pass doesn't run under the single writer and a probe
+	// failure leaves no half-ingested row behind.
+	vid.OriginalKey = key
+	tx.m.prog.UpdateStatus(vid.ID, "Probing")
+	probe, err := tx.m.probeVideo(tx.ctx, key)
+	if err != nil {
+		tx.m.prog.Close(vid.ID, err)
+		return err
+	}
+
 	err = tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
 		// If another live Video already has these exact bytes, merge
 		// the current (freshly-copied) Video into it: re-point the
@@ -141,7 +153,6 @@ func (tx *TxR) taskIngest(args []string) error {
 			if winner.ID == vid.ID {
 				continue
 			}
-			merged = true
 			return txw.mergeDuplicateVideo(vid, winner, key)
 		}
 		vid, err = txw.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
@@ -149,19 +160,13 @@ func (tx *TxR) taskIngest(args []string) error {
 			OriginalKey: key,
 			ContentHash: sum,
 		})
-
-		return err
+		if err != nil {
+			return err
+		}
+		return txw.planAndCreateRenditions(vid, probe)
 	})
-	if err != nil {
-		tx.m.prog.Close(vid.ID, err)
-		return err
-	}
-	if merged {
-		tx.m.prog.Close(vid.ID, nil)
-		return nil
-	}
-
-	return tx.planAndCreateRenditions(vid)
+	tx.m.prog.Close(vid.ID, err)
+	return err
 }
 
 // mergeDuplicateVideo is called when a freshly-copied video's content
@@ -226,31 +231,26 @@ func (tx *TxRW) mergeDuplicateVideo(loser schema.Video, winner schema.Video, los
 	return nil
 }
 
-// planAndCreateRenditions probes the source in the blob store, plans a
-// rendition ladder, creates the rendition DB records, and queues
-// pass1. The caller must have already set vid.OriginalKey and
-// opened progress tracking for vid.ID.
-func (tx *TxR) planAndCreateRenditions(vid schema.Video) (err error) {
-	defer func() { tx.m.prog.Close(vid.ID, err) }()
-	existing, err := tx.q.RenditionListByVideoID(vid.ID)
+// probeVideo opens the original blob at originalKey and runs
+// ffmpeg.Probe. It is the only slow step of rendition planning and so
+// runs outside any write transaction; the probe it returns is handed to
+// planAndCreateRenditions, which writes within the caller's tx.
+func (m *Model) probeVideo(ctx context.Context, originalKey string) (*ffmpeg.ProbeResult, error) {
+	f, err := m.store.Open(originalKey)
 	if err != nil {
-		return err
-	}
-	if len(existing) > 0 {
-		return nil
-	}
-
-	tx.m.prog.UpdateStatus(vid.ID, "Probing")
-	f, err := tx.m.store.Open(vid.OriginalKey)
-	if err != nil {
-		return permanentIfGone(err)
+		return nil, permanentIfGone(err)
 	}
 	defer f.Close()
-	probe, err := ffmpeg.Probe(tx.ctx, f)
-	if err != nil {
-		return err
-	}
+	return ffmpeg.Probe(ctx, f)
+}
 
+// planAndCreateRenditions plans a rendition ladder from probe and
+// writes the probe metadata, the track and rendition rows, and the
+// encode-task enqueues on tx. probeVideo produces probe beforehand, so
+// the slow ffmpeg pass runs outside this transaction and the rendition
+// rows commit together with whatever else the caller writes, leaving no
+// window in which the video is half-ingested.
+func (tx *TxRW) planAndCreateRenditions(vid schema.Video, probe *ffmpeg.ProbeResult) error {
 	// When the source might be remuxable, the planner falls back to
 	// re-encoding if GOPs are long enough that aligned segments would
 	// overshoot Apple's recommended ceiling. Probe.Video.Keyframes is
@@ -338,78 +338,76 @@ func (tx *TxR) planAndCreateRenditions(vid schema.Video) (err error) {
 	}
 
 	tx.m.prog.UpdateStatus(vid.ID, "Queued")
-	return tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
-		err = txw.q.VideoUpdateProbe(schema.VideoUpdateProbeParams{
-			ID:                 vid.ID,
-			Duration:           probe.Duration.Milliseconds(),
-			OriginalType:       probe.ContentType(),
-			Format:             probe.FormatName,
-			Width:              int64(probe.Video.Width),
-			Height:             int64(probe.Video.Height),
-			FrameRateNum:       int64(probe.Video.FrameRate.Num),
-			FrameRateDen:       int64(probe.Video.FrameRate.Den),
-			VideoPacketCount:   probe.Video.PacketCount,
-			VideoDurationTicks: probe.Video.DurationTicks,
-			VideoTimebaseNum:   int64(probe.Video.TimebaseNum),
-			VideoTimebaseDen:   int64(probe.Video.TimebaseDen),
-			VideoKeyframes:     string(keyframesJSON),
-			DolbyVisionProfile: int64(probe.Video.DolbyVisionProfile),
-			ColorTransfer:      probe.Video.ColorTransfer,
+	err = tx.q.VideoUpdateProbe(schema.VideoUpdateProbeParams{
+		ID:                 vid.ID,
+		Duration:           probe.Duration.Milliseconds(),
+		OriginalType:       probe.ContentType(),
+		Format:             probe.FormatName,
+		Width:              int64(probe.Video.Width),
+		Height:             int64(probe.Video.Height),
+		FrameRateNum:       int64(probe.Video.FrameRate.Num),
+		FrameRateDen:       int64(probe.Video.FrameRate.Den),
+		VideoPacketCount:   probe.Video.PacketCount,
+		VideoDurationTicks: probe.Video.DurationTicks,
+		VideoTimebaseNum:   int64(probe.Video.TimebaseNum),
+		VideoTimebaseDen:   int64(probe.Video.TimebaseDen),
+		VideoKeyframes:     string(keyframesJSON),
+		DolbyVisionProfile: int64(probe.Video.DolbyVisionProfile),
+		ColorTransfer:      probe.Video.ColorTransfer,
+	})
+
+	if err != nil {
+		return err
+	}
+	streamIndexToTrackID := make(map[int]string, len(atParams))
+	for _, at := range atParams {
+		created, err := tx.q.AudioTrackCreate(at)
+		if err != nil {
+			return err
+		}
+		streamIndexToTrackID[int(created.StreamIndex)] = created.ID
+	}
+	for _, st := range stParams {
+		_, err = tx.q.SubtitleTrackCreate(st)
+		if err != nil {
+			return err
+		}
+	}
+	for _, rp := range rendParams {
+		_, err = tx.q.RenditionCreate(rp)
+		if err != nil {
+			return err
+		}
+	}
+	var audioRendIDs []string
+	for _, ar := range audioPlanned {
+		trackID, ok := streamIndexToTrackID[ar.SourceStreamIndex]
+		if !ok {
+			return fmt.Errorf("audio rendition: no AudioTrack for source stream %d", ar.SourceStreamIndex)
+		}
+		created, err := tx.q.AudioRenditionCreate(schema.AudioRenditionCreateParams{
+			VideoID:      vid.ID,
+			AudioTrackID: trackID,
+			Channels:     int64(ar.Channels),
+			Bitrate:      ar.Bitrate,
+			Codec:        ar.Codec,
+			Priority:     int64(ar.Priority),
+			SortKey:      int64(ar.SortKey),
 		})
 
 		if err != nil {
 			return err
 		}
-		streamIndexToTrackID := make(map[int]string, len(atParams))
-		for _, at := range atParams {
-			created, err := txw.q.AudioTrackCreate(at)
-			if err != nil {
-				return err
-			}
-			streamIndexToTrackID[int(created.StreamIndex)] = created.ID
-		}
-		for _, st := range stParams {
-			_, err = txw.q.SubtitleTrackCreate(st)
-			if err != nil {
-				return err
-			}
-		}
-		for _, rp := range rendParams {
-			_, err = txw.q.RenditionCreate(rp)
-			if err != nil {
-				return err
-			}
-		}
-		var audioRendIDs []string
-		for _, ar := range audioPlanned {
-			trackID, ok := streamIndexToTrackID[ar.SourceStreamIndex]
-			if !ok {
-				return fmt.Errorf("audio rendition: no AudioTrack for source stream %d", ar.SourceStreamIndex)
-			}
-			created, err := txw.q.AudioRenditionCreate(schema.AudioRenditionCreateParams{
-				VideoID:      vid.ID,
-				AudioTrackID: trackID,
-				Channels:     int64(ar.Channels),
-				Bitrate:      ar.Bitrate,
-				Codec:        ar.Codec,
-				Priority:     int64(ar.Priority),
-				SortKey:      int64(ar.SortKey),
-			})
-
-			if err != nil {
-				return err
-			}
-			audioRendIDs = append(audioRendIDs, created.ID)
-		}
-		txw.addTaskWithPriority(priority.Pass1, taskIngestPass1, vid.ID)
-		for _, id := range audioRendIDs {
-			txw.addTaskWithPriority(priority.EncodeAudio, taskIngestEncodeAudio, id)
-		}
-		if len(stParams) > 0 {
-			txw.addTask(taskIngestExtractSubs, vid.ID)
-		}
-		return nil
-	})
+		audioRendIDs = append(audioRendIDs, created.ID)
+	}
+	tx.addTaskWithPriority(priority.Pass1, taskIngestPass1, vid.ID)
+	for _, id := range audioRendIDs {
+		tx.addTaskWithPriority(priority.EncodeAudio, taskIngestEncodeAudio, id)
+	}
+	if len(stParams) > 0 {
+		tx.addTask(taskIngestExtractSubs, vid.ID)
+	}
+	return nil
 }
 
 // taskIngestPass1 runs combined first-pass analysis for all reencode
@@ -938,7 +936,7 @@ func (tx *TxRW) ReencodeVideo(videoID string) error {
 
 // taskReencode deletes all existing renditions for a video
 // and restarts the ingestion pipeline from the probe step.
-func (tx *TxR) taskReencode(args []string) error {
+func (tx *TxR) taskReencode(args []string) (err error) {
 	vid, err := tx.q.VideoGet(args[0])
 	if err != nil {
 		return err
@@ -947,71 +945,6 @@ func (tx *TxR) taskReencode(args []string) error {
 		return fmt.Errorf("video %s has no original hash", vid.ID)
 	}
 
-	// Delete existing rendition blobs and any stale pass1 data
-	// left behind by a prior cycle.
-	renditions, err := tx.q.RenditionListByVideoID(vid.ID)
-	if err != nil {
-		return err
-	}
-	for _, r := range renditions {
-		if r.Key != "" {
-			tx.m.store.Remove(r.Key)
-		}
-	}
-	audioRends, err := tx.q.AudioRenditionListByVideoID(vid.ID)
-	if err != nil {
-		return err
-	}
-	for _, ar := range audioRends {
-		if ar.Key != "" {
-			tx.m.store.Remove(ar.Key)
-		}
-	}
-	subTracks, err := tx.q.SubtitleTrackListByVideoID(vid.ID)
-	if err != nil {
-		return err
-	}
-	for _, st := range subTracks {
-		if st.OriginalKey != "" {
-			tx.m.store.Remove(st.OriginalKey)
-		}
-		if st.WebVTTKey != "" {
-			tx.m.store.Remove(st.WebVTTKey)
-		}
-	}
-	os.RemoveAll(tx.m.pass1Dir(vid.ID))
-
-	// Delete rendition, audio track, and subtitle track DB records;
-	// clear the playable flag.
-	err = tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
-		err := txw.q.AudioRenditionDeleteByVideoIDList([]string{vid.ID})
-		if err != nil {
-			return err
-		}
-		err = txw.q.AudioTrackDeleteByVideoID(vid.ID)
-		if err != nil {
-			return err
-		}
-		err = txw.q.SubtitleTrackDeleteByVideoID(vid.ID)
-		if err != nil {
-			return err
-		}
-		err = txw.q.RenditionDeleteByVideoID(vid.ID)
-		if err != nil {
-			return err
-		}
-		_, err = txw.q.VideoUpdatePlayable(schema.VideoUpdatePlayableParams{
-			ID:       vid.ID,
-			Playable: 0,
-		})
-
-		return err
-	})
-	if err != nil {
-		return err
-	}
-
-	// Set up progress tracking.
 	evs, err := tx.q.EpisodeVideoListByVideoID(vid.ID)
 	if err != nil {
 		return err
@@ -1020,13 +953,66 @@ func (tx *TxR) taskReencode(args []string) error {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 	tx.m.prog.Open(vid.ID, vid.Name, "Re-encoding")
+	defer func() { tx.m.prog.Close(vid.ID, err) }()
 
-	// Open a fresh read transaction so planAndCreateRenditions's
-	// existing-rendition guard observes the post-delete state. Reusing
-	// the outer tx would still see the pre-delete snapshot pinned by
-	// our earlier reads, and the guard would short-circuit.
-	return tx.m.WithTxR(tx.ctx, func(tx *TxR) error {
-		return tx.planAndCreateRenditions(vid)
+	// Probe the still-intact original before tearing anything down, so a
+	// probe or planning failure leaves the existing renditions in place
+	// rather than stripping the video.
+	tx.m.prog.UpdateStatus(vid.ID, "Probing")
+	probe, err := tx.m.probeVideo(tx.ctx, vid.OriginalKey)
+	if err != nil {
+		return err
+	}
+
+	// Stale pass1 scratch is referenced by no row, so drop it up front.
+	os.RemoveAll(tx.m.pass1Dir(vid.ID))
+
+	// Tear down the old rendition, audio, and subtitle rows and rebuild
+	// from the probe in one transaction, so a failure can't leave the
+	// video stripped of renditions with nothing queued to rebuild it.
+	return tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
+		// The delete queries return the superseded blob keys; remove
+		// those blobs on commit so a rolled-back rebuild leaves the old
+		// rows and their blobs intact.
+		audioKeys, err := txw.q.AudioRenditionDeleteByVideoID(vid.ID)
+		if err != nil {
+			return err
+		}
+		err = txw.q.AudioTrackDeleteByVideoID(vid.ID)
+		if err != nil {
+			return err
+		}
+		subKeys, err := txw.q.SubtitleTrackDeleteByVideoID(vid.ID)
+		if err != nil {
+			return err
+		}
+		rendKeys, err := txw.q.RenditionDeleteByVideoID(vid.ID)
+		if err != nil {
+			return err
+		}
+		_, err = txw.q.VideoUpdatePlayable(schema.VideoUpdatePlayableParams{
+			ID:       vid.ID,
+			Playable: 0,
+		})
+		if err != nil {
+			return err
+		}
+		txw.onCommit(func() {
+			for _, k := range slices.Concat(rendKeys, audioKeys) {
+				if k != "" {
+					txw.m.store.Remove(k)
+				}
+			}
+			for _, st := range subKeys {
+				if st.OriginalKey != "" {
+					txw.m.store.Remove(st.OriginalKey)
+				}
+				if st.WebVTTKey != "" {
+					txw.m.store.Remove(st.WebVTTKey)
+				}
+			}
+		})
+		return txw.planAndCreateRenditions(vid, probe)
 	})
 }
 

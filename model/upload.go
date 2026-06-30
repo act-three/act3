@@ -110,9 +110,9 @@ func (m *Model) uploadEnd(u *upload) {
 // attached to the target junction instead — mirroring the
 // duplicate-merge path in taskIngest.
 //
-// On a fresh upload, planAndCreateRenditions is called outside the
-// write transaction to kick off the HLS rendition pipeline, joining
-// the same downstream encoding path used by torrent ingest.
+// On a fresh upload the source is probed before the write tx, then the
+// video create, target attach, and rendition rows commit together,
+// joining the same downstream encoding path used by torrent ingest.
 func (m *Model) VideoUploadCreate(
 	ctx context.Context,
 	r io.Reader,
@@ -149,6 +149,14 @@ func (m *Model) VideoUploadCreate(
 		return vid, err
 	}
 
+	// Probe before the write tx so the video create, the target attach,
+	// and the rendition rows commit together; a duplicate just wastes
+	// the probe.
+	probe, err := m.probeVideo(ctx, key)
+	if err != nil {
+		return vid, err
+	}
+
 	var merged bool
 	err = m.WithTxRW(ctx, func(tx *TxRW) error {
 		dups, err := tx.q.VideoListByContentHash(sum)
@@ -180,7 +188,10 @@ func (m *Model) VideoUploadCreate(
 			return err
 		}
 		vid = v
-		return tx.attachUploadedVideo(v.ID, medID, epID)
+		if err := tx.attachUploadedVideo(v.ID, medID, epID); err != nil {
+			return err
+		}
+		return tx.planAndCreateRenditions(v, probe)
 	})
 	if err != nil {
 		return vid, err
@@ -195,11 +206,7 @@ func (m *Model) VideoUploadCreate(
 	if medID != nil {
 		m.prog.AddEdge(*medID, vid.ID)
 	}
-	m.prog.Open(vid.ID, vid.Name, "Probing")
-	err = m.WithTxR(ctx, func(tx *TxR) error {
-		return tx.planAndCreateRenditions(vid)
-	})
-	return vid, err
+	return vid, nil
 }
 
 // attachUploadedVideo wires a Video into either an Episode or a

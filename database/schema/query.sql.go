@@ -54,6 +54,33 @@ func (q *Queries) AudioRenditionCreate(arg AudioRenditionCreateParams) (AudioRen
 	return i, err
 }
 
+const audioRenditionDeleteByVideoID = `-- name: AudioRenditionDeleteByVideoID :many
+DELETE FROM AudioRendition WHERE VideoID = ? RETURNING Key
+`
+
+func (q *Queries) AudioRenditionDeleteByVideoID(videoid string) ([]string, error) {
+	rows, err := q.db.QueryContext(q.ctx, audioRenditionDeleteByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, err
+		}
+		items = append(items, key)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const audioRenditionDeleteByVideoIDList = `-- name: AudioRenditionDeleteByVideoIDList :exec
 DELETE FROM AudioRendition WHERE VideoID IN (/*SLICE:ids*/?)
 `
@@ -3468,13 +3495,31 @@ func (q *Queries) RenditionCreate(arg RenditionCreateParams) (Rendition, error) 
 	return i, err
 }
 
-const renditionDeleteByVideoID = `-- name: RenditionDeleteByVideoID :exec
-DELETE FROM Rendition WHERE VideoID = ?
+const renditionDeleteByVideoID = `-- name: RenditionDeleteByVideoID :many
+DELETE FROM Rendition WHERE VideoID = ? RETURNING Key
 `
 
-func (q *Queries) RenditionDeleteByVideoID(videoid string) error {
-	_, err := q.db.ExecContext(q.ctx, renditionDeleteByVideoID, videoid)
-	return err
+func (q *Queries) RenditionDeleteByVideoID(videoid string) ([]string, error) {
+	rows, err := q.db.QueryContext(q.ctx, renditionDeleteByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, err
+		}
+		items = append(items, key)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const renditionDeleteByVideoIDList = `-- name: RenditionDeleteByVideoIDList :exec
@@ -5466,13 +5511,36 @@ func (q *Queries) SubtitleTrackCreate(arg SubtitleTrackCreateParams) (SubtitleTr
 	return i, err
 }
 
-const subtitleTrackDeleteByVideoID = `-- name: SubtitleTrackDeleteByVideoID :exec
-DELETE FROM SubtitleTrack WHERE VideoID = ?
+const subtitleTrackDeleteByVideoID = `-- name: SubtitleTrackDeleteByVideoID :many
+DELETE FROM SubtitleTrack WHERE VideoID = ? RETURNING OriginalKey, WebVTTKey
 `
 
-func (q *Queries) SubtitleTrackDeleteByVideoID(videoid string) error {
-	_, err := q.db.ExecContext(q.ctx, subtitleTrackDeleteByVideoID, videoid)
-	return err
+type SubtitleTrackDeleteByVideoIDRow struct {
+	OriginalKey string
+	WebVTTKey   string
+}
+
+func (q *Queries) SubtitleTrackDeleteByVideoID(videoid string) ([]SubtitleTrackDeleteByVideoIDRow, error) {
+	rows, err := q.db.QueryContext(q.ctx, subtitleTrackDeleteByVideoID, videoid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SubtitleTrackDeleteByVideoIDRow
+	for rows.Next() {
+		var i SubtitleTrackDeleteByVideoIDRow
+		if err := rows.Scan(&i.OriginalKey, &i.WebVTTKey); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const subtitleTrackDeleteByVideoIDList = `-- name: SubtitleTrackDeleteByVideoIDList :exec
