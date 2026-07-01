@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 )
 
 // createTrashableDownload inserts a Download row directly (bypassing
@@ -113,21 +114,21 @@ func fortyCharHex(seed byte) string {
 }
 
 func TestKindOfInfoHash(t *testing.T) {
-	if got := KindOf(fortyCharHex(0)); got != TrashKindDownload {
-		t.Errorf("KindOf(40-char hex) = %v, want TrashKindDownload", got)
+	if got := KindOf(fortyCharHex(0)); got != (kind.Download{}) {
+		t.Errorf("KindOf(40-char hex) = %v, want kind.Download", got)
 	}
 	// Wrong length.
-	if got := KindOf("abcdef1234"); got == TrashKindDownload {
-		t.Errorf("KindOf(10-char hex) = %v; should not be TrashKindDownload", got)
+	if got := KindOf("abcdef1234"); got == (kind.Download{}) {
+		t.Errorf("KindOf(10-char hex) = %v; should not be kind.Download", got)
 	}
 	// Right length, non-hex.
 	notHex := strings.Repeat("z", 40)
-	if got := KindOf(notHex); got == TrashKindDownload {
-		t.Errorf("KindOf(40 z's) = %v; should not be TrashKindDownload", got)
+	if got := KindOf(notHex); got == (kind.Download{}) {
+		t.Errorf("KindOf(40 z's) = %v; should not be kind.Download", got)
 	}
 	// Flurry prefixes still win.
-	if got := KindOf("mo" + strings.Repeat("a", 38)); got != TrashKindMovie {
-		t.Errorf("KindOf(mo... 40 chars) = %v; want TrashKindMovie", got)
+	if got := KindOf("mo" + strings.Repeat("a", 38)); got != (kind.Movie{}) {
+		t.Errorf("KindOf(mo... 40 chars) = %v; want kind.Movie", got)
 	}
 }
 

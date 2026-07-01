@@ -7,6 +7,7 @@ import (
 	"ily.dev/domi"
 
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
 )
@@ -141,53 +142,54 @@ func trashForm(id string) domi.Node {
 	)(Text("Delete"))
 }
 
-func trashKindIcon(k model.TrashKind) string {
-	switch k {
-	case model.TrashKindMovie, model.TrashKindMovieEdition:
+func trashKindIcon(k kind.Trash) string {
+	switch k.(type) {
+	case kind.Movie, kind.MovieEdition:
 		return "line/film-01"
-	case model.TrashKindSeries, model.TrashKindSeriesEdition:
+	case kind.Series, kind.SeriesEdition:
 		return "line/tv-03"
-	case model.TrashKindSeason:
+	case kind.Season:
 		return "line/ticket-02"
-	case model.TrashKindEpisode:
+	case kind.Episode:
 		return "line/play-square"
-	case model.TrashKindVideo:
+	case kind.Video:
 		return "line/video-recorder"
-	case model.TrashKindCollection:
+	case kind.Collection:
 		return "line/layers-three-01"
-	case model.TrashKindDownload:
+	case kind.Download:
 		return "line/download-01"
 	}
 	return "line/trash-01"
 }
 
-func trashKindIcon2(k model.TrashKind) string {
-	switch k {
-	case model.TrashKindMovieEdition, model.TrashKindSeriesEdition:
+func trashKindIcon2(k kind.Trash) string {
+	switch k.(type) {
+	case kind.MovieEdition, kind.SeriesEdition:
 		return "line/clapperboard"
+	default:
+		return ""
 	}
-	return ""
 }
 
-func trashKindLabel(k model.TrashKind) string {
-	switch k {
-	case model.TrashKindMovie:
+func trashKindLabel(k kind.Trash) string {
+	switch k.(type) {
+	case kind.Movie:
 		return "Movie"
-	case model.TrashKindMovieEdition:
+	case kind.MovieEdition:
 		return "Movie Edition"
-	case model.TrashKindSeries:
+	case kind.Series:
 		return "Series"
-	case model.TrashKindSeriesEdition:
+	case kind.SeriesEdition:
 		return "Series Edition"
-	case model.TrashKindSeason:
+	case kind.Season:
 		return "Season"
-	case model.TrashKindEpisode:
+	case kind.Episode:
 		return "Episode"
-	case model.TrashKindVideo:
+	case kind.Video:
 		return "Video"
-	case model.TrashKindCollection:
+	case kind.Collection:
 		return "Collection"
-	case model.TrashKindDownload:
+	case kind.Download:
 		return "Download"
 	}
 	return "Unknown"
