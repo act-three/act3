@@ -13,21 +13,7 @@ import (
 	"kr.dev/errorfmt"
 
 	"ily.dev/act3/database/schema"
-)
-
-type TrashKind int
-
-const (
-	TrashKindInvalid TrashKind = iota
-	TrashKindMovie
-	TrashKindMovieEdition
-	TrashKindSeries
-	TrashKindSeriesEdition
-	TrashKindSeason
-	TrashKindEpisode
-	TrashKindVideo
-	TrashKindCollection
-	TrashKindDownload
+	"ily.dev/act3/model/kind"
 )
 
 // trashRetention is how long a trashed entity stays in the trash
@@ -49,7 +35,7 @@ var ErrNotTrashed = errors.New("not trashed")
 var ErrCascadeTrashed = errors.New("cascade-trashed; restore the root instead")
 
 type TrashItem struct {
-	Kind      TrashKind
+	Kind      kind.Trash
 	ID        string
 	Title     string
 	Subtitle  string
@@ -79,8 +65,8 @@ func (tx *TxR) trashState(id string) (trashState, error) {
 }
 
 func (tx *TxRW) insertTrashRow(id, root string, now time.Time) error {
-	kind := KindOf(id)
-	title, subtitle, err := tx.computeTrashTitle(id, kind)
+	k := KindOf(id)
+	title, subtitle, err := tx.computeTrashTitle(id, k)
 	if err != nil {
 		return err
 	}
@@ -94,27 +80,27 @@ func (tx *TxRW) insertTrashRow(id, root string, now time.Time) error {
 	return tx.q.TrashInsert(params)
 }
 
-func (tx *TxRW) computeTrashTitle(id string, kind TrashKind) (title, subtitle string, err error) {
-	switch kind {
-	case TrashKindMovie:
+func (tx *TxRW) computeTrashTitle(id string, k kind.Trash) (title, subtitle string, err error) {
+	switch k.(type) {
+	case kind.Movie:
 		r, err := tx.q.MovieEditionGetDefault(id)
 		if err != nil {
 			return "", "", err
 		}
 		return r.Title, "", nil
-	case TrashKindMovieEdition:
+	case kind.MovieEdition:
 		r, err := tx.q.MovieEditionGet(id)
 		if err != nil {
 			return "", "", err
 		}
 		return r.Title + " \u00b7 " + r.Label, "", nil
-	case TrashKindSeries:
+	case kind.Series:
 		r, err := tx.q.SeriesGet(id)
 		if err != nil {
 			return "", "", err
 		}
 		return r.Title, "", nil
-	case TrashKindSeriesEdition:
+	case kind.SeriesEdition:
 		r, err := tx.q.SeriesEditionGet(id)
 		if err != nil {
 			return "", "", err
@@ -124,7 +110,7 @@ func (tx *TxRW) computeTrashTitle(id string, kind TrashKind) (title, subtitle st
 			return "", "", err
 		}
 		return sr.Title + " \u00b7 " + r.Label, "", nil
-	case TrashKindSeason:
+	case kind.Season:
 		r, err := tx.q.SeasonGet(id)
 		if err != nil {
 			return "", "", err
@@ -138,7 +124,7 @@ func (tx *TxRW) computeTrashTitle(id string, kind TrashKind) (title, subtitle st
 			return "", "", err
 		}
 		return r.Title, sr.Title + " \u00b7 " + sed.Label, nil
-	case TrashKindEpisode:
+	case kind.Episode:
 		r, err := tx.q.EpisodeGetAny(id)
 		if err != nil {
 			return "", "", err
@@ -159,19 +145,19 @@ func (tx *TxRW) computeTrashTitle(id string, kind TrashKind) (title, subtitle st
 			return r.Title, sr.Title, nil
 		}
 		return r.Title, "", nil
-	case TrashKindVideo:
+	case kind.Video:
 		r, err := tx.q.VideoGet(id)
 		if err != nil {
 			return "", "", err
 		}
 		return r.Name, "", nil
-	case TrashKindCollection:
+	case kind.Collection:
 		r, err := tx.q.CollectionGet(id)
 		if err != nil {
 			return "", "", err
 		}
 		return r.Title, "", nil
-	case TrashKindDownload:
+	case kind.Download:
 		r, err := tx.q.DownloadGet(id)
 		if err != nil {
 			return "", "", err
@@ -185,7 +171,6 @@ func (tx *TxRW) computeTrashTitle(id string, kind TrashKind) (title, subtitle st
 // sub-tree, orphan-reaping shared Episode/Video rows that lose their
 // last live reference.
 func (tx *TxRW) Trash(id string) (err error) {
-	kind := KindOf(id)
 	defer errorfmt.Handlef("trash %s: %w", id, &err)
 
 	state, err := tx.trashState(id)
@@ -197,30 +182,30 @@ func (tx *TxRW) Trash(id string) (err error) {
 	}
 
 	now := time.Now()
-	switch kind {
-	case TrashKindMovie:
+	switch KindOf(id).(type) {
+	case nil:
+		return fmt.Errorf("no trashable kind for ID %q", id)
+	case kind.Movie:
 		err = tx.trashMovie(id, id, now)
-	case TrashKindMovieEdition:
+	case kind.MovieEdition:
 		err = tx.trashMovieEdition(id, id, now)
-	case TrashKindSeries:
+	case kind.Series:
 		err = tx.trashSeries(id, id, now)
-	case TrashKindSeriesEdition:
+	case kind.SeriesEdition:
 		err = tx.trashSeriesEdition(id, id, now)
-	case TrashKindSeason:
+	case kind.Season:
 		err = tx.trashSeason(id, id, now)
-	case TrashKindEpisode:
+	case kind.Episode:
 		err = tx.trashEpisode(id, id, now)
-	case TrashKindVideo:
+	case kind.Video:
 		if err := tx.guardActiveVideo(id); err != nil {
 			return err
 		}
 		err = tx.trashVideo(id, id, now)
-	case TrashKindCollection:
+	case kind.Collection:
 		err = tx.trashCollection(id, id, now)
-	case TrashKindDownload:
+	case kind.Download:
 		err = tx.trashDownload(id, id, now)
-	default:
-		return fmt.Errorf("no trashable kind for ID %q", id)
 	}
 	if err != nil {
 		return err
@@ -535,26 +520,26 @@ func (tx *TxRW) Restore(id string) (err error) {
 // was separately trashed after the episode itself, this walks the
 // junctions up to the Seasons and ensureLive pulls the rest back.
 func (tx *TxRW) ensureParentsLive(id string) error {
-	switch KindOf(id) {
-	case TrashKindMovieEdition:
+	switch KindOf(id).(type) {
+	case kind.MovieEdition:
 		med, err := tx.q.MovieEditionGet(id)
 		if err != nil {
 			return err
 		}
 		return tx.ensureLive(med.MovieID)
-	case TrashKindSeriesEdition:
+	case kind.SeriesEdition:
 		sed, err := tx.q.SeriesEditionGet(id)
 		if err != nil {
 			return err
 		}
 		return tx.ensureLive(sed.SeriesID)
-	case TrashKindSeason:
+	case kind.Season:
 		sn, err := tx.q.SeasonGet(id)
 		if err != nil {
 			return err
 		}
 		return tx.ensureLive(sn.EditionID)
-	case TrashKindEpisode:
+	case kind.Episode:
 		seasonIDs, err := tx.q.SeasonEpisodeDistinctSeasonsByEpisode(id)
 		if err != nil {
 			return err
@@ -564,7 +549,7 @@ func (tx *TxRW) ensureParentsLive(id string) error {
 				return err
 			}
 		}
-	case TrashKindVideo:
+	case kind.Video:
 		epIDs, err := tx.q.EpisodeVideoDistinctEpisodesByVideo(id)
 		if err != nil {
 			return err
@@ -583,6 +568,9 @@ func (tx *TxRW) ensureParentsLive(id string) error {
 				return err
 			}
 		}
+	default:
+		// Movies, series, collections, and downloads have no
+		// structural parent.
 	}
 	return nil
 }
@@ -610,43 +598,43 @@ func (tx *TxRW) ensureLive(id string) error {
 }
 
 func (tx *TxRW) restoreRoot(id string) error {
-	kind := KindOf(id)
-
 	var sneps []schema.SeasonEpisode
-	switch kind {
-	case TrashKindMovie:
+	switch KindOf(id).(type) {
+	case nil:
+		return fmt.Errorf("no trashable kind for ID %q", id)
+	case kind.Movie:
 		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.MovieRestore(id); err != nil {
 			return err
 		}
-	case TrashKindMovieEdition:
+	case kind.MovieEdition:
 		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.MovieEditionRestore(id); err != nil {
 			return err
 		}
-	case TrashKindSeries:
+	case kind.Series:
 		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.SeriesRestore(id); err != nil {
 			return err
 		}
-	case TrashKindSeriesEdition:
+	case kind.SeriesEdition:
 		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.SeriesEditionRestore(id); err != nil {
 			return err
 		}
-	case TrashKindSeason:
+	case kind.Season:
 		if err := tx.q.SeasonRestore(id); err != nil {
 			return err
 		}
-	case TrashKindEpisode:
+	case kind.Episode:
 		if err := tx.q.EpisodeRestore(id); err != nil {
 			return err
 		}
@@ -660,26 +648,24 @@ func (tx *TxRW) restoreRoot(id string) error {
 				return err
 			}
 		}
-	case TrashKindVideo:
+	case kind.Video:
 		if err := tx.q.VideoRestore(id); err != nil {
 			return err
 		}
-	case TrashKindCollection:
+	case kind.Collection:
 		if err := tx.restoreSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.CollectionRestore(id); err != nil {
 			return err
 		}
-	case TrashKindDownload:
+	case kind.Download:
 		if err := tx.q.DownloadRestore(schema.DownloadRestoreParams{
 			LastActivityAt: time.Now().UnixMilli(),
 			InfoHash:       id,
 		}); err != nil {
 			return err
 		}
-	default:
-		return fmt.Errorf("no trashable kind for ID %q", id)
 	}
 
 	cascadeOf := &id
@@ -726,19 +712,21 @@ func (tx *TxRW) restoreRoot(id string) error {
 // live (title/label-change) and trashed (restore) cases via the
 // entity's DeletedAt.
 func (tx *TxRW) restoreSlug(id string) error {
-	switch KindOf(id) {
-	case TrashKindMovie:
+	switch KindOf(id).(type) {
+	case kind.Movie:
 		return tx.movieEnsureSlug(id)
-	case TrashKindSeries:
+	case kind.Series:
 		return tx.seriesEnsureSlug(id)
-	case TrashKindCollection:
+	case kind.Collection:
 		return tx.collectionEnsureSlug(id)
-	case TrashKindMovieEdition:
+	case kind.MovieEdition:
 		return tx.movieEditionEnsureSlug(id)
-	case TrashKindSeriesEdition:
+	case kind.SeriesEdition:
 		return tx.seriesEditionEnsureSlug(id)
+	default:
+		// Other kinds have no slug.
+		return nil
 	}
-	return nil
 }
 
 // Purge hard-deletes a trashed item and all rows in its cascade
@@ -918,33 +906,33 @@ func (m *Model) purgeTrashLoop() {
 	}
 }
 
-// KindOf returns the TrashKind implied by a flurry ID prefix, or
-// TrashKindInvalid if the ID doesn't match a known prefix.
-func KindOf(id string) TrashKind {
+// KindOf returns the kind implied by a flurry ID prefix,
+// or nil if the ID doesn't match a known prefix.
+func KindOf(id string) kind.Trash {
 	switch {
 	case strings.HasPrefix(id, "med"):
-		return TrashKindMovieEdition
+		return kind.MovieEdition{}
 	case strings.HasPrefix(id, "mo"):
-		return TrashKindMovie
+		return kind.Movie{}
 	case strings.HasPrefix(id, "sed"):
-		return TrashKindSeriesEdition
+		return kind.SeriesEdition{}
 	case strings.HasPrefix(id, "sn"):
-		return TrashKindSeason
+		return kind.Season{}
 	case strings.HasPrefix(id, "sr"):
-		return TrashKindSeries
+		return kind.Series{}
 	case strings.HasPrefix(id, "ep"):
-		return TrashKindEpisode
+		return kind.Episode{}
 	case strings.HasPrefix(id, "vid"):
-		return TrashKindVideo
+		return kind.Video{}
 	case strings.HasPrefix(id, "col"):
-		return TrashKindCollection
+		return kind.Collection{}
 	}
 	// Downloads have no flurry prefix; their ID is a 40-char hex SHA-1
 	// info hash, which can't collide with any of the prefixes above.
 	if len(id) == 40 {
 		if _, err := hex.DecodeString(id); err == nil {
-			return TrashKindDownload
+			return kind.Download{}
 		}
 	}
-	return TrashKindInvalid
+	return nil
 }

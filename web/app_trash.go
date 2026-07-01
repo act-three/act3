@@ -2,6 +2,7 @@ package web
 
 import (
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 )
 
 // trashRedirectTarget returns the path the acting user should be sent
@@ -10,12 +11,12 @@ import (
 // redirect to their parent movie/series root, which re-routes to the
 // newly-promoted default edition.
 func trashRedirectTarget(tx *model.TxRW, id string) string {
-	switch model.KindOf(id) {
-	case model.TrashKindMovie:
+	switch model.KindOf(id).(type) {
+	case kind.Movie:
 		return "/app/movies"
-	case model.TrashKindSeries:
+	case kind.Series:
 		return "/app/series"
-	case model.TrashKindEpisode:
+	case kind.Episode:
 		eps := tx.EpisodeEditions(id)
 		if len(eps) == 0 { // can't happen
 			return "/app/series"
@@ -24,12 +25,13 @@ func trashRedirectTarget(tx *model.TxRW, id string) string {
 			eps[0].SeriesHead(),
 			eps[0].SeriesEditionHead(),
 		)
-	case model.TrashKindMovieEdition:
+	case kind.MovieEdition:
 		return tx.MovieHeadByEditionID(id).EditorPath()
-	case model.TrashKindSeriesEdition:
+	case kind.SeriesEdition:
 		sed := tx.SeriesEditionHead(id)
 		sr := tx.SeriesHead(sed.SeriesID())
 		return sr.EditorPath()
+	default:
+		return ""
 	}
-	return ""
 }
