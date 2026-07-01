@@ -13,6 +13,7 @@ import (
 	"kr.dev/errorfmt"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 )
 
 // An Upload describes a video upload in flight.
@@ -99,8 +100,8 @@ func (m *Model) uploadEnd(u *upload) {
 }
 
 // VideoUploadCreate streams r into the blob store and registers it as
-// a new Video not associated with any Download. Exactly one target
-// must be specified: an episode (epID) or a movie edition (medID).
+// a new Video not associated with any Download.
+// target is the episode or movie edition the Video attaches to.
 // While the upload is in flight it is listed by Uploads, with its
 // progress measured against size (the caller's estimate of the
 // total; non-positive means unknown).
@@ -118,7 +119,8 @@ func (m *Model) VideoUploadCreate(
 	r io.Reader,
 	name string,
 	size int64,
-	medID, epID *string,
+	target kind.VideoUpload,
+	id string,
 ) (vid schema.Video, err error) {
 	defer errorfmt.Handlef("VideoUploadCreate: %w", &err)
 
@@ -129,20 +131,13 @@ func (m *Model) VideoUploadCreate(
 			Err: fmt.Errorf("%q lacks a recognized video extension", base),
 		}
 	}
-	var targetID string
-	switch {
-	case medID != nil && epID == nil:
-		targetID = *medID
-	case medID == nil && epID != nil:
-		targetID = *epID
-	default:
+	if target == nil || id == "" {
 		return vid, &ValidationError{
 			Op:  "target",
-			Err: fmt.Errorf("must specify exactly one of med-id or ep-id"),
+			Err: fmt.Errorf("missing target kind or id"),
 		}
 	}
-
-	u := m.uploadBegin(targetID, base, size, r)
+	u := m.uploadBegin(id, base, size, r)
 	defer m.uploadEnd(u)
 	key, sum, err := m.copyToStoreHashed(u)
 	if err != nil {
@@ -172,7 +167,7 @@ func (m *Model) VideoUploadCreate(
 						"key", key, "err", err)
 				}
 			})
-			return tx.attachUploadedVideo(vid.ID, medID, epID)
+			return tx.attachUploadedVideo(vid.ID, target, id)
 		}
 		v, err := tx.q.VideoCreate(schema.VideoCreateParams{Name: base})
 		if err != nil {
@@ -188,7 +183,7 @@ func (m *Model) VideoUploadCreate(
 			return err
 		}
 		vid = v
-		if err := tx.attachUploadedVideo(v.ID, medID, epID); err != nil {
+		if err := tx.attachUploadedVideo(v.ID, target, id); err != nil {
 			return err
 		}
 		return tx.planAndCreateRenditions(v, probe)
@@ -200,32 +195,26 @@ func (m *Model) VideoUploadCreate(
 		return vid, nil
 	}
 
-	if epID != nil {
-		m.prog.AddEdge(*epID, vid.ID)
-	}
-	if medID != nil {
-		m.prog.AddEdge(*medID, vid.ID)
-	}
+	m.prog.AddEdge(id, vid.ID)
 	return vid, nil
 }
 
-// attachUploadedVideo wires a Video into either an Episode or a
-// MovieEdition. Uses ensure-style inserts so a re-upload of an
-// already-attached file is idempotent.
-func (tx *TxRW) attachUploadedVideo(videoID string, medID, epID *string) error {
-	switch {
-	case epID != nil:
+// attachUploadedVideo wires a Video into its target episode or movie
+// edition.
+// Uses ensure-style inserts so a re-upload of an already-attached file
+// is idempotent.
+func (tx *TxRW) attachUploadedVideo(videoID string, target kind.VideoUpload, id string) error {
+	switch target.(type) {
+	case kind.Episode:
 		return tx.q.EpisodeVideoEnsure(schema.EpisodeVideoEnsureParams{
-			EpisodeID: *epID,
+			EpisodeID: id,
 			VideoID:   videoID,
 		})
-
-	case medID != nil:
+	case kind.MovieEdition:
 		return tx.q.MovieVideoEnsure(schema.MovieVideoEnsureParams{
-			MovieEditionID: *medID,
+			MovieEditionID: id,
 			VideoID:        videoID,
 		})
-
 	}
-	return fmt.Errorf("attachUploadedVideo: no target")
+	panic(fmt.Sprintf("attachUploadedVideo: unhandled kind %v", target))
 }

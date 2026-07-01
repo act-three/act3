@@ -525,7 +525,7 @@ func appEpisodeDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Upload"),
 						),
-						uploadVideoControl("ep-id", ep.ID(), uploads),
+						uploadVideoControl(kind.Episode{}, ep.ID(), uploads),
 					),
 				),
 

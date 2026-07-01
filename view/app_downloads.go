@@ -163,20 +163,20 @@ func addTorrentButton(k kind.TorrentTarget, id string) domi.Node {
 	)
 }
 
-// uploadVideoControl renders the video upload control for the
-// target (an episode or movie edition, named by targetName's form
-// field): an upload button, or the upload's progress while one is
-// in flight for this target.
-func uploadVideoControl(targetName, targetID string, uploads []model.Upload) domi.Node {
+// uploadVideoControl renders the video upload control for a target
+// episode or movie edition:
+// either an upload button,
+// or the upload's progress while one is in flight for the target.
+func uploadVideoControl(target kind.VideoUpload, id string, uploads []model.Upload) domi.Node {
 	for _, u := range uploads {
-		if u.TargetID == targetID {
+		if u.TargetID == id {
 			return uploadProgressBar(u)
 		}
 	}
-	return uploadVideoForm(targetName, targetID)
+	return uploadVideoForm(target, id)
 }
 
-func uploadVideoForm(targetName, targetValue string) domi.Node {
+func uploadVideoForm(target kind.VideoUpload, id string) domi.Node {
 	return html.Form(
 		Class("v-media-torrent-form"),
 		attr.Method("POST"),
@@ -184,7 +184,8 @@ func uploadVideoForm(targetName, targetValue string) domi.Node {
 		attr.Action("/-/do/video-upload"),
 		stimulus.Controller("upload"),
 	)(
-		Hidden(targetName, targetValue),
+		Hidden("kind", target.String()),
+		Hidden("id", id),
 		html.Input(
 			Class("v-media-torrent-picker"),
 			attr.Type("file"),

@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 )
 
 func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (node, error) {
@@ -41,8 +42,8 @@ const maxUploadFormField = 1 << 10
 // rely on req.MultipartReader to avoid spooling the upload through
 // req.FormFile's default /tmp file.
 //
-// The form is expected to emit small text parts (sed-id / med-id /
-// ep-id) before the file part named "video".
+// The form is expected to emit the kind and id text parts before the
+// file part named "video".
 func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (node, error) {
 	ctx := req.Context()
 	mr, err := req.MultipartReader()
@@ -50,7 +51,8 @@ func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (node, 
 		return nil, &model.ValidationError{Op: "multipart", Err: err}
 	}
 
-	var medID, epID string
+	var k kind.VideoUpload
+	var id string
 	size := req.ContentLength // file size upper bound: includes multipart framing
 	var fileSeen bool
 	for {
@@ -62,10 +64,14 @@ func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (node, 
 			return nil, err
 		}
 		switch part.FormName() {
-		case "med-id":
-			medID, err = readField(part)
-		case "ep-id":
-			epID, err = readField(part)
+		case "kind":
+			var s string
+			s, err = readField(part)
+			if err == nil {
+				k, err = kind.ParseVideoUpload(s)
+			}
+		case "id":
+			id, err = readField(part)
 		case "size":
 			// The exact file size, sent by our own upload form just
 			// ahead of the file.
@@ -85,14 +91,7 @@ func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (node, 
 				break
 			}
 			fileSeen = true
-			var medp, epp *string
-			if medID != "" {
-				medp = &medID
-			}
-			if epID != "" {
-				epp = &epID
-			}
-			_, err = c.Model.VideoUploadCreate(ctx, part, part.FileName(), size, medp, epp)
+			_, err = c.Model.VideoUploadCreate(ctx, part, part.FileName(), size, k, id)
 		}
 		part.Close()
 		if err != nil {
