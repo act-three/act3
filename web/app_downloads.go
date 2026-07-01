@@ -17,7 +17,7 @@ func (c *Config) doTorrentAdd(w http.ResponseWriter, req *http.Request) (node, e
 
 		k, err := kind.ParseTorrentTarget(req.FormValue("kind"))
 		if err != nil {
-			return nil, err
+			return nil, &model.ValidationError{Op: "parse", Err: err}
 		}
 		id := req.FormValue("id")
 		dl, err := tx.DownloadCreate(file, k, id)
