@@ -7,6 +7,7 @@ import (
 
 	"github.com/anacrolix/torrent/bencode"
 	"github.com/anacrolix/torrent/metainfo"
+	"ily.dev/act3/model/kind"
 )
 
 func TestCheckTorrentPaths(t *testing.T) {
@@ -207,7 +208,7 @@ func TestDownloadCreateRejectsTraversal(t *testing.T) {
 	}
 
 	err = m.WithTxRW(t.Context(), func(tx *TxRW) error {
-		_, err := tx.DownloadCreate(bytes.NewReader(buf.Bytes()), nil, nil)
+		_, err := tx.DownloadCreate(bytes.NewReader(buf.Bytes()), kind.MovieEdition{}, "")
 		return err
 	})
 

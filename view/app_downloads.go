@@ -14,6 +14,7 @@ import (
 
 	"ily.dev/act3/expr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
@@ -136,7 +137,7 @@ func downloadListItem(dl *model.DownloadHead) domi.Node {
 // addTorrentButton renders a file-upload form for adding a
 // torrent to an edition.
 // Shared by the series and movie edit views.
-func addTorrentButton(inputName, inputValue string) domi.Node {
+func addTorrentButton(k kind.TorrentTarget, id string) domi.Node {
 	return html.Form(
 		Class("v-media-torrent-form"),
 		attr.Method("POST"),
@@ -144,7 +145,8 @@ func addTorrentButton(inputName, inputValue string) domi.Node {
 		attr.Action("/-/do/torrent-add"),
 		stimulus.Controller("upload"),
 	)(
-		Hidden(inputName, inputValue),
+		Hidden("kind", k.String()),
+		Hidden("id", id),
 		html.Input(
 			Class("v-media-torrent-picker"),
 			attr.Type("file"),

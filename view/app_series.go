@@ -12,6 +12,7 @@ import (
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/expr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/ui/stimulus"
@@ -172,7 +173,7 @@ func appSeriesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Downloads"),
 						),
-						addTorrentButton("sed-id", sed.ID()),
+						addTorrentButton(kind.SeriesEdition{}, sed.ID()),
 					),
 					rangeNodes(dls, downloadListItem),
 				),

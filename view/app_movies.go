@@ -7,6 +7,7 @@ import (
 
 	"ily.dev/act3/expr"
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/msg"
 	"ily.dev/act3/service/tmdb"
 	. "ily.dev/act3/ui"
@@ -181,7 +182,7 @@ func appMoviesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Downloads"),
 						),
-						addTorrentButton("med-id", med.ID()),
+						addTorrentButton(kind.MovieEdition{}, med.ID()),
 					),
 					rangeNodes(dls, downloadListItem),
 				),
