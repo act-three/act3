@@ -5945,7 +5945,7 @@ func (q *Queries) TrashDelete(id string) error {
 }
 
 const trashGet = `-- name: TrashGet :one
-SELECT id, title, subtitle, deletedat, cascadeof FROM Trash WHERE ID = ?
+SELECT id, kind, title, subtitle, deletedat, cascadeof FROM Trash WHERE ID = ?
 `
 
 func (q *Queries) TrashGet(id string) (Trash, error) {
@@ -5953,6 +5953,7 @@ func (q *Queries) TrashGet(id string) (Trash, error) {
 	var i Trash
 	err := row.Scan(
 		&i.ID,
+		&i.Kind,
 		&i.Title,
 		&i.Subtitle,
 		&i.DeletedAt,
@@ -5962,11 +5963,12 @@ func (q *Queries) TrashGet(id string) (Trash, error) {
 }
 
 const trashInsert = `-- name: TrashInsert :exec
-INSERT INTO Trash (ID, Title, Subtitle, DeletedAt, CascadeOf) VALUES (?, ?, ?, ?, ?)
+INSERT INTO Trash (ID, Kind, Title, Subtitle, DeletedAt, CascadeOf) VALUES (?, ?, ?, ?, ?, ?)
 `
 
 type TrashInsertParams struct {
 	ID        string
+	Kind      string
 	Title     string
 	Subtitle  string
 	DeletedAt int64
@@ -5976,6 +5978,7 @@ type TrashInsertParams struct {
 func (q *Queries) TrashInsert(arg TrashInsertParams) error {
 	_, err := q.db.ExecContext(q.ctx, trashInsert,
 		arg.ID,
+		arg.Kind,
 		arg.Title,
 		arg.Subtitle,
 		arg.DeletedAt,
@@ -5985,7 +5988,7 @@ func (q *Queries) TrashInsert(arg TrashInsertParams) error {
 }
 
 const trashList = `-- name: TrashList :many
-SELECT id, title, subtitle, deletedat, cascadeof FROM Trash WHERE CascadeOf IS NULL ORDER BY DeletedAt DESC
+SELECT id, kind, title, subtitle, deletedat, cascadeof FROM Trash WHERE CascadeOf IS NULL ORDER BY DeletedAt DESC
 `
 
 func (q *Queries) TrashList() ([]Trash, error) {
@@ -5999,6 +6002,7 @@ func (q *Queries) TrashList() ([]Trash, error) {
 		var i Trash
 		if err := rows.Scan(
 			&i.ID,
+			&i.Kind,
 			&i.Title,
 			&i.Subtitle,
 			&i.DeletedAt,

@@ -89,21 +89,36 @@ func TestSnapshotRows(t *testing.T) {
 }
 
 // TestApplyAndRead exercises the real database.Open update path: it seeds a
-// database at schema version 000, then confirms applyAndRead applies 001,
-// reads back the rolling digest that frozen.txt records for it, and reports
-// zero changed rows (001 is pure schema).
+// database at schema version 000, then confirms applyAndRead walks every
+// later update, reads back the version and rolling digest recorded for the
+// newest one (matching frozen.txt when it is frozen), and counts no changed
+// data rows — the seeded tables are empty, so backfills touch nothing.
 func TestApplyAndRead(t *testing.T) {
 	path, frozen := seedAt000(t)
+	names, err := updateNames(filepath.FromSlash("../../database/ddl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	newest := frozen[len(frozen)-1]
+	if name := names[len(names)-1]; name != newest.Name {
+		// The newest update is still unfrozen; its rolling digest is
+		// recorded nowhere, so expect only its version.
+		version, _, _ := strings.Cut(name, "_")
+		newest = entry{Version: version, Name: name}
+	}
+
 	version, digest, affected, err := applyAndRead(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if version != frozen[1].Version || digest != frozen[1].Digest {
+	if version != newest.Version || (newest.Digest != "" && digest != newest.Digest) {
 		t.Fatalf("applyAndRead = (%q, %q), want (%q, %q)",
-			version, digest, frozen[1].Version, frozen[1].Digest)
+			version, digest, newest.Version, newest.Digest)
 	}
-	if affected != 0 {
-		t.Errorf("affected = %d, want 0 (001 changes no data rows)", affected)
+	// applyAndRead subtracts one bookkeeping row assuming a single applied
+	// update; each additional update applied from 000 leaves one more.
+	if want := len(names) - 2; affected != want {
+		t.Errorf("affected = %d, want %d (updates change no data rows on empty tables)", affected, want)
 	}
 }
 

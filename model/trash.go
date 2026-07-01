@@ -64,14 +64,14 @@ func (tx *TxR) trashState(id string) (trashState, error) {
 	return trashState{trashed: true, cascadeOf: cascadeOf}, nil
 }
 
-func (tx *TxRW) insertTrashRow(id, root string, now time.Time) error {
-	k := KindOf(id)
+func (tx *TxRW) insertTrashRow[K kind.Trash](id, root string, now time.Time) error {
+	var k K
 	title, subtitle, err := tx.computeTrashTitle(id, k)
 	if err != nil {
 		return err
 	}
 	params := schema.TrashInsertParams{
-		ID: id, Title: title, Subtitle: subtitle,
+		ID: id, Kind: k.String(), Title: title, Subtitle: subtitle,
 		DeletedAt: now.UnixMilli(),
 	}
 	if root != id {
@@ -214,7 +214,7 @@ func (tx *TxRW) Trash(id string) (err error) {
 }
 
 func (tx *TxRW) trashMovie(id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.Movie](id, root, now); err != nil {
 		return err
 	}
 	meds, err := tx.q.MovieEditionListByMovieID(id)
@@ -257,7 +257,7 @@ func (tx *TxRW) trashMovieEdition(id, root string, now time.Time) error {
 			}
 		}
 	}
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.MovieEdition](id, root, now); err != nil {
 		return err
 	}
 	dls, err := tx.q.DownloadListByMovieEditionID(&id)
@@ -283,7 +283,7 @@ func (tx *TxRW) trashMovieEdition(id, root string, now time.Time) error {
 }
 
 func (tx *TxRW) trashSeries(id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.Series](id, root, now); err != nil {
 		return err
 	}
 	seds, err := tx.q.SeriesEditionListBySeriesID(id)
@@ -324,7 +324,7 @@ func (tx *TxRW) trashSeriesEdition(id, root string, now time.Time) error {
 			}
 		}
 	}
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.SeriesEdition](id, root, now); err != nil {
 		return err
 	}
 	dls, err := tx.q.DownloadListBySeriesEditionID(&id)
@@ -352,7 +352,7 @@ func (tx *TxRW) trashSeriesEdition(id, root string, now time.Time) error {
 }
 
 func (tx *TxRW) trashSeason(id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.Season](id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.SeasonEpisodeSoftDeleteBySeasonID(schema.SeasonEpisodeSoftDeleteBySeasonIDParams{
@@ -379,7 +379,7 @@ func (tx *TxRW) trashEpisode(id, root string, now time.Time) error {
 			return err
 		}
 	}
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.Episode](id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.SeasonEpisodeSoftDeleteByEpisodeID(schema.SeasonEpisodeSoftDeleteByEpisodeIDParams{
@@ -409,7 +409,7 @@ func (tx *TxRW) trashEpisode(id, root string, now time.Time) error {
 }
 
 func (tx *TxRW) trashVideo(id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.Video](id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.EpisodeVideoSoftDeleteByVideoID(schema.EpisodeVideoSoftDeleteByVideoIDParams{
@@ -429,7 +429,7 @@ func (tx *TxRW) trashVideo(id, root string, now time.Time) error {
 }
 
 func (tx *TxRW) trashCollection(id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.Collection](id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.CollectionMovieSoftDeleteByCollectionID(schema.CollectionMovieSoftDeleteByCollectionIDParams{
@@ -451,7 +451,7 @@ func (tx *TxRW) trashCollection(id, root string, now time.Time) error {
 }
 
 func (tx *TxRW) trashDownload(id, root string, now time.Time) error {
-	if err := tx.insertTrashRow(id, root, now); err != nil {
+	if err := tx.insertTrashRow[kind.Download](id, root, now); err != nil {
 		return err
 	}
 	if err := tx.q.DownloadSoftDelete(schema.DownloadSoftDeleteParams{

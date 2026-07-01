@@ -227,6 +227,7 @@ type Task struct {
 
 type Trash struct {
 	ID        string
+	Kind      string
 	Title     string
 	Subtitle  string
 	DeletedAt int64
