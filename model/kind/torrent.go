@@ -22,5 +22,5 @@ func ParseTorrentTarget(s string) (TorrentTarget, error) {
 			return k, nil
 		}
 	}
-	return nil, fmt.Errorf("kind: %q is not a TorrentTarget", s)
+	return nil, fmt.Errorf("kind: bad TorrentTarget %q", s)
 }

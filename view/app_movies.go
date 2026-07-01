@@ -152,7 +152,7 @@ func appMoviesDetail(
 							),
 
 							buttonImageEdit(
-								&msg.ImageDialogOpen{Kind: "med-id", ID: med.ID()},
+								&msg.ImageDialogOpen{Kind: kind.MovieEdition{}, ID: med.ID()},
 								med.Poster(),
 								AspectPoster,
 							),

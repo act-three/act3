@@ -2,6 +2,7 @@ package web
 
 import (
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 )
 
 // A dialog holds the app-side state of the open modal dialog.
@@ -57,7 +58,7 @@ func (*collectionSeriesAddDialog) isDialog() {}
 // control. The view resolves the item on each render, so an upload
 // refreshes the image in place.
 type imageDialog struct {
-	kind string // upload form-field name
+	kind kind.ImageOwner
 	id   string
 }
 

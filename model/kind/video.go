@@ -22,5 +22,5 @@ func ParseVideoUpload(s string) (VideoUpload, error) {
 			return k, nil
 		}
 	}
-	return nil, fmt.Errorf("kind: %q is not a VideoUpload", s)
+	return nil, fmt.Errorf("kind: bad VideoUpload %q", s)
 }
