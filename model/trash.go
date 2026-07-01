@@ -44,6 +44,7 @@ type TrashItem struct {
 
 type trashState struct {
 	trashed   bool
+	kind      kind.Trash
 	cascadeOf string
 }
 
@@ -57,11 +58,15 @@ func (tx *TxR) trashState(id string) (trashState, error) {
 	if err != nil {
 		return trashState{}, err
 	}
+	k, err := kind.ParseTrash(row.Kind)
+	if err != nil {
+		return trashState{}, err
+	}
 	cascadeOf := ""
 	if row.CascadeOf != nil {
 		cascadeOf = *row.CascadeOf
 	}
-	return trashState{trashed: true, cascadeOf: cascadeOf}, nil
+	return trashState{trashed: true, kind: k, cascadeOf: cascadeOf}, nil
 }
 
 func (tx *TxRW) insertTrashRow[K kind.Trash](id, root string, now time.Time) error {
@@ -519,8 +524,8 @@ func (tx *TxRW) Restore(id string) (err error) {
 // climbs as far as needed. For an Episode whose containing Series
 // was separately trashed after the episode itself, this walks the
 // junctions up to the Seasons and ensureLive pulls the rest back.
-func (tx *TxRW) ensureParentsLive(id string) error {
-	switch KindOf(id).(type) {
+func (tx *TxRW) ensureParentsLive(k kind.Trash, id string) error {
+	switch k.(type) {
 	case kind.MovieEdition:
 		med, err := tx.q.MovieEditionGet(id)
 		if err != nil {
@@ -591,40 +596,40 @@ func (tx *TxRW) ensureLive(id string) error {
 	if state.cascadeOf != "" {
 		return tx.ensureLive(state.cascadeOf)
 	}
-	if err := tx.ensureParentsLive(id); err != nil {
+	if err := tx.ensureParentsLive(state.kind, id); err != nil {
 		return err
 	}
-	return tx.restoreRoot(id)
+	return tx.restoreRoot(state.kind, id)
 }
 
-func (tx *TxRW) restoreRoot(id string) error {
+func (tx *TxRW) restoreRoot(k kind.Trash, id string) error {
 	var sneps []schema.SeasonEpisode
-	switch KindOf(id).(type) {
+	switch k.(type) {
 	case nil:
 		return fmt.Errorf("no trashable kind for ID %q", id)
 	case kind.Movie:
-		if err := tx.restoreSlug(id); err != nil {
+		if err := tx.movieEnsureSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.MovieRestore(id); err != nil {
 			return err
 		}
 	case kind.MovieEdition:
-		if err := tx.restoreSlug(id); err != nil {
+		if err := tx.movieEditionEnsureSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.MovieEditionRestore(id); err != nil {
 			return err
 		}
 	case kind.Series:
-		if err := tx.restoreSlug(id); err != nil {
+		if err := tx.seriesEnsureSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.SeriesRestore(id); err != nil {
 			return err
 		}
 	case kind.SeriesEdition:
-		if err := tx.restoreSlug(id); err != nil {
+		if err := tx.seriesEditionEnsureSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.SeriesEditionRestore(id); err != nil {
@@ -653,7 +658,7 @@ func (tx *TxRW) restoreRoot(id string) error {
 			return err
 		}
 	case kind.Collection:
-		if err := tx.restoreSlug(id); err != nil {
+		if err := tx.collectionEnsureSlug(id); err != nil {
 			return err
 		}
 		if err := tx.q.CollectionRestore(id); err != nil {
@@ -704,29 +709,6 @@ func (tx *TxRW) restoreRoot(id string) error {
 	}
 
 	return tx.q.TrashDelete(id)
-}
-
-// restoreSlug regenerates the slug for a restored entity,
-// reinserting the Slug table row for top-level entities. Dispatches
-// to the kind-specific ensureSlug helper, which handles both the
-// live (title/label-change) and trashed (restore) cases via the
-// entity's DeletedAt.
-func (tx *TxRW) restoreSlug(id string) error {
-	switch KindOf(id).(type) {
-	case kind.Movie:
-		return tx.movieEnsureSlug(id)
-	case kind.Series:
-		return tx.seriesEnsureSlug(id)
-	case kind.Collection:
-		return tx.collectionEnsureSlug(id)
-	case kind.MovieEdition:
-		return tx.movieEditionEnsureSlug(id)
-	case kind.SeriesEdition:
-		return tx.seriesEditionEnsureSlug(id)
-	default:
-		// Other kinds have no slug.
-		return nil
-	}
 }
 
 // Purge hard-deletes a trashed item and all rows in its cascade
@@ -807,7 +789,7 @@ func (tx *TxR) FindTrashItem(id string) (*TrashItem, bool) {
 
 func newTrashItem(row schema.Trash) *TrashItem {
 	return &TrashItem{
-		Kind:      KindOf(row.ID),
+		Kind:      txmust1(kind.ParseTrash(row.Kind)),
 		ID:        row.ID,
 		Title:     row.Title,
 		Subtitle:  row.Subtitle,
