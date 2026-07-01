@@ -132,7 +132,7 @@ func appCollectionDetail(col *model.Collection) domi.Node {
 								SettingsItemLabelTitle("Delete Collection"),
 								SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
 							),
-							trashForm(col.ID()),
+							trashForm(kind.Collection{}, col.ID()),
 						),
 					),
 				),

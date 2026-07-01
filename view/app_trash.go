@@ -136,8 +136,8 @@ func appTrashDetail(it model.TrashItem) domi.Node {
 
 func appTrashDetailPath(id string) string { return "/app/trash/" + id }
 
-func trashForm(id string) domi.Node {
-	return Button(onClick(&msg.Trash{ID: id}),
+func trashForm(k kind.Trash, id string) domi.Node {
+	return Button(onClick(&msg.Trash{Kind: k, ID: id}),
 		Destructive, ButtonGhost, ButtonSize2,
 	)(Text("Delete"))
 }

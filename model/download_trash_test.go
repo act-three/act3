@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -113,25 +112,6 @@ func fortyCharHex(seed byte) string {
 	return string(b[:])
 }
 
-func TestKindOfInfoHash(t *testing.T) {
-	if got := KindOf(fortyCharHex(0)); got != (kind.Download{}) {
-		t.Errorf("KindOf(40-char hex) = %v, want kind.Download", got)
-	}
-	// Wrong length.
-	if got := KindOf("abcdef1234"); got == (kind.Download{}) {
-		t.Errorf("KindOf(10-char hex) = %v; should not be kind.Download", got)
-	}
-	// Right length, non-hex.
-	notHex := strings.Repeat("z", 40)
-	if got := KindOf(notHex); got == (kind.Download{}) {
-		t.Errorf("KindOf(40 z's) = %v; should not be kind.Download", got)
-	}
-	// Flurry prefixes still win.
-	if got := KindOf("mo" + strings.Repeat("a", 38)); got != (kind.Movie{}) {
-		t.Errorf("KindOf(mo... 40 chars) = %v; want kind.Movie", got)
-	}
-}
-
 func TestDownloadTrashAnyState(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
@@ -139,7 +119,7 @@ func TestDownloadTrashAnyState(t *testing.T) {
 		_, _, sedID, _, _, _ := createSeriesRow(t, m, "dl-"+state, state)
 		infoHash := fortyCharHex(byte(len(state)))
 		createTrashableDownload(t, m, infoHash, state, sedID)
-		if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(infoHash) }); err != nil {
+		if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.Download{}, infoHash) }); err != nil {
 			t.Errorf("Trash(%s) state=%s: %v", infoHash, state, err)
 		}
 	}
@@ -154,7 +134,7 @@ func TestDownloadTrashReapsOrphanVideos(t *testing.T) {
 	vidID := createVideoRow(t, m, "orphan.mkv", "", nil)
 	attachVideoToDownload(t, m, vidID, infoHash)
 
-	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.Download{}, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	// Video had no EV/MV junctions; its only pin was the Download. After
@@ -175,7 +155,7 @@ func TestDownloadTrashKeepsJunctionedVideos(t *testing.T) {
 	attachVideoToDownload(t, m, vidID, infoHash)
 	// Video is already EV-linked to the episode via createSeriesRow.
 
-	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.Download{}, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	if !videoLive(t, m, vidID) {
@@ -192,7 +172,7 @@ func TestDownloadRestoreRehydratesOrphanVideos(t *testing.T) {
 	vidID := createVideoRow(t, m, "restore.mkv", "", nil)
 	attachVideoToDownload(t, m, vidID, infoHash)
 
-	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.Download{}, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	if videoLive(t, m, vidID) {
@@ -214,7 +194,7 @@ func TestDownloadPurgeNullsSurvivingVideoInfoHash(t *testing.T) {
 	createTrashableDownload(t, m, infoHash, "imported", sedID)
 	attachVideoToDownload(t, m, vidID, infoHash)
 
-	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.Download{}, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Purge(infoHash) }); err != nil {
@@ -243,7 +223,7 @@ func TestDownloadCreateOnTrashedRestores(t *testing.T) {
 	createTrashableDownload(t, m, infoHash, "imported", sedID)
 
 	// Trash the Download.
-	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.Download{}, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 
@@ -372,7 +352,7 @@ func TestDownloadRestoreBumpsActivity(t *testing.T) {
 
 	// Trash; then backdate the still-live-column to simulate a stale
 	// restore candidate.
-	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(infoHash) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.Download{}, infoHash) }); err != nil {
 		t.Fatal(err)
 	}
 	stale := time.Now().Add(-30 * 24 * time.Hour).UnixMilli()
@@ -488,7 +468,7 @@ func TestTrashMovieCascadesToDownload(t *testing.T) {
 	infoHash := fortyCharHex(12)
 	createTrashableMovieDownload(t, m, infoHash, "downloading", medID)
 
-	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(movieID) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.Movie{}, movieID) }); err != nil {
 		t.Fatal(err)
 	}
 	if downloadLive(t, m, infoHash) {
@@ -504,7 +484,7 @@ func TestTrashSeriesEditionCascadesToDownload(t *testing.T) {
 	infoHash := fortyCharHex(13)
 	createTrashableDownload(t, m, infoHash, "downloading", sedID)
 
-	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(sedID) }); err != nil {
+	if err := m.WithTxRW(ctx, func(tx *TxRW) error { return tx.Trash(kind.SeriesEdition{}, sedID) }); err != nil {
 		t.Fatal(err)
 	}
 	if downloadLive(t, m, infoHash) {

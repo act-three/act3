@@ -220,10 +220,10 @@ func appSeriesDetail(
 						),
 						expr.IfElse(len(editions) > 1,
 							func() domi.Node {
-								return trashForm(sed.ID())
+								return trashForm(kind.SeriesEdition{}, sed.ID())
 							},
 							func() domi.Node {
-								return trashForm(sr.ID())
+								return trashForm(kind.Series{}, sr.ID())
 							},
 						),
 					),
@@ -329,7 +329,7 @@ func appSeriesDetailSeasonItem(sn *model.Season) domi.Node {
 				Button(onClick(&msg.EpisodeCreate{SeasonID: sn.ID()}),
 					ButtonGhost, ButtonSize2,
 				)(Text("Add Episode")),
-				trashForm(sn.ID()),
+				trashForm(kind.Season{}, sn.ID()),
 			),
 		),
 		domi.Keyed("div")(
@@ -561,7 +561,7 @@ func appEpisodeDetail(
 							SettingsItemLabelTitle("Delete Episode"),
 							SettingsItemLabelDescription("Deleted items remain in Trash for 30 days"),
 						),
-						trashForm(ep.ID()),
+						trashForm(kind.Episode{}, ep.ID()),
 					),
 				),
 			),
@@ -629,7 +629,7 @@ func appEpisodeDialogVideo(ep *model.Episode, v *model.Video) domi.Node {
 				},
 				func() domi.Node { return Group() },
 			),
-			trashForm(v.ID()),
+			trashForm(kind.Video{}, v.ID()),
 		),
 	)
 }

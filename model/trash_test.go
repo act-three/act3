@@ -12,6 +12,7 @@ import (
 
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 )
 
 // trashTestFixture builds a Series with two Editions that share a
@@ -144,7 +145,7 @@ func TestTrashOrphanReapAcrossEditions(t *testing.T) {
 	fx := newTrashTestFixture(t, m)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(fx.edition1)
+		return tx.Trash(kind.SeriesEdition{}, fx.edition1)
 	}); err != nil {
 		t.Fatalf("trash edition 1: %v", err)
 	}
@@ -154,7 +155,7 @@ func TestTrashOrphanReapAcrossEditions(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(fx.edition2)
+		return tx.Trash(kind.SeriesEdition{}, fx.edition2)
 	}); err != nil {
 		t.Fatalf("trash edition 2: %v", err)
 	}
@@ -184,12 +185,12 @@ func TestTrashDirectSkippedInCascade(t *testing.T) {
 	fx := newTrashTestFixture(t, m)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(fx.season1)
+		return tx.Trash(kind.Season{}, fx.season1)
 	}); err != nil {
 		t.Fatalf("trash season: %v", err)
 	}
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(fx.edition1)
+		return tx.Trash(kind.SeriesEdition{}, fx.edition1)
 	}); err != nil {
 		t.Fatalf("trash edition: %v", err)
 	}
@@ -262,13 +263,13 @@ func TestTrashAlreadyTrashedReturnsError(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	}); err != nil {
 		t.Fatalf("first trash: %v", err)
 	}
 
 	err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	})
 
 	if !errors.Is(err, ErrAlreadyTrashed) {
@@ -415,7 +416,7 @@ func TestTrashOrphanReapVideoSharedAcrossEpisodeAndMovie(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(fx.episodeID)
+		return tx.Trash(kind.Episode{}, fx.episodeID)
 	}); err != nil {
 		t.Fatalf("trash episode: %v", err)
 	}
@@ -424,7 +425,7 @@ func TestTrashOrphanReapVideoSharedAcrossEpisodeAndMovie(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	}); err != nil {
 		t.Fatalf("trash movie: %v", err)
 	}
@@ -559,7 +560,7 @@ func TestTrashPurgeOrdering(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(seriesID)
+		return tx.Trash(kind.Series{}, seriesID)
 	}); err != nil {
 		t.Fatalf("trash series: %v", err)
 	}
@@ -616,7 +617,7 @@ func TestTrashSlugCollisionOnRestore(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(movieA)
+		return tx.Trash(kind.Movie{}, movieA)
 	}); err != nil {
 		t.Fatalf("trash movie A: %v", err)
 	}
@@ -681,7 +682,7 @@ func TestTrashPartialUniqueIndexAllowsReuse(t *testing.T) {
 	movieA, _ := createMovieRow(t, m, "foo", &tmdb)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(movieA)
+		return tx.Trash(kind.Movie{}, movieA)
 	}); err != nil {
 		t.Fatalf("trash movie A: %v", err)
 	}
@@ -735,7 +736,7 @@ func TestTrashPurgeRemovesBlobKeys(t *testing.T) {
 	vidID := createVideoRow(t, m, "cas.mkv", originalKey, []string{rendKey1, rendKey2})
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(vidID)
+		return tx.Trash(kind.Video{}, vidID)
 	}); err != nil {
 		t.Fatalf("trash video: %v", err)
 	}
@@ -861,7 +862,7 @@ func TestTrashCascadeDepthFullSeries(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(seriesID)
+		return tx.Trash(kind.Series{}, seriesID)
 	}); err != nil {
 		t.Fatalf("trash series: %v", err)
 	}
@@ -934,7 +935,7 @@ func TestTrashErrorCases(t *testing.T) {
 	// Set up a cascade-trashed episode via a fresh series.
 	srID, _, _, _, cascadedEpID, _ := createSeriesRow(t, m, "err-cascade", "ErrCascade")
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(srID)
+		return tx.Trash(kind.Series{}, srID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -946,7 +947,7 @@ func TestTrashErrorCases(t *testing.T) {
 	}{
 		{
 			"Trash non-existent",
-			func(tx *TxRW) error { return tx.Trash(missingID) },
+			func(tx *TxRW) error { return tx.Trash(kind.Movie{}, missingID) },
 			nil, // any non-nil error OK; not ErrAlreadyTrashed
 		},
 		{
@@ -971,12 +972,12 @@ func TestTrashErrorCases(t *testing.T) {
 		},
 		{
 			"Trash cascade-trashed episode",
-			func(tx *TxRW) error { return tx.Trash(cascadedEpID) },
+			func(tx *TxRW) error { return tx.Trash(kind.Episode{}, cascadedEpID) },
 			ErrAlreadyTrashed,
 		},
 		{
 			"Trash invalid-kind ID",
-			func(tx *TxRW) error { return tx.Trash(invalidID) },
+			func(tx *TxRW) error { return tx.Trash(nil, invalidID) },
 			nil,
 		},
 		{
@@ -991,7 +992,7 @@ func TestTrashErrorCases(t *testing.T) {
 		},
 		{
 			"Trash non-existent episode",
-			func(tx *TxRW) error { return tx.Trash(missingEpID) },
+			func(tx *TxRW) error { return tx.Trash(kind.Episode{}, missingEpID) },
 			sql.ErrNoRows,
 		},
 	}
@@ -1083,7 +1084,7 @@ func TestTrashDefaultMovieEditionPromotesSuccessor(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(ed1)
+		return tx.Trash(kind.MovieEdition{}, ed1)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1199,7 +1200,7 @@ func TestTrashEpisodeTrashRestoreInMiddle(t *testing.T) {
 
 	targetEp := epIDs[1] // "Ep 2"
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(targetEp)
+		return tx.Trash(kind.Episode{}, targetEp)
 	}); err != nil {
 		t.Fatalf("trash: %v", err)
 	}
@@ -1242,7 +1243,7 @@ func TestTrashRestoreCascadeTrashedErrors(t *testing.T) {
 	fx := newTrashTestFixture(t, m)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(fx.seriesID)
+		return tx.Trash(kind.Series{}, fx.seriesID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1305,10 +1306,10 @@ func TestTrashRestoreEpisodePullsUpTrashedSeries(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(epID); err != nil {
+		if err := tx.Trash(kind.Episode{}, epID); err != nil {
 			return err
 		}
-		return tx.Trash(srID)
+		return tx.Trash(kind.Series{}, srID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1383,7 +1384,7 @@ func TestTrashRoundTripMovie(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	}); err != nil {
 		t.Fatalf("trash: %v", err)
 	}
@@ -1437,7 +1438,7 @@ func TestTrashRoundTripMovieEdition(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(medExtra)
+		return tx.Trash(kind.MovieEdition{}, medExtra)
 	}); err != nil {
 		t.Fatalf("trash: %v", err)
 	}
@@ -1466,7 +1467,7 @@ func TestTrashRoundTripSeriesEdition(t *testing.T) {
 	srID, sedDefault, sedExtra, snID, epID, vidID := createSeriesRow(t, m, "rt-sed", "rt sed")
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(sedExtra)
+		return tx.Trash(kind.SeriesEdition{}, sedExtra)
 	}); err != nil {
 		t.Fatalf("trash: %v", err)
 	}
@@ -1587,7 +1588,7 @@ func TestTrashRoundTripSeason(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(snA)
+		return tx.Trash(kind.Season{}, snA)
 	}); err != nil {
 		t.Fatalf("trash season A: %v", err)
 	}
@@ -1617,7 +1618,7 @@ func TestTrashRoundTripEpisode(t *testing.T) {
 	_, _, _, _, epID, vidID := createSeriesRow(t, m, "rt-ep", "rt ep")
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(epID)
+		return tx.Trash(kind.Episode{}, epID)
 	}); err != nil {
 		t.Fatalf("trash: %v", err)
 	}
@@ -1659,7 +1660,7 @@ func TestTrashRoundTripVideoShared(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(vidID)
+		return tx.Trash(kind.Video{}, vidID)
 	}); err != nil {
 		t.Fatalf("trash: %v", err)
 	}
@@ -1718,7 +1719,7 @@ func TestTrashRoundTripCollection(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(colID)
+		return tx.Trash(kind.Collection{}, colID)
 	}); err != nil {
 		t.Fatalf("trash: %v", err)
 	}
@@ -1775,10 +1776,10 @@ func TestTrashRestoreMEdPullsUpMovie(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(medExtra); err != nil {
+		if err := tx.Trash(kind.MovieEdition{}, medExtra); err != nil {
 			return err
 		}
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1802,10 +1803,10 @@ func TestTrashRestoreSEdPullsUpSeries(t *testing.T) {
 	srID, sedDefault, sedExtra, _, _, _ := createSeriesRow(t, m, "pull-up-sr", "Pull Up Sr")
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(sedExtra); err != nil {
+		if err := tx.Trash(kind.SeriesEdition{}, sedExtra); err != nil {
 			return err
 		}
-		return tx.Trash(srID)
+		return tx.Trash(kind.Series{}, srID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1827,10 +1828,10 @@ func TestTrashRestoreSeasonPullsUpSEd(t *testing.T) {
 	_, _, sedExtra, snID, _, _ := createSeriesRow(t, m, "pull-up-sn", "Pull Up Sn")
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(snID); err != nil {
+		if err := tx.Trash(kind.Season{}, snID); err != nil {
 			return err
 		}
-		return tx.Trash(sedExtra)
+		return tx.Trash(kind.SeriesEdition{}, sedExtra)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1854,10 +1855,10 @@ func TestTrashRestoreEpisodePullsUpSeason(t *testing.T) {
 	_, _, _, snID, epID, _ := createSeriesRow(t, m, "pull-up-ep", "Pull Up Ep")
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(epID); err != nil {
+		if err := tx.Trash(kind.Episode{}, epID); err != nil {
 			return err
 		}
-		return tx.Trash(snID)
+		return tx.Trash(kind.Season{}, snID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1920,10 +1921,10 @@ func TestTrashRestoreVideoPullsUpMEd(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(vidID); err != nil {
+		if err := tx.Trash(kind.Video{}, vidID); err != nil {
 			return err
 		}
-		return tx.Trash(medExtra)
+		return tx.Trash(kind.MovieEdition{}, medExtra)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1946,10 +1947,10 @@ func TestTrashRestoreVideoPullsUpEpisode(t *testing.T) {
 	_, _, _, _, epID, vidID := createSeriesRow(t, m, "pull-up-vid-ep", "PullVidEp")
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(vidID); err != nil {
+		if err := tx.Trash(kind.Video{}, vidID); err != nil {
 			return err
 		}
-		return tx.Trash(epID)
+		return tx.Trash(kind.Episode{}, epID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1972,9 +1973,17 @@ func TestTrashRestoreEpisodeMultiHop(t *testing.T) {
 	srID, _, sedExtra, snID, epID, vidID := createSeriesRow(t, m, "pull-up-chain", "Chain")
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		for _, id := range []string{epID, snID, sedExtra, srID} {
-			if err := tx.Trash(id); err != nil {
-				return fmt.Errorf("trash %s: %w", id, err)
+		for _, target := range []struct {
+			k  kind.Trash
+			id string
+		}{
+			{kind.Episode{}, epID},
+			{kind.Season{}, snID},
+			{kind.SeriesEdition{}, sedExtra},
+			{kind.Series{}, srID},
+		} {
+			if err := tx.Trash(target.k, target.id); err != nil {
+				return fmt.Errorf("trash %s: %w", target.id, err)
 			}
 		}
 		return nil
@@ -2011,10 +2020,10 @@ func TestTrashRestoreMovieInTrashedCollection(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(movieID); err != nil {
+		if err := tx.Trash(kind.Movie{}, movieID); err != nil {
 			return err
 		}
-		return tx.Trash(colID)
+		return tx.Trash(kind.Collection{}, colID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2037,10 +2046,10 @@ func TestTrashRestoreSiblingsMovie(t *testing.T) {
 	mB, _ := createMovieRow(t, m, "sibling-b", nil)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(mA); err != nil {
+		if err := tx.Trash(kind.Movie{}, mA); err != nil {
 			return err
 		}
-		return tx.Trash(mB)
+		return tx.Trash(kind.Movie{}, mB)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2113,10 +2122,10 @@ func TestTrashRestoreSiblingsEpisode(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(ep1); err != nil {
+		if err := tx.Trash(kind.Episode{}, ep1); err != nil {
 			return err
 		}
-		return tx.Trash(ep2)
+		return tx.Trash(kind.Episode{}, ep2)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2169,10 +2178,10 @@ func TestTrashRestoreSiblingsCollectionMovies(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(mA); err != nil {
+		if err := tx.Trash(kind.Movie{}, mA); err != nil {
 			return err
 		}
-		return tx.Trash(mB)
+		return tx.Trash(kind.Movie{}, mB)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2198,7 +2207,7 @@ func TestTrashRestoreJunctionSharedEpisodeEditionTrash(t *testing.T) {
 	fx := newTrashTestFixture(t, m)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(fx.edition1)
+		return tx.Trash(kind.SeriesEdition{}, fx.edition1)
 	}); err != nil {
 		t.Fatalf("trash edition 1: %v", err)
 	}
@@ -2271,7 +2280,7 @@ func TestTrashRestoreJunctionSharedVideoMEdTrash(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(med1)
+		return tx.Trash(kind.MovieEdition{}, med1)
 	}); err != nil {
 		t.Fatalf("trash med1: %v", err)
 	}
@@ -2319,13 +2328,13 @@ func TestTrashRestoreJunctionOtherSideStillTrashed(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(srID)
+		return tx.Trash(kind.Series{}, srID)
 	}); err != nil {
 		t.Fatalf("trash series: %v", err)
 	}
 	assertLive(t, m, vidID)
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	}); err != nil {
 		t.Fatalf("trash movie: %v", err)
 	}
@@ -2368,10 +2377,10 @@ func TestTrashRestoreJunctionDanglingAutoRestore(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(srID); err != nil {
+		if err := tx.Trash(kind.Series{}, srID); err != nil {
 			return err
 		}
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2462,14 +2471,14 @@ func TestTrashOrphanReapAcrossSeries(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(sr1)
+		return tx.Trash(kind.Series{}, sr1)
 	}); err != nil {
 		t.Fatalf("trash sr1: %v", err)
 	}
 	assertLive(t, m, epID)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(sr2)
+		return tx.Trash(kind.Series{}, sr2)
 	}); err != nil {
 		t.Fatalf("trash sr2: %v", err)
 	}
@@ -2493,7 +2502,7 @@ func TestTrashCascadeReapsAndRestoresOrphan(t *testing.T) {
 	srID, _, _, _, epID, _ := createSeriesRow(t, m, "cascade-orphan-ev", "Cascade Orphan")
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(srID)
+		return tx.Trash(kind.Series{}, srID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2556,14 +2565,14 @@ func TestTrashVideoAcrossTwoMEds(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(med2)
+		return tx.Trash(kind.MovieEdition{}, med2)
 	}); err != nil {
 		t.Fatalf("trash med2: %v", err)
 	}
 	assertLive(t, m, vidID)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(med1)
+		return tx.Trash(kind.MovieEdition{}, med1)
 	}); err != nil {
 		t.Fatalf("trash med1: %v", err)
 	}
@@ -2658,7 +2667,7 @@ func TestTrashVideoAcrossTwoSeasons(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(sn1)
+		return tx.Trash(kind.Season{}, sn1)
 	}); err != nil {
 		t.Fatalf("trash sn1: %v", err)
 	}
@@ -2676,7 +2685,7 @@ func TestTrashSeriesSlugReuse(t *testing.T) {
 
 	sr1, _, _, _, _, _ := createSeriesRow(t, m, "foo", "Foo")
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(sr1)
+		return tx.Trash(kind.Series{}, sr1)
 	}); err != nil {
 		t.Fatalf("trash sr1: %v", err)
 	}
@@ -2708,7 +2717,7 @@ func TestTrashCollectionSlugReuse(t *testing.T) {
 
 	c1 := createCollectionRow(t, m, "foo", "Foo")
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(c1)
+		return tx.Trash(kind.Collection{}, c1)
 	}); err != nil {
 		t.Fatalf("trash c1: %v", err)
 	}
@@ -2741,7 +2750,7 @@ func TestTrashSlugGetAfterTrash(t *testing.T) {
 
 	mID, _ := createMovieRow(t, m, "gone", nil)
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(mID)
+		return tx.Trash(kind.Movie{}, mID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2766,7 +2775,7 @@ func TestTrashSlugCollisionOnRestoreSeries(t *testing.T) {
 
 	srA, _, _, _, _, _ := createSeriesRow(t, m, "breaking-bad", "Breaking Bad")
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(srA)
+		return tx.Trash(kind.Series{}, srA)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2807,7 +2816,7 @@ func TestTrashSlugCollisionOnRestoreCollection(t *testing.T) {
 
 	cA := createCollectionRow(t, m, "classics", "Classics")
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(cA)
+		return tx.Trash(kind.Collection{}, cA)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2880,7 +2889,7 @@ func TestTrashDefaultSeriesEditionPromotesSuccessor(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(ed1)
+		return tx.Trash(kind.SeriesEdition{}, ed1)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -2906,7 +2915,7 @@ func TestTrashDefaultMovieEditionSole(t *testing.T) {
 
 	_, medID := createMovieRow(t, m, "sole-med", nil)
 	err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(medID)
+		return tx.Trash(kind.MovieEdition{}, medID)
 	})
 
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -2941,7 +2950,7 @@ func TestTrashDefaultSeriesEditionSole(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(sedID)
+		return tx.Trash(kind.SeriesEdition{}, sedID)
 	})
 
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -2997,7 +3006,7 @@ func TestTrashDefaultSeriesEditionPromotesLexSmallest(t *testing.T) {
 	// smaller flurry ID regardless of the label. The default
 	// successor query orders by ID, so edZZZ wins.
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(edDefault)
+		return tx.Trash(kind.SeriesEdition{}, edDefault)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -3040,7 +3049,7 @@ func TestPurgeByKind(t *testing.T) {
 			t.Fatal(err)
 		}
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(movieID)
+			return tx.Trash(kind.Movie{}, movieID)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3093,7 +3102,7 @@ func TestPurgeByKind(t *testing.T) {
 			t.Fatal(err)
 		}
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(medExtra)
+			return tx.Trash(kind.MovieEdition{}, medExtra)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3118,7 +3127,7 @@ func TestPurgeByKind(t *testing.T) {
 		m := newTestModel(t)
 		srID, _, sedExtra, snID, epID, vidID := createSeriesRow(t, m, "p-sed", "PSed")
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(sedExtra)
+			return tx.Trash(kind.SeriesEdition{}, sedExtra)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3149,7 +3158,7 @@ func TestPurgeByKind(t *testing.T) {
 		m := newTestModel(t)
 		_, _, sedExtra, snID, epID, vidID := createSeriesRow(t, m, "p-season", "PSeason")
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(snID)
+			return tx.Trash(kind.Season{}, snID)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3177,7 +3186,7 @@ func TestPurgeByKind(t *testing.T) {
 		m := newTestModel(t)
 		_, _, _, snID, epID, vidID := createSeriesRow(t, m, "p-ep", "PEp")
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(epID)
+			return tx.Trash(kind.Episode{}, epID)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3211,7 +3220,7 @@ func TestPurgeByKind(t *testing.T) {
 			t.Fatal(err)
 		}
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(colID)
+			return tx.Trash(kind.Collection{}, colID)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3240,7 +3249,7 @@ func TestPurgeRemovesTrashedMovie(t *testing.T) {
 
 	movieID, _ := createMovieRow(t, m, "purge-ev", nil)
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -3263,7 +3272,7 @@ func TestPurgeOnCascadeTrashed(t *testing.T) {
 
 	srID, _, _, _, epID, _ := createSeriesRow(t, m, "purge-cascade", "PCascade")
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(srID)
+		return tx.Trash(kind.Series{}, srID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -3313,10 +3322,10 @@ func TestPurgeSiblingSEd(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		if err := tx.Trash(sed1); err != nil {
+		if err := tx.Trash(kind.SeriesEdition{}, sed1); err != nil {
 			return err
 		}
-		return tx.Trash(sed2)
+		return tx.Trash(kind.SeriesEdition{}, sed2)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -3349,7 +3358,7 @@ func TestTrashPurgeLoopAgedTrashPurged(t *testing.T) {
 
 		vidID := createVideoRow(t, m, "aged.mkv", "", nil)
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(vidID)
+			return tx.Trash(kind.Video{}, vidID)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3373,7 +3382,7 @@ func TestTrashPurgeLoopRecentTrashSkipped(t *testing.T) {
 
 		vidID := createVideoRow(t, m, "fresh.mkv", "", nil)
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(vidID)
+			return tx.Trash(kind.Video{}, vidID)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3398,7 +3407,7 @@ func TestTrashPurgeLoopMixedAges(t *testing.T) {
 
 		vidOld := createVideoRow(t, m, "old.mkv", "", nil)
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(vidOld)
+			return tx.Trash(kind.Video{}, vidOld)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3406,7 +3415,7 @@ func TestTrashPurgeLoopMixedAges(t *testing.T) {
 		time.Sleep(trashRetention + 2*time.Hour)
 		vidNew := createVideoRow(t, m, "new.mkv", "", nil)
 		if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-			return tx.Trash(vidNew)
+			return tx.Trash(kind.Video{}, vidNew)
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -3480,7 +3489,7 @@ func TestTrashSortKeyBumpCollision(t *testing.T) {
 
 	// Trash middle episode (SortKey 2).
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(epIDs[1])
+		return tx.Trash(kind.Episode{}, epIDs[1])
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -3602,7 +3611,7 @@ func TestTrashCascadeCoversAllDescendants(t *testing.T) {
 	}
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(srID)
+		return tx.Trash(kind.Series{}, srID)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -3640,7 +3649,7 @@ func TestTrashBlobsRemovedByPurge(t *testing.T) {
 	vidID := createVideoRow(t, m, "p-cas.mkv", origKey, []string{rendKey})
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(vidID)
+		return tx.Trash(kind.Video{}, vidID)
 	}); err != nil {
 		t.Fatal(err)
 	}

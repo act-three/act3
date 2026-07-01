@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 )
 
 // attachEpisodeVideo links videoID to episodeID via EpisodeVideoCreate.
@@ -246,7 +247,7 @@ func TestActiveVideoLockedAgainstTrash(t *testing.T) {
 	makeVideoPlayable(t, m, v2)
 
 	err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(v1)
+		return tx.Trash(kind.Video{}, v1)
 	})
 
 	if !errors.Is(err, ErrActiveVideoLocked) {
@@ -266,7 +267,7 @@ func TestActiveVideoSoleAllowsTrash(t *testing.T) {
 	makeVideoPlayable(t, m, v1)
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(v1)
+		return tx.Trash(kind.Video{}, v1)
 	}); err != nil {
 		t.Fatalf("Trash sole active: %v", err)
 	}
@@ -288,7 +289,7 @@ func TestActiveVideoNonActiveTrashAllowed(t *testing.T) {
 	// v1 became playable first → Active; v2 → not Active.
 
 	if err := m.WithTxRW(ctx, func(tx *TxRW) error {
-		return tx.Trash(v2)
+		return tx.Trash(kind.Video{}, v2)
 	}); err != nil {
 		t.Fatalf("trash non-active: %v", err)
 	}

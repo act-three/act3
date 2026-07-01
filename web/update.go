@@ -170,8 +170,8 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 
 	case *msg.Trash:
 		return a.doNav(ctx, func(tx *model.TxRW) (string, error) {
-			dest := trashRedirectTarget(tx, m.ID)
-			return dest, tx.Trash(m.ID)
+			dest := trashRedirectTarget(tx, m.Kind, m.ID)
+			return dest, tx.Trash(m.Kind, m.ID)
 		})
 	case *msg.Restore:
 		a.doRW(ctx, func(tx *model.TxRW) error { return tx.Restore(m.ID) })

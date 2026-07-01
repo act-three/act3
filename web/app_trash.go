@@ -10,8 +10,8 @@ import (
 // runs before tx.Trash so parent lookups see the live rows. Editions
 // redirect to their parent movie/series root, which re-routes to the
 // newly-promoted default edition.
-func trashRedirectTarget(tx *model.TxRW, id string) string {
-	switch model.KindOf(id).(type) {
+func trashRedirectTarget(tx *model.TxRW, k kind.Trash, id string) string {
+	switch k.(type) {
 	case kind.Movie:
 		return "/app/movies"
 	case kind.Series:

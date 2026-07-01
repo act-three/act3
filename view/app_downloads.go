@@ -252,7 +252,7 @@ func appDownloadsDetail(dl *model.Download) domi.Node {
 							SettingsItemLabelTitle("Delete"),
 							SettingsItemLabelDescription("Deleted torrents remain in Transmission"),
 						),
-						trashForm(dl.InfoHash()),
+						trashForm(kind.Download{}, dl.InfoHash()),
 					),
 				),
 			),
