@@ -7,6 +7,7 @@ import (
 
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 )
 
 // slugResolveFixture builds one of each addressable work, with both a
@@ -35,7 +36,7 @@ func newSlugResolveFixture(t *testing.T, m *Model) slugResolveFixture {
 		if _, err := tx.q.MovieCreate(schema.MovieCreateParams{ID: moID, Slug: "star-wars"}); err != nil {
 			return err
 		}
-		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "star-wars", Kind: "movie", Target: moID}); err != nil {
+		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "star-wars", Kind: kind.Movie{}.String(), Target: moID}); err != nil {
 			return err
 		}
 		fx.movieID = moID
@@ -56,7 +57,7 @@ func newSlugResolveFixture(t *testing.T, m *Model) slugResolveFixture {
 		}); err != nil {
 			return err
 		}
-		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "star-trek-voyager", Kind: "series", Target: srID}); err != nil {
+		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "star-trek-voyager", Kind: kind.Series{}.String(), Target: srID}); err != nil {
 			return err
 		}
 		fx.seriesID = srID
@@ -94,7 +95,7 @@ func newSlugResolveFixture(t *testing.T, m *Model) slugResolveFixture {
 		if err != nil {
 			return err
 		}
-		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "phase-three", Kind: "collection", Target: col.ID}); err != nil {
+		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "phase-three", Kind: kind.Collection{}.String(), Target: col.ID}); err != nil {
 			return err
 		}
 		fx.collectionID = col.ID

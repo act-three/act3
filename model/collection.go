@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/xstrings"
 )
 
@@ -273,7 +274,7 @@ func (tx *TxRW) CollectionCreate(title string) (*CollectionHead, error) {
 	}
 	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
 		Slug:   slug,
-		Kind:   "collection",
+		Kind:   kind.Collection{}.String(),
 		Target: colData.ID,
 	})
 
@@ -372,7 +373,7 @@ func (tx *TxRW) collectionEnsureSlug(id string) error {
 	}
 	if col.DeletedAt != nil || slug != col.Slug {
 		return tx.q.SlugUpsert(schema.SlugUpsertParams{
-			Slug: slug, Kind: "collection", Target: id,
+			Slug: slug, Kind: kind.Collection{}.String(), Target: id,
 		})
 
 	}

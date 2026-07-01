@@ -107,6 +107,35 @@ func TestTrashKindBackfill(t *testing.T) {
 	}
 }
 
+// TestSlugKindRename covers update 002's Slug rebuild: stored
+// lowercase kinds become table names.
+func TestSlugKindRename(t *testing.T) {
+	path := seedAt001(t, []string{
+		`INSERT INTO Slug (Slug, Kind, Target) VALUES
+			('mov-a', 'movie', 'movA'),
+			('sr-a', 'series', 'srA'),
+			('col-a', 'collection', 'colA')`,
+	})
+
+	dbr, dbw, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer dbw.Close()
+	defer dbr.Close()
+
+	want := map[string]string{"mov-a": "Movie", "sr-a": "Series", "col-a": "Collection"}
+	for slug, kind := range want {
+		var got string
+		if err := dbr.QueryRow(`SELECT Kind FROM Slug WHERE Slug = ?`, slug).Scan(&got); err != nil {
+			t.Fatal(err)
+		}
+		if got != kind {
+			t.Errorf("Slug[%s].Kind = %q, want %q", slug, got, kind)
+		}
+	}
+}
+
 // A trash row whose ID matches no entity table has no kind; the
 // backfill must fail loudly rather than invent one.
 func TestTrashKindBackfillUnmatched(t *testing.T) {
