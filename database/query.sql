@@ -1311,7 +1311,7 @@ DELETE FROM Trash WHERE ID = ?;
 SELECT * FROM Trash WHERE ID = ?;
 
 -- name: TrashInsert :exec
-INSERT INTO Trash (ID, Title, Subtitle, DeletedAt, CascadeOf) VALUES (?, ?, ?, ?, ?);
+INSERT INTO Trash (ID, Kind, Title, Subtitle, DeletedAt, CascadeOf) VALUES (?, ?, ?, ?, ?, ?);
 
 -- name: TrashList :many
 SELECT * FROM Trash WHERE CascadeOf IS NULL ORDER BY DeletedAt DESC;
