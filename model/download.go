@@ -834,7 +834,7 @@ func (m *Model) autoTrashDownloadsOnce(ctx context.Context) error {
 			return err
 		}
 		for _, ih := range infoHashes {
-			if err := tx.Trash(ih); err != nil && !errors.Is(err, ErrAlreadyTrashed) {
+			if err := tx.Trash(kind.Download{}, ih); err != nil && !errors.Is(err, ErrAlreadyTrashed) {
 				return err
 			}
 		}

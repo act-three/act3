@@ -3,11 +3,9 @@ package model
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"kr.dev/errorfmt"
@@ -175,7 +173,7 @@ func (tx *TxRW) computeTrashTitle(id string, k kind.Trash) (title, subtitle stri
 // Trash soft-deletes the item and cascades the trash down its owned
 // sub-tree, orphan-reaping shared Episode/Video rows that lose their
 // last live reference.
-func (tx *TxRW) Trash(id string) (err error) {
+func (tx *TxRW) Trash(k kind.Trash, id string) (err error) {
 	defer errorfmt.Handlef("trash %s: %w", id, &err)
 
 	state, err := tx.trashState(id)
@@ -187,7 +185,7 @@ func (tx *TxRW) Trash(id string) (err error) {
 	}
 
 	now := time.Now()
-	switch KindOf(id).(type) {
+	switch k.(type) {
 	case nil:
 		return fmt.Errorf("no trashable kind for ID %q", id)
 	case kind.Movie:
@@ -886,35 +884,4 @@ func (m *Model) purgeTrashLoop() {
 			slog.Error("trash purge", "error", err)
 		}
 	}
-}
-
-// KindOf returns the kind implied by a flurry ID prefix,
-// or nil if the ID doesn't match a known prefix.
-func KindOf(id string) kind.Trash {
-	switch {
-	case strings.HasPrefix(id, "med"):
-		return kind.MovieEdition{}
-	case strings.HasPrefix(id, "mo"):
-		return kind.Movie{}
-	case strings.HasPrefix(id, "sed"):
-		return kind.SeriesEdition{}
-	case strings.HasPrefix(id, "sn"):
-		return kind.Season{}
-	case strings.HasPrefix(id, "sr"):
-		return kind.Series{}
-	case strings.HasPrefix(id, "ep"):
-		return kind.Episode{}
-	case strings.HasPrefix(id, "vid"):
-		return kind.Video{}
-	case strings.HasPrefix(id, "col"):
-		return kind.Collection{}
-	}
-	// Downloads have no flurry prefix; their ID is a 40-char hex SHA-1
-	// info hash, which can't collide with any of the prefixes above.
-	if len(id) == 40 {
-		if _, err := hex.DecodeString(id); err == nil {
-			return kind.Download{}
-		}
-	}
-	return nil
 }

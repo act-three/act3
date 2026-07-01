@@ -141,7 +141,10 @@ type (
 	TaskKill   struct{ ID string }
 	TaskDelete struct{ ID string }
 
-	Trash   struct{ ID string }
+	Trash struct {
+		Kind kind.Trash
+		ID   string
+	}
 	Restore struct{ ID string }
 	Purge   struct{ ID string }
 

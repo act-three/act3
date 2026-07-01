@@ -7,6 +7,7 @@ import (
 
 	"ily.dev/act3/database"
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/msg"
 	"ily.dev/act3/storage"
 )
@@ -84,7 +85,7 @@ func TestReplaceURLIgnoresStaleDescriptor(t *testing.T) {
 
 	a := newTestApp(t, m, moviePath)
 	if err := m.WithTxRW(ctx, func(tx *model.TxRW) error {
-		return tx.Trash(movieID)
+		return tx.Trash(kind.Movie{}, movieID)
 	}); err != nil {
 		t.Fatal(err)
 	}

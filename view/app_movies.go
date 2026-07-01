@@ -229,10 +229,10 @@ func appMoviesDetail(
 
 						expr.IfElse(len(editions) > 1,
 							func() domi.Node {
-								return trashForm(med.ID())
+								return trashForm(kind.MovieEdition{}, med.ID())
 							},
 							func() domi.Node {
-								return trashForm(mo.ID())
+								return trashForm(kind.Movie{}, mo.ID())
 							},
 						),
 					),
@@ -415,7 +415,7 @@ func appMoviesDetailVideos(med *model.MovieEdition) domi.Node {
 						},
 						func() domi.Node { return Group() },
 					),
-					trashForm(v.ID()),
+					trashForm(kind.Video{}, v.ID()),
 				),
 			)
 		}),
