@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 )
 
 func (c *Config) doTorrentAdd(w http.ResponseWriter, req *http.Request) (node, error) {
@@ -14,22 +15,21 @@ func (c *Config) doTorrentAdd(w http.ResponseWriter, req *http.Request) (node, e
 			return nil, err
 		}
 
-		// Plan for either a series edition or a movie edition,
-		// depending on which hidden field is present.
-		var sedID, medID *string
-		if v := req.FormValue("sed-id"); v != "" {
-			sedID = &v
-		} else if v := req.FormValue("med-id"); v != "" {
-			medID = &v
-		}
-		dl, err := tx.DownloadCreate(file, sedID, medID)
+		k, err := kind.ParseTorrentTarget(req.FormValue("kind"))
 		if err != nil {
 			return nil, err
 		}
-		if sedID != nil {
-			_, err = tx.DownloadCreatePlanSeries(dl.InfoHash(), *sedID)
-		} else if medID != nil {
-			_, err = tx.DownloadCreatePlanMovie(dl.InfoHash(), *medID)
+		id := req.FormValue("id")
+		dl, err := tx.DownloadCreate(file, k, id)
+		if err != nil {
+			return nil, err
+		}
+		// Plan for the targeted edition.
+		switch k.(type) {
+		case kind.SeriesEdition:
+			_, err = tx.DownloadCreatePlanSeries(dl.InfoHash(), id)
+		case kind.MovieEdition:
+			_, err = tx.DownloadCreatePlanMovie(dl.InfoHash(), id)
 		}
 		if err != nil {
 			return nil, err

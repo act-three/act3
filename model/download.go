@@ -23,6 +23,7 @@ import (
 
 	"ily.dev/act3/database/schema"
 	"ily.dev/act3/log/logcontext"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/model/plan"
 	"ily.dev/act3/tlog"
 )
@@ -515,8 +516,15 @@ func torrentDone(t *transmissionrpc.Torrent) map[string]bool {
 	return done
 }
 
-func (tx *TxRW) DownloadCreate(torrent io.Reader, sedID, medID *string) (d *Download, err error) {
+func (tx *TxRW) DownloadCreate(torrent io.Reader, target kind.TorrentTarget, id string) (d *Download, err error) {
 	defer errorfmt.Handlef("CreateDownload: %w", &err)
+	var sedID, medID *string
+	switch target.(type) {
+	case kind.SeriesEdition:
+		sedID = &id
+	case kind.MovieEdition:
+		medID = &id
+	}
 	b, err := io.ReadAll(torrent)
 	if err != nil {
 		return nil, err
