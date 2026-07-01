@@ -5,9 +5,11 @@
 package kind
 
 type (
+	Episode       struct{}
 	MovieEdition  struct{}
 	SeriesEdition struct{}
 )
 
+func (Episode) String() string       { return "Episode" }
 func (MovieEdition) String() string  { return "MovieEdition" }
 func (SeriesEdition) String() string { return "SeriesEdition" }

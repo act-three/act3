@@ -192,7 +192,7 @@ func appMoviesDetail(
 						SettingsItemLabel()(
 							SettingsItemLabelTitle("Upload"),
 						),
-						uploadVideoControl("med-id", med.ID(), uploads),
+						uploadVideoControl(kind.MovieEdition{}, med.ID(), uploads),
 					),
 				),
 

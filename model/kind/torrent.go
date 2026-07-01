@@ -15,8 +15,7 @@ func (SeriesEdition) torrentTarget() {}
 
 var torrentTargets = []TorrentTarget{MovieEdition{}, SeriesEdition{}}
 
-// ParseTorrentTarget returns the TorrentTarget named by s,
-// or an error if s names none.
+// ParseTorrentTarget returns the TorrentTarget named by s.
 func ParseTorrentTarget(s string) (TorrentTarget, error) {
 	for _, k := range torrentTargets {
 		if k.String() == s {
