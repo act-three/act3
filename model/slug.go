@@ -4,6 +4,7 @@ import (
 	"path"
 
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 )
 
 // KindMovieEdition etc discriminate object pages.
@@ -31,8 +32,12 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 	if err != nil {
 		return nil
 	}
-	switch s.Kind {
-	case "movie":
+	k, err := kind.ParseSlugOwner(s.Kind)
+	if err != nil {
+		return nil
+	}
+	switch k.(type) {
+	case kind.Movie:
 		if len(path) > 2 {
 			return nil
 		}
@@ -45,15 +50,15 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 			"med":  med.ID(),
 			"mo":   med.MovieHead().ID(),
 		}
-	case "series":
+	case kind.Series:
 		return tx.resolveSeries(slug, path[1:])
-	case "collection":
-		var kind string
+	case kind.Collection:
+		var pageKind string
 		switch {
 		case len(path) == 1:
-			kind = KindCollectionOverview
+			pageKind = KindCollectionOverview
 		case len(path) == 2 && path[1] == "playlist":
-			kind = KindCollectionPlaylist
+			pageKind = KindCollectionPlaylist
 		default:
 			return nil
 		}
@@ -61,7 +66,7 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 		if !ok {
 			return nil
 		}
-		return map[string]string{"kind": kind, "col": col.ID()}
+		return map[string]string{"kind": pageKind, "col": col.ID()}
 	}
 	return nil
 }
@@ -83,7 +88,7 @@ func (tx *TxR) SlugPath(odesc map[string]string) string {
 		if !ok || med.DeletedAt != nil || med.MovieID != odesc["mo"] {
 			return ""
 		}
-		slug := tx.slugForTarget("movie", med.MovieID)
+		slug := tx.slugForTarget(kind.Movie{}, med.MovieID)
 		if slug == "" {
 			return ""
 		}
@@ -93,7 +98,7 @@ func (tx *TxR) SlugPath(odesc map[string]string) string {
 		if !ok || sed.DeletedAt != nil || sed.SeriesID != odesc["sr"] {
 			return ""
 		}
-		slug := tx.slugForTarget("series", sed.SeriesID)
+		slug := tx.slugForTarget(kind.Series{}, sed.SeriesID)
 		if slug == "" {
 			return ""
 		}
@@ -110,19 +115,19 @@ func (tx *TxR) SlugPath(odesc map[string]string) string {
 		if !ok || snep.EditionID != sed.ID {
 			return ""
 		}
-		slug := tx.slugForTarget("series", sed.SeriesID)
+		slug := tx.slugForTarget(kind.Series{}, sed.SeriesID)
 		if slug == "" {
 			return ""
 		}
 		return path.Join("/", slug, sed.Slug, snep.Slug)
 	case KindCollectionOverview:
-		slug := tx.slugForTarget("collection", odesc["col"])
+		slug := tx.slugForTarget(kind.Collection{}, odesc["col"])
 		if slug == "" {
 			return ""
 		}
 		return path.Join("/", slug)
 	case KindCollectionPlaylist:
-		slug := tx.slugForTarget("collection", odesc["col"])
+		slug := tx.slugForTarget(kind.Collection{}, odesc["col"])
 		if slug == "" {
 			return ""
 		}
@@ -131,9 +136,9 @@ func (tx *TxR) SlugPath(odesc map[string]string) string {
 	return ""
 }
 
-func (tx *TxR) slugForTarget(kind, target string) string {
+func (tx *TxR) slugForTarget(k kind.SlugOwner, target string) string {
 	s, ok := txfind1(tx.q.SlugGetByTarget(target))
-	if !ok || s.Kind != kind {
+	if !ok || s.Kind != k.String() {
 		return ""
 	}
 	return s.Slug

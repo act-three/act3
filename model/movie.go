@@ -10,6 +10,7 @@ import (
 
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/priority"
 	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/xstrings"
@@ -186,7 +187,7 @@ func (tx *TxRW) MovieCreate(title, releaseDate string) (*MovieWork, error) {
 	}
 	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
 		Slug:   slug,
-		Kind:   "movie",
+		Kind:   kind.Movie{}.String(),
 		Target: moID,
 	})
 
@@ -228,7 +229,7 @@ func (tx *TxRW) movieCreateByTMDBID(movie *tmdb.Movie) (*MovieWork, error) {
 	}
 	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
 		Slug:   slug,
-		Kind:   "movie",
+		Kind:   kind.Movie{}.String(),
 		Target: moID,
 	})
 
@@ -347,7 +348,7 @@ func (tx *TxRW) movieEnsureSlug(id string) error {
 	}
 	if mo.DeletedAt != nil || slug != mo.Slug {
 		return tx.q.SlugUpsert(schema.SlugUpsertParams{
-			Slug: slug, Kind: "movie", Target: id,
+			Slug: slug, Kind: kind.Movie{}.String(), Target: id,
 		})
 
 	}

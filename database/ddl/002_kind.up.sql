@@ -1,5 +1,7 @@
--- record each trashed entity's kind (its table name) on its Trash row
+-- record object kinds as table names on Trash and Slug rows
 PRAGMA defer_foreign_keys = ON;
+
+-- Trash gains a Kind column naming the trashed entity's table.
 CREATE TABLE TrashNew
 (
 	ID        TEXT PRIMARY KEY,
@@ -35,3 +37,24 @@ DROP TABLE Trash;
 ALTER TABLE TrashNew RENAME TO Trash;
 CREATE INDEX Idx_Trash_DirectDeletedAt ON Trash (DeletedAt DESC) WHERE CascadeOf IS NULL;
 CREATE INDEX Idx_Trash_CascadeOf       ON Trash (CascadeOf)     WHERE CascadeOf IS NOT NULL;
+
+-- Slug.Kind moves from ad-hoc lowercase names to the same table-name
+-- vocabulary. An unknown stored kind leaves NULL and fails the update.
+CREATE TABLE SlugNew
+(
+	Slug   TEXT PRIMARY KEY,
+	Kind   TEXT NOT NULL CHECK (Kind IN ('Collection', 'Movie', 'Series')),
+	Target TEXT NOT NULL UNIQUE
+)
+STRICT;
+INSERT INTO SlugNew (Slug, Kind, Target)
+SELECT Slug,
+	CASE Kind
+	WHEN 'collection' THEN 'Collection'
+	WHEN 'movie'      THEN 'Movie'
+	WHEN 'series'     THEN 'Series'
+	END,
+	Target
+FROM Slug;
+DROP TABLE Slug;
+ALTER TABLE SlugNew RENAME TO Slug;

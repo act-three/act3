@@ -9,6 +9,7 @@ import (
 
 	"ily.dev/act3/database/flurry"
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/priority"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/xstrings"
@@ -173,7 +174,7 @@ func (tx *TxRW) seriesEnsureSlug(id string) error {
 	}
 	if sr.DeletedAt != nil || slug != sr.Slug {
 		return tx.q.SlugUpsert(schema.SlugUpsertParams{
-			Slug: slug, Kind: "series", Target: id,
+			Slug: slug, Kind: kind.Series{}.String(), Target: id,
 		})
 
 	}
@@ -270,7 +271,7 @@ func (tx *TxRW) seriesCreateByTVmazeID(show *tvmaze.Show) (*SeriesWork, error) {
 	}
 	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
 		Slug:   slug,
-		Kind:   "series",
+		Kind:   kind.Series{}.String(),
 		Target: srID,
 	})
 
