@@ -67,7 +67,9 @@ func (c *Config) doVideoUpload(w http.ResponseWriter, req *http.Request) (node, 
 			var s string
 			s, err = readField(part)
 			if err == nil {
-				k, err = kind.ParseVideoUpload(s)
+				if k, err = kind.ParseVideoUpload(s); err != nil {
+					err = &model.ValidationError{Op: "parse", Err: err}
+				}
 			}
 		case "id":
 			id, err = readField(part)
