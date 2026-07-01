@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/ui"
 	"ily.dev/act3/view"
 	"ily.dev/domi"
@@ -119,19 +120,19 @@ func viewDownloadFileAttach(tx *model.TxR, d *downloadFileAttachPopover) node {
 }
 
 // dialogImage returns the current image for the item the ID
-// identifies; kind selects how to resolve it.
-func dialogImage(tx *model.TxR, kind, id string) model.Image {
-	switch kind {
-	case "med-id":
+// identifies; k selects how to resolve it.
+func dialogImage(tx *model.TxR, k kind.ImageOwner, id string) model.Image {
+	switch k.(type) {
+	case kind.MovieEdition:
 		return tx.MovieEdition(id).Poster()
-	case "sed-id":
+	case kind.SeriesEdition:
 		return tx.SeriesEdition(id).Poster()
-	case "ep-id":
+	case kind.Episode:
 		return tx.EpisodeHead(id).Thumbnail()
-	case "col-id":
+	case kind.Collection:
 		return tx.CollectionHead(id).Banner()
 	}
-	panic(fmt.Sprintf("unknown image dialog kind %q", kind))
+	panic(fmt.Sprintf("unknown image dialog kind %v", k))
 }
 
 func viewHome(tx *model.TxR) (title string, n node) {

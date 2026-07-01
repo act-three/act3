@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 )
 
 //sumtype:decl
@@ -87,7 +88,7 @@ type (
 	// identifies: the poster of a movie or series edition, the
 	// thumbnail of an episode, or the banner of a collection.
 	ImageDialogOpen struct {
-		Kind string // upload form-field name (med-id, ep-id, etc)
+		Kind kind.ImageOwner
 		ID   string
 	}
 

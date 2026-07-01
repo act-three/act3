@@ -23,6 +23,7 @@ import (
 
 	"ily.dev/act3/assets"
 	"ily.dev/act3/database/schema"
+	"ily.dev/act3/model/kind"
 )
 
 // ImageKind selects the target aspect ratio and per-density physical
@@ -335,46 +336,46 @@ func (tx *TxRW) imageInsert(b imageBlobs) (originalID string, err error) {
 	return originalID, nil
 }
 
-// ImageUploadCreate stores an uploaded image and attaches it to the
-// named parent in one transaction, so a failed association can never
-// leave the Image row orphaned. Exactly one of medID, sedID, epID,
-// colID must be non-empty; the image kind is derived from which one.
+// ImageUploadCreate stores an uploaded image
+// and attaches it to its owner in one transaction,
+// so a failed association can never leave the Image row orphaned.
+// target is the movie edition, series edition, episode, or collection
+// the image belongs to; its ImageKind follows from the target.
 // Returns the new Image's ID.
 //
-// Decode failures are returned as ValidationError so the HTTP edge
-// can return 400.
-func (m *Model) ImageUploadCreate(ctx context.Context, r io.Reader, medID, sedID, epID, colID string) (id string, err error) {
+// Decode failures are returned as ValidationError,
+// so the HTTP edge can return 400.
+func (m *Model) ImageUploadCreate(ctx context.Context, r io.Reader, target kind.ImageOwner, ownerID string) (id string, err error) {
 	defer errorfmt.Handlef("ImageUploadCreate: %w", &err)
 
-	targets := slices.DeleteFunc([]string{medID, sedID, epID, colID}, func(s string) bool { return s == "" })
-	if len(targets) != 1 {
+	if target == nil || ownerID == "" {
 		return "", &ValidationError{
-			Op:  "params",
-			Err: fmt.Errorf("exactly one target med-id, sed-id, ep-id, or col-id required"),
+			Op:  "target",
+			Err: fmt.Errorf("missing target kind or id"),
 		}
 	}
 
-	var kind ImageKind
+	var k ImageKind
 	var attach func(tx *TxRW, imageID string) error
-	switch {
-	case medID != "":
-		kind = ImagePoster
-		attach = func(tx *TxRW, imageID string) error { return tx.MovieEditionPosterIDSet(medID, imageID) }
-	case sedID != "":
-		kind = ImagePoster
-		attach = func(tx *TxRW, imageID string) error { return tx.SeriesEditionPosterIDSet(sedID, imageID) }
-	case epID != "":
-		kind = ImageThumbnail
-		attach = func(tx *TxRW, imageID string) error { return tx.EpisodeThumbnailIDSet(epID, imageID) }
-	case colID != "":
-		kind = ImageBanner
-		attach = func(tx *TxRW, imageID string) error { return tx.CollectionBannerIDSet(colID, imageID) }
+	switch target.(type) {
+	case kind.MovieEdition:
+		k = ImagePoster
+		attach = func(tx *TxRW, imageID string) error { return tx.MovieEditionPosterIDSet(ownerID, imageID) }
+	case kind.SeriesEdition:
+		k = ImagePoster
+		attach = func(tx *TxRW, imageID string) error { return tx.SeriesEditionPosterIDSet(ownerID, imageID) }
+	case kind.Episode:
+		k = ImageThumbnail
+		attach = func(tx *TxRW, imageID string) error { return tx.EpisodeThumbnailIDSet(ownerID, imageID) }
+	case kind.Collection:
+		k = ImageBanner
+		attach = func(tx *TxRW, imageID string) error { return tx.CollectionBannerIDSet(ownerID, imageID) }
 	}
 
 	// Fetch, decode, encode, and copy blobs before opening any write
 	// transaction, then record the rows and bind the parent FK in one
 	// commit.
-	b, err := m.imageStore(r, kind)
+	b, err := m.imageStore(r, k)
 	if err != nil {
 		return "", err
 	}

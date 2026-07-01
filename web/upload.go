@@ -19,12 +19,11 @@ func (c *Config) doUpload(w http.ResponseWriter, req *http.Request) (node, error
 	}
 	defer file.Close()
 
-	medID := req.FormValue("med-id")
-	sedID := req.FormValue("sed-id")
-	epID := req.FormValue("ep-id")
-	colID := req.FormValue("col-id")
-
-	if _, err := c.Model.ImageUploadCreate(ctx, file, medID, sedID, epID, colID); err != nil {
+	k, err := kind.ParseImageOwner(req.FormValue("kind"))
+	if err != nil {
+		return nil, &model.ValidationError{Op: "parse", Err: err}
+	}
+	if _, err := c.Model.ImageUploadCreate(ctx, file, k, req.FormValue("id")); err != nil {
 		return nil, err
 	}
 	w.WriteHeader(http.StatusNoContent)

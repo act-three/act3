@@ -8,6 +8,7 @@ import (
 	"ily.dev/domi/html"
 
 	"ily.dev/act3/model"
+	"ily.dev/act3/model/kind"
 	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
 )
@@ -89,7 +90,7 @@ func appCollectionDetail(col *model.Collection) domi.Node {
 								SettingsItemLabelTitle("Banner"),
 							),
 							buttonImageEdit(
-								&msg.ImageDialogOpen{Kind: "col-id", ID: col.ID()},
+								&msg.ImageDialogOpen{Kind: kind.Collection{}, ID: col.ID()},
 								col.Banner(),
 								AspectBanner,
 							),
