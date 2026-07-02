@@ -22,6 +22,14 @@ const (
 // so could never name a stored blob.
 var ErrBadKey = errors.New("bad key")
 
+// A Dir stores blobs in a directory tree,
+// naming each blob with a random key.
+//
+// A key exists nowhere but in its blob's file name:
+// clients that want to find a blob again must record its key,
+// and are expected to do so promptly after creating the blob.
+// A blob whose key is recorded nowhere is garbage,
+// and [Dir.Sweep] removes such blobs once they are old enough.
 type Dir struct {
 	root *os.Root
 }
