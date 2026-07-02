@@ -5,7 +5,11 @@ import (
 	"encoding/base32"
 )
 
-var Encoding = base32.NewEncoding("0123456789ABCDEFGHJKMNPQRSTVWXYZ")
+// Alphabet is the set of symbols used by Encoding,
+// in encoding-value order.
+const Alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+
+var Encoding = base32.NewEncoding(Alphabet)
 
 func DecodeString(s string) ([]byte, error) {
 	return Encoding.DecodeString(s)
