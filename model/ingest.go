@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"slices"
 	"time"
 
 	"kr.dev/errorfmt"
@@ -153,7 +152,7 @@ func (tx *TxR) taskIngest(args []string) error {
 			if winner.ID == vid.ID {
 				continue
 			}
-			return txw.mergeDuplicateVideo(vid, winner, key)
+			return txw.mergeDuplicateVideo(vid, winner)
 		}
 		vid, err = txw.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
 			ID:          vid.ID,
@@ -171,9 +170,9 @@ func (tx *TxR) taskIngest(args []string) error {
 
 // mergeDuplicateVideo is called when a freshly-copied video's content
 // hash matches an already-live `winner` Video. It re-points all live
-// junctions from `loser` to `winner`, hard-deletes the loser row, and
-// schedules the newly-copied bytes (`loserKey`) for removal on commit.
-func (tx *TxRW) mergeDuplicateVideo(loser schema.Video, winner schema.Video, loserKey string) (err error) {
+// junctions from `loser` to `winner` and hard-deletes the loser row,
+// leaving the newly-copied bytes for the blob GC.
+func (tx *TxRW) mergeDuplicateVideo(loser schema.Video, winner schema.Video) (err error) {
 	defer errorfmt.Handlef("merge %s into %s: %w", loser.ID, winner.ID, &err)
 	// Revive any soft-deleted winner junctions that would otherwise
 	// collide with live loser junctions on reassign. The loser's
@@ -219,16 +218,7 @@ func (tx *TxRW) mergeDuplicateVideo(loser schema.Video, winner schema.Video, los
 			return err
 		}
 	}
-	if err := tx.q.VideoHardDelete(loser.ID); err != nil {
-		return err
-	}
-	tx.onCommit(func() {
-		if err := tx.m.store.Remove(loserKey); err != nil {
-			slog.Error("remove merged duplicate bytes",
-				"key", loserKey, "err", err)
-		}
-	})
-	return nil
+	return tx.q.VideoHardDelete(loser.ID)
 }
 
 // probeVideo opens the original blob at originalKey and runs
@@ -838,9 +828,10 @@ func (tx *TxR) taskIngestEncodeDownloadRend(args []string) error {
 }
 
 // ReimportVideo queues a reimport task for the given video.
-// The task will delete all existing renditions and the original
-// blob, re-copy the source from the download path, and
-// restart the full ingestion pipeline.
+// The task will delete all existing rendition records,
+// re-copy the source from the download path,
+// and restart the full ingestion pipeline;
+// the superseded blobs are left for the blob GC.
 func (tx *TxRW) ReimportVideo(videoID string) error {
 	if err := tx.guardActiveVideo(videoID); err != nil {
 		return err
@@ -906,10 +897,7 @@ func (tx *TxR) taskReimport(args []string) (err error) {
 	if err != nil {
 		return err
 	}
-	oldKey := vid.OriginalKey
-
 	return tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
-		txw.onCommit(func() { tx.m.store.Remove(oldKey) })
 		_, err := txw.q.VideoUpdateOriginalKey(schema.VideoUpdateOriginalKeyParams{
 			ID:          vid.ID,
 			OriginalKey: newKey,
@@ -924,9 +912,10 @@ func (tx *TxR) taskReimport(args []string) (err error) {
 }
 
 // ReencodeVideo queues a reencode task for the given video.
-// The task will delete all existing renditions (blobs and DB
-// records), re-probe the original source, plan new renditions,
-// and restart the encoding pipeline.
+// The task will delete all existing rendition records,
+// re-probe the original source, plan new renditions,
+// and restart the encoding pipeline;
+// the superseded blobs are left for the blob GC.
 func (tx *TxRW) ReencodeVideo(videoID string) error {
 	if err := tx.guardActiveVideo(videoID); err != nil {
 		return err
@@ -971,10 +960,8 @@ func (tx *TxR) taskReencode(args []string) (err error) {
 	// from the probe in one transaction, so a failure can't leave the
 	// video stripped of renditions with nothing queued to rebuild it.
 	return tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
-		// The delete queries return the superseded blob keys; remove
-		// those blobs on commit so a rolled-back rebuild leaves the old
-		// rows and their blobs intact.
-		audioKeys, err := txw.q.AudioRenditionDeleteByVideoID(vid.ID)
+		// The superseded blobs are left for the blob GC.
+		err := txw.q.AudioRenditionDeleteByVideoID(vid.ID)
 		if err != nil {
 			return err
 		}
@@ -982,11 +969,11 @@ func (tx *TxR) taskReencode(args []string) (err error) {
 		if err != nil {
 			return err
 		}
-		subKeys, err := txw.q.SubtitleTrackDeleteByVideoID(vid.ID)
+		err = txw.q.SubtitleTrackDeleteByVideoID(vid.ID)
 		if err != nil {
 			return err
 		}
-		rendKeys, err := txw.q.RenditionDeleteByVideoID(vid.ID)
+		err = txw.q.RenditionDeleteByVideoID(vid.ID)
 		if err != nil {
 			return err
 		}
@@ -997,21 +984,6 @@ func (tx *TxR) taskReencode(args []string) (err error) {
 		if err != nil {
 			return err
 		}
-		txw.onCommit(func() {
-			for _, k := range slices.Concat(rendKeys, audioKeys) {
-				if k != "" {
-					txw.m.store.Remove(k)
-				}
-			}
-			for _, st := range subKeys {
-				if st.OriginalKey != "" {
-					txw.m.store.Remove(st.OriginalKey)
-				}
-				if st.WebVTTKey != "" {
-					txw.m.store.Remove(st.WebVTTKey)
-				}
-			}
-		})
 		return txw.planAndCreateRenditions(vid, probe)
 	})
 }

@@ -712,11 +712,11 @@ func TestTrashPartialUniqueIndexAllowsReuse(t *testing.T) {
 	}
 }
 
-// TestTrashPurgeRemovesBlobKeys covers scenario 5: a Video's
-// OriginalKey and Rendition keys are passed to store.Remove when
-// purged. Uses the real storage.Dir backing the test Model; the
-// files must actually disappear from the filesystem.
-func TestTrashPurgeRemovesBlobKeys(t *testing.T) {
+// TestTrashPurgeLeavesBlobsForGC covers scenario 5: purging a Video
+// deletes its rows but touches no blobs — those are left orphaned
+// for the blob GC, which must then collect them. Uses the real
+// storage.Dir backing the test Model.
+func TestTrashPurgeLeavesBlobsForGC(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 
@@ -760,9 +760,21 @@ func TestTrashPurgeRemovesBlobKeys(t *testing.T) {
 
 	for _, k := range []string{originalKey, rendKey1, rendKey2} {
 		f, err := m.store.Open(k)
+		if err != nil {
+			t.Errorf("blob %q gone before GC: %v", k, err)
+			continue
+		}
+		f.Close()
+	}
+
+	if err := m.gcBlobsOnce(ctx, time.Now().Add(time.Hour)); err != nil {
+		t.Fatalf("gcBlobsOnce: %v", err)
+	}
+	for _, k := range []string{originalKey, rendKey1, rendKey2} {
+		f, err := m.store.Open(k)
 		if err == nil {
 			f.Close()
-			t.Errorf("blob %q still exists after purge", k)
+			t.Errorf("blob %q still exists after GC", k)
 		}
 	}
 }
@@ -3631,10 +3643,10 @@ func TestTrashCascadeCoversAllDescendants(t *testing.T) {
 	}
 }
 
-// TestTrashBlobsRemovedByPurge covers explicit-Purge blob cleanup:
-// Trash a Video with an OriginalKey and a rendition, Purge, assert
-// both blobs are removed.
-func TestTrashBlobsRemovedByPurge(t *testing.T) {
+// TestTrashPurgeBlobsSurvive covers explicit Purge: Trash a Video
+// with an OriginalKey and a rendition, Purge, assert both blobs are
+// untouched — reclaiming them is the blob GC's job.
+func TestTrashPurgeBlobsSurvive(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 
@@ -3658,11 +3670,11 @@ func TestTrashBlobsRemovedByPurge(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("purge: %v", err)
 	}
-	if blobExists(t, m, origKey) {
-		t.Errorf("original blob %q still exists", origKey)
+	if !blobExists(t, m, origKey) {
+		t.Errorf("original blob %q gone before GC", origKey)
 	}
-	if blobExists(t, m, rendKey) {
-		t.Errorf("rendition blob %q still exists", rendKey)
+	if !blobExists(t, m, rendKey) {
+		t.Errorf("rendition blob %q gone before GC", rendKey)
 	}
 }
 
