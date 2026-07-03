@@ -32,10 +32,28 @@ jobs:
                   # explicitly. Revert to go-version-file once Go 1.27
                   # ships.
                   go-version: 1.27.0-rc.1
-                  cache: true
+                  # setup-go keys its cache on go.sum alone, so all
+                  # jobs collide on one key and only the first to
+                  # finish saves — leaving the others (notably the
+                  # race-instrumented build) cold on every run. Cache
+                  # per job instead.
+                  cache: false
+
+            - name: Cache Go modules and build cache
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/go/pkg/mod
+                      ~/.cache/go-build
+                  key: go-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}
+                  restore-keys: go-${{ github.job }}-
 
             - name: Install sqlc
-              run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
+              run: |
+                  mkdir -p "$HOME/.local/bin"
+                  curl -fsSL https://github.com/sqlc-dev/sqlc/releases/download/v1.30.0/sqlc_1.30.0_linux_amd64.tar.gz |
+                      tar -xz -C "$HOME/.local/bin" sqlc
+                  echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
             - name: Install goimports
               run: go install golang.org/x/tools/cmd/goimports@v0.44.0
@@ -160,7 +178,16 @@ jobs:
             - uses: actions/setup-go@v5
               with:
                   go-version: 1.27.0-rc.1 # see ci job above
-                  cache: true
+                  cache: false # see ci job above
+
+            - name: Cache Go modules and build cache
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/go/pkg/mod
+                      ~/.cache/go-build
+                  key: go-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}
+                  restore-keys: go-${{ github.job }}-
 
             - name: go test -race -short
               run: go test -race -short ./...
@@ -176,7 +203,16 @@ jobs:
             - uses: actions/setup-go@v5
               with:
                   go-version: 1.27.0-rc.1 # see ci job above
-                  cache: true
+                  cache: false # see ci job above
+
+            - name: Cache Go modules and build cache
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/go/pkg/mod
+                      ~/.cache/go-build
+                  key: go-${{ github.job }}-${{ hashFiles('go.mod', 'go.sum') }}
+                  restore-keys: go-${{ github.job }}-
 
             - name: go test (full)
               run: go test ./...
