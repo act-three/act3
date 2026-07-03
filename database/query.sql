@@ -6,8 +6,8 @@ INSERT INTO AudioRendition (
 ) VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
--- name: AudioRenditionDeleteByVideoID :many
-DELETE FROM AudioRendition WHERE VideoID = ? RETURNING Key;
+-- name: AudioRenditionDeleteByVideoID :exec
+DELETE FROM AudioRendition WHERE VideoID = ?;
 
 -- name: AudioRenditionDeleteByVideoIDList :exec
 DELETE FROM AudioRendition WHERE VideoID IN (sqlc.slice(ids));
@@ -32,10 +32,6 @@ SELECT ar.* FROM AudioRendition ar
 JOIN AudioTrack at ON at.ID = ar.AudioTrackID
 WHERE ar.VideoID = ? AND ar.Key != ''
 ORDER BY ar.SortKey;
-
--- name: AudioRenditionListKeysByVideoIDs :many
-SELECT Key FROM AudioRendition
-WHERE VideoID IN (sqlc.slice(ids)) AND Key != '';
 
 -- name: AudioRenditionUpdateEncode :one
 UPDATE AudioRendition
@@ -569,8 +565,8 @@ INSERT INTO Image (ID, OriginalKey, Type)
 VALUES (?, ?, ?)
 ON CONFLICT (ID) DO NOTHING;
 
--- name: ImageDelete :one
-DELETE FROM Image WHERE ID = ? RETURNING OriginalKey;
+-- name: ImageDelete :exec
+DELETE FROM Image WHERE ID = ?;
 
 -- name: ImageGet :one
 SELECT * FROM Image WHERE ID = ?;
@@ -579,8 +575,8 @@ SELECT * FROM Image WHERE ID = ?;
 INSERT INTO ImageRendition (Key, ImageID, Type, Width, Height)
 VALUES (?, ?, ?, ?, ?);
 
--- name: ImageRenditionDeleteByImageID :many
-DELETE FROM ImageRendition WHERE ImageID = ? RETURNING Key;
+-- name: ImageRenditionDeleteByImageID :exec
+DELETE FROM ImageRendition WHERE ImageID = ?;
 
 -- name: ImageRenditionListByImageID :many
 SELECT * FROM ImageRendition WHERE ImageID = ? ORDER BY Width;
@@ -835,8 +831,8 @@ INSERT INTO Rendition (
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
--- name: RenditionDeleteByVideoID :many
-DELETE FROM Rendition WHERE VideoID = ? RETURNING Key;
+-- name: RenditionDeleteByVideoID :exec
+DELETE FROM Rendition WHERE VideoID = ?;
 
 -- name: RenditionDeleteByVideoIDList :exec
 DELETE FROM Rendition WHERE VideoID IN (sqlc.slice(ids));
@@ -855,10 +851,6 @@ SELECT * FROM Rendition WHERE VideoID = ?;
 -- name: RenditionListEncodedStreamingByVideoID :many
 SELECT * FROM Rendition
 WHERE VideoID = ? AND Purpose = 'streaming' AND Key != '';
-
--- name: RenditionListKeysByVideoIDs :many
-SELECT Key FROM Rendition
-WHERE VideoID IN (sqlc.slice(ids)) AND Key != '';
 
 -- name: RenditionListStreamingByEpisodeID :many
 SELECT * FROM Rendition
@@ -1220,8 +1212,8 @@ INSERT INTO SubtitleTrack (
 ) VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
--- name: SubtitleTrackDeleteByVideoID :many
-DELETE FROM SubtitleTrack WHERE VideoID = ? RETURNING OriginalKey, WebVTTKey;
+-- name: SubtitleTrackDeleteByVideoID :exec
+DELETE FROM SubtitleTrack WHERE VideoID = ?;
 
 -- name: SubtitleTrackDeleteByVideoIDList :exec
 DELETE FROM SubtitleTrack WHERE VideoID IN (sqlc.slice(ids));

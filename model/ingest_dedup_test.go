@@ -110,7 +110,7 @@ func TestMergeDuplicateVideoMovesJunctions(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return tx.mergeDuplicateVideo(loser, winner, loserKey)
+		return tx.mergeDuplicateVideo(loser, winner)
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -151,10 +151,10 @@ func TestMergeDuplicateVideoMovesJunctions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// The loser's bytes are scheduled for removal via onCommit after
-	// the WithTxRW above completes. Give the store a direct check.
-	if _, err := m.store.Open(loserKey); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("loser storage key should be removed after commit: err=%v", err)
+	// The loser's bytes are left in the store for the blob GC; the
+	// merge itself must not touch either blob.
+	if _, err := m.store.Open(loserKey); err != nil {
+		t.Errorf("loser storage key unexpectedly gone before GC: %v", err)
 	}
 	if _, err := m.store.Open(winnerKey); err != nil {
 		t.Errorf("winner storage key unexpectedly gone: %v", err)
@@ -224,8 +224,7 @@ func TestMergeDuplicateVideoRestoresSoftDeletedJunction(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	loserKey, err := m.store.Copy(bytes.NewReader(fileBytes))
-	if err != nil {
+	if _, err := m.store.Copy(bytes.NewReader(fileBytes)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -238,7 +237,7 @@ func TestMergeDuplicateVideoRestoresSoftDeletedJunction(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		return tx.mergeDuplicateVideo(loser, winner, loserKey)
+		return tx.mergeDuplicateVideo(loser, winner)
 	}); err != nil {
 		t.Fatal(err)
 	}

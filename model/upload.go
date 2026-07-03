@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log/slog"
 	"path"
 	"slices"
 	"sync"
@@ -107,8 +106,8 @@ func (m *Model) uploadEnd(u *upload) {
 // total; non-positive means unknown).
 //
 // If the uploaded bytes match an existing live Video's ContentHash,
-// the freshly-copied blob is discarded and the existing Video is
-// attached to the target junction instead — mirroring the
+// the freshly-copied blob is left for the blob GC and the existing
+// Video is attached to the target junction instead — mirroring the
 // duplicate-merge path in taskIngest.
 //
 // On a fresh upload the source is probed before the write tx, then the
@@ -161,12 +160,6 @@ func (m *Model) VideoUploadCreate(
 		if len(dups) > 0 {
 			merged = true
 			vid = dups[0]
-			tx.onCommit(func() {
-				if err := m.store.Remove(key); err != nil {
-					slog.Error("remove upload duplicate bytes",
-						"key", key, "err", err)
-				}
-			})
 			return tx.attachUploadedVideo(vid.ID, target, id)
 		}
 		v, err := tx.q.VideoCreate(schema.VideoCreateParams{Name: base})

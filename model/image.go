@@ -553,33 +553,19 @@ func (m *Model) insertPlaceholder(ctx context.Context, b *placeholderBlobs) erro
 	})
 }
 
-// imageDelete deletes an Image and its rendition rows + blobs
-// unconditionally. Callers are responsible for not invoking this
-// on a placeholder. The cleanup is split between SQL (rows
-// deleted in this transaction) and storage (blob keys removed
-// in an onCommit hook so a rolled-back tx doesn't lose the
-// bytes).
+// imageDelete deletes an Image and its rendition rows
+// unconditionally, leaving their blobs for the blob GC. Callers are
+// responsible for not invoking this on a placeholder.
 //
 // Each user-uploaded image has exactly one owner — when a parent
 // row's image FK is updated, the previous image is no longer
 // reachable from anywhere and can be removed without ref
 // counting.
 func (tx *TxRW) imageDelete(imageID string) error {
-	renditionKeys, err := tx.q.ImageRenditionDeleteByImageID(imageID)
-	if err != nil {
+	if err := tx.q.ImageRenditionDeleteByImageID(imageID); err != nil {
 		return err
 	}
-	imageKey, err := tx.q.ImageDelete(imageID)
-	if err != nil {
-		return err
-	}
-	tx.onCommit(func() {
-		for _, k := range renditionKeys {
-			tx.m.store.Remove(k)
-		}
-		tx.m.store.Remove(imageKey)
-	})
-	return nil
+	return tx.q.ImageDelete(imageID)
 }
 
 // centerCrop returns the largest rectangle of src whose aspect

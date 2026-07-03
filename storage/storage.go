@@ -110,14 +110,6 @@ func (d *Dir) CreateFunc(f func(*os.File) error) (key string, err error) {
 	return key, nil
 }
 
-func (d *Dir) Remove(key string) error {
-	p, err := keyPath(key, filepath.Join)
-	if err != nil {
-		return err
-	}
-	return d.root.Remove(p)
-}
-
 func (d *Dir) Open(key string) (*os.File, error) {
 	p, err := keyPath(key, filepath.Join)
 	if err != nil {

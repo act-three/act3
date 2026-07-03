@@ -730,14 +730,11 @@ func (tx *TxRW) Purge(id string) (err error) {
 	if err != nil {
 		return err
 	}
-	var vidIDs, origKeys []string
+	var vidIDs []string
 	for _, v := range vids {
 		vidIDs = append(vidIDs, v.ID)
-		if v.OriginalKey != "" {
-			origKeys = append(origKeys, v.OriginalKey)
-		}
 	}
-	if err := tx.purgeVideoBlobs(vidIDs, origKeys); err != nil {
+	if err := tx.purgeVideoRows(vidIDs); err != nil {
 		return err
 	}
 
@@ -820,43 +817,12 @@ func (tx *TxRW) trashPurge(threshold time.Time) (err error) {
 	return nil
 }
 
-// purgeVideoBlobs deletes AudioTrack, SubtitleTrack and Rendition rows
-// for the given videos and schedules their blob keys for removal on
-// commit.
-func (tx *TxRW) purgeVideoBlobs(vidIDs, origKeys []string) error {
+// purgeVideoRows deletes AudioRendition, AudioTrack, SubtitleTrack
+// and Rendition rows for the given videos, leaving their blobs for
+// the blob GC.
+func (tx *TxRW) purgeVideoRows(vidIDs []string) error {
 	if len(vidIDs) == 0 {
 		return nil
-	}
-	rendKeys, err := tx.q.RenditionListKeysByVideoIDs(vidIDs)
-	if err != nil {
-		return err
-	}
-	keys := append(origKeys, rendKeys...)
-	audKeys, err := tx.q.AudioRenditionListKeysByVideoIDs(vidIDs)
-	if err != nil {
-		return err
-	}
-	keys = append(keys, audKeys...)
-	for _, vid := range vidIDs {
-		subs, err := tx.q.SubtitleTrackListByVideoID(vid)
-		if err != nil {
-			return err
-		}
-		for _, st := range subs {
-			if st.OriginalKey != "" {
-				keys = append(keys, st.OriginalKey)
-			}
-			if st.WebVTTKey != "" {
-				keys = append(keys, st.WebVTTKey)
-			}
-		}
-	}
-	if len(keys) > 0 {
-		tx.onCommit(func() {
-			for _, k := range keys {
-				tx.m.store.Remove(k)
-			}
-		})
 	}
 	if err := tx.q.AudioRenditionDeleteByVideoIDList(vidIDs); err != nil {
 		return err
