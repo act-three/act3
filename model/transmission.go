@@ -1,8 +1,10 @@
 package model
 
 import (
+	"net/http"
 	urlpkg "net/url"
 	"path/filepath"
+	"time"
 
 	"github.com/hekmon/transmissionrpc/v3"
 	"ily.dev/act3/sys/fsinfo"
@@ -35,7 +37,14 @@ func (tx *TxR) loadTransmissionConfig() (err error) {
 }
 
 func (m *Model) setTransmissionBaseURL(u *urlpkg.URL) {
-	c, err := transmissionrpc.New(u, nil)
+	// Transmission RPCs are quick metadata exchanges, but their
+	// callers carry no deadline (task ctxs and the poll loop), so
+	// without a client timeout a connected-but-unresponsive daemon
+	// would wedge its caller indefinitely. tmdb and tvmaze bound
+	// their requests the same way, per call inside the service.
+	c, err := transmissionrpc.New(u, &transmissionrpc.Config{
+		CustomClient: &http.Client{Timeout: 30 * time.Second},
+	})
 	if err != nil {
 		return
 	}
