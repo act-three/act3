@@ -68,6 +68,18 @@ Use `Fixes:` for the commit that closes the issue, `Refs:` for partial
 work or follow-ups. Use the full identifier as Linear returns it
 (e.g. `ACT-123`), not the shorthand.
 
+## Reference the commit in Linear
+
+The mirror image: a Linear comment about landed work must cite the
+landed commit id, not just the subject line. Subjects can be retitled
+at landing (ACT-231 landed as #123 under a different subject than the
+local commit), so the id is the only durable link. Read it from
+`main@origin` — the user will usually have fetched already — e.g.:
+
+```
+Landed as 6153950a171e, `model: record tombstones for changed slugs` (#123).
+```
+
 ## Attribution
 
 Anything you write into Linear on the user's behalf
