@@ -65,6 +65,12 @@ type Download struct {
 	DeletedAt       *int64
 }
 
+type EditionSlugTombstone struct {
+	ParentID string
+	Slug     string
+	TargetID string
+}
+
 type Episode struct {
 	ID          string
 	Title       string
@@ -196,9 +202,10 @@ type Setting struct {
 }
 
 type Slug struct {
-	Slug   string
-	Kind   string
-	Target string
+	Slug      string
+	Kind      string
+	Target    string
+	Tombstone int64
 }
 
 type SubtitleTrack struct {

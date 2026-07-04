@@ -479,23 +479,6 @@ func (q *Queries) CollectionGet(id string) (Collection, error) {
 	return i, err
 }
 
-const collectionGetBySlug = `-- name: CollectionGetBySlug :one
-SELECT id, slug, title, bannerid, deletedat FROM Collection WHERE Slug = ? AND DeletedAt IS NULL
-`
-
-func (q *Queries) CollectionGetBySlug(slug string) (Collection, error) {
-	row := q.db.QueryRowContext(q.ctx, collectionGetBySlug, slug)
-	var i Collection
-	err := row.Scan(
-		&i.ID,
-		&i.Slug,
-		&i.Title,
-		&i.BannerID,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
 const collectionGetStats = `-- name: CollectionGetStats :one
 SELECT COUNT(*) AS ItemCount, CAST(COALESCE(SUM(Runtime), 0) AS INTEGER) AS RuntimeMinutes FROM (
 	SELECT MovieEdition.Runtime FROM MovieEdition
@@ -1388,6 +1371,61 @@ type DownloadUpdateTargetingParams struct {
 
 func (q *Queries) DownloadUpdateTargeting(arg DownloadUpdateTargetingParams) error {
 	_, err := q.db.ExecContext(q.ctx, downloadUpdateTargeting, arg.SeriesEditionID, arg.MovieEditionID, arg.InfoHash)
+	return err
+}
+
+const editionSlugTombstoneClaim = `-- name: EditionSlugTombstoneClaim :exec
+DELETE FROM EditionSlugTombstone WHERE ParentID = ? AND Slug = ?
+`
+
+type EditionSlugTombstoneClaimParams struct {
+	ParentID string
+	Slug     string
+}
+
+func (q *Queries) EditionSlugTombstoneClaim(arg EditionSlugTombstoneClaimParams) error {
+	_, err := q.db.ExecContext(q.ctx, editionSlugTombstoneClaim, arg.ParentID, arg.Slug)
+	return err
+}
+
+const editionSlugTombstoneDeleteByTarget = `-- name: EditionSlugTombstoneDeleteByTarget :exec
+DELETE FROM EditionSlugTombstone WHERE TargetID = ?
+`
+
+func (q *Queries) EditionSlugTombstoneDeleteByTarget(targetid string) error {
+	_, err := q.db.ExecContext(q.ctx, editionSlugTombstoneDeleteByTarget, targetid)
+	return err
+}
+
+const editionSlugTombstoneGet = `-- name: EditionSlugTombstoneGet :one
+SELECT parentid, slug, targetid FROM EditionSlugTombstone WHERE ParentID = ? AND Slug = ?
+`
+
+type EditionSlugTombstoneGetParams struct {
+	ParentID string
+	Slug     string
+}
+
+func (q *Queries) EditionSlugTombstoneGet(arg EditionSlugTombstoneGetParams) (EditionSlugTombstone, error) {
+	row := q.db.QueryRowContext(q.ctx, editionSlugTombstoneGet, arg.ParentID, arg.Slug)
+	var i EditionSlugTombstone
+	err := row.Scan(&i.ParentID, &i.Slug, &i.TargetID)
+	return i, err
+}
+
+const editionSlugTombstoneSet = `-- name: EditionSlugTombstoneSet :exec
+INSERT INTO EditionSlugTombstone (ParentID, Slug, TargetID) VALUES (?, ?, ?)
+ON CONFLICT (ParentID, Slug) DO UPDATE SET TargetID = ?3
+`
+
+type EditionSlugTombstoneSetParams struct {
+	ParentID string
+	Slug     string
+	TargetID string
+}
+
+func (q *Queries) EditionSlugTombstoneSet(arg EditionSlugTombstoneSetParams) error {
+	_, err := q.db.ExecContext(q.ctx, editionSlugTombstoneSet, arg.ParentID, arg.Slug, arg.TargetID)
 	return err
 }
 
@@ -2759,23 +2797,6 @@ WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID = ?)
 
 func (q *Queries) MovieGetByEditionID(id string) (Movie, error) {
 	row := q.db.QueryRowContext(q.ctx, movieGetByEditionID, id)
-	var i Movie
-	err := row.Scan(
-		&i.ID,
-		&i.Slug,
-		&i.TMDBID,
-		&i.IMDBID,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const movieGetBySlug = `-- name: MovieGetBySlug :one
-SELECT id, slug, tmdbid, imdbid, deletedat FROM Movie WHERE Slug = ? AND DeletedAt IS NULL
-`
-
-func (q *Queries) MovieGetBySlug(slug string) (Movie, error) {
-	row := q.db.QueryRowContext(q.ctx, movieGetBySlug, slug)
 	var i Movie
 	err := row.Scan(
 		&i.ID,
@@ -4654,19 +4675,17 @@ func (q *Queries) SeriesEditionGet(id string) (SeriesEdition, error) {
 }
 
 const seriesEditionGetBySlug = `-- name: SeriesEditionGetBySlug :one
-SELECT seriesedition.id, seriesedition.seriesid, seriesedition.slug, seriesedition.label, seriesedition.summary, seriesedition.posterid, seriesedition.deletedat FROM SeriesEdition
-JOIN Series ON Series.ID = SeriesEdition.SeriesID
-WHERE Series.Slug = ?1 AND SeriesEdition.Slug = ?2
-AND SeriesEdition.DeletedAt IS NULL AND Series.DeletedAt IS NULL
+SELECT id, seriesid, slug, label, summary, posterid, deletedat FROM SeriesEdition
+WHERE SeriesID = ? AND Slug = ? AND DeletedAt IS NULL
 `
 
 type SeriesEditionGetBySlugParams struct {
-	SeriesSlug  string
-	EditionSlug string
+	SeriesID string
+	Slug     string
 }
 
 func (q *Queries) SeriesEditionGetBySlug(arg SeriesEditionGetBySlugParams) (SeriesEdition, error) {
-	row := q.db.QueryRowContext(q.ctx, seriesEditionGetBySlug, arg.SeriesSlug, arg.EditionSlug)
+	row := q.db.QueryRowContext(q.ctx, seriesEditionGetBySlug, arg.SeriesID, arg.Slug)
 	var i SeriesEdition
 	err := row.Scan(
 		&i.ID,
@@ -4972,29 +4991,6 @@ func (q *Queries) SeriesGetByEditionID(id string) (Series, error) {
 	return i, err
 }
 
-const seriesGetBySlug = `-- name: SeriesGetBySlug :one
-SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series WHERE Slug = ? AND DeletedAt IS NULL
-`
-
-func (q *Queries) SeriesGetBySlug(slug string) (Series, error) {
-	row := q.db.QueryRowContext(q.ctx, seriesGetBySlug, slug)
-	var i Series
-	err := row.Scan(
-		&i.ID,
-		&i.Slug,
-		&i.Title,
-		&i.Status,
-		&i.PremieredOn,
-		&i.EndedOn,
-		&i.TVmazeID,
-		&i.IMDBID,
-		&i.TVDBID,
-		&i.TVRageID,
-		&i.DeletedAt,
-	)
-	return i, err
-}
-
 const seriesGetByTVmazeID = `-- name: SeriesGetByTVmazeID :one
 SELECT id, slug, title, status, premieredon, endedon, tvmazeid, imdbid, tvdbid, tvrageid, deletedat FROM Series WHERE TVmazeID = ? AND DeletedAt IS NULL
 `
@@ -5280,6 +5276,22 @@ func (q *Queries) SettingSet(arg SettingSetParams) error {
 	return err
 }
 
+const slugClaim = `-- name: SlugClaim :exec
+INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
+ON CONFLICT (Slug) DO UPDATE SET Kind = ?2, Target = ?3, Tombstone = 0
+`
+
+type SlugClaimParams struct {
+	Slug   string
+	Kind   string
+	Target string
+}
+
+func (q *Queries) SlugClaim(arg SlugClaimParams) error {
+	_, err := q.db.ExecContext(q.ctx, slugClaim, arg.Slug, arg.Kind, arg.Target)
+	return err
+}
+
 const slugDelete = `-- name: SlugDelete :exec
 DELETE FROM Slug WHERE Target = ?
 `
@@ -5290,7 +5302,7 @@ func (q *Queries) SlugDelete(target string) error {
 }
 
 const slugExists = `-- name: SlugExists :one
-SELECT COUNT(*) FROM Slug WHERE Slug = ?
+SELECT COUNT(*) FROM Slug WHERE Slug = ? AND Tombstone = 0
 `
 
 func (q *Queries) SlugExists(slug string) (int64, error) {
@@ -5301,40 +5313,43 @@ func (q *Queries) SlugExists(slug string) (int64, error) {
 }
 
 const slugGet = `-- name: SlugGet :one
-SELECT slug, kind, target FROM Slug WHERE Slug = ?
+SELECT slug, kind, target, tombstone FROM Slug WHERE Slug = ?
 `
 
 func (q *Queries) SlugGet(slug string) (Slug, error) {
 	row := q.db.QueryRowContext(q.ctx, slugGet, slug)
 	var i Slug
-	err := row.Scan(&i.Slug, &i.Kind, &i.Target)
+	err := row.Scan(
+		&i.Slug,
+		&i.Kind,
+		&i.Target,
+		&i.Tombstone,
+	)
 	return i, err
 }
 
 const slugGetByTarget = `-- name: SlugGetByTarget :one
-SELECT slug, kind, target FROM Slug WHERE Target = ?
+SELECT slug, kind, target, tombstone FROM Slug WHERE Target = ? AND Tombstone = 0
 `
 
 func (q *Queries) SlugGetByTarget(target string) (Slug, error) {
 	row := q.db.QueryRowContext(q.ctx, slugGetByTarget, target)
 	var i Slug
-	err := row.Scan(&i.Slug, &i.Kind, &i.Target)
+	err := row.Scan(
+		&i.Slug,
+		&i.Kind,
+		&i.Target,
+		&i.Tombstone,
+	)
 	return i, err
 }
 
-const slugUpsert = `-- name: SlugUpsert :exec
-INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
-ON CONFLICT (Target) DO UPDATE SET Slug = ?1
+const slugTombstone = `-- name: SlugTombstone :exec
+UPDATE Slug SET Tombstone = 1 WHERE Target = ? AND Tombstone = 0
 `
 
-type SlugUpsertParams struct {
-	Slug   string
-	Kind   string
-	Target string
-}
-
-func (q *Queries) SlugUpsert(arg SlugUpsertParams) error {
-	_, err := q.db.ExecContext(q.ctx, slugUpsert, arg.Slug, arg.Kind, arg.Target)
+func (q *Queries) SlugTombstone(target string) error {
+	_, err := q.db.ExecContext(q.ctx, slugTombstone, target)
 	return err
 }
 

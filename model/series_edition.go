@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"iter"
 	"path"
 	"slices"
@@ -136,19 +137,39 @@ func (tx *TxR) SeriesEdition(id string) *SeriesEdition {
 	return sed
 }
 
-// seriesEditionBySlug looks up a series by its slug
+// seriesEditionByID looks up a series by its id
 // and returns the edition matching edSlug
 // (empty string for the default edition).
-func (tx *TxR) seriesEditionBySlug(slug, edSlug string) (*SeriesEdition, error) {
+func (tx *TxR) seriesEditionByID(seriesID, edSlug string) (*SeriesEdition, error) {
 	sedData, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
-		SeriesSlug:  slug,
-		EditionSlug: edSlug,
+		SeriesID: seriesID,
+		Slug:     edSlug,
 	})
 
 	if err != nil {
 		return nil, err
 	}
 	return tx.SeriesEdition(sedData.ID), nil
+}
+
+// seriesEditionByTombstone resolves a tombstoned edition slug
+// to the edition of seriesID that used to hold it.
+func (tx *TxR) seriesEditionByTombstone(seriesID, edSlug string) (schema.SeriesEdition, error) {
+	ts, err := tx.q.EditionSlugTombstoneGet(schema.EditionSlugTombstoneGetParams{
+		ParentID: seriesID, Slug: edSlug,
+	})
+
+	if err != nil {
+		return schema.SeriesEdition{}, err
+	}
+	sed, err := tx.q.SeriesEditionGet(ts.TargetID)
+	if err != nil {
+		return schema.SeriesEdition{}, err
+	}
+	if sed.DeletedAt != nil || sed.SeriesID != seriesID {
+		return schema.SeriesEdition{}, sql.ErrNoRows
+	}
+	return sed, nil
 }
 
 func (tx *TxR) SeriesEditionList(sr *SeriesHead) []*SeriesWork {
@@ -167,6 +188,13 @@ func (tx *TxRW) seriesEditionCreate(label, seriesID, summary string) (schema.Ser
 	slug, err := tx.generateSeriesEditionSlug(label, seriesID)
 	if err != nil {
 		return schema.SeriesEdition{}, err
+	}
+	if slug != "" {
+		if err := tx.q.EditionSlugTombstoneClaim(schema.EditionSlugTombstoneClaimParams{
+			ParentID: seriesID, Slug: slug,
+		}); err != nil {
+			return schema.SeriesEdition{}, err
+		}
 	}
 	return tx.q.SeriesEditionCreate(schema.SeriesEditionCreateParams{
 		Label:    label,
@@ -268,8 +296,28 @@ func (tx *TxRW) seriesEditionEnsureSlug(id string) error {
 	if slug == sed.Slug {
 		return nil
 	}
+	return tx.seriesEditionSlugMove(sed, slug)
+}
+
+// seriesEditionSlugMove is the SeriesEdition analog of
+// movieEditionSlugMove.
+func (tx *TxRW) seriesEditionSlugMove(sed schema.SeriesEdition, slug string) error {
+	if slug != "" {
+		if err := tx.q.EditionSlugTombstoneClaim(schema.EditionSlugTombstoneClaimParams{
+			ParentID: sed.SeriesID, Slug: slug,
+		}); err != nil {
+			return err
+		}
+	}
+	if sed.DeletedAt == nil && sed.Slug != "" {
+		if err := tx.q.EditionSlugTombstoneSet(schema.EditionSlugTombstoneSetParams{
+			ParentID: sed.SeriesID, Slug: sed.Slug, TargetID: sed.ID,
+		}); err != nil {
+			return err
+		}
+	}
 	return tx.q.SeriesEditionSlugSet(schema.SeriesEditionSlugSetParams{
-		Slug: slug, ID: id,
+		Slug: slug, ID: sed.ID,
 	})
 
 }
@@ -320,15 +368,10 @@ func (tx *TxRW) seriesEditionSetDefault(id string) error {
 	if err != nil {
 		return err
 	}
-	if err := tx.q.SeriesEditionSlugSet(schema.SeriesEditionSlugSetParams{
-		Slug: oldSlug, ID: old.ID,
-	}); err != nil {
+	if err := tx.seriesEditionSlugMove(old, oldSlug); err != nil {
 		return err
 	}
-	return tx.q.SeriesEditionSlugSet(schema.SeriesEditionSlugSetParams{
-		Slug: "", ID: sed.ID,
-	})
-
+	return tx.seriesEditionSlugMove(sed, "")
 }
 
 func (tx *TxRW) generateSeriesEditionSlug(label, seriesID string, allow ...string) (string, error) {

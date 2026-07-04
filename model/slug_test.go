@@ -36,7 +36,7 @@ func newSlugResolveFixture(t *testing.T, m *Model) slugResolveFixture {
 		if _, err := tx.q.MovieCreate(schema.MovieCreateParams{ID: moID, Slug: "star-wars"}); err != nil {
 			return err
 		}
-		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "star-wars", Kind: kind.Movie{}.String(), Target: moID}); err != nil {
+		if err := tx.q.SlugClaim(schema.SlugClaimParams{Slug: "star-wars", Kind: kind.Movie{}.String(), Target: moID}); err != nil {
 			return err
 		}
 		fx.movieID = moID
@@ -57,7 +57,7 @@ func newSlugResolveFixture(t *testing.T, m *Model) slugResolveFixture {
 		}); err != nil {
 			return err
 		}
-		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "star-trek-voyager", Kind: kind.Series{}.String(), Target: srID}); err != nil {
+		if err := tx.q.SlugClaim(schema.SlugClaimParams{Slug: "star-trek-voyager", Kind: kind.Series{}.String(), Target: srID}); err != nil {
 			return err
 		}
 		fx.seriesID = srID
@@ -95,7 +95,7 @@ func newSlugResolveFixture(t *testing.T, m *Model) slugResolveFixture {
 		if err != nil {
 			return err
 		}
-		if err := tx.q.SlugUpsert(schema.SlugUpsertParams{Slug: "phase-three", Kind: kind.Collection{}.String(), Target: col.ID}); err != nil {
+		if err := tx.q.SlugClaim(schema.SlugClaimParams{Slug: "phase-three", Kind: kind.Collection{}.String(), Target: col.ID}); err != nil {
 			return err
 		}
 		fx.collectionID = col.ID
@@ -222,6 +222,209 @@ func TestSlugPath(t *testing.T) {
 				t.Fatalf("SlugPath() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+// TestSlugTombstoneRename verifies that renames leave tombstones
+// behind: every slug a work ever answered to keeps resolving to it,
+// and SlugPath still reports the canonical path.
+func TestSlugTombstoneRename(t *testing.T) {
+	m := newTestModel(t)
+	ctx := context.Background()
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		mw, err := tx.MovieCreate("Star Wars", "")
+		if err != nil {
+			return err
+		}
+		moID := mw.MovieHead.ID()
+		medID := mw.MovieEditionHead.ID()
+		// Rename twice; each hop should tombstone the slug it leaves.
+		if err := tx.MovieEditionTitleSet(medID, "A New Hope"); err != nil {
+			return err
+		}
+		if err := tx.MovieEditionTitleSet(medID, "Episode IV"); err != nil {
+			return err
+		}
+		want := map[string]string{"kind": KindMovieEdition, "mo": moID, "med": medID}
+		for _, slug := range []string{"star-wars", "a-new-hope", "episode-iv"} {
+			odesc := tx.SlugResolve([]string{slug})
+			if !maps.Equal(odesc, want) {
+				t.Fatalf("SlugResolve(%q) = %v, want %v", slug, odesc, want)
+			}
+			if got := tx.SlugPath(odesc); got != "/episode-iv" {
+				t.Fatalf("SlugPath after resolving %q = %q, want %q", slug, got, "/episode-iv")
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestSlugTombstoneClaim verifies that tombstones reserve nothing:
+// a new work wanting a tombstoned slug takes it over.
+func TestSlugTombstoneClaim(t *testing.T) {
+	m := newTestModel(t)
+	ctx := context.Background()
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		mw, err := tx.MovieCreate("Star Wars", "")
+		if err != nil {
+			return err
+		}
+		if err := tx.MovieEditionTitleSet(mw.MovieEditionHead.ID(), "A New Hope"); err != nil {
+			return err
+		}
+		usurper, err := tx.MovieCreate("Star Wars", "")
+		if err != nil {
+			return err
+		}
+		if got, want := usurper.MovieHead.Slug(), "star-wars"; got != want {
+			t.Fatalf("usurper slug = %q, want %q", got, want)
+		}
+		odesc := tx.SlugResolve([]string{"star-wars"})
+		if got, want := odesc["mo"], usurper.MovieHead.ID(); got != want {
+			t.Fatalf(`SlugResolve("star-wars") = movie %v, want usurper %v`, got, want)
+		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestSlugTombstoneTrash verifies that a work's tombstones die with it.
+func TestSlugTombstoneTrash(t *testing.T) {
+	m := newTestModel(t)
+	ctx := context.Background()
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		mw, err := tx.MovieCreate("Star Wars", "")
+		if err != nil {
+			return err
+		}
+		if err := tx.MovieEditionTitleSet(mw.MovieEditionHead.ID(), "A New Hope"); err != nil {
+			return err
+		}
+		if err := tx.Trash(kind.Movie{}, mw.MovieHead.ID()); err != nil {
+			return err
+		}
+		for _, slug := range []string{"star-wars", "a-new-hope"} {
+			if odesc := tx.SlugResolve([]string{slug}); odesc != nil {
+				t.Fatalf("SlugResolve(%q) after trash = %v, want nil", slug, odesc)
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestEditionSlugTombstone exercises the per-parent tombstones behind
+// edition slugs: label renames, promotion to default, shadowing by a
+// live episode slug, and displacement by a new edition.
+func TestEditionSlugTombstone(t *testing.T) {
+	m := newTestModel(t)
+	fx := newSlugResolveFixture(t, m)
+	ctx := context.Background()
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		// A label rename tombstones the edition slug it leaves.
+		if err := tx.SeriesEditionLabelSet(fx.seriesNamedSed, "Definitive"); err != nil {
+			return err
+		}
+		want := map[string]string{"kind": KindSeriesEdition, "sr": fx.seriesID, "sed": fx.seriesNamedSed}
+		odesc := tx.SlugResolve([]string{"star-trek-voyager", "remastered"})
+		if !maps.Equal(odesc, want) {
+			t.Fatalf("SlugResolve(remastered) = %v, want %v", odesc, want)
+		}
+		if got, want := tx.SlugPath(odesc), "/star-trek-voyager/definitive"; got != want {
+			t.Fatalf("SlugPath = %q, want %q", got, want)
+		}
+
+		// Episodes resolve under the tombstoned edition slug too.
+		sn, err := tx.q.SeasonCreate(schema.SeasonCreateParams{EditionID: fx.seriesNamedSed, SortKey: "01", Title: "Season 1", Number: 1})
+		if err != nil {
+			return err
+		}
+		if err := tx.q.SeasonEpisodeCreate(schema.SeasonEpisodeCreateParams{
+			EditionID: fx.seriesNamedSed, SeasonID: sn.ID, EpisodeID: fx.episodeID,
+			SortKey: 1, Label: "1", Number: 1, Slug: "s1e1-caretaker",
+		}); err != nil {
+			return err
+		}
+		odesc = tx.SlugResolve([]string{"star-trek-voyager", "remastered", "s1e1-caretaker"})
+		wantEp := map[string]string{"kind": KindEpisode, "sr": fx.seriesID, "sed": fx.seriesNamedSed, "sn": sn.ID, "ep": fx.episodeID}
+		if !maps.Equal(odesc, wantEp) {
+			t.Fatalf("SlugResolve(remastered episode) = %v, want %v", odesc, wantEp)
+		}
+
+		// A live episode slug shadows a tombstoned edition slug.
+		ep2, err := tx.q.EpisodeCreate(schema.EpisodeCreateParams{Title: "Remastered", Type: "regular", Runtime: 45})
+		if err != nil {
+			return err
+		}
+		if err := tx.q.SeasonEpisodeCreate(schema.SeasonEpisodeCreateParams{
+			EditionID: fx.seriesDefSed, SeasonID: fx.seasonID, EpisodeID: ep2.ID,
+			SortKey: 2, Label: "2", Number: 2, Slug: "remastered",
+		}); err != nil {
+			return err
+		}
+		odesc = tx.SlugResolve([]string{"star-trek-voyager", "remastered"})
+		if odesc["kind"] != KindEpisode {
+			t.Fatalf("SlugResolve(remastered) with live episode slug = %v, want episode", odesc)
+		}
+
+		// A new edition wanting the tombstoned slug displaces it.
+		newSed, err := tx.seriesEditionCreate("Remastered", fx.seriesID, "")
+		if err != nil {
+			return err
+		}
+		if got, want := newSed.Slug, "remastered"; got != want {
+			t.Fatalf("new edition slug = %q, want %q", got, want)
+		}
+		if _, err := tx.seriesEditionByTombstone(fx.seriesID, "remastered"); err == nil {
+			t.Fatal("tombstone survived being claimed by a new edition")
+		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestEditionSlugTombstonePromote verifies that promoting an edition
+// to default tombstones the slug it held, so its old URL redirects to
+// the work's root path.
+func TestEditionSlugTombstonePromote(t *testing.T) {
+	m := newTestModel(t)
+	fx := newSlugResolveFixture(t, m)
+	ctx := context.Background()
+	err := m.WithTxRW(ctx, func(tx *TxRW) error {
+		if err := tx.MovieEditionSetDefault(fx.movieNamedMed); err != nil {
+			return err
+		}
+		want := map[string]string{"kind": KindMovieEdition, "mo": fx.movieID, "med": fx.movieNamedMed}
+		odesc := tx.SlugResolve([]string{"star-wars", "special-edition"})
+		if !maps.Equal(odesc, want) {
+			t.Fatalf("SlugResolve(special-edition) = %v, want %v", odesc, want)
+		}
+		if got, want := tx.SlugPath(odesc), "/star-wars"; got != want {
+			t.Fatalf("SlugPath = %q, want %q", got, want)
+		}
+		// The demoted edition answers at its label's slug, live.
+		odesc = tx.SlugResolve([]string{"star-wars", "default-edition"})
+		if got, want := odesc["med"], fx.movieDefMed; got != want {
+			t.Fatalf("SlugResolve(default-edition) = med %v, want demoted %v", got, want)
+		}
+		return nil
+	})
+
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

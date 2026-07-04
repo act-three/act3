@@ -101,6 +101,18 @@ func (mo *Movie) EditionBySlug(slug string) *MovieEdition {
 	return nil
 }
 
+func (mo *Movie) editionByID(id string) *MovieEdition {
+	if mo == nil {
+		return nil
+	}
+	for _, med := range mo.editions {
+		if med.med.ID == id {
+			return med
+		}
+	}
+	return nil
+}
+
 // MovieHead returns the MovieHead for id.
 // If id is not found, MovieHead aborts the tx.
 func (tx *TxR) MovieHead(id string) *MovieHead {
@@ -115,14 +127,18 @@ func (tx *TxR) MovieHeadByEditionID(editionID string) *MovieHead {
 	return &MovieHead{moData}
 }
 
-// movieEditionBySlug looks up a movie by its slug
+// movieEditionByID looks up a movie by its id
 // and returns the edition matching edSlug
 // (empty string for the default edition).
-func (tx *TxR) movieEditionBySlug(slug, edSlug string) (*MovieEdition, error) {
+// A tombstoned edSlug resolves to the edition that used to hold it.
+func (tx *TxR) movieEditionByID(id, edSlug string) (*MovieEdition, error) {
 	// TODO(april): avoid loading other editions here.
-	moData, err := tx.q.MovieGetBySlug(slug)
+	moData, err := tx.q.MovieGet(id)
 	if err != nil {
 		return nil, err
+	}
+	if moData.DeletedAt != nil {
+		return nil, sql.ErrNoRows
 	}
 	meds, err := tx.q.MovieEditionListByMovieID(moData.ID)
 	if err != nil {
@@ -142,6 +158,13 @@ func (tx *TxR) movieEditionBySlug(slug, edSlug string) (*MovieEdition, error) {
 
 	mo := newMovie(moData, meds, videosByEditionID)
 	med := mo.EditionBySlug(edSlug)
+	if med == nil && edSlug != "" {
+		if ts, ok := txfind1(tx.q.EditionSlugTombstoneGet(schema.EditionSlugTombstoneGetParams{
+			ParentID: moData.ID, Slug: edSlug,
+		})); ok {
+			med = mo.editionByID(ts.TargetID)
+		}
+	}
 	if med == nil {
 		return nil, sql.ErrNoRows
 	}
@@ -185,7 +208,7 @@ func (tx *TxRW) MovieCreate(title, releaseDate string) (*MovieWork, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
+	err = tx.q.SlugClaim(schema.SlugClaimParams{
 		Slug:   slug,
 		Kind:   kind.Movie{}.String(),
 		Target: moID,
@@ -227,7 +250,7 @@ func (tx *TxRW) movieCreateByTMDBID(movie *tmdb.Movie) (*MovieWork, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
+	err = tx.q.SlugClaim(schema.SlugClaimParams{
 		Slug:   slug,
 		Kind:   kind.Movie{}.String(),
 		Target: moID,
@@ -347,10 +370,7 @@ func (tx *TxRW) movieEnsureSlug(id string) error {
 		}
 	}
 	if mo.DeletedAt != nil || slug != mo.Slug {
-		return tx.q.SlugUpsert(schema.SlugUpsertParams{
-			Slug: slug, Kind: kind.Movie{}.String(), Target: id,
-		})
-
+		return tx.slugMove(kind.Movie{}, id, slug)
 	}
 	return nil
 }

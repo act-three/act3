@@ -29,7 +29,8 @@ func (a *app) Preview(ctx context.Context, u *url.URL) (dest, title string, n no
 func (a *app) View(ctx context.Context) (title string, n node) {
 	var dlg node
 	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
-		title, n = viewRoot(tx, a.path, a.odesc)
+		odesc, _ := resolve(tx, splitPath(a.path))
+		title, n = viewRoot(tx, a.path, odesc)
 		dlg = viewDialog(tx, a.dialog)
 		return nil
 	})

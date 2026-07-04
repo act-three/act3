@@ -183,9 +183,9 @@ func (tx *TxR) CollectionSeriesSearch(colID, query string) []CollectionSeriesSea
 	return matches
 }
 
-func (tx *TxR) collectionBySlug(slug string) (*Collection, bool) {
-	colData, ok := txfind1(tx.q.CollectionGetBySlug(slug))
-	if !ok {
+func (tx *TxR) collectionByID(id string) (*Collection, bool) {
+	colData, ok := txfind1(tx.q.CollectionGet(id))
+	if !ok || colData.DeletedAt != nil {
 		return nil, false
 	}
 	return tx.collectionFromData(colData), true
@@ -243,12 +243,12 @@ func (tx *TxR) CollectionPlayables(id string) []Playable {
 	movieIDs := txmust1(tx.q.CollectionMovieList(id))
 	var playables []Playable
 	for _, mo := range movieIDs {
-		med := txmust1(tx.movieEditionBySlug(mo.Slug, ""))
+		med := txmust1(tx.movieEditionByID(mo.ID, ""))
 		playables = append(playables, med)
 	}
 	seriesIDs := txmust1(tx.q.CollectionSeriesList(id))
 	for _, sr := range seriesIDs {
-		sed := txmust1(tx.seriesEditionBySlug(sr.Slug, ""))
+		sed := txmust1(tx.seriesEditionByID(sr.ID, ""))
 		for ep := range sed.Episodes(Significant) {
 			playables = append(playables, ep)
 		}
@@ -272,7 +272,7 @@ func (tx *TxRW) CollectionCreate(title string) (*CollectionHead, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
+	err = tx.q.SlugClaim(schema.SlugClaimParams{
 		Slug:   slug,
 		Kind:   kind.Collection{}.String(),
 		Target: colData.ID,
@@ -372,10 +372,7 @@ func (tx *TxRW) collectionEnsureSlug(id string) error {
 		}
 	}
 	if col.DeletedAt != nil || slug != col.Slug {
-		return tx.q.SlugUpsert(schema.SlugUpsertParams{
-			Slug: slug, Kind: kind.Collection{}.String(), Target: id,
-		})
-
+		return tx.slugMove(kind.Collection{}, id, slug)
 	}
 	return nil
 }

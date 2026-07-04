@@ -88,9 +88,6 @@ RETURNING *;
 -- name: CollectionGet :one
 SELECT * FROM Collection WHERE ID = ?;
 
--- name: CollectionGetBySlug :one
-SELECT * FROM Collection WHERE Slug = ? AND DeletedAt IS NULL;
-
 -- name: CollectionGetStats :one
 SELECT COUNT(*) AS ItemCount, CAST(COALESCE(SUM(Runtime), 0) AS INTEGER) AS RuntimeMinutes FROM (
 	SELECT MovieEdition.Runtime FROM MovieEdition
@@ -328,6 +325,19 @@ WHERE InfoHash = sqlc.arg(InfoHash) RETURNING *;
 
 -- name: DownloadUpdateTargeting :exec
 UPDATE Download SET SeriesEditionID = ?, MovieEditionID = ? WHERE InfoHash = ?;
+
+-- name: EditionSlugTombstoneClaim :exec
+DELETE FROM EditionSlugTombstone WHERE ParentID = ? AND Slug = ?;
+
+-- name: EditionSlugTombstoneDeleteByTarget :exec
+DELETE FROM EditionSlugTombstone WHERE TargetID = ?;
+
+-- name: EditionSlugTombstoneGet :one
+SELECT * FROM EditionSlugTombstone WHERE ParentID = ? AND Slug = ?;
+
+-- name: EditionSlugTombstoneSet :exec
+INSERT INTO EditionSlugTombstone (ParentID, Slug, TargetID) VALUES (?, ?, ?)
+ON CONFLICT (ParentID, Slug) DO UPDATE SET TargetID = ?3;
 
 -- name: EpisodeAirdateSet :exec
 UPDATE Episode SET Airdate = ? WHERE ID = ?;
@@ -665,9 +675,6 @@ SELECT * FROM Movie WHERE ID = ?;
 -- name: MovieGetByEditionID :one
 SELECT * FROM Movie
 WHERE ID IN (SELECT MovieID FROM MovieEdition WHERE MovieEdition.ID = ?);
-
--- name: MovieGetBySlug :one
-SELECT * FROM Movie WHERE Slug = ? AND DeletedAt IS NULL;
 
 -- name: MovieList :many
 SELECT * FROM Movie
@@ -1075,10 +1082,8 @@ LIMIT 1;
 SELECT * FROM SeriesEdition WHERE ID = ?;
 
 -- name: SeriesEditionGetBySlug :one
-SELECT SeriesEdition.* FROM SeriesEdition
-JOIN Series ON Series.ID = SeriesEdition.SeriesID
-WHERE Series.Slug = sqlc.arg(SeriesSlug) AND SeriesEdition.Slug = sqlc.arg(EditionSlug)
-AND SeriesEdition.DeletedAt IS NULL AND Series.DeletedAt IS NULL;
+SELECT * FROM SeriesEdition
+WHERE SeriesID = ? AND Slug = ? AND DeletedAt IS NULL;
 
 -- name: SeriesEditionGetDefault :one
 SELECT * FROM SeriesEdition WHERE SeriesID = ? AND Slug = '';
@@ -1134,9 +1139,6 @@ SELECT * FROM Series WHERE ID = ?;
 SELECT * FROM Series
 WHERE ID IN (SELECT SeriesID FROM SeriesEdition WHERE SeriesEdition.ID = ?);
 
--- name: SeriesGetBySlug :one
-SELECT * FROM Series WHERE Slug = ? AND DeletedAt IS NULL;
-
 -- name: SeriesGetByTVmazeID :one
 SELECT * FROM Series WHERE TVmazeID = ? AND DeletedAt IS NULL;
 
@@ -1189,21 +1191,24 @@ SELECT * FROM Setting WHERE "Group" = ?;
 INSERT INTO Setting (Key, "Group", Value) VALUES (?, ?, ?)
 ON CONFLICT (Key) DO UPDATE SET Value = ?3;
 
+-- name: SlugClaim :exec
+INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
+ON CONFLICT (Slug) DO UPDATE SET Kind = ?2, Target = ?3, Tombstone = 0;
+
 -- name: SlugDelete :exec
 DELETE FROM Slug WHERE Target = ?;
 
 -- name: SlugExists :one
-SELECT COUNT(*) FROM Slug WHERE Slug = ?;
+SELECT COUNT(*) FROM Slug WHERE Slug = ? AND Tombstone = 0;
 
 -- name: SlugGet :one
 SELECT * FROM Slug WHERE Slug = ?;
 
 -- name: SlugGetByTarget :one
-SELECT * FROM Slug WHERE Target = ?;
+SELECT * FROM Slug WHERE Target = ? AND Tombstone = 0;
 
--- name: SlugUpsert :exec
-INSERT INTO Slug (Slug, Kind, Target) VALUES (?, ?, ?)
-ON CONFLICT (Target) DO UPDATE SET Slug = ?1;
+-- name: SlugTombstone :exec
+UPDATE Slug SET Tombstone = 1 WHERE Target = ? AND Tombstone = 0;
 
 -- name: SubtitleTrackCreate :one
 INSERT INTO SubtitleTrack (

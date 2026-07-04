@@ -98,12 +98,49 @@ func TestReplaceURLIgnoresStaleDescriptor(t *testing.T) {
 	}
 }
 
+// TestTombstonedSlugCanonicalized verifies that arriving at a
+// tombstoned slug — on session start (a bookmark or stale link) or by
+// in-session navigation — resolves the page and yields a ReplaceURL
+// cmd toward the canonical path.
+func TestTombstonedSlugCanonicalized(t *testing.T) {
+	ctx := context.Background()
+	m := newTestModel(t)
+	if err := m.WithTxRW(ctx, func(tx *model.TxRW) error {
+		mw, err := tx.MovieCreate("Dune", "")
+		if err != nil {
+			return err
+		}
+		return tx.MovieEditionTitleSet(mw.MovieEditionHead.ID(), "Dune Part One")
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	a, c := newApp(ctx, &Config{Model: m}, &url.URL{Path: "/dune"})
+	if c == nil {
+		t.Fatal("newApp at tombstoned /dune returned nil cmd, want ReplaceURL cmd")
+	}
+	if title, _ := a.View(ctx); title != "Dune Part One — Act Three" {
+		t.Fatalf("View at tombstoned /dune has title %q, want the movie's", title)
+	}
+
+	a = newTestApp(t, m, "/dune-part-one")
+	if c := a.Update(ctx, &msg.URLChange{URL: &url.URL{Path: "/dune"}}); c == nil {
+		t.Fatal("Update(URLChange to tombstoned /dune) returned nil cmd, want ReplaceURL cmd")
+	}
+	if title, _ := a.View(ctx); title != "Dune Part One — Act Three" {
+		t.Fatalf("View after navigating to tombstoned /dune has title %q, want the movie's", title)
+	}
+
+	// A canonical path needs no correction.
+	a = newTestApp(t, m, "/dune-part-one")
+	if c := a.Update(ctx, &msg.URLChange{URL: &url.URL{Path: "/dune-part-one"}}); c != nil {
+		t.Fatalf("Update(URLChange to canonical path) returned %T, want nil", c)
+	}
+}
+
 func newTestApp(t *testing.T, m *model.Model, path string) *app {
 	t.Helper()
 	a, _ := newApp(context.Background(), &Config{Model: m}, &url.URL{Path: path})
-	if a.odesc == nil {
-		t.Fatalf("new app at %q has nil odesc", path)
-	}
 	return a
 }
 

@@ -1,4 +1,5 @@
--- record object kinds as table names on Trash and Slug rows
+-- record object kinds as table names on Trash and Slug rows;
+-- add tombstones preserving slugs across renames
 PRAGMA defer_foreign_keys = ON;
 
 -- Trash gains a Kind column naming the trashed entity's table.
@@ -40,11 +41,19 @@ CREATE INDEX Idx_Trash_CascadeOf       ON Trash (CascadeOf)     WHERE CascadeOf 
 
 -- Slug.Kind moves from ad-hoc lowercase names to the same table-name
 -- vocabulary. An unknown stored kind leaves NULL and fails the update.
+--
+-- Slug also gains a Tombstone flag. A tombstone row preserves a slug
+-- its target no longer answers to: resolving one still finds the
+-- target, and the server redirects to the target's current canonical
+-- slug. A target has exactly one live slug but any number of
+-- tombstones. Tombstones reserve nothing; whoever wants a tombstoned
+-- slug simply claims it.
 CREATE TABLE SlugNew
 (
-	Slug   TEXT PRIMARY KEY,
-	Kind   TEXT NOT NULL CHECK (Kind IN ('Collection', 'Movie', 'Series')),
-	Target TEXT NOT NULL UNIQUE
+	Slug      TEXT PRIMARY KEY,
+	Kind      TEXT NOT NULL CHECK (Kind IN ('Collection', 'Movie', 'Series')),
+	Target    TEXT NOT NULL,
+	Tombstone INTEGER NOT NULL DEFAULT 0 CHECK (Tombstone IN (0, 1))
 )
 STRICT;
 INSERT INTO SlugNew (Slug, Kind, Target)
@@ -58,3 +67,17 @@ SELECT Slug,
 FROM Slug;
 DROP TABLE Slug;
 ALTER TABLE SlugNew RENAME TO Slug;
+CREATE UNIQUE INDEX UQ_Slug_Target ON Slug (Target) WHERE Tombstone = 0;
+
+-- Edition slugs are scoped to their parent movie or series rather than
+-- the global Slug table, so their tombstones get a per-parent table of
+-- their own. Same semantics as Slug tombstones; live edition slugs
+-- stay on the edition rows.
+CREATE TABLE EditionSlugTombstone
+(
+	ParentID TEXT NOT NULL, -- MovieID or SeriesID
+	Slug     TEXT NOT NULL,
+	TargetID TEXT NOT NULL, -- the MovieEdition or SeriesEdition that held Slug
+	PRIMARY KEY (ParentID, Slug)
+)
+STRICT;

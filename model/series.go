@@ -173,10 +173,7 @@ func (tx *TxRW) seriesEnsureSlug(id string) error {
 		}
 	}
 	if sr.DeletedAt != nil || slug != sr.Slug {
-		return tx.q.SlugUpsert(schema.SlugUpsertParams{
-			Slug: slug, Kind: kind.Series{}.String(), Target: id,
-		})
-
+		return tx.slugMove(kind.Series{}, id, slug)
 	}
 	return nil
 }
@@ -269,7 +266,7 @@ func (tx *TxRW) seriesCreateByTVmazeID(show *tvmaze.Show) (*SeriesWork, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = tx.q.SlugUpsert(schema.SlugUpsertParams{
+	err = tx.q.SlugClaim(schema.SlugClaimParams{
 		Slug:   slug,
 		Kind:   kind.Series{}.String(),
 		Target: srID,
