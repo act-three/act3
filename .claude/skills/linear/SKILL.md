@@ -61,10 +61,10 @@ model: create pass1 statsDir with 0o755 mode
 Matches the rest of the codebase; the directory holds ffmpeg first-pass
 log files and has no reason to be group- or world-writable.
 
-Fixes: ACT-123
+Fixes ACT-123.
 ```
 
-Use `Fixes:` for the commit that closes the issue, `Refs:` for partial
+Use `Fixes` for the commit that closes the issue, `Refs` for partial
 work or follow-ups. Use the full identifier as Linear returns it
 (e.g. `ACT-123`), not the shorthand.
 
@@ -102,5 +102,6 @@ When creating issues:
 - Assigned to someone → `Todo`.
 - Unassigned → `Backlog`.
 
-New issues default to project `Beta Launch` unless the user says otherwise
+New issues default to being assigned to the current Linear user
+and project `Beta Launch` unless the user says otherwise
 or the work clearly belongs outside that project's scope.
