@@ -314,14 +314,14 @@ type SubtitleStream struct {
 
 // EncodeParams describes how to produce one rendition.
 type EncodeParams struct {
-	File      *os.File // output file; media data is written here
-	Remux     bool     // true: copy video stream; false: reencode
-	Codec     string   // ffmpeg encoder name, e.g. "libx264" or "libx265" (ignored if Remux)
-	Bitrate   int64    // target video bitrate in kbit/s (ignored if Remux)
-	MaxHeight int      // max output height; 0 = source (ignored if Remux)
-	MaxFPS    int      // max output fps; 0 = source (ignored if Remux)
-	Tag       string   // video tag, e.g. "hvc1" for HEVC in fMP4
-	StatsID   string   // stable filename for pass-1 stats inside statsDir; required when !Remux, ignored otherwise
+	Path      string // output file path; written by ffmpeg
+	Remux     bool   // true: copy video stream; false: reencode
+	Codec     string // ffmpeg encoder name, e.g. "libx264" or "libx265" (ignored if Remux)
+	Bitrate   int64  // target video bitrate in kbit/s (ignored if Remux)
+	MaxHeight int    // max output height; 0 = source (ignored if Remux)
+	MaxFPS    int    // max output fps; 0 = source (ignored if Remux)
+	Tag       string // video tag, e.g. "hvc1" for HEVC in fMP4
+	StatsID   string // stable filename for pass-1 stats inside statsDir; required when !Remux, ignored otherwise
 
 	// DolbyVision, when set on a re-encode rendition, applies the
 	// source's Dolby Vision RPU and converts the reshaped base layer
@@ -807,6 +807,15 @@ func playlistName(i int) string {
 	return fmt.Sprintf("stream%d.m3u8", i)
 }
 
+// normalizeMediaName rewrites references to the media output file in
+// a generated playlist to the stable [MediaName] form: the HLS muxer
+// bakes the media file's base name into URI and EXT-X-MAP entries,
+// but callers locate references via [MediaName] when fixing up the
+// playlist after storing the media.
+func normalizeMediaName(playlist, mediaPath string) string {
+	return strings.ReplaceAll(playlist, filepath.Base(mediaPath), MediaName(0))
+}
+
 // Pass1Combined runs a single ffmpeg command that performs first-pass
 // analysis for every reencode rendition in dsts (those with Remux
 // false), reading the source once. For each such rendition, stats
@@ -891,7 +900,6 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 		}
 	}
 
-	mediaPath := filepath.Join(tmpDir, MediaName(0))
 	plsPath := filepath.Join(tmpDir, playlistName(0))
 
 	// Build single-rendition pass-2 args.
@@ -920,31 +928,28 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	codecExtras = append(codecExtras, threadParams(dst.Codec, ThreadsFor(dst)))
 	args = append(args, twoPassArgs(dst.Codec, 2, passlog, codecExtras...)...)
 	args = append(args, "-an", "-sn")
-	args = append(args, hlsOutputArgs(mediaPath)...)
+	args = append(args, hlsOutputArgs(dst.Path)...)
 	args = append(args, plsPath)
 
 	if err := runWithProgress(ctx, args, report); err != nil {
 		return "", err
 	}
 
-	// Copy media to caller's file and read playlist.
-	mediaData, err := os.ReadFile(mediaPath)
-	if err != nil {
-		return "", fmt.Errorf("read media: %w", err)
-	}
-	if _, err := dst.File.Write(mediaData); err != nil {
-		return "", fmt.Errorf("write media: %w", err)
-	}
 	b, err := os.ReadFile(plsPath)
 	if err != nil {
 		return "", fmt.Errorf("read playlist: %w", err)
 	}
+	pls := normalizeMediaName(string(b), dst.Path)
 
 	// Correct EXTINF durations. ffmpeg's HLS muxer computes them
 	// from raw encoder packet timestamps which can be offset from
 	// the actual fMP4 segment PTS spans by the B-frame encoder
 	// delay (~117ms with medium preset on VFR telecine input).
-	return fixEXTINF(string(b), mediaData), nil
+	mediaData, err := os.ReadFile(dst.Path)
+	if err != nil {
+		return "", fmt.Errorf("read media: %w", err)
+	}
+	return fixEXTINF(pls, mediaData), nil
 }
 
 // RemuxSingle produces one HLS rendition by copying the video stream.
@@ -964,21 +969,16 @@ func RemuxSingle(ctx context.Context, src *os.File, format string, dst EncodePar
 		}
 	}
 
-	if err := doRemux(ctx, src, format, tmpDir, dst, 0, report); err != nil {
+	plsPath := filepath.Join(tmpDir, playlistName(0))
+	if err := doRemux(ctx, src, format, dst.Path, plsPath, dst, report); err != nil {
 		return "", err
 	}
 
-	// Copy media to caller's file and read playlist.
-	mediaPath := filepath.Join(tmpDir, MediaName(0))
-	plsPath := filepath.Join(tmpDir, playlistName(0))
-	if err := copyFileData(dst.File, mediaPath); err != nil {
-		return "", fmt.Errorf("copy media: %w", err)
-	}
 	b, err := os.ReadFile(plsPath)
 	if err != nil {
 		return "", fmt.Errorf("read playlist: %w", err)
 	}
-	return string(b), nil
+	return normalizeMediaName(string(b), dst.Path), nil
 }
 
 // RemuxToMP4 produces a single downloadable MP4 by copying the video stream.
@@ -993,12 +993,6 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		return fmt.Errorf("probe source: %w", err)
 	}
 
-	tmpDir, err := mkScratch("ffmpeg-remux-mp4-*")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmpDir)
-
 	total := duration
 	report := func(d time.Duration) {
 		if onProgress != nil {
@@ -1006,7 +1000,7 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		}
 	}
 
-	outPath := filepath.Join(tmpDir, "output.mp4")
+	outPath := dst.Path
 	args := inputArgs(format)
 	args = append(args, "-i", src.Name(),
 		"-map", "0:v:0",
@@ -1018,10 +1012,7 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
-	if err := runWithProgress(ctx, args, report); err != nil {
-		return err
-	}
-	return copyFileData(dst.File, outPath)
+	return runWithProgress(ctx, args, report)
 }
 
 // Pass2ToMP4 runs second-pass encoding for a single rendition,
@@ -1055,12 +1046,6 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		}
 	}()
 
-	tmpDir, err := mkScratch("ffmpeg-pass2-mp4-*")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tmpDir)
-
 	total := duration
 	report := func(d time.Duration) {
 		if onProgress != nil {
@@ -1068,7 +1053,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		}
 	}
 
-	outPath := filepath.Join(tmpDir, "output.mp4")
+	outPath := dst.Path
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
 	args := hwDeviceArgs(dst.DolbyVision)
 	args = append(args, inputArgs(format)...)
@@ -1093,10 +1078,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
-	if err := runWithProgress(ctx, args, report); err != nil {
-		return err
-	}
-	return copyFileData(dst.File, outPath)
+	return runWithProgress(ctx, args, report)
 }
 
 // audioMuxArgsForDownload returns the ffmpeg args needed to mux every
@@ -1251,12 +1233,9 @@ func ExtractSubtitleWebVTT(ctx context.Context, src *os.File, format string, str
 // -----------------------------------------------------------------------
 
 // doRemux produces one HLS rendition by copying the video stream.
-func doRemux(ctx context.Context, src *os.File, format, tmpDir string,
-	p EncodeParams, idx int, onProgress func(time.Duration),
+func doRemux(ctx context.Context, src *os.File, format, mediaPath, plsPath string,
+	p EncodeParams, onProgress func(time.Duration),
 ) error {
-	mediaPath := filepath.Join(tmpDir, MediaName(idx))
-	plsPath := filepath.Join(tmpDir, playlistName(idx))
-
 	args := inputArgs(format)
 	args = append(args, "-i", src.Name())
 	args = append(args, "-map", "0:v:0")
@@ -1727,17 +1706,6 @@ func parseFrameRate(s string) FrameRate {
 	n, _ := strconv.Atoi(num)
 	d, _ := strconv.Atoi(den)
 	return FrameRate{n, d}
-}
-
-// copyFileData copies the contents of the file at srcPath into dst.
-func copyFileData(dst *os.File, srcPath string) error {
-	f, err := os.Open(srcPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = io.Copy(dst, f)
-	return err
 }
 
 // presetDefault is the preset Pass1Combined records when no

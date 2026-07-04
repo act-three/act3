@@ -88,14 +88,8 @@ func TestSegmentAlignment(t *testing.T) {
 	// a no-op, but matches the production ladder shape). With
 	// SegmentBoundaries set, the encoder is forced to keyframe at
 	// exactly the same source frames the remux variant cuts at.
-	reencFile, err := os.Create(filepath.Join(dir, "reenc.mp4"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer reencFile.Close()
-
 	reencParams := EncodeParams{
-		File:                reencFile,
+		Path:                filepath.Join(dir, "reenc.mp4"),
 		Codec:               "libx264",
 		Bitrate:             500,
 		MaxHeight:           540,
@@ -117,14 +111,8 @@ func TestSegmentAlignment(t *testing.T) {
 
 	// Remux rendition: stream-copy of the synthesised h264 stream.
 	// Inherits the source's 6s keyframe cadence.
-	remuxFile, err := os.Create(filepath.Join(dir, "remux.mp4"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer remuxFile.Close()
-
 	remuxParams := EncodeParams{
-		File:  remuxFile,
+		Path:  filepath.Join(dir, "remux.mp4"),
 		Remux: true,
 	}
 
@@ -139,6 +127,16 @@ func TestSegmentAlignment(t *testing.T) {
 	// switch streams: frames N, M, ... will land on the same
 	// timeline position iff the underlying media has keyframes at
 	// the same display-order indices.
+	reencFile, err := os.Open(reencParams.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reencFile.Close()
+	remuxFile, err := os.Open(remuxParams.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer remuxFile.Close()
 	reencScan, err := scanVideoPackets(ctx, reencFile, "mp4")
 	if err != nil {
 		t.Fatalf("probe re-encode keyframes: %v", err)
