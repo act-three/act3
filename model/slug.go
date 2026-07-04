@@ -25,10 +25,12 @@ const (
 // The keys are named after the object id prefixes used in the database,
 // such as "med" for a movie edition, "ep" for an episode, etc.
 //
+// Slugs resolve through tombstones. Callers can compare the path
+// against SlugPath of the returned odesc and redirect if they differ.
+//
 // SlugResolve returns nil when no object is found.
 func (tx *TxR) SlugResolve(path []string) map[string]string {
-	slug := getSlug(0, path)
-	s, err := tx.q.SlugGet(slug)
+	s, err := tx.q.SlugGet(getSlug(0, path))
 	if err != nil {
 		return nil
 	}
@@ -41,7 +43,7 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 		if len(path) > 2 {
 			return nil
 		}
-		med, err := tx.movieEditionBySlug(slug, getSlug(1, path))
+		med, err := tx.movieEditionByID(s.Target, getSlug(1, path))
 		if err != nil {
 			return nil
 		}
@@ -51,7 +53,7 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 			"mo":   med.MovieHead().ID(),
 		}
 	case kind.Series:
-		return tx.resolveSeries(slug, path[1:])
+		return tx.resolveSeries(s.Target, path[1:])
 	case kind.Collection:
 		var pageKind string
 		switch {
@@ -62,7 +64,7 @@ func (tx *TxR) SlugResolve(path []string) map[string]string {
 		default:
 			return nil
 		}
-		col, ok := tx.collectionBySlug(slug)
+		col, ok := tx.collectionByID(s.Target)
 		if !ok {
 			return nil
 		}
@@ -136,6 +138,20 @@ func (tx *TxR) SlugPath(odesc map[string]string) string {
 	return ""
 }
 
+// slugMove points target's live Slug-table row at slug, leaving a
+// tombstone at the slug target previously answered to (so old URLs
+// keep resolving) and displacing any tombstone holding the new slug.
+// With no previous row — creation, or restore after trash removed the
+// target's rows — it simply claims the slug.
+func (tx *TxRW) slugMove(k kind.SlugOwner, target, slug string) error {
+	if err := tx.q.SlugTombstone(target); err != nil {
+		return err
+	}
+	return tx.q.SlugClaim(schema.SlugClaimParams{
+		Slug: slug, Kind: k.String(), Target: target,
+	})
+}
+
 func (tx *TxR) slugForTarget(k kind.SlugOwner, target string) string {
 	s, ok := txfind1(tx.q.SlugGetByTarget(target))
 	if !ok || s.Kind != k.String() {
@@ -146,40 +162,64 @@ func (tx *TxR) slugForTarget(k kind.SlugOwner, target string) string {
 
 // resolveSeries resolves the segments under a series slug: nothing (the
 // default edition), an edition slug, an episode of the default edition,
-// or an edition slug followed by an episode slug.
-func (tx *TxR) resolveSeries(seriesSlug string, rest []string) map[string]string {
+// or an edition slug followed by an episode slug. An ambiguous single
+// segment prefers a live edition over an episode over a tombstoned
+// edition, so tombstones never shadow live slugs.
+func (tx *TxR) resolveSeries(seriesID string, rest []string) map[string]string {
 	switch len(rest) {
 	case 0:
-		sed, err := tx.seriesEditionBySlug(seriesSlug, "")
-		if err != nil {
-			return nil
-		}
-		return map[string]string{
-			"kind": KindSeriesEdition,
-			"sr":   sed.SeriesHead().ID(),
-			"sed":  sed.ID(),
-		}
+		return tx.resolveSeriesEdition(seriesID, "")
 	case 1:
-		if sed, err := tx.seriesEditionBySlug(seriesSlug, rest[0]); err == nil {
-			return map[string]string{
-				"kind": KindSeriesEdition,
-				"sr":   sed.SeriesHead().ID(),
-				"sed":  sed.ID(),
-			}
+		if odesc := tx.resolveSeriesEdition(seriesID, rest[0]); odesc != nil {
+			return odesc
 		}
-		return tx.resolveEpisode(seriesSlug, "", rest[0])
+		if odesc := tx.resolveEpisode(seriesID, "", rest[0]); odesc != nil {
+			return odesc
+		}
+		return tx.resolveSeriesEditionTombstone(seriesID, rest[0])
 	case 2:
-		return tx.resolveEpisode(seriesSlug, rest[0], rest[1])
+		return tx.resolveEpisode(seriesID, rest[0], rest[1])
 	}
 	return nil
 }
 
-func (tx *TxR) resolveEpisode(seriesSlug, edSlug, epSlug string) map[string]string {
+func (tx *TxR) resolveSeriesEdition(seriesID, edSlug string) map[string]string {
 	sed, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
-		SeriesSlug:  seriesSlug,
-		EditionSlug: edSlug,
+		SeriesID: seriesID,
+		Slug:     edSlug,
 	})
 
+	if err != nil {
+		return nil
+	}
+	return map[string]string{
+		"kind": KindSeriesEdition,
+		"sr":   sed.SeriesID,
+		"sed":  sed.ID,
+	}
+}
+
+func (tx *TxR) resolveSeriesEditionTombstone(seriesID, edSlug string) map[string]string {
+	sed, err := tx.seriesEditionByTombstone(seriesID, edSlug)
+	if err != nil {
+		return nil
+	}
+	return map[string]string{
+		"kind": KindSeriesEdition,
+		"sr":   sed.SeriesID,
+		"sed":  sed.ID,
+	}
+}
+
+func (tx *TxR) resolveEpisode(seriesID, edSlug, epSlug string) map[string]string {
+	sed, err := tx.q.SeriesEditionGetBySlug(schema.SeriesEditionGetBySlugParams{
+		SeriesID: seriesID,
+		Slug:     edSlug,
+	})
+
+	if err != nil && edSlug != "" {
+		sed, err = tx.seriesEditionByTombstone(seriesID, edSlug)
+	}
 	if err != nil {
 		return nil
 	}

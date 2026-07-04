@@ -218,6 +218,13 @@ func (tx *TxRW) movieEditionCreate(label, movieID string, p movieEditionParams) 
 	if err != nil {
 		return nil, err
 	}
+	if slug != "" {
+		if err := tx.q.EditionSlugTombstoneClaim(schema.EditionSlugTombstoneClaimParams{
+			ParentID: movieID, Slug: slug,
+		}); err != nil {
+			return nil, err
+		}
+	}
 	medData, err := tx.q.MovieEditionCreate(schema.MovieEditionCreateParams{
 		Title:       p.Title,
 		Label:       label,
@@ -293,9 +300,31 @@ func (tx *TxRW) movieEditionEnsureSlug(id string) error {
 	if slug == med.Slug {
 		return nil
 	}
+	return tx.movieEditionSlugMove(med, slug)
+}
+
+// movieEditionSlugMove points the edition's slug at slug, leaving a
+// tombstone at the slug it held (so old URLs keep resolving) and
+// displacing any tombstone holding the new slug. The default slug ""
+// is not a URL and is never tombstoned or claimed.
+func (tx *TxRW) movieEditionSlugMove(med schema.MovieEdition, slug string) error {
+	if slug != "" {
+		if err := tx.q.EditionSlugTombstoneClaim(schema.EditionSlugTombstoneClaimParams{
+			ParentID: med.MovieID, Slug: slug,
+		}); err != nil {
+			return err
+		}
+	}
+	if med.DeletedAt == nil && med.Slug != "" {
+		if err := tx.q.EditionSlugTombstoneSet(schema.EditionSlugTombstoneSetParams{
+			ParentID: med.MovieID, Slug: med.Slug, TargetID: med.ID,
+		}); err != nil {
+			return err
+		}
+	}
 	return tx.q.MovieEditionSlugSet(schema.MovieEditionSlugSetParams{
 		Slug: slug,
-		ID:   id,
+		ID:   med.ID,
 	})
 
 }
@@ -400,19 +429,10 @@ func (tx *TxRW) MovieEditionSetDefault(id string) error {
 	if err != nil {
 		return err
 	}
-	err = tx.q.MovieEditionSlugSet(schema.MovieEditionSlugSetParams{
-		Slug: oldSlug,
-		ID:   old.ID,
-	})
-
-	if err != nil {
+	if err := tx.movieEditionSlugMove(old, oldSlug); err != nil {
 		return err
 	}
-	return tx.q.MovieEditionSlugSet(schema.MovieEditionSlugSetParams{
-		Slug: "",
-		ID:   med.ID,
-	})
-
+	return tx.movieEditionSlugMove(med, "")
 }
 
 func (tx *TxRW) movieEditionFindSlug(label, movieID string, allow ...string) (string, error) {

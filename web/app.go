@@ -17,8 +17,7 @@ type app struct {
 	model *model.Model
 
 	// mutable state
-	path    string            // request path
-	odesc   map[string]string // object descriptor, if any, see model.SlugResolve
+	path    string // request path; object pages re-resolve it each frame
 	dialog  dialog
 	player  *player
 	notes   []ui.Note
@@ -46,7 +45,9 @@ func newApp(ctx context.Context, c *Config, u *url.URL) (*app, cmd) {
 		model: c.Model,
 	}
 	a.setPath(ctx, u)
-	return a, nil
+	// A bookmarked or stale link may arrive with tombstoned slugs;
+	// canonicalize the URL once the session is up.
+	return a, a.replaceURL(ctx)
 }
 
 func (a *app) Subscriptions(ctx context.Context) domi.Sub[msg.Msg] {

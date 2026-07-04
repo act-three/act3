@@ -26,7 +26,9 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 	switch m := m.(type) {
 	case *msg.URLChange:
 		a.setPath(ctx, m.URL)
-		return nil
+		// The path's slugs may be stale — resolved through a tombstone
+		// after a rename — so canonicalize in place.
+		return a.replaceURL(ctx)
 	case *msg.URLRequest:
 		if !m.Internal {
 			return domi.Load[msg.Msg](m.URL.String())
@@ -452,19 +454,12 @@ func (a *app) notify(variant ui.NoteVariant, title string) {
 
 // setPath is used by both Update *and* Preview (and newApp).
 // It can set fields on a but must not mutate deeper structures
-// or write to the db.
+// or touch the db.
 func (a *app) setPath(ctx context.Context, u *url.URL) {
 	slog.InfoContext(ctx, "navigate", "path", u.Path)
 	a.dialog = nil // navigating away closes any open dialog
 	a.player = nil // and the player
 	a.path = u.Path
-	a.odesc = nil
-	if section, slugs, allowed := slugs(splitPath(a.path)); section != "" {
-		a.model.WithTxR(ctx, func(tx *model.TxR) error {
-			a.odesc = slugResolve(tx, slugs, allowed)
-			return nil
-		})
-	}
 }
 
 func slugResolve(tx *model.TxR, slugs, allowed []string) map[string]string {

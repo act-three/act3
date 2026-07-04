@@ -282,6 +282,9 @@ func (tx *TxRW) trashMovieEdition(id, root string, now time.Time) error {
 	}); err != nil {
 		return err
 	}
+	if err := tx.q.EditionSlugTombstoneDeleteByTarget(id); err != nil {
+		return err
+	}
 	return tx.reapOrphanVideos(root, now)
 }
 
@@ -348,10 +351,12 @@ func (tx *TxRW) trashSeriesEdition(id, root string, now time.Time) error {
 			return err
 		}
 	}
-	return tx.q.SeriesEditionSoftDelete(schema.SeriesEditionSoftDeleteParams{
+	if err := tx.q.SeriesEditionSoftDelete(schema.SeriesEditionSoftDeleteParams{
 		DeletedAt: new(now.UnixMilli()), ID: id,
-	})
-
+	}); err != nil {
+		return err
+	}
+	return tx.q.EditionSlugTombstoneDeleteByTarget(id)
 }
 
 func (tx *TxRW) trashSeason(id, root string, now time.Time) error {
