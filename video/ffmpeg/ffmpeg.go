@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"ily.dev/act3/xbufio"
@@ -945,10 +946,28 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	// from raw encoder packet timestamps which can be offset from
 	// the actual fMP4 segment PTS spans by the B-frame encoder
 	// delay (~117ms with medium preset on VFR telecine input).
-	mediaData, err := os.ReadFile(dst.Path)
+	// Map the media read-only rather than reading it into memory:
+	// fixEXTINF touches only each segment's leading boxes (sidx and
+	// moof), so the kernel pages in a few KB per segment instead of
+	// the whole multi-GB rendition.
+	media, err := os.Open(dst.Path)
 	if err != nil {
-		return "", fmt.Errorf("read media: %w", err)
+		return "", fmt.Errorf("open media: %w", err)
 	}
+	defer media.Close()
+	fi, err := media.Stat()
+	if err != nil {
+		return "", fmt.Errorf("stat media: %w", err)
+	}
+	if fi.Size() == 0 {
+		return pls, nil // nothing to correct; mmap rejects length 0
+	}
+	mediaData, err := syscall.Mmap(int(media.Fd()), 0, int(fi.Size()),
+		syscall.PROT_READ, syscall.MAP_SHARED)
+	if err != nil {
+		return "", fmt.Errorf("mmap media: %w", err)
+	}
+	defer syscall.Munmap(mediaData)
 	return fixEXTINF(pls, mediaData), nil
 }
 
