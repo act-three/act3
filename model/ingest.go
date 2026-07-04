@@ -570,7 +570,7 @@ func (tx *TxR) taskIngestEncodeAudio(args []string) error {
 
 	var playlist string
 	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
-		dst.File = dstFile
+		dst.Path = dstFile.Name()
 		tx.m.prog.UpdateStatus(progKey, desc+": encoding")
 		var err error
 		playlist, err = ffmpeg.EncodeAudio(tx.ctx, src, vid.Format, dst, duration,
@@ -682,7 +682,7 @@ func (tx *TxR) taskIngestEncodeRend(args []string) error {
 
 	var playlist string
 	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
-		dst.File = dstFile
+		dst.Path = dstFile.Name()
 		onProgress := func(v float64) { tx.m.prog.Update(progKey, v) }
 
 		if rfs.Remux != 0 {
@@ -788,7 +788,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(args []string) error {
 	tx.m.reweighTask(tx.ctx, ffmpeg.ThreadsFor(dst))
 
 	hash, err := tx.m.store.CreateFunc(func(dstFile *os.File) error {
-		dst.File = dstFile
+		dst.Path = dstFile.Name()
 		onProgress := func(v float64) { tx.m.prog.Update(progKey, v) }
 
 		if rfd.Remux != 0 {

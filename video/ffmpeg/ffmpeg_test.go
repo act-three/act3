@@ -214,13 +214,8 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	}
 
 	mediaPath := filepath.Join(dir, MediaName(0))
-	outFile, err := os.Create(mediaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	params := EncodeParams{
-		File:    outFile,
+		Path:    mediaPath,
 		Codec:   "libx265",
 		Bitrate: 6000,
 		Tag:     "hvc1",
@@ -245,7 +240,6 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	if playlist == "" {
 		t.Fatal("empty playlist")
 	}
-	outFile.Close()
 
 	// Write playlist and validate with mediastreamvalidator.
 	plsPath := filepath.Join(dir, "stream0.m3u8")
@@ -309,13 +303,8 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 	}
 
 	mediaPath := filepath.Join(dir, MediaName(0))
-	outFile, err := os.Create(mediaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	params := EncodeParams{
-		File:    outFile,
+		Path:    mediaPath,
 		Codec:   "libx265",
 		Bitrate: 1500,
 		Tag:     "hvc1",
@@ -338,7 +327,6 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 	if playlist == "" {
 		t.Fatal("empty playlist")
 	}
-	outFile.Close()
 
 	// Verify media file is non-empty.
 	info, err := os.Stat(mediaPath)
@@ -456,14 +444,8 @@ func TestMPEG2TelecineTwoPass(t *testing.T) {
 			probe.Video.FrameRate)
 	}
 
-	mediaFile, err := os.Create(filepath.Join(dir, MediaName(0)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer mediaFile.Close()
-
 	params := EncodeParams{
-		File:    mediaFile,
+		Path:    filepath.Join(dir, MediaName(0)),
 		Codec:   "libx265",
 		Bitrate: 5000,
 		Tag:     "hvc1",
@@ -524,14 +506,8 @@ func TestX264MbtreePass2(t *testing.T) {
 	}
 
 	mediaPath := filepath.Join(dir, MediaName(0))
-	outFile, err := os.Create(mediaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer outFile.Close()
-
 	params := EncodeParams{
-		File:    outFile,
+		Path:    mediaPath,
 		Codec:   "libx264",
 		Bitrate: 500,
 		StatsID: "r0",
@@ -630,12 +606,8 @@ func TestHDR10EncodePreservesColor(t *testing.T) {
 	}
 
 	mediaPath := filepath.Join(dir, MediaName(0))
-	outFile, err := os.Create(mediaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
 	params := EncodeParams{
-		File:      outFile,
+		Path:      mediaPath,
 		Codec:     "libx265",
 		Bitrate:   500,
 		MaxHeight: 90, // force the scale filtergraph
@@ -657,7 +629,6 @@ func TestHDR10EncodePreservesColor(t *testing.T) {
 	if playlist == "" {
 		t.Fatal("empty playlist")
 	}
-	outFile.Close()
 
 	var buf bytes.Buffer
 	cmd := newCmd(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
@@ -784,12 +755,8 @@ func TestDolbyVisionEncodeHDR10(t *testing.T) {
 	}
 
 	mediaPath := filepath.Join(dir, MediaName(0))
-	outFile, err := os.Create(mediaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
 	params := EncodeParams{
-		File:        outFile,
+		Path:        mediaPath,
 		Codec:       "libx265",
 		Bitrate:     1000,
 		Tag:         "hvc1",
@@ -811,7 +778,6 @@ func TestDolbyVisionEncodeHDR10(t *testing.T) {
 	if playlist == "" {
 		t.Fatal("empty playlist")
 	}
-	outFile.Close()
 
 	// The encoded media must be 10-bit HDR10 (Main 10, BT.2020 PQ).
 	var buf bytes.Buffer

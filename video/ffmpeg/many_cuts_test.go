@@ -61,14 +61,8 @@ func TestEncoderHonorsManyForcedKeyframes(t *testing.T) {
 	t.Logf("requesting %d cuts at %s, last cut frame %d",
 		len(cuts), rate, cuts[len(cuts)-1])
 
-	outFile, err := os.Create(filepath.Join(dir, "out.mp4"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer outFile.Close()
-
 	params := EncodeParams{
-		File:                outFile,
+		Path:                filepath.Join(dir, "out.mp4"),
 		Codec:               "libx265",
 		Bitrate:             500,
 		Tag:                 "hvc1",
@@ -88,6 +82,11 @@ func TestEncoderHonorsManyForcedKeyframes(t *testing.T) {
 		t.Fatalf("pass 2: %v", err)
 	}
 
+	outFile, err := os.Open(params.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer outFile.Close()
 	scan, err := scanVideoPackets(ctx, outFile, "mp4")
 	if err != nil {
 		t.Fatalf("scan output: %v", err)

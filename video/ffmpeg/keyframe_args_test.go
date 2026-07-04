@@ -164,14 +164,8 @@ func TestPass1AcceptsManyCuts(t *testing.T) {
 		cuts[i] = int64(i + 1)
 	}
 
-	mediaFile, err := os.Create(filepath.Join(dir, MediaName(0)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer mediaFile.Close()
-
 	params := EncodeParams{
-		File:                mediaFile,
+		Path:                filepath.Join(dir, MediaName(0)),
 		Codec:               "libx265",
 		Bitrate:             500,
 		Tag:                 "hvc1",

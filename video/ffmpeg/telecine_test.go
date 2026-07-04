@@ -734,14 +734,8 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 			MinFramesPerSegment(codedFps, MinSegmentDuration))
 	}
 
-	mediaFile, err := os.Create(filepath.Join(dir, MediaName(0)))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer mediaFile.Close()
-
 	params := EncodeParams{
-		File:    mediaFile,
+		Path:    filepath.Join(dir, MediaName(0)),
 		Codec:   "libx265",
 		Bitrate: 1500,
 		Tag:     "hvc1",
@@ -764,7 +758,6 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 	if playlist == "" {
 		t.Fatal("empty playlist")
 	}
-	mediaFile.Close()
 
 	// Step 5: Validate with mediastreamvalidator.
 	plsPath := filepath.Join(dir, "stream0.m3u8")

@@ -12,17 +12,17 @@ import (
 
 // AudioEncodeParams describes one audio output rendition.
 type AudioEncodeParams struct {
-	File              *os.File // output file: media data is written here
-	SourceStreamIndex int      // 0-based among audio streams; matches probe.Audio[i].Index
-	Channels          int      // target channels (source count, or 2 for a downmix)
-	SourceLayout      string   // source ChannelLayout, used only to log layout remaps
-	Bitrate           int64    // kbit/s; ignored when StreamCopy
-	StreamCopy        bool     // true: copy source audio stream as-is
+	Path              string // output file path; written by ffmpeg
+	SourceStreamIndex int    // 0-based among audio streams; matches probe.Audio[i].Index
+	Channels          int    // target channels (source count, or 2 for a downmix)
+	SourceLayout      string // source ChannelLayout, used only to log layout remaps
+	Bitrate           int64  // kbit/s; ignored when StreamCopy
+	StreamCopy        bool   // true: copy source audio stream as-is
 }
 
 // EncodeAudio extracts one source audio stream into an HLS audio
 // rendition: a single-file fMP4 plus media playlist. The playlist
-// is returned as a string; the fMP4 bytes are written to dst.File.
+// is returned as a string; the fMP4 is written to dst.Path.
 //
 // Stream-copy (StreamCopy=true) skips re-encoding entirely; the
 // caller decides this based on source codec and channel match.
@@ -60,7 +60,6 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 		}
 	}
 
-	mediaPath := filepath.Join(tmpDir, MediaName(0))
 	plsPath := filepath.Join(tmpDir, playlistName(0))
 
 	args := inputArgs(format)
@@ -87,25 +86,18 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 			}
 		}
 	}
-	args = append(args, hlsOutputArgs(mediaPath)...)
+	args = append(args, hlsOutputArgs(dst.Path)...)
 	args = append(args, plsPath)
 
 	if err := runWithProgress(ctx, args, report); err != nil {
 		return "", err
 	}
 
-	mediaData, err := os.ReadFile(mediaPath)
-	if err != nil {
-		return "", fmt.Errorf("read media: %w", err)
-	}
-	if _, err := dst.File.Write(mediaData); err != nil {
-		return "", fmt.Errorf("write media: %w", err)
-	}
 	b, err := os.ReadFile(plsPath)
 	if err != nil {
 		return "", fmt.Errorf("read playlist: %w", err)
 	}
-	return string(b), nil
+	return normalizeMediaName(string(b), dst.Path), nil
 }
 
 // standardLayout maps a channel count to the ffmpeg

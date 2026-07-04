@@ -101,19 +101,13 @@ func runAudioCase(t *testing.T, dir string, c audioCase) {
 		probe.Audio[0].CodecName, probe.Audio[0].Channels, probe.Audio[0].ChannelLayout)
 
 	mediaPath := filepath.Join(dir, c.name+"-out.mp4")
-	outFile, err := os.Create(mediaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c.dst.File = outFile
+	c.dst.Path = mediaPath
 
 	playlist, err := EncodeAudio(ctx, srcFile, probe.FormatName, c.dst,
 		probe.Duration, nil)
 	if err != nil {
-		outFile.Close()
 		t.Fatalf("EncodeAudio: %v", err)
 	}
-	outFile.Close()
 
 	if playlist == "" {
 		t.Fatal("empty playlist")
@@ -310,18 +304,13 @@ func TestEncodeAudioMissingStream(t *testing.T) {
 	}
 
 	mediaPath := filepath.Join(dir, "missing-out.mp4")
-	outFile, err := os.Create(mediaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
 	dst := AudioEncodeParams{
-		File:              outFile,
+		Path:              mediaPath,
 		SourceStreamIndex: 5, // nonexistent
 		Channels:          2,
 		Bitrate:           128,
 	}
 	_, err = EncodeAudio(ctx, srcFile, probe.FormatName, dst, probe.Duration, nil)
-	outFile.Close()
 	if err == nil {
 		t.Fatal("EncodeAudio with nonexistent stream returned nil error")
 	}
@@ -373,21 +362,15 @@ func TestEncodeAudio51SideRemap(t *testing.T) {
 	}
 
 	mediaPath := filepath.Join(dir, "remap-out.mp4")
-	outFile, err := os.Create(mediaPath)
-	if err != nil {
-		t.Fatal(err)
-	}
 	dst := AudioEncodeParams{
-		File:              outFile,
+		Path:              mediaPath,
 		SourceStreamIndex: 0,
 		Channels:          6,
 		Bitrate:           384,
 	}
 	if _, err := EncodeAudio(ctx, srcFile, probe.FormatName, dst, probe.Duration, nil); err != nil {
-		outFile.Close()
 		t.Fatalf("EncodeAudio: %v", err)
 	}
-	outFile.Close()
 
 	outFp, err := os.Open(mediaPath)
 	if err != nil {

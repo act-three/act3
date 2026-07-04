@@ -191,18 +191,12 @@ func TestRemuxToMP4_TwoAudioTracks(t *testing.T) {
 	}
 
 	mp4Path := filepath.Join(dir, "out.mp4")
-	outFile, err := os.Create(mp4Path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dst := EncodeParams{File: outFile, Remux: true}
+	dst := EncodeParams{Path: mp4Path, Remux: true}
 
 	t.Log("running RemuxToMP4...")
 	if err := RemuxToMP4(ctx, srcFile, probe.FormatName, dst, probe.Duration, nil); err != nil {
-		outFile.Close()
 		t.Fatalf("RemuxToMP4: %v", err)
 	}
-	outFile.Close()
 
 	assertTwoAudioOutput(t, ctx, mp4Path)
 	if !hasFaststart(t, mp4Path) {
@@ -238,12 +232,8 @@ func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
 	}
 
 	mp4Path := filepath.Join(dir, "out.mp4")
-	outFile, err := os.Create(mp4Path)
-	if err != nil {
-		t.Fatal(err)
-	}
 	dst := EncodeParams{
-		File:    outFile,
+		Path:    mp4Path,
 		Codec:   "libx264",
 		Bitrate: 500,
 		StatsID: "r0",
@@ -252,16 +242,13 @@ func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
 	t.Log("running pass 1...")
 	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
 		[]EncodeParams{dst}, dir, probe.Duration, nil); err != nil {
-		outFile.Close()
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running Pass2ToMP4...")
 	if err := Pass2ToMP4(ctx, srcFile, probe.FormatName, dst, dir, probe.Duration, nil); err != nil {
-		outFile.Close()
 		t.Fatalf("Pass2ToMP4: %v", err)
 	}
-	outFile.Close()
 
 	assertTwoAudioOutput(t, ctx, mp4Path)
 	if !hasFaststart(t, mp4Path) {
