@@ -77,7 +77,7 @@ local commit), so the id is the only durable link. Read it from
 `main@origin` — the user will usually have fetched already — e.g.:
 
 ```
-Landed as 6153950a171e, `model: record tombstones for changed slugs` (#123).
+Landed as `6153950a171e`, "model: record tombstones for changed slugs" (#123).
 ```
 
 ## Attribution
