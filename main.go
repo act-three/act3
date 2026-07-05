@@ -115,18 +115,16 @@ func main() {
 	if v := os.Getenv("A3TMDBTOKEN"); v != "" {
 		model.SettingDefaultString(model.SettingKeyTMDBAccessToken, v)
 	}
-	if v := os.Getenv("A3FFMPEGVIDEOPRESET"); v != "" {
-		ffmpeg.OverridePreset(v)
-	}
 
 	store := must(storage.Open(datDir))
 	tmdbClient := tmdb.New()
 	tvmazeClient := tvmaze.New()
 	m := must(model.New(dbr, dbw, model.Config{
-		Store:    store,
-		Pass1Dir: pass1Dir,
-		TMDB:     tmdbClient,
-		TVmaze:   tvmazeClient,
+		Store:       store,
+		Pass1Dir:    pass1Dir,
+		VideoPreset: os.Getenv("A3FFMPEGVIDEOPRESET"),
+		TMDB:        tmdbClient,
+		TVmaze:      tvmazeClient,
 	}))
 
 	mux := &http.ServeMux{}

@@ -36,7 +36,7 @@ import (
 // irregular per-sample durations into the trun).
 func TestSegmentAlignment(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 
 	srcPath := filepath.Join(dir, "source.mkv")
@@ -99,13 +99,14 @@ func TestSegmentAlignment(t *testing.T) {
 	}
 
 	t.Log("running re-encode pass 1...")
-	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{reencParams}, dir, probe.Duration, nil); err != nil {
+	err = Pass1Combined(ctx, srcFile, probe.FormatName,
+		[]EncodeParams{reencParams}, dir, preset, probe.Duration, nil)
+	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 	t.Log("running re-encode pass 2...")
 	if _, err := Pass2Single(ctx, srcFile, probe.FormatName,
-		reencParams, dir, probe.Duration, nil); err != nil {
+		reencParams, dir, preset, probe.Duration, nil); err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
 

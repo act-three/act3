@@ -439,6 +439,7 @@ func (tx *TxR) taskIngestPass1(args []string) (err error) {
 		}
 	}
 
+	preset := tx.m.videoPreset
 	if numReencode > 0 {
 		// Pass 1 runs one capped encoder per reencode rendition in a
 		// single ffmpeg; refine the nominal admission weight now that
@@ -488,7 +489,7 @@ func (tx *TxR) taskIngestPass1(args []string) (err error) {
 		}
 
 		tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Pass 1 (%d renditions)", numReencode))
-		err = ffmpeg.Pass1Combined(tx.ctx, src, vid.Format, dsts, statsDir, time.Duration(vid.Duration)*time.Millisecond,
+		err = ffmpeg.Pass1Combined(tx.ctx, src, vid.Format, dsts, statsDir, preset, time.Duration(vid.Duration)*time.Millisecond,
 			func(v float64) { tx.m.prog.Update(vid.ID, v) },
 		)
 		if err != nil {
@@ -496,7 +497,9 @@ func (tx *TxR) taskIngestPass1(args []string) (err error) {
 		}
 	}
 
-	// Queue one encode task per rendition.
+	// Queue one encode task per rendition. The preset goes in the
+	// task args so pass 2 uses the preset pass 1 analyzed with,
+	// even when the configured preset changes. They must match.
 	tx.m.prog.UpdateStatus(vid.ID, "Queuing renditions")
 	return tx.m.WithTxRW(tx.ctx, func(txw *TxRW) error {
 		for _, r := range renditions {
@@ -504,7 +507,7 @@ func (tx *TxR) taskIngestPass1(args []string) (err error) {
 			if r.Purpose == "download" {
 				ttype = taskIngestEncodeDownloadRend
 			}
-			txw.addTaskWithPriority(r.Priority, ttype, r.ID)
+			txw.addTaskWithPriority(r.Priority, ttype, r.ID, preset)
 		}
 		return nil
 	})
@@ -693,9 +696,10 @@ func (tx *TxR) taskIngestEncodeRend(args []string) error {
 		}
 
 		tx.m.prog.UpdateStatus(progKey, desc+": encoding")
+		preset := args[1]
 		var err error
 		playlist, err = ffmpeg.Pass2Single(tx.ctx, src, vid.Format, dst,
-			tx.m.pass1Dir(vid.ID), duration, onProgress)
+			tx.m.pass1Dir(vid.ID), preset, duration, onProgress)
 		return err
 	})
 	if err != nil {
@@ -797,8 +801,9 @@ func (tx *TxR) taskIngestEncodeDownloadRend(args []string) error {
 		}
 
 		tx.m.prog.UpdateStatus(progKey, "download mp4: encoding")
+		preset := args[1]
 		return ffmpeg.Pass2ToMP4(tx.ctx, src, vid.Format, dst,
-			tx.m.pass1Dir(vid.ID), duration, onProgress)
+			tx.m.pass1Dir(vid.ID), preset, duration, onProgress)
 	})
 	if err != nil {
 		tx.m.prog.Close(progKey, err)

@@ -17,7 +17,7 @@ import (
 // enough. Read the encoded media's keyframe indices directly.
 func TestEncoderHonorsManyForcedKeyframes(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 
 	srcPath := filepath.Join(dir, "source.mkv")
@@ -72,13 +72,14 @@ func TestEncoderHonorsManyForcedKeyframes(t *testing.T) {
 	}
 
 	t.Log("running pass 1...")
-	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil); err != nil {
+	err = Pass1Combined(ctx, srcFile, probe.FormatName,
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 	t.Log("running pass 2...")
 	if _, err := Pass2Single(ctx, srcFile, probe.FormatName,
-		params, dir, probe.Duration, nil); err != nil {
+		params, dir, preset, probe.Duration, nil); err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
 
