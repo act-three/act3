@@ -48,11 +48,10 @@ package fenc
 const Protocol = 1
 
 // Slot tokens.
-// Argv in a [JobRequest] refers to the files a tool reads and
-// writes through these tokens rather than concrete paths;
+// Argv in a [JobRequest] refers to the files a tool writes
+// through these tokens rather than concrete paths;
 // the agent resolves them against its own filesystem layout.
 const (
-	SlotInput = "$INPUT" // the job's staged input file
 	SlotOut   = "$OUT"   // $OUT/<name>: output file <name> in the job's out directory
 	SlotStats = "$STATS" // $STATS/<name>: file <name> in the job's declared stats directory
 )
@@ -82,13 +81,10 @@ type JobRequest struct {
 	Job string `json:"job"`
 
 	// Input is the staged input file's name inside the job
-	// directory. SlotInput resolves to it.
+	// directory, presented on the tool's standard input
+	// (argv reads it as fd: or pipe:0).
+	// Empty when the job has no media input.
 	Input string `json:"input,omitzero"`
-
-	// Stdin presents the input on the tool's standard input,
-	// for argv that reads pipe:0 or fd:,
-	// rather than resolving SlotInput to a path.
-	Stdin bool `json:"stdin,omitzero"`
 
 	// Stdout names an output file (under <job>/out/) that
 	// captures the tool's standard output.

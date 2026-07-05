@@ -93,7 +93,7 @@ func TestClientJob(t *testing.T) {
 			Args: []string{
 				"-y", "-nostdin", "-hide_banner",
 				"-progress", "pipe:3", "-nostats",
-				"-i", "$INPUT",
+				"-i", "fd:",
 				"-c:v", "copy",
 				"$OUT/out.mkv",
 			},
@@ -126,7 +126,7 @@ func TestClientJobToolFailure(t *testing.T) {
 		}
 		res, err := c.Job(t.Context(), JobRequest{
 			Tool:  "ffprobe",
-			Args:  []string{"-v", "error", "-show_format", "$INPUT"},
+			Args:  []string{"-v", "error", "-show_format", "fd:"},
 			Job:   "job1",
 			Input: "bad.bin",
 		}, nil)
