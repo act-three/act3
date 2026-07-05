@@ -86,7 +86,7 @@ type JobRequest struct {
 	Input string `json:"input,omitzero"`
 
 	// Stdin presents the input on the tool's standard input,
-	// for argv that reads pipe:0 or /dev/stdin,
+	// for argv that reads pipe:0 or fd:,
 	// rather than resolving SlotInput to a path.
 	Stdin bool `json:"stdin,omitzero"`
 
