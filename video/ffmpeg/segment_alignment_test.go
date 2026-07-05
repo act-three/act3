@@ -35,7 +35,7 @@ import (
 // with the underlying fragment data when ffmpeg's HLS muxer writes
 // irregular per-sample durations into the trun).
 func TestSegmentAlignment(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	preset := "ultrafast"
 	ctx := t.Context()
 
@@ -100,13 +100,13 @@ func TestSegmentAlignment(t *testing.T) {
 
 	t.Log("running re-encode pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{reencParams}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{reencParams}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 	t.Log("running re-encode pass 2...")
 	if _, err := Pass2Single(ctx, srcFile, probe.FormatName,
-		reencParams, dir, preset, probe.Duration, nil); err != nil {
+		reencParams, testBatch, preset, probe.Duration, nil); err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
 
@@ -138,11 +138,11 @@ func TestSegmentAlignment(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer remuxFile.Close()
-	reencScan, err := scanVideoPackets(ctx, reencFile, "mp4")
+	reencScan, err := scanPackets(ctx, reencFile, "mp4")
 	if err != nil {
 		t.Fatalf("probe re-encode keyframes: %v", err)
 	}
-	remuxScan, err := scanVideoPackets(ctx, remuxFile, "mp4")
+	remuxScan, err := scanPackets(ctx, remuxFile, "mp4")
 	if err != nil {
 		t.Fatalf("probe remux keyframes: %v", err)
 	}

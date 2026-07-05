@@ -6,6 +6,7 @@ import (
 
 	"ily.dev/act3/model"
 	"ily.dev/act3/sys/fsinfo"
+	"ily.dev/act3/video/ffmpeg"
 	"ily.dev/act3/view"
 )
 
@@ -47,7 +48,7 @@ func viewEditorStorage(tx *model.TxR) (title string, n node) {
 		})
 	}
 
-	return view.AppStorage(fs)
+	return view.AppStorage(fs, ffmpeg.CloneDegraded())
 }
 
 func filepathHasPrefix(p, prefix string) bool {

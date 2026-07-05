@@ -35,8 +35,7 @@ import (
 )
 
 type Config struct {
-	Store    *storage.Dir
-	Pass1Dir string
+	Store *storage.Dir
 
 	// VideoPreset is the encoder preset for video encodes;
 	// empty means defaultVideoPreset.
@@ -52,7 +51,6 @@ const defaultVideoPreset = "medium"
 
 type Model struct {
 	store       *storage.Dir
-	pass1Root   string
 	videoPreset string
 	tmdb        *tmdb.Client
 	tvmaze      *tvmaze.Client
@@ -84,7 +82,6 @@ func New(dbr, dbw *sql.DB, c Config) (m *Model, err error) {
 	defer errorfmt.Handlef("model init: %w", &err)
 	m = &Model{
 		store:       c.Store,
-		pass1Root:   c.Pass1Dir,
 		videoPreset: cmp.Or(c.VideoPreset, defaultVideoPreset),
 		tmdb:        c.TMDB,
 		tvmaze:      c.TVmaze,

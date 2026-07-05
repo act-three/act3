@@ -169,7 +169,7 @@ func assertTwoAudioOutput(t *testing.T, ctx context.Context, mp4Path string) {
 // title metadata, marks only the first track as default, and produces a
 // faststart-formatted MP4. Requires host ffmpeg.
 func TestRemuxToMP4_TwoAudioTracks(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	ctx := t.Context()
 
 	srcPath := filepath.Join(dir, "two-audio.mkv")
@@ -209,7 +209,7 @@ func TestRemuxToMP4_TwoAudioTracks(t *testing.T) {
 // title metadata, marks only the first track as default, and produces a
 // faststart-formatted MP4. Requires host ffmpeg.
 func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	preset := "ultrafast"
 	ctx := t.Context()
 
@@ -241,13 +241,13 @@ func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{dst}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{dst}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running Pass2ToMP4...")
-	if err := Pass2ToMP4(ctx, srcFile, probe.FormatName, dst, dir, preset, probe.Duration, nil); err != nil {
+	if err := Pass2ToMP4(ctx, srcFile, probe.FormatName, dst, testBatch, preset, probe.Duration, nil); err != nil {
 		t.Fatalf("Pass2ToMP4: %v", err)
 	}
 
@@ -361,6 +361,19 @@ func TestAudioMuxArgsForDownload(t *testing.T) {
 				"-disposition:a:0", "default",
 			},
 		},
+		{
+			name: "slot tokens are dropped from tags",
+			audio: []AudioStream{
+				{Index: 0, CodecName: "aac", Channels: 2, Language: "e$OUTng", Title: "Dub $STATS/x"},
+			},
+			want: []string{
+				"-map", "0:a:0",
+				"-c:a:0", "copy",
+				"-metadata:s:a:0", "language=eng",
+				"-metadata:s:a:0", "handler_name=Dub /x",
+				"-disposition:a:0", "default",
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -369,6 +382,24 @@ func TestAudioMuxArgsForDownload(t *testing.T) {
 				t.Errorf("audioMuxArgsForDownload mismatch\n got: %v\nwant: %v", got, c.want)
 			}
 		})
+	}
+}
+
+func TestTagValue(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"English", "English"},
+		{"$10 Movie Commentary", "$10 Movie Commentary"},
+		{"$OUT", ""},
+		{"a $STATS/rf01 b", "a /rf01 b"},
+		// Removing one token must not splice the fragments
+		// around it into another.
+		{"$OU$STATST", ""},
+		{"$$OUTSTATS", ""},
+	}
+	for _, c := range cases {
+		if got := tagValue(c.in); got != c.want {
+			t.Errorf("tagValue(%q) = %q, want %q", c.in, got, c.want)
+		}
 	}
 }
 

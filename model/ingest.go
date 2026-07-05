@@ -483,13 +483,8 @@ func (tx *TxR) taskIngestPass1(args []string) (err error) {
 			}
 		}
 
-		statsDir := tx.m.pass1Dir(vid.ID)
-		if err := os.MkdirAll(statsDir, 0o755); err != nil {
-			return err
-		}
-
 		tx.m.prog.UpdateStatus(vid.ID, fmt.Sprintf("Pass 1 (%d renditions)", numReencode))
-		err = ffmpeg.Pass1Combined(tx.ctx, src, vid.Format, dsts, statsDir, preset, time.Duration(vid.Duration)*time.Millisecond,
+		err = ffmpeg.Pass1Combined(tx.ctx, src, vid.Format, dsts, vid.ID, preset, time.Duration(vid.Duration)*time.Millisecond,
 			func(v float64) { tx.m.prog.Update(vid.ID, v) },
 		)
 		if err != nil {
@@ -609,6 +604,16 @@ func audioRendDesc(ar schema.AudioRendition) string {
 	return fmt.Sprintf("audio %dch %dk", ar.Channels, ar.Bitrate)
 }
 
+// releasePass1Stats releases the video's pass-1 stats batch on
+// the encoder agent.
+// A failed release only wastes agent disk,
+// so it is logged rather than failing the caller's task.
+func (m *Model) releasePass1Stats(ctx context.Context, videoID string) {
+	if err := ffmpeg.ReleaseStats(ctx, videoID); err != nil {
+		slog.WarnContext(ctx, "release-pass1-stats", "video", videoID, "err", err)
+	}
+}
+
 // taskIngestEncodeRend encodes the streaming rendition named in args
 // and rebuilds the MV playlist.
 func (tx *TxR) taskIngestEncodeRend(args []string) error {
@@ -699,7 +704,7 @@ func (tx *TxR) taskIngestEncodeRend(args []string) error {
 		preset := args[1]
 		var err error
 		playlist, err = ffmpeg.Pass2Single(tx.ctx, src, vid.Format, dst,
-			tx.m.pass1Dir(vid.ID), preset, duration, onProgress)
+			vid.ID, preset, duration, onProgress)
 		return err
 	})
 	if err != nil {
@@ -735,7 +740,7 @@ func (tx *TxR) taskIngestEncodeRend(args []string) error {
 		return txw.recomputePlayable(vid)
 	})
 	if err == nil && allDone {
-		os.RemoveAll(tx.m.pass1Dir(vid.ID))
+		tx.m.releasePass1Stats(tx.ctx, vid.ID)
 	}
 	tx.m.prog.Close(progKey, err)
 	return err
@@ -803,7 +808,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(args []string) error {
 		tx.m.prog.UpdateStatus(progKey, "download mp4: encoding")
 		preset := args[1]
 		return ffmpeg.Pass2ToMP4(tx.ctx, src, vid.Format, dst,
-			tx.m.pass1Dir(vid.ID), preset, duration, onProgress)
+			vid.ID, preset, duration, onProgress)
 	})
 	if err != nil {
 		tx.m.prog.Close(progKey, err)
@@ -826,7 +831,7 @@ func (tx *TxR) taskIngestEncodeDownloadRend(args []string) error {
 		return err
 	})
 	if err == nil && allDone {
-		os.RemoveAll(tx.m.pass1Dir(vid.ID))
+		tx.m.releasePass1Stats(tx.ctx, vid.ID)
 	}
 	tx.m.prog.Close(progKey, err)
 	return err
@@ -958,8 +963,8 @@ func (tx *TxR) taskReencode(args []string) (err error) {
 		return err
 	}
 
-	// Stale pass1 scratch is referenced by no row, so drop it up front.
-	os.RemoveAll(tx.m.pass1Dir(vid.ID))
+	// Stale pass1 stats are referenced by no row, so drop them up front.
+	tx.m.releasePass1Stats(tx.ctx, vid.ID)
 
 	// Tear down the old rendition, audio, and subtitle rows and rebuild
 	// from the probe in one transaction, so a failure can't leave the
@@ -1195,14 +1200,6 @@ func toVideoTag(codec string) string {
 		return "hvc1"
 	}
 	return ""
-}
-
-// pass1Dir is the directory ffmpeg owns for storing pass-1 stats for
-// every rendition of a video. Callers treat its contents as opaque:
-// creation and removal are this package's responsibility, but the
-// files inside belong to video/ffmpeg.
-func (m *Model) pass1Dir(vidID string) string {
-	return filepath.Join(m.pass1Root, vidID)
 }
 
 // sourceSegmentBoundaries returns the HLS segment cut points every

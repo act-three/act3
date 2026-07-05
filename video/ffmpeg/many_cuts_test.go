@@ -16,7 +16,7 @@ import (
 // the next available cut), so reading playlist segment count is not
 // enough. Read the encoded media's keyframe indices directly.
 func TestEncoderHonorsManyForcedKeyframes(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	preset := "ultrafast"
 	ctx := t.Context()
 
@@ -73,13 +73,13 @@ func TestEncoderHonorsManyForcedKeyframes(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 	t.Log("running pass 2...")
 	if _, err := Pass2Single(ctx, srcFile, probe.FormatName,
-		params, dir, preset, probe.Duration, nil); err != nil {
+		params, testBatch, preset, probe.Duration, nil); err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
 
@@ -88,7 +88,7 @@ func TestEncoderHonorsManyForcedKeyframes(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer outFile.Close()
-	scan, err := scanVideoPackets(ctx, outFile, "mp4")
+	scan, err := scanPackets(ctx, outFile, "mp4")
 	if err != nil {
 		t.Fatalf("scan output: %v", err)
 	}

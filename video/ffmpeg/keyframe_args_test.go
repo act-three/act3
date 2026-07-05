@@ -121,7 +121,7 @@ func TestKeyframeArgsPanicsOnZeroRate(t *testing.T) {
 // 101-element cut list — one term past the old cliff — and
 // expects success.
 func TestPass1AcceptsManyCuts(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	requireFFmpegEncoder(t, "libsvtav1")
 	preset := "ultrafast"
 	ctx := t.Context()
@@ -176,7 +176,7 @@ func TestPass1AcceptsManyCuts(t *testing.T) {
 
 	t.Logf("running pass 1 with %d-element cut list...", len(cuts))
 	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil); err != nil {
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil); err != nil {
 		t.Fatalf("Pass1Combined with %d cuts: %v", len(cuts), err)
 	}
 }

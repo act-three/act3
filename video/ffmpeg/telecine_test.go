@@ -461,7 +461,7 @@ func parseProbeFlat(output string) []probeFrame {
 // ffmpeg, patches it, and verifies that ffprobe sees the correct
 // repeat_pict and VFR timestamps.
 func TestPatchTelecineIntegration(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	ctx := t.Context()
 
 	// Generate a short MPEG-2 PS (VOB format) at 24fps, no
@@ -588,7 +588,7 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 		t.Skip("mediastreamvalidator not in PATH")
 	}
 
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	// Must use medium preset — ultrafast uses fewer B-frames and
 	// does not reproduce this bug.
 	preset := "medium"
@@ -744,14 +744,14 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, preset, probe.Duration, nil)
+		testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
