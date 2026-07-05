@@ -98,10 +98,6 @@ func threadParams(codec string, threads int) string {
 	return ""
 }
 
-// newCmd creates an *exec.Cmd for the named tool (ffmpeg or ffprobe).
-// Tests override this to run tools inside Docker.
-var newCmd = exec.CommandContext
-
 // FrameRate is a frame rate represented as the exact fraction Num/Den.
 // A zero or negative Den is treated as "unknown" by comparison methods.
 type FrameRate struct {
@@ -404,7 +400,7 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 		return nil, err
 	}
 	var stdout, stderr bytes.Buffer
-	c := newCmd(ctx, "ffprobe",
+	c := exec.CommandContext(ctx, "ffprobe",
 		"-v", "quiet",
 		"-protocol_whitelist", "file",
 		"-f", format,
@@ -598,7 +594,7 @@ func scanVideoPackets(ctx context.Context, r *os.File, format string) (videoPack
 		return videoPacketScan{}, err
 	}
 	var stdout, stderr bytes.Buffer
-	c := newCmd(ctx, "ffprobe",
+	c := exec.CommandContext(ctx, "ffprobe",
 		"-v", "error",
 		"-protocol_whitelist", "file",
 		"-f", format,
@@ -712,7 +708,7 @@ func parseVideoPackets(out string) videoPacketScan {
 // as -f on subsequent invocations.
 func probeFormat(ctx context.Context, r *os.File) (string, error) {
 	var stdout, stderr bytes.Buffer
-	c := newCmd(ctx, "ffprobe",
+	c := exec.CommandContext(ctx, "ffprobe",
 		"-v", "error",
 		"-protocol_whitelist", "pipe",
 		"-format_whitelist", allowedDemuxers,
@@ -1197,7 +1193,7 @@ func ExtractSubtitleOriginal(ctx context.Context, src *os.File, format string, s
 		return err
 	}
 	var stderr bytes.Buffer
-	c := newCmd(ctx, "ffmpeg",
+	c := exec.CommandContext(ctx, "ffmpeg",
 		"-v", "error",
 		"-nostdin", "-hide_banner",
 		"-protocol_whitelist", "file",
@@ -1227,7 +1223,7 @@ func ExtractSubtitleWebVTT(ctx context.Context, src *os.File, format string, str
 		return err
 	}
 	var stderr bytes.Buffer
-	c := newCmd(ctx, "ffmpeg",
+	c := exec.CommandContext(ctx, "ffmpeg",
 		"-v", "error",
 		"-nostdin", "-hide_banner",
 		"-protocol_whitelist", "file",
@@ -1652,7 +1648,7 @@ func keyframeArgs(cuts []int64, rate FrameRate) (forceArgs []string, extras []st
 // progress-reporting pipe on fd 3, and blocks until ffmpeg exits.
 func runWithProgress(ctx context.Context, args []string, onProgress func(time.Duration)) error {
 	stderr := &xbufio.BoundedWriter{Max: 100_000}
-	c := newCmd(ctx, "ffmpeg", args...)
+	c := exec.CommandContext(ctx, "ffmpeg", args...)
 	c.Stderr = stderr
 
 	pr, pw, err := os.Pipe()

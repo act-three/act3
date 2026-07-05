@@ -2,128 +2,30 @@ package ffmpeg
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 )
 
-const dockerImage = "act3-ffmpeg"
-
-// setupDocker configures the package to run ffmpeg/ffprobe inside
-// the act3-ffmpeg Docker container and returns a working directory
-// that is bind-mounted into the container at the same host path.
-//
-// If docker is unavailable but a host ffmpeg is on PATH, falls back
-// to running ffmpeg/ffprobe directly via the default newCmd. Skips
-// if neither is available.
-func setupDocker(t *testing.T) string {
-	t.Helper()
-	if testing.Short() {
-		t.Skip("ffmpeg test, skipped in -short mode")
-	}
-	dir := ffmpegTestDir(t)
-
-	// Temp dirs created by production code (e.g. Pass2Single) must
-	// land under dir so they are accessible inside the container
-	// (and stay together for the host fallback too).
-	t.Setenv("TMPDIR", dir)
-
-	if docker, err := exec.LookPath("docker"); err == nil {
-		if out, err := exec.Command(docker, "image", "inspect",
-			dockerImage).CombinedOutput(); err == nil {
-			t.Logf("using Docker image %s for ffmpeg tests", dockerImage)
-			origCmd := newCmd
-			newCmd = dockerCmd(dir)
-			t.Cleanup(func() { newCmd = origCmd })
-			return dir
-		} else {
-			t.Logf("Docker image %s unavailable; falling back to host ffmpeg: %v\n%s",
-				dockerImage, err, out)
-		}
-	} else {
-		t.Logf("docker not in PATH; falling back to host ffmpeg")
-	}
-
-	if _, err := exec.LookPath("ffmpeg"); err != nil {
-		t.Skip("neither docker+act3-ffmpeg nor host ffmpeg available")
-	}
-	t.Log("using host ffmpeg for ffmpeg tests")
-	return dir
-}
-
-// setupHost is like setupDocker but never routes through the
-// container, even when docker and the act3-ffmpeg image are
-// available. Use it for tests that hit a code path Docker's stdin
-// pipe breaks — e.g. mpegts probing, where the demuxer needs a
-// seekable input to compute duration but `docker run -i` always
-// pipes stdin through the daemon.
+// setupHost returns a working directory for ffmpeg tests, which
+// run against the host tools; skips if no host ffmpeg is on PATH.
 func setupHost(t *testing.T) string {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("ffmpeg test, skipped in -short mode")
 	}
-	dir := ffmpegTestDir(t)
-	t.Setenv("TMPDIR", dir)
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		t.Skip("host ffmpeg not available")
 	}
+	dir := t.TempDir()
+
+	// Temp dirs created by production code (e.g. Pass2Single) must
+	// land under dir so each test's scratch stays together.
+	t.Setenv("TMPDIR", dir)
 	return dir
-}
-
-func ffmpegTestDir(t *testing.T) string {
-	t.Helper()
-	if runtime.GOOS != "darwin" {
-		return t.TempDir()
-	}
-	// Docker Desktop/OrbStack reliably shares /private/tmp. Go's
-	// default macOS temp root under /var/folders can be visible to the
-	// host but not to Docker bind mounts, which makes Docker-backed
-	// ffprobe invocations fail after ffmpeg has written the output.
-	dir, err := os.MkdirTemp("/private/tmp", "act3-ffmpeg-test-*")
-	if err != nil {
-		t.Fatalf("create Docker-shareable temp dir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.RemoveAll(dir) })
-	return dir
-}
-
-// dockerCmd returns a newCmd replacement that runs tools inside
-// Docker, with dir bind-mounted at the same host path.
-func dockerCmd(dir string) func(context.Context, string, ...string) *exec.Cmd {
-	return func(ctx context.Context, name string, args ...string) *exec.Cmd {
-		// Strip -progress pipe:3 and -nostats: the progress
-		// pipe fd is not forwarded into the Docker container.
-		var filtered []string
-		for i := 0; i < len(args); i++ {
-			if args[i] == "-progress" && i+1 < len(args) {
-				i++ // skip value
-				continue
-			}
-			if args[i] == "-nostats" {
-				continue
-			}
-			filtered = append(filtered, args[i])
-		}
-
-		a := []string{
-			"run", "--rm", "-i",
-			"-v", dir + ":" + dir,
-			// The Dolby Vision path runs libplacebo on the bundled
-			// software Vulkan driver; point the loader at it. Harmless
-			// for tools and filters that don't touch Vulkan.
-			"-e", "VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json",
-			"--tmpfs", "/tmp",
-			dockerImage,
-			"/out/" + name,
-		}
-		a = append(a, filtered...)
-		return exec.CommandContext(ctx, "docker", a...)
-	}
 }
 
 // setPreset overrides the ffmpeg video preset for the duration
@@ -135,11 +37,11 @@ func setPreset(t *testing.T, preset string) {
 	t.Cleanup(func() { overridePreset = orig })
 }
 
-// generate runs ffmpeg (through newCmd) to create a synthetic
+// generate runs host ffmpeg to create a synthetic
 // source file for testing.
 func generate(t *testing.T, args ...string) {
 	t.Helper()
-	cmd := newCmd(t.Context(), "ffmpeg", args...)
+	cmd := exec.CommandContext(t.Context(), "ffmpeg", args...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("generate source: %v\n%s", err, out)
 	}
@@ -147,14 +49,13 @@ func generate(t *testing.T, args ...string) {
 
 func requireFFmpegEncoder(t *testing.T, encoder string) {
 	t.Helper()
-	cmd := newCmd(t.Context(), "ffmpeg", "-hide_banner", "-encoders")
+	cmd := exec.CommandContext(t.Context(), "ffmpeg", "-hide_banner", "-encoders")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("list ffmpeg encoders: %v\n%s", err, out)
 	}
 	if !strings.Contains(string(out), " "+encoder+" ") {
-		t.Skipf("ffmpeg encoder %q not available; use Docker image %s or install a host ffmpeg with that encoder",
-			encoder, dockerImage)
+		t.Skipf("ffmpeg encoder %q not available; install a host ffmpeg with that encoder", encoder)
 	}
 }
 
@@ -180,7 +81,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 		t.Skip("mediastreamvalidator not in PATH")
 	}
 
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	requireFFmpegEncoder(t, "libsvtav1")
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
@@ -266,9 +167,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 
 // TestEncodeMPEG2ToHEVC verifies that a synthetic MPEG2+MP2 source
 // in MPEG-TS (typical of broadcast captures and DVD rips) encodes
-// correctly to HEVC HLS fMP4. Always runs against host ffmpeg
-// because Probe needs a seekable stdin to compute mpegts duration,
-// and `docker run -i` strips that.
+// correctly to HEVC HLS fMP4.
 func TestEncodeMPEG2ToHEVC(t *testing.T) {
 	dir := setupHost(t)
 	setPreset(t, "ultrafast")
@@ -374,7 +273,7 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 // frames ~2.5×. x265 then runs out of CU-tree stats and fails
 // with "Incomplete CU-tree stats file".
 func TestMPEG2TelecineTwoPass(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 
@@ -474,7 +373,7 @@ func TestMPEG2TelecineTwoPass(t *testing.T) {
 // pass 1 writes stats (including .mbtree) directly to a persistent
 // directory and pass 2 reads from the same path.
 func TestX264MbtreePass2(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "medium")
 	ctx := t.Context()
 
@@ -577,7 +476,7 @@ func TestHDRFormat(t *testing.T) {
 // what the encoder writes into the VUI; ffmpeg 8's -color* output
 // flags no longer reach it.
 func TestHDR10EncodePreservesColor(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "source.mkv")
@@ -631,7 +530,7 @@ func TestHDR10EncodePreservesColor(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	cmd := newCmd(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+	cmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
 		"-show_entries",
 		"stream=profile,pix_fmt,color_transfer,color_primaries,color_space",
 		"-of", "default=noprint_wrappers=1", mediaPath)
@@ -695,16 +594,16 @@ func TestBuildFilterComplexDolbyVision(t *testing.T) {
 // act3-ffmpeg image alongside ffmpeg; the test skips when they aren't
 // available (host-ffmpeg fallback, or a stale image).
 func TestDolbyVisionEncodeHDR10(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 
-	if err := newCmd(ctx, "dovi_tool", "--version").Run(); err != nil {
+	if err := exec.CommandContext(ctx, "dovi_tool", "--version").Run(); err != nil {
 		t.Skip("dovi_tool not available (rebuild the act3-ffmpeg image)")
 	}
 	runTool := func(name string, args ...string) {
 		t.Helper()
-		if out, err := newCmd(ctx, name, args...).CombinedOutput(); err != nil {
+		if out, err := exec.CommandContext(ctx, name, args...).CombinedOutput(); err != nil {
 			t.Fatalf("%s: %v\n%s", name, err, out)
 		}
 	}
@@ -781,7 +680,7 @@ func TestDolbyVisionEncodeHDR10(t *testing.T) {
 
 	// The encoded media must be 10-bit HDR10 (Main 10, BT.2020 PQ).
 	var buf bytes.Buffer
-	cmd := newCmd(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
+	cmd := exec.CommandContext(ctx, "ffprobe", "-v", "error", "-select_streams", "v:0",
 		"-show_entries",
 		"stream=profile,pix_fmt,color_transfer,color_primaries,color_space",
 		"-of", "default=noprint_wrappers=1", mediaPath)

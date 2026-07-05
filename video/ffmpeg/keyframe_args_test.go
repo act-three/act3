@@ -121,7 +121,7 @@ func TestKeyframeArgsPanicsOnZeroRate(t *testing.T) {
 // 101-element cut list — one term past the old cliff — and
 // expects success.
 func TestPass1AcceptsManyCuts(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	requireFFmpegEncoder(t, "libsvtav1")
 	setPreset(t, "ultrafast")
 	ctx := t.Context()

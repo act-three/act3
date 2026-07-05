@@ -6,6 +6,7 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -29,7 +30,7 @@ type downloadAudio struct {
 func probeDownload(t *testing.T, ctx context.Context, path string) []downloadAudio {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
-	c := newCmd(ctx, "ffprobe",
+	c := exec.CommandContext(ctx, "ffprobe",
 		"-v", "quiet",
 		"-print_format", "json",
 		"-show_streams",
@@ -166,9 +167,9 @@ func assertTwoAudioOutput(t *testing.T, ctx context.Context, mp4Path string) {
 // TestRemuxToMP4_TwoAudioTracks verifies that the remux download path
 // preserves every source audio track, propagates per-track language and
 // title metadata, marks only the first track as default, and produces a
-// faststart-formatted MP4. Requires Docker (act3-ffmpeg image).
+// faststart-formatted MP4. Requires host ffmpeg.
 func TestRemuxToMP4_TwoAudioTracks(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 
@@ -207,9 +208,9 @@ func TestRemuxToMP4_TwoAudioTracks(t *testing.T) {
 // TestPass2ToMP4_TwoAudioTracks verifies that the 2-pass download path
 // preserves every source audio track, propagates per-track language and
 // title metadata, marks only the first track as default, and produces a
-// faststart-formatted MP4. Requires Docker (act3-ffmpeg image).
+// faststart-formatted MP4. Requires host ffmpeg.
 func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 
@@ -257,7 +258,7 @@ func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
 }
 
 // TestPass2ToMP4_RejectsEmptyStatsID verifies the precondition guard
-// at the top of Pass2ToMP4. Runs without Docker (panics before any
+// at the top of Pass2ToMP4. Runs without ffmpeg (panics before any
 // ffmpeg invocation).
 func TestPass2ToMP4_RejectsEmptyStatsID(t *testing.T) {
 	defer func() {
@@ -269,7 +270,7 @@ func TestPass2ToMP4_RejectsEmptyStatsID(t *testing.T) {
 }
 
 // TestAudioMuxArgsForDownload exercises the per-stream argument
-// builder directly. Runs without Docker.
+// builder directly. Runs without ffmpeg.
 func TestAudioMuxArgsForDownload(t *testing.T) {
 	cases := []struct {
 		name  string

@@ -16,7 +16,7 @@ import (
 // the next available cut), so reading playlist segment count is not
 // enough. Read the encoded media's keyframe indices directly.
 func TestEncoderHonorsManyForcedKeyframes(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 
