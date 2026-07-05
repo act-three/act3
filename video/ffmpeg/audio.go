@@ -63,7 +63,7 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 	plsPath := filepath.Join(tmpDir, playlistName(0))
 
 	args := inputArgs(format)
-	args = append(args, "-i", src.Name())
+	args = append(args, "-i", "fd:")
 	args = append(args, "-map", fmt.Sprintf("0:a:%d", dst.SourceStreamIndex))
 	args = append(args, "-vn", "-sn")
 	if dst.StreamCopy {
@@ -89,7 +89,7 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 	args = append(args, hlsOutputArgs(dst.Path)...)
 	args = append(args, plsPath)
 
-	if err := runWithProgress(ctx, args, report); err != nil {
+	if err := runWithProgress(ctx, src, args, report); err != nil {
 		return "", err
 	}
 

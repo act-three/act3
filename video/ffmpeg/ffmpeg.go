@@ -384,10 +384,13 @@ var subtitleTextCodecs = map[string]bool{
 // It probes in two stages. Stage 1 reads from pipe:0 with
 // -protocol_whitelist pipe and -format_whitelist allowedDemuxers, so
 // ffprobe can't open any filesystem paths during demuxer auto-detection
-// and can't accept a container not on our list. Stage 2 re-probes with
-// seekable /dev/stdin so duration scanning works, but forces the
-// demuxer via -f using the format learned in stage 1 — so demuxer
-// auto-detection never runs on attacker-controlled bytes.
+// and can't accept a container not on our list. Stage 2 re-probes
+// through the fd protocol — the source bound to fd 0, seekable, so
+// duration scanning works — and forces the demuxer via -f using the
+// format learned in stage 1, so demuxer auto-detection never runs on
+// attacker-controlled bytes. With -protocol_whitelist fd, no
+// filesystem protocol is available at all: a file reference inside
+// attacker bytes, relative or absolute, cannot be opened.
 func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	if _, err := r.Seek(0, io.SeekStart); err != nil {
 		return nil, err
@@ -402,12 +405,12 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	var stdout, stderr bytes.Buffer
 	c := exec.CommandContext(ctx, "ffprobe",
 		"-v", "quiet",
-		"-protocol_whitelist", "file",
+		"-protocol_whitelist", "fd",
 		"-f", format,
 		"-print_format", "json",
 		"-show_format",
 		"-show_streams",
-		"/dev/stdin",
+		"fd:",
 	)
 	c.Stdin = r
 	c.Stdout = &stdout
@@ -596,13 +599,13 @@ func scanVideoPackets(ctx context.Context, r *os.File, format string) (videoPack
 	var stdout, stderr bytes.Buffer
 	c := exec.CommandContext(ctx, "ffprobe",
 		"-v", "error",
-		"-protocol_whitelist", "file",
+		"-protocol_whitelist", "fd",
 		"-f", format,
 		"-select_streams", "v:0",
 		"-show_packets",
 		"-show_entries", "packet=pts,dts,duration,flags",
 		"-of", "csv=p=0",
-		"/dev/stdin",
+		"fd:",
 	)
 	c.Stdin = r
 	c.Stdout = &stdout
@@ -903,7 +906,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
 	args := hwDeviceArgs(dst.DolbyVision)
 	args = append(args, inputArgs(format)...)
-	args = append(args, "-i", src.Name())
+	args = append(args, "-i", "fd:")
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
 	}
@@ -928,7 +931,7 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	args = append(args, hlsOutputArgs(dst.Path)...)
 	args = append(args, plsPath)
 
-	if err := runWithProgress(ctx, args, report); err != nil {
+	if err := runWithProgress(ctx, src, args, report); err != nil {
 		return "", err
 	}
 
@@ -1017,7 +1020,7 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 
 	outPath := dst.Path
 	args := inputArgs(format)
-	args = append(args, "-i", src.Name(),
+	args = append(args, "-i", "fd:",
 		"-map", "0:v:0",
 		"-c:v", "copy",
 	)
@@ -1027,7 +1030,7 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
-	return runWithProgress(ctx, args, report)
+	return runWithProgress(ctx, src, args, report)
 }
 
 // Pass2ToMP4 runs second-pass encoding for a single rendition,
@@ -1072,7 +1075,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
 	args := hwDeviceArgs(dst.DolbyVision)
 	args = append(args, inputArgs(format)...)
-	args = append(args, "-i", src.Name())
+	args = append(args, "-i", "fd:")
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
 	}
@@ -1093,7 +1096,7 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
 	args = append(args, "-sn", "-movflags", "+faststart", outPath)
 
-	return runWithProgress(ctx, args, report)
+	return runWithProgress(ctx, src, args, report)
 }
 
 // audioMuxArgsForDownload returns the ffmpeg args needed to mux every
@@ -1196,9 +1199,9 @@ func ExtractSubtitleOriginal(ctx context.Context, src *os.File, format string, s
 	c := exec.CommandContext(ctx, "ffmpeg",
 		"-v", "error",
 		"-nostdin", "-hide_banner",
-		"-protocol_whitelist", "file",
+		"-protocol_whitelist", "fd,pipe",
 		"-f", format,
-		"-i", "/dev/stdin",
+		"-i", "fd:",
 		"-map", fmt.Sprintf("0:s:%d", streamIndex),
 		"-c:s", "copy",
 		"-f", outFormat,
@@ -1226,9 +1229,9 @@ func ExtractSubtitleWebVTT(ctx context.Context, src *os.File, format string, str
 	c := exec.CommandContext(ctx, "ffmpeg",
 		"-v", "error",
 		"-nostdin", "-hide_banner",
-		"-protocol_whitelist", "file",
+		"-protocol_whitelist", "fd,pipe",
 		"-f", format,
-		"-i", "/dev/stdin",
+		"-i", "fd:",
 		"-map", fmt.Sprintf("0:s:%d", streamIndex),
 		"-c:s", "webvtt",
 		"-f", "webvtt",
@@ -1252,7 +1255,7 @@ func doRemux(ctx context.Context, src *os.File, format, mediaPath, plsPath strin
 	p EncodeParams, onProgress func(time.Duration),
 ) error {
 	args := inputArgs(format)
-	args = append(args, "-i", src.Name())
+	args = append(args, "-i", "fd:")
 	args = append(args, "-map", "0:v:0")
 	args = append(args, "-c:v", "copy")
 	if p.Tag != "" {
@@ -1261,7 +1264,7 @@ func doRemux(ctx context.Context, src *os.File, format, mediaPath, plsPath strin
 	args = append(args, "-an", "-sn")
 	args = append(args, hlsOutputArgs(mediaPath)...)
 	args = append(args, plsPath)
-	return runWithProgress(ctx, args, onProgress)
+	return runWithProgress(ctx, src, args, onProgress)
 }
 
 // pass1Combined runs a single ffmpeg command that performs first-pass
@@ -1275,7 +1278,7 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
 
 	args := hwDeviceArgs(anyDolbyVision(dsts))
 	args = append(args, inputArgs(format)...)
-	args = append(args, "-i", src.Name())
+	args = append(args, "-i", "fd:")
 	if filterStr != "" {
 		args = append(args, "-filter_complex", filterStr)
 	}
@@ -1301,7 +1304,7 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir string,
 		args = append(args, "-f", "null", "/dev/null")
 	}
 
-	return runWithProgress(ctx, args, onProgress)
+	return runWithProgress(ctx, src, args, onProgress)
 }
 
 // -----------------------------------------------------------------------
@@ -1434,18 +1437,26 @@ func buildFilterComplex(dsts []EncodeParams) (string, map[int]string) {
 // bundles progress-reporting wiring, the shared security flags, and
 // the forced input demuxer.
 //
-// -protocol_whitelist file,pipe: restrict every protocol open (main
-// input and any nested opens a demuxer might attempt) to real files
-// and our progress pipe. -f format: skip demuxer auto-detection so
-// attacker bytes can't coerce ffmpeg into running concat, HLS, or
-// similar multi-URL demuxers. -hwaccel none: force software decoding
-// so ffmpeg doesn't fail on codecs without a hardware decoder (e.g.
-// AV1). -nostdin / -hide_banner: standard unattended-run hygiene.
+// -protocol_whitelist fd,pipe: the input arrives on fd 0 (the
+// source blob, bound by runWithProgress), so no filesystem
+// protocol is whitelisted and a file reference inside attacker
+// bytes — relative or absolute — cannot be opened during the
+// encode. The whitelist is a per-input option; the muxer's own
+// output opens (media, playlist) run under the output context and
+// are unaffected. pipe stays listed for the fd-3 progress pipe —
+// fd: itself can only address the default descriptors (0 to read,
+// 1 to write; anything else needs the per-URL-unsettable -fd
+// option), which is why progress can't ride the fd protocol.
+// -f format: skip demuxer auto-detection so attacker bytes can't
+// coerce ffmpeg into running concat, HLS, or similar multi-URL
+// demuxers. -hwaccel none: force software decoding so ffmpeg
+// doesn't fail on codecs without a hardware decoder (e.g. AV1).
+// -nostdin / -hide_banner: standard unattended-run hygiene.
 func inputArgs(format string) []string {
 	return []string{
 		"-y", "-nostdin", "-hide_banner",
 		"-hwaccel", "none",
-		"-protocol_whitelist", "file,pipe",
+		"-protocol_whitelist", "fd,pipe",
 		"-progress", "pipe:3", "-nostats",
 		"-f", format,
 	}
@@ -1644,11 +1655,16 @@ func keyframeArgs(cuts []int64, rate FrameRate) (forceArgs []string, extras []st
 // Internal: running ffmpeg with progress
 // -----------------------------------------------------------------------
 
-// runWithProgress starts ffmpeg with the given args, sets up a
+// runWithProgress starts ffmpeg with the given args, presents src
+// on fd 0 (which the args reference as fd:), sets up a
 // progress-reporting pipe on fd 3, and blocks until ffmpeg exits.
-func runWithProgress(ctx context.Context, args []string, onProgress func(time.Duration)) error {
+func runWithProgress(ctx context.Context, src *os.File, args []string, onProgress func(time.Duration)) error {
+	if _, err := src.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
 	stderr := &xbufio.BoundedWriter{Max: 100_000}
 	c := exec.CommandContext(ctx, "ffmpeg", args...)
+	c.Stdin = src
 	c.Stderr = stderr
 
 	pr, pw, err := os.Pipe()
