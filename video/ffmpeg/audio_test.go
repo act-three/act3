@@ -8,7 +8,7 @@ import (
 )
 
 // TestEncodeAudioValidation verifies argument validation rejects bad
-// inputs without invoking ffmpeg. Runs without Docker.
+// inputs without invoking ffmpeg.
 func TestEncodeAudioValidation(t *testing.T) {
 	cases := []struct {
 		name string
@@ -48,7 +48,7 @@ func TestEncodeAudioValidation(t *testing.T) {
 }
 
 // TestStandardLayout pins the channel counts that map to a PCE-free
-// AAC channel configuration. Runs without Docker.
+// AAC channel configuration. Runs without ffmpeg.
 func TestStandardLayout(t *testing.T) {
 	cases := map[int]string{
 		1: "mono", 2: "stereo", 3: "3.0", 4: "4.0",
@@ -163,9 +163,9 @@ func runAudioCase(t *testing.T, dir string, c audioCase) {
 // TestEncodeAudio runs EncodeAudio against several synthetic source
 // configurations, covering the three encoder paths the spec calls out:
 // stream-copy AAC stereo, re-encode of FLAC stereo, re-encode of AAC
-// 5.1, and re-encode of AC3 5.1. Requires Docker (act3-ffmpeg image).
+// 5.1, and re-encode of AC3 5.1. Requires host ffmpeg.
 func TestEncodeAudio(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 
 	commonVideo := []string{
 		"-f", "lavfi", "-i",
@@ -273,9 +273,9 @@ func TestEncodeAudio(t *testing.T) {
 
 // TestEncodeAudioMissingStream verifies EncodeAudio surfaces an error
 // when the requested SourceStreamIndex doesn't exist in the source.
-// Requires Docker.
+// Requires host ffmpeg.
 func TestEncodeAudioMissingStream(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "src-one-audio.mkv")
 
@@ -324,9 +324,9 @@ func TestEncodeAudioMissingStream(t *testing.T) {
 
 // TestEncodeAudio51SideRemap specifically exercises the
 // 5.1(side) → 5.1(back) channel-layout remap that lets CoreMedia /
-// HLS clients accept the output. Requires Docker.
+// HLS clients accept the output. Requires host ffmpeg.
 func TestEncodeAudio51SideRemap(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "src-5_1-side.mkv")
 

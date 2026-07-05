@@ -180,7 +180,7 @@ func patchTelecine(data []byte) []byte {
 }
 
 // ---------------------------------------------------------------------------
-// Unit tests — no Docker / ffmpeg required
+// Unit tests — no ffmpeg required
 // ---------------------------------------------------------------------------
 
 // TestEncodePTSRoundTrip verifies that encodePTS/decodePTS are
@@ -356,7 +356,7 @@ func TestPatchTelecineTimestamps(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Integration tests — require Docker (ffmpeg/ffprobe) and possibly
+// Integration tests — require host ffmpeg/ffprobe and possibly
 // mediastreamvalidator
 // ---------------------------------------------------------------------------
 
@@ -461,7 +461,7 @@ func parseProbeFlat(output string) []probeFrame {
 // ffmpeg, patches it, and verifies that ffprobe sees the correct
 // repeat_pict and VFR timestamps.
 func TestPatchTelecineIntegration(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	ctx := t.Context()
 
 	// Generate a short MPEG-2 PS (VOB format) at 24fps, no
@@ -494,7 +494,7 @@ func TestPatchTelecineIntegration(t *testing.T) {
 
 	// Probe the patched file for repeat_pict and timestamps using
 	// the flat output format to avoid CSV side_data contamination.
-	probeCmd := newCmd(ctx, "ffprobe",
+	probeCmd := exec.CommandContext(ctx, "ffprobe",
 		"-show_frames", "-select_streams", "v",
 		"-read_intervals", "%+#20",
 		"-show_entries", "frame=pkt_dts_time,repeat_pict",
@@ -588,7 +588,7 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 		t.Skip("mediastreamvalidator not in PATH")
 	}
 
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	// Must use medium preset — ultrafast uses fewer B-frames and
 	// does not reproduce this bug.
 	setPreset(t, "medium")
@@ -625,7 +625,7 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 
 	// Verify the patch produced VFR timestamps.
 	t.Log("verifying patch...")
-	verifyCmd := newCmd(ctx, "ffprobe",
+	verifyCmd := exec.CommandContext(ctx, "ffprobe",
 		"-show_frames", "-select_streams", "v",
 		"-read_intervals", "%+#10",
 		"-show_entries", "frame=pkt_dts_time,repeat_pict",
@@ -865,7 +865,7 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 		}
 
 		// Count decoded video frames with ffprobe.
-		probeCmd := newCmd(ctx, "ffprobe",
+		probeCmd := exec.CommandContext(ctx, "ffprobe",
 			"-v", "error",
 			"-select_streams", "v",
 			"-count_frames",
@@ -880,7 +880,7 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 			segments++
 			continue
 		}
-		// Take the last non-empty line — Docker platform
+		// Take the last non-empty line — tool startup
 		// warnings may precede the actual output.
 		outLines := strings.Split(
 			strings.TrimSpace(string(probeOut)), "\n")

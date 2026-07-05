@@ -35,7 +35,7 @@ import (
 // with the underlying fragment data when ffmpeg's HLS muxer writes
 // irregular per-sample durations into the trun).
 func TestSegmentAlignment(t *testing.T) {
-	dir := setupDocker(t)
+	dir := setupHost(t)
 	setPreset(t, "ultrafast")
 	ctx := t.Context()
 
