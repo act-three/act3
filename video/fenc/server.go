@@ -77,11 +77,15 @@ func (s *Server) handleJob(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "job directory not staged: "+req.Job, http.StatusBadRequest)
 		return
 	}
+	var input *os.File
 	if req.Input != "" {
-		if _, err := os.Stat(filepath.Join(jobDir, req.Input)); err != nil {
+		var err error
+		input, err = os.Open(filepath.Join(jobDir, req.Input))
+		if err != nil {
 			http.Error(w, "input not staged: "+err.Error(), http.StatusBadRequest)
 			return
 		}
+		defer input.Close()
 	}
 	outDir := filepath.Join(jobDir, "out")
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
@@ -101,19 +105,13 @@ func (s *Server) handleJob(w http.ResponseWriter, r *http.Request) {
 	// drops the connection, the context ends and the tool is
 	// killed. That is the protocol's only cancellation mechanism.
 	ctx := r.Context()
-	args := req.resolve(jobDir, outDir, statsDir)
+	args := req.resolve(outDir, statsDir)
 	c := exec.CommandContext(ctx, req.Tool, args...)
 	stderr := &xbufio.BoundedWriter{Max: 100_000}
 	c.Stderr = stderr
 
-	if req.Stdin {
-		in, err := os.Open(filepath.Join(jobDir, req.Input))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer in.Close()
-		c.Stdin = in
+	if input != nil {
+		c.Stdin = input
 	}
 	if req.Stdout != "" {
 		out, err := os.Create(filepath.Join(outDir, req.Stdout))
@@ -198,9 +196,6 @@ func (req *JobRequest) validate() error {
 	if req.Stats != "" && !validName(req.Stats) {
 		return fmt.Errorf("invalid stats id %q", req.Stats)
 	}
-	if req.Input == "" && (req.Stdin || slicesContainsSubstring(req.Args, SlotInput)) {
-		return errors.New("job references an input but names none")
-	}
 	if req.Stats == "" && slicesContainsSubstring(req.Args, SlotStats) {
 		return errors.New("job references stats but declares none")
 	}
@@ -220,8 +215,7 @@ func validName(name string) bool {
 }
 
 func hasSlot(arg string) bool {
-	return strings.Contains(arg, SlotInput) ||
-		strings.Contains(arg, SlotOut) ||
+	return strings.Contains(arg, SlotOut) ||
 		strings.Contains(arg, SlotStats)
 }
 
@@ -239,9 +233,8 @@ func slicesContainsSubstring(args []string, sub string) bool {
 // statsDir is the job's declared stats directory,
 // not the stats root: SlotStats reaches only the stats the job
 // declared.
-func (req *JobRequest) resolve(jobDir, outDir, statsDir string) []string {
+func (req *JobRequest) resolve(outDir, statsDir string) []string {
 	r := strings.NewReplacer(
-		SlotInput, filepath.Join(jobDir, req.Input),
 		SlotOut, outDir,
 		SlotStats, statsDir,
 	)

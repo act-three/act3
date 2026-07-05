@@ -137,12 +137,10 @@ func TestJobValidation(t *testing.T) {
 		{"separator in input", JobRequest{Tool: "ffprobe", Job: "staged", Input: "a/b"}},
 		{"separator in stdout", JobRequest{Tool: "ffprobe", Job: "staged", Stdout: "a/b"}},
 		{"separator in stats", JobRequest{Tool: "ffprobe", Job: "staged", Stats: "a/b"}},
-		{"slot input without input", JobRequest{Tool: "ffprobe", Job: "staged", Args: []string{"$INPUT"}}},
-		{"stdin without input", JobRequest{Tool: "ffprobe", Job: "staged", Stdin: true}},
 		{"slot stats without stats", JobRequest{Tool: "ffmpeg", Job: "staged", Args: []string{"-x265-params", "pass=1:stats=$STATS/r0"}}},
 		{"escape in slot arg", JobRequest{Tool: "ffprobe", Job: "staged", Args: []string{"$OUT/../../x"}}},
 		{"unstaged job dir", JobRequest{Tool: "ffprobe", Job: "nonexistent"}},
-		{"unstaged input", JobRequest{Tool: "ffprobe", Job: "staged", Input: "missing.mkv", Args: []string{"$INPUT"}}},
+		{"unstaged input", JobRequest{Tool: "ffprobe", Job: "staged", Input: "missing.mkv"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -164,18 +162,17 @@ func TestJobValidation(t *testing.T) {
 
 func TestResolve(t *testing.T) {
 	req := JobRequest{
-		Input: "source.mkv",
 		Args: []string{
-			"-i", "$INPUT",
+			"-i", "fd:",
 			"-x265-params", "pass=1:stats=$STATS/rf01:open-gop=0",
 			"-hls_segment_filename", "$OUT/media0.mp4",
 			"$OUT/stream0.m3u8",
 			"plain",
 		},
 	}
-	got := req.resolve("/spool/job1", "/spool/job1/out", "/stats/batch1")
+	got := req.resolve("/spool/job1/out", "/stats/batch1")
 	want := []string{
-		"-i", "/spool/job1/source.mkv",
+		"-i", "fd:",
 		"-x265-params", "pass=1:stats=/stats/batch1/rf01:open-gop=0",
 		"-hls_segment_filename", "/spool/job1/out/media0.mp4",
 		"/spool/job1/out/stream0.m3u8",
@@ -274,7 +271,7 @@ func TestJobProbe(t *testing.T) {
 
 	events := postJob(t, ts, JobRequest{
 		Tool:   "ffprobe",
-		Args:   []string{"-v", "error", "-print_format", "json", "-show_format", "$INPUT"},
+		Args:   []string{"-v", "error", "-print_format", "json", "-show_format", "fd:"},
 		Job:    "job1",
 		Input:  "source.mkv",
 		Stdout: "probe.json",
@@ -298,7 +295,7 @@ func TestJobProbe(t *testing.T) {
 	}
 }
 
-func TestJobStdin(t *testing.T) {
+func TestJobPipe0(t *testing.T) {
 	needFFmpeg(t)
 	s, ts := newTestServer(t)
 	jobDir := stageJob(t, s, "job1")
@@ -319,7 +316,6 @@ func TestJobStdin(t *testing.T) {
 		},
 		Job:    "job1",
 		Input:  "source.mkv",
-		Stdin:  true,
 		Stdout: "probe.json",
 	})
 	if res := done(t, events); res.Exit != 0 {
@@ -345,7 +341,7 @@ func TestJobToolFailure(t *testing.T) {
 
 	events := postJob(t, ts, JobRequest{
 		Tool:  "ffprobe",
-		Args:  []string{"-v", "error", "-show_format", "$INPUT"},
+		Args:  []string{"-v", "error", "-show_format", "fd:"},
 		Job:   "job1",
 		Input: "bad.bin",
 	})
@@ -373,7 +369,7 @@ func TestJobProgressAndOutput(t *testing.T) {
 		Args: []string{
 			"-y", "-nostdin", "-hide_banner",
 			"-progress", "pipe:3", "-nostats",
-			"-i", "$INPUT",
+			"-i", "fd:",
 			"-c:v", "copy",
 			"$OUT/out.mkv",
 		},
