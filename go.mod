@@ -9,6 +9,7 @@ require (
 	github.com/gen2brain/webp v0.5.5
 	github.com/hekmon/transmissionrpc/v3 v3.0.0
 	golang.org/x/image v0.38.0
+	golang.org/x/sys v0.44.0
 	golang.org/x/text v0.37.0
 	golang.org/x/time v0.15.0
 	golang.org/x/tools v0.44.0
@@ -58,7 +59,6 @@ require (
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.44.0 // indirect
 	modernc.org/libc v1.67.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
