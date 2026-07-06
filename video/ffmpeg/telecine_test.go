@@ -591,7 +591,7 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 	dir := setupHost(t)
 	// Must use medium preset — ultrafast uses fewer B-frames and
 	// does not reproduce this bug.
-	setPreset(t, "medium")
+	preset := "medium"
 	ctx := t.Context()
 
 	// Step 1: Generate video-only MPEG-2 VOB. We keep audio out of
@@ -744,14 +744,14 @@ func TestMPEG2TelecineEXTINFMismatch_Synthetic(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil)
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, probe.Duration, nil)
+		dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}

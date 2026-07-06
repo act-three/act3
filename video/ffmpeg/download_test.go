@@ -170,7 +170,6 @@ func assertTwoAudioOutput(t *testing.T, ctx context.Context, mp4Path string) {
 // faststart-formatted MP4. Requires host ffmpeg.
 func TestRemuxToMP4_TwoAudioTracks(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "ultrafast")
 	ctx := t.Context()
 
 	srcPath := filepath.Join(dir, "two-audio.mkv")
@@ -211,7 +210,7 @@ func TestRemuxToMP4_TwoAudioTracks(t *testing.T) {
 // faststart-formatted MP4. Requires host ffmpeg.
 func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 
 	srcPath := filepath.Join(dir, "two-audio.mkv")
@@ -241,13 +240,14 @@ func TestPass2ToMP4_TwoAudioTracks(t *testing.T) {
 	}
 
 	t.Log("running pass 1...")
-	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{dst}, dir, probe.Duration, nil); err != nil {
+	err = Pass1Combined(ctx, srcFile, probe.FormatName,
+		[]EncodeParams{dst}, dir, preset, probe.Duration, nil)
+	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running Pass2ToMP4...")
-	if err := Pass2ToMP4(ctx, srcFile, probe.FormatName, dst, dir, probe.Duration, nil); err != nil {
+	if err := Pass2ToMP4(ctx, srcFile, probe.FormatName, dst, dir, preset, probe.Duration, nil); err != nil {
 		t.Fatalf("Pass2ToMP4: %v", err)
 	}
 
@@ -266,7 +266,7 @@ func TestPass2ToMP4_RejectsEmptyStatsID(t *testing.T) {
 			t.Fatal("expected panic for empty StatsID, got none")
 		}
 	}()
-	Pass2ToMP4(t.Context(), nil, "", EncodeParams{StatsID: ""}, "", 0, nil)
+	Pass2ToMP4(t.Context(), nil, "", EncodeParams{StatsID: ""}, "", "", 0, nil)
 }
 
 // TestAudioMuxArgsForDownload exercises the per-stream argument

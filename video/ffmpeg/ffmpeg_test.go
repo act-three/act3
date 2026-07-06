@@ -28,15 +28,6 @@ func setupHost(t *testing.T) string {
 	return dir
 }
 
-// setPreset overrides the ffmpeg video preset for the duration
-// of the test.
-func setPreset(t *testing.T, preset string) {
-	t.Helper()
-	orig := overridePreset
-	overridePreset = preset
-	t.Cleanup(func() { overridePreset = orig })
-}
-
 // generate runs host ffmpeg to create a synthetic
 // source file for testing.
 func generate(t *testing.T, args ...string) {
@@ -83,7 +74,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 
 	dir := setupHost(t)
 	requireFFmpegEncoder(t, "libsvtav1")
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "source.mkv")
 
@@ -126,7 +117,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	// Pass 1: analysis.
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil)
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
@@ -134,7 +125,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	// Pass 2: encode to HLS fMP4.
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, probe.Duration, nil)
+		dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -170,7 +161,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 // correctly to HEVC HLS fMP4.
 func TestEncodeMPEG2ToHEVC(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "source.ts")
 
@@ -212,14 +203,14 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil)
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, probe.Duration, nil)
+		dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -274,7 +265,7 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 // with "Incomplete CU-tree stats file".
 func TestMPEG2TelecineTwoPass(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 
 	// Synthesise a source that mimics a DVD-rip MKV with soft
@@ -353,14 +344,14 @@ func TestMPEG2TelecineTwoPass(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil)
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, probe.Duration, nil)
+		dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -374,7 +365,7 @@ func TestMPEG2TelecineTwoPass(t *testing.T) {
 // directory and pass 2 reads from the same path.
 func TestX264MbtreePass2(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "medium")
+	preset := "medium"
 	ctx := t.Context()
 
 	srcPath := filepath.Join(dir, "source.mkv")
@@ -416,7 +407,7 @@ func TestX264MbtreePass2(t *testing.T) {
 	// Pass 1: x264 analysis writes stats + .mbtree directly.
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil)
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
@@ -433,7 +424,7 @@ func TestX264MbtreePass2(t *testing.T) {
 	// Pass 2: encode reading stats from the same dir.
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, probe.Duration, nil)
+		dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -477,7 +468,7 @@ func TestHDRFormat(t *testing.T) {
 // flags no longer reach it.
 func TestHDR10EncodePreservesColor(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "source.mkv")
 
@@ -515,13 +506,14 @@ func TestHDR10EncodePreservesColor(t *testing.T) {
 	}
 
 	t.Log("running pass 1...")
-	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil); err != nil {
+	err = Pass1Combined(ctx, srcFile, probe.FormatName,
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, probe.Duration, nil)
+		dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -595,7 +587,7 @@ func TestBuildFilterComplexDolbyVision(t *testing.T) {
 // available (host-ffmpeg fallback, or a stale image).
 func TestDolbyVisionEncodeHDR10(t *testing.T) {
 	dir := setupHost(t)
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 
 	if err := exec.CommandContext(ctx, "dovi_tool", "--version").Run(); err != nil {
@@ -664,13 +656,14 @@ func TestDolbyVisionEncodeHDR10(t *testing.T) {
 	}
 
 	t.Log("pass 1 (libplacebo DV → HDR10 on software Vulkan)...")
-	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil); err != nil {
+	err = Pass1Combined(ctx, srcFile, probe.FormatName,
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 	t.Log("pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, probe.Duration, nil)
+		dir, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}

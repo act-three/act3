@@ -123,7 +123,7 @@ func TestKeyframeArgsPanicsOnZeroRate(t *testing.T) {
 func TestPass1AcceptsManyCuts(t *testing.T) {
 	dir := setupHost(t)
 	requireFFmpegEncoder(t, "libsvtav1")
-	setPreset(t, "ultrafast")
+	preset := "ultrafast"
 	ctx := t.Context()
 
 	srcPath := filepath.Join(dir, "source.mkv")
@@ -176,7 +176,7 @@ func TestPass1AcceptsManyCuts(t *testing.T) {
 
 	t.Logf("running pass 1 with %d-element cut list...", len(cuts))
 	if err := Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, probe.Duration, nil); err != nil {
+		[]EncodeParams{params}, dir, preset, probe.Duration, nil); err != nil {
 		t.Fatalf("Pass1Combined with %d cuts: %v", len(cuts), err)
 	}
 }
