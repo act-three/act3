@@ -165,7 +165,7 @@ func runAudioCase(t *testing.T, dir string, c audioCase) {
 // stream-copy AAC stereo, re-encode of FLAC stereo, re-encode of AAC
 // 5.1, and re-encode of AC3 5.1. Requires host ffmpeg.
 func TestEncodeAudio(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 
 	commonVideo := []string{
 		"-f", "lavfi", "-i",
@@ -275,7 +275,7 @@ func TestEncodeAudio(t *testing.T) {
 // when the requested SourceStreamIndex doesn't exist in the source.
 // Requires host ffmpeg.
 func TestEncodeAudioMissingStream(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "src-one-audio.mkv")
 
@@ -326,7 +326,7 @@ func TestEncodeAudioMissingStream(t *testing.T) {
 // 5.1(side) → 5.1(back) channel-layout remap that lets CoreMedia /
 // HLS clients accept the output. Requires host ffmpeg.
 func TestEncodeAudio51SideRemap(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "src-5_1-side.mkv")
 

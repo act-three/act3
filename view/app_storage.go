@@ -16,12 +16,26 @@ type Filesystem struct {
 	Free int64
 }
 
-func AppStorage(fs []*Filesystem) (title string, n domi.Node) {
+func AppStorage(fs []*Filesystem, cloneDegraded error) (title string, n domi.Node) {
 	return "Storage", html.Div(attr.Class("v-system"))(
+		cloneWarning(cloneDegraded),
 		html.H2()(domi.Text("filesystem info")),
 		html.UL()(
 			rangeNodes(fs, fsItem),
 		),
+	)
+}
+
+// cloneWarning surfaces a degraded encoder spool: staging has
+// fallen back from filesystem clones to full copies, which keeps
+// encodes flowing but wastes time and disk until the storage
+// configuration is fixed.
+func cloneWarning(err error) domi.Node {
+	if err == nil {
+		return nil
+	}
+	return html.P()(
+		domi.Text("⚠ " + err.Error()),
 	)
 }
 

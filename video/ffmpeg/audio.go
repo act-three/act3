@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
+
+	"ily.dev/act3/video/fenc"
 )
 
 // AudioEncodeParams describes one audio output rendition.
@@ -47,11 +48,11 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 		panic(fmt.Sprintf("ffmpeg.EncodeAudio: non-positive Bitrate %d", dst.Bitrate))
 	}
 
-	tmpDir, err := mkScratch("ffmpeg-audio-*")
+	j, err := newJob(src)
 	if err != nil {
 		return "", err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer j.close()
 
 	total := duration
 	report := func(d time.Duration) {
@@ -59,8 +60,6 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 			onProgress(float64(d) / float64(total))
 		}
 	}
-
-	plsPath := filepath.Join(tmpDir, playlistName(0))
 
 	args := inputArgs(format)
 	args = append(args, "-i", "fd:")
@@ -86,18 +85,26 @@ func EncodeAudio(ctx context.Context, src *os.File, format string,
 			}
 		}
 	}
-	args = append(args, hlsOutputArgs(dst.Path)...)
-	args = append(args, plsPath)
+	args = append(args, hlsOutputArgs(fenc.SlotOut+"/"+MediaName(0))...)
+	args = append(args, fenc.SlotOut+"/"+playlistName(0))
 
-	if err := runWithProgress(ctx, src, args, report); err != nil {
+	err = j.run(ctx, fenc.JobRequest{
+		Tool:     "ffmpeg",
+		Args:     args,
+		Progress: true,
+	}, report)
+	if err != nil {
 		return "", err
 	}
 
-	b, err := os.ReadFile(plsPath)
+	if err := collectInto(dst.Path, j.out(MediaName(0))); err != nil {
+		return "", fmt.Errorf("collect media: %w", err)
+	}
+	b, err := os.ReadFile(j.out(playlistName(0)))
 	if err != nil {
 		return "", fmt.Errorf("read playlist: %w", err)
 	}
-	return normalizeMediaName(string(b), dst.Path), nil
+	return string(b), nil
 }
 
 // standardLayout maps a channel count to the ffmpeg

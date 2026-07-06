@@ -1,47 +1,21 @@
 package ffmpeg
 
 import (
-	"bufio"
-	"bytes"
 	"cmp"
 	"context"
 	"encoding/json/v2"
 	"errors"
 	"fmt"
-	"io"
-	"log/slog"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"time"
 
-	"ily.dev/act3/xbufio"
+	"ily.dev/act3/video/fenc"
 	"kr.dev/errorfmt"
 )
-
-var scratchDir string
-
-// SetScratchDir directs all ffmpeg scratch output
-// (encode and remux working files)
-// to directories created under dir.
-// Scratch contents are transient:
-// they are removed when each operation finishes
-// and need not survive a restart.
-// By default, or when dir is empty,
-// scratch goes to the system temporary directory.
-func SetScratchDir(dir string) {
-	scratchDir = dir
-}
-
-// mkScratch creates a new scratch directory for one operation.
-func mkScratch(pattern string) (string, error) {
-	return os.MkdirTemp(scratchDir, pattern)
-}
 
 // Per-encoder thread budgets. Encoder thread pools are capped so
 // that concurrent encodes pack predictably onto large machines,
@@ -303,14 +277,14 @@ type SubtitleStream struct {
 
 // EncodeParams describes how to produce one rendition.
 type EncodeParams struct {
-	Path      string // output file path; written by ffmpeg
+	Path      string // output file path; the encoded media is collected here
 	Remux     bool   // true: copy video stream; false: reencode
 	Codec     string // ffmpeg encoder name, e.g. "libx264" or "libx265" (ignored if Remux)
 	Bitrate   int64  // target video bitrate in kbit/s (ignored if Remux)
 	MaxHeight int    // max output height; 0 = source (ignored if Remux)
 	MaxFPS    int    // max output fps; 0 = source (ignored if Remux)
 	Tag       string // video tag, e.g. "hvc1" for HEVC in fMP4
-	StatsID   string // stable filename for pass-1 stats inside statsDir; required when !Remux, ignored otherwise
+	StatsID   string // stable pass-1 stats name within the encode batch; required when !Remux, ignored otherwise
 
 	// DolbyVision, when set on a re-encode rendition, applies the
 	// source's Dolby Vision RPU and converts the reshaped base layer
@@ -373,43 +347,48 @@ var subtitleTextCodecs = map[string]bool{
 
 // Probe runs ffprobe and returns stream information for the media in r.
 //
-// It probes in two stages. Stage 1 reads from pipe:0 with
-// -protocol_whitelist pipe and -format_whitelist allowedDemuxers, so
-// ffprobe can't open any filesystem paths during demuxer auto-detection
-// and can't accept a container not on our list. Stage 2 re-probes
-// through the fd protocol — the source bound to fd 0, seekable, so
-// duration scanning works — and forces the demuxer via -f using the
-// format learned in stage 1, so demuxer auto-detection never runs on
-// attacker-controlled bytes. With -protocol_whitelist fd, no
-// filesystem protocol is available at all: a file reference inside
-// attacker bytes, relative or absolute, cannot be opened.
+// It probes in two stages.
+// Stage 1 reads the staged input from pipe:0
+// with -protocol_whitelist pipe and -format_whitelist allowedDemuxers,
+// so ffprobe can't open any filesystem paths
+// during demuxer auto-detection
+// and can't accept a container not on our list.
+// Stage 2 re-probes through the fd protocol —
+// the staged input bound to fd 0, seekable, so duration scanning works —
+// and forces the demuxer via -f using the format learned in stage 1,
+// so demuxer auto-detection never runs on attacker-controlled bytes.
+// With -protocol_whitelist fd, no filesystem protocol is available at all:
+// a file reference inside attacker bytes, relative or absolute,
+// cannot be opened.
 func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
-		return nil, err
-	}
-	format, err := probeFormat(ctx, r)
+	j, err := newJob(r)
 	if err != nil {
 		return nil, err
 	}
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
+	defer j.close()
+	format, err := probeFormat(ctx, j)
+	if err != nil {
 		return nil, err
 	}
-	var stdout, stderr bytes.Buffer
-	c := exec.CommandContext(ctx, "ffprobe",
-		"-v", "quiet",
-		"-protocol_whitelist", "fd",
-		"-f", format,
-		"-print_format", "json",
-		"-show_format",
-		"-show_streams",
-		"fd:",
-	)
-	c.Stdin = r
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-	err = c.Run()
+	err = j.run(ctx, fenc.JobRequest{
+		Tool: "ffprobe",
+		Args: []string{
+			"-v", "quiet",
+			"-protocol_whitelist", "fd",
+			"-f", format,
+			"-print_format", "json",
+			"-show_format",
+			"-show_streams",
+			"fd:",
+		},
+		Stdout: "probe.json",
+	}, nil)
 	if err != nil {
-		return nil, errors.Join(err, errors.New(stderr.String()))
+		return nil, err
+	}
+	stdout, err := os.ReadFile(j.out("probe.json"))
+	if err != nil {
+		return nil, err
 	}
 
 	var raw struct {
@@ -445,7 +424,7 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 			} `json:"side_data_list"`
 		} `json:"streams"`
 	}
-	err = json.Unmarshal(stdout.Bytes(), &raw)
+	err = json.Unmarshal(stdout, &raw)
 	if err != nil {
 		return nil, err
 	}
@@ -540,7 +519,7 @@ func Probe(ctx context.Context, r *os.File) (*ProbeResult, error) {
 	}
 
 	if result.Video != nil {
-		scan, err := scanVideoPackets(ctx, r, format)
+		scan, err := scanVideoPackets(ctx, j, format)
 		if err != nil {
 			return nil, err
 		}
@@ -584,28 +563,29 @@ type videoPacketScan struct {
 // position sits a frame or two past its DTS index. Keyframe
 // positions are translated to display order by sorting packets on
 // PTS and emitting the post-sort indices.
-func scanVideoPackets(ctx context.Context, r *os.File, format string) (videoPacketScan, error) {
-	if _, err := r.Seek(0, io.SeekStart); err != nil {
+func scanVideoPackets(ctx context.Context, j *job, format string) (videoPacketScan, error) {
+	err := j.run(ctx, fenc.JobRequest{
+		Tool: "ffprobe",
+		Args: []string{
+			"-v", "error",
+			"-protocol_whitelist", "fd",
+			"-f", format,
+			"-select_streams", "v:0",
+			"-show_packets",
+			"-show_entries", "packet=pts,dts,duration,flags",
+			"-of", "csv=p=0",
+			"fd:",
+		},
+		Stdout: "packets.csv",
+	}, nil)
+	if err != nil {
 		return videoPacketScan{}, err
 	}
-	var stdout, stderr bytes.Buffer
-	c := exec.CommandContext(ctx, "ffprobe",
-		"-v", "error",
-		"-protocol_whitelist", "fd",
-		"-f", format,
-		"-select_streams", "v:0",
-		"-show_packets",
-		"-show_entries", "packet=pts,dts,duration,flags",
-		"-of", "csv=p=0",
-		"fd:",
-	)
-	c.Stdin = r
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-	if err := c.Run(); err != nil {
-		return videoPacketScan{}, errors.Join(err, errors.New(stderr.String()))
+	stdout, err := os.ReadFile(j.out("packets.csv"))
+	if err != nil {
+		return videoPacketScan{}, err
 	}
-	return parseVideoPackets(stdout.String()), nil
+	return parseVideoPackets(string(stdout)), nil
 }
 
 // pktInfo carries the per-packet fields we extract during
@@ -687,11 +667,11 @@ func parseVideoPackets(out string) videoPacketScan {
 }
 
 // probeFormat runs a constrained ffprobe to detect the container
-// format. Input is piped as pipe:0 (non-seekable) under a
-// -protocol_whitelist of pipe only, so ffprobe has no protocol-level
-// way to touch the filesystem, and restricted via -format_whitelist to
-// allowedDemuxers so auto-detection itself will fail for containers
-// we don't accept.
+// format. The staged input is presented as pipe:0 (non-seekable)
+// under a -protocol_whitelist of pipe only, so ffprobe has no
+// protocol-level way to touch the filesystem, and restricted via
+// -format_whitelist to allowedDemuxers so auto-detection itself will
+// fail for containers we don't accept.
 //
 // When the detected format is the libavformat mov/mp4 demuxer
 // (shared between MP4 and QuickTime), the ftyp box's major_brand is
@@ -701,21 +681,25 @@ func parseVideoPackets(out string) videoPacketScan {
 //
 // Returns the ffprobe format_name string, suitable for passing back
 // as -f on subsequent invocations.
-func probeFormat(ctx context.Context, r *os.File) (string, error) {
-	var stdout, stderr bytes.Buffer
-	c := exec.CommandContext(ctx, "ffprobe",
-		"-v", "error",
-		"-protocol_whitelist", "pipe",
-		"-format_whitelist", allowedDemuxers,
-		"-print_format", "json",
-		"-show_format",
-		"pipe:0",
-	)
-	c.Stdin = r
-	c.Stdout = &stdout
-	c.Stderr = &stderr
-	if err := c.Run(); err != nil {
-		return "", errors.Join(err, errors.New(stderr.String()))
+func probeFormat(ctx context.Context, j *job) (string, error) {
+	err := j.run(ctx, fenc.JobRequest{
+		Tool: "ffprobe",
+		Args: []string{
+			"-v", "error",
+			"-protocol_whitelist", "pipe",
+			"-format_whitelist", allowedDemuxers,
+			"-print_format", "json",
+			"-show_format",
+			"pipe:0",
+		},
+		Stdout: "format.json",
+	}, nil)
+	if err != nil {
+		return "", err
+	}
+	stdout, err := os.ReadFile(j.out("format.json"))
+	if err != nil {
+		return "", err
 	}
 	var raw struct {
 		Format struct {
@@ -726,7 +710,7 @@ func probeFormat(ctx context.Context, r *os.File) (string, error) {
 			} `json:"tags"`
 		} `json:"format"`
 	}
-	if err := json.Unmarshal(stdout.Bytes(), &raw); err != nil {
+	if err := json.Unmarshal(stdout, &raw); err != nil {
 		return "", err
 	}
 	if raw.Format.FormatName == "" {
@@ -799,31 +783,26 @@ func playlistName(i int) string {
 	return fmt.Sprintf("stream%d.m3u8", i)
 }
 
-// normalizeMediaName rewrites references to the media output file in
-// a generated playlist to the stable [MediaName] form: the HLS muxer
-// bakes the media file's base name into URI and EXT-X-MAP entries,
-// but callers locate references via [MediaName] when fixing up the
-// playlist after storing the media.
-func normalizeMediaName(playlist, mediaPath string) string {
-	return strings.ReplaceAll(playlist, filepath.Base(mediaPath), MediaName(0))
-}
-
-// Pass1Combined runs a single ffmpeg command that performs first-pass
-// analysis for every reencode rendition in dsts (those with Remux
-// false), reading the source once. For each such rendition, stats
-// are stored inside statsDir under its StatsID.
+// Pass1Combined runs a single ffmpeg command
+// that performs first-pass analysis
+// for every reencode rendition in dsts (those with Remux false),
+// reading the source once.
+// For each such rendition,
+// stats are kept by the encoder agent
+// under the given batch ID and the rendition's StatsID.
 //
 // preset selects the encoder preset for every reencode rendition.
-// The caller passes the same preset to [Pass2Single] and
-// [Pass2ToMP4], which may run in a later process: both passes
-// must agree on it — x265 makes identical B/P frame decisions
-// only when the presets match, and rejects the two-pass stats
-// otherwise.
+// The caller passes the same preset to [Pass2Single] and [Pass2ToMP4],
+// which may run in a later process:
+// both passes must agree on it —
+// x265 makes identical B/P frame decisions only when the presets match,
+// and rejects the two-pass stats otherwise.
 //
-// The caller must ensure statsDir exists, and must treat its contents
-// as opaque: files inside belong to the ffmpeg package.
+// The batch's stats belong to the agent;
+// release them with [ReleaseStats]
+// once every rendition has been encoded.
 func Pass1Combined(ctx context.Context, src *os.File, format string,
-	dsts []EncodeParams, statsDir, preset string,
+	dsts []EncodeParams, batch, preset string,
 	duration time.Duration, onProgress func(float64),
 ) error {
 	if i := slices.IndexFunc(dsts, func(p EncodeParams) bool {
@@ -842,35 +821,26 @@ func Pass1Combined(ctx context.Context, src *os.File, format string,
 		}
 	}
 
-	return pass1Combined(ctx, src, format, statsDir, preset, dsts, report)
+	return pass1Combined(ctx, src, format, batch, preset, dsts, report)
 }
 
 // Pass2Single runs second-pass encoding for a single rendition,
-// producing one HLS fMP4 output. dst.StatsID and statsDir must refer
-// to a rendition that was included in a prior [Pass1Combined]
-// call, and preset must be the preset that call analyzed with.
-// On success, Pass2Single removes its own per-rendition stats from
-// statsDir; the caller is responsible for removing statsDir itself
-// once every rendition for the batch has been processed.
+// producing one HLS fMP4 output.
+// batch and dst.StatsID must refer to a rendition
+// that was included in a prior [Pass1Combined] call,
+// and preset must be the preset that call analyzed with.
 func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodeParams,
-	statsDir, preset string, duration time.Duration, onProgress func(float64),
+	batch, preset string, duration time.Duration, onProgress func(float64),
 ) (playlist string, err error) {
 	if dst.StatsID == "" {
 		panic("ffmpeg.Pass2Single: dst.StatsID is empty")
 	}
-	passlog := filepath.Join(statsDir, dst.StatsID)
 
-	defer func() {
-		if err == nil {
-			removePass1StatsFor(passlog)
-		}
-	}()
-
-	tmpDir, err := mkScratch("ffmpeg-pass2-*")
+	j, err := newJob(src)
 	if err != nil {
 		return "", err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer j.close()
 
 	total := duration
 	report := func(d time.Duration) {
@@ -878,8 +848,6 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 			onProgress(float64(d) / float64(total))
 		}
 	}
-
-	plsPath := filepath.Join(tmpDir, playlistName(0))
 
 	// Build single-rendition pass-2 args.
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
@@ -901,20 +869,29 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	forceArgs, codecExtras := keyframeArgs(dst.SegmentBoundaries, dst.SegmentBoundaryRate)
 	args = append(args, forceArgs...)
 	codecExtras = append(codecExtras, threadParams(dst.Codec, ThreadsFor(dst)))
-	args = append(args, twoPassArgs(dst.Codec, 2, passlog, codecExtras...)...)
+	args = append(args, twoPassArgs(dst.Codec, 2, fenc.SlotStats+"/"+dst.StatsID, codecExtras...)...)
 	args = append(args, "-an", "-sn")
-	args = append(args, hlsOutputArgs(dst.Path)...)
-	args = append(args, plsPath)
+	args = append(args, hlsOutputArgs(fenc.SlotOut+"/"+MediaName(0))...)
+	args = append(args, fenc.SlotOut+"/"+playlistName(0))
 
-	if err := runWithProgress(ctx, src, args, report); err != nil {
+	err = j.run(ctx, fenc.JobRequest{
+		Tool:     "ffmpeg",
+		Args:     args,
+		Stats:    batch,
+		Progress: true,
+	}, report)
+	if err != nil {
 		return "", err
 	}
 
-	b, err := os.ReadFile(plsPath)
+	if err := collectInto(dst.Path, j.out(MediaName(0))); err != nil {
+		return "", fmt.Errorf("collect media: %w", err)
+	}
+	b, err := os.ReadFile(j.out(playlistName(0)))
 	if err != nil {
 		return "", fmt.Errorf("read playlist: %w", err)
 	}
-	pls := normalizeMediaName(string(b), dst.Path)
+	pls := string(b)
 
 	// Correct EXTINF durations. ffmpeg's HLS muxer computes them
 	// from raw encoder packet timestamps which can be offset from
@@ -923,8 +900,9 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 	// Map the media read-only rather than reading it into memory:
 	// fixEXTINF touches only each segment's leading boxes (sidx and
 	// moof), so the kernel pages in a few KB per segment instead of
-	// the whole multi-GB rendition.
-	media, err := os.Open(dst.Path)
+	// the whole multi-GB rendition. The job's spool copy has the
+	// same bytes as the collected media; map that one.
+	media, err := os.Open(j.out(MediaName(0)))
 	if err != nil {
 		return "", fmt.Errorf("open media: %w", err)
 	}
@@ -949,11 +927,11 @@ func Pass2Single(ctx context.Context, src *os.File, format string, dst EncodePar
 func RemuxSingle(ctx context.Context, src *os.File, format string, dst EncodeParams,
 	duration time.Duration, onProgress func(float64),
 ) (playlist string, err error) {
-	tmpDir, err := mkScratch("ffmpeg-remux-*")
+	j, err := newJob(src)
 	if err != nil {
 		return "", err
 	}
-	defer os.RemoveAll(tmpDir)
+	defer j.close()
 
 	total := duration
 	report := func(d time.Duration) {
@@ -962,16 +940,34 @@ func RemuxSingle(ctx context.Context, src *os.File, format string, dst EncodePar
 		}
 	}
 
-	plsPath := filepath.Join(tmpDir, playlistName(0))
-	if err := doRemux(ctx, src, format, dst.Path, plsPath, dst, report); err != nil {
+	args := inputArgs(format)
+	args = append(args, "-i", "fd:")
+	args = append(args, "-map", "0:v:0")
+	args = append(args, "-c:v", "copy")
+	if dst.Tag != "" {
+		args = append(args, "-tag:v", dst.Tag)
+	}
+	args = append(args, "-an", "-sn")
+	args = append(args, hlsOutputArgs(fenc.SlotOut+"/"+MediaName(0))...)
+	args = append(args, fenc.SlotOut+"/"+playlistName(0))
+
+	err = j.run(ctx, fenc.JobRequest{
+		Tool:     "ffmpeg",
+		Args:     args,
+		Progress: true,
+	}, report)
+	if err != nil {
 		return "", err
 	}
 
-	b, err := os.ReadFile(plsPath)
+	if err := collectInto(dst.Path, j.out(MediaName(0))); err != nil {
+		return "", fmt.Errorf("collect media: %w", err)
+	}
+	b, err := os.ReadFile(j.out(playlistName(0)))
 	if err != nil {
 		return "", fmt.Errorf("read playlist: %w", err)
 	}
-	return normalizeMediaName(string(b), dst.Path), nil
+	return string(b), nil
 }
 
 // RemuxToMP4 produces a single downloadable MP4 by copying the video stream.
@@ -993,7 +989,12 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		}
 	}
 
-	outPath := dst.Path
+	j, err := newJob(src)
+	if err != nil {
+		return err
+	}
+	defer j.close()
+
 	args := inputArgs(format)
 	args = append(args, "-i", "fd:",
 		"-map", "0:v:0",
@@ -1003,22 +1004,30 @@ func RemuxToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		args = append(args, "-tag:v", dst.Tag)
 	}
 	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
-	args = append(args, "-sn", "-movflags", "+faststart", outPath)
+	args = append(args, "-sn", "-movflags", "+faststart", fenc.SlotOut+"/"+MediaName(0))
 
-	return runWithProgress(ctx, src, args, report)
+	err = j.run(ctx, fenc.JobRequest{
+		Tool:     "ffmpeg",
+		Args:     args,
+		Progress: true,
+	}, report)
+	if err != nil {
+		return err
+	}
+	return collectInto(dst.Path, j.out(MediaName(0)))
 }
 
 // Pass2ToMP4 runs second-pass encoding for a single rendition,
-// producing a downloadable MP4 with faststart. dst.StatsID and
-// statsDir must refer to a rendition that was included in a prior
-// [Pass1Combined] call, and preset must be the preset that call
-// analyzed with. On success, Pass2ToMP4 removes its own
-// per-rendition stats from statsDir. Every source audio track is
-// muxed in (stream-copied when AAC, otherwise re-encoded to AAC),
-// with per-track language and title metadata preserved and the
-// first track marked as the MP4 default audio track.
+// producing a downloadable MP4 with faststart.
+// batch and dst.StatsID must refer to a rendition
+// that was included in a prior [Pass1Combined] call,
+// and preset must be the preset that call analyzed with.
+// Every source audio track is muxed in
+// (stream-copied when AAC, otherwise re-encoded to AAC),
+// with per-track language and title metadata preserved
+// and the first track marked as the MP4 default audio track.
 func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodeParams,
-	statsDir, preset string, duration time.Duration, onProgress func(float64),
+	batch, preset string, duration time.Duration, onProgress func(float64),
 ) (err error) {
 	if dst.StatsID == "" {
 		panic("ffmpeg.Pass2ToMP4: dst.StatsID is empty")
@@ -1027,13 +1036,12 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	if err != nil {
 		return fmt.Errorf("probe source: %w", err)
 	}
-	passlog := filepath.Join(statsDir, dst.StatsID)
 
-	defer func() {
-		if err == nil {
-			removePass1StatsFor(passlog)
-		}
-	}()
+	j, err := newJob(src)
+	if err != nil {
+		return err
+	}
+	defer j.close()
 
 	total := duration
 	report := func(d time.Duration) {
@@ -1042,7 +1050,6 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 		}
 	}
 
-	outPath := dst.Path
 	filterStr, labels := buildFilterComplex([]EncodeParams{dst})
 	args := hwDeviceArgs(dst.DolbyVision)
 	args = append(args, inputArgs(format)...)
@@ -1059,11 +1066,20 @@ func Pass2ToMP4(ctx context.Context, src *os.File, format string, dst EncodePara
 	if dst.Tag != "" {
 		args = append(args, "-tag:v", dst.Tag)
 	}
-	args = append(args, twoPassArgs(dst.Codec, 2, passlog, threadParams(dst.Codec, ThreadsFor(dst)))...)
+	args = append(args, twoPassArgs(dst.Codec, 2, fenc.SlotStats+"/"+dst.StatsID, threadParams(dst.Codec, ThreadsFor(dst)))...)
 	args = append(args, audioMuxArgsForDownload(probe.Audio)...)
-	args = append(args, "-sn", "-movflags", "+faststart", outPath)
+	args = append(args, "-sn", "-movflags", "+faststart", fenc.SlotOut+"/"+MediaName(0))
 
-	return runWithProgress(ctx, src, args, report)
+	err = j.run(ctx, fenc.JobRequest{
+		Tool:     "ffmpeg",
+		Args:     args,
+		Stats:    batch,
+		Progress: true,
+	}, report)
+	if err != nil {
+		return err
+	}
+	return collectInto(dst.Path, j.out(MediaName(0)))
 }
 
 // audioMuxArgsForDownload returns the ffmpeg args needed to mux every
@@ -1101,14 +1117,14 @@ func audioMuxArgsForDownload(audio []AudioStream) []string {
 		// players; treat it the same as missing.
 		if a.Language != "" && a.Language != "und" {
 			args = append(args,
-				fmt.Sprintf("-metadata:s:a:%d", i), "language="+a.Language)
+				fmt.Sprintf("-metadata:s:a:%d", i), "language="+tagValue(a.Language))
 		}
 		if a.Title != "" {
 			// MP4's per-track name lives in the hdlr box, set via
 			// handler_name; the title= key is silently dropped by
 			// the mov muxer.
 			args = append(args,
-				fmt.Sprintf("-metadata:s:a:%d", i), "handler_name="+a.Title)
+				fmt.Sprintf("-metadata:s:a:%d", i), "handler_name="+tagValue(a.Title))
 		}
 		if i == 0 {
 			args = append(args, fmt.Sprintf("-disposition:a:%d", i), "default")
@@ -1117,6 +1133,25 @@ func audioMuxArgsForDownload(audio []AudioStream) []string {
 		}
 	}
 	return args
+}
+
+// tagValue makes a source-controlled tag value safe to place in
+// agent argv.
+// The agent substitutes slot tokens anywhere in any argument,
+// so a tag carrying one would be rewritten to an agent-side path —
+// or rejected outright, permanently failing the encode.
+// The tokens never appear in honest metadata, so they are dropped.
+// Removal repeats until no token remains:
+// overlapping fragments must not reassemble into a new token.
+func tagValue(s string) string {
+	for {
+		t := strings.ReplaceAll(s, fenc.SlotOut, "")
+		t = strings.ReplaceAll(t, fenc.SlotStats, "")
+		if t == s {
+			return t
+		}
+		s = t
+	}
 }
 
 // downloadAudioBitrate scales bitrate with channel count for re-encoded
@@ -1159,28 +1194,7 @@ func ExtractSubtitleOriginal(ctx context.Context, src *os.File, format string, s
 	if !ok {
 		return fmt.Errorf("no standalone output format for codec %q", codec)
 	}
-	if _, err := src.Seek(0, io.SeekStart); err != nil {
-		return err
-	}
-	var stderr bytes.Buffer
-	c := exec.CommandContext(ctx, "ffmpeg",
-		"-v", "error",
-		"-nostdin", "-hide_banner",
-		"-protocol_whitelist", "fd,pipe",
-		"-f", format,
-		"-i", "fd:",
-		"-map", fmt.Sprintf("0:s:%d", streamIndex),
-		"-c:s", "copy",
-		"-f", outFormat,
-		"pipe:1",
-	)
-	c.Stdin = src
-	c.Stdout = dst
-	c.Stderr = &stderr
-	if err := c.Run(); err != nil {
-		return errors.Join(err, errors.New(stderr.String()))
-	}
-	return nil
+	return extractSubtitle(ctx, src, format, streamIndex, "copy", outFormat, dst)
 }
 
 // ExtractSubtitleWebVTT extracts subtitle stream streamIndex from
@@ -1189,58 +1203,59 @@ func ExtractSubtitleOriginal(ctx context.Context, src *os.File, format string, s
 func ExtractSubtitleWebVTT(ctx context.Context, src *os.File, format string, streamIndex int, dst *os.File) (err error) {
 	defer errorfmt.Handlef("extract subtitle webvtt: %w", &err)
 
-	if _, err := src.Seek(0, io.SeekStart); err != nil {
+	return extractSubtitle(ctx, src, format, streamIndex, "webvtt", "webvtt", dst)
+}
+
+// extractSubtitle runs one subtitle-extraction job: stream
+// streamIndex of src, transcoded by subtitle codec csCodec into
+// container outFormat, written to dst.
+func extractSubtitle(ctx context.Context, src *os.File, format string,
+	streamIndex int, csCodec, outFormat string, dst *os.File,
+) error {
+	j, err := newJob(src)
+	if err != nil {
 		return err
 	}
-	var stderr bytes.Buffer
-	c := exec.CommandContext(ctx, "ffmpeg",
-		"-v", "error",
-		"-nostdin", "-hide_banner",
-		"-protocol_whitelist", "fd,pipe",
-		"-f", format,
-		"-i", "fd:",
-		"-map", fmt.Sprintf("0:s:%d", streamIndex),
-		"-c:s", "webvtt",
-		"-f", "webvtt",
-		"pipe:1",
-	)
-	c.Stdin = src
-	c.Stdout = dst
-	c.Stderr = &stderr
-	if err := c.Run(); err != nil {
-		return errors.Join(err, errors.New(stderr.String()))
+	defer j.close()
+
+	err = j.run(ctx, fenc.JobRequest{
+		Tool: "ffmpeg",
+		Args: []string{
+			"-v", "error",
+			"-nostdin", "-hide_banner",
+			"-protocol_whitelist", "fd,pipe",
+			"-f", format,
+			"-i", "fd:",
+			"-map", fmt.Sprintf("0:s:%d", streamIndex),
+			"-c:s", csCodec,
+			"-f", outFormat,
+			"pipe:1",
+		},
+		Stdout: "sub",
+	}, nil)
+	if err != nil {
+		return err
 	}
-	return nil
+	return collectFile(dst, j.out("sub"))
 }
 
 // -----------------------------------------------------------------------
-// Internal: the three encoding phases
+// Internal: combined first-pass analysis
 // -----------------------------------------------------------------------
-
-// doRemux produces one HLS rendition by copying the video stream.
-func doRemux(ctx context.Context, src *os.File, format, mediaPath, plsPath string,
-	p EncodeParams, onProgress func(time.Duration),
-) error {
-	args := inputArgs(format)
-	args = append(args, "-i", "fd:")
-	args = append(args, "-map", "0:v:0")
-	args = append(args, "-c:v", "copy")
-	if p.Tag != "" {
-		args = append(args, "-tag:v", p.Tag)
-	}
-	args = append(args, "-an", "-sn")
-	args = append(args, hlsOutputArgs(mediaPath)...)
-	args = append(args, plsPath)
-	return runWithProgress(ctx, src, args, onProgress)
-}
 
 // pass1Combined runs a single ffmpeg command that performs first-pass
 // analysis for every reencode rendition in dsts (those with Remux
 // false), reading the source once. Different resolution/fps targets
 // are handled via filter_complex+split.
-func pass1Combined(ctx context.Context, src *os.File, format, statsDir, preset string,
+func pass1Combined(ctx context.Context, src *os.File, format, batch, preset string,
 	dsts []EncodeParams, onProgress func(time.Duration),
 ) error {
+	j, err := newJob(src)
+	if err != nil {
+		return err
+	}
+	defer j.close()
+
 	filterStr, labels := buildFilterComplex(dsts)
 
 	args := hwDeviceArgs(anyDolbyVision(dsts))
@@ -1261,12 +1276,17 @@ func pass1Combined(ctx context.Context, src *os.File, format, statsDir, preset s
 		forceArgs, codecExtras := keyframeArgs(p.SegmentBoundaries, p.SegmentBoundaryRate)
 		args = append(args, forceArgs...)
 		codecExtras = append(codecExtras, threadParams(p.Codec, EncoderThreads))
-		args = append(args, twoPassArgs(p.Codec, 1, filepath.Join(statsDir, p.StatsID), codecExtras...)...)
+		args = append(args, twoPassArgs(p.Codec, 1, fenc.SlotStats+"/"+p.StatsID, codecExtras...)...)
 		args = append(args, "-an", "-sn")
 		args = append(args, "-f", "null", "/dev/null")
 	}
 
-	return runWithProgress(ctx, src, args, onProgress)
+	return j.run(ctx, fenc.JobRequest{
+		Tool:     "ffmpeg",
+		Args:     args,
+		Stats:    batch,
+		Progress: true,
+	}, onProgress)
 }
 
 // -----------------------------------------------------------------------
@@ -1400,7 +1420,7 @@ func buildFilterComplex(dsts []EncodeParams) (string, map[int]string) {
 // the forced input demuxer.
 //
 // -protocol_whitelist fd,pipe: the input arrives on fd 0 (the
-// source blob, bound by runWithProgress), so no filesystem
+// staged spool file, bound by the agent), so no filesystem
 // protocol is whitelisted and a file reference inside attacker
 // bytes — relative or absolute — cannot be opened during the
 // encode. The whitelist is a per-input option; the muxer's own
@@ -1502,17 +1522,6 @@ func fpsPassthrough() []string {
 	return []string{"-fps_mode:v", "passthrough"}
 }
 
-// removePass1StatsFor removes the pass-1 stats files for a single
-// rendition: the base stats file plus the .mbtree / .cutree sidecars
-// that x264 / x265 deposit next to it. Best effort: missing files are
-// not errors, and failures are silently ignored since the caller's
-// eventual statsDir RemoveAll will sweep anything left behind.
-func removePass1StatsFor(passlog string) {
-	os.Remove(passlog)
-	os.Remove(passlog + ".mbtree")
-	os.Remove(passlog + ".cutree")
-}
-
 // twoPassArgs returns encoder-specific flags for 2-pass encoding.
 // Both libx264 and libx265 use their native parameter interface
 // (-x264-params / -x265-params) to specify the stats file directly.
@@ -1524,15 +1533,15 @@ func removePass1StatsFor(passlog string) {
 // libx264/libx265; for other codecs they are ignored. Each extra is
 // expected to be a single "key=value" fragment.
 //
-// Panics if passlog contains ':', '\\', or '\n': those characters
-// would be reinterpreted as additional options inside the
-// colon-separated -x264-params / -x265-params lists. The passlog
-// path is built from operator config ($A3STORAGE), so this
-// represents misconfiguration, not user input.
+// passlog is a $STATS slot token,
+// which the agent resolves to a path on its own filesystem.
+// That path lands inside the colon-separated
+// -x264-params / -x265-params value,
+// where ':', '\' and '\n' would be reinterpreted as
+// option separators,
+// so the agent's stats root must avoid those characters.
+// Nothing on this side of the protocol can check that.
 func twoPassArgs(codec string, pass int, passlog string, extras ...string) []string {
-	if strings.ContainsAny(passlog, ":\\\n") {
-		panic(fmt.Sprintf("ffmpeg: passlog path %q contains forbidden character (:, \\, or \\n)", passlog))
-	}
 	var key, params string
 	switch codec {
 	case "libx265":
@@ -1611,76 +1620,6 @@ func keyframeArgs(cuts []int64, rate FrameRate) (forceArgs []string, extras []st
 	}
 	return []string{"-force_key_frames", sb.String()},
 		[]string{"keyint=99999", "scenecut=0"}
-}
-
-// -----------------------------------------------------------------------
-// Internal: running ffmpeg with progress
-// -----------------------------------------------------------------------
-
-// runWithProgress starts ffmpeg with the given args, presents src
-// on fd 0 (which the args reference as fd:), sets up a
-// progress-reporting pipe on fd 3, and blocks until ffmpeg exits.
-func runWithProgress(ctx context.Context, src *os.File, args []string, onProgress func(time.Duration)) error {
-	if _, err := src.Seek(0, io.SeekStart); err != nil {
-		return err
-	}
-	stderr := &xbufio.BoundedWriter{Max: 100_000}
-	c := exec.CommandContext(ctx, "ffmpeg", args...)
-	c.Stdin = src
-	c.Stderr = stderr
-
-	pr, pw, err := os.Pipe()
-	if err != nil {
-		return err
-	}
-	c.ExtraFiles = []*os.File{pw}
-
-	slog.DebugContext(ctx, "ffmpeg-command", "args", args)
-	err = c.Start()
-	pw.Close() // close parent's copy; child has its own fd
-	if err != nil {
-		pr.Close()
-		return errors.Join(err, errors.New(stderr.String()))
-	}
-
-	var wg sync.WaitGroup
-	wg.Go(func() {
-		readProgress(ctx, pr, onProgress)
-		pr.Close()
-	})
-
-	err = c.Wait()
-	wg.Wait()
-	if err != nil {
-		return errors.Join(err, errors.New(stderr.String()))
-	}
-	return nil
-}
-
-// readProgress reads ffmpeg -progress output from r and calls update
-// with the current position in the output timeline.
-func readProgress(ctx context.Context, r io.Reader, update func(time.Duration)) {
-	scanner := bufio.NewScanner(r)
-	// ffmpeg -progress lines are short key=value pairs (well under
-	// 100 bytes). 4 KB is ample; anything bigger is a bug worth surfacing.
-	scanner.Buffer(make([]byte, 1024), 4*1024)
-	for scanner.Scan() {
-		line := scanner.Text()
-		after, ok := strings.CutPrefix(line, "out_time_us=")
-		if !ok {
-			continue
-		}
-		us, err := strconv.ParseUint(after, 10, 64)
-		if err != nil {
-			continue
-		}
-		if update != nil {
-			update(time.Microsecond * time.Duration(us))
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		slog.WarnContext(ctx, "ffmpeg-progress-read", "err", err)
-	}
 }
 
 // -----------------------------------------------------------------------

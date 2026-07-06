@@ -23,6 +23,7 @@ import (
 	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/service/tvmaze"
 	"ily.dev/act3/storage"
+	"ily.dev/act3/video/fenc"
 	"ily.dev/act3/video/ffmpeg"
 	"ily.dev/act3/web"
 	"ily.dev/domi"
@@ -88,7 +89,7 @@ func main() {
 
 	datDir := filepath.Join(storageDir, "dat")
 	pass1Dir := filepath.Join(storageDir, "pass1")
-	tmpDir := filepath.Join(storageDir, "tmp")
+	spoolDir := filepath.Join(storageDir, "spool")
 	if err := os.MkdirAll(datDir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -97,17 +98,23 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	// Scratch space for in-flight encodes. Contents are worthless
-	// after a crash or restart, so start from empty.
-	if err := os.RemoveAll(tmpDir); err != nil {
+	// The spool holds in-flight encoder jobs. Contents are
+	// worthless after a crash or restart, so start from empty.
+	if err := os.RemoveAll(spoolDir); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+	if err := os.MkdirAll(spoolDir, 0755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	ffmpeg.SetScratchDir(tmpDir)
+	// Encoding runs on the fenc agent. Until the sibling encoder
+	// box exists, that agent runs in-process, with pass-1 stats
+	// kept under pass1Dir.
+	ffmpeg.SetAgent(fenc.NewInProcessClient(&fenc.Server{
+		Spool: spoolDir,
+		Stats: pass1Dir,
+	}), spoolDir)
 
 	if v := os.Getenv("A3TRANSMISSION"); v != "" {
 		model.SettingDefaultString(model.SettingKeyTransmissionBaseURL, v)
@@ -121,7 +128,6 @@ func main() {
 	tvmazeClient := tvmaze.New()
 	m := must(model.New(dbr, dbw, model.Config{
 		Store:       store,
-		Pass1Dir:    pass1Dir,
 		VideoPreset: os.Getenv("A3FFMPEGVIDEOPRESET"),
 		TMDB:        tmdbClient,
 		TVmaze:      tvmazeClient,

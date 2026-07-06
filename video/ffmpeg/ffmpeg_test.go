@@ -2,17 +2,29 @@ package ffmpeg
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"ily.dev/act3/video/fenc"
 )
 
-// setupHost returns a working directory for ffmpeg tests, which
-// run against the host tools; skips if no host ffmpeg is on PATH.
-func setupHost(t *testing.T) string {
+// testBatch is the stats batch ID tests hand to Pass1Combined and
+// the pass-2 functions. Each test gets its own agent stats root
+// from setupAgent, so a fixed name never collides.
+const testBatch = "b1"
+
+// setupAgent configures the package to run ffmpeg/ffprobe through
+// an in-process fenc agent backed by the host tools, and returns a
+// working directory for test artifacts. The agent's spool and
+// stats roots live under it, at "spool" and "stats"; a batch's
+// pass-1 stats land in stats/<batch>/<StatsID>.
+// Skips if no host ffmpeg is on PATH.
+func setupAgent(t *testing.T) string {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("ffmpeg test, skipped in -short mode")
@@ -21,14 +33,31 @@ func setupHost(t *testing.T) string {
 		t.Skip("host ffmpeg not available")
 	}
 	dir := t.TempDir()
-
-	// Temp dirs created by production code (e.g. Pass2Single) must
-	// land under dir so each test's scratch stays together.
-	t.Setenv("TMPDIR", dir)
+	spool := filepath.Join(dir, "spool")
+	stats := filepath.Join(dir, "stats")
+	for _, d := range []string{spool, stats} {
+		if err := os.Mkdir(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	origAgent, origSpool := agent, agentSpool
+	SetAgent(fenc.NewInProcessClient(&fenc.Server{Spool: spool, Stats: stats}), spool)
+	t.Cleanup(func() { agent, agentSpool = origAgent, origSpool })
 	return dir
 }
 
-// generate runs host ffmpeg to create a synthetic
+// scanPackets stages f into a fresh job and scans its video
+// packets, for tests that inspect the media they encoded.
+func scanPackets(ctx context.Context, f *os.File, format string) (videoPacketScan, error) {
+	j, err := newJob(f)
+	if err != nil {
+		return videoPacketScan{}, err
+	}
+	defer j.close()
+	return scanVideoPackets(ctx, j, format)
+}
+
+// generate runs host ffmpeg directly to create a synthetic
 // source file for testing.
 func generate(t *testing.T, args ...string) {
 	t.Helper()
@@ -50,29 +79,12 @@ func requireFFmpegEncoder(t *testing.T, encoder string) {
 	}
 }
 
-func TestTwoPassArgsRejectsInjection(t *testing.T) {
-	for _, passlog := range []string{
-		"/foo/bar:crf=0",
-		"/foo\\bar",
-		"/foo\nbar",
-	} {
-		t.Run(passlog, func(t *testing.T) {
-			defer func() {
-				if recover() == nil {
-					t.Errorf("twoPassArgs(%q) did not panic", passlog)
-				}
-			}()
-			twoPassArgs("libx265", 1, passlog)
-		})
-	}
-}
-
 func TestEncodeAV1ToHEVC(t *testing.T) {
 	if _, err := exec.LookPath("mediastreamvalidator"); err != nil {
 		t.Skip("mediastreamvalidator not in PATH")
 	}
 
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	requireFFmpegEncoder(t, "libsvtav1")
 	preset := "ultrafast"
 	ctx := t.Context()
@@ -117,7 +129,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	// Pass 1: analysis.
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
@@ -125,7 +137,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 	// Pass 2: encode to HLS fMP4.
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, preset, probe.Duration, nil)
+		testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -160,7 +172,7 @@ func TestEncodeAV1ToHEVC(t *testing.T) {
 // in MPEG-TS (typical of broadcast captures and DVD rips) encodes
 // correctly to HEVC HLS fMP4.
 func TestEncodeMPEG2ToHEVC(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	preset := "ultrafast"
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "source.ts")
@@ -203,14 +215,14 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, preset, probe.Duration, nil)
+		testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -264,7 +276,7 @@ func TestEncodeMPEG2ToHEVC(t *testing.T) {
 // frames ~2.5×. x265 then runs out of CU-tree stats and fails
 // with "Incomplete CU-tree stats file".
 func TestMPEG2TelecineTwoPass(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	preset := "ultrafast"
 	ctx := t.Context()
 
@@ -344,14 +356,14 @@ func TestMPEG2TelecineTwoPass(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, preset, probe.Duration, nil)
+		testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -364,7 +376,7 @@ func TestMPEG2TelecineTwoPass(t *testing.T) {
 // pass 1 writes stats (including .mbtree) directly to a persistent
 // directory and pass 2 reads from the same path.
 func TestX264MbtreePass2(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	preset := "medium"
 	ctx := t.Context()
 
@@ -402,12 +414,12 @@ func TestX264MbtreePass2(t *testing.T) {
 		Bitrate: 500,
 		StatsID: "r0",
 	}
-	passlog := filepath.Join(dir, params.StatsID)
+	passlog := filepath.Join(dir, "stats", testBatch, params.StatsID)
 
 	// Pass 1: x264 analysis writes stats + .mbtree directly.
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
@@ -424,7 +436,7 @@ func TestX264MbtreePass2(t *testing.T) {
 	// Pass 2: encode reading stats from the same dir.
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, preset, probe.Duration, nil)
+		testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -467,7 +479,7 @@ func TestHDRFormat(t *testing.T) {
 // what the encoder writes into the VUI; ffmpeg 8's -color* output
 // flags no longer reach it.
 func TestHDR10EncodePreservesColor(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	preset := "ultrafast"
 	ctx := t.Context()
 	srcPath := filepath.Join(dir, "source.mkv")
@@ -507,13 +519,13 @@ func TestHDR10EncodePreservesColor(t *testing.T) {
 
 	t.Log("running pass 1...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 	t.Log("running pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, preset, probe.Duration, nil)
+		testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
@@ -586,7 +598,7 @@ func TestBuildFilterComplexDolbyVision(t *testing.T) {
 // act3-ffmpeg image alongside ffmpeg; the test skips when they aren't
 // available (host-ffmpeg fallback, or a stale image).
 func TestDolbyVisionEncodeHDR10(t *testing.T) {
-	dir := setupHost(t)
+	dir := setupAgent(t)
 	preset := "ultrafast"
 	ctx := t.Context()
 
@@ -657,13 +669,13 @@ func TestDolbyVisionEncodeHDR10(t *testing.T) {
 
 	t.Log("pass 1 (libplacebo DV → HDR10 on software Vulkan)...")
 	err = Pass1Combined(ctx, srcFile, probe.FormatName,
-		[]EncodeParams{params}, dir, preset, probe.Duration, nil)
+		[]EncodeParams{params}, testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 1: %v", err)
 	}
 	t.Log("pass 2...")
 	playlist, err := Pass2Single(ctx, srcFile, probe.FormatName, params,
-		dir, preset, probe.Duration, nil)
+		testBatch, preset, probe.Duration, nil)
 	if err != nil {
 		t.Fatalf("pass 2: %v", err)
 	}
