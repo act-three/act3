@@ -33,7 +33,10 @@
 // progress positions while the tool runs,
 // then a final event carrying the exit status and bounded stderr.
 // The request's lifetime is the job's lifetime:
-// dropping the connection cancels the job and kills the tool.
+// dropping the connection cancels the job and kills the tool,
+// and the agent removes the canceled job's directory —
+// the caller cannot know when the killed tool stops writing,
+// so it cannot safely remove the directory itself.
 //
 // The agent trusts its caller.
 // Reaching it at all is access control's job
