@@ -403,7 +403,7 @@ func TestJobProgressAndOutput(t *testing.T) {
 func TestJobCancel(t *testing.T) {
 	needFFmpeg(t)
 	s, ts := newTestServer(t)
-	stageJob(t, s, "job1")
+	jobDir := stageJob(t, s, "job1")
 
 	// -re paces the lavfi source at realtime, so this job would
 	// run for a minute if cancellation didn't kill it.
@@ -451,5 +451,12 @@ func TestJobCancel(t *testing.T) {
 	}
 	if elapsed := time.Since(start); elapsed > 30*time.Second {
 		t.Errorf("cancellation took %v", elapsed)
+	}
+
+	// The agent removes a canceled job's directory before its
+	// handler returns, and Close blocks until the handler returns.
+	ts.Close()
+	if _, err := os.Stat(jobDir); !os.IsNotExist(err) {
+		t.Errorf("canceled job directory was not removed: %v", err)
 	}
 }

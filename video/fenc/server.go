@@ -164,6 +164,17 @@ func (s *Server) handleJob(w http.ResponseWriter, r *http.Request) {
 	err = c.Wait()
 	wg.Wait()
 
+	// A canceled job's directory is the agent's to remove:
+	// the caller cannot know when the killed tool stops writing,
+	// so removing it from that side would race the dying tool
+	// and leave a partial directory behind.
+	// The tool is reaped by now, so removal here is safe.
+	if ctx.Err() != nil {
+		if rerr := os.RemoveAll(jobDir); rerr != nil {
+			slog.WarnContext(ctx, "job-cleanup", "job", req.Job, "err", rerr)
+		}
+	}
+
 	res := &Result{Stderr: stderr.String()}
 	if ee, ok := errors.AsType[*exec.ExitError](err); ok {
 		res.Exit = ee.ExitCode()
