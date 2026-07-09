@@ -1182,9 +1182,14 @@ func (q *Queries) DownloadListBySeriesEditionID(serieseditionid *string) ([]Down
 
 const downloadListInfoHashesActive = `-- name: DownloadListInfoHashesActive :many
 SELECT InfoHash FROM Download
-WHERE State IN ('downloading', 'downloaded') AND DeletedAt IS NULL
+WHERE State IN ('queued', 'downloading', 'downloaded') AND DeletedAt IS NULL
 `
 
+// DownloadListInfoHashesActive includes 'queued' so that a download
+// whose add-to-transmission task was killed after the TorrentAdd is
+// reconciled by the next poll pass instead of staying queued forever.
+// Queued downloads not yet in Transmission are simply absent from the
+// poll response.
 func (q *Queries) DownloadListInfoHashesActive() ([]string, error) {
 	rows, err := q.db.QueryContext(q.ctx, downloadListInfoHashesActive)
 	if err != nil {
