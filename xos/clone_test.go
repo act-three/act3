@@ -2,10 +2,8 @@ package xos
 
 import (
 	"bytes"
-	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 )
 
@@ -31,7 +29,7 @@ func TestClone(t *testing.T) {
 	dst := filepath.Join(dir, "dst")
 
 	if err := Clone(dst, src); err != nil {
-		t.Skipf("cloning unsupported on this filesystem: %v", err)
+		t.Fatal(err)
 	}
 	b, err := os.ReadFile(dst)
 	if err != nil {
@@ -56,7 +54,7 @@ func TestCloneUnlinkedSource(t *testing.T) {
 
 	dst := filepath.Join(dir, "dst")
 	if err := Clone(dst, src); err != nil {
-		t.Skipf("cloning unsupported on this filesystem: %v", err)
+		t.Fatal(err)
 	}
 	b, err := os.ReadFile(dst)
 	if err != nil {
@@ -83,15 +81,8 @@ func TestCloneInto(t *testing.T) {
 	}
 	defer w.Close()
 
-	err = CloneInto(w, src)
-	if errors.Is(err, ErrNoCloneInto) {
-		if runtime.GOOS == "linux" {
-			t.Fatalf("CloneInto = ErrNoCloneInto on %s", runtime.GOOS)
-		}
-		return
-	}
-	if err != nil {
-		t.Skipf("cloning unsupported on this filesystem: %v", err)
+	if err := CloneInto(w, src); err != nil {
+		t.Fatal(err)
 	}
 	b, err := os.ReadFile(dst)
 	if err != nil {
@@ -99,5 +90,63 @@ func TestCloneInto(t *testing.T) {
 	}
 	if string(b) != "clone me" {
 		t.Errorf("clone content = %q, want %q", b, "clone me")
+	}
+}
+
+// The copy fallbacks must reproduce clone semantics exactly —
+// src's full contents regardless of current offsets, replacing
+// everything dst held — because callers can't tell which path ran.
+
+func TestCopyFileTo(t *testing.T) {
+	dir := t.TempDir()
+	src := newSrc(t, dir)
+	if _, err := src.Seek(5, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	dst := filepath.Join(dir, "dst")
+	if err := copyFileTo(dst, src); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "clone me" {
+		t.Errorf("copy content = %q, want %q", b, "clone me")
+	}
+
+	// dst must not already exist.
+	if err := copyFileTo(dst, src); err == nil {
+		t.Error("copying onto an existing file succeeded")
+	}
+}
+
+func TestCopyInto(t *testing.T) {
+	dir := t.TempDir()
+	src := newSrc(t, dir)
+	if _, err := src.Seek(5, 0); err != nil {
+		t.Fatal(err)
+	}
+
+	dst := filepath.Join(dir, "dst")
+	if err := os.WriteFile(dst, bytes.Repeat([]byte("x"), 100), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	w, err := os.OpenFile(dst, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer w.Close()
+
+	if err := copyInto(w, src); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "clone me" {
+		t.Errorf("copy content = %q, want %q", b, "clone me")
 	}
 }

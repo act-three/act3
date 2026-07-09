@@ -26,10 +26,10 @@ func AppStorage(fs []*Filesystem, cloneDegraded error) (title string, n domi.Nod
 	)
 }
 
-// cloneWarning surfaces a degraded encoder spool: staging has
-// fallen back from filesystem clones to full copies, which keeps
-// encodes flowing but wastes time and disk until the storage
-// configuration is fixed.
+// cloneWarning surfaces degraded clone traffic: bulk file copies
+// have fallen back from filesystem clones to full byte copies,
+// which keeps media flowing but wastes time and disk until the
+// storage configuration is fixed.
 func cloneWarning(err error) domi.Node {
 	if err == nil {
 		return nil

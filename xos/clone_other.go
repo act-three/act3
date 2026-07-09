@@ -12,5 +12,5 @@ func clone(dst string, src *os.File) error {
 }
 
 func cloneInto(dst, src *os.File) error {
-	return ErrNoCloneInto
+	return errNoCloneInto
 }

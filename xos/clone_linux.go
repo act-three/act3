@@ -11,8 +11,9 @@ import (
 // cloning (reflink), and not copy_file_range, whose contract is
 // only "copy, cloning if possible": when cloning is unavailable
 // (for example with zfs_bclone_enabled=0),
-// copy_file_range quietly performs a full byte copy —
-// exactly what Clone promises never to do.
+// copy_file_range quietly performs a full byte copy,
+// leaving Clone no way to notice the degradation
+// and record it for CloneDegradation.
 
 func clone(dst string, src *os.File) error {
 	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
