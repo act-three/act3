@@ -6,8 +6,8 @@ import (
 
 	"ily.dev/act3/model"
 	"ily.dev/act3/sys/fsinfo"
-	"ily.dev/act3/video/ffmpeg"
 	"ily.dev/act3/view"
+	"ily.dev/act3/xos"
 )
 
 var excludeFSType = map[string]bool{
@@ -48,7 +48,7 @@ func viewEditorStorage(tx *model.TxR) (title string, n node) {
 		})
 	}
 
-	return view.AppStorage(fs, ffmpeg.CloneDegraded())
+	return view.AppStorage(fs, xos.CloneDegradation())
 }
 
 func filepathHasPrefix(p, prefix string) bool {

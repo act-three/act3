@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"ily.dev/act3/video/fenc"
+	"ily.dev/act3/xos"
 )
 
 // The encoder agent every tool invocation runs on, and this
@@ -63,7 +64,7 @@ func newJob(input *os.File) (*job, error) {
 	}
 	if input != nil {
 		j.input = "input"
-		if err := stageFile(input, filepath.Join(j.dir, j.input)); err != nil {
+		if err := xos.Clone(filepath.Join(j.dir, j.input), input); err != nil {
 			j.close()
 			return nil, err
 		}

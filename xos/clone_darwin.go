@@ -19,5 +19,5 @@ func clone(dst string, src *os.File) error {
 // clonefile only creates its destination;
 // Darwin has no way to clone into an existing file.
 func cloneInto(dst, src *os.File) error {
-	return ErrNoCloneInto
+	return errNoCloneInto
 }
