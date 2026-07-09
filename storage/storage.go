@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"ily.dev/act3/encoding/base32c"
+	"ily.dev/act3/xos"
 )
 
 const (
@@ -53,6 +54,36 @@ func (d *Dir) CopyFile(name string) (key string, err error) {
 	}
 	defer fr.Close()
 	return d.Copy(fr)
+}
+
+// Clone stores src's current contents as a new blob
+// and returns the blob's key.
+// The blob is a copy-on-write reflink of src
+// where the platform and filesystem allow;
+// where they don't, [xos.CloneInto] falls back to a byte copy.
+func (d *Dir) Clone(src *os.File) (key string, err error) {
+	tmp := rand.Text()[:8]
+	fw, err := d.root.Create(tmp)
+	if err != nil {
+		return "", err
+	}
+	defer fw.Close()
+	defer d.root.Remove(tmp)
+	err = xos.CloneInto(fw, src)
+	if err != nil {
+		return "", err
+	}
+	key = newID()
+	path, _ := keyPath(key, filepath.Join)
+	err = d.root.MkdirAll(path[:5], 0755)
+	if err != nil {
+		return "", err
+	}
+	err = d.root.Rename(tmp, path)
+	if err != nil {
+		return "", err
+	}
+	return key, nil
 }
 
 func (d *Dir) Copy(r io.Reader) (key string, err error) {
