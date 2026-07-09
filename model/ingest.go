@@ -34,6 +34,32 @@ func (m *Model) copyToStoreHashed(r io.Reader) (key string, sum []byte, err erro
 	return key, h.Sum(nil), nil
 }
 
+// cloneToStoreHashed stores a reflink clone of src in the blob store
+// and returns the storage key alongside a blake3-256 digest of the
+// stored bytes.
+// The digest is computed from the stored clone rather than from src,
+// so it matches the blob
+// even if src changes after the clone is taken;
+// a failure after the clone leaves the blob for the GC.
+// Where cloning is unavailable,
+// the store falls back to a full copy (see [xos.CloneInto]).
+func (m *Model) cloneToStoreHashed(src *os.File) (key string, sum []byte, err error) {
+	key, err = m.store.Clone(src)
+	if err != nil {
+		return "", nil, err
+	}
+	f, err := m.store.Open(key)
+	if err != nil {
+		return "", nil, err
+	}
+	defer f.Close()
+	h := blake3.New(32, nil)
+	if _, err := io.Copy(h, f); err != nil {
+		return "", nil, err
+	}
+	return key, h.Sum(nil), nil
+}
+
 // openIngestSource opens name inside localDir for reading, rejecting
 // symlinks that escape the root, absolute or ".." paths, and any
 // source that is not a regular file. The returned file's Stat and
@@ -123,7 +149,7 @@ func (tx *TxR) taskIngest(args []string) error {
 		tx.m.prog.AddEdge(ev.EpisodeID, vid.ID)
 	}
 	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
-	key, sum, err := tx.m.copyToStoreHashed(src)
+	key, sum, err := tx.m.cloneToStoreHashed(src)
 	if err != nil {
 		tx.m.prog.Close(vid.ID, err)
 		return err
@@ -903,7 +929,7 @@ func (tx *TxR) taskReimport(args []string) (err error) {
 	tx.m.prog.Open(vid.ID, vid.Name, "Copying")
 	defer func() { tx.m.prog.Close(vid.ID, err) }()
 
-	newKey, newSum, err := tx.m.copyToStoreHashed(src)
+	newKey, newSum, err := tx.m.cloneToStoreHashed(src)
 	if err != nil {
 		return err
 	}
