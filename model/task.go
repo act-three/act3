@@ -410,7 +410,10 @@ func (tq *taskQueue) run1(ctx context.Context, task schema.Task) (err error, sta
 		if err != nil {
 			return err
 		}
-		return tq.m.WithTxRW(ctx, func(t *TxRW) error {
+		// The task's work is already committed. Detach so a kill
+		// landing during this terminal delete cannot leave a
+		// completed task behind as a permanent failure.
+		return tq.m.WithTxRW(context.WithoutCancel(ctx), func(t *TxRW) error {
 			return t.q.TaskDelete(task.ID)
 		})
 	}), nil
