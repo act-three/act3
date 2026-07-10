@@ -13,7 +13,7 @@ require (
 	golang.org/x/text v0.37.0
 	golang.org/x/time v0.15.0
 	golang.org/x/tools v0.44.0
-	ily.dev/domi v0.2.1
+	ily.dev/domi v0.3.0
 	kr.dev/errorfmt v0.1.1
 	kr.dev/walk v0.1.0
 	lukechampine.com/blake3 v1.4.1
