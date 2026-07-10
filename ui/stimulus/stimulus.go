@@ -15,6 +15,6 @@ func Target(controller, name string) domi.Attr {
 	return domi.Name("data-" + controller + "-target")(name)
 }
 
-func Value(controller, name string) func(string) domi.Attr {
+func Value(controller, name string) func(...string) domi.Attr {
 	return domi.Name("data-" + controller + "-" + name + "-value")
 }

@@ -17,7 +17,7 @@ func Stylef(format string, a ...any) domi.Attr {
 	return attr.Stylef(format, a...)
 }
 
-func Attr(name string) func(string) domi.Attr { return domi.Name(name) }
+func Attr(name string) func(...string) domi.Attr { return domi.Name(name) }
 
 func Disabled(disabled bool) domi.Attr { return attr.Disabled(disabled) }
 
