@@ -166,7 +166,7 @@ func sidebarMenuButton(it MenuItem, current string) domi.Node {
 		Class("v-sidebar-menu-button"),
 		it.Attr,
 		Href(it.Path),
-		domi.Bool("data-selected")(isActive(it.Path, current)),
+		BoolAttr("data-selected", isActive(it.Path, current)),
 		Attr("data-slot")("sidebar-menu-button"),
 		Attr("data-sidebar")("menu-button"),
 		Attr("data-size")("default"),

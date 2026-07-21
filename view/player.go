@@ -17,14 +17,10 @@ import (
 )
 
 func PlayerContainer(id string, player domi.Node) domi.Node {
-	return domi.Keyed("div")(attr.ID("player"))(
-		func(yield func(string, domi.Node) bool) {
-			if player == nil {
-				return
-			}
-			yield(id, player)
-		},
-	)
+	if player == nil {
+		return html.Div(attr.ID("player"))()
+	}
+	return html.Div(attr.ID("player"))(domi.WithKeyOpaque(id, player))
 }
 
 // PlayerForEpisode and PlayerForMovie render the player for an episode
@@ -60,7 +56,6 @@ func player(
 		initAudio = audioOpts[0].ID
 	}
 	return html.Div(
-		domi.Opaque,
 		attr.ID("full-player"),
 		Class("v-player"),
 		stimulus.Controller("player"),
