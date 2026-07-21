@@ -131,7 +131,7 @@ func collectionStatus(c *model.Collection, itemCount, runtimeMinutes int64) domi
 
 func collectionTabButton(label, url string, selected bool) domi.Node {
 	return ButtonLink(url,
-		domi.Bool("data-selected")(selected),
+		BoolAttr("data-selected", selected),
 	)(Text(label))
 }
 

@@ -10,7 +10,7 @@
     if (!map) {
       map = /* @__PURE__ */ new Map();
       for (const child of parent.children) {
-        const k = child.dataset && child.dataset.domiKey;
+        const k = child.getAttribute("domi-key");
         if (k != null) map.set(k, child);
       }
       parent.__domiChildren = map;
@@ -27,7 +27,7 @@
     for (let n = node; n !== root; n = n.parentNode) {
       const parent = n.parentNode;
       if (!parent) throw new Error("domi: mutate target is not inside domi-root");
-      const key = n.dataset && n.dataset.domiKey;
+      const key = n.getAttribute("domi-key");
       path.unshift(key != null ? key : indexOf(parent.childNodes, n));
     }
     return path;
@@ -35,6 +35,18 @@
   function indexOf(nodes, node) {
     for (let i = 0; i < nodes.length; i++) if (nodes[i] === node) return i;
     return -1;
+  }
+  function isKeyed(node) {
+    return !!(node.hasAttribute && node.hasAttribute("domi-key"));
+  }
+  function insertAfterLastKeyed(parent, node) {
+    for (let c = parent.lastElementChild; c; c = c.previousElementSibling) {
+      if (isKeyed(c)) {
+        if (c !== node) parent.insertBefore(node, c.nextSibling);
+        return;
+      }
+    }
+    parent.appendChild(node);
   }
   function uniqueKey(map, key) {
     for (let i = 1; ; i++) {
@@ -48,25 +60,27 @@
         console.warn("domi: unknown mutation op", m.op);
         return null;
       }
-      if (!moveOK(m)) {
+      if (!moveOK(root, m)) {
         console.warn("domi: malformed move, skipping optimistic commit", m);
         return null;
       }
     }
     return muts.map((m) => applyMove(root, m.node, m.before ?? null, m.into ?? null));
   }
-  function moveOK(m) {
+  function moveOK(root, m) {
     const dst = m.before ? m.before.parentNode : m.into;
-    return !!(m.node && m.node.parentNode && dst && m.node.dataset && m.node.dataset.domiKey != null);
+    if (!(dst && dst.nodeType === 1 && root.contains(dst))) return false;
+    if (m.before && !isKeyed(m.before)) return false;
+    return !!(m.node && m.node.parentNode && root.contains(m.node) && isKeyed(m.node));
   }
   function applyMove(root, node, before, into) {
     const src = node.parentNode;
     const dst = before ? before.parentNode : into;
     if (!src || !dst) throw new Error("domi: move needs a connected node and a destination");
-    const key = node.dataset && node.dataset.domiKey;
-    if (key == null) throw new Error("domi: move node has no data-domi-key");
+    const key = node.getAttribute("domi-key");
+    if (key == null) throw new Error("domi: move node has no domi-key");
     const from = nodePath(root, node);
-    const beforeKey = before ? before.dataset && before.dataset.domiKey || "" : "";
+    const beforeKey = before ? before.getAttribute("domi-key") || "" : "";
     const dstMap = childMap(dst);
     let newKey = key;
     const clash = dstMap.get(key);
@@ -75,7 +89,7 @@
       console.warn("domi: move key", key, "already in destination; generated", newKey);
     }
     childMap(src).delete(key);
-    node.dataset.domiKey = newKey;
+    node.setAttribute("domi-key", newKey);
     dst.insertBefore(node, before || null);
     dstMap.set(newKey, node);
     return { Op: "move", From: from, To: nodePath(root, node), Before: beforeKey };
@@ -84,7 +98,16 @@
     switch (p.Op) {
       case "Replace": {
         const node = walk(root, p.Path);
-        node.parentNode.replaceChild(fragmentFromHTML(p.HTML).firstChild, node);
+        const parent = node.parentNode;
+        const fresh = fragmentFromHTML(p.HTML).firstChild;
+        parent.replaceChild(fresh, node);
+        const map = parent.__domiChildren;
+        if (map) {
+          const oldKey = node.getAttribute && node.getAttribute("domi-key");
+          if (oldKey != null) map.delete(oldKey);
+          const newKey = fresh.getAttribute && fresh.getAttribute("domi-key");
+          if (newKey != null) map.set(newKey, fresh);
+        }
         break;
       }
       case "SetText": {
@@ -104,8 +127,11 @@
         const newNode = fragmentFromHTML(p.HTML).firstChild;
         if (p.Key != null) {
           const map = childMap(parent);
-          const anchor = p.Before ? map.get(p.Before) : null;
-          parent.insertBefore(newNode, anchor || null);
+          if (p.Before) {
+            parent.insertBefore(newNode, map.get(p.Before) || null);
+          } else {
+            insertAfterLastKeyed(parent, newNode);
+          }
           map.set(p.Key, newNode);
         } else {
           parent.insertBefore(newNode, parent.childNodes[p.Index] || null);
@@ -131,8 +157,13 @@
         if (p.Key != null) {
           const map = childMap(parent);
           const node = map.get(p.Key);
-          const anchor = p.Before ? map.get(p.Before) : null;
-          if (node) parent.insertBefore(node, anchor || null);
+          if (node) {
+            if (p.Before) {
+              parent.insertBefore(node, map.get(p.Before) || null);
+            } else {
+              insertAfterLastKeyed(parent, node);
+            }
+          }
         } else {
           const node = parent.childNodes[p.From];
           parent.removeChild(node);
@@ -166,9 +197,6 @@
     return out;
   }
   var EVENTS = ["click", "submit", "input", "change", "keydown", "keyup"];
-  function datasetKeyFor(event) {
-    return "msg" + event.charAt(0).toUpperCase() + event.slice(1);
-  }
   function postEnvelope(eventURL, h, e, ver, mutations) {
     const body = { Type: "Dispatch", Handler: h, Event: e, Ver: ver };
     if (mutations && mutations.length) body.Mutations = mutations;
@@ -182,9 +210,9 @@
     if (typeof document === "undefined") return;
     const root = document.querySelector("body > domi-root");
     if (!root) throw new Error("domi: element domi-root not found");
-    const prefix = root.dataset.domiPrefix;
-    if (!prefix) throw new Error("domi: no session on domi-root, expected data-domi-prefix");
-    delete root.dataset.domiPrefix;
+    const prefix = root.getAttribute("prefix");
+    if (!prefix) throw new Error("domi: attribute domi-root[prefix] not found");
+    root.removeAttribute("prefix");
     const eventURL = `${prefix}/event`;
     const eventsURL = `${prefix}/events`;
     const pathSets = /* @__PURE__ */ new Map();
@@ -192,11 +220,11 @@
       for (const k in obj) pathSets.set(k, obj[k]);
     }
     try {
-      addPathSets(JSON.parse(root.dataset.domiPathSets || "{}"));
+      addPathSets(JSON.parse(root.getAttribute("path-sets") || "{}"));
     } catch (err) {
       console.error("domi: bad path sets", err);
     }
-    delete root.dataset.domiPathSets;
+    root.removeAttribute("path-sets");
     const snapshots = /* @__PURE__ */ new Map();
     const SNAPSHOT_MAX = 30;
     let base = "11111111111111111111111111";
@@ -247,8 +275,7 @@
         let el = e.target;
         while (el && el !== root.parentNode) {
           if (el.nodeType === 1) {
-            const key = datasetKeyFor(ev);
-            const raw = el.dataset && el.dataset[key];
+            const raw = el.getAttribute("domi-msg-" + ev);
             if (raw) {
               if (ev === "submit") e.preventDefault();
               const keys = [];
@@ -287,7 +314,7 @@
       if (!a || a.tagName !== "A") return;
       let el = e.target;
       while (el && el !== a.parentNode) {
-        if (el.nodeType === 1 && el.dataset && el.dataset.msgClick) return;
+        if (el.nodeType === 1 && el.getAttribute("domi-msg-click")) return;
         el = el.parentNode;
       }
       const href = a.getAttribute("href");
@@ -295,7 +322,7 @@
       const target = a.getAttribute("target");
       if (target && target !== "_self") return;
       if (a.hasAttribute("download")) return;
-      if (a.hasAttribute("data-domi-bypass")) return;
+      if (a.hasAttribute("domi-bypass")) return;
       let url;
       try {
         url = new URL(href, location.href);
@@ -334,7 +361,7 @@
       const target = a.getAttribute("target");
       if (target && target !== "_self") return;
       if (a.hasAttribute("download")) return;
-      if (a.hasAttribute("data-domi-bypass")) return;
+      if (a.hasAttribute("domi-bypass")) return;
       let url;
       try {
         url = new URL(href, location.href);

@@ -17,7 +17,17 @@ func Stylef(format string, a ...any) domi.Attr {
 	return attr.Stylef(format, a...)
 }
 
-func Attr(name string) func(...string) domi.Attr { return domi.Name(name) }
+func Attr(name string) func(...string) domi.Attr {
+	return func(value ...string) domi.Attr { return domi.Name(name, value...) }
+}
+
+// BoolAttr returns a name-only attribute when b is true and nothing otherwise.
+func BoolAttr(name string, b bool) domi.Attr {
+	if b {
+		return domi.Name(name)
+	}
+	return nil
+}
 
 func Disabled(disabled bool) domi.Attr { return attr.Disabled(disabled) }
 

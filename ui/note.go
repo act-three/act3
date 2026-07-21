@@ -40,18 +40,17 @@ type Note struct {
 //
 // Place NotePort once in the base layout.
 func NotePort(notes []Note) domi.Node {
-	return domi.Keyed("div")(
+	return html.Div(
 		stimulus.Controller(notePortController),
 		stimulus.Action("visibilitychange@document->note-port#togglePaused"),
-	)(func(yield func(string, domi.Node) bool) {
-		_ = yield("port", notePort()) &&
-			yield("outbox", noteOutbox(notes))
-	})
+	)(
+		domi.WithKeyOpaque("port", notePort()),
+		domi.WithKey("outbox", noteOutbox(notes)),
+	)
 }
 
 func notePort() domi.Node {
 	return html.Div(
-		domi.Opaque,
 		attr.ID("note-port"),
 		Class("u-note-port"),
 		attr.Role("region"),
@@ -63,16 +62,14 @@ func notePort() domi.Node {
 }
 
 func noteOutbox(notes []Note) domi.Node {
-	return domi.Keyed("div")(attr.Hidden(true))(func(yield func(string, domi.Node) bool) {
-		for _, n := range notes {
-			entry := html.Div(
-				stimulus.Target(notePortController, "outbox"),
-			)(noteView(n))
-			if !yield(n.ID, entry) {
-				return
-			}
-		}
-	})
+	var entries []domi.Node
+	for _, n := range notes {
+		entry := html.Div(
+			stimulus.Target(notePortController, "outbox"),
+		)(noteView(n))
+		entries = append(entries, domi.WithKey(n.ID, entry))
+	}
+	return html.Div(domi.Name("hidden"))(entries...)
 }
 
 // noteView renders a single note.

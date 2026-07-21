@@ -24,7 +24,7 @@ func SettingsButtonRowItem[Msg any](selected bool, commit Msg, nodes ...domi.Nod
 		ButtonSurface,
 		ButtonSize2,
 		attr.Type("button"),
-		domi.Bool("data-selected")(selected),
+		BoolAttr("data-selected", selected),
 		event.Click(commit),
 	)(nodes...)
 }

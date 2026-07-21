@@ -332,19 +332,17 @@ func appSeriesDetailSeasonItem(sn *model.Season) domi.Node {
 				trashForm(kind.Season{}, sn.ID()),
 			),
 		),
-		domi.Keyed("div")(
+		html.Div(
 			Class("u-contents"),
 			stimulus.Controller("sortable"),
 			stimulus.Action("keydown.esc@document->sortable#cancel"),
 			Attr("data-season-id")(sn.ID()),
 			onEpisodeMove(),
-		)(func(yield func(string, domi.Node) bool) {
-			for ep := range sn.Episodes(model.AnyEpisode) {
-				if !yield(ep.ID(), appSeriesDetailEpisodeListItem(ep)) {
-					return
-				}
-			}
-		}),
+		)(
+			rangeSeq(sn.Episodes(model.AnyEpisode), func(ep *model.Episode) domi.Node {
+				return domi.WithKey(ep.ID(), appSeriesDetailEpisodeListItem(ep))
+			}),
+		),
 	)
 }
 

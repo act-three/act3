@@ -125,7 +125,7 @@ func taskRow(t *model.Task, runLabel string) domi.Node {
 		iff(s != "", func() domi.Node {
 			return html.TR()(
 				TableCell(
-					attr.Colspan("5"),
+					attr.ColSpan("5"),
 				)(
 					Code()(
 						domi.Text(s),

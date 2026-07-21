@@ -18,7 +18,7 @@ func BrowseEpisode(
 ) (title string, n domi.Node) {
 	v := ep.ActiveVideo()
 	return ep.Title(), browse(uploads, ep.Thumbnail())(
-		Grid12(Class("v-detail"), domi.Bool("data-spoiler")(hideSpoilers(ep)))(
+		Grid12(Class("v-detail"), BoolAttr("data-spoiler", hideSpoilers(ep)))(
 			FlexCol(ColSpan7, Class("v-detail-info"))(
 				Link(ep.EditionTheaterPath())(Text(ep.SeriesHead().Title())),
 				Grid7()(

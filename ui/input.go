@@ -12,14 +12,14 @@ var (
 	InputSize3 = Attr("data-input-size")("3")
 )
 
-func InputText(attrs ...domi.Attr) domi.Element {
+func InputText(attrs ...domi.Attr) domi.Node {
 	return html.Input(
 		Class("u-input"),
 		group(attrs...),
 	)
 }
 
-func InputSubmit(attrs ...domi.Attr) domi.Element {
+func InputSubmit(attrs ...domi.Attr) domi.Node {
 	return html.Input(
 		group(attrs...),
 		attr.Type("submit"),
