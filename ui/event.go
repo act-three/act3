@@ -58,9 +58,9 @@ func onClickSelf[Msg any](m Msg) domi.Attr {
 	}, []string{"target", "id"}, []string{"currentTarget", "id"})
 }
 
-// onChangeValue calls f with the element's committed value
+// OnChangeValue calls f with the element's committed value
 // and delivers the resulting message.
-func onChangeValue[Msg any](f func(value string) Msg) domi.Attr {
+func OnChangeValue[Msg any](f func(value string) Msg) domi.Attr {
 	return domi.On("change", func(v jsontext.Value) (Msg, error) {
 		var e struct {
 			CurrentTarget struct {

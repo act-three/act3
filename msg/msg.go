@@ -21,6 +21,10 @@ type (
 	// SeriesSearch searches TVmaze for shows matching Query.
 	SeriesSearch struct{ Query string }
 
+	// SeriesSearchEdit records the add-series dialog's edited
+	// query without searching.
+	SeriesSearchEdit struct{ Query string }
+
 	// SeriesSearched delivers the results of a SeriesSearch.
 	SeriesSearched struct {
 		Query   string
@@ -47,6 +51,10 @@ type (
 
 	// MovieSearch searches TMDB for movies matching Query.
 	MovieSearch struct{ Query string }
+
+	// MovieSearchEdit records the add-movie dialog's edited
+	// query without searching.
+	MovieSearchEdit struct{ Query string }
 
 	// MovieSearched delivers the results of a MovieSearch.
 	MovieSearched struct {
@@ -270,6 +278,7 @@ func (*MovieEditionSetRuntime) msg()     {}
 func (*MovieEditionSetSummary) msg()     {}
 func (*MovieEditionSetTitle) msg()       {}
 func (*MovieSearch) msg()                {}
+func (*MovieSearchEdit) msg()            {}
 func (*MovieSearchError) msg()           {}
 func (*MovieSearched) msg()              {}
 func (*MovieVideoSetActive) msg()        {}
@@ -288,6 +297,7 @@ func (*SeriesEditionAdd) msg()           {}
 func (*SeriesEditionSetLabel) msg()      {}
 func (*SeriesEditionSetSummary) msg()    {}
 func (*SeriesSearch) msg()               {}
+func (*SeriesSearchEdit) msg()           {}
 func (*SeriesSearchError) msg()          {}
 func (*SeriesSearched) msg()             {}
 func (*SeriesSetTitle) msg()             {}

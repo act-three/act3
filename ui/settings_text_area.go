@@ -19,7 +19,7 @@ func SettingsTextArea[Msg any](value string, commit func(value string) Msg, attr
 	)(
 		html.Textarea(
 			Class("u-settings-text-area-input"),
-			onChangeValue(commit),
+			OnChangeValue(commit),
 			stimulus.Target("settings-text-area", "input"),
 			stimulus.Action("keydown->settings-text-area#keydown"),
 		)(domi.Text(value)),
