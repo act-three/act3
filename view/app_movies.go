@@ -263,6 +263,9 @@ func AppMovieAddDialog(query string, searching bool, results []model.MovieSearch
 					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 					attr.Value(query),
+					OnChangeValue(func(v string) msg.Msg {
+						return &msg.MovieSearchEdit{Query: v}
+					}),
 				),
 			),
 			html.Div(

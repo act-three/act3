@@ -26,6 +26,9 @@ func AppTMDB(settings model.Settings) (string, domi.Node) {
 					attr.Name("token"),
 					Class("v-system-input"),
 					attr.Value(settings[model.SettingKeyTMDBAccessToken].String()),
+					OnChangeValue(func(v string) msg.Msg {
+						return &msg.TMDBSetToken{Token: v}
+					}),
 				),
 			),
 			html.Div(Class("v-system-field"))(

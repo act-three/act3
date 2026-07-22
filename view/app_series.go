@@ -391,6 +391,9 @@ func AppSeriesAddDialog(query string, searching bool, results []model.SeriesSear
 					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 					attr.Value(query),
+					OnChangeValue(func(v string) msg.Msg {
+						return &msg.SeriesSearchEdit{Query: v}
+					}),
 				),
 			),
 			html.Div(

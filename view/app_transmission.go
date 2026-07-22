@@ -24,6 +24,9 @@ func AppTransmission(settings model.Settings) (string, domi.Node) {
 					attr.Name("url"),
 					Class("v-system-input"),
 					attr.Value(settings[model.SettingKeyTransmissionBaseURL].String()),
+					OnChangeValue(func(v string) msg.Msg {
+						return &msg.TransmissionSetURL{URL: v}
+					}),
 				),
 			),
 			html.Div(Class("v-system-field"))(

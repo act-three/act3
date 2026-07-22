@@ -94,6 +94,99 @@
     dstMap.set(newKey, node);
     return { Op: "move", From: from, To: nodePath(root, node), Before: beforeKey };
   }
+  function isOpaque(el) {
+    return !!(el.closest && el.closest("[domi-opaque]"));
+  }
+  function radioGroup(root, el) {
+    const name = el.getAttribute("name");
+    if (!name) return [el];
+    const group = [];
+    for (const r of root.querySelectorAll("input")) {
+      if (r.type === "radio" && r.getAttribute("name") === name && !isOpaque(r)) group.push(r);
+    }
+    return group;
+  }
+  function commitOps(root, el) {
+    if (!el || el.nodeType !== 1 || isOpaque(el)) return [];
+    editing.delete(el);
+    const checkedOp = (r) => {
+      if (r.checked) r.setAttribute("checked", "");
+      else r.removeAttribute("checked");
+      return { Op: "setchecked", Path: nodePath(root, r), Checked: r.checked };
+    };
+    switch (el.tagName) {
+      case "INPUT":
+        if (el.type === "file") return [];
+        if (el.type === "checkbox") return [checkedOp(el)];
+        if (el.type === "radio") return radioGroup(root, el).map(checkedOp);
+        el.setAttribute("value", el.value);
+        return [{ Op: "setvalue", Path: nodePath(root, el), Value: el.value }];
+      case "TEXTAREA":
+        el.textContent = el.value;
+        return [{ Op: "settext", Path: nodePath(root, el), Value: el.value }];
+      case "SELECT": {
+        const ops = [];
+        for (const o of el.options) {
+          if (isOpaque(o)) continue;
+          if (o.selected) o.setAttribute("selected", "");
+          else o.removeAttribute("selected");
+          ops.push({ Op: "setselected", Path: nodePath(root, o), Selected: o.selected });
+        }
+        return ops;
+      }
+    }
+    return [];
+  }
+  function revertControl(root, el) {
+    if (!el || el.nodeType !== 1 || isOpaque(el)) return;
+    editing.delete(el);
+    switch (el.tagName) {
+      case "INPUT":
+        if (el.type === "file") return;
+        if (el.type === "checkbox") el.checked = el.hasAttribute("checked");
+        else if (el.type === "radio") {
+          for (const r of radioGroup(root, el)) r.checked = r.hasAttribute("checked");
+        } else el.value = el.getAttribute("value") ?? "";
+        return;
+      case "TEXTAREA":
+        el.value = el.textContent;
+        return;
+      case "SELECT":
+        for (const o of el.options) {
+          if (!isOpaque(o)) o.selected = o.hasAttribute("selected");
+        }
+        return;
+    }
+  }
+  function hasEditHandler(root, el) {
+    for (let n = el; n && n !== root.parentNode; n = n.parentNode) {
+      if (n.nodeType === 1 && (n.getAttribute("domi-msg-input") || n.getAttribute("domi-msg-change"))) {
+        return true;
+      }
+    }
+    return false;
+  }
+  function syncProp(el, name) {
+    switch (name) {
+      case "value":
+        if (el.tagName === "INPUT" && el.type !== "file" && (el !== document.activeElement || !editing.has(el))) {
+          el.value = el.getAttribute("value") ?? "";
+        }
+        break;
+      case "checked":
+        if (el.tagName === "INPUT") el.checked = el.hasAttribute("checked");
+        break;
+      case "selected":
+        if (el.tagName === "OPTION") el.selected = el.hasAttribute("selected");
+        break;
+    }
+  }
+  function syncTextareaValue(parent) {
+    if (parent.tagName === "TEXTAREA" && (parent !== document.activeElement || !editing.has(parent))) {
+      parent.value = parent.textContent;
+    }
+  }
+  var editing = /* @__PURE__ */ new WeakSet();
   function applyPatch(root, p) {
     switch (p.Op) {
       case "Replace": {
@@ -111,15 +204,21 @@
         break;
       }
       case "SetText": {
-        walk(root, p.Path).nodeValue = p.Value;
+        const text = walk(root, p.Path);
+        text.nodeValue = p.Value;
+        syncTextareaValue(text.parentNode);
         break;
       }
       case "SetAttr": {
-        walk(root, p.Path).setAttribute(p.Name, p.Value ?? "");
+        const el = walk(root, p.Path);
+        el.setAttribute(p.Name, p.Value ?? "");
+        syncProp(el, p.Name);
         break;
       }
       case "RemoveAttr": {
-        walk(root, p.Path).removeAttribute(p.Name);
+        const el = walk(root, p.Path);
+        el.removeAttribute(p.Name);
+        syncProp(el, p.Name);
         break;
       }
       case "InsertChild": {
@@ -136,6 +235,7 @@
         } else {
           parent.insertBefore(newNode, parent.childNodes[p.Index] || null);
         }
+        syncTextareaValue(parent);
         break;
       }
       case "RemoveChild": {
@@ -150,6 +250,7 @@
         } else {
           parent.removeChild(parent.childNodes[p.Index]);
         }
+        syncTextareaValue(parent);
         break;
       }
       case "MoveChild": {
@@ -270,8 +371,17 @@
         body: JSON.stringify({ Type: "URLChange", URL: p.dest, SnapshotVer: p.base, ToPreview: true })
       }).catch((err) => console.error("domi: urlChange POST failed", err));
     }
+    for (const ev of ["input", "change"]) {
+      root.addEventListener(ev, (e) => {
+        if (e.target.nodeType === 1) editing.add(e.target);
+      });
+    }
+    root.addEventListener("focusout", (e) => {
+      if (e.target.nodeType === 1) editing.delete(e.target);
+    });
     for (const ev of EVENTS) {
       root.addEventListener(ev, (e) => {
+        const commits = (ev === "input" || ev === "change") && !e.isComposing;
         let el = e.target;
         while (el && el !== root.parentNode) {
           if (el.nodeType === 1) {
@@ -287,12 +397,14 @@
                 if (p) paths.push(...p);
               }
               const fields = getFields(e, el, paths);
+              const committed = commits ? commitOps(root, e.target) : [];
               const muts = e.detail && e.detail.domi && e.detail.domi.mutations;
-              const wire = Array.isArray(muts) && muts.length ? applyClientMutations(root, muts) : null;
-              if (wire) {
+              const proposed = Array.isArray(muts) && muts.length ? applyClientMutations(root, muts) ?? [] : [];
+              const ops = committed.concat(proposed);
+              if (ops.length) {
                 const acted = ver;
                 base = ver = acted + "-mutated";
-                postEnvelope(eventURL, keys.join(","), fields, acted, wire);
+                postEnvelope(eventURL, keys.join(","), fields, acted, ops);
               } else {
                 postEnvelope(eventURL, keys.join(","), fields, ver);
               }
@@ -300,6 +412,9 @@
             }
           }
           el = el.parentNode;
+        }
+        if (commits && e.target.nodeType === 1 && !hasEditHandler(root, e.target)) {
+          revertControl(root, e.target);
         }
       });
     }

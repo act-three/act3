@@ -40,10 +40,13 @@ func Home(
 				),
 				Box(Class("v-home-search"))(
 					Icon("line/search-sm"),
-					html.Input(
+					// Opaque: the search box is a client-owned
+					// filter (see home.js); domi must neither
+					// commit nor revert what the user types.
+					domi.WithKeyOpaque("search", html.Input(
 						Class("v-home-search-input"),
 						stimulus.Action("input->home#search"),
-					),
+					)),
 				),
 			),
 			FlexCol(Class("v-home-collections"))(

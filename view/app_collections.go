@@ -161,6 +161,9 @@ func AppCollectionMovieAddDialog(colID, query string, results []model.Collection
 					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 					attr.Value(query),
+					OnChangeValue(func(v string) msg.Msg {
+						return &msg.CollectionPickerSearch{Query: v}
+					}),
 				),
 			),
 			html.Div(
@@ -244,6 +247,9 @@ func AppCollectionSeriesAddDialog(colID, query string, results []model.Collectio
 					Class("v-media-dialog-fixed"),
 					attr.Name("q"),
 					attr.Value(query),
+					OnChangeValue(func(v string) msg.Msg {
+						return &msg.CollectionPickerSearch{Query: v}
+					}),
 				),
 			),
 			html.Div(

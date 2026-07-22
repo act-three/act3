@@ -47,6 +47,11 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 	case *msg.SeriesAddOpen:
 		a.dialog = &seriesAddDialog{}
 		return nil
+	case *msg.SeriesSearchEdit:
+		if d, ok := a.dialog.(*seriesAddDialog); ok {
+			d.query = m.Query
+		}
+		return nil
 	case *msg.SeriesSearch:
 		d, ok := a.dialog.(*seriesAddDialog)
 		if !ok {
@@ -99,6 +104,11 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 
 	case *msg.MovieAddOpen:
 		a.dialog = &movieAddDialog{}
+		return nil
+	case *msg.MovieSearchEdit:
+		if d, ok := a.dialog.(*movieAddDialog); ok {
+			d.query = m.Query
+		}
 		return nil
 	case *msg.MovieSearch:
 		d, ok := a.dialog.(*movieAddDialog)

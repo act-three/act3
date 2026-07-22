@@ -326,12 +326,15 @@ func AppDownloadFileAttachPopover(
 			Style("width: 300px; height: 350px"),
 			stimulus.Controller("picker"),
 		)(
-			InputText(
+			// Opaque: the filter is a client-owned control (see
+			// picker.js); domi must neither commit nor revert
+			// what the user types.
+			domi.WithKeyOpaque("filter", InputText(
 				attr.Autofocus(true),
 				attr.Placeholder("Filter..."),
 				Class("u-picker-filter"),
 				stimulus.Action("input->picker#filter"),
-			),
+			)),
 			ScrollY()(
 				iff(len(attachedEps) > 0, func() domi.Node {
 					return PickerGroup()(

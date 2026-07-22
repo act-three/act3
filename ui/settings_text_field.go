@@ -29,7 +29,7 @@ func SettingsTextField[Msg any](value string, commit func(value string) Msg, att
 		html.Div(Class("u-settings-text-field-inner"))(
 			InputText(
 				attr.Value(value),
-				onChangeValue(commit),
+				OnChangeValue(commit),
 				stimulus.Target("settings-text-field", "input"),
 				stimulus.Action("keydown->settings-text-field#keydown"),
 				stimulus.Action("input->settings-text-field#sync"),
