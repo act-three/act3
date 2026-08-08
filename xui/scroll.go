@@ -1,0 +1,55 @@
+package ui
+
+import (
+	"cmp"
+
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+)
+
+// A ScrollView displays v inside a viewport
+// that scrolls along the requested axis.
+// If v is larger than the viewport,
+// part of it will be hidden until scrolled into view.
+//
+// To request scrolling along both axes,
+// combine the axis values with bitwise-or:
+//
+//	ScrollView(Horizontal|Vertical, v)
+//
+// The viewport expands to fill available space along both axes,
+// regardless of the specified scroll axis.
+func ScrollView(axis AxisSet, v View) View {
+	return base{scrollNode{along: axis, contents: v}}
+}
+
+type scrollNode struct {
+	along    AxisSet
+	contents View
+}
+
+func (s scrollNode) render(rc renderContext) box {
+	// Along a scroll axis, the content's available space is unbounded.
+	// On a non-scrolling axis the available space is the viewport's own size.
+	inner := renderContext{unbounded: s.along}
+	variant := cmp.Or(map[AxisSet]string{
+		Horizontal:            "ui-scroll-x",
+		Vertical:              "ui-scroll-y",
+		Horizontal | Vertical: "ui-scroll-xy",
+	}[s.along], "ui-scroll-none")
+	// The scroll viewport is a single-cell grid establishing no axes.
+	// It is equivalent to the root view context in a scrolling web page.
+	a := []domi.Attr{attr.Class("ui-scroll", variant)}
+	if rc.unbounded.hasAll(Horizontal) {
+		a = append(a, attr.Style("width:100px"))
+	}
+	if rc.unbounded.hasAll(Vertical) {
+		a = append(a, attr.Style("height:100px"))
+	}
+	content, _ := subviewsRendered(inner, s.contents)
+	return box{
+		fills:   (Horizontal | Vertical) &^ rc.unbounded,
+		attrs:   domi.Group(a...),
+		content: content,
+	}
+}
