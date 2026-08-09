@@ -6,7 +6,6 @@ import (
 	"ily.dev/act3/xui/internal/boxutil"
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
-	"ily.dev/domi/html"
 )
 
 // A View is a user interface element,
@@ -180,5 +179,5 @@ func Render(root View) (page domi.Node) {
 		root = VStack(root)
 	}
 	content, _ := subviewsRendered(renderContext{}, root)
-	return html.Div(attr.Class("ui ui-theme"))(content)
+	return domi.Tag("ui-root")(content)
 }
