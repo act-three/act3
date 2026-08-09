@@ -111,9 +111,10 @@ func Main(m *testing.M) int {
 	return code
 }
 
-// Run renders html in a browser tab and hands the loaded page to fn.
+// Run renders html in a browser tab with a w×h viewport and hands the
+// loaded page to fn.
 // It skips the test when no Chrome-compatible browser is available.
-func Run(t *testing.T, html string, fn func(*Session)) {
+func Run(t *testing.T, w, h int, html string, fn func(*Session)) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "page.html")
 	if err := os.WriteFile(path, []byte(html), 0o644); err != nil {
@@ -135,7 +136,7 @@ func Run(t *testing.T, html string, fn func(*Session)) {
 
 	u := url.URL{Scheme: "file", Path: path}
 	err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(1000, 800),
+		chromedp.EmulateViewport(int64(w), int64(h)),
 		chromedp.Navigate(u.String()),
 	)
 	if err != nil {
@@ -157,6 +158,9 @@ type Rect struct {
 
 // Right is the x coordinate of the box's right edge.
 func (r Rect) Right() float64 { return r.X + r.W }
+
+// Bottom is the y coordinate of the box's bottom edge.
+func (r Rect) Bottom() float64 { return r.Y + r.H }
 
 // Rect measures the nth match of a CSS selector, failing the test when the
 // element does not exist.

@@ -23,7 +23,10 @@
 .ui *::before,
 .ui *::after { box-sizing: border-box; }
 
+/* The root is the browser viewport (not the scrolling body). */
 .ui {
+	position: fixed;
+	inset: 0;
 	display: grid;
 	grid-template: 100% / 100%;
 	place-items: center;

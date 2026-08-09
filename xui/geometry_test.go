@@ -16,19 +16,18 @@ import (
 
 func TestMain(m *testing.M) { os.Exit(uitest.Main(m)) }
 
-// stage renders v inside a 600x400 box — the definite ancestor every fill
-// chain terminates at — and hands the loaded page to fn.
+// stage renders v as the page root of a 600x400 viewport — the definite
+// frame every fill chain terminates at — and hands the loaded page to fn.
 func stage(t *testing.T, v ui.View, fn func(*uitest.Session)) {
 	t.Helper()
 	var sb strings.Builder
 	sb.WriteString("<!doctype html><meta charset=utf-8><style>")
 	sb.WriteString(ui.CSS)
-	sb.WriteString(`</style><body style="margin:0"><div id="stage" style="width:600px;height:400px">`)
+	sb.WriteString(`</style><body>`)
 	if err := domi.RenderTo(&sb, ui.Render(v)); err != nil {
 		t.Fatalf("render: %v", err)
 	}
-	sb.WriteString("</div>")
-	uitest.Run(t, sb.String(), fn)
+	uitest.Run(t, 600, 400, sb.String(), fn)
 }
 
 // within asserts got is within tol of want.
@@ -46,6 +45,29 @@ func TestGeometrySpacerAbsorbsSlack(t *testing.T) {
 			t.Errorf("spacer width = %g, want most of the row's slack", w)
 		}
 		within(t, "trailing text right edge", s.Rect(".ui-text", 1).Right(), 600, 1)
+	})
+	stage(t, ui.VStack(ui.Text("a"), ui.Spacer(), ui.Text("b")), func(s *uitest.Session) {
+		within(t, "column height", s.Rect(".ui-vstack", 0).H, 400, 1)
+		if h := s.Rect(".ui-spacer", 0).H; h < 300 {
+			t.Errorf("spacer height = %g, want most of the column's slack", h)
+		}
+		within(t, "trailing text bottom edge", s.Rect(".ui-text", 1).Bottom(), 400, 1)
+	})
+}
+
+// TestGeometryRootIsViewport pins the root contract: the rendered root
+// covers the viewport exactly, and the viewport acts as a definite
+// frame — the root view's fills on both axes terminate at it.
+func TestGeometryRootIsViewport(t *testing.T) {
+	stage(t, ui.Muted, func(s *uitest.Session) {
+		root := s.Rect(".ui", 0)
+		within(t, "root x", root.X, 0, 0.5)
+		within(t, "root y", root.Y, 0, 0.5)
+		within(t, "root width", root.W, 600, 1)
+		within(t, "root height", root.H, 400, 1)
+		paint := s.Rect(".ui-color-paint", 0)
+		within(t, "color fills the viewport", paint.W, 600, 1)
+		within(t, "color fills the viewport", paint.H, 400, 1)
 	})
 }
 
@@ -470,15 +492,18 @@ func TestGeometrySoftFrameIdeal(t *testing.T) {
 }
 
 // TestGeometryGalleryFits loads the full fixture gallery and checks nothing
-// forces the document to scroll horizontally.
+// forces its scroll viewport to scroll horizontally.
 func TestGeometryGalleryFits(t *testing.T) {
 	html, err := fixture.Document()
 	if err != nil {
 		t.Fatalf("fixture.Document: %v", err)
 	}
-	uitest.Run(t, html, func(s *uitest.Session) {
+	uitest.Run(t, 1000, 800, html, func(s *uitest.Session) {
 		var over bool
-		s.Eval("document.scrollingElement.scrollWidth > window.innerWidth", &over)
+		s.Eval(`(() => {
+			const e = document.querySelector(".ui-scroll");
+			return e.scrollWidth > e.clientWidth;
+		})()`, &over)
 		if over {
 			t.Error("gallery overflows horizontally")
 		}

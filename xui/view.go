@@ -166,8 +166,19 @@ func (x box) build(rc renderContext) domi.Node {
 	return n
 }
 
-// Render returns an HTML element representing v.
-func Render(v View) domi.Node {
-	content, _ := subviewsRendered(renderContext{}, v)
+// Render returns an HTML page representing root.
+// It displays root centered in the browser viewport.
+// The available space for root is the size of the viewport.
+//
+// The returned page should be placed directly inside the "body" element.
+//
+//	func (app *App) View(ctx context.Context) (string, domi.Node) {
+//	    return "Greeting", Render(Text("Hello, world!"))
+//	}
+func Render(root View) (page domi.Node) {
+	if len(root.nodes()) > 1 {
+		root = VStack(root)
+	}
+	content, _ := subviewsRendered(renderContext{}, root)
 	return html.Div(attr.Class("ui ui-theme"))(content)
 }

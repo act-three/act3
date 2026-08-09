@@ -243,7 +243,7 @@ func Document() (string, error) {
 	sb.WriteString("\nbody{margin:0;background:#f5f6f8}")
 	sb.WriteString("\n.demo-bordered{border:1px solid var(--ui-color-border);border-radius:var(--ui-radius);background:#fff}")
 	sb.WriteString("\n</style></head><body>")
-	if err := domi.RenderTo(&sb, Render(Page())); err != nil {
+	if err := domi.RenderTo(&sb, Render(ScrollView(Vertical, Page()))); err != nil {
 		return "", err
 	}
 	sb.WriteString("</body></html>")
