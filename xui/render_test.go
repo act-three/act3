@@ -823,3 +823,17 @@ func TestModifierOrder(t *testing.T) {
 		t.Errorf("modifier order should change the lowering, but both rendered identically:\n%s", paddedThenBg)
 	}
 }
+
+// TestRenderRootWrapsGroup pins the root's multiview rule: the viewport
+// frames a single view, so a view of more than one node is wrapped in a
+// VStack rather than distributed over.
+func TestRenderRootWrapsGroup(t *testing.T) {
+	group := render(t, ui.Group(ui.Text("a"), ui.Text("b")))
+	if !strings.Contains(group, "ui-vstack") {
+		t.Errorf("a root Group should be wrapped in a VStack:\n%s", group)
+	}
+	single := render(t, ui.Text("a"))
+	if strings.Contains(single, "ui-vstack") {
+		t.Errorf("a single root view should not be wrapped:\n%s", single)
+	}
+}
