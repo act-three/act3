@@ -99,7 +99,7 @@ func TestAccountCard(t *testing.T) {
 	}))
 
 	wants := []string{
-		`class="ui ui-theme"`,                      // root
+		`<ui-root>`, // root
 		`class="ui-hstack ui-card ui-cell-fill-x"`, // Card: a VStack with the surface class
 		`class="ui-hstack ui-grow"`,                // the Spacer's fill stretches the row across the card
 		`ui-border-ellipse`,                        // BorderShape applied to the image frame

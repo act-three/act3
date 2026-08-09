@@ -60,7 +60,7 @@ func TestGeometrySpacerAbsorbsSlack(t *testing.T) {
 // frame — the root view's fills on both axes terminate at it.
 func TestGeometryRootIsViewport(t *testing.T) {
 	stage(t, ui.Muted, func(s *uitest.Session) {
-		root := s.Rect(".ui", 0)
+		root := s.Rect("ui-root", 0)
 		within(t, "root x", root.X, 0, 0.5)
 		within(t, "root y", root.Y, 0, 0.5)
 		within(t, "root width", root.W, 600, 1)

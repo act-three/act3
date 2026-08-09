@@ -1,4 +1,11 @@
-.ui-theme {
+/* The root is the browser viewport (not the scrolling body). */
+ui-root {
+	position: fixed;
+	inset: 0;
+	display: grid;
+	grid-template: 100% / 100%;
+	place-items: center;
+
 	--ui-color-fg: #101828;
 	--ui-color-muted: #667085;
 	--ui-color-border: #e4e7ec;
@@ -18,19 +25,10 @@
 }
 
 /* Normalization. */
-.ui,
-.ui *,
-.ui *::before,
-.ui *::after { box-sizing: border-box; }
-
-/* The root is the browser viewport (not the scrolling body). */
-.ui {
-	position: fixed;
-	inset: 0;
-	display: grid;
-	grid-template: 100% / 100%;
-	place-items: center;
-}
+ui-root,
+ui-root *,
+ui-root *::before,
+ui-root *::after { box-sizing: border-box; }
 
 .ui-text {
 	display: block;
