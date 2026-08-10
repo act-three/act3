@@ -31,7 +31,7 @@ type scrollNode struct {
 func (s scrollNode) render(rc renderContext) box {
 	// Along a scroll axis, the content's available space is unbounded.
 	// On a non-scrolling axis the available space is the viewport's own size.
-	inner := renderContext{unbounded: s.along}
+	inner := renderContext{unbounded: s.along, sheet: rc.sheet}
 	variant := cmp.Or(map[AxisSet]string{
 		Horizontal:            "ui-scroll-x",
 		Vertical:              "ui-scroll-y",

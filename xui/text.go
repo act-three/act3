@@ -4,6 +4,8 @@ import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
+
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // A TextView displays one or more lines of read-only text.
@@ -60,7 +62,7 @@ type textStyle struct {
 	color              Color
 }
 
-func (s textStyle) attr() domi.Attr {
+func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
 	var a []domi.Attr
 	if s.mono {
 		a = append(a, attr.Class("ui-mono"))
@@ -75,7 +77,7 @@ func (s textStyle) attr() domi.Attr {
 		a = append(a, attr.Class("ui-italic"))
 	}
 	if s.color != "" {
-		a = append(a, attr.Style("color:"+string(s.color)))
+		a = append(a, attr.Class(sh.ClassFor(sheet.Style("color", string(s.color)))))
 	}
 	return domi.Group(a...)
 }
@@ -89,30 +91,30 @@ type textNode struct {
 	style textStyle
 }
 
-func (n textNode) render(renderContext) box {
+func (n textNode) render(rc renderContext) box {
 	return box{
 		attrs:   attr.Class("ui-text"),
-		content: n.html(),
+		content: n.html(rc.sheet),
 	}
 }
 
 // html lowers n (with its own style, if any).
-func (n textNode) html() domi.Node {
+func (n textNode) html(sh *sheet.Sheet) domi.Node {
 	if n.style == (textStyle{}) {
-		return n.content()
+		return n.content(sh)
 	}
-	return html.Span(n.style.attr())(n.content())
+	return html.Span(n.style.attr(sh))(n.content(sh))
 }
 
 // content lowers n's content without its own style.
 // Any subtrees still lower their style.
-func (n textNode) content() domi.Node {
+func (n textNode) content(sh *sheet.Sheet) domi.Node {
 	if n.parts == nil {
 		return domi.Text(n.text)
 	}
 	var out []domi.Node
 	for _, p := range n.parts {
-		out = append(out, p.html())
+		out = append(out, p.html(sh))
 	}
 	return domi.Fragment(out...)
 }

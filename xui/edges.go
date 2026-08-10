@@ -2,9 +2,6 @@ package ui
 
 import (
 	"fmt"
-
-	"ily.dev/domi"
-	"ily.dev/domi/attr"
 )
 
 // EdgeSpace specifies spacing distances for the edges of a rectangle.
@@ -51,12 +48,13 @@ func (s EdgeSpace) add(o EdgeSpace) EdgeSpace {
 	return s
 }
 
-// padding returns the padding declarations in their shortest form.
-func (s EdgeSpace) padding() domi.Attr {
+// setPadding adds the shortest equivalent padding declarations to x.
+func (s EdgeSpace) setPadding(x *box) {
 	t, b := cssPx(s.Top), cssPx(s.Bottom)
 	le, tr := cssPx(s.Leading), cssPx(s.Trailing)
 	if t == b && le == tr && t == le {
-		return attr.Style("padding:" + t)
+		x.setStyle("padding", t)
+		return
 	}
 	block, inline := t, le
 	if b != t {
@@ -65,10 +63,8 @@ func (s EdgeSpace) padding() domi.Attr {
 	if tr != le {
 		inline += " " + tr
 	}
-	return domi.Group(
-		attr.Style("padding-block:"+block),
-		attr.Style("padding-inline:"+inline),
-	)
+	x.setStyle("padding-block", block)
+	x.setStyle("padding-inline", inline)
 }
 
 func cssPx(v float64) string { return fmt.Sprintf("%gpx", v) }

@@ -24,7 +24,7 @@ func stage(t *testing.T, v ui.View, fn func(*uitest.Session)) {
 	sb.WriteString("<!doctype html><meta charset=utf-8><style>")
 	sb.WriteString(ui.CSS)
 	sb.WriteString(`</style><body>`)
-	if err := domi.RenderTo(&sb, ui.Render(v)); err != nil {
+	if err := domi.RenderTo(&sb, new(ui.Renderer).Render(v)); err != nil {
 		t.Fatalf("render: %v", err)
 	}
 	uitest.Run(t, 600, 400, sb.String(), fn)

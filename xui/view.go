@@ -3,9 +3,11 @@ package ui
 import (
 	"cmp"
 
-	"ily.dev/act3/xui/internal/boxutil"
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+
+	"ily.dev/act3/xui/internal/boxutil"
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // A View is a user interface element,
@@ -120,6 +122,7 @@ type renderContext struct {
 	lc        layoutContext
 	container containerKind
 	unbounded AxisSet
+	sheet     *sheet.Sheet
 }
 
 // A box is an HTML element under construction.
@@ -130,12 +133,24 @@ type box struct {
 	rigid    AxisSet
 	attrs    domi.Attr
 	modClass boxutil.ClassSet
+	styles   sheet.StyleSet
 	content  domi.Node
 	raw      domi.Node
 }
 
-func (x *box) add(a domi.Attr)   { x.attrs = domi.Group(x.attrs, a) }
-func (x *box) addStyle(s string) { x.add(attr.Style(s)) }
+func (x *box) add(a domi.Attr) { x.attrs = domi.Group(x.attrs, a) }
+
+// setStyle adds a dynamic CSS declaration to the box.
+// Setting the same property again replaces its value.
+func (x *box) setStyle(property, value string) { x.styles.Set(property, value) }
+
+// styleClass returns the generated class for the box's dynamic styles.
+func (x box) styleClass(rc renderContext) domi.Attr {
+	if x.styles.IsEmpty() {
+		return nil
+	}
+	return attr.Class(rc.sheet.ClassFor(x.styles))
+}
 
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views and merges their fill requests.
@@ -156,28 +171,12 @@ func subviewsRendered(rc renderContext, vs ...View) (domi.Node, AxisSet) {
 func (x box) build(rc renderContext) domi.Node {
 	n := x.raw
 	if n == nil {
-		a := domi.Group(x.modClass.Attr(), x.fills.fillAttr(rc), x.rigid.rigidAttr(rc))
+		// Keep the generated class after the named classes in rendered output.
+		a := domi.Group(x.modClass.Attr(), x.fills.fillAttr(rc), x.rigid.rigidAttr(rc), x.styleClass(rc))
 		n = domi.Tag(cmp.Or(x.tag, "div"), x.attrs, a)(x.content)
 	}
 	if x.key != "" {
 		n = domi.WithKey(x.key, n)
 	}
 	return n
-}
-
-// Render returns an HTML page representing root.
-// It displays root centered in the browser viewport.
-// The available space for root is the size of the viewport.
-//
-// The returned page should be placed directly inside the "body" element.
-//
-//	func (app *App) View(ctx context.Context) (string, domi.Node) {
-//	    return "Greeting", Render(Text("Hello, world!"))
-//	}
-func Render(root View) (page domi.Node) {
-	if len(root.nodes()) > 1 {
-		root = VStack(root)
-	}
-	content, _ := subviewsRendered(renderContext{}, root)
-	return domi.Tag("ui-root")(content)
 }

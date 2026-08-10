@@ -44,26 +44,23 @@ func (w wrapFrame) definite() (a AxisSet) {
 }
 
 func (w wrapFrame) wrapElement(_ renderContext, content domi.Node, f AxisSet) box {
-	return box{
+	var align domi.Attr
+	if w.align != Center {
+		align = attr.Class(w.align.placeClass())
+	}
+	b := box{
 		fills:   f &^ w.definite(),
 		rigid:   w.definite(),
-		attrs:   domi.Group(attr.Class("ui-frame"), w.attrs()),
+		attrs:   domi.Group(attr.Class("ui-frame"), align),
 		content: content,
 	}
-}
-
-func (w wrapFrame) attrs() domi.Attr {
-	var a []domi.Attr
 	if w.h.definite {
-		a = append(a, attr.Style("width:"+w.h.css()))
+		b.setStyle("width", w.h.css())
 	}
 	if w.v.definite {
-		a = append(a, attr.Style("height:"+w.v.css()))
+		b.setStyle("height", w.v.css())
 	}
-	if w.align != Center {
-		a = append(a, attr.Class(w.align.placeClass()))
-	}
-	return domi.Group(a...)
+	return b
 }
 
 // context clears unbounded on each axis the frame makes definite.

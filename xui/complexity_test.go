@@ -42,7 +42,7 @@ func TestRenderVisitsEachNodeOnce(t *testing.T) {
 			wrap(nodeWrap{wrapper: wrapLayer{view: wrap(colorFillNode{color: "#000"})}, node: leaf("decorated")}),
 		}})
 	}
-	Render(v)
+	new(Renderer).Render(v)
 
 	for i, c := range counts {
 		if *c != 1 {

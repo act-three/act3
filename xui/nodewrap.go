@@ -77,7 +77,7 @@ type wrapLayer struct {
 	alignment Alignment // placement within the layer
 }
 
-func (w wrapLayer) wrapElement(_ renderContext, content domi.Node, f AxisSet) box {
+func (w wrapLayer) wrapElement(rc renderContext, content domi.Node, f AxisSet) box {
 	class := "ui-underlay"
 	if w.over {
 		class = "ui-overlay"
@@ -87,7 +87,7 @@ func (w wrapLayer) wrapElement(_ renderContext, content domi.Node, f AxisSet) bo
 		attrs = append(attrs, attr.Class(w.alignment.placeClass()))
 	}
 	baseLayer := html.Div(attr.Class("ui-layer-base"))(content)
-	layer := html.Div(attrs...)(renderLayer(w.view))
+	layer := html.Div(attrs...)(renderLayer(rc, w.view))
 	return box{
 		fills:   f,
 		attrs:   attr.Class("ui-layers"),
@@ -98,8 +98,8 @@ func (w wrapLayer) wrapElement(_ renderContext, content domi.Node, f AxisSet) bo
 // renderLayer renders a view inside its grid layer,
 // where, as in a ZStack, both axes are minor.
 // v's fill requests don't propagate outside the layer.
-func renderLayer(v View) domi.Node {
-	rc := renderContext{lc: axes[axisZ].lc, container: containerGrid}
+func renderLayer(rc renderContext, v View) domi.Node {
+	rc = renderContext{lc: axes[axisZ].lc, container: containerGrid, sheet: rc.sheet}
 	content, _ := subviewsRendered(rc, v)
 	return content
 }
@@ -113,9 +113,11 @@ type wrapPadding struct {
 }
 
 func (w wrapPadding) wrapElement(_ renderContext, content domi.Node, f AxisSet) box {
-	return box{
+	b := box{
 		fills:   f,
-		attrs:   domi.Group(attr.Class("ui-padding"), w.space.padding()),
+		attrs:   attr.Class("ui-padding"),
 		content: content,
 	}
+	w.space.setPadding(&b)
+	return b
 }
