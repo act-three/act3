@@ -113,10 +113,10 @@ func (f colorFillNode) render(rc renderContext) box {
 	// default, and the rest adapt.
 	a := []domi.Attr{attr.Class("ui-color")}
 	if rc.unbounded.hasAll(Horizontal) {
-		a = append(a, attr.Style("width:10px"))
+		a = append(a, attr.Class("ui-color-ideal-x"))
 	}
 	if rc.unbounded.hasAll(Vertical) {
-		a = append(a, attr.Style("height:10px"))
+		a = append(a, attr.Class("ui-color-ideal-y"))
 	}
 	return box{
 		fills:   (Horizontal | Vertical) &^ rc.unbounded,

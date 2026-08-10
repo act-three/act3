@@ -36,12 +36,12 @@ const (
 	ScaledToFill
 )
 
-func (m FramingMode) css() string {
+func (m FramingMode) class() string {
 	switch m {
 	case ScaledToFit:
-		return "contain"
+		return "ui-fm-contain"
 	case ScaledToFill:
-		return "cover"
+		return "ui-fm-cover"
 	}
 	panic("unreached")
 }

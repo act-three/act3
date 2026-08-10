@@ -41,10 +41,10 @@ func (s scrollNode) render(rc renderContext) box {
 	// It is equivalent to the root view context in a scrolling web page.
 	a := []domi.Attr{attr.Class("ui-scroll", variant)}
 	if rc.unbounded.hasAll(Horizontal) {
-		a = append(a, attr.Style("width:100px"))
+		a = append(a, attr.Class("ui-scroll-ideal-x"))
 	}
 	if rc.unbounded.hasAll(Vertical) {
-		a = append(a, attr.Style("height:100px"))
+		a = append(a, attr.Class("ui-scroll-ideal-y"))
 	}
 	content, _ := subviewsRendered(inner, s.contents)
 	return box{

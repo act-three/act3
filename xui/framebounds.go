@@ -275,7 +275,7 @@ func (w wrapFrameBounds) attrs(rc renderContext, f AxisSet) domi.Attr {
 	if w.h.min.definite {
 		a = append(a, attr.Style("min-width:"+w.h.min.css()))
 		if !capped.hasAll(Horizontal) {
-			a = append(a, attr.Style("grid-template-columns:minmax(0,100%)"))
+			a = append(a, attr.Class("ui-min-track-x"))
 		}
 	}
 	if w.h.max.definite {
@@ -284,14 +284,14 @@ func (w wrapFrameBounds) attrs(rc renderContext, f AxisSet) domi.Attr {
 	if w.v.min.definite {
 		a = append(a, attr.Style("min-height:"+w.v.min.css()))
 		if !capped.hasAll(Vertical) {
-			a = append(a, attr.Style("grid-template-rows:minmax(0,100%)"))
+			a = append(a, attr.Class("ui-min-track-y"))
 		}
 	}
 	if w.v.max.definite {
 		a = append(a, attr.Style("max-height:"+w.v.max.css()))
 	}
 	if w.align != Center {
-		a = append(a, attr.Style("place-items:"+w.align.place()))
+		a = append(a, attr.Class(w.align.placeClass()))
 	}
 	return domi.Group(a...)
 }

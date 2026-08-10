@@ -58,6 +58,6 @@ func (n imageNode) render(rc renderContext) box {
 	return box{
 		tag:   "img",
 		fills: (Horizontal | Vertical) &^ rc.unbounded,
-		attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image"), attr.Style("object-fit:"+n.fit.css())),
+		attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class())),
 	}
 }

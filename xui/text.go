@@ -69,10 +69,10 @@ func (s textStyle) attr() domi.Attr {
 		a = append(a, attr.Class(c))
 	}
 	if s.bold {
-		a = append(a, attr.Style("font-weight:600"))
+		a = append(a, attr.Class("ui-bold"))
 	}
 	if s.italic {
-		a = append(a, attr.Style("font-style:italic"))
+		a = append(a, attr.Class("ui-italic"))
 	}
 	if s.color != "" {
 		a = append(a, attr.Style("color:"+string(s.color)))

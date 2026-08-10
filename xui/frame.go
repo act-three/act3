@@ -61,7 +61,7 @@ func (w wrapFrame) attrs() domi.Attr {
 		a = append(a, attr.Style("height:"+w.v.css()))
 	}
 	if w.align != Center {
-		a = append(a, attr.Style("place-items:"+w.align.place()))
+		a = append(a, attr.Class(w.align.placeClass()))
 	}
 	return domi.Group(a...)
 }
