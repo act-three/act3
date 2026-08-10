@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
@@ -109,52 +111,48 @@ var (
 )
 
 const (
-	Center Alignment = iota
-	TopLeading
-	Top
-	TopTrailing
-	Leading
-	Trailing
-	BottomLeading
-	Bottom
-	BottomTrailing
+	Center        Alignment = 0
+	Leading       Alignment = 1 << 0
+	Trailing      Alignment = 1 << 1
+	Top           Alignment = 1 << 2
+	Bottom        Alignment = 1 << 3
+	FirstBaseline Alignment = 1 << 4
 
-	FirstBaselineLeading
-	FirstBaseline
-	FirstBaselineTrailing
+	TopLeading     = Top | Leading
+	TopTrailing    = Top | Trailing
+	BottomLeading  = Bottom | Leading
+	BottomTrailing = Bottom | Trailing
+
+	FirstBaselineLeading  = FirstBaseline | Leading
+	FirstBaselineTrailing = FirstBaseline | Trailing
 )
 
 func (a Alignment) applyFrame(w *wrapFrame) { w.align = a }
 
 func (a Alignment) applyFrameBounds(w *wrapFrameBounds) { w.align = a }
 
-// horizontal maps the alignment's horizontal component
-// to a CSS alignment keyword.
-func (a Alignment) horizontal() string {
+// keyword maps a single-axis projection to its CSS alignment keyword.
+// It panics on an alignment with more than one bit set in an axis,
+// such as Top|Bottom.
+func (a Alignment) keyword() string {
 	switch a {
-	case TopLeading, Leading, BottomLeading, FirstBaselineLeading:
-		return "start"
-	case TopTrailing, Trailing, BottomTrailing, FirstBaselineTrailing:
-		return "end"
-	default:
+	case Center:
 		return "center"
+	case Leading, Top:
+		return "start"
+	case Trailing, Bottom:
+		return "end"
+	case FirstBaseline:
+		return "baseline"
 	}
+	panic(fmt.Sprintf("ui: invalid Alignment %#b", int(a)))
 }
 
-// vertical maps the alignment's vertical component
-// to a CSS alignment keyword.
-func (a Alignment) vertical() string {
-	switch a {
-	case TopLeading, Top, TopTrailing:
-		return "start"
-	case BottomLeading, Bottom, BottomTrailing:
-		return "end"
-	case FirstBaselineLeading, FirstBaseline, FirstBaselineTrailing:
-		return "baseline"
-	default:
-		return "center"
-	}
-}
+// horizontal returns the alignment's horizontal component.
+func (a Alignment) horizontal() Alignment { return a & (Leading | Trailing) }
+
+// vertical returns the alignment's vertical component.
+func (a Alignment) vertical() Alignment { return a & (Top | Bottom | FirstBaseline) }
 
 // placeClass maps an alignment to the class carrying its place-items
 // value, which takes the block component first,
@@ -164,16 +162,17 @@ func (a Alignment) placeClass() string {
 	if a == Center {
 		return ""
 	}
-	return "ui-place-" + a.vertical() + "-" + a.horizontal()
+	return "ui-place-" + a.vertical().keyword() + "-" + a.horizontal().keyword()
 }
 
-// alignClass maps an align-items keyword to the class carrying it.
-// An alignment can project to center on one axis without being Center
+// alignClass maps an alignment's projection onto one axis
+// to the class carrying its align-items keyword.
+// An alignment can project to Center on one axis without being Center
 // (such as Top on a VStack's cross axis);
-// center has no class, as it is the stylesheet default.
-func alignClass(keyword string) domi.Attr {
-	if keyword == "center" {
+// Center has no class, as it is the stylesheet default.
+func alignClass(projection Alignment) domi.Attr {
+	if projection == Center {
 		return nil
 	}
-	return attr.Class("ui-align-" + keyword)
+	return attr.Class("ui-align-" + projection.keyword())
 }
