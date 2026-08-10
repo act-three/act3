@@ -84,7 +84,7 @@ func (w wrapLayer) wrapElement(_ renderContext, content domi.Node, f AxisSet) bo
 	}
 	attrs := []domi.Attr{attr.Class(class)}
 	if w.alignment != Center {
-		attrs = append(attrs, attr.Style("place-items:"+w.alignment.place()))
+		attrs = append(attrs, attr.Class(w.alignment.placeClass()))
 	}
 	baseLayer := html.Div(attr.Class("ui-layer-base"))(content)
 	layer := html.Div(attrs...)(renderLayer(w.view))

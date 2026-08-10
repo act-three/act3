@@ -156,7 +156,24 @@ func (a Alignment) vertical() string {
 	}
 }
 
-// place maps an alignment to a CSS place-self / place-items value,
-// which takes the block component first,
+// placeClass maps an alignment to the class carrying its place-items
+// value, which takes the block component first,
 // which in this package is always the vertical axis.
-func (a Alignment) place() string { return a.vertical() + " " + a.horizontal() }
+// Center has no class; it is the stylesheet default.
+func (a Alignment) placeClass() string {
+	if a == Center {
+		return ""
+	}
+	return "ui-place-" + a.vertical() + "-" + a.horizontal()
+}
+
+// alignClass maps an align-items keyword to the class carrying it.
+// An alignment can project to center on one axis without being Center
+// (such as Top on a VStack's cross axis);
+// center has no class, as it is the stylesheet default.
+func alignClass(keyword string) domi.Attr {
+	if keyword == "center" {
+		return nil
+	}
+	return attr.Class("ui-align-" + keyword)
+}

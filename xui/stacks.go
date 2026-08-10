@@ -77,13 +77,13 @@ func (s stackNode) render(rc renderContext) box {
 	content, f := subviewsRendered(rc, s.subviews...)
 	return box{
 		fills:   f,
-		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.style()),
+		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.attrs()),
 		content: content,
 	}
 }
 
-// style returns the stack's CSS inline styles.
-func (s stackNode) style() domi.Attr {
+// attrs returns the stack's gap and alignment attributes.
+func (s stackNode) attrs() domi.Attr {
 	var a []domi.Attr
 	if s.gap != defaultGap {
 		a = append(a, attr.Style("gap:"+cssPx(s.gap)))
@@ -91,11 +91,11 @@ func (s stackNode) style() domi.Attr {
 	if s.align != Center {
 		switch s.dir {
 		case axisV:
-			a = append(a, attr.Style("align-items:"+s.align.horizontal()))
+			a = append(a, alignClass(s.align.horizontal()))
 		case axisH:
-			a = append(a, attr.Style("align-items:"+s.align.vertical()))
+			a = append(a, alignClass(s.align.vertical()))
 		default:
-			a = append(a, attr.Style("place-items:"+s.align.place()))
+			a = append(a, attr.Class(s.align.placeClass()))
 		}
 	}
 	return domi.Group(a...)
@@ -138,13 +138,13 @@ func (dividerNode) render(rc renderContext) box {
 		// Major axis horizontal: vertical line.
 		a = append(a, attr.Class("ui-divider-v"))
 		if rc.unbounded.hasAll(Vertical) {
-			a = append(a, attr.Style("height:10px"))
+			a = append(a, attr.Class("ui-divider-ideal-y"))
 			f &^= Vertical
 		}
 	} else {
 		a = append(a, attr.Class("ui-divider-h"))
 		if rc.unbounded.hasAll(Horizontal) {
-			a = append(a, attr.Style("width:10px"))
+			a = append(a, attr.Class("ui-divider-ideal-x"))
 			f &^= Horizontal
 		}
 	}

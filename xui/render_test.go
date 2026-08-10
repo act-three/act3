@@ -109,7 +109,7 @@ func TestAccountCard(t *testing.T) {
 		`class="ui-hstack ui-button ui-role-primary"`,
 		`class="ui-layers ui-cell-fill-x"`, // Underlay + Overlay decoration layers
 		`class="ui-underlay"`,
-		`class="ui-overlay"`,
+		`class="ui-overlay ui-place-start-end"`,
 		`ui-border-capsule`, // the Badge's pill
 		`Pro`,
 		`Ada Lovelace`,
@@ -317,56 +317,56 @@ func TestIdealSize(t *testing.T) {
 		{
 			"direct FixedSize",
 			ui.Muted.FixedSize(),
-			[]string{"width:10px", "height:10px"},
+			[]string{"ui-color-ideal-x", "ui-color-ideal-y"},
 			nil,
 		},
 		{
 			"FixedSize on an ancestor",
 			ui.VStack(ui.Muted).FixedSize(),
-			[]string{"width:10px", "height:10px"},
+			[]string{"ui-color-ideal-x", "ui-color-ideal-y"},
 			nil,
 		},
 		{
 			"definite frame axis clears its axis only",
 			ui.VStack(ui.Muted).Frame(ui.Width(200)).FixedSize(),
-			[]string{"height:10px"},
-			[]string{"width:10px"},
+			[]string{"ui-color-ideal-y"},
+			[]string{"ui-color-ideal-x"},
 		},
 		{
 			"both definite axes clear both",
 			ui.VStack(ui.Muted).Frame(ui.Width(200), ui.Height(100)).FixedSize(),
 			nil,
-			[]string{"10px"},
+			[]string{"ui-color-ideal"},
 		},
 		{
 			"scroll viewport takes 100px; content unbounded on the scroll axis",
 			ui.ScrollView(ui.Vertical, ui.Muted).FixedSize(),
-			[]string{"width:100px", "height:100px", "height:10px"},
-			[]string{"width:10px"},
+			[]string{"ui-scroll-ideal-x", "ui-scroll-ideal-y", "ui-color-ideal-y"},
+			[]string{"ui-color-ideal-x"},
 		},
 		{
 			"scroll axis is unbounded without FixedSize",
 			ui.ScrollView(ui.Vertical, ui.Muted),
-			[]string{"height:10px", "ui-cell-fill-x"},
-			[]string{"width:10px"},
+			[]string{"ui-color-ideal-y", "ui-cell-fill-x"},
+			[]string{"ui-color-ideal-x"},
 		},
 		{
 			"both-axes scroll makes both content axes unbounded",
 			ui.ScrollView(ui.Horizontal|ui.Vertical, ui.Muted),
-			[]string{"width:10px", "height:10px"},
+			[]string{"ui-color-ideal-x", "ui-color-ideal-y"},
 			nil,
 		},
 		{
 			"no-axis scroll makes neither content axis unbounded",
 			ui.ScrollView(ui.AxisSet(0), ui.Muted).FixedSize(),
-			[]string{"width:100px", "height:100px", "ui-scroll-none"},
-			[]string{"10px"},
+			[]string{"ui-scroll-ideal-x", "ui-scroll-ideal-y", "ui-scroll-none"},
+			[]string{"ui-color-ideal"},
 		},
 		{
 			"bounds frame takes its ideal and makes it the subview's space",
 			ui.VStack(ui.Muted).FrameBounds(ui.IdealWidth(200), ui.IdealHeight(80)).FixedSize(),
 			[]string{"width:200px", "height:80px"},
-			[]string{"10px"},
+			[]string{"ui-color-ideal"},
 		},
 		{
 			"bounds frame ideal is inert in bounded space",
@@ -381,7 +381,7 @@ func TestIdealSize(t *testing.T) {
 			// max clamps only the frame's answer.
 			"a definite max passes the query through",
 			ui.VStack(ui.Muted).FrameBounds(ui.MaxWidth(300)).FixedSize(),
-			[]string{"width:10px", "height:10px", "max-width:300px"},
+			[]string{"ui-color-ideal-x", "ui-color-ideal-y", "max-width:300px"},
 			[]string{"grid-template"},
 		},
 		{
@@ -389,7 +389,7 @@ func TestIdealSize(t *testing.T) {
 			// meet, the img's intrinsic geometry answers instead.
 			"scaled image drops its fills on unbounded axes",
 			ui.Image("/x.png").FramedAs(ui.ScaledToFill).FixedSize(),
-			[]string{"object-fit:cover"},
+			[]string{"ui-fm-cover"},
 			[]string{"ui-cell-fill"},
 		},
 		{
@@ -397,26 +397,26 @@ func TestIdealSize(t *testing.T) {
 			// the image's own fill is dropped on the scroll axis.
 			"scaled image keeps its fill on the bounded cross axis",
 			ui.ScrollView(ui.Vertical, ui.Image("/x.png").FramedAs(ui.ScaledToFill)),
-			[]string{`class="ui-image ui-cell-fill-x"`},
+			[]string{`class="ui-image ui-fm-cover ui-cell-fill-x"`},
 			nil,
 		},
 		{
 			"divider takes 10px along its length",
 			ui.VStack(ui.Divider()).FixedSize(),
-			[]string{"ui-divider-h", "width:10px"},
-			[]string{"height:10px"},
+			[]string{"ui-divider-h", "ui-divider-ideal-x"},
+			[]string{"ui-divider-ideal-y"},
 		},
 		{
 			"vertical divider takes 10px along its length",
 			ui.HStack(ui.Divider()).FixedSize(),
-			[]string{"ui-divider-v", "height:10px"},
-			[]string{"width:10px"},
+			[]string{"ui-divider-v", "ui-divider-ideal-y"},
+			[]string{"ui-divider-ideal-x"},
 		},
 		{
 			"decoration layer clears both axes",
 			ui.Text("x").LayerOver(ui.Center, ui.Muted).FixedSize(),
 			nil,
-			[]string{"10px"},
+			[]string{"ui-color-ideal"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -462,7 +462,7 @@ func TestTextRunsPreserveType(t *testing.T) {
 		TextForeground(ui.Muted)
 
 	html := render(t, v)
-	for _, w := range []string{"font-weight:600", "font-style:italic", "Status: ", "Draft"} {
+	for _, w := range []string{"ui-bold", "ui-italic", "Status: ", "Draft"} {
 		if !strings.Contains(html, w) {
 			t.Errorf("rich text missing %q\n\n%s", w, html)
 		}
@@ -479,10 +479,10 @@ func TestTextRunsPreserveType(t *testing.T) {
 // own styling.
 func TestTextWholeTextRule(t *testing.T) {
 	html := render(t, ui.Text("a").Concat(ui.Text("b").Italic()).Bold())
-	if !strings.Contains(html, `<div class="ui-text"><span style="font-weight:600">a<span`) {
+	if !strings.Contains(html, `<div class="ui-text"><span class="ui-bold">a<span`) {
 		t.Errorf("whole-text Bold should land on a span enclosing every run:\n%s", html)
 	}
-	if !strings.Contains(html, `style="font-style:italic"`) {
+	if !strings.Contains(html, `class="ui-italic"`) {
 		t.Errorf("pre-Concat Italic should stay on its own run:\n%s", html)
 	}
 }
@@ -506,17 +506,24 @@ func TestForKeyLikeIdiom(t *testing.T) {
 // block for an HStack.
 func TestAlignProjectsOntoCrossAxis(t *testing.T) {
 	h := render(t, ui.HStack(ui.Text("a")).Alignment(ui.TopTrailing))
-	if !strings.Contains(h, "align-items:start") {
+	if !strings.Contains(h, "ui-align-start") {
 		t.Errorf("HStack TopTrailing should align to the top:\n%s", h)
 	}
 	v := render(t, ui.VStack(ui.Text("a")).Alignment(ui.TopTrailing))
-	if !strings.Contains(v, "align-items:end") {
+	if !strings.Contains(v, "ui-align-end") {
 		t.Errorf("VStack TopTrailing should align to the trailing edge:\n%s", v)
 	}
 
 	f := render(t, ui.Text("a").Frame(ui.Width(100), ui.BottomTrailing))
-	if !strings.Contains(f, "place-items:end end") {
+	if !strings.Contains(f, "ui-place-end-end") {
 		t.Errorf("frame Align should place the content in both axes:\n%s", f)
+	}
+
+	// An alignment whose relevant axis projects to center emits no
+	// class: center is the stylesheet default.
+	c := render(t, ui.VStack(ui.Text("a")).Alignment(ui.Top))
+	if strings.Contains(c, "ui-align") {
+		t.Errorf("VStack Top projects to center on the cross axis, want no class:\n%s", c)
 	}
 }
 
@@ -618,10 +625,10 @@ func TestScrollView(t *testing.T) {
 func TestFrameBounds(t *testing.T) {
 	bounded := render(t, ui.Text("x").FrameBounds(ui.MinWidth(96), ui.MaxWidth(320), ui.MinHeight(24), ui.MaxHeight(48), ui.Leading))
 	for _, w := range []string{
-		"min-width:96px", "max-width:320px", "min-height:24px", "max-height:48px", "place-items:center start",
+		"min-width:96px", "max-width:320px", "min-height:24px", "max-height:48px", "ui-place-center-start",
 		// An explicit minimum zeroes the axis's intrinsic track so the
 		// min-* declaration is the floor.
-		"grid-template-columns:minmax(0,100%)", "grid-template-rows:minmax(0,100%)",
+		"ui-min-track-x", "ui-min-track-y",
 	} {
 		if !strings.Contains(bounded, w) {
 			t.Errorf("bounded frame missing %q\n\n%s", w, bounded)
@@ -648,7 +655,7 @@ func TestFrameBounds(t *testing.T) {
 	}
 
 	auto := render(t, ui.Text("x").FrameBounds(ui.MinWidth(ui.Auto{}), ui.MaxWidth(ui.Auto{})))
-	for _, r := range []string{"min-width", "max-width", "grid-template"} {
+	for _, r := range []string{"min-width", "max-width", "grid-template", "ui-min-track"} {
 		if strings.Contains(auto, r) {
 			t.Errorf("Auto bound should emit nothing, got %q:\n%s", r, auto)
 		}

@@ -36,6 +36,8 @@ ui-root *::after { box-sizing: border-box; }
 }
 
 .ui-mono { font-family: var(--ui-font-mono); }
+.ui-bold { font-weight: 600; }
+.ui-italic { font-style: italic; }
 
 .ui-vstack {
 	display: inline-flex;
@@ -85,6 +87,8 @@ ui-root *::after { box-sizing: border-box; }
 	width: 1px;
 	height: auto;
 }
+.ui-divider-ideal-x { width: 10px; }
+.ui-divider-ideal-y { height: 10px; }
 
 .ui-scroll {
 	display: grid;
@@ -103,6 +107,8 @@ ui-root *::after { box-sizing: border-box; }
 }
 .ui-scroll-xy { overflow: auto; }
 .ui-scroll-none { overflow: clip; }
+.ui-scroll-ideal-x { width: 100px; }
+.ui-scroll-ideal-y { height: 100px; }
 
 .ui-padding {
 	display: grid;
@@ -115,6 +121,10 @@ ui-root *::after { box-sizing: border-box; }
 	grid-template: 100% / 100%;
 	place-items: center;
 }
+/* Zero a frame track's intrinsic contribution
+   so an explicit min-* is the axis's floor. */
+.ui-min-track-x { grid-template-columns: minmax(0, 100%); }
+.ui-min-track-y { grid-template-rows: minmax(0, 100%); }
 .ui-fixed-size {
 	width: max-content;
 	height: max-content;
@@ -158,6 +168,8 @@ ui-root *::after { box-sizing: border-box; }
 	min-width: 0;
 	min-height: 0;
 }
+.ui-fm-contain { object-fit: contain; }
+.ui-fm-cover { object-fit: cover; }
 
 .ui-font-caption {
 	font-size: 0.75rem;
@@ -188,6 +200,8 @@ ui-root *::after { box-sizing: border-box; }
 	width: 100%;
 	height: 100%;
 }
+.ui-color-ideal-x { width: 10px; }
+.ui-color-ideal-y { height: 10px; }
 
 .ui-button {
 	padding: 8px 12px;
@@ -213,3 +227,23 @@ ui-root *::after { box-sizing: border-box; }
 	border-color: var(--ui-color-danger);
 	color: #fff;
 }
+
+/* Alignment. Stacks carry ui-align-* (cross axis);
+   grid containers carry ui-place-* (block axis first).
+   These follow the component rules so they override
+   the centered defaults. */
+.ui-align-start { align-items: start; }
+.ui-align-end { align-items: end; }
+.ui-align-baseline { align-items: baseline; }
+
+.ui-place-start-start { place-items: start start; }
+.ui-place-start-center { place-items: start center; }
+.ui-place-start-end { place-items: start end; }
+.ui-place-center-start { place-items: center start; }
+.ui-place-center-end { place-items: center end; }
+.ui-place-end-start { place-items: end start; }
+.ui-place-end-center { place-items: end center; }
+.ui-place-end-end { place-items: end end; }
+.ui-place-baseline-start { place-items: baseline start; }
+.ui-place-baseline-center { place-items: baseline center; }
+.ui-place-baseline-end { place-items: baseline end; }
