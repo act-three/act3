@@ -118,13 +118,13 @@ const (
 	Bottom        Alignment = 1 << 3
 	FirstBaseline Alignment = 1 << 4
 
-	TopLeading     = Top | Leading
-	TopTrailing    = Top | Trailing
-	BottomLeading  = Bottom | Leading
-	BottomTrailing = Bottom | Trailing
+	TopLeading     Alignment = Top | Leading
+	TopTrailing    Alignment = Top | Trailing
+	BottomLeading  Alignment = Bottom | Leading
+	BottomTrailing Alignment = Bottom | Trailing
 
-	FirstBaselineLeading  = FirstBaseline | Leading
-	FirstBaselineTrailing = FirstBaseline | Trailing
+	FirstBaselineLeading  Alignment = FirstBaseline | Leading
+	FirstBaselineTrailing Alignment = FirstBaseline | Trailing
 )
 
 func (a Alignment) applyFrame(w *wrapFrame) { w.align = a }
