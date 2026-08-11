@@ -1,6 +1,7 @@
 package ui_test
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -85,10 +86,25 @@ func movieRow(movie Movie) ui.View {
 func render(t *testing.T, v ui.View) string {
 	t.Helper()
 	var sb strings.Builder
-	if err := domi.RenderTo(&sb, ui.Render(v)); err != nil {
+	if err := domi.RenderTo(&sb, new(ui.Renderer).Render(v)); err != nil {
 		t.Fatalf("render: %v", err)
 	}
 	return sb.String()
+}
+
+// classRule finds an element matching pattern.
+// It returns the declarations for the generated class captured by the pattern.
+func classRule(t *testing.T, html, pattern string) string {
+	t.Helper()
+	m := regexp.MustCompile(pattern).FindStringSubmatch(html)
+	if m == nil {
+		t.Fatalf("no element matching %q in:\n%s", pattern, html)
+	}
+	r := regexp.MustCompile(regexp.QuoteMeta("."+m[1]) + `\{([^}]*)\}`).FindStringSubmatch(html)
+	if r == nil {
+		t.Fatalf("no rule for class %s in:\n%s", m[1], html)
+	}
+	return r[1]
 }
 
 func TestAccountCard(t *testing.T) {
@@ -101,7 +117,7 @@ func TestAccountCard(t *testing.T) {
 	wants := []string{
 		`<ui-root>`, // root
 		`class="ui-hstack ui-card ui-cell-fill-x"`, // Card: a VStack with the surface class
-		`class="ui-hstack ui-grow"`,                // the Spacer's fill stretches the row across the card
+		`class="ui-hstack ui-grow`,                 // the Spacer's fill stretches the row across the card
 		`ui-border-ellipse`,                        // BorderShape applied to the image frame
 		`ui-frame`,                                 // Size(48) introduces a frame wrapper
 		`width:48px`,                               // ...with the resolved size
@@ -133,7 +149,7 @@ func TestMoviePageFillPropagation(t *testing.T) {
 		`class="ui-hstack ui-stretch"`,
 		// The outer VStack inherits that horizontal fill; at the root, a
 		// grid, it lowers to a cell stretch.
-		`class="ui-vstack ui-cell-fill-x"`,
+		`class="ui-vstack ui-cell-fill-x`,
 		// Both movie rows rendered via For, each with its own Spacer.
 		`Metropolis`,
 		`Solaris`,
@@ -193,7 +209,7 @@ func TestTagPanicsOnNamedElement(t *testing.T) {
 					t.Error("rendering did not panic")
 				}
 			}()
-			ui.Render(tt.v)
+			new(ui.Renderer).Render(tt.v)
 		})
 	}
 }
@@ -242,8 +258,8 @@ func TestImmutableModifiers(t *testing.T) {
 // black, and generic modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
 	html := render(t, ui.Muted)
-	if !strings.Contains(html, `class="ui-color-paint" style="background-color:var(--ui-color-muted)"`) {
-		t.Errorf("color view should paint itself as its element's content:\n%s", html)
+	if got := classRule(t, html, `class="ui-color-paint (ui-\w+)"`); got != "background-color:var(--ui-color-muted)" {
+		t.Errorf("color view should paint itself as its element's content, got %q:\n%s", got, html)
 	}
 	if !strings.Contains(html, `class="ui-color ui-cell-fill-x ui-cell-fill-y"`) {
 		t.Errorf("color view should request fill on both axes:\n%s", html)
@@ -259,10 +275,11 @@ func TestColorAsView(t *testing.T) {
 	// inner color content, visible where c is translucent — no extra layer,
 	// and the Modify spelling is the same merge.
 	bg := render(t, ui.Color("#0008").Background("#fff"))
-	for _, w := range []string{"background-color:#0008", `style="background-color:#fff"`} {
-		if !strings.Contains(bg, w) {
-			t.Errorf("Background under a color missing %q:\n%s", w, bg)
-		}
+	if got := classRule(t, bg, `class="ui-color-paint (ui-\w+)"`); got != "background-color:#0008" {
+		t.Errorf("the inner paint should carry the color, got %q:\n%s", got, bg)
+	}
+	if got := classRule(t, bg, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#fff" {
+		t.Errorf("Background should merge onto the color's own element, got %q:\n%s", got, bg)
 	}
 	if strings.Contains(bg, "ui-underlay") {
 		t.Errorf("Background on a color should merge, not add a layer:\n%s", bg)

@@ -75,30 +75,30 @@ func (s stackNode) render(rc renderContext) box {
 	rc.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
 	content, f := subviewsRendered(rc, s.subviews...)
-	return box{
+	b := box{
 		fills:   f,
-		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.attrs()),
+		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr()),
 		content: content,
 	}
+	if s.gap != defaultGap {
+		b.setStyle("gap", cssPx(s.gap))
+	}
+	return b
 }
 
-// attrs returns the stack's gap and alignment attributes.
-func (s stackNode) attrs() domi.Attr {
-	var a []domi.Attr
-	if s.gap != defaultGap {
-		a = append(a, attr.Style("gap:"+cssPx(s.gap)))
+// alignAttr returns the class for the stack's alignment.
+func (s stackNode) alignAttr() domi.Attr {
+	if s.align == Center {
+		return nil
 	}
-	if s.align != Center {
-		switch s.dir {
-		case axisV:
-			a = append(a, alignClass(s.align.horizontal()))
-		case axisH:
-			a = append(a, alignClass(s.align.vertical()))
-		default:
-			a = append(a, attr.Class(s.align.placeClass()))
-		}
+	switch s.dir {
+	case axisV:
+		return alignClass(s.align.horizontal())
+	case axisH:
+		return alignClass(s.align.vertical())
+	default:
+		return attr.Class(s.align.placeClass())
 	}
-	return domi.Group(a...)
 }
 
 // A Spacer occupies empty space.

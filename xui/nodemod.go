@@ -99,7 +99,7 @@ func Background(c Color) Modifier { return modBackground{c} }
 
 func (m modBackground) applyTo(x box) box {
 	if m.c != "" {
-		x.addStyle("background-color:" + string(m.c))
+		x.setStyle("background-color", string(m.c))
 	}
 	return x
 }
@@ -149,7 +149,7 @@ func Foreground(c Color) Modifier { return modForeground{c: c} }
 
 func (m modForeground) applyTo(x box) box {
 	if m.c != "" {
-		x.addStyle("color:" + string(m.c))
+		x.setStyle("color", string(m.c))
 	}
 	return x
 }
@@ -160,7 +160,7 @@ type modOpacity struct{ x float64 }
 func Opacity(x float64) Modifier { return modOpacity{x: x} }
 
 func (m modOpacity) applyTo(x box) box {
-	x.addStyle(fmt.Sprintf("opacity:%g", m.x))
+	x.setStyle("opacity", fmt.Sprintf("%g", m.x))
 	return x
 }
 

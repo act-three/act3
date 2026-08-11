@@ -2,10 +2,10 @@
 Package ui is a UI toolkit for [ily.dev/domi] applications.
 
 Application code composes views,
-then renders the View graph with [Render].
+then renders the View graph with a [Renderer].
 
 	func (app *App) View(ctx context.Context) (string, domi.Node) {
-		return "Movies", Render(
+		return "Movies", app.ui.Render(
 			VStack(
 				Text("Movies").
 					Font(Title),
@@ -99,5 +99,6 @@ which is an adjacent sibling of the outer frame.
 
 The companion stylesheet is exposed as [CSS].
 Serve it once per page.
+A [Renderer] emits CSS for dynamic style values with each rendered page.
 */
 package ui

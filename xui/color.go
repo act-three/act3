@@ -6,6 +6,8 @@ import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
+
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // Theme color tokens.
@@ -118,9 +120,10 @@ func (f colorFillNode) render(rc renderContext) box {
 	if rc.unbounded.hasAll(Vertical) {
 		a = append(a, attr.Class("ui-color-ideal-y"))
 	}
+	paint := rc.sheet.ClassFor(sheet.Style("background-color", cmp.Or(string(f.color), "#000")))
 	return box{
 		fills:   (Horizontal | Vertical) &^ rc.unbounded,
 		attrs:   domi.Group(a...),
-		content: html.Div(attr.Class("ui-color-paint"), attr.Style("background-color:"+cmp.Or(string(f.color), "#000"))),
+		content: html.Div(attr.Class("ui-color-paint", paint)),
 	}
 }
