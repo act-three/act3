@@ -6,8 +6,8 @@ import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 
-	"ily.dev/act3/xui/internal/boxutil"
 	"ily.dev/act3/xui/internal/sheet"
+	"ily.dev/act3/xui/internal/slot"
 )
 
 // A View is a user interface element,
@@ -123,19 +123,29 @@ type renderContext struct {
 	container containerKind
 	unbounded AxisSet
 	sheet     *sheet.Sheet
+	shape     slot.Slot[Shape]
+}
+
+// shapeClass consumes the pending border shape as its class attribute.
+// It returns nil when no shape is pending.
+// A node that produces a box consumes the shape before rendering subviews.
+func (rc *renderContext) shapeClass() domi.Attr {
+	if s, ok := rc.shape.Take(); ok {
+		return attr.Class(s.class())
+	}
+	return nil
 }
 
 // A box is an HTML element under construction.
 type box struct {
-	tag      string
-	key      string
-	fills    AxisSet // A fill request is the physical axes a box wants to fill.
-	rigid    AxisSet
-	attrs    domi.Attr
-	modClass boxutil.ClassSet
-	styles   sheet.StyleSet
-	content  domi.Node
-	raw      domi.Node
+	tag     string
+	key     string
+	fills   AxisSet // A fill request is the physical axes a box wants to fill.
+	rigid   AxisSet
+	attrs   domi.Attr
+	styles  sheet.StyleSet
+	content domi.Node
+	raw     domi.Node
 }
 
 func (x *box) add(a domi.Attr) { x.attrs = domi.Group(x.attrs, a) }
@@ -172,7 +182,7 @@ func (x box) build(rc renderContext) domi.Node {
 	n := x.raw
 	if n == nil {
 		// Keep the generated class after the named classes in rendered output.
-		a := domi.Group(x.modClass.Attr(), x.fills.fillAttr(rc), x.rigid.rigidAttr(rc), x.styleClass(rc))
+		a := domi.Group(x.fills.fillAttr(rc), x.rigid.rigidAttr(rc), x.styleClass(rc))
 		n = domi.Tag(cmp.Or(x.tag, "div"), x.attrs, a)(x.content)
 	}
 	if x.key != "" {

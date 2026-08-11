@@ -46,6 +46,7 @@ func (s scrollNode) render(rc renderContext) box {
 	if rc.unbounded.hasAll(Vertical) {
 		a = append(a, attr.Class("ui-scroll-ideal-y"))
 	}
+	a = append(a, rc.shapeClass())
 	content, _ := subviewsRendered(inner, s.contents)
 	return box{
 		fills:   (Horizontal | Vertical) &^ rc.unbounded,

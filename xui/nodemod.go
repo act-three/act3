@@ -11,6 +11,11 @@ import (
 // It can be applied with [View.Modify].
 //
 // It is usually more convenient to call modifier methods directly on View.
+//
+// A style modifier behaves as if it were applied to a
+// layout-transparent element wrapping the modified view.
+// The renderer may collapse modifiers onto a single element
+// only where that preserves the wrapper semantics.
 type Modifier interface {
 	applyTo(box) box
 }
@@ -29,6 +34,9 @@ type nodeMod struct {
 }
 
 func (m nodeMod) render(rc renderContext) box {
+	if w, ok := m.mod.(elementWrapper); ok {
+		return nodeWrap{node: m.node, wrapper: w}.render(rc)
+	}
 	if c, ok := m.mod.(contextual); ok {
 		rc = c.context(rc)
 	}
@@ -84,6 +92,13 @@ func (v base) Opacity(x float64) View { return v.Modify(Opacity(x)) }
 // If v already has a tag name, Tag panics.
 func (v base) Tag(name string) View { return v.Modify(modTag{name: name}) }
 
+// wraps marks a modifier that lowers to its own wrapper element.
+// Its applyTo is never called: [nodeMod] routes wrapper modifiers
+// through [nodeWrap] instead.
+type wraps struct{}
+
+func (wraps) applyTo(box) box { panic("unreached") }
+
 // NOTE: no exported construcor.
 type modAttr struct{ attr domi.Attr }
 
@@ -92,27 +107,41 @@ func (m modAttr) applyTo(x box) box {
 	return x
 }
 
-type modBackground struct{ c Color }
+type modBackground struct {
+	wraps
+	c Color
+}
 
 // Background fills the background of a view with c.
-func Background(c Color) Modifier { return modBackground{c} }
+func Background(c Color) Modifier { return modBackground{c: c} }
 
-func (m modBackground) applyTo(x box) box {
+func (m modBackground) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+	b := box{fills: f, rigid: r, attrs: attr.Class("ui-mod"), content: content}
 	if m.c != "" {
-		x.setStyle("background-color", string(m.c))
+		b.setStyle("background-color", string(m.c))
 	}
-	return x
+	return b
 }
 
 type modBorderShape struct{ s Shape }
 
 // BorderShape sets the shape of a view's border.
+//
+// The shape is drawn by the modified view itself:
+// it inherits down to the first box under the modifier,
+// which consumes it and paints itself in the given shape.
+// A repeated BorderShape is therefore inert:
+// the innermost shape is written last and wins.
+// BorderShape does not clip;
+// content that overflows the shape is drawn in full.
 func BorderShape(s Shape) Modifier { return modBorderShape{s} }
 
-func (m modBorderShape) applyTo(x box) box {
-	type key struct{}
-	x.modClass.Set(key{}, m.s.class())
-	return x
+// applyTo is the identity: the shape acts through the context.
+func (m modBorderShape) applyTo(x box) box { return x }
+
+func (m modBorderShape) context(rc renderContext) renderContext {
+	rc.shape.Set(m.s)
+	return rc
 }
 
 // NOTE: no exported construcor.
@@ -130,38 +159,53 @@ func (modFixedSize) context(rc renderContext) renderContext {
 	return rc
 }
 
-type modFont struct{ f FontSize }
+type modFont struct {
+	wraps
+	f FontSize
+}
 
 // Font sets the font size for text in a view.
 func Font(f FontSize) Modifier { return modFont{f: f} }
 
-func (m modFont) applyTo(x box) box {
-	type key struct{}
-	x.modClass.Set(key{}, m.f.class())
-	return x
+func (m modFont) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+	a := attr.Class("ui-mod")
+	if c := m.f.class(); c != "" {
+		a = attr.Class("ui-mod", c)
+	}
+	return box{fills: f, rigid: r, attrs: a, content: content}
 }
 
-type modForeground struct{ c Color }
+type modForeground struct {
+	wraps
+	c Color
+}
 
 // Foreground uses c to draw foreground elements in a view,
 // such as text.
 func Foreground(c Color) Modifier { return modForeground{c: c} }
 
-func (m modForeground) applyTo(x box) box {
+func (m modForeground) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+	b := box{fills: f, rigid: r, attrs: attr.Class("ui-mod"), content: content}
 	if m.c != "" {
-		x.setStyle("color", string(m.c))
+		b.setStyle("color", string(m.c))
 	}
-	return x
+	return b
 }
 
-type modOpacity struct{ x float64 }
+type modOpacity struct {
+	wraps
+	x float64
+}
 
 // Opacity sets a view's opacity to x, from 0 (transparent) to 1 (opaque).
+// Nested opacities multiply:
+// v.Opacity(0.5).Opacity(0.5) draws v at a quarter of full opacity.
 func Opacity(x float64) Modifier { return modOpacity{x: x} }
 
-func (m modOpacity) applyTo(x box) box {
-	x.setStyle("opacity", fmt.Sprintf("%g", m.x))
-	return x
+func (m modOpacity) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+	b := box{fills: f, rigid: r, attrs: attr.Class("ui-mod"), content: content}
+	b.setStyle("opacity", fmt.Sprintf("%g", m.x))
+	return b
 }
 
 // NOTE: no exported construcor.

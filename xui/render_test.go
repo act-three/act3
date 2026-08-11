@@ -271,15 +271,15 @@ func TestColorAsView(t *testing.T) {
 		t.Errorf("modifier on a color view should reach its box:\n%s", mod)
 	}
 
-	// Background merges onto the color's own element and paints under the
-	// inner color content, visible where c is translucent — no extra layer,
-	// and the Modify spelling is the same merge.
+	// Background wraps the color and paints behind it, visible where c
+	// is translucent — ordinary painting order, not a decoration layer,
+	// and the Modify spelling is the same lowering.
 	bg := render(t, ui.Color("#0008").Background("#fff"))
 	if got := classRule(t, bg, `class="ui-color-paint (ui-\w+)"`); got != "background-color:#0008" {
 		t.Errorf("the inner paint should carry the color, got %q:\n%s", got, bg)
 	}
-	if got := classRule(t, bg, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#fff" {
-		t.Errorf("Background should merge onto the color's own element, got %q:\n%s", got, bg)
+	if got := classRule(t, bg, `class="ui-mod ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#fff" {
+		t.Errorf("Background should paint on the wrapper around the color, got %q:\n%s", got, bg)
 	}
 	if strings.Contains(bg, "ui-underlay") {
 		t.Errorf("Background on a color should merge, not add a layer:\n%s", bg)

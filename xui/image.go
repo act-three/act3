@@ -46,7 +46,7 @@ func (n imageNode) render(rc renderContext) box {
 		return box{
 			tag:   "img",
 			rigid: Horizontal | Vertical,
-			attrs: domi.Group(attr.Src(n.src), alt),
+			attrs: domi.Group(attr.Src(n.src), alt, rc.shapeClass()),
 		}
 	}
 	// A scaling mode is a statement about meeting an imposed box: the
@@ -58,6 +58,6 @@ func (n imageNode) render(rc renderContext) box {
 	return box{
 		tag:   "img",
 		fills: (Horizontal | Vertical) &^ rc.unbounded,
-		attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class())),
+		attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class()), rc.shapeClass()),
 	}
 }
