@@ -26,11 +26,17 @@
 		line-height: 1.4;
 	}
 
-	/* Normalization. */
-	ui-root,
-	ui-root *,
-	ui-root *::before,
-	ui-root *::after { box-sizing: border-box; }
+	@layer normalize {
+		ui-root,
+		ui-root *,
+		ui-root *::before,
+		ui-root *::after { box-sizing: border-box; }
+
+		.ui-button {
+			color: inherit;
+			font: inherit;
+		}
+	}
 
 	.ui-text {
 		display: block;
@@ -226,8 +232,6 @@
 		border: 1px solid var(--ui-color-border);
 		border-radius: var(--ui-radius);
 		background: var(--ui-color-surface);
-		color: inherit;
-		font: inherit;
 		cursor: pointer;
 	}
 	.ui-button:hover { border-color: var(--ui-color-muted); }
