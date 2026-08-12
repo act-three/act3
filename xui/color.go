@@ -109,23 +109,23 @@ func (c Color) Attr(a ...domi.Attr) View { return c.view().Attr(a...) }
 // painting order, with no property doing double duty.
 type colorFillNode struct{ color Color }
 
-func (f colorFillNode) render(rc renderContext) box {
+func (f colorFillNode) render(env environment) box {
 	// A color adapts to any space and has no content-derived size of
 	// its own; an axis with unbounded available space takes a 10px
 	// default, and the rest adapt.
 	a := []domi.Attr{attr.Class("ui-color")}
-	if rc.unbounded.hasAll(Horizontal) {
+	if env.unbounded.hasAll(Horizontal) {
 		a = append(a, attr.Class("ui-color-ideal-x"))
 	}
-	if rc.unbounded.hasAll(Vertical) {
+	if env.unbounded.hasAll(Vertical) {
 		a = append(a, attr.Class("ui-color-ideal-y"))
 	}
-	paint := rc.sheet.ClassFor(sheet.Style("background-color", cmp.Or(string(f.color), "#000")))
+	paint := env.sheet.ClassFor(sheet.Style("background-color", cmp.Or(string(f.color), "#000")))
 	// The box consumes a border shape but realizes it on the paint
 	// element, the only thing it draws.
 	return box{
-		fills:   (Horizontal | Vertical) &^ rc.unbounded,
+		fills:   (Horizontal | Vertical) &^ env.unbounded,
 		attrs:   domi.Group(a...),
-		content: html.Div(attr.Class("ui-color-paint"), rc.shapeClass(), attr.Class(paint)),
+		content: html.Div(attr.Class("ui-color-paint"), env.shapeClass(), attr.Class(paint)),
 	}
 }

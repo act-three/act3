@@ -28,10 +28,10 @@ type scrollNode struct {
 	contents View
 }
 
-func (s scrollNode) render(rc renderContext) box {
+func (s scrollNode) render(env environment) box {
 	// Along a scroll axis, the content's available space is unbounded.
 	// On a non-scrolling axis the available space is the viewport's own size.
-	inner := renderContext{unbounded: s.along, sheet: rc.sheet}
+	inner := environment{unbounded: s.along, sheet: env.sheet}
 	variant := cmp.Or(map[AxisSet]string{
 		Horizontal:            "ui-scroll-x",
 		Vertical:              "ui-scroll-y",
@@ -40,16 +40,16 @@ func (s scrollNode) render(rc renderContext) box {
 	// The scroll viewport is a single-cell grid establishing no axes.
 	// It is equivalent to the root view context in a scrolling web page.
 	a := []domi.Attr{attr.Class("ui-scroll", variant)}
-	if rc.unbounded.hasAll(Horizontal) {
+	if env.unbounded.hasAll(Horizontal) {
 		a = append(a, attr.Class("ui-scroll-ideal-x"))
 	}
-	if rc.unbounded.hasAll(Vertical) {
+	if env.unbounded.hasAll(Vertical) {
 		a = append(a, attr.Class("ui-scroll-ideal-y"))
 	}
-	a = append(a, rc.shapeClass())
+	a = append(a, env.shapeClass())
 	content, _ := subviewsRendered(inner, s.contents)
 	return box{
-		fills:   (Horizontal | Vertical) &^ rc.unbounded,
+		fills:   (Horizontal | Vertical) &^ env.unbounded,
 		attrs:   domi.Group(a...),
 		content: content,
 	}

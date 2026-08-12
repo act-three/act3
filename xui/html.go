@@ -10,6 +10,6 @@ func HTML(n domi.Node) View { return base{domiNode{n: n}} }
 
 type domiNode struct{ n domi.Node }
 
-func (d domiNode) render(renderContext) box {
+func (d domiNode) render(environment) box {
 	return box{raw: d.n}
 }

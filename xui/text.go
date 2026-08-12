@@ -103,10 +103,10 @@ type textNode struct {
 	style textStyle
 }
 
-func (n textNode) render(rc renderContext) box {
+func (n textNode) render(env environment) box {
 	return box{
-		attrs:   domi.Group(attr.Class("ui-text"), rc.shapeClass()),
-		content: n.html(rc.sheet),
+		attrs:   domi.Group(attr.Class("ui-text"), env.shapeClass()),
+		content: n.html(env.sheet),
 	}
 }
 

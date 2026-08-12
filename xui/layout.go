@@ -28,16 +28,16 @@ func (s AxisSet) complement() AxisSet { return (Horizontal | Vertical) &^ s }
 // fillAttr lowers the receiver as a fill request, picking the CSS
 // mechanism the parent context responds to: grow or stretch as a flex item,
 // self-stretch in a grid cell. A single mechanism cannot serve both.
-func (s AxisSet) fillAttr(rc renderContext) (a domi.Attr) {
+func (s AxisSet) fillAttr(env environment) (a domi.Attr) {
 	if s == 0 {
 		return nil
 	}
-	switch rc.container {
+	switch env.container {
 	case containerFlex:
-		if s.hasAny(rc.lc.majorAxis) {
+		if s.hasAny(env.lc.majorAxis) {
 			a = domi.Group(a, attr.Class("ui-grow"))
 		}
-		if s.hasAny(rc.lc.minorAxes()) {
+		if s.hasAny(env.lc.minorAxes()) {
 			a = domi.Group(a, attr.Class("ui-stretch"))
 		}
 	default:
@@ -56,11 +56,11 @@ func (s AxisSet) fillAttr(rc renderContext) (a domi.Attr) {
 // This is only necessary along a flex major axis,
 // where flex shrink would compress the box.
 // Everywhere else a fixed size is rigid by default in CSS.
-func (s AxisSet) rigidAttr(rc renderContext) domi.Attr {
-	if rc.container != containerFlex {
+func (s AxisSet) rigidAttr(env environment) domi.Attr {
+	if env.container != containerFlex {
 		return nil
 	}
-	if s.hasAll(rc.lc.majorAxis) {
+	if s.hasAll(env.lc.majorAxis) {
 		return attr.Class("ui-rigid")
 	}
 	return nil

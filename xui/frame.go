@@ -43,7 +43,7 @@ func (w wrapFrame) definite() (a AxisSet) {
 	return a
 }
 
-func (w wrapFrame) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+func (w wrapFrame) wrapElement(_ environment, content domi.Node, f, r AxisSet) box {
 	var align domi.Attr
 	if w.align != Center {
 		align = attr.Class(w.align.placeClass())
@@ -65,9 +65,9 @@ func (w wrapFrame) wrapElement(_ renderContext, content domi.Node, f, r AxisSet)
 
 // context clears unbounded on each axis the frame makes definite.
 // A definite axis is available space for the view inside.
-func (w wrapFrame) context(rc renderContext) renderContext {
-	rc.unbounded &^= w.definite()
-	return rc
+func (w wrapFrame) context(env environment) environment {
+	env.unbounded &^= w.definite()
+	return env
 }
 
 // A FrameOption configures the size and alignment of a frame.
