@@ -71,11 +71,10 @@ type stackNode struct {
 }
 
 func (s stackNode) render(env environment) box {
-	p := env.takePending()
 	env.lc = axes[s.dir].lc
 	env.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
-	content, f := subviewsRendered(env, s.subviews...)
+	content, f, p := subviewsRendered(env, s.subviews...)
 	b := box{
 		fills:   f,
 		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr()),
