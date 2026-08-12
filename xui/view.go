@@ -127,6 +127,8 @@ type environment struct {
 	shape slot.Slot[Shape]
 	attrs slot.Slot[domi.Attr]
 	tag   slot.Slot[string]
+	fg    slot.Slot[Color]
+	font  slot.Slot[FontSize]
 }
 
 // shapeClass consumes the pending border shape as its class attribute.
@@ -138,32 +140,54 @@ func (env *environment) shapeClass() domi.Attr {
 	return nil
 }
 
+// fontClass consumes the pending font size as its class attribute.
+// It returns nil when no font size is pending.
+func (env *environment) fontClass() domi.Attr {
+	if f, ok := env.font.Take(); ok {
+		return attr.Class(f.class())
+	}
+	return nil
+}
+
 // pending is a set of consumed modifier effects, ready to land on a box.
 type pending struct {
-	attrs     domi.Attr // added to the box, including the shape's class
-	tag       string    // the box's tag, unless the box has its own
-	unbounded AxisSet   // axes on which the box takes its ideal size
+	attrs     domi.Attr      // added to the box, including the shape's and font's classes
+	tag       string         // the box's tag, unless the box has its own
+	unbounded AxisSet        // axes on which the box takes its ideal size
+	styles    sheet.StyleSet // inherited declarations, such as the foreground color
 }
 
 // takePending consumes the environment's pending modifier effects.
 // A node that produces a box takes them before rendering subviews,
 // so each effect stops at the first box under its modifier.
 func (env *environment) takePending() pending {
-	p := pending{attrs: env.shapeClass(), unbounded: env.unbounded}
+	p := pending{
+		attrs:     domi.Group(env.shapeClass(), env.fontClass()),
+		unbounded: env.unbounded,
+	}
 	if a, ok := env.attrs.Take(); ok {
 		p.attrs = domi.Group(p.attrs, a)
 	}
 	p.tag, _ = env.tag.Take()
+	if c, ok := env.fg.Take(); ok {
+		p.styles.Set("color", string(c))
+	}
 	return p
 }
 
 // applyTo lands the pending effects on the box.
 // The innermost tag wins, so the box's own tag is kept if it has one.
+// Consumed inherited declarations land under the box's own:
+// the box is the innermost writer,
+// so its declarations come later in map-set order and win.
 // An unbounded axis takes the box's ideal size, which is definite,
 // so the axis is rigid and a fill request on it is meaningless.
 func (p pending) applyTo(x *box) {
 	x.add(p.attrs)
 	x.tag = cmp.Or(x.tag, p.tag)
+	styles := p.styles
+	styles.Merge(x.styles)
+	x.styles = styles
 	x.fills &^= p.unbounded
 	x.rigid |= p.unbounded
 }
