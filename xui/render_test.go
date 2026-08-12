@@ -213,34 +213,74 @@ func TestTagInnermostWins(t *testing.T) {
 	}
 }
 
-// TestDomiModifierPanics pins the [ui.HTML] contract: the wrapped node is
-// opaque, so a modifier that must act on the view's own element panics
-// instead of silently dropping the effect.
-func TestDomiModifierPanics(t *testing.T) {
+// TestHTMLHost pins the [ui.HTML] host contract: the node renders inside
+// a host element the view manages, and element modifiers land on that
+// host rather than on the node.
+func TestHTMLHost(t *testing.T) {
+	html := render(t, ui.HTML(domi.Text("raw")))
+	if want := `<div class="ui-html ui-cell-fill-x ui-cell-fill-y">raw</div>`; !strings.Contains(html, want) {
+		t.Errorf("missing %q:\n%s", want, html)
+	}
+
+	mod := render(t, ui.HTML(domi.Text("raw")).BorderShape(ui.Ellipse).Class("x").Tag("section"))
+	for _, w := range []string{"<section", "ui-html", "ui-border-ellipse x", ">raw<"} {
+		if !strings.Contains(mod, w) {
+			t.Errorf("host modifiers missing %q:\n%s", w, mod)
+		}
+	}
+}
+
+// TestHTMLFill pins the view's fill personality: like a Color, it
+// requests fill on both axes — lowered per the enclosing container and
+// propagated through an enclosing stack — and FixedSize opts into
+// content sizing.
+func TestHTMLFill(t *testing.T) {
 	for _, tt := range []struct {
-		name string
-		v    ui.View
+		name    string
+		v       ui.View
+		wants   []string
+		rejects []string
 	}{
-		{"attrs", ui.HTML(domi.Text("raw")).Class("x")},
-		{"tag", ui.HTML(domi.Text("raw")).Tag("div")},
-		{"shape", ui.HTML(domi.Text("raw")).BorderShape(ui.Ellipse)},
+		{
+			"both axes at the root grid",
+			ui.HTML(domi.Text("raw")),
+			[]string{`class="ui-html ui-cell-fill-x ui-cell-fill-y"`},
+			nil,
+		},
+		{
+			"a row grows it, stretches it, and inherits the fill",
+			ui.HStack(ui.HTML(domi.Text("raw"))),
+			[]string{`class="ui-html ui-grow ui-stretch"`, `class="ui-hstack ui-cell-fill-x ui-cell-fill-y"`},
+			nil,
+		},
+		{
+			"FixedSize clears the fill axes",
+			ui.HTML(domi.Text("raw")).FixedSize(),
+			[]string{`class="ui-html ui-fixed-size"`},
+			[]string{"ui-cell-fill"},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			defer func() {
-				if recover() == nil {
-					t.Error("modifying a Domi view did not panic")
+			html := render(t, tt.v)
+			for _, w := range tt.wants {
+				if !strings.Contains(html, w) {
+					t.Errorf("missing %q\n\n%s", w, html)
 				}
-			}()
-			render(t, tt.v)
+			}
+			for _, r := range tt.rejects {
+				if strings.Contains(html, r) {
+					t.Errorf("should not emit %q\n\n%s", r, html)
+				}
+			}
 		})
 	}
 }
 
-// TestDomiWrappersApply pins the complement: a modifier that wraps the
-// view in an element of its own never touches the node, so it applies.
-func TestDomiWrappersApply(t *testing.T) {
+// TestHTMLWrappers pins that wrapping modifiers enclose the host: the
+// wrapper elements appear outside it and the node stays untouched inside.
+func TestHTMLWrappers(t *testing.T) {
 	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background("red"))
-	for _, w := range []string{`class="ui-mod`, `class="ui-padding`, ">raw<"} {
+	for _, w := range []string{`class="ui-mod`, `class="ui-padding`, `class="ui-html ui-cell-fill-x ui-cell-fill-y">raw<`} {
 		if !strings.Contains(html, w) {
 			t.Errorf("missing %q:\n%s", w, html)
 		}

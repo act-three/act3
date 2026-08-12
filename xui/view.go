@@ -177,7 +177,6 @@ type box struct {
 	attrs   domi.Attr
 	styles  sheet.StyleSet
 	content domi.Node
-	raw     domi.Node
 }
 
 func (x *box) add(a domi.Attr) { x.attrs = domi.Group(x.attrs, a) }
@@ -215,12 +214,9 @@ func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, pending)
 
 // build builds x as an HTML node.
 func (x box) build(env environment) domi.Node {
-	n := x.raw
-	if n == nil {
-		// Keep the generated class after the named classes in rendered output.
-		a := domi.Group(x.fills.fillAttr(env), x.rigid.rigidAttr(env), x.styleClass(env))
-		n = domi.Tag(cmp.Or(x.tag, "div"), x.attrs, a)(x.content)
-	}
+	// Keep the generated class after the named classes in rendered output.
+	a := domi.Group(x.fills.fillAttr(env), x.rigid.rigidAttr(env), x.styleClass(env))
+	n := domi.Tag(cmp.Or(x.tag, "div"), x.attrs, a)(x.content)
 	if x.key != "" {
 		n = domi.WithKey(x.key, n)
 	}

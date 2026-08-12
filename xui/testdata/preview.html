@@ -124,6 +124,15 @@ ui-root *::after { box-sizing: border-box; }
 	place-items: center;
 }
 
+/* The host element of an HTML view. Unlike its lookalikes above,
+   its interior layout is public interface (see HTML), and app CSS
+   may override it. */
+.ui-html {
+	display: grid;
+	grid-template: 100% / 100%;
+	place-items: center;
+}
+
 .ui-frame {
 	display: grid;
 	grid-template: 100% / 100%;
