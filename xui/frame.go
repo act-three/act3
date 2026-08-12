@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
 
@@ -14,7 +13,7 @@ func (v base) Frame(o ...FrameOption) View {
 	for _, o := range o {
 		o.applyFrame(&w)
 	}
-	return v.wrap(w)
+	return v.Modify(w)
 }
 
 // wrapFrame is a sizing frame. It is a single-cell grid that places a
@@ -30,7 +29,10 @@ func (v base) Frame(o ...FrameOption) View {
 type wrapFrame struct {
 	h, v  size
 	align Alignment
+	node  node
 }
+
+func (w wrapFrame) modify(n node) node { w.node = n; return w }
 
 // definite is the set of axes the frame makes definite.
 func (w wrapFrame) definite() (a AxisSet) {
@@ -43,16 +45,18 @@ func (w wrapFrame) definite() (a AxisSet) {
 	return a
 }
 
-func (w wrapFrame) wrapElement(_ environment, content domi.Node, f, r AxisSet) box {
-	var align domi.Attr
+func (w wrapFrame) render(env environment) box {
+	p := env.takePending()
+	inner := env
+	// A definite axis is available space for the view inside,
+	// so it is no longer unbounded.
+	inner.unbounded &^= w.definite()
+	b := wrapSubview(inner, w.node)
+	b.fills &^= w.definite()
+	b.rigid |= w.definite()
+	b.add(attr.Class("ui-frame"))
 	if w.align != Center {
-		align = attr.Class(w.align.placeClass())
-	}
-	b := box{
-		fills:   f &^ w.definite(),
-		rigid:   w.definite() | r,
-		attrs:   domi.Group(attr.Class("ui-frame"), align),
-		content: content,
+		b.add(attr.Class(w.align.placeClass()))
 	}
 	if w.h.definite {
 		b.setStyle("width", w.h.css())
@@ -60,14 +64,8 @@ func (w wrapFrame) wrapElement(_ environment, content domi.Node, f, r AxisSet) b
 	if w.v.definite {
 		b.setStyle("height", w.v.css())
 	}
+	p.applyTo(&b)
 	return b
-}
-
-// context clears unbounded on each axis the frame makes definite.
-// A definite axis is available space for the view inside.
-func (w wrapFrame) context(env environment) environment {
-	env.unbounded &^= w.definite()
-	return env
 }
 
 // A FrameOption configures the size and alignment of a frame.

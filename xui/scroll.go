@@ -46,11 +46,13 @@ func (s scrollNode) render(env environment) box {
 	if env.unbounded.hasAll(Vertical) {
 		a = append(a, attr.Class("ui-scroll-ideal-y"))
 	}
-	a = append(a, env.shapeClass())
+	p := env.takePending()
 	content, _ := subviewsRendered(inner, s.contents)
-	return box{
-		fills:   (Horizontal | Vertical) &^ env.unbounded,
+	b := box{
+		fills:   Horizontal | Vertical,
 		attrs:   domi.Group(a...),
 		content: content,
 	}
+	p.applyTo(&b)
+	return b
 }

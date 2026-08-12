@@ -38,8 +38,8 @@ func TestRenderVisitsEachNodeOnce(t *testing.T) {
 		v = wrap(stackNode{dir: axisV, subviews: []View{
 			v,
 			wrap(spacerNode{}),
-			wrap(nodeWrap{wrapper: wrapFrame{h: newSize(40)}, node: leaf("framed")}),
-			wrap(nodeWrap{wrapper: wrapLayer{view: wrap(colorFillNode{color: "#000"})}, node: leaf("decorated")}),
+			wrap(wrapFrame{h: newSize(40), node: leaf("framed")}),
+			wrap(wrapLayer{view: wrap(colorFillNode{color: "#000"}), node: leaf("decorated")}),
 		}})
 	}
 	new(Renderer).Render(v)

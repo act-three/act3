@@ -71,19 +71,20 @@ type stackNode struct {
 }
 
 func (s stackNode) render(env environment) box {
-	shape := env.shapeClass()
+	p := env.takePending()
 	env.lc = axes[s.dir].lc
 	env.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
 	content, f := subviewsRendered(env, s.subviews...)
 	b := box{
 		fills:   f,
-		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr(), shape),
+		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr()),
 		content: content,
 	}
 	if s.gap != defaultGap {
 		b.setStyle("gap", cssPx(s.gap))
 	}
+	p.applyTo(&b)
 	return b
 }
 
@@ -111,6 +112,7 @@ func Spacer() View { return base{spacerNode{}} }
 type spacerNode struct{}
 
 func (spacerNode) render(env environment) box {
+	p := env.takePending()
 	var a domi.Attr
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		a = attr.Class("ui-spacer-h")
@@ -118,10 +120,12 @@ func (spacerNode) render(env environment) box {
 	if env.lc.majorAxis.hasAll(Vertical) {
 		a = attr.Class("ui-spacer-v")
 	}
-	return box{
+	b := box{
 		fills: env.lc.majorAxis,
-		attrs: domi.Group(attr.Class("ui-spacer"), a, env.shapeClass()),
+		attrs: domi.Group(attr.Class("ui-spacer"), a),
 	}
+	p.applyTo(&b)
+	return b
 }
 
 // A Divider is a thin line that can be used to separate other views.
@@ -133,25 +137,24 @@ func Divider() View { return base{dividerNode{}} }
 type dividerNode struct{}
 
 func (dividerNode) render(env environment) box {
-	f := env.lc.minorAxes()
+	p := env.takePending()
 	a := []domi.Attr{attr.Class("ui-divider")}
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
 		a = append(a, attr.Class("ui-divider-v"))
 		if env.unbounded.hasAll(Vertical) {
 			a = append(a, attr.Class("ui-divider-ideal-y"))
-			f &^= Vertical
 		}
 	} else {
 		a = append(a, attr.Class("ui-divider-h"))
 		if env.unbounded.hasAll(Horizontal) {
 			a = append(a, attr.Class("ui-divider-ideal-x"))
-			f &^= Horizontal
 		}
 	}
-	a = append(a, env.shapeClass())
-	return box{
-		fills: f,
+	b := box{
+		fills: env.lc.minorAxes(),
 		attrs: domi.Group(a...),
 	}
+	p.applyTo(&b)
+	return b
 }
