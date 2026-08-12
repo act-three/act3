@@ -45,6 +45,6 @@ func (r *Renderer) Render(root View) (page domi.Node) {
 	// Put the stylesheet before the content
 	// so its rules are available before the content is painted.
 	// Emit it even when empty to keep the tree stable.
-	style := domi.Tag("style", nonce)(domi.Text(r.sheet.CSS()))
+	style := domi.Tag("style", nonce)(domi.Text("@layer xui{" + r.sheet.CSS() + "}"))
 	return domi.Tag("ui-root")(style, content)
 }

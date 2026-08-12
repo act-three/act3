@@ -40,7 +40,7 @@ func TestRendererAccumulatesRules(t *testing.T) {
 // and include the configured nonce.
 func TestRendererStyleElement(t *testing.T) {
 	plain := renderWith(t, new(ui.Renderer), ui.Text("x"))
-	if !strings.Contains(plain, "<ui-root><style></style>") {
+	if !strings.Contains(plain, "<ui-root><style>@layer xui{}</style>") {
 		t.Errorf("empty style element not first in ui-root:\n%s", plain)
 	}
 	nonced := renderWith(t, &ui.Renderer{Nonce: "abc123"}, ui.Text("x"))

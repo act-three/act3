@@ -6,6 +6,7 @@ import (
 
 	ui "ily.dev/act3/xui"
 	"ily.dev/act3/xui/internal/uitest"
+	"ily.dev/domi"
 )
 
 // TestForegroundInnermostWins pins the wrapper model for inherited
@@ -149,4 +150,52 @@ func TestTextStyleInnermostWins(t *testing.T) {
 	if !strings.Contains(html, "ui-font-title") || strings.Contains(html, "ui-font-caption") {
 		t.Errorf("repeated TextFont should keep the first size:\n%s", html)
 	}
+}
+
+// stageApp is stage with unlayered app CSS placed before ui.CSS in the
+// document, so an app rule can win only through the xui cascade layer,
+// never through source order.
+func stageApp(t *testing.T, appCSS string, v ui.View, fn func(*uitest.Session)) {
+	t.Helper()
+	var sb strings.Builder
+	sb.WriteString("<!doctype html><meta charset=utf-8><style>")
+	sb.WriteString(appCSS)
+	sb.WriteString("</style><style>")
+	sb.WriteString(ui.CSS)
+	sb.WriteString(`</style><body>`)
+	if err := domi.RenderTo(&sb, new(ui.Renderer).Render(v)); err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	uitest.Run(t, 600, 400, sb.String(), fn)
+}
+
+// TestAppCSSBeatsStaticSheet pins the app-vs-xui contract for ui.css:
+// every rule it emits sits in the xui layer, so an unlayered app class
+// overrides it at equal specificity regardless of source order. The
+// fixture is the one HTML's documentation invites: an app class
+// restyling the host adapter's interior layout.
+func TestAppCSSBeatsStaticSheet(t *testing.T) {
+	v := ui.HTML(domi.Text("hi")).Class("app-host")
+	stageApp(t, ".app-host{place-items:stretch}", v, func(s *uitest.Session) {
+		var align, justify string
+		s.Eval(`getComputedStyle(document.querySelector(".ui-html")).alignItems`, &align)
+		s.Eval(`getComputedStyle(document.querySelector(".ui-html")).justifyItems`, &justify)
+		if align != "stretch" || justify != "stretch" {
+			t.Errorf("place-items = %s %s, want the app's stretch stretch", align, justify)
+		}
+	})
+}
+
+// TestAppCSSBeatsDynamicSheet pins the same contract for the
+// render-time hashed sheet, whose style element follows the app's in
+// the document and would otherwise win by source order.
+func TestAppCSSBeatsDynamicSheet(t *testing.T) {
+	v := ui.Text("hi").Padding(ui.Edges(16)).Class("app-pad")
+	stageApp(t, ".app-pad{padding:0}", v, func(s *uitest.Session) {
+		var pad string
+		s.Eval(`getComputedStyle(document.querySelector(".app-pad")).paddingTop`, &pad)
+		if pad != "0px" {
+			t.Errorf("padding-top = %s, want the app's 0px", pad)
+		}
+	})
 }
