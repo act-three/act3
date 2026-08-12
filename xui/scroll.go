@@ -47,7 +47,7 @@ func (s scrollNode) render(env environment) box {
 		a = append(a, attr.Class("ui-scroll-ideal-y"))
 	}
 	p := env.takePending()
-	content, _ := subviewsRendered(inner, s.contents)
+	content, _, _ := subviewsRendered(inner, s.contents)
 	b := box{
 		fills:   Horizontal | Vertical,
 		attrs:   domi.Group(a...),

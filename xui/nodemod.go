@@ -99,8 +99,7 @@ func Background(c Color) Modifier { return wrapBackground{c: c} }
 func (w wrapBackground) modify(n node) node { w.node = n; return w }
 
 func (w wrapBackground) render(env environment) box {
-	p := env.takePending()
-	b := wrapSubview(env, w.node)
+	b, p := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-mod"))
 	if w.c != "" {
 		b.setStyle("background-color", string(w.c))
@@ -155,8 +154,7 @@ func Font(f FontSize) Modifier { return wrapFont{f: f} }
 func (w wrapFont) modify(n node) node { w.node = n; return w }
 
 func (w wrapFont) render(env environment) box {
-	p := env.takePending()
-	b := wrapSubview(env, w.node)
+	b, p := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-mod"))
 	if c := w.f.class(); c != "" {
 		b.add(attr.Class(c))
@@ -177,8 +175,7 @@ func Foreground(c Color) Modifier { return wrapForeground{c: c} }
 func (w wrapForeground) modify(n node) node { w.node = n; return w }
 
 func (w wrapForeground) render(env environment) box {
-	p := env.takePending()
-	b := wrapSubview(env, w.node)
+	b, p := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-mod"))
 	if w.c != "" {
 		b.setStyle("color", string(w.c))
@@ -200,8 +197,7 @@ func Opacity(x float64) Modifier { return wrapOpacity{x: x} }
 func (w wrapOpacity) modify(n node) node { w.node = n; return w }
 
 func (w wrapOpacity) render(env environment) box {
-	p := env.takePending()
-	b := wrapSubview(env, w.node)
+	b, p := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-mod"))
 	b.setStyle("opacity", fmt.Sprintf("%g", w.x))
 	p.applyTo(&b)

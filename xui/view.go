@@ -196,7 +196,11 @@ func (x box) styleClass(env environment) domi.Attr {
 
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views and merges their fill requests.
-func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
+// It consumes env's pending effects before any subview renders,
+// so they cannot land on a subview's box,
+// and returns them for the caller to apply once its own box is final.
+func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, pending) {
+	p := env.takePending()
 	var ns []domi.Node
 	var f AxisSet
 	for _, v := range vs {
@@ -206,7 +210,7 @@ func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
 			ns = append(ns, x.build(env))
 		}
 	}
-	return domi.Fragment(ns...), f
+	return domi.Fragment(ns...), f, p
 }
 
 // build builds x as an HTML node.

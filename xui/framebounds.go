@@ -235,7 +235,6 @@ func (w wrapFrameBounds) cappedFills(f AxisSet) (a AxisSet) {
 }
 
 func (w wrapFrameBounds) render(env environment) box {
-	p := env.takePending()
 	ideal := w.idealAxes(env)
 	inner := env
 	// An axis that takes its ideal has a definite size —
@@ -246,7 +245,7 @@ func (w wrapFrameBounds) render(env environment) box {
 	// but it cannot turn the absence of available space into space —
 	// adding a maximum must never make the subview bigger.
 	inner.unbounded &^= ideal
-	b := wrapSubview(inner, w.node)
+	b, p := wrapSubview(inner, w.node)
 	capped := w.cappedFills(b.fills) &^ ideal
 	// An axis taking its ideal is rigid on its own. An axis with
 	// no bounds takes the subview's sizing and its rigidity with
