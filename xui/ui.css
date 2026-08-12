@@ -1,265 +1,267 @@
-/* The root is the browser viewport (not the scrolling body). */
-ui-root {
-	position: fixed;
-	inset: 0;
-	display: grid;
-	grid-template: 100% / 100%;
-	place-items: center;
+@layer xui {
+	/* The root is the browser viewport (not the scrolling body). */
+	ui-root {
+		position: fixed;
+		inset: 0;
+		display: grid;
+		grid-template: 100% / 100%;
+		place-items: center;
 
-	--ui-color-fg: #101828;
-	--ui-color-muted: #667085;
-	--ui-color-border: #e4e7ec;
-	--ui-color-surface: #ffffff;
-	--ui-color-accent: #4f46e5;
-	--ui-color-danger: #d92d20;
+		--ui-color-fg: #101828;
+		--ui-color-muted: #667085;
+		--ui-color-border: #e4e7ec;
+		--ui-color-surface: #ffffff;
+		--ui-color-accent: #4f46e5;
+		--ui-color-danger: #d92d20;
 
-	--ui-font-body: system-ui, -apple-system, sans-serif;
-	--ui-font-mono: ui-monospace, "SF Mono", monospace;
+		--ui-font-body: system-ui, -apple-system, sans-serif;
+		--ui-font-mono: ui-monospace, "SF Mono", monospace;
 
-	--ui-radius: 0.5rem;
-	--ui-radius-sm: 0.25rem;
+		--ui-radius: 0.5rem;
+		--ui-radius-sm: 0.25rem;
 
-	font-family: var(--ui-font-body);
-	color: var(--ui-color-fg);
-	line-height: 1.4;
-}
+		font-family: var(--ui-font-body);
+		color: var(--ui-color-fg);
+		line-height: 1.4;
+	}
 
-/* Normalization. */
-ui-root,
-ui-root *,
-ui-root *::before,
-ui-root *::after { box-sizing: border-box; }
+	/* Normalization. */
+	ui-root,
+	ui-root *,
+	ui-root *::before,
+	ui-root *::after { box-sizing: border-box; }
 
-.ui-text {
-	display: block;
-	overflow-wrap: break-word;
-}
+	.ui-text {
+		display: block;
+		overflow-wrap: break-word;
+	}
 
-.ui-mono { font-family: var(--ui-font-mono); }
-.ui-bold { font-weight: 600; }
-.ui-italic { font-style: italic; }
+	.ui-mono { font-family: var(--ui-font-mono); }
+	.ui-bold { font-weight: 600; }
+	.ui-italic { font-style: italic; }
 
-.ui-vstack {
-	display: inline-flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 8px;
-}
+	.ui-vstack {
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+	}
 
-.ui-hstack {
-	display: inline-flex;
-	flex-direction: row;
-	align-items: center;
-	gap: 8px;
-}
+	.ui-hstack {
+		display: inline-flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+	}
 
-.ui-spacer {
-	flex: 1 1 0;
-	min-width: 0;
-	min-height: 0;
-}
-.ui-spacer-h { min-width: 8px; }
-.ui-spacer-v { min-height: 8px; }
+	.ui-spacer {
+		flex: 1 1 0;
+		min-width: 0;
+		min-height: 0;
+	}
+	.ui-spacer-h { min-width: 8px; }
+	.ui-spacer-v { min-height: 8px; }
 
-.ui-grow { flex-grow: 1; }
-.ui-stretch { align-self: stretch; }
-.ui-cell-fill-x { justify-self: stretch; }
-.ui-cell-fill-y { align-self: stretch; }
+	.ui-grow { flex-grow: 1; }
+	.ui-stretch { align-self: stretch; }
+	.ui-cell-fill-x { justify-self: stretch; }
+	.ui-cell-fill-y { align-self: stretch; }
 
-.ui-rigid { flex-shrink: 0; }
+	.ui-rigid { flex-shrink: 0; }
 
-.ui-zstack {
-	display: grid;
-	grid-template: 100% / 100%;
-	place-items: center;
-}
-.ui-zstack > * { grid-area: 1 / 1; }
+	.ui-zstack {
+		display: grid;
+		grid-template: 100% / 100%;
+		place-items: center;
+	}
+	.ui-zstack > * { grid-area: 1 / 1; }
 
-.ui-divider {
-	flex: none;
-	background: var(--ui-color-border);
-}
-.ui-divider-h {
-	height: 1px;
-	width: auto;
-}
-.ui-divider-v {
-	width: 1px;
-	height: auto;
-}
-.ui-divider-ideal-x { width: 10px; }
-.ui-divider-ideal-y { height: 10px; }
+	.ui-divider {
+		flex: none;
+		background: var(--ui-color-border);
+	}
+	.ui-divider-h {
+		height: 1px;
+		width: auto;
+	}
+	.ui-divider-v {
+		width: 1px;
+		height: auto;
+	}
+	.ui-divider-ideal-x { width: 10px; }
+	.ui-divider-ideal-y { height: 10px; }
 
-.ui-scroll {
-	display: grid;
-	place-items: start;
-	min-width: 0;
-	min-height: 0;
-	overscroll-behavior: contain;
-}
-.ui-scroll-x {
-	overflow-x: auto;
-	overflow-y: hidden;
-}
-.ui-scroll-y {
-	overflow-x: hidden;
-	overflow-y: auto;
-}
-.ui-scroll-xy { overflow: auto; }
-.ui-scroll-none { overflow: clip; }
-.ui-scroll-ideal-x { width: 100px; }
-.ui-scroll-ideal-y { height: 100px; }
+	.ui-scroll {
+		display: grid;
+		place-items: start;
+		min-width: 0;
+		min-height: 0;
+		overscroll-behavior: contain;
+	}
+	.ui-scroll-x {
+		overflow-x: auto;
+		overflow-y: hidden;
+	}
+	.ui-scroll-y {
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+	.ui-scroll-xy { overflow: auto; }
+	.ui-scroll-none { overflow: clip; }
+	.ui-scroll-ideal-x { width: 100px; }
+	.ui-scroll-ideal-y { height: 100px; }
 
-.ui-padding {
-	display: grid;
-	grid-template: 100% / 100%;
-	place-items: center;
-}
+	.ui-padding {
+		display: grid;
+		grid-template: 100% / 100%;
+		place-items: center;
+	}
 
-/* A pass-through box carrying one style modifier. */
-.ui-mod {
-	display: grid;
-	grid-template: 100% / 100%;
-	place-items: center;
-}
+	/* A pass-through box carrying one style modifier. */
+	.ui-mod {
+		display: grid;
+		grid-template: 100% / 100%;
+		place-items: center;
+	}
 
-/* The host element of an HTML view. Unlike its lookalikes above,
-   its interior layout is public interface (see HTML), and app CSS
-   may override it. */
-.ui-html {
-	display: grid;
-	grid-template: 100% / 100%;
-	place-items: center;
-}
+	/* The host element of an HTML view. Unlike its lookalikes above,
+	   its interior layout is public interface (see HTML), and app CSS
+	   may override it. */
+	.ui-html {
+		display: grid;
+		grid-template: 100% / 100%;
+		place-items: center;
+	}
 
-.ui-frame {
-	display: grid;
-	grid-template: 100% / 100%;
-	place-items: center;
-}
-/* Zero a frame track's intrinsic contribution
-   so an explicit min-* is the axis's floor. */
-.ui-min-track-x { grid-template-columns: minmax(0, 100%); }
-.ui-min-track-y { grid-template-rows: minmax(0, 100%); }
-.ui-fixed-size {
-	width: max-content;
-	height: max-content;
-}
+	.ui-frame {
+		display: grid;
+		grid-template: 100% / 100%;
+		place-items: center;
+	}
+	/* Zero a frame track's intrinsic contribution
+	   so an explicit min-* is the axis's floor. */
+	.ui-min-track-x { grid-template-columns: minmax(0, 100%); }
+	.ui-min-track-y { grid-template-rows: minmax(0, 100%); }
+	.ui-fixed-size {
+		width: max-content;
+		height: max-content;
+	}
 
-.ui-layers {
-	position: relative;
-	isolation: isolate;
-	overflow: visible;
-}
-.ui-layer-base {
-	position: relative;
-	z-index: 1;
-	display: grid;
-	grid-template: 100% / 100%;
-	place-items: center;
-}
-.ui-underlay,
-.ui-overlay {
-	position: absolute;
-	inset: 0;
-	display: grid;
-	grid-template: 100% / 100%;
-}
-.ui-underlay {
-	z-index: 0;
-	place-items: center;
-}
-.ui-overlay {
-	z-index: 2;
-	place-items: center;
-	pointer-events: none;
-}
-.ui-overlay > * { pointer-events: auto; }
+	.ui-layers {
+		position: relative;
+		isolation: isolate;
+		overflow: visible;
+	}
+	.ui-layer-base {
+		position: relative;
+		z-index: 1;
+		display: grid;
+		grid-template: 100% / 100%;
+		place-items: center;
+	}
+	.ui-underlay,
+	.ui-overlay {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		grid-template: 100% / 100%;
+	}
+	.ui-underlay {
+		z-index: 0;
+		place-items: center;
+	}
+	.ui-overlay {
+		z-index: 2;
+		place-items: center;
+		pointer-events: none;
+	}
+	.ui-overlay > * { pointer-events: auto; }
 
-.ui-border-ellipse { border-radius: 50%; }
-.ui-border-rounded { border-radius: var(--ui-radius); }
-.ui-border-capsule { border-radius: 9999px; }
+	.ui-border-ellipse { border-radius: 50%; }
+	.ui-border-rounded { border-radius: var(--ui-radius); }
+	.ui-border-capsule { border-radius: 9999px; }
 
-.ui-image {
-	min-width: 0;
-	min-height: 0;
-}
-.ui-fm-contain { object-fit: contain; }
-.ui-fm-cover { object-fit: cover; }
+	.ui-image {
+		min-width: 0;
+		min-height: 0;
+	}
+	.ui-fm-contain { object-fit: contain; }
+	.ui-fm-cover { object-fit: cover; }
 
-.ui-font-caption {
-	font-size: 0.75rem;
-	line-height: 1.3;
-}
-.ui-font-headline {
-	font-size: 1.125rem;
-	font-weight: 600;
-}
-.ui-font-title {
-	font-size: 1.5rem;
-	font-weight: 700;
-	line-height: 1.2;
-}
-.ui-font-large-title {
-	font-size: 2rem;
-	font-weight: 700;
-	line-height: 1.15;
-}
+	.ui-font-caption {
+		font-size: 0.75rem;
+		line-height: 1.3;
+	}
+	.ui-font-headline {
+		font-size: 1.125rem;
+		font-weight: 600;
+	}
+	.ui-font-title {
+		font-size: 1.5rem;
+		font-weight: 700;
+		line-height: 1.2;
+	}
+	.ui-font-large-title {
+		font-size: 2rem;
+		font-weight: 700;
+		line-height: 1.15;
+	}
 
-.ui-card {
-	border: 1px solid var(--ui-color-border);
-	border-radius: var(--ui-radius);
-	background: var(--ui-color-surface);
-}
+	.ui-card {
+		border: 1px solid var(--ui-color-border);
+		border-radius: var(--ui-radius);
+		background: var(--ui-color-surface);
+	}
 
-.ui-color-paint {
-	width: 100%;
-	height: 100%;
-}
-.ui-color-ideal-x { width: 10px; }
-.ui-color-ideal-y { height: 10px; }
+	.ui-color-paint {
+		width: 100%;
+		height: 100%;
+	}
+	.ui-color-ideal-x { width: 10px; }
+	.ui-color-ideal-y { height: 10px; }
 
-.ui-button {
-	padding: 8px 12px;
-	border: 1px solid var(--ui-color-border);
-	border-radius: var(--ui-radius);
-	background: var(--ui-color-surface);
-	color: inherit;
-	font: inherit;
-	cursor: pointer;
-}
-.ui-button:hover { border-color: var(--ui-color-muted); }
-.ui-button:disabled {
-	opacity: 0.5;
-	cursor: default;
-}
-.ui-button.ui-role-primary {
-	background: var(--ui-color-accent);
-	border-color: var(--ui-color-accent);
-	color: #fff;
-}
-.ui-button.ui-role-destructive {
-	background: var(--ui-color-danger);
-	border-color: var(--ui-color-danger);
-	color: #fff;
-}
+	.ui-button {
+		padding: 8px 12px;
+		border: 1px solid var(--ui-color-border);
+		border-radius: var(--ui-radius);
+		background: var(--ui-color-surface);
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+	.ui-button:hover { border-color: var(--ui-color-muted); }
+	.ui-button:disabled {
+		opacity: 0.5;
+		cursor: default;
+	}
+	.ui-button.ui-role-primary {
+		background: var(--ui-color-accent);
+		border-color: var(--ui-color-accent);
+		color: #fff;
+	}
+	.ui-button.ui-role-destructive {
+		background: var(--ui-color-danger);
+		border-color: var(--ui-color-danger);
+		color: #fff;
+	}
 
-/* Alignment. Stacks carry ui-align-* (cross axis);
-   grid containers carry ui-place-* (block axis first).
-   These follow the component rules so they override
-   the centered defaults. */
-.ui-align-start { align-items: start; }
-.ui-align-end { align-items: end; }
-.ui-align-baseline { align-items: baseline; }
+	/* Alignment. Stacks carry ui-align-* (cross axis);
+	   grid containers carry ui-place-* (block axis first).
+	   These follow the component rules so they override
+	   the centered defaults. */
+	.ui-align-start { align-items: start; }
+	.ui-align-end { align-items: end; }
+	.ui-align-baseline { align-items: baseline; }
 
-.ui-place-start-start { place-items: start start; }
-.ui-place-start-center { place-items: start center; }
-.ui-place-start-end { place-items: start end; }
-.ui-place-center-start { place-items: center start; }
-.ui-place-center-end { place-items: center end; }
-.ui-place-end-start { place-items: end start; }
-.ui-place-end-center { place-items: end center; }
-.ui-place-end-end { place-items: end end; }
-.ui-place-baseline-start { place-items: baseline start; }
-.ui-place-baseline-center { place-items: baseline center; }
-.ui-place-baseline-end { place-items: baseline end; }
+	.ui-place-start-start { place-items: start start; }
+	.ui-place-start-center { place-items: start center; }
+	.ui-place-start-end { place-items: start end; }
+	.ui-place-center-start { place-items: center start; }
+	.ui-place-center-end { place-items: center end; }
+	.ui-place-end-start { place-items: end start; }
+	.ui-place-end-center { place-items: end center; }
+	.ui-place-end-end { place-items: end end; }
+	.ui-place-baseline-start { place-items: baseline start; }
+	.ui-place-baseline-center { place-items: baseline center; }
+	.ui-place-baseline-end { place-items: baseline end; }
+}

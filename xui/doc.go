@@ -100,5 +100,7 @@ which is an adjacent sibling of the outer frame.
 The companion stylesheet is exposed as [CSS].
 Serve it once per page.
 A [Renderer] emits CSS for dynamic style values with each rendered page.
+
+All CSS rules are declared in the "xui" cascade layer.
 */
 package ui
