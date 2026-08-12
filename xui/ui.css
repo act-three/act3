@@ -116,6 +116,13 @@ ui-root *::after { box-sizing: border-box; }
 	place-items: center;
 }
 
+/* A pass-through box carrying one style modifier. */
+.ui-mod {
+	display: grid;
+	grid-template: 100% / 100%;
+	place-items: center;
+}
+
 .ui-frame {
 	display: grid;
 	grid-template: 100% / 100%;

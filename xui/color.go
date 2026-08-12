@@ -105,7 +105,7 @@ func (c Color) Attr(a ...domi.Attr) View { return c.view().Attr(a...) }
 // colorFillNode is the box a Color lowers to as a view, requesting fill on
 // both axes. Like a replaced element's content, the color paints as an inner
 // element covering the box rather than as the box's own background, so a
-// [View.Background] merged onto the box lands under the color — ordinary CSS
+// [View.Background] applied to the color lands under it — ordinary CSS
 // painting order, with no property doing double duty.
 type colorFillNode struct{ color Color }
 
@@ -121,9 +121,11 @@ func (f colorFillNode) render(rc renderContext) box {
 		a = append(a, attr.Class("ui-color-ideal-y"))
 	}
 	paint := rc.sheet.ClassFor(sheet.Style("background-color", cmp.Or(string(f.color), "#000")))
+	// The box consumes a border shape but realizes it on the paint
+	// element, the only thing it draws.
 	return box{
 		fills:   (Horizontal | Vertical) &^ rc.unbounded,
 		attrs:   domi.Group(a...),
-		content: html.Div(attr.Class("ui-color-paint", paint)),
+		content: html.Div(attr.Class("ui-color-paint"), rc.shapeClass(), attr.Class(paint)),
 	}
 }

@@ -9,8 +9,12 @@ import (
 )
 
 // An elementWrapper returns a fresh box containing the subview.
+// An elementWrapper receives the subview's fill request f and rigid
+// axes r. A layout-transparent wrapper forwards both to its own box;
+// a frame answers for the axes its own geometry governs and forwards
+// the rest.
 type elementWrapper interface {
-	wrapElement(rc renderContext, content domi.Node, f AxisSet) box
+	wrapElement(rc renderContext, content domi.Node, f, r AxisSet) box
 }
 
 // nodeWrap applies wrapper to node's box.
@@ -20,6 +24,7 @@ type nodeWrap struct {
 }
 
 func (m nodeWrap) render(rc renderContext) box {
+	shape := rc.shapeClass()
 	inner := rc
 	inner.container = containerGrid
 	if c, ok := m.wrapper.(contextual); ok {
@@ -29,7 +34,9 @@ func (m nodeWrap) render(rc renderContext) box {
 	if x.raw != nil {
 		panic(fmt.Sprintf("ui: %T applied to a Domi view, which has no ui-managed element", m.wrapper))
 	}
-	return m.wrapper.wrapElement(rc, x.build(inner), x.fills)
+	b := m.wrapper.wrapElement(rc, x.build(inner), x.fills, x.rigid)
+	b.add(shape)
+	return b
 }
 
 // wrap applies w to each of v's nodes.
@@ -77,7 +84,7 @@ type wrapLayer struct {
 	alignment Alignment // placement within the layer
 }
 
-func (w wrapLayer) wrapElement(rc renderContext, content domi.Node, f AxisSet) box {
+func (w wrapLayer) wrapElement(rc renderContext, content domi.Node, f, r AxisSet) box {
 	class := "ui-underlay"
 	if w.over {
 		class = "ui-overlay"
@@ -90,6 +97,7 @@ func (w wrapLayer) wrapElement(rc renderContext, content domi.Node, f AxisSet) b
 	layer := html.Div(attrs...)(renderLayer(rc, w.view))
 	return box{
 		fills:   f,
+		rigid:   r,
 		attrs:   attr.Class("ui-layers"),
 		content: domi.Fragment(baseLayer, layer),
 	}
@@ -112,9 +120,10 @@ type wrapPadding struct {
 	space EdgeSpace
 }
 
-func (w wrapPadding) wrapElement(_ renderContext, content domi.Node, f AxisSet) box {
+func (w wrapPadding) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
 	b := box{
 		fills:   f,
+		rigid:   r,
 		attrs:   attr.Class("ui-padding"),
 		content: content,
 	}

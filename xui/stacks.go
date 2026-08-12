@@ -71,13 +71,14 @@ type stackNode struct {
 }
 
 func (s stackNode) render(rc renderContext) box {
+	shape := rc.shapeClass()
 	rc.lc = axes[s.dir].lc
 	rc.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
 	content, f := subviewsRendered(rc, s.subviews...)
 	b := box{
 		fills:   f,
-		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr()),
+		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr(), shape),
 		content: content,
 	}
 	if s.gap != defaultGap {
@@ -119,7 +120,7 @@ func (spacerNode) render(rc renderContext) box {
 	}
 	return box{
 		fills: rc.lc.majorAxis,
-		attrs: domi.Group(attr.Class("ui-spacer"), a),
+		attrs: domi.Group(attr.Class("ui-spacer"), a, rc.shapeClass()),
 	}
 }
 
@@ -148,6 +149,7 @@ func (dividerNode) render(rc renderContext) box {
 			f &^= Horizontal
 		}
 	}
+	a = append(a, rc.shapeClass())
 	return box{
 		fills: f,
 		attrs: domi.Group(a...),

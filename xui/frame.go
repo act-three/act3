@@ -26,7 +26,7 @@ func (v base) Frame(o ...FrameOption) View {
 //
 // For the frame's parent, a fixed size axis never issues a fill
 // request. An auto axis propagates the inside view's fill request, if
-// any.
+// any, and likewise its rigidity.
 type wrapFrame struct {
 	h, v  size
 	align Alignment
@@ -43,14 +43,14 @@ func (w wrapFrame) definite() (a AxisSet) {
 	return a
 }
 
-func (w wrapFrame) wrapElement(_ renderContext, content domi.Node, f AxisSet) box {
+func (w wrapFrame) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
 	var align domi.Attr
 	if w.align != Center {
 		align = attr.Class(w.align.placeClass())
 	}
 	b := box{
 		fills:   f &^ w.definite(),
-		rigid:   w.definite(),
+		rigid:   w.definite() | r,
 		attrs:   domi.Group(attr.Class("ui-frame"), align),
 		content: content,
 	}

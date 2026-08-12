@@ -201,6 +201,19 @@ func (w wrapFrameBounds) idealAxes(rc renderContext) (a AxisSet) {
 	return a
 }
 
+// boundedAxes is the set of axes with any bound set.
+// A bounded axis's sizing is governed by the frame,
+// so the subview's rigidity does not pass through it.
+func (w wrapFrameBounds) boundedAxes() (a AxisSet) {
+	if w.h.ideal.definite || w.h.min.definite || w.h.max.definite {
+		a |= Horizontal
+	}
+	if w.v.ideal.definite || w.v.min.definite || w.v.max.definite {
+		a |= Vertical
+	}
+	return a
+}
+
 // cappedFills is the set of axes on which a fill request from the subview
 // meets a definite maximum.
 // The frame is greedy only up to the maximum,
@@ -219,7 +232,7 @@ func (w wrapFrameBounds) cappedFills(f AxisSet) (a AxisSet) {
 	return a
 }
 
-func (w wrapFrameBounds) wrapElement(rc renderContext, content domi.Node, f AxisSet) box {
+func (w wrapFrameBounds) wrapElement(rc renderContext, content domi.Node, f, r AxisSet) box {
 	ideal := w.idealAxes(rc)
 	capped := w.cappedFills(f) &^ ideal
 	var align domi.Attr
@@ -227,8 +240,12 @@ func (w wrapFrameBounds) wrapElement(rc renderContext, content domi.Node, f Axis
 		align = attr.Class(w.align.placeClass())
 	}
 	b := box{
-		fills:   f &^ (ideal | capped),
-		rigid:   ideal,
+		fills: f &^ (ideal | capped),
+		// An axis taking its ideal is rigid on its own. An axis with
+		// no bounds takes the subview's sizing and its rigidity with
+		// it. A bounded axis tracks space between its bounds instead,
+		// regardless of the subview's rigidity.
+		rigid:   ideal | (r &^ w.boundedAxes()),
 		attrs:   domi.Group(attr.Class("ui-frame"), align),
 		content: content,
 	}
