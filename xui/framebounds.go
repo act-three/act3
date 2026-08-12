@@ -190,12 +190,12 @@ type wrapFrameBounds struct {
 	align Alignment
 }
 
-// idealAxes is the set of axes on which the frame uses its ideal size in rc.
-func (w wrapFrameBounds) idealAxes(rc renderContext) (a AxisSet) {
-	if rc.unbounded.hasAll(Horizontal) && w.h.ideal.definite {
+// idealAxes is the set of axes on which the frame uses its ideal size in env.
+func (w wrapFrameBounds) idealAxes(env environment) (a AxisSet) {
+	if env.unbounded.hasAll(Horizontal) && w.h.ideal.definite {
 		a |= Horizontal
 	}
-	if rc.unbounded.hasAll(Vertical) && w.v.ideal.definite {
+	if env.unbounded.hasAll(Vertical) && w.v.ideal.definite {
 		a |= Vertical
 	}
 	return a
@@ -232,8 +232,8 @@ func (w wrapFrameBounds) cappedFills(f AxisSet) (a AxisSet) {
 	return a
 }
 
-func (w wrapFrameBounds) wrapElement(rc renderContext, content domi.Node, f, r AxisSet) box {
-	ideal := w.idealAxes(rc)
+func (w wrapFrameBounds) wrapElement(env environment, content domi.Node, f, r AxisSet) box {
+	ideal := w.idealAxes(env)
 	capped := w.cappedFills(f) &^ ideal
 	var align domi.Attr
 	if w.align != Center {
@@ -260,9 +260,9 @@ func (w wrapFrameBounds) wrapElement(rc renderContext, content domi.Node, f, r A
 // and the answer the frame reports (max-*),
 // but it cannot turn the absence of available space into space —
 // adding a maximum must never make the subview bigger.
-func (w wrapFrameBounds) context(rc renderContext) renderContext {
-	rc.unbounded &^= w.idealAxes(rc)
-	return rc
+func (w wrapFrameBounds) context(env environment) environment {
+	env.unbounded &^= w.idealAxes(env)
+	return env
 }
 
 // setStyles adds the frame's size and track declarations to b.

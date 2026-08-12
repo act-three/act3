@@ -34,7 +34,7 @@ type imageNode struct {
 	fit      FramingMode
 }
 
-func (n imageNode) render(rc renderContext) box {
+func (n imageNode) render(env environment) box {
 	var alt domi.Attr
 	if n.alt != "" { // alt="" would mark the image as decorative.
 		alt = attr.Alt(n.alt)
@@ -46,7 +46,7 @@ func (n imageNode) render(rc renderContext) box {
 		return box{
 			tag:   "img",
 			rigid: Horizontal | Vertical,
-			attrs: domi.Group(attr.Src(n.src), alt, rc.shapeClass()),
+			attrs: domi.Group(attr.Src(n.src), alt, env.shapeClass()),
 		}
 	}
 	// A scaling mode is a statement about meeting an imposed box: the
@@ -57,7 +57,7 @@ func (n imageNode) render(rc renderContext) box {
 	// through the picture's ratio.
 	return box{
 		tag:   "img",
-		fills: (Horizontal | Vertical) &^ rc.unbounded,
-		attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class()), rc.shapeClass()),
+		fills: (Horizontal | Vertical) &^ env.unbounded,
+		attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class()), env.shapeClass()),
 	}
 }

@@ -70,12 +70,12 @@ type stackNode struct {
 	align    Alignment
 }
 
-func (s stackNode) render(rc renderContext) box {
-	shape := rc.shapeClass()
-	rc.lc = axes[s.dir].lc
-	rc.container = axes[s.dir].container
+func (s stackNode) render(env environment) box {
+	shape := env.shapeClass()
+	env.lc = axes[s.dir].lc
+	env.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
-	content, f := subviewsRendered(rc, s.subviews...)
+	content, f := subviewsRendered(env, s.subviews...)
 	b := box{
 		fills:   f,
 		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr(), shape),
@@ -110,17 +110,17 @@ func Spacer() View { return base{spacerNode{}} }
 
 type spacerNode struct{}
 
-func (spacerNode) render(rc renderContext) box {
+func (spacerNode) render(env environment) box {
 	var a domi.Attr
-	if rc.lc.majorAxis.hasAll(Horizontal) {
+	if env.lc.majorAxis.hasAll(Horizontal) {
 		a = attr.Class("ui-spacer-h")
 	}
-	if rc.lc.majorAxis.hasAll(Vertical) {
+	if env.lc.majorAxis.hasAll(Vertical) {
 		a = attr.Class("ui-spacer-v")
 	}
 	return box{
-		fills: rc.lc.majorAxis,
-		attrs: domi.Group(attr.Class("ui-spacer"), a, rc.shapeClass()),
+		fills: env.lc.majorAxis,
+		attrs: domi.Group(attr.Class("ui-spacer"), a, env.shapeClass()),
 	}
 }
 
@@ -132,24 +132,24 @@ func Divider() View { return base{dividerNode{}} }
 
 type dividerNode struct{}
 
-func (dividerNode) render(rc renderContext) box {
-	f := rc.lc.minorAxes()
+func (dividerNode) render(env environment) box {
+	f := env.lc.minorAxes()
 	a := []domi.Attr{attr.Class("ui-divider")}
-	if rc.lc.majorAxis.hasAll(Horizontal) {
+	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
 		a = append(a, attr.Class("ui-divider-v"))
-		if rc.unbounded.hasAll(Vertical) {
+		if env.unbounded.hasAll(Vertical) {
 			a = append(a, attr.Class("ui-divider-ideal-y"))
 			f &^= Vertical
 		}
 	} else {
 		a = append(a, attr.Class("ui-divider-h"))
-		if rc.unbounded.hasAll(Horizontal) {
+		if env.unbounded.hasAll(Horizontal) {
 			a = append(a, attr.Class("ui-divider-ideal-x"))
 			f &^= Horizontal
 		}
 	}
-	a = append(a, rc.shapeClass())
+	a = append(a, env.shapeClass())
 	return box{
 		fills: f,
 		attrs: domi.Group(a...),

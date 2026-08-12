@@ -9,9 +9,9 @@ type countingNode struct {
 	visits *int
 }
 
-func (c countingNode) render(rc renderContext) box {
+func (c countingNode) render(env environment) box {
 	*c.visits++
-	return c.inner.render(rc)
+	return c.inner.render(env)
 }
 
 // TestRenderVisitsEachNodeOnce pins the linear-time contract: a render visits

@@ -21,10 +21,10 @@ type Modifier interface {
 }
 
 // contextual is implemented by modifiers and wrappers that adjust the
-// render context their subtree sees, on top of their effect on the box
+// environment their subtrees see, on top of their effect on the box
 // itself: the box acts bottom-up, the context flows top-down.
 type contextual interface {
-	context(renderContext) renderContext
+	context(environment) environment
 }
 
 // nodeMod applies a modifier to its node's box.
@@ -33,14 +33,14 @@ type nodeMod struct {
 	node node
 }
 
-func (m nodeMod) render(rc renderContext) box {
+func (m nodeMod) render(env environment) box {
 	if w, ok := m.mod.(elementWrapper); ok {
-		return nodeWrap{node: m.node, wrapper: w}.render(rc)
+		return nodeWrap{node: m.node, wrapper: w}.render(env)
 	}
 	if c, ok := m.mod.(contextual); ok {
-		rc = c.context(rc)
+		env = c.context(env)
 	}
-	x := m.node.render(rc)
+	x := m.node.render(env)
 	if x.raw != nil {
 		panic(fmt.Sprintf("ui: %T applied to a Domi view, which has no ui-managed element", m.mod))
 	}
@@ -115,7 +115,7 @@ type modBackground struct {
 // Background fills the background of a view with c.
 func Background(c Color) Modifier { return modBackground{c: c} }
 
-func (m modBackground) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+func (m modBackground) wrapElement(_ environment, content domi.Node, f, r AxisSet) box {
 	b := box{fills: f, rigid: r, attrs: attr.Class("ui-mod"), content: content}
 	if m.c != "" {
 		b.setStyle("background-color", string(m.c))
@@ -139,9 +139,9 @@ func BorderShape(s Shape) Modifier { return modBorderShape{s} }
 // applyTo is the identity: the shape acts through the context.
 func (m modBorderShape) applyTo(x box) box { return x }
 
-func (m modBorderShape) context(rc renderContext) renderContext {
-	rc.shape.Set(m.s)
-	return rc
+func (m modBorderShape) context(env environment) environment {
+	env.shape.Set(m.s)
+	return env
 }
 
 // NOTE: no exported construcor.
@@ -154,9 +154,9 @@ func (modFixedSize) applyTo(x box) box {
 	return x
 }
 
-func (modFixedSize) context(rc renderContext) renderContext {
-	rc.unbounded = Horizontal | Vertical
-	return rc
+func (modFixedSize) context(env environment) environment {
+	env.unbounded = Horizontal | Vertical
+	return env
 }
 
 type modFont struct {
@@ -167,7 +167,7 @@ type modFont struct {
 // Font sets the font size for text in a view.
 func Font(f FontSize) Modifier { return modFont{f: f} }
 
-func (m modFont) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+func (m modFont) wrapElement(_ environment, content domi.Node, f, r AxisSet) box {
 	a := attr.Class("ui-mod")
 	if c := m.f.class(); c != "" {
 		a = attr.Class("ui-mod", c)
@@ -184,7 +184,7 @@ type modForeground struct {
 // such as text.
 func Foreground(c Color) Modifier { return modForeground{c: c} }
 
-func (m modForeground) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+func (m modForeground) wrapElement(_ environment, content domi.Node, f, r AxisSet) box {
 	b := box{fills: f, rigid: r, attrs: attr.Class("ui-mod"), content: content}
 	if m.c != "" {
 		b.setStyle("color", string(m.c))
@@ -202,7 +202,7 @@ type modOpacity struct {
 // v.Opacity(0.5).Opacity(0.5) draws v at a quarter of full opacity.
 func Opacity(x float64) Modifier { return modOpacity{x: x} }
 
-func (m modOpacity) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+func (m modOpacity) wrapElement(_ environment, content domi.Node, f, r AxisSet) box {
 	b := box{fills: f, rigid: r, attrs: attr.Class("ui-mod"), content: content}
 	b.setStyle("opacity", fmt.Sprintf("%g", m.x))
 	return b

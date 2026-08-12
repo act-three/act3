@@ -14,7 +14,7 @@ import (
 // a frame answers for the axes its own geometry governs and forwards
 // the rest.
 type elementWrapper interface {
-	wrapElement(rc renderContext, content domi.Node, f, r AxisSet) box
+	wrapElement(env environment, content domi.Node, f, r AxisSet) box
 }
 
 // nodeWrap applies wrapper to node's box.
@@ -23,9 +23,9 @@ type nodeWrap struct {
 	wrapper elementWrapper
 }
 
-func (m nodeWrap) render(rc renderContext) box {
-	shape := rc.shapeClass()
-	inner := rc
+func (m nodeWrap) render(env environment) box {
+	shape := env.shapeClass()
+	inner := env
 	inner.container = containerGrid
 	if c, ok := m.wrapper.(contextual); ok {
 		inner = c.context(inner)
@@ -34,7 +34,7 @@ func (m nodeWrap) render(rc renderContext) box {
 	if x.raw != nil {
 		panic(fmt.Sprintf("ui: %T applied to a Domi view, which has no ui-managed element", m.wrapper))
 	}
-	b := m.wrapper.wrapElement(rc, x.build(inner), x.fills, x.rigid)
+	b := m.wrapper.wrapElement(env, x.build(inner), x.fills, x.rigid)
 	b.add(shape)
 	return b
 }
@@ -84,7 +84,7 @@ type wrapLayer struct {
 	alignment Alignment // placement within the layer
 }
 
-func (w wrapLayer) wrapElement(rc renderContext, content domi.Node, f, r AxisSet) box {
+func (w wrapLayer) wrapElement(env environment, content domi.Node, f, r AxisSet) box {
 	class := "ui-underlay"
 	if w.over {
 		class = "ui-overlay"
@@ -94,7 +94,7 @@ func (w wrapLayer) wrapElement(rc renderContext, content domi.Node, f, r AxisSet
 		attrs = append(attrs, attr.Class(w.alignment.placeClass()))
 	}
 	baseLayer := html.Div(attr.Class("ui-layer-base"))(content)
-	layer := html.Div(attrs...)(renderLayer(rc, w.view))
+	layer := html.Div(attrs...)(renderLayer(env, w.view))
 	return box{
 		fills:   f,
 		rigid:   r,
@@ -106,9 +106,9 @@ func (w wrapLayer) wrapElement(rc renderContext, content domi.Node, f, r AxisSet
 // renderLayer renders a view inside its grid layer,
 // where, as in a ZStack, both axes are minor.
 // v's fill requests don't propagate outside the layer.
-func renderLayer(rc renderContext, v View) domi.Node {
-	rc = renderContext{lc: axes[axisZ].lc, container: containerGrid, sheet: rc.sheet}
-	content, _ := subviewsRendered(rc, v)
+func renderLayer(env environment, v View) domi.Node {
+	env = environment{lc: axes[axisZ].lc, container: containerGrid, sheet: env.sheet}
+	content, _ := subviewsRendered(env, v)
 	return content
 }
 
@@ -120,7 +120,7 @@ type wrapPadding struct {
 	space EdgeSpace
 }
 
-func (w wrapPadding) wrapElement(_ renderContext, content domi.Node, f, r AxisSet) box {
+func (w wrapPadding) wrapElement(_ environment, content domi.Node, f, r AxisSet) box {
 	b := box{
 		fills:   f,
 		rigid:   r,

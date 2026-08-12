@@ -107,7 +107,7 @@ func (v base) nodes() []node { return v }
 // A node is a unary view.
 // Its whole job is to lower itself to a single box.
 type node interface {
-	render(renderContext) box
+	render(environment) box
 }
 
 type containerKind int
@@ -117,8 +117,8 @@ const (
 	containerFlex
 )
 
-// renderContext carries the top-down state of a lowering pass.
-type renderContext struct {
+// environment carries the top-down state of a lowering pass.
+type environment struct {
 	lc        layoutContext
 	container containerKind
 	unbounded AxisSet
@@ -129,8 +129,8 @@ type renderContext struct {
 // shapeClass consumes the pending border shape as its class attribute.
 // It returns nil when no shape is pending.
 // A node that produces a box consumes the shape before rendering subviews.
-func (rc *renderContext) shapeClass() domi.Attr {
-	if s, ok := rc.shape.Take(); ok {
+func (env *environment) shapeClass() domi.Attr {
+	if s, ok := env.shape.Take(); ok {
 		return attr.Class(s.class())
 	}
 	return nil
@@ -155,34 +155,34 @@ func (x *box) add(a domi.Attr) { x.attrs = domi.Group(x.attrs, a) }
 func (x *box) setStyle(property, value string) { x.styles.Set(property, value) }
 
 // styleClass returns the generated class for the box's dynamic styles.
-func (x box) styleClass(rc renderContext) domi.Attr {
+func (x box) styleClass(env environment) domi.Attr {
 	if x.styles.IsEmpty() {
 		return nil
 	}
-	return attr.Class(rc.sheet.ClassFor(x.styles))
+	return attr.Class(env.sheet.ClassFor(x.styles))
 }
 
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views and merges their fill requests.
-func subviewsRendered(rc renderContext, vs ...View) (domi.Node, AxisSet) {
+func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
 	var ns []domi.Node
 	var f AxisSet
 	for _, v := range vs {
 		for _, n := range v.nodes() {
-			x := n.render(rc)
+			x := n.render(env)
 			f |= x.fills
-			ns = append(ns, x.build(rc))
+			ns = append(ns, x.build(env))
 		}
 	}
 	return domi.Fragment(ns...), f
 }
 
 // build builds x as an HTML node.
-func (x box) build(rc renderContext) domi.Node {
+func (x box) build(env environment) domi.Node {
 	n := x.raw
 	if n == nil {
 		// Keep the generated class after the named classes in rendered output.
-		a := domi.Group(x.fills.fillAttr(rc), x.rigid.rigidAttr(rc), x.styleClass(rc))
+		a := domi.Group(x.fills.fillAttr(env), x.rigid.rigidAttr(env), x.styleClass(env))
 		n = domi.Tag(cmp.Or(x.tag, "div"), x.attrs, a)(x.content)
 	}
 	if x.key != "" {

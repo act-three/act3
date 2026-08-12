@@ -93,8 +93,8 @@ type keyNode struct {
 	node node
 }
 
-func (k keyNode) render(rc renderContext) box {
-	x := k.node.render(rc)
+func (k keyNode) render(env environment) box {
+	x := k.node.render(env)
 	x.key = k.key
 	return x
 }
