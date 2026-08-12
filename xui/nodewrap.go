@@ -1,51 +1,24 @@
 package ui
 
 import (
-	"fmt"
-
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
 )
 
-// An elementWrapper returns a fresh box containing the subview.
-// An elementWrapper receives the subview's fill request f and rigid
-// axes r. A layout-transparent wrapper forwards both to its own box;
-// a frame answers for the axes its own geometry governs and forwards
-// the rest.
-type elementWrapper interface {
-	wrapElement(env environment, content domi.Node, f, r AxisSet) box
-}
-
-// nodeWrap applies wrapper to node's box.
-type nodeWrap struct {
-	node    node
-	wrapper elementWrapper
-}
-
-func (m nodeWrap) render(env environment) box {
-	shape := env.shapeClass()
-	inner := env
-	inner.container = containerGrid
-	if c, ok := m.wrapper.(contextual); ok {
-		inner = c.context(inner)
+// wrapSubview renders n as the content of a fresh wrapper box.
+// The subview sits in the wrapper's single-cell grid,
+// and the wrapper forwards the subview's fill request and rigid axes,
+// staying layout-transparent.
+// A frame masks the forwarded axes its own geometry governs.
+func wrapSubview(env environment, n node) box {
+	env.container = containerGrid
+	x := n.render(env)
+	return box{
+		fills:   x.fills,
+		rigid:   x.rigid,
+		content: x.build(env),
 	}
-	x := m.node.render(inner)
-	if x.raw != nil {
-		panic(fmt.Sprintf("ui: %T applied to a Domi view, which has no ui-managed element", m.wrapper))
-	}
-	b := m.wrapper.wrapElement(env, x.build(inner), x.fills, x.rigid)
-	b.add(shape)
-	return b
-}
-
-// wrap applies w to each of v's nodes.
-func (v base) wrap(w elementWrapper) base {
-	out := make(base, len(v))
-	for i, n := range v {
-		out[i] = nodeWrap{node: n, wrapper: w}
-	}
-	return out
 }
 
 // LayerUnder displays u under v.
@@ -53,7 +26,7 @@ func (v base) wrap(w elementWrapper) base {
 //
 // The given Alignment sets the position of u relative to v.
 func (v base) LayerUnder(a Alignment, u View) View {
-	return v.wrap(wrapLayer{view: u, over: false, alignment: a})
+	return v.Modify(wrapLayer{view: u, over: false, alignment: a})
 }
 
 // LayerOver displays o over v.
@@ -61,7 +34,7 @@ func (v base) LayerUnder(a Alignment, u View) View {
 //
 // The given Alignment sets the position of o relative to v.
 func (v base) LayerOver(a Alignment, o View) View {
-	return v.wrap(wrapLayer{view: o, over: true, alignment: a})
+	return v.Modify(wrapLayer{view: o, over: true, alignment: a})
 }
 
 // Padding adds the empty space defined by s around v.
@@ -71,7 +44,7 @@ func (v base) Padding(s ...EdgeSpace) View {
 	for _, s := range s {
 		sum = sum.add(s)
 	}
-	return v.wrap(wrapPadding{space: sum})
+	return v.Modify(wrapPadding{space: sum})
 }
 
 // wrapLayer layers a view over or under a base view.
@@ -82,9 +55,13 @@ type wrapLayer struct {
 	view      View
 	over      bool
 	alignment Alignment // placement within the layer
+	node      node
 }
 
-func (w wrapLayer) wrapElement(env environment, content domi.Node, f, r AxisSet) box {
+func (w wrapLayer) modify(n node) node { w.node = n; return w }
+
+func (w wrapLayer) render(env environment) box {
+	p := env.takePending()
 	class := "ui-underlay"
 	if w.over {
 		class = "ui-overlay"
@@ -93,14 +70,14 @@ func (w wrapLayer) wrapElement(env environment, content domi.Node, f, r AxisSet)
 	if w.alignment != Center {
 		attrs = append(attrs, attr.Class(w.alignment.placeClass()))
 	}
-	baseLayer := html.Div(attr.Class("ui-layer-base"))(content)
-	layer := html.Div(attrs...)(renderLayer(env, w.view))
-	return box{
-		fills:   f,
-		rigid:   r,
-		attrs:   attr.Class("ui-layers"),
-		content: domi.Fragment(baseLayer, layer),
-	}
+	b := wrapSubview(env, w.node)
+	b.content = domi.Fragment(
+		html.Div(attr.Class("ui-layer-base"))(b.content),
+		html.Div(attrs...)(renderLayer(env, w.view)),
+	)
+	b.add(attr.Class("ui-layers"))
+	p.applyTo(&b)
+	return b
 }
 
 // renderLayer renders a view inside its grid layer,
@@ -118,15 +95,16 @@ func renderLayer(env environment, v View) domi.Node {
 // It is not CSS padding on the subview itself.
 type wrapPadding struct {
 	space EdgeSpace
+	node  node
 }
 
-func (w wrapPadding) wrapElement(_ environment, content domi.Node, f, r AxisSet) box {
-	b := box{
-		fills:   f,
-		rigid:   r,
-		attrs:   attr.Class("ui-padding"),
-		content: content,
-	}
+func (w wrapPadding) modify(n node) node { w.node = n; return w }
+
+func (w wrapPadding) render(env environment) box {
+	p := env.takePending()
+	b := wrapSubview(env, w.node)
+	b.add(attr.Class("ui-padding"))
 	w.space.setPadding(&b)
+	p.applyTo(&b)
 	return b
 }

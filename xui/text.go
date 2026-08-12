@@ -104,10 +104,13 @@ type textNode struct {
 }
 
 func (n textNode) render(env environment) box {
-	return box{
-		attrs:   domi.Group(attr.Class("ui-text"), env.shapeClass()),
+	p := env.takePending()
+	b := box{
+		attrs:   attr.Class("ui-text"),
 		content: n.html(env.sheet),
 	}
+	p.applyTo(&b)
+	return b
 }
 
 // html lowers n (with its own style, if any).

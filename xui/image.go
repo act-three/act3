@@ -35,29 +35,34 @@ type imageNode struct {
 }
 
 func (n imageNode) render(env environment) box {
+	p := env.takePending()
 	var alt domi.Attr
 	if n.alt != "" { // alt="" would mark the image as decorative.
 		alt = attr.Alt(n.alt)
 	}
+	var b box
 	if n.fit == Native {
 		// At native size the img's intrinsic geometry is the whole
 		// contract, so the img is its own box, with no wrapper to
 		// mediate between the box and the available space.
-		return box{
+		b = box{
 			tag:   "img",
 			rigid: Horizontal | Vertical,
-			attrs: domi.Group(attr.Src(n.src), alt, env.shapeClass()),
+			attrs: domi.Group(attr.Src(n.src), alt),
+		}
+	} else {
+		// A scaling mode is a statement about meeting an imposed box: the
+		// img is fully flexible, and object-fit fits the picture to
+		// whatever box it lands in. On an unbounded axis there is no box
+		// to meet, so the fill drops away and the img's intrinsic
+		// geometry answers — its natural size, or the other axis scaled
+		// through the picture's ratio.
+		b = box{
+			tag:   "img",
+			fills: Horizontal | Vertical,
+			attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class())),
 		}
 	}
-	// A scaling mode is a statement about meeting an imposed box: the
-	// img is fully flexible, and object-fit fits the picture to
-	// whatever box it lands in. On an unbounded axis there is no box
-	// to meet, so the fill drops away and the img's intrinsic
-	// geometry answers — its natural size, or the other axis scaled
-	// through the picture's ratio.
-	return box{
-		tag:   "img",
-		fills: (Horizontal | Vertical) &^ env.unbounded,
-		attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class()), env.shapeClass()),
-	}
+	p.applyTo(&b)
+	return b
 }

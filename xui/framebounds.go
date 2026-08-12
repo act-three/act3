@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
 
@@ -14,7 +13,7 @@ func (v base) FrameBounds(o ...FrameBoundsOption) View {
 	for _, o := range o {
 		o.applyFrameBounds(&w)
 	}
-	return v.wrap(w)
+	return v.Modify(w)
 }
 
 // A FrameBoundsOption configures the bounds and alignment of a frame.
@@ -188,7 +187,10 @@ func (x *axisBounds) setIdeal(s size) {
 type wrapFrameBounds struct {
 	h, v  axisBounds
 	align Alignment
+	node  node
 }
+
+func (w wrapFrameBounds) modify(n node) node { w.node = n; return w }
 
 // idealAxes is the set of axes on which the frame uses its ideal size in env.
 func (w wrapFrameBounds) idealAxes(env environment) (a AxisSet) {
@@ -232,37 +234,33 @@ func (w wrapFrameBounds) cappedFills(f AxisSet) (a AxisSet) {
 	return a
 }
 
-func (w wrapFrameBounds) wrapElement(env environment, content domi.Node, f, r AxisSet) box {
+func (w wrapFrameBounds) render(env environment) box {
+	p := env.takePending()
 	ideal := w.idealAxes(env)
-	capped := w.cappedFills(f) &^ ideal
-	var align domi.Attr
+	inner := env
+	// An axis that takes its ideal has a definite size —
+	// real available space for the subview, no longer unbounded.
+	// Bounds never clear unboundedness: they clamp sizes, not queries.
+	// A maximum clamps the space the subview lays out against
+	// and the answer the frame reports (max-*),
+	// but it cannot turn the absence of available space into space —
+	// adding a maximum must never make the subview bigger.
+	inner.unbounded &^= ideal
+	b := wrapSubview(inner, w.node)
+	capped := w.cappedFills(b.fills) &^ ideal
+	// An axis taking its ideal is rigid on its own. An axis with
+	// no bounds takes the subview's sizing and its rigidity with
+	// it. A bounded axis tracks space between its bounds instead,
+	// regardless of the subview's rigidity.
+	b.rigid = ideal | (b.rigid &^ w.boundedAxes())
+	b.fills &^= ideal | capped
+	b.add(attr.Class("ui-frame"))
 	if w.align != Center {
-		align = attr.Class(w.align.placeClass())
-	}
-	b := box{
-		fills: f &^ (ideal | capped),
-		// An axis taking its ideal is rigid on its own. An axis with
-		// no bounds takes the subview's sizing and its rigidity with
-		// it. A bounded axis tracks space between its bounds instead,
-		// regardless of the subview's rigidity.
-		rigid:   ideal | (r &^ w.boundedAxes()),
-		attrs:   domi.Group(attr.Class("ui-frame"), align),
-		content: content,
+		b.add(attr.Class(w.align.placeClass()))
 	}
 	w.setStyles(&b, ideal, capped)
+	p.applyTo(&b)
 	return b
-}
-
-// context clears unbounded on each axis that takes its ideal:
-// the ideal is a definite size — real available space for the subview.
-// Bounds never clear it: they clamp sizes, not queries.
-// A maximum clamps the space the subview lays out against
-// and the answer the frame reports (max-*),
-// but it cannot turn the absence of available space into space —
-// adding a maximum must never make the subview bigger.
-func (w wrapFrameBounds) context(env environment) environment {
-	env.unbounded &^= w.idealAxes(env)
-	return env
 }
 
 // setStyles adds the frame's size and track declarations to b.

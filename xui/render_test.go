@@ -192,38 +192,38 @@ func TestTagNamesElement(t *testing.T) {
 	}
 }
 
-// TestTagPanicsOnNamedElement pins Tag's contract: naming an element that
-// already has a name panics, whether the name is the view's own or came from
-// an earlier Tag.
-func TestTagPanicsOnNamedElement(t *testing.T) {
+// TestTagInnermostWins pins Tag's contract: the innermost tag names the
+// element, so a view's intrinsic tag beats a Tag modifier, and the Tag
+// nearest the view beats a repetition.
+func TestTagInnermostWins(t *testing.T) {
 	for _, tt := range []struct {
 		name string
 		v    ui.View
+		want string
 	}{
-		{"intrinsic tag", ui.Button(ui.Text("x"), Msg{}).Tag("figure")},
-		{"double Tag", ui.VStack().Tag("ul").Tag("ol")},
+		{"intrinsic tag", ui.Button(ui.Text("x"), Msg{}).Tag("figure"), "<button"},
+		{"double Tag", ui.VStack().Tag("ul").Tag("ol"), "<ul"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			defer func() {
-				if recover() == nil {
-					t.Error("rendering did not panic")
-				}
-			}()
-			new(ui.Renderer).Render(tt.v)
+			html := render(t, tt.v)
+			if !strings.Contains(html, tt.want) {
+				t.Errorf("missing %q:\n%s", tt.want, html)
+			}
 		})
 	}
 }
 
 // TestDomiModifierPanics pins the [ui.HTML] contract: the wrapped node is
-// opaque, so a modifier has no element to act on and applying one panics
+// opaque, so a modifier that must act on the view's own element panics
 // instead of silently dropping the effect.
 func TestDomiModifierPanics(t *testing.T) {
 	for _, tt := range []struct {
 		name string
 		v    ui.View
 	}{
-		{"style", ui.HTML(domi.Text("raw")).Class("x")},
-		{"structural", ui.HTML(domi.Text("raw")).Padding(ui.Edges(4))},
+		{"attrs", ui.HTML(domi.Text("raw")).Class("x")},
+		{"tag", ui.HTML(domi.Text("raw")).Tag("div")},
+		{"shape", ui.HTML(domi.Text("raw")).BorderShape(ui.Ellipse)},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			defer func() {
@@ -233,6 +233,17 @@ func TestDomiModifierPanics(t *testing.T) {
 			}()
 			render(t, tt.v)
 		})
+	}
+}
+
+// TestDomiWrappersApply pins the complement: a modifier that wraps the
+// view in an element of its own never touches the node, so it applies.
+func TestDomiWrappersApply(t *testing.T) {
+	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background("red"))
+	for _, w := range []string{`class="ui-mod`, `class="ui-padding`, ">raw<"} {
+		if !strings.Contains(html, w) {
+			t.Errorf("missing %q:\n%s", w, html)
+		}
 	}
 }
 
