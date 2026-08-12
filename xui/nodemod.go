@@ -143,45 +143,33 @@ func (modFixedSize) environment(env environment) environment {
 	return env
 }
 
-type wrapFont struct {
-	f    FontSize
-	node node
-}
+type modFont struct{ f FontSize }
 
 // Font sets the font size for text in a view.
-func Font(f FontSize) Modifier { return wrapFont{f: f} }
+func Font(f FontSize) Modifier { return modFont{f} }
 
-func (w wrapFont) modify(n node) node { w.node = n; return w }
+func (m modFont) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
-func (w wrapFont) render(env environment) box {
-	b, p := wrapSubview(env, w.node)
-	b.add(attr.Class("ui-mod"))
-	if c := w.f.class(); c != "" {
-		b.add(attr.Class(c))
+func (m modFont) environment(env environment) environment {
+	if m.f.class() != "" {
+		env.font.Set(m.f)
 	}
-	p.applyTo(&b)
-	return b
+	return env
 }
 
-type wrapForeground struct {
-	c    Color
-	node node
-}
+type modForeground struct{ c Color }
 
 // Foreground uses c to draw foreground elements in a view,
 // such as text.
-func Foreground(c Color) Modifier { return wrapForeground{c: c} }
+func Foreground(c Color) Modifier { return modForeground{c} }
 
-func (w wrapForeground) modify(n node) node { w.node = n; return w }
+func (m modForeground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
-func (w wrapForeground) render(env environment) box {
-	b, p := wrapSubview(env, w.node)
-	b.add(attr.Class("ui-mod"))
-	if w.c != "" {
-		b.setStyle("color", string(w.c))
+func (m modForeground) environment(env environment) environment {
+	if m.c != "" {
+		env.fg.Set(m.c)
 	}
-	p.applyTo(&b)
-	return b
+	return env
 }
 
 type wrapOpacity struct {

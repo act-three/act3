@@ -1,6 +1,7 @@
 package ui_test
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -30,6 +31,46 @@ func TestForegroundInnermostWins(t *testing.T) {
 			})
 		})
 	}
+}
+
+// TestInheritedModifierCollapses pins the collapsed lowering for
+// inherited modifiers: no wrapper element, with the consumed
+// declaration landing exactly once — on the first element boundary
+// under the modifier — and descendants styled by CSS inheritance.
+func TestInheritedModifierCollapses(t *testing.T) {
+	html := render(t, ui.VStack(ui.Text("a"), ui.Text("b")).Foreground("red"))
+	if strings.Contains(html, "ui-mod") {
+		t.Fatalf("Foreground should not produce a wrapper:\n%s", html)
+	}
+	if got := classRule(t, html, `class="ui-vstack (ui-\w+)"`); got != "color:red" {
+		t.Errorf("stack box rule = %q, want the consumed color", got)
+	}
+	m := regexp.MustCompile(`\.(ui-\w+)\{color:red\}`).FindStringSubmatch(html)
+	if m == nil {
+		t.Fatalf("no color rule in the sheet:\n%s", html)
+	}
+	if n := strings.Count(html, m[1]); n != 2 { // the rule and one use
+		t.Errorf("consumed color class appears %d times, want 2:\n%s", n, html)
+	}
+}
+
+// TestModifierBeatsComponentChrome pins the collapse against
+// component chrome: consumed Font and Foreground values land on the
+// button element itself, where its font:inherit and color:inherit —
+// the absence of an opinion — must yield to them.
+func TestModifierBeatsComponentChrome(t *testing.T) {
+	v := ui.Button(ui.Text("x"), struct{}{}).Font(ui.Title).Foreground("rgb(255, 0, 0)")
+	stage(t, v, func(s *uitest.Session) {
+		var size, color string
+		s.Eval(`getComputedStyle(document.querySelector(".ui-button")).fontSize`, &size)
+		s.Eval(`getComputedStyle(document.querySelector(".ui-button")).color`, &color)
+		if size != "24px" { // Title, 1.5rem
+			t.Errorf("button font-size = %s, want the modifier's 24px", size)
+		}
+		if color != "rgb(255, 0, 0)" {
+			t.Errorf("button color = %s, want the modifier's rgb(255, 0, 0)", color)
+		}
+	})
 }
 
 // TestOpacityNests pins the wrapper model for opacity: each
@@ -127,7 +168,7 @@ func TestWrapperKeepsRigidity(t *testing.T) {
 		v    ui.View
 		want string
 	}{
-		{"style wrapper", ui.HStack(ui.Text("x").FixedSize().Foreground("red")), `class="ui-mod ui-rigid`},
+		{"style wrapper", ui.HStack(ui.Text("x").FixedSize().Background("red")), `class="ui-mod ui-rigid`},
 		{"frame auto axis", ui.HStack(ui.Text("x").FixedSize().Frame(ui.Height(40))), `class="ui-frame ui-rigid`},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
