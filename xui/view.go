@@ -151,10 +151,10 @@ func (env *environment) fontClass() domi.Attr {
 
 // pending is a set of consumed modifier effects, ready to land on a box.
 type pending struct {
-	attrs     domi.Attr      // added to the box, including the shape's and font's classes
-	tag       string         // the box's tag, unless the box has its own
-	unbounded AxisSet        // axes on which the box takes its ideal size
-	styles    sheet.StyleSet // inherited declarations, such as the foreground color
+	attrs     domi.Attr // added to the box, including the shape's and font's classes
+	tag       string    // the box's tag, unless the box has its own
+	unbounded AxisSet   // axes on which the box takes its ideal size
+	color     *Color    // inherited foreground color, if any
 }
 
 // takePending consumes the environment's pending modifier effects.
@@ -170,24 +170,23 @@ func (env *environment) takePending() pending {
 	}
 	p.tag, _ = env.tag.Take()
 	if c, ok := env.fg.Take(); ok {
-		p.styles.Set("color", string(c))
+		p.color = &c
 	}
 	return p
 }
 
 // applyTo lands the pending effects on the box.
 // The innermost tag wins, so the box's own tag is kept if it has one.
-// Consumed inherited declarations land under the box's own:
-// the box is the innermost writer,
-// so its declarations come later in map-set order and win.
+// Likewise a consumed inherited value lands only where the box
+// carries no value of its own: the box is the innermost writer.
 // An unbounded axis takes the box's ideal size, which is definite,
 // so the axis is rigid and a fill request on it is meaningless.
 func (p pending) applyTo(x *box) {
 	x.add(p.attrs)
 	x.tag = cmp.Or(x.tag, p.tag)
-	styles := p.styles
-	styles.Merge(x.styles)
-	x.styles = styles
+	if x.pres.color == nil {
+		x.pres.color = p.color
+	}
 	x.fills &^= p.unbounded
 	x.rigid |= p.unbounded
 }
@@ -199,22 +198,28 @@ type box struct {
 	fills   AxisSet // A fill request is the physical axes a box wants to fill.
 	rigid   AxisSet
 	attrs   domi.Attr
-	styles  sheet.StyleSet
+	layout  sheet.StyleSet // layout declarations only
+	pres    presentation
 	content domi.Node
 }
 
 func (x *box) add(a domi.Attr) { x.attrs = domi.Group(x.attrs, a) }
 
-// setStyle adds a dynamic CSS declaration to the box.
+// setLayoutStyle adds a resolved CSS layout declaration to b.
 // Setting the same property again replaces its value.
-func (x *box) setStyle(property, value string) { x.styles.Set(property, value) }
+// Do not call setLayoutStyle for non-layout properties.
+// Use box.pres instead.
+func (x *box) setLayoutStyle(property, value string) { x.layout.Set(property, value) }
 
-// styleClass returns the generated class for the box's dynamic styles.
+// styleClass returns the generated class for the box's dynamic styles,
+// combining layout declarations and lowered presentation.
 func (x box) styleClass(env environment) domi.Attr {
-	if x.styles.IsEmpty() {
+	s := x.layout
+	x.pres.lower(&s)
+	if s.IsEmpty() {
 		return nil
 	}
-	return attr.Class(env.sheet.ClassFor(x.styles))
+	return attr.Class(env.sheet.ClassFor(s))
 }
 
 // subviewsRendered is a generic combinator for lists of subviews.

@@ -58,10 +58,10 @@ func (w wrapFrame) render(env environment) box {
 		b.add(attr.Class(w.align.placeClass()))
 	}
 	if w.h.definite {
-		b.setStyle("width", w.h.css())
+		b.setLayoutStyle("width", w.h.css())
 	}
 	if w.v.definite {
-		b.setStyle("height", w.v.css())
+		b.setLayoutStyle("height", w.v.css())
 	}
 	p.applyTo(&b)
 	return b

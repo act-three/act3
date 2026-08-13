@@ -273,14 +273,14 @@ func (w wrapFrameBounds) setStyles(b *box, ideal, capped AxisSet) {
 	// once, either poisoning the container's floor or (flex-basis)
 	// vanishing from its max-content entirely.
 	if ideal.hasAll(Horizontal) {
-		b.setStyle("width", w.h.ideal.css())
+		b.setLayoutStyle("width", w.h.ideal.css())
 	} else if capped.hasAll(Horizontal) {
-		b.setStyle("grid-template-columns", "minmax(0,"+w.h.max.css()+")")
+		b.setLayoutStyle("grid-template-columns", "minmax(0,"+w.h.max.css()+")")
 	}
 	if ideal.hasAll(Vertical) {
-		b.setStyle("height", w.v.ideal.css())
+		b.setLayoutStyle("height", w.v.ideal.css())
 	} else if capped.hasAll(Vertical) {
-		b.setStyle("grid-template-rows", "minmax(0,"+w.v.max.css()+")")
+		b.setLayoutStyle("grid-template-rows", "minmax(0,"+w.v.max.css()+")")
 	}
 	// An explicit minimum replaces the axis's content-derived floor:
 	// without intervention the frame's min-content size is its subview's,
@@ -288,21 +288,21 @@ func (w wrapFrameBounds) setStyles(b *box, ideal, capped AxisSet) {
 	// the track's intrinsic contribution makes min-* the floor. A
 	// capped axis's track is already zeroed.
 	if w.h.min.definite {
-		b.setStyle("min-width", w.h.min.css())
+		b.setLayoutStyle("min-width", w.h.min.css())
 		if !capped.hasAll(Horizontal) {
 			b.add(attr.Class("ui-min-track-x"))
 		}
 	}
 	if w.h.max.definite {
-		b.setStyle("max-width", w.h.max.css())
+		b.setLayoutStyle("max-width", w.h.max.css())
 	}
 	if w.v.min.definite {
-		b.setStyle("min-height", w.v.min.css())
+		b.setLayoutStyle("min-height", w.v.min.css())
 		if !capped.hasAll(Vertical) {
 			b.add(attr.Class("ui-min-track-y"))
 		}
 	}
 	if w.v.max.definite {
-		b.setStyle("max-height", w.v.max.css())
+		b.setLayoutStyle("max-height", w.v.max.css())
 	}
 }
