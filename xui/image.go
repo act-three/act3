@@ -35,6 +35,7 @@ type imageNode struct {
 }
 
 func (n imageNode) render(env environment) box {
+	env.tag.Set("img")
 	p := env.takePending()
 	var alt domi.Attr
 	if n.alt != "" { // alt="" would mark the image as decorative.
@@ -46,7 +47,6 @@ func (n imageNode) render(env environment) box {
 		// contract, so the img is its own box, with no wrapper to
 		// mediate between the box and the available space.
 		b = box{
-			tag:   "img",
 			rigid: Horizontal | Vertical,
 			attrs: domi.Group(attr.Src(n.src), alt),
 		}
@@ -58,7 +58,6 @@ func (n imageNode) render(env environment) box {
 		// geometry answers — its natural size, or the other axis scaled
 		// through the picture's ratio.
 		b = box{
-			tag:   "img",
 			fills: Horizontal | Vertical,
 			attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class())),
 		}

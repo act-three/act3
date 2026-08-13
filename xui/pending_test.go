@@ -2,26 +2,16 @@ package ui
 
 import "testing"
 
-// TestConsumedColorYieldsToBox pins the consumption discipline for
-// inherited values: a consumed Foreground lands only where the box
-// carries no value of its own — the box is the innermost writer.
-func TestConsumedColorYieldsToBox(t *testing.T) {
+// TestBoxIsInnermostWriter pins the write-order rule for contended
+// values: a box contributes its own values through the same
+// environment slots as the modifiers wrapping it, writing last,
+// so its value wins and applyTo applies unconditionally.
+func TestBoxIsInnermostWriter(t *testing.T) {
 	var env environment
-	env.fg.Set("red")
-	p := env.takePending()
-
-	blue := Color("blue")
-	opinion := box{pres: presentation{color: &blue}}
-	p.applyTo(&opinion)
-	if got := *opinion.pres.color; got != "blue" {
-		t.Errorf("consumed color overwrote the box's own: %s, want blue", got)
-	}
-
-	var plain box
-	env.fg.Set("red")
-	env.takePending().applyTo(&plain)
-	if c := plain.pres.color; c == nil || *c != "red" {
-		t.Errorf("consumed color missing from an unopinionated box: %v", c)
+	env.tag.Set("picture") // an outer Tag modifier
+	b := imageNode{src: "x.png"}.render(env)
+	if b.tag != "img" {
+		t.Errorf("box tag = %q, want the image's own img", b.tag)
 	}
 }
 

@@ -152,9 +152,9 @@ func (env *environment) fontClass() domi.Attr {
 // pending is a set of consumed modifier effects, ready to land on a box.
 type pending struct {
 	attrs     domi.Attr // added to the box, including the shape's and font's classes
-	tag       string    // the box's tag, unless the box has its own
+	tag       string    // the box's tag
 	unbounded AxisSet   // axes on which the box takes its ideal size
-	color     *Color    // inherited foreground color, if any
+	color     *Color    // foreground color, if any
 }
 
 // takePending consumes the environment's pending modifier effects.
@@ -176,17 +176,16 @@ func (env *environment) takePending() pending {
 }
 
 // applyTo lands the pending effects on the box.
-// The innermost tag wins, so the box's own tag is kept if it has one.
-// Likewise a consumed inherited value lands only where the box
-// carries no value of its own: the box is the innermost writer.
-// An unbounded axis takes the box's ideal size, which is definite,
+// Application is unconditional: precedence was already resolved in
+// the environment slots by write order.
+// It must run after the box's fields are final, because the
+// unbounded mask applies to the box's resolved fill request:
+// an unbounded axis takes the box's ideal size, which is definite,
 // so the axis is rigid and a fill request on it is meaningless.
 func (p pending) applyTo(x *box) {
 	x.add(p.attrs)
-	x.tag = cmp.Or(x.tag, p.tag)
-	if x.pres.color == nil {
-		x.pres.color = p.color
-	}
+	x.tag = p.tag
+	x.pres.color = p.color
 	x.fills &^= p.unbounded
 	x.rigid |= p.unbounded
 }
