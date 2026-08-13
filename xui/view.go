@@ -106,7 +106,7 @@ func (v base) nodes() []node { return v }
 // A node is a unary view.
 // Its whole job is to lower itself to a single box.
 type node interface {
-	render(environment) box
+	render(environment) plan
 }
 
 type containerKind int
@@ -175,23 +175,23 @@ func (env *environment) takeMise() mise {
 	return m
 }
 
-// applyTo lands m's effects on the box.
+// applyTo lands m's effects on the plan.
 // Application is unconditional: precedence was already resolved in
 // the environment slots by write order.
-// It must run after the box's fields are final, because the
-// unbounded mask applies to the box's resolved fill request:
-// an unbounded axis takes the box's ideal size, which is definite,
+// It must run after the plan's fields are final, because the
+// unbounded mask applies to the plan's resolved fill request:
+// an unbounded axis takes its ideal size, which is definite,
 // so the axis is rigid and a fill request on it is meaningless.
-func (m mise) applyTo(x *box) {
-	x.add(m.attrs)
-	x.tag = m.tag
-	x.pres.color = m.color
-	x.fills &^= m.unbounded
-	x.rigid |= m.unbounded
+func (m mise) applyTo(p *plan) {
+	p.add(m.attrs)
+	p.tag = m.tag
+	p.pres.color = m.color
+	p.fills &^= m.unbounded
+	p.rigid |= m.unbounded
 }
 
-// A box is an HTML element under construction.
-type box struct {
+// A plan is an HTML element under construction.
+type plan struct {
 	tag     string
 	key     string
 	fills   AxisSet // A fill request is the physical axes a box wants to fill.
@@ -202,19 +202,19 @@ type box struct {
 	content domi.Node
 }
 
-func (x *box) add(a domi.Attr) { x.attrs = domi.Group(x.attrs, a) }
+func (p *plan) add(a domi.Attr) { p.attrs = domi.Group(p.attrs, a) }
 
-// setLayoutStyle adds a resolved CSS layout declaration to b.
+// setLayoutStyle adds a resolved CSS layout declaration to x.
 // Setting the same property again replaces its value.
 // Do not call setLayoutStyle for non-layout properties.
-// Use box.pres instead.
-func (x *box) setLayoutStyle(property, value string) { x.layout.Set(property, value) }
+// Use plan.pres instead.
+func (p *plan) setLayoutStyle(property, value string) { p.layout.Set(property, value) }
 
-// styleClass returns the generated class for the box's dynamic styles,
+// styleClass returns the generated class for the plan's dynamic styles,
 // combining layout declarations and lowered presentation.
-func (x box) styleClass(env environment) domi.Attr {
-	s := x.layout
-	x.pres.lower(&s)
+func (p plan) styleClass(env environment) domi.Attr {
+	s := p.layout
+	p.pres.lower(&s)
 	if s.IsEmpty() {
 		return nil
 	}
@@ -224,29 +224,29 @@ func (x box) styleClass(env environment) domi.Attr {
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views and merges their fill requests.
 // It takes env's mise before any subview renders,
-// so it cannot land on a subview's box,
-// and returns it for the caller to apply once its own box is final.
+// so it cannot land on a subview's plan,
+// and returns it for the caller to apply once its own plan is final.
 func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, mise) {
 	m := env.takeMise()
 	var ns []domi.Node
 	var f AxisSet
 	for _, v := range vs {
 		for _, n := range v.nodes() {
-			x := n.render(env)
-			f |= x.fills
-			ns = append(ns, x.build(env))
+			p := n.render(env)
+			f |= p.fills
+			ns = append(ns, p.build(env))
 		}
 	}
 	return domi.Fragment(ns...), f, m
 }
 
 // build builds x as an HTML node.
-func (x box) build(env environment) domi.Node {
+func (p plan) build(env environment) domi.Node {
 	// Keep the generated class after the named classes in rendered output.
-	a := domi.Group(x.fills.fillAttr(env), x.rigid.rigidAttr(env), x.styleClass(env))
-	n := domi.Tag(cmp.Or(x.tag, "div"), x.attrs, a)(x.content)
-	if x.key != "" {
-		n = domi.WithKey(x.key, n)
+	a := domi.Group(p.fills.fillAttr(env), p.rigid.rigidAttr(env), p.styleClass(env))
+	n := domi.Tag(cmp.Or(p.tag, "div"), p.attrs, a)(p.content)
+	if p.key != "" {
+		n = domi.WithKey(p.key, n)
 	}
 	return n
 }

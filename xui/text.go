@@ -103,14 +103,14 @@ type textNode struct {
 	style textStyle
 }
 
-func (n textNode) render(env environment) box {
+func (n textNode) render(env environment) plan {
 	m := env.takeMise()
-	b := box{
+	p := plan{
 		attrs:   attr.Class("ui-text"),
 		content: n.html(env.sheet),
 	}
-	m.applyTo(&b)
-	return b
+	m.applyTo(&p)
+	return p
 }
 
 // html lowers n (with its own style, if any).

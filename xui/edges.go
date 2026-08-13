@@ -49,11 +49,11 @@ func (s EdgeSpace) add(o EdgeSpace) EdgeSpace {
 }
 
 // setPadding adds the shortest equivalent padding declarations to x.
-func (s EdgeSpace) setPadding(x *box) {
+func (s EdgeSpace) setPadding(p *plan) {
 	t, b := cssPx(s.Top), cssPx(s.Bottom)
 	le, tr := cssPx(s.Leading), cssPx(s.Trailing)
 	if t == b && le == tr && t == le {
-		x.setLayoutStyle("padding", t)
+		p.setLayoutStyle("padding", t)
 		return
 	}
 	block, inline := t, le
@@ -63,8 +63,8 @@ func (s EdgeSpace) setPadding(x *box) {
 	if tr != le {
 		inline += " " + tr
 	}
-	x.setLayoutStyle("padding-block", block)
-	x.setLayoutStyle("padding-inline", inline)
+	p.setLayoutStyle("padding-block", block)
+	p.setLayoutStyle("padding-inline", inline)
 }
 
 func cssPx(v float64) string { return fmt.Sprintf("%gpx", v) }
