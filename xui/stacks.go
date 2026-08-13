@@ -74,7 +74,7 @@ func (s stackNode) render(env environment) box {
 	env.lc = axes[s.dir].lc
 	env.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
-	content, f, p := subviewsRendered(env, s.subviews...)
+	content, f, m := subviewsRendered(env, s.subviews...)
 	b := box{
 		fills:   f,
 		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr()),
@@ -83,7 +83,7 @@ func (s stackNode) render(env environment) box {
 	if s.gap != defaultGap {
 		b.setLayoutStyle("gap", cssPx(s.gap))
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }
 
@@ -111,7 +111,7 @@ func Spacer() View { return base{spacerNode{}} }
 type spacerNode struct{}
 
 func (spacerNode) render(env environment) box {
-	p := env.takePending()
+	m := env.takeMise()
 	var a domi.Attr
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		a = attr.Class("ui-spacer-h")
@@ -123,7 +123,7 @@ func (spacerNode) render(env environment) box {
 		fills: env.lc.majorAxis,
 		attrs: domi.Group(attr.Class("ui-spacer"), a),
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }
 
@@ -136,7 +136,7 @@ func Divider() View { return base{dividerNode{}} }
 type dividerNode struct{}
 
 func (dividerNode) render(env environment) box {
-	p := env.takePending()
+	m := env.takeMise()
 	a := []domi.Attr{attr.Class("ui-divider")}
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
@@ -154,6 +154,6 @@ func (dividerNode) render(env environment) box {
 		fills: env.lc.minorAxes(),
 		attrs: domi.Group(a...),
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }

@@ -50,7 +50,7 @@ func (w wrapFrame) render(env environment) box {
 	// A definite axis is available space for the view inside,
 	// so it is no longer unbounded.
 	inner.unbounded &^= w.definite()
-	b, p := wrapSubview(inner, w.node)
+	b, m := wrapSubview(inner, w.node)
 	b.fills &^= w.definite()
 	b.rigid |= w.definite()
 	b.add(attr.Class("ui-frame"))
@@ -63,7 +63,7 @@ func (w wrapFrame) render(env environment) box {
 	if w.v.definite {
 		b.setLayoutStyle("height", w.v.css())
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }
 

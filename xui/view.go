@@ -149,45 +149,45 @@ func (env *environment) fontClass() domi.Attr {
 	return nil
 }
 
-// pending is a set of consumed modifier effects, ready to land on a box.
-type pending struct {
+// mise is a set of consumed environment values to apply to a box.
+type mise struct {
 	attrs     domi.Attr // added to the box, including the shape's and font's classes
 	tag       string    // the box's tag
 	unbounded AxisSet   // axes on which the box takes its ideal size
 	color     *Color    // foreground color, if any
 }
 
-// takePending consumes the environment's pending modifier effects.
+// takeMise consumes the environment's pending modifier effects.
 // A node that produces a box takes them before rendering subviews,
 // so each effect stops at the first box under its modifier.
-func (env *environment) takePending() pending {
-	p := pending{
+func (env *environment) takeMise() mise {
+	m := mise{
 		attrs:     domi.Group(env.shapeClass(), env.fontClass()),
 		unbounded: env.unbounded,
 	}
 	if a, ok := env.attrs.Take(); ok {
-		p.attrs = domi.Group(p.attrs, a)
+		m.attrs = domi.Group(m.attrs, a)
 	}
-	p.tag, _ = env.tag.Take()
+	m.tag, _ = env.tag.Take()
 	if c, ok := env.fg.Take(); ok {
-		p.color = &c
+		m.color = &c
 	}
-	return p
+	return m
 }
 
-// applyTo lands the pending effects on the box.
+// applyTo lands m's effects on the box.
 // Application is unconditional: precedence was already resolved in
 // the environment slots by write order.
 // It must run after the box's fields are final, because the
 // unbounded mask applies to the box's resolved fill request:
 // an unbounded axis takes the box's ideal size, which is definite,
 // so the axis is rigid and a fill request on it is meaningless.
-func (p pending) applyTo(x *box) {
-	x.add(p.attrs)
-	x.tag = p.tag
-	x.pres.color = p.color
-	x.fills &^= p.unbounded
-	x.rigid |= p.unbounded
+func (m mise) applyTo(x *box) {
+	x.add(m.attrs)
+	x.tag = m.tag
+	x.pres.color = m.color
+	x.fills &^= m.unbounded
+	x.rigid |= m.unbounded
 }
 
 // A box is an HTML element under construction.
@@ -223,11 +223,11 @@ func (x box) styleClass(env environment) domi.Attr {
 
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views and merges their fill requests.
-// It consumes env's pending effects before any subview renders,
-// so they cannot land on a subview's box,
-// and returns them for the caller to apply once its own box is final.
-func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, pending) {
-	p := env.takePending()
+// It takes env's mise before any subview renders,
+// so it cannot land on a subview's box,
+// and returns it for the caller to apply once its own box is final.
+func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, mise) {
+	m := env.takeMise()
 	var ns []domi.Node
 	var f AxisSet
 	for _, v := range vs {
@@ -237,7 +237,7 @@ func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, pending)
 			ns = append(ns, x.build(env))
 		}
 	}
-	return domi.Fragment(ns...), f, p
+	return domi.Fragment(ns...), f, m
 }
 
 // build builds x as an HTML node.

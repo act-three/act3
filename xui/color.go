@@ -123,12 +123,12 @@ func (f colorFillNode) render(env environment) box {
 	// The box consumes a border shape but realizes it on the paint
 	// element, the only thing it draws.
 	shape := env.shapeClass()
-	p := env.takePending()
+	m := env.takeMise()
 	b := box{
 		fills:   Horizontal | Vertical,
 		attrs:   domi.Group(a...),
 		content: html.Div(attr.Class("ui-color-paint"), shape, attr.Class(paint)),
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }

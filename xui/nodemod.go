@@ -77,7 +77,7 @@ type modAttr struct{ attr domi.Attr }
 
 func (m modAttr) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
-// environment prepends the attributes to the pending set,
+// environment prepends the attributes to those already set,
 // keeping an inner modifier's attributes before an outer's,
 // so they land on the consuming box in application order.
 func (m modAttr) environment(env environment) environment {
@@ -97,12 +97,12 @@ func Background(c Color) Modifier { return wrapBackground{c: c} }
 func (w wrapBackground) modify(n node) node { w.node = n; return w }
 
 func (w wrapBackground) render(env environment) box {
-	b, p := wrapSubview(env, w.node)
+	b, m := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-mod"))
 	if w.c != "" {
 		b.pres.background = &w.c
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }
 
@@ -132,8 +132,8 @@ type modFixedSize struct{}
 func (m modFixedSize) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 // environment gives the subtree unbounded available space on both axes,
-// so the first box takes its ideal size (see [pending]).
-// The marker class rides the pending attrs.
+// so the first box takes its ideal size (see [mise]).
+// The marker class rides the mise's attrs.
 func (modFixedSize) environment(env environment) environment {
 	env.unbounded = Horizontal | Vertical
 	a, _ := env.attrs.Take()
@@ -183,10 +183,10 @@ func Opacity(x float64) Modifier { return wrapOpacity{x: x} }
 func (w wrapOpacity) modify(n node) node { w.node = n; return w }
 
 func (w wrapOpacity) render(env environment) box {
-	b, p := wrapSubview(env, w.node)
+	b, m := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-mod"))
 	b.pres.opacity = &w.x
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }
 
