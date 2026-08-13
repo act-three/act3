@@ -46,11 +46,12 @@ func (w wrapFrame) definite() (a AxisSet) {
 }
 
 func (w wrapFrame) render(env environment) box {
+	m := env.takeMise()
 	inner := env
 	// A definite axis is available space for the view inside,
 	// so it is no longer unbounded.
 	inner.unbounded &^= w.definite()
-	p, m := wrapSubview(inner, w.node)
+	p, _ := wrapSubview(inner, w.node)
 	p.fills &^= w.definite()
 	p.rigid |= w.definite()
 	p.add(attr.Class("ui-frame"))
