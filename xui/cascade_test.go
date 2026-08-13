@@ -114,7 +114,7 @@ func TestBackgroundStacks(t *testing.T) {
 	}
 }
 
-// TestBackgroundShapeOrder pins the shape slot: a shape applied after
+// TestBackgroundShapeOrder pins the shape's write order: a shape applied after
 // paint shapes it; paint applied after a shape lands outside it.
 func TestBackgroundShapeOrder(t *testing.T) {
 	// Background then shape: the shape merges onto the paint wrapper —

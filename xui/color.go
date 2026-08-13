@@ -123,11 +123,11 @@ func (f colorFillNode) render(env environment) box {
 	// The plan consumes a border shape but realizes it on the paint
 	// element, the only thing it draws.
 	shape := env.shapeClass()
-	m := env.takeMise()
+	env.shape = nil
 	p := plan{
 		fills:   Horizontal | Vertical,
 		attrs:   domi.Group(a...),
 		content: html.Div(attr.Class("ui-color-paint"), shape, attr.Class(paint)),
 	}
-	return build(env, m, p)
+	return build(env, p)
 }
