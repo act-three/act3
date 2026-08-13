@@ -11,18 +11,18 @@ import (
 // and the wrapper forwards the subview's fill request and rigid axes,
 // staying layout-transparent.
 // A frame masks the forwarded axes its own geometry governs.
-// wrapSubview consumes env's pending effects before the subview renders,
-// so they cannot land on the subview's box,
-// and returns them for the caller to apply once its box is final.
-func wrapSubview(env environment, n node) (box, pending) {
-	p := env.takePending()
+// wrapSubview takes env's mise before the subview renders,
+// so it cannot land on the subview's box,
+// and returns it for the caller to apply once its box is final.
+func wrapSubview(env environment, n node) (box, mise) {
+	m := env.takeMise()
 	env.container = containerGrid
 	x := n.render(env)
 	return box{
 		fills:   x.fills,
 		rigid:   x.rigid,
 		content: x.build(env),
-	}, p
+	}, m
 }
 
 // LayerUnder displays u under v.
@@ -73,13 +73,13 @@ func (w wrapLayer) render(env environment) box {
 	if w.alignment != Center {
 		attrs = append(attrs, attr.Class(w.alignment.placeClass()))
 	}
-	b, p := wrapSubview(env, w.node)
+	b, m := wrapSubview(env, w.node)
 	b.content = domi.Fragment(
 		html.Div(attr.Class("ui-layer-base"))(b.content),
 		html.Div(attrs...)(renderLayer(env, w.view)),
 	)
 	b.add(attr.Class("ui-layers"))
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }
 
@@ -104,9 +104,9 @@ type wrapPadding struct {
 func (w wrapPadding) modify(n node) node { w.node = n; return w }
 
 func (w wrapPadding) render(env environment) box {
-	b, p := wrapSubview(env, w.node)
+	b, m := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-padding"))
 	w.space.setPadding(&b)
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }

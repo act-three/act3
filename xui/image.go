@@ -36,7 +36,7 @@ type imageNode struct {
 
 func (n imageNode) render(env environment) box {
 	env.tag.Set("img")
-	p := env.takePending()
+	m := env.takeMise()
 	var alt domi.Attr
 	if n.alt != "" { // alt="" would mark the image as decorative.
 		alt = attr.Alt(n.alt)
@@ -62,6 +62,6 @@ func (n imageNode) render(env environment) box {
 			attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class())),
 		}
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }

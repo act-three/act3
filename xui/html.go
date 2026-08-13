@@ -33,12 +33,12 @@ func HTML(node domi.Node) View { return base{nodeHTML{node: node}} }
 type nodeHTML struct{ node domi.Node }
 
 func (h nodeHTML) render(env environment) box {
-	p := env.takePending()
+	m := env.takeMise()
 	b := box{
 		fills:   Horizontal | Vertical,
 		attrs:   attr.Class("ui-html"),
 		content: h.node,
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }

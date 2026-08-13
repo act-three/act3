@@ -104,12 +104,12 @@ type textNode struct {
 }
 
 func (n textNode) render(env environment) box {
-	p := env.takePending()
+	m := env.takeMise()
 	b := box{
 		attrs:   attr.Class("ui-text"),
 		content: n.html(env.sheet),
 	}
-	p.applyTo(&b)
+	m.applyTo(&b)
 	return b
 }
 

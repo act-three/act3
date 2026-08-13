@@ -15,18 +15,18 @@ func TestBoxIsInnermostWriter(t *testing.T) {
 	}
 }
 
-// TestTakePendingStripsEnvironment pins consume-exactly-once: the
-// first boundary to take the pending effects empties the environment,
+// TestTakeMiseStripsEnvironment pins consume-exactly-once: the
+// first boundary to take the mise empties the environment,
 // so nothing is left for a second boundary in the same subtree.
-func TestTakePendingStripsEnvironment(t *testing.T) {
+func TestTakeMiseStripsEnvironment(t *testing.T) {
 	var env environment
 	env.fg.Set("red")
 	env.font.Set(Title)
-	env.takePending()
+	env.takeMise()
 	if _, ok := env.fg.Take(); ok {
-		t.Error("foreground color survived takePending")
+		t.Error("foreground color survived takeMise")
 	}
 	if _, ok := env.font.Take(); ok {
-		t.Error("font size survived takePending")
+		t.Error("font size survived takeMise")
 	}
 }
