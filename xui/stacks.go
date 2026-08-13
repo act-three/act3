@@ -70,11 +70,14 @@ type stackNode struct {
 	align    Alignment
 }
 
-func (s stackNode) render(env environment) plan {
-	env.lc = axes[s.dir].lc
-	env.container = axes[s.dir].container
+func (s stackNode) render(env environment) box {
+	// The subviews lay out in a derived child environment;
+	// the stack itself builds in the environment it received.
+	inner := env
+	inner.lc = axes[s.dir].lc
+	inner.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
-	content, f, m := subviewsRendered(env, s.subviews...)
+	content, f, m := subviewsRendered(inner, s.subviews...)
 	p := plan{
 		fills:   f,
 		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr()),
@@ -83,8 +86,7 @@ func (s stackNode) render(env environment) plan {
 	if s.gap != defaultGap {
 		p.setLayoutStyle("gap", cssPx(s.gap))
 	}
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }
 
 // alignAttr returns the class for the stack's alignment.
@@ -110,7 +112,7 @@ func Spacer() View { return base{spacerNode{}} }
 
 type spacerNode struct{}
 
-func (spacerNode) render(env environment) plan {
+func (spacerNode) render(env environment) box {
 	m := env.takeMise()
 	var a domi.Attr
 	if env.lc.majorAxis.hasAll(Horizontal) {
@@ -123,8 +125,7 @@ func (spacerNode) render(env environment) plan {
 		fills: env.lc.majorAxis,
 		attrs: domi.Group(attr.Class("ui-spacer"), a),
 	}
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }
 
 // A Divider is a thin line that can be used to separate other views.
@@ -135,7 +136,7 @@ func Divider() View { return base{dividerNode{}} }
 
 type dividerNode struct{}
 
-func (dividerNode) render(env environment) plan {
+func (dividerNode) render(env environment) box {
 	m := env.takeMise()
 	a := []domi.Attr{attr.Class("ui-divider")}
 	if env.lc.majorAxis.hasAll(Horizontal) {
@@ -154,6 +155,5 @@ func (dividerNode) render(env environment) plan {
 		fills: env.lc.minorAxes(),
 		attrs: domi.Group(a...),
 	}
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }

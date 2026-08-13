@@ -108,7 +108,7 @@ func (c Color) Attr(a ...domi.Attr) View { return c.view().Attr(a...) }
 // painting order, with no property doing double duty.
 type colorFillNode struct{ color Color }
 
-func (f colorFillNode) render(env environment) plan {
+func (f colorFillNode) render(env environment) box {
 	// A color adapts to any space and has no content-derived size of
 	// its own; an axis with unbounded available space takes a 10px
 	// default, and the rest adapt.
@@ -129,6 +129,5 @@ func (f colorFillNode) render(env environment) plan {
 		attrs:   domi.Group(a...),
 		content: html.Div(attr.Class("ui-color-paint"), shape, attr.Class(paint)),
 	}
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }

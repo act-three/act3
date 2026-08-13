@@ -34,7 +34,7 @@ type imageNode struct {
 	fit      FramingMode
 }
 
-func (n imageNode) render(env environment) plan {
+func (n imageNode) render(env environment) box {
 	env.tag.Set("img")
 	m := env.takeMise()
 	var alt domi.Attr
@@ -62,6 +62,5 @@ func (n imageNode) render(env environment) plan {
 			attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class())),
 		}
 	}
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }

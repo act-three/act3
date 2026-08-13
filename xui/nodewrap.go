@@ -13,15 +13,15 @@ import (
 // A frame masks the forwarded axes its own geometry governs.
 // wrapSubview takes env's mise before the subview renders,
 // so it cannot land on the subview's plan,
-// and returns it for the caller to apply once its plan is final.
+// and returns it for the caller to build its plan with.
 func wrapSubview(env environment, n node) (plan, mise) {
 	m := env.takeMise()
 	env.container = containerGrid
-	p := n.render(env)
+	b := n.render(env)
 	return plan{
-		fills:   p.fills,
-		rigid:   p.rigid,
-		content: p.build(env),
+		fills:   b.fills,
+		rigid:   b.rigid,
+		content: b.node,
 	}, m
 }
 
@@ -64,7 +64,7 @@ type wrapLayer struct {
 
 func (w wrapLayer) modify(n node) node { w.node = n; return w }
 
-func (w wrapLayer) render(env environment) plan {
+func (w wrapLayer) render(env environment) box {
 	class := "ui-underlay"
 	if w.over {
 		class = "ui-overlay"
@@ -79,8 +79,7 @@ func (w wrapLayer) render(env environment) plan {
 		html.Div(attrs...)(renderLayer(env, w.view)),
 	)
 	p.add(attr.Class("ui-layers"))
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }
 
 // renderLayer renders a view inside its grid layer,
@@ -103,10 +102,9 @@ type wrapPadding struct {
 
 func (w wrapPadding) modify(n node) node { w.node = n; return w }
 
-func (w wrapPadding) render(env environment) plan {
+func (w wrapPadding) render(env environment) box {
 	p, m := wrapSubview(env, w.node)
 	p.add(attr.Class("ui-padding"))
 	w.space.setPadding(&p)
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }

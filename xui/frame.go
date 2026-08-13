@@ -45,7 +45,7 @@ func (w wrapFrame) definite() (a AxisSet) {
 	return a
 }
 
-func (w wrapFrame) render(env environment) plan {
+func (w wrapFrame) render(env environment) box {
 	inner := env
 	// A definite axis is available space for the view inside,
 	// so it is no longer unbounded.
@@ -63,8 +63,7 @@ func (w wrapFrame) render(env environment) plan {
 	if w.v.definite {
 		p.setLayoutStyle("height", w.v.css())
 	}
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }
 
 // A FrameOption configures the size and alignment of a frame.

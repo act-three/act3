@@ -63,7 +63,7 @@ type buttonNode struct {
 
 // render delegates plan construction to the row the button is: an ordinary
 // HStack whose element carries the button name, chrome, and behavior.
-func (n buttonNode) render(env environment) plan {
+func (n buttonNode) render(env environment) box {
 	b := HStack(n.label).
 		Tag("button").
 		Class("ui-button").

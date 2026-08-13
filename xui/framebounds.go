@@ -234,7 +234,7 @@ func (w wrapFrameBounds) cappedFills(f AxisSet) (a AxisSet) {
 	return a
 }
 
-func (w wrapFrameBounds) render(env environment) plan {
+func (w wrapFrameBounds) render(env environment) box {
 	ideal := w.idealAxes(env)
 	inner := env
 	// An axis that takes its ideal has a definite size —
@@ -258,8 +258,7 @@ func (w wrapFrameBounds) render(env environment) plan {
 		p.add(attr.Class(w.align.placeClass()))
 	}
 	w.setStyles(&p, ideal, capped)
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }
 
 // setStyles adds the frame's size and track declarations to b.
