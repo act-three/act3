@@ -9,7 +9,7 @@ type countingNode struct {
 	visits *int
 }
 
-func (c countingNode) render(env environment) plan {
+func (c countingNode) render(env environment) box {
 	*c.visits++
 	return c.inner.render(env)
 }

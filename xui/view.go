@@ -106,7 +106,7 @@ func (v base) nodes() []node { return v }
 // A node is a unary view.
 // Its whole job is to lower itself to a single box.
 type node interface {
-	render(environment) plan
+	render(environment) box
 }
 
 type containerKind int
@@ -149,7 +149,7 @@ func (env *environment) fontClass() domi.Attr {
 	return nil
 }
 
-// mise is a set of consumed environment values to apply to a box.
+// mise is a set of consumed environment values to apply at build.
 type mise struct {
 	attrs     domi.Attr // added to the box, including the shape's and font's classes
 	tag       string    // the box's tag
@@ -175,25 +175,8 @@ func (env *environment) takeMise() mise {
 	return m
 }
 
-// applyTo lands m's effects on the plan.
-// Application is unconditional: precedence was already resolved in
-// the environment slots by write order.
-// It must run after the plan's fields are final, because the
-// unbounded mask applies to the plan's resolved fill request:
-// an unbounded axis takes its ideal size, which is definite,
-// so the axis is rigid and a fill request on it is meaningless.
-func (m mise) applyTo(p *plan) {
-	p.add(m.attrs)
-	p.tag = m.tag
-	p.pres.color = m.color
-	p.fills &^= m.unbounded
-	p.rigid |= m.unbounded
-}
-
 // A plan is an HTML element under construction.
 type plan struct {
-	tag     string
-	key     string
 	fills   AxisSet // A fill request is the physical axes a box wants to fill.
 	rigid   AxisSet
 	attrs   domi.Attr
@@ -221,32 +204,47 @@ func (p plan) styleClass(env environment) domi.Attr {
 	return attr.Class(env.sheet.ClassFor(s))
 }
 
+// A box is a rendered node.
+// It contains the HTML node,
+// plus ancillary data needed by its consumer.
+type box struct {
+	node  domi.Node
+	fills AxisSet
+	rigid AxisSet
+}
+
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views and merges their fill requests.
 // It takes env's mise before any subview renders,
 // so it cannot land on a subview's plan,
-// and returns it for the caller to apply once its own plan is final.
+// and returns it for the caller to build its own plan with.
 func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, mise) {
 	m := env.takeMise()
 	var ns []domi.Node
 	var f AxisSet
 	for _, v := range vs {
 		for _, n := range v.nodes() {
-			p := n.render(env)
-			f |= p.fills
-			ns = append(ns, p.build(env))
+			b := n.render(env)
+			f |= b.fills
+			ns = append(ns, b.node)
 		}
 	}
 	return domi.Fragment(ns...), f, m
 }
 
-// build builds x as an HTML node.
-func (p plan) build(env environment) domi.Node {
+// build returns the box described by env, m, and p.
+func build(env environment, m mise, p plan) box {
+	p.add(m.attrs)
+	p.pres.color = m.color
+	// A fill request on an unbounded axis is meaningless, so clear it.
+	fills := p.fills &^ m.unbounded
+	// A box is always rigid on an unbounded axis.
+	rigid := p.rigid | m.unbounded
 	// Keep the generated class after the named classes in rendered output.
-	a := domi.Group(p.fills.fillAttr(env), p.rigid.rigidAttr(env), p.styleClass(env))
-	n := domi.Tag(cmp.Or(p.tag, "div"), p.attrs, a)(p.content)
-	if p.key != "" {
-		n = domi.WithKey(p.key, n)
+	a := domi.Group(fills.fillAttr(env), rigid.rigidAttr(env), p.styleClass(env))
+	return box{
+		node:  domi.Tag(cmp.Or(m.tag, "div"), p.attrs, a)(p.content),
+		fills: fills,
+		rigid: rigid,
 	}
-	return n
 }

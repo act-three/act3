@@ -1,6 +1,10 @@
 package ui
 
-import "fmt"
+import (
+	"fmt"
+
+	"ily.dev/domi"
+)
 
 // Empty is an empty view.
 // It occupies no space.
@@ -93,8 +97,8 @@ type keyNode struct {
 	node node
 }
 
-func (k keyNode) render(env environment) plan {
-	p := k.node.render(env)
-	p.key = k.key
-	return p
+func (k keyNode) render(env environment) box {
+	b := k.node.render(env)
+	b.node = domi.WithKey(k.key, b.node)
+	return b
 }

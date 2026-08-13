@@ -24,7 +24,7 @@ type nodeEnv struct {
 	node node
 }
 
-func (m nodeEnv) render(env environment) plan {
+func (m nodeEnv) render(env environment) box {
 	return m.node.render(m.f(env))
 }
 
@@ -96,14 +96,13 @@ func Background(c Color) Modifier { return wrapBackground{c: c} }
 
 func (w wrapBackground) modify(n node) node { w.node = n; return w }
 
-func (w wrapBackground) render(env environment) plan {
+func (w wrapBackground) render(env environment) box {
 	p, m := wrapSubview(env, w.node)
 	p.add(attr.Class("ui-mod"))
 	if w.c != "" {
 		p.pres.background = &w.c
 	}
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }
 
 type modBorderShape struct{ s Shape }
@@ -182,12 +181,11 @@ func Opacity(x float64) Modifier { return wrapOpacity{x: x} }
 
 func (w wrapOpacity) modify(n node) node { w.node = n; return w }
 
-func (w wrapOpacity) render(env environment) plan {
+func (w wrapOpacity) render(env environment) box {
 	p, m := wrapSubview(env, w.node)
 	p.add(attr.Class("ui-mod"))
 	p.pres.opacity = &w.x
-	m.applyTo(&p)
-	return p
+	return build(env, m, p)
 }
 
 // NOTE: no exported construcor.
