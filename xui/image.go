@@ -34,19 +34,19 @@ type imageNode struct {
 	fit      FramingMode
 }
 
-func (n imageNode) render(env environment) box {
+func (n imageNode) render(env environment) plan {
 	env.tag.Set("img")
 	m := env.takeMise()
 	var alt domi.Attr
 	if n.alt != "" { // alt="" would mark the image as decorative.
 		alt = attr.Alt(n.alt)
 	}
-	var b box
+	var p plan
 	if n.fit == Native {
 		// At native size the img's intrinsic geometry is the whole
 		// contract, so the img is its own box, with no wrapper to
 		// mediate between the box and the available space.
-		b = box{
+		p = plan{
 			rigid: Horizontal | Vertical,
 			attrs: domi.Group(attr.Src(n.src), alt),
 		}
@@ -57,11 +57,11 @@ func (n imageNode) render(env environment) box {
 		// to meet, so the fill drops away and the img's intrinsic
 		// geometry answers — its natural size, or the other axis scaled
 		// through the picture's ratio.
-		b = box{
+		p = plan{
 			fills: Horizontal | Vertical,
 			attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class())),
 		}
 	}
-	m.applyTo(&b)
-	return b
+	m.applyTo(&p)
+	return p
 }

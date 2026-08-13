@@ -28,7 +28,7 @@ type scrollNode struct {
 	contents View
 }
 
-func (s scrollNode) render(env environment) box {
+func (s scrollNode) render(env environment) plan {
 	// Along a scroll axis, the content's available space is unbounded.
 	// On a non-scrolling axis the available space is the viewport's own size.
 	inner := environment{unbounded: s.along, sheet: env.sheet}
@@ -48,11 +48,11 @@ func (s scrollNode) render(env environment) box {
 	}
 	m := env.takeMise()
 	content, _, _ := subviewsRendered(inner, s.contents)
-	b := box{
+	p := plan{
 		fills:   Horizontal | Vertical,
 		attrs:   domi.Group(a...),
 		content: content,
 	}
-	m.applyTo(&b)
-	return b
+	m.applyTo(&p)
+	return p
 }

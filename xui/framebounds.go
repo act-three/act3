@@ -234,7 +234,7 @@ func (w wrapFrameBounds) cappedFills(f AxisSet) (a AxisSet) {
 	return a
 }
 
-func (w wrapFrameBounds) render(env environment) box {
+func (w wrapFrameBounds) render(env environment) plan {
 	ideal := w.idealAxes(env)
 	inner := env
 	// An axis that takes its ideal has a definite size —
@@ -245,25 +245,25 @@ func (w wrapFrameBounds) render(env environment) box {
 	// but it cannot turn the absence of available space into space —
 	// adding a maximum must never make the subview bigger.
 	inner.unbounded &^= ideal
-	b, m := wrapSubview(inner, w.node)
-	capped := w.cappedFills(b.fills) &^ ideal
+	p, m := wrapSubview(inner, w.node)
+	capped := w.cappedFills(p.fills) &^ ideal
 	// An axis taking its ideal is rigid on its own. An axis with
 	// no bounds takes the subview's sizing and its rigidity with
 	// it. A bounded axis tracks space between its bounds instead,
 	// regardless of the subview's rigidity.
-	b.rigid = ideal | (b.rigid &^ w.boundedAxes())
-	b.fills &^= ideal | capped
-	b.add(attr.Class("ui-frame"))
+	p.rigid = ideal | (p.rigid &^ w.boundedAxes())
+	p.fills &^= ideal | capped
+	p.add(attr.Class("ui-frame"))
 	if w.align != Center {
-		b.add(attr.Class(w.align.placeClass()))
+		p.add(attr.Class(w.align.placeClass()))
 	}
-	w.setStyles(&b, ideal, capped)
-	m.applyTo(&b)
-	return b
+	w.setStyles(&p, ideal, capped)
+	m.applyTo(&p)
+	return p
 }
 
 // setStyles adds the frame's size and track declarations to b.
-func (w wrapFrameBounds) setStyles(b *box, ideal, capped AxisSet) {
+func (w wrapFrameBounds) setStyles(p *plan, ideal, capped AxisSet) {
 	// An absorbed fill claims the maximum through the frame's own
 	// track: minmax(0, max) makes the frame's max-content size the
 	// maximum — hugging ancestors size themselves around the full
@@ -273,14 +273,14 @@ func (w wrapFrameBounds) setStyles(b *box, ideal, capped AxisSet) {
 	// once, either poisoning the container's floor or (flex-basis)
 	// vanishing from its max-content entirely.
 	if ideal.hasAll(Horizontal) {
-		b.setLayoutStyle("width", w.h.ideal.css())
+		p.setLayoutStyle("width", w.h.ideal.css())
 	} else if capped.hasAll(Horizontal) {
-		b.setLayoutStyle("grid-template-columns", "minmax(0,"+w.h.max.css()+")")
+		p.setLayoutStyle("grid-template-columns", "minmax(0,"+w.h.max.css()+")")
 	}
 	if ideal.hasAll(Vertical) {
-		b.setLayoutStyle("height", w.v.ideal.css())
+		p.setLayoutStyle("height", w.v.ideal.css())
 	} else if capped.hasAll(Vertical) {
-		b.setLayoutStyle("grid-template-rows", "minmax(0,"+w.v.max.css()+")")
+		p.setLayoutStyle("grid-template-rows", "minmax(0,"+w.v.max.css()+")")
 	}
 	// An explicit minimum replaces the axis's content-derived floor:
 	// without intervention the frame's min-content size is its subview's,
@@ -288,21 +288,21 @@ func (w wrapFrameBounds) setStyles(b *box, ideal, capped AxisSet) {
 	// the track's intrinsic contribution makes min-* the floor. A
 	// capped axis's track is already zeroed.
 	if w.h.min.definite {
-		b.setLayoutStyle("min-width", w.h.min.css())
+		p.setLayoutStyle("min-width", w.h.min.css())
 		if !capped.hasAll(Horizontal) {
-			b.add(attr.Class("ui-min-track-x"))
+			p.add(attr.Class("ui-min-track-x"))
 		}
 	}
 	if w.h.max.definite {
-		b.setLayoutStyle("max-width", w.h.max.css())
+		p.setLayoutStyle("max-width", w.h.max.css())
 	}
 	if w.v.min.definite {
-		b.setLayoutStyle("min-height", w.v.min.css())
+		p.setLayoutStyle("min-height", w.v.min.css())
 		if !capped.hasAll(Vertical) {
-			b.add(attr.Class("ui-min-track-y"))
+			p.add(attr.Class("ui-min-track-y"))
 		}
 	}
 	if w.v.max.definite {
-		b.setLayoutStyle("max-height", w.v.max.css())
+		p.setLayoutStyle("max-height", w.v.max.css())
 	}
 }

@@ -45,26 +45,26 @@ func (w wrapFrame) definite() (a AxisSet) {
 	return a
 }
 
-func (w wrapFrame) render(env environment) box {
+func (w wrapFrame) render(env environment) plan {
 	inner := env
 	// A definite axis is available space for the view inside,
 	// so it is no longer unbounded.
 	inner.unbounded &^= w.definite()
-	b, m := wrapSubview(inner, w.node)
-	b.fills &^= w.definite()
-	b.rigid |= w.definite()
-	b.add(attr.Class("ui-frame"))
+	p, m := wrapSubview(inner, w.node)
+	p.fills &^= w.definite()
+	p.rigid |= w.definite()
+	p.add(attr.Class("ui-frame"))
 	if w.align != Center {
-		b.add(attr.Class(w.align.placeClass()))
+		p.add(attr.Class(w.align.placeClass()))
 	}
 	if w.h.definite {
-		b.setLayoutStyle("width", w.h.css())
+		p.setLayoutStyle("width", w.h.css())
 	}
 	if w.v.definite {
-		b.setLayoutStyle("height", w.v.css())
+		p.setLayoutStyle("height", w.v.css())
 	}
-	m.applyTo(&b)
-	return b
+	m.applyTo(&p)
+	return p
 }
 
 // A FrameOption configures the size and alignment of a frame.

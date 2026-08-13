@@ -9,9 +9,9 @@ import "testing"
 func TestBoxIsInnermostWriter(t *testing.T) {
 	var env environment
 	env.tag.Set("picture") // an outer Tag modifier
-	b := imageNode{src: "x.png"}.render(env)
-	if b.tag != "img" {
-		t.Errorf("box tag = %q, want the image's own img", b.tag)
+	p := imageNode{src: "x.png"}.render(env)
+	if p.tag != "img" {
+		t.Errorf("box tag = %q, want the image's own img", p.tag)
 	}
 }
 
