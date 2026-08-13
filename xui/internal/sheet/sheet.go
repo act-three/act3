@@ -48,20 +48,6 @@ func (s *StyleSet) Set(property, value string) {
 // IsEmpty reports whether s has no declarations.
 func (s StyleSet) IsEmpty() bool { return len(s.m) == 0 }
 
-// Merge sets every declaration of t,
-// replacing s's value where both declare the same property.
-func (s *StyleSet) Merge(t StyleSet) {
-	if t.IsEmpty() {
-		return
-	}
-	m := maps.Clone(s.m)
-	if m == nil {
-		m = make(map[string]string, len(t.m))
-	}
-	maps.Copy(m, t.m)
-	s.m = m
-}
-
 // declarations returns the declarations sorted by property and joined with semicolons.
 func (s StyleSet) declarations() string {
 	var b strings.Builder

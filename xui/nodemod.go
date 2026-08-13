@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
@@ -102,7 +100,7 @@ func (w wrapBackground) render(env environment) box {
 	b, p := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-mod"))
 	if w.c != "" {
-		b.setStyle("background-color", string(w.c))
+		b.pres.background = &w.c
 	}
 	p.applyTo(&b)
 	return b
@@ -187,7 +185,7 @@ func (w wrapOpacity) modify(n node) node { w.node = n; return w }
 func (w wrapOpacity) render(env environment) box {
 	b, p := wrapSubview(env, w.node)
 	b.add(attr.Class("ui-mod"))
-	b.setStyle("opacity", fmt.Sprintf("%g", w.x))
+	b.pres.opacity = &w.x
 	p.applyTo(&b)
 	return b
 }

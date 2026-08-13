@@ -81,7 +81,7 @@ func (s stackNode) render(env environment) box {
 		content: content,
 	}
 	if s.gap != defaultGap {
-		b.setStyle("gap", cssPx(s.gap))
+		b.setLayoutStyle("gap", cssPx(s.gap))
 	}
 	p.applyTo(&b)
 	return b
