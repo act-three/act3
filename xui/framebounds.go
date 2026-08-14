@@ -3,6 +3,8 @@ package ui
 import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // FrameBounds positions v inside an invisible frame
@@ -257,13 +259,13 @@ func (w wrapFrameBounds) render(env environment) box {
 	if w.align != Center {
 		env.add(attr.Class(w.align.placeClass()))
 	}
-	env.add(w.setStyles(&p, ideal, capped))
+	env.add(w.setStyles(&env.style, ideal, capped))
 	return build(env, p)
 }
 
-// setStyles adds the frame's size and track declarations to p,
+// setStyles adds the frame's size and track declarations to ss,
 // and returns the frame's track classes.
-func (w wrapFrameBounds) setStyles(p *plan, ideal, capped AxisSet) (a domi.Attr) {
+func (w wrapFrameBounds) setStyles(ss *sheet.StyleSet, ideal, capped AxisSet) (a domi.Attr) {
 	// An absorbed fill claims the maximum through the frame's own
 	// track: minmax(0, max) makes the frame's max-content size the
 	// maximum — hugging ancestors size themselves around the full
@@ -273,14 +275,14 @@ func (w wrapFrameBounds) setStyles(p *plan, ideal, capped AxisSet) (a domi.Attr)
 	// once, either poisoning the container's floor or (flex-basis)
 	// vanishing from its max-content entirely.
 	if ideal.hasAll(Horizontal) {
-		p.setLayoutStyle("width", w.h.ideal.css())
+		ss.Set("width", w.h.ideal.css())
 	} else if capped.hasAll(Horizontal) {
-		p.setLayoutStyle("grid-template-columns", "minmax(0,"+w.h.max.css()+")")
+		ss.Set("grid-template-columns", "minmax(0,"+w.h.max.css()+")")
 	}
 	if ideal.hasAll(Vertical) {
-		p.setLayoutStyle("height", w.v.ideal.css())
+		ss.Set("height", w.v.ideal.css())
 	} else if capped.hasAll(Vertical) {
-		p.setLayoutStyle("grid-template-rows", "minmax(0,"+w.v.max.css()+")")
+		ss.Set("grid-template-rows", "minmax(0,"+w.v.max.css()+")")
 	}
 	// An explicit minimum replaces the axis's content-derived floor:
 	// without intervention the frame's min-content size is its subview's,
@@ -288,22 +290,22 @@ func (w wrapFrameBounds) setStyles(p *plan, ideal, capped AxisSet) (a domi.Attr)
 	// the track's intrinsic contribution makes min-* the floor. A
 	// capped axis's track is already zeroed.
 	if w.h.min.definite {
-		p.setLayoutStyle("min-width", w.h.min.css())
+		ss.Set("min-width", w.h.min.css())
 		if !capped.hasAll(Horizontal) {
 			a = domi.Group(a, attr.Class("ui-min-track-x"))
 		}
 	}
 	if w.h.max.definite {
-		p.setLayoutStyle("max-width", w.h.max.css())
+		ss.Set("max-width", w.h.max.css())
 	}
 	if w.v.min.definite {
-		p.setLayoutStyle("min-height", w.v.min.css())
+		ss.Set("min-height", w.v.min.css())
 		if !capped.hasAll(Vertical) {
 			a = domi.Group(a, attr.Class("ui-min-track-y"))
 		}
 	}
 	if w.v.max.definite {
-		p.setLayoutStyle("max-height", w.v.max.css())
+		ss.Set("max-height", w.v.max.css())
 	}
 	return a
 }

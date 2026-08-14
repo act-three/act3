@@ -77,14 +77,13 @@ func (s stackNode) render(env environment) box {
 	// The stack fills an axis when any subview does.
 	content, f := subviewsRendered(inner, s.subviews...)
 	env.add(attr.Class(axes[s.dir].class), s.alignAttr())
-	p := plan{
+	if s.gap != defaultGap {
+		env.style.Set("gap", cssPx(s.gap))
+	}
+	return build(env, plan{
 		fills:   f,
 		content: content,
-	}
-	if s.gap != defaultGap {
-		p.setLayoutStyle("gap", cssPx(s.gap))
-	}
-	return build(env, p)
+	})
 }
 
 // alignAttr returns the class for the stack's alignment.

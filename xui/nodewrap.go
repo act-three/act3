@@ -104,6 +104,6 @@ func (w wrapPadding) modify(n node) node { w.node = n; return w }
 func (w wrapPadding) render(env environment) box {
 	p := wrapSubview(env, w.node)
 	env.add(attr.Class("ui-padding"))
-	w.space.setPadding(&p)
+	w.space.setPadding(&env.style)
 	return build(env, p)
 }
