@@ -65,9 +65,9 @@ func TestGeometryRootIsViewport(t *testing.T) {
 		within(t, "root y", root.Y, 0, 0.5)
 		within(t, "root width", root.W, 600, 1)
 		within(t, "root height", root.H, 400, 1)
-		paint := s.Rect(".ui-color-paint", 0)
-		within(t, "color fills the viewport", paint.W, 600, 1)
-		within(t, "color fills the viewport", paint.H, 400, 1)
+		fill := s.Rect(".ui-color", 0)
+		within(t, "color fills the viewport", fill.W, 600, 1)
+		within(t, "color fills the viewport", fill.H, 400, 1)
 	})
 }
 
@@ -470,9 +470,9 @@ func TestGeometrySoftFrameIdeal(t *testing.T) {
 		soft := s.Rect(".soft", 0)
 		within(t, "fixed soft width takes the clamped ideal", soft.W, 300, 1)
 		within(t, "fixed soft height takes the ideal", soft.H, 80, 1)
-		paint := s.Rect(".ui-color-paint", 0)
-		within(t, "color fills the ideal-sized frame", paint.W, 300, 1)
-		within(t, "color fills the ideal-sized frame", paint.H, 80, 1)
+		fill := s.Rect(".ui-color", 0)
+		within(t, "color fills the ideal-sized frame", fill.W, 300, 1)
+		within(t, "color fills the ideal-sized frame", fill.H, 80, 1)
 	})
 
 	stage(t, v.Frame(ui.Width(600), ui.Height(300)), func(s *uitest.Session) {
@@ -485,9 +485,9 @@ func TestGeometrySoftFrameIdeal(t *testing.T) {
 	// the subview bigger. With no available space to bound, the color
 	// takes the same 10px defaults it would take without the frame.
 	stage(t, ui.VStack(ui.Muted).FrameBounds(ui.MaxWidth(300)).FixedSize(), func(s *uitest.Session) {
-		paint := s.Rect(".ui-color-paint", 0)
-		within(t, "color keeps its default under a max", paint.W, 10, 1)
-		within(t, "color keeps its default under a max", paint.H, 10, 1)
+		fill := s.Rect(".ui-color", 0)
+		within(t, "color keeps its default under a max", fill.W, 10, 1)
+		within(t, "color keeps its default under a max", fill.H, 10, 1)
 	})
 }
 
