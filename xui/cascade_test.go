@@ -148,13 +148,12 @@ func TestBorderShapeRepetition(t *testing.T) {
 	}
 }
 
-// TestBorderShapeShapesColorPaint pins render-time consumption: a
-// Color draws on an inner paint element, so the shape it consumes is
-// realized there rather than on its own (unpainted) element.
-func TestBorderShapeShapesColorPaint(t *testing.T) {
+// TestBorderShapeShapesColor pins render-time consumption: a Color
+// paints its own box, so the shape it consumes is realized there.
+func TestBorderShapeShapesColor(t *testing.T) {
 	html := render(t, ui.Color("red").BorderShape(ui.Ellipse))
-	if !strings.Contains(html, `class="ui-color-paint ui-border-ellipse`) {
-		t.Errorf("shape should land on the color's paint element:\n%s", html)
+	if !strings.Contains(html, `class="ui-color ui-border-ellipse`) {
+		t.Errorf("shape should land on the color's element:\n%s", html)
 	}
 }
 

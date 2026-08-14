@@ -219,10 +219,6 @@
 		background: var(--ui-color-surface);
 	}
 
-	.ui-color-paint {
-		width: 100%;
-		height: 100%;
-	}
 	.ui-color-ideal-x { width: 10px; }
 	.ui-color-ideal-y { height: 10px; }
 

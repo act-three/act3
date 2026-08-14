@@ -309,11 +309,8 @@ func TestImmutableModifiers(t *testing.T) {
 // black, and generic modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
 	html := render(t, ui.Muted)
-	if got := classRule(t, html, `class="ui-color-paint (ui-\w+)"`); got != "background-color:var(--ui-color-muted)" {
-		t.Errorf("color view should paint itself as its element's content, got %q:\n%s", got, html)
-	}
-	if !strings.Contains(html, `class="ui-color ui-cell-fill-x ui-cell-fill-y"`) {
-		t.Errorf("color view should request fill on both axes:\n%s", html)
+	if got := classRule(t, html, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:var(--ui-color-muted)" {
+		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
 	if zero := render(t, ui.Color("")); !strings.Contains(zero, "background-color:#000") {
 		t.Errorf("zero color view should render black:\n%s", zero)
@@ -326,8 +323,8 @@ func TestColorAsView(t *testing.T) {
 	// is translucent — ordinary painting order, not a decoration layer,
 	// and the Modify spelling is the same lowering.
 	bg := render(t, ui.Color("#0008").Background("#fff"))
-	if got := classRule(t, bg, `class="ui-color-paint (ui-\w+)"`); got != "background-color:#0008" {
-		t.Errorf("the inner paint should carry the color, got %q:\n%s", got, bg)
+	if got := classRule(t, bg, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#0008" {
+		t.Errorf("the color should paint its own box, got %q:\n%s", got, bg)
 	}
 	if got := classRule(t, bg, `class="ui-mod ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#fff" {
 		t.Errorf("Background should paint on the wrapper around the color, got %q:\n%s", got, bg)
