@@ -77,11 +77,8 @@ type modAttr struct{ attr domi.Attr }
 
 func (m modAttr) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
-// environment prepends the attributes to those already set,
-// keeping an inner modifier's attributes before an outer's,
-// so they land on the consuming box in application order.
 func (m modAttr) environment(env environment) environment {
-	env.attrs = domi.Group(m.attr, env.attrs)
+	env.add(m.attr)
 	return env
 }
 
@@ -97,7 +94,7 @@ func (w wrapBackground) modify(n node) node { w.node = n; return w }
 
 func (w wrapBackground) render(env environment) box {
 	p := wrapSubview(env, w.node)
-	p.add(attr.Class("ui-mod"))
+	env.add(attr.Class("ui-mod"))
 	if w.c != "" {
 		p.background = &w.c
 	}
@@ -134,7 +131,7 @@ func (m modFixedSize) modify(n node) node { return nodeEnv{f: m.environment, nod
 // The marker class rides the environment's attrs.
 func (modFixedSize) environment(env environment) environment {
 	env.unbounded = Horizontal | Vertical
-	env.attrs = domi.Group(attr.Class("ui-fixed-size"), env.attrs)
+	env.add(attr.Class("ui-fixed-size"))
 	return env
 }
 
@@ -181,7 +178,7 @@ func (w wrapOpacity) modify(n node) node { w.node = n; return w }
 
 func (w wrapOpacity) render(env environment) box {
 	p := wrapSubview(env, w.node)
-	p.add(attr.Class("ui-mod"))
+	env.add(attr.Class("ui-mod"))
 	p.opacity = &w.x
 	return build(env, p)
 }

@@ -45,10 +45,8 @@ func (n imageNode) render(env environment) box {
 		// At native size the img's intrinsic geometry is the whole
 		// contract, so the img is its own box, with no wrapper to
 		// mediate between the box and the available space.
-		p = plan{
-			rigid: Horizontal | Vertical,
-			attrs: domi.Group(attr.Src(n.src), alt),
-		}
+		env.add(attr.Src(n.src), alt)
+		p = plan{rigid: Horizontal | Vertical}
 	} else {
 		// A scaling mode is a statement about meeting an imposed box: the
 		// img is fully flexible, and object-fit fits the picture to
@@ -56,10 +54,8 @@ func (n imageNode) render(env environment) box {
 		// to meet, so the fill drops away and the img's intrinsic
 		// geometry answers — its natural size, or the other axis scaled
 		// through the picture's ratio.
-		p = plan{
-			fills: Horizontal | Vertical,
-			attrs: domi.Group(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class())),
-		}
+		env.add(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class()))
+		p = plan{fills: Horizontal | Vertical}
 	}
 	return build(env, p)
 }

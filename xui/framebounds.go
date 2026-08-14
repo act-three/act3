@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
 
@@ -252,16 +253,17 @@ func (w wrapFrameBounds) render(env environment) box {
 	// bounds instead, regardless of the subview's rigidity.
 	p.rigid &^= w.boundedAxes()
 	p.fills &^= capped
-	p.add(attr.Class("ui-frame"))
+	env.add(attr.Class("ui-frame"))
 	if w.align != Center {
-		p.add(attr.Class(w.align.placeClass()))
+		env.add(attr.Class(w.align.placeClass()))
 	}
-	w.setStyles(&p, ideal, capped)
+	env.add(w.setStyles(&p, ideal, capped))
 	return build(env, p)
 }
 
-// setStyles adds the frame's size and track declarations to b.
-func (w wrapFrameBounds) setStyles(p *plan, ideal, capped AxisSet) {
+// setStyles adds the frame's size and track declarations to p,
+// and returns the frame's track classes.
+func (w wrapFrameBounds) setStyles(p *plan, ideal, capped AxisSet) (a domi.Attr) {
 	// An absorbed fill claims the maximum through the frame's own
 	// track: minmax(0, max) makes the frame's max-content size the
 	// maximum — hugging ancestors size themselves around the full
@@ -288,7 +290,7 @@ func (w wrapFrameBounds) setStyles(p *plan, ideal, capped AxisSet) {
 	if w.h.min.definite {
 		p.setLayoutStyle("min-width", w.h.min.css())
 		if !capped.hasAll(Horizontal) {
-			p.add(attr.Class("ui-min-track-x"))
+			a = domi.Group(a, attr.Class("ui-min-track-x"))
 		}
 	}
 	if w.h.max.definite {
@@ -297,10 +299,11 @@ func (w wrapFrameBounds) setStyles(p *plan, ideal, capped AxisSet) {
 	if w.v.min.definite {
 		p.setLayoutStyle("min-height", w.v.min.css())
 		if !capped.hasAll(Vertical) {
-			p.add(attr.Class("ui-min-track-y"))
+			a = domi.Group(a, attr.Class("ui-min-track-y"))
 		}
 	}
 	if w.v.max.definite {
 		p.setLayoutStyle("max-height", w.v.max.css())
 	}
+	return a
 }

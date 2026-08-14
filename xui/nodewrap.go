@@ -77,7 +77,7 @@ func (w wrapLayer) render(env environment) box {
 		html.Div(attr.Class("ui-layer-base"))(p.content),
 		html.Div(attrs...)(renderLayer(env, w.view)),
 	)
-	p.add(attr.Class("ui-layers"))
+	env.add(attr.Class("ui-layers"))
 	return build(env, p)
 }
 
@@ -103,7 +103,7 @@ func (w wrapPadding) modify(n node) node { w.node = n; return w }
 
 func (w wrapPadding) render(env environment) box {
 	p := wrapSubview(env, w.node)
-	p.add(attr.Class("ui-padding"))
+	env.add(attr.Class("ui-padding"))
 	w.space.setPadding(&p)
 	return build(env, p)
 }

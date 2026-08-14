@@ -76,9 +76,9 @@ func (s stackNode) render(env environment) box {
 	inner.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
 	content, f := subviewsRendered(inner, s.subviews...)
+	env.add(attr.Class(axes[s.dir].class), s.alignAttr())
 	p := plan{
 		fills:   f,
-		attrs:   domi.Group(attr.Class(axes[s.dir].class), s.alignAttr()),
 		content: content,
 	}
 	if s.gap != defaultGap {
@@ -118,11 +118,8 @@ func (spacerNode) render(env environment) box {
 	if env.lc.majorAxis.hasAll(Vertical) {
 		a = attr.Class("ui-spacer-v")
 	}
-	p := plan{
-		fills: env.lc.majorAxis,
-		attrs: domi.Group(attr.Class("ui-spacer"), a),
-	}
-	return build(env, p)
+	env.add(attr.Class("ui-spacer"), a)
+	return build(env, plan{fills: env.lc.majorAxis})
 }
 
 // A Divider is a thin line that can be used to separate other views.
@@ -134,22 +131,18 @@ func Divider() View { return base{dividerNode{}} }
 type dividerNode struct{}
 
 func (dividerNode) render(env environment) box {
-	a := []domi.Attr{attr.Class("ui-divider")}
+	env.add(attr.Class("ui-divider"))
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
-		a = append(a, attr.Class("ui-divider-v"))
+		env.add(attr.Class("ui-divider-v"))
 		if env.unbounded.hasAll(Vertical) {
-			a = append(a, attr.Class("ui-divider-ideal-y"))
+			env.add(attr.Class("ui-divider-ideal-y"))
 		}
 	} else {
-		a = append(a, attr.Class("ui-divider-h"))
+		env.add(attr.Class("ui-divider-h"))
 		if env.unbounded.hasAll(Horizontal) {
-			a = append(a, attr.Class("ui-divider-ideal-x"))
+			env.add(attr.Class("ui-divider-ideal-x"))
 		}
 	}
-	p := plan{
-		fills: env.lc.minorAxes(),
-		attrs: domi.Group(a...),
-	}
-	return build(env, p)
+	return build(env, plan{fills: env.lc.minorAxes()})
 }

@@ -104,11 +104,8 @@ type textNode struct {
 }
 
 func (n textNode) render(env environment) box {
-	p := plan{
-		attrs:   attr.Class("ui-text"),
-		content: n.html(env.sheet),
-	}
-	return build(env, p)
+	env.add(attr.Class("ui-text"))
+	return build(env, plan{content: n.html(env.sheet)})
 }
 
 // html lowers n (with its own style, if any).
