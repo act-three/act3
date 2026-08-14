@@ -9,11 +9,6 @@ import (
 // It can be applied with [View.Modify].
 //
 // It is usually more convenient to call modifier methods directly on View.
-//
-// A style modifier behaves as if it were applied to a
-// layout-transparent element wrapping the modified view.
-// The renderer may collapse modifiers onto a single element
-// only where that preserves the wrapper semantics.
 type Modifier interface {
 	modify(node) node
 }
@@ -104,14 +99,6 @@ func (w wrapBackground) render(env environment) box {
 type modBorderShape struct{ s Shape }
 
 // BorderShape sets the shape of a view's border.
-//
-// The shape is drawn by the modified view itself:
-// it inherits down to the first box under the modifier,
-// which consumes it and paints itself in the given shape.
-// A repeated BorderShape is therefore inert:
-// the innermost shape is written last and wins.
-// BorderShape does not clip;
-// content that overflows the shape is drawn in full.
 func BorderShape(s Shape) Modifier { return modBorderShape{s} }
 
 func (m modBorderShape) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
@@ -167,8 +154,6 @@ func (m modForeground) environment(env environment) environment {
 type modOpacity struct{ x float64 }
 
 // Opacity sets a view's opacity to x, from 0 (transparent) to 1 (opaque).
-// Nested opacities multiply:
-// v.Opacity(0.5).Opacity(0.5) draws v at a quarter of full opacity.
 func Opacity(x float64) Modifier { return modOpacity{x} }
 
 func (m modOpacity) modify(n node) node { return nodeEnv{f: m.environment, node: n} }

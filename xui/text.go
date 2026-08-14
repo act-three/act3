@@ -28,8 +28,6 @@ func (v TextView) Monospace() TextView { return v.styledWith(func(s *textStyle) 
 // TextFont sets the font size for the text in v.
 //
 // It is equivalent to [View.Font], but it returns a TextView.
-// Like Font, an inner TextFont closer to the text wins,
-// so a repeated TextFont keeps the first font size.
 func (v TextView) TextFont(f FontSize) TextView {
 	return v.styledWith(func(s *textStyle) {
 		if s.font == "" {
@@ -41,8 +39,6 @@ func (v TextView) TextFont(f FontSize) TextView {
 // TextForeground uses c to draw the text in v.
 //
 // It is equivalent to [View.Foreground], but it returns a TextView.
-// Like Foreground, an inner TextForeground closer to the text wins,
-// so a repeated TextForeground keeps the first color.
 func (v TextView) TextForeground(c Color) TextView {
 	return v.styledWith(func(s *textStyle) {
 		if s.color == "" {
