@@ -116,13 +116,13 @@ func TestAccountCard(t *testing.T) {
 
 	wants := []string{
 		`<ui-root>`, // root
-		`class="ui-hstack ui-card ui-cell-fill-x"`, // Card: a VStack with the surface class
+		`class="ui-hstack ui-card ui-cell-fill-x `, // Card: a VStack with the surface class
 		`class="ui-hstack ui-grow`,                 // the Spacer's fill stretches the row across the card
 		`ui-border-ellipse`,                        // BorderShape applied to the image frame
 		`ui-frame`,                                 // Size(48) introduces a frame wrapper
 		`width:48px`,                               // ...with the resolved size
 		`class="ui-spacer ui-spacer-h ui-grow"`,
-		`class="ui-hstack ui-button ui-role-primary"`,
+		`class="ui-hstack ui-button ui-role-primary `,
 		`class="ui-layers ui-cell-fill-x"`, // Underlay + Overlay decoration layers
 		`class="ui-underlay"`,
 		`class="ui-overlay ui-place-start-end"`,
@@ -146,7 +146,7 @@ func TestMoviePageFillPropagation(t *testing.T) {
 	wants := []string{
 		// The header HStack contains a Spacer, so it fills horizontally —
 		// the minor axis of the enclosing VStack, lowered as a self-stretch.
-		`class="ui-hstack ui-stretch"`,
+		`class="ui-hstack ui-stretch `,
 		// The outer VStack inherits that horizontal fill; at the root, a
 		// grid, it lowers to a cell stretch.
 		`class="ui-vstack ui-cell-fill-x`,
@@ -173,7 +173,7 @@ func TestMoviePageFillPropagation(t *testing.T) {
 // row's main axis) and the enclosing stack keeps propagating the request
 // toward a definite ancestor.
 func TestTagNamesElement(t *testing.T) {
-	if html := render(t, ui.VStack(ui.Text("a")).Tag("ul")); !strings.Contains(html, `<ul class="ui-vstack"`) {
+	if html := render(t, ui.VStack(ui.Text("a")).Tag("ul")); !strings.Contains(html, `<ul class="ui-vstack `) {
 		t.Errorf("Tag should rename the stack's own element:\n%s", html)
 	}
 
@@ -183,7 +183,7 @@ func TestTagNamesElement(t *testing.T) {
 	))
 	for _, w := range []string{
 		`<nav class="ui-frame ui-grow"`,         // the tagged frame carries the fill
-		`class="ui-hstack ui-cell-fill-x"`,      // ...and the root stack keeps it
+		`class="ui-hstack ui-cell-fill-x `,      // ...and the root stack keeps it
 		`class="ui-spacer ui-spacer-h ui-grow"`, // the inner row distributes slack
 	} {
 		if !strings.Contains(html, w) {
@@ -250,7 +250,7 @@ func TestHTMLFill(t *testing.T) {
 		{
 			"a row grows it, stretches it, and inherits the fill",
 			ui.HStack(ui.HTML(domi.Text("raw"))),
-			[]string{`class="ui-html ui-grow ui-stretch"`, `class="ui-hstack ui-cell-fill-x ui-cell-fill-y"`},
+			[]string{`class="ui-html ui-grow ui-stretch"`, `class="ui-hstack ui-cell-fill-x ui-cell-fill-y `},
 			nil,
 		},
 		{
@@ -862,8 +862,11 @@ func TestGapDoesNotLeak(t *testing.T) {
 	html := render(t, ui.VStack(
 		ui.VStack(ui.Text("a"), ui.Text("b")),
 	).Gap(16))
-	if got := strings.Count(html, "gap:"); got != 1 {
-		t.Errorf("gap declaration count = %d, want 1 (outer stack only)\n\n%s", got, html)
+	if got := strings.Count(html, "gap:16px"); got != 1 {
+		t.Errorf("gap:16px declaration count = %d, want 1 (outer stack only)\n\n%s", got, html)
+	}
+	if got := strings.Count(html, "gap:8px"); got != 1 {
+		t.Errorf("gap:8px declaration count = %d, want 1 (the inner stack's own default)\n\n%s", got, html)
 	}
 }
 

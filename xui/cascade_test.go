@@ -42,10 +42,10 @@ func TestInheritedModifierCollapses(t *testing.T) {
 	if strings.Contains(html, "ui-mod") {
 		t.Fatalf("Foreground should not produce a wrapper:\n%s", html)
 	}
-	if got := classRule(t, html, `class="ui-vstack (ui-\w+)"`); got != "color:red" {
-		t.Errorf("stack box rule = %q, want the consumed color", got)
+	if got := classRule(t, html, `class="ui-vstack (ui-\w+)"`); got != "color:red;gap:8px" {
+		t.Errorf("stack box rule = %q, want the consumed color in the stack's own set", got)
 	}
-	m := regexp.MustCompile(`\.(ui-\w+)\{color:red\}`).FindStringSubmatch(html)
+	m := regexp.MustCompile(`\.(ui-\w+)\{color:red;gap:8px\}`).FindStringSubmatch(html)
 	if m == nil {
 		t.Fatalf("no color rule in the sheet:\n%s", html)
 	}
