@@ -277,13 +277,15 @@ func TestHTMLFill(t *testing.T) {
 }
 
 // TestHTMLWrappers pins that wrapping modifiers enclose the host: the
-// wrapper elements appear outside it and the node stays untouched inside.
+// wrapper element appears outside it, carrying the paint, and the node
+// stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
 	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background("red"))
-	for _, w := range []string{`class="ui-mod`, `class="ui-padding`, `class="ui-html ui-cell-fill-x ui-cell-fill-y">raw<`} {
-		if !strings.Contains(html, w) {
-			t.Errorf("missing %q:\n%s", w, html)
-		}
+	if got := classRule(t, html, `class="ui-padding ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:red;padding:4px" {
+		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
+	}
+	if !strings.Contains(html, `class="ui-html ui-cell-fill-x ui-cell-fill-y">raw<`) {
+		t.Errorf("host should stay untouched inside:\n%s", html)
 	}
 }
 
@@ -319,15 +321,12 @@ func TestColorAsView(t *testing.T) {
 		t.Errorf("modifier on a color view should reach its box:\n%s", mod)
 	}
 
-	// Background wraps the color and paints behind it, visible where c
-	// is translucent — ordinary painting order, not a decoration layer,
-	// and the Modify spelling is the same lowering.
+	// Background layers behind the color on the color's own element,
+	// visible where c is translucent — ordinary painting order, not a
+	// decoration layer, and the Modify spelling is the same lowering.
 	bg := render(t, ui.Color("#0008").Background("#fff"))
-	if got := classRule(t, bg, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#0008" {
-		t.Errorf("the color should paint its own box, got %q:\n%s", got, bg)
-	}
-	if got := classRule(t, bg, `class="ui-mod ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#fff" {
-		t.Errorf("Background should paint on the wrapper around the color, got %q:\n%s", got, bg)
+	if got := classRule(t, bg, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#fff;background-image:linear-gradient(#0008,#0008)" {
+		t.Errorf("Background should layer under the color, got %q:\n%s", got, bg)
 	}
 	if strings.Contains(bg, "ui-underlay") {
 		t.Errorf("Background on a color should merge, not add a layer:\n%s", bg)

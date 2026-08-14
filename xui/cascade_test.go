@@ -115,31 +115,29 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 }
 
 // TestBackgroundStacks pins the paint stack: an outer Background
-// paints behind an inner one, visible where the inner is translucent.
+// paints behind an inner one on the same element, visible where the
+// inner is translucent — the outermost color as background-color,
+// the inner colors as image layers listed innermost first.
 func TestBackgroundStacks(t *testing.T) {
 	html := render(t, ui.Text("x").Background("#0008").Background("#fff"))
-	inner := classRule(t, html, `class="ui-mod (ui-\w+)"><div class="ui-text"`)
-	if inner != "background-color:#0008" {
-		t.Errorf("inner paint = %q, want the first Background", inner)
-	}
-	outer := classRule(t, html, `class="ui-mod (ui-\w+)"><div class="ui-mod`)
-	if outer != "background-color:#fff" {
-		t.Errorf("outer paint = %q, want the second Background", outer)
+	got := classRule(t, html, `class="ui-text (ui-\w+)"`)
+	if got != "background-color:#fff;background-image:linear-gradient(#0008,#0008)" {
+		t.Errorf("paint stack = %q, want the outer color under the inner layer:\n%s", got, html)
 	}
 }
 
 // TestBackgroundShapeOrder pins the shape's write order: a shape applied after
 // paint shapes it; paint applied after a shape lands outside it.
 func TestBackgroundShapeOrder(t *testing.T) {
-	// Background then shape: the shape merges onto the paint wrapper —
+	// Background then shape: shape and paint share the element —
 	// a red capsule.
 	shaped := render(t, ui.Text("x").Background("red").BorderShape(ui.Capsule))
-	if got := classRule(t, shaped, `class="ui-mod ui-border-capsule (ui-\w+)"`); got != "background-color:red" {
-		t.Errorf("shape after paint should shape the paint element, got %q:\n%s", got, shaped)
+	if got := classRule(t, shaped, `class="ui-text ui-border-capsule (ui-\w+)"`); got != "background-color:red" {
+		t.Errorf("shape after paint should shape the paint, got %q:\n%s", got, shaped)
 	}
 
 	// Shape then background: the shape stays on the text element and
-	// the paint wraps it, unshaped — a red rectangle.
+	// the paint boxes out around it, unshaped — a red rectangle.
 	square := render(t, ui.Text("x").BorderShape(ui.Capsule).Background("red"))
 	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "background-color:red" {
 		t.Errorf("paint after shape should land on a wrapper, got %q:\n%s", got, square)
@@ -181,7 +179,7 @@ func TestWrapperKeepsRigidity(t *testing.T) {
 		v    ui.View
 		want string
 	}{
-		{"style wrapper", ui.HStack(ui.Text("x").FixedSize().Background("red")), `class="ui-mod ui-rigid`},
+		{"transform box", ui.HStack(ui.Text("x").FixedSize().Opacity(0.5).Background("red")), `class="ui-mod ui-rigid`},
 		{"frame auto axis", ui.HStack(ui.Text("x").FixedSize().Frame(ui.Height(40))), `class="ui-frame ui-rigid`},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

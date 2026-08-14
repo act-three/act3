@@ -2,7 +2,9 @@ package ui
 
 import (
 	"cmp"
+	"slices"
 	"strconv"
+	"strings"
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
@@ -129,12 +131,14 @@ type environment struct {
 // that must be cleared before rendering a subview.
 // They are "one-shot" or "one-box" values.
 type boxenv struct {
+	paint bool // set by every paint modifier
 	shape *Shape
 	attrs domi.Attr
 	tag   string
 	fg    *Color
 	font  FontSize
 	trans float64
+	bg    []Color
 }
 
 // add prepends attributes to the environment,
@@ -159,13 +163,11 @@ type plan struct {
 	fills   AxisSet // A fill request is the physical axes a box wants to fill.
 	rigid   AxisSet
 	layout  sheet.StyleSet // layout declarations only
-	presentation
 }
 
 // setLayoutStyle adds a resolved CSS layout declaration to p.
 // Setting the same property again replaces its value.
 // Do not call setLayoutStyle for non-layout properties.
-// Use the presentation fields instead.
 func (p *plan) setLayoutStyle(property, value string) { p.layout.Set(property, value) }
 
 // A box is a rendered node.
@@ -206,7 +208,7 @@ func build(env environment, p plan) box {
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
 	ss := p.layout
-	p.presentation.lower(&ss)
+	addBackgroundStylesTo(&ss, env.bg)
 	if env.fg != nil {
 		ss.Set("color", string(*env.fg))
 	}
@@ -224,4 +226,22 @@ func build(env environment, p plan) box {
 		fills: fills,
 		rigid: rigid,
 	}
+}
+
+// addBackgroundStylesTo adds the declarations for the paint stack bg:
+// the outermost color as background-color,
+// and the inner colors as image layers listed innermost first.
+func addBackgroundStylesTo(ss *sheet.StyleSet, bg []Color) {
+	if len(bg) == 0 {
+		return
+	}
+	ss.Set("background-color", string(bg[0]))
+	if len(bg) == 1 {
+		return
+	}
+	var img []string
+	for _, c := range slices.Backward(bg[1:]) {
+		img = append(img, "linear-gradient("+string(c)+","+string(c)+")")
+	}
+	ss.Set("background-image", strings.Join(img, ","))
 }

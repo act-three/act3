@@ -23,6 +23,27 @@ func (m nodeEnv) render(env environment) box {
 	return m.node.render(m.f(env))
 }
 
+// A nodeTransform adjusts the environment for its subtree, like nodeEnv.
+// Additionally, if the environment has any paint modifiers
+// (as indicated by boxenv.paint),
+// it first emits a layout-preserving wrapper box
+// that applies all env modifiers,
+// thus clearing any pending paint modifiers
+// before applying f and rendering node.
+type nodeTransform struct {
+	f    func(environment) environment
+	node node
+}
+
+func (m nodeTransform) render(env environment) box {
+	if !env.paint {
+		return m.node.render(m.f(env))
+	}
+	p := wrapSubview(env, nodeEnv{f: m.f, node: m.node})
+	env.add(attr.Class("ui-mod"))
+	return build(env, p)
+}
+
 // Modify applies the given modifiers to v in order from left to right.
 func (v base) Modify(mods ...Modifier) View {
 	for _, m := range mods {
@@ -77,23 +98,19 @@ func (m modAttr) environment(env environment) environment {
 	return env
 }
 
-type wrapBackground struct {
-	c    Color
-	node node
-}
+type modBackground struct{ c Color }
 
 // Background fills the background of a view with c.
-func Background(c Color) Modifier { return wrapBackground{c: c} }
+func Background(c Color) Modifier { return modBackground{c} }
 
-func (w wrapBackground) modify(n node) node { w.node = n; return w }
+func (m modBackground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
-func (w wrapBackground) render(env environment) box {
-	p := wrapSubview(env, w.node)
-	env.add(attr.Class("ui-mod"))
-	if w.c != "" {
-		p.background = &w.c
+func (m modBackground) environment(env environment) environment {
+	if m.c != "" {
+		env.bg = append(env.bg, m.c)
+		env.paint = true
 	}
-	return build(env, p)
+	return env
 }
 
 type modBorderShape struct{ s Shape }
@@ -101,7 +118,7 @@ type modBorderShape struct{ s Shape }
 // BorderShape sets the shape of a view's border.
 func BorderShape(s Shape) Modifier { return modBorderShape{s} }
 
-func (m modBorderShape) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
+func (m modBorderShape) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
 
 func (m modBorderShape) environment(env environment) environment {
 	env.shape = &m.s
@@ -156,7 +173,7 @@ type modOpacity struct{ x float64 }
 // Opacity sets a view's opacity to x, from 0 (transparent) to 1 (opaque).
 func Opacity(x float64) Modifier { return modOpacity{x} }
 
-func (m modOpacity) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
+func (m modOpacity) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
 
 func (m modOpacity) environment(env environment) environment {
 	a := 1 - env.trans
