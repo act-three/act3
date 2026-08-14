@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-
 	"ily.dev/act3/xui/internal/sheet"
 )
 
@@ -12,15 +10,11 @@ import (
 // translates them to CSS declarations at build time.
 type presentation struct {
 	background *Color
-	opacity    *float64
 }
 
 // lower adds the CSS declarations for p's values to set.
 func (p presentation) lower(set *sheet.StyleSet) {
 	if p.background != nil {
 		set.Set("background-color", string(*p.background))
-	}
-	if p.opacity != nil {
-		set.Set("opacity", fmt.Sprintf("%g", *p.opacity))
 	}
 }

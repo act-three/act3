@@ -230,10 +230,7 @@
 		cursor: pointer;
 	}
 	.ui-button:hover { border-color: var(--ui-color-muted); }
-	.ui-button:disabled {
-		opacity: 0.5;
-		cursor: default;
-	}
+	.ui-button:disabled { cursor: default; }
 	.ui-button.ui-role-primary {
 		background: var(--ui-color-accent);
 		border-color: var(--ui-color-accent);
