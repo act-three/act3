@@ -135,6 +135,13 @@ type boxenv struct {
 	font  FontSize
 }
 
+// add prepends attributes to the environment,
+// keeping an inner writer's attributes before an outer's,
+// so they land on the box in application order.
+func (env *environment) add(a ...domi.Attr) {
+	env.attrs = domi.Group(domi.Group(a...), env.attrs)
+}
+
 // shapeClass returns the pending border shape's class attribute,
 // or nil when no shape is pending.
 func (env environment) shapeClass() domi.Attr {
@@ -149,12 +156,9 @@ type plan struct {
 	content domi.Node
 	fills   AxisSet // A fill request is the physical axes a box wants to fill.
 	rigid   AxisSet
-	attrs   domi.Attr
 	layout  sheet.StyleSet // layout declarations only
 	presentation
 }
-
-func (p *plan) add(a domi.Attr) { p.attrs = domi.Group(p.attrs, a) }
 
 // setLayoutStyle adds a resolved CSS layout declaration to p.
 // Setting the same property again replaces its value.
@@ -191,11 +195,10 @@ func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
 
 // build returns the box described by env and p.
 func build(env environment, p plan) box {
-	p.add(env.shapeClass())
+	a := domi.Group(env.attrs, env.shapeClass())
 	if c := env.font.class(); c != "" {
-		p.add(attr.Class(c))
+		a = domi.Group(a, attr.Class(c))
 	}
-	p.add(env.attrs)
 	// A fill request on an unbounded axis is meaningless, so clear it.
 	fills := p.fills &^ env.unbounded
 	// A box is always rigid on an unbounded axis.
@@ -210,9 +213,9 @@ func build(env environment, p plan) box {
 		style = attr.Class(env.sheet.ClassFor(ss))
 	}
 	// Keep the generated class after the named classes in rendered output.
-	a := domi.Group(fills.fillAttr(env), rigid.rigidAttr(env), style)
+	a = domi.Group(a, fills.fillAttr(env), rigid.rigidAttr(env), style)
 	return box{
-		node:  domi.Tag(cmp.Or(env.tag, "div"), p.attrs, a)(p.content),
+		node:  domi.Tag(cmp.Or(env.tag, "div"), a)(p.content),
 		fills: fills,
 		rigid: rigid,
 	}

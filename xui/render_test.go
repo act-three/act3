@@ -223,7 +223,7 @@ func TestHTMLHost(t *testing.T) {
 	}
 
 	mod := render(t, ui.HTML(domi.Text("raw")).BorderShape(ui.Ellipse).Class("x").Tag("section"))
-	for _, w := range []string{"<section", "ui-html", "ui-border-ellipse x", ">raw<"} {
+	for _, w := range []string{"<section", "ui-html", "x ui-border-ellipse", ">raw<"} {
 		if !strings.Contains(mod, w) {
 			t.Errorf("host modifiers missing %q:\n%s", w, mod)
 		}
@@ -597,12 +597,12 @@ func TestAlignProjectsOntoCrossAxis(t *testing.T) {
 // minor axis either way.
 func TestDividerAxisAware(t *testing.T) {
 	h := render(t, ui.HStack(ui.Text("a"), ui.Divider(), ui.Text("b")))
-	if !strings.Contains(h, "ui-divider ui-divider-v ui-stretch") {
+	if !strings.Contains(h, "ui-divider-v ui-divider ui-stretch") {
 		t.Errorf("divider in HStack should be vertical and stretch:\n%s", h)
 	}
 
 	v := render(t, ui.VStack(ui.Text("a"), ui.Divider(), ui.Text("b")))
-	if !strings.Contains(v, "ui-divider ui-divider-h ui-stretch") {
+	if !strings.Contains(v, "ui-divider-h ui-divider ui-stretch") {
 		t.Errorf("divider in VStack should be horizontal and stretch:\n%s", v)
 	}
 }

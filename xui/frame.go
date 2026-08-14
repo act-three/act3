@@ -53,9 +53,9 @@ func (w wrapFrame) render(env environment) box {
 	p := wrapSubview(inner, w.node)
 	p.fills &^= w.definite()
 	p.rigid |= w.definite()
-	p.add(attr.Class("ui-frame"))
+	env.add(attr.Class("ui-frame"))
 	if w.align != Center {
-		p.add(attr.Class(w.align.placeClass()))
+		env.add(attr.Class(w.align.placeClass()))
 	}
 	if w.h.definite {
 		p.setLayoutStyle("width", w.h.css())

@@ -102,19 +102,18 @@ func (c Color) Attr(a ...domi.Attr) View { return c.view().Attr(a...) }
 type colorFillNode struct{ color Color }
 
 func (f colorFillNode) render(env environment) box {
+	env.add(attr.Class("ui-color"))
 	// A color adapts to any space and has no content-derived size of
 	// its own; an axis with unbounded available space takes a 10px
 	// default, and the rest adapt.
-	a := []domi.Attr{attr.Class("ui-color")}
 	if env.unbounded.hasAll(Horizontal) {
-		a = append(a, attr.Class("ui-color-ideal-x"))
+		env.add(attr.Class("ui-color-ideal-x"))
 	}
 	if env.unbounded.hasAll(Vertical) {
-		a = append(a, attr.Class("ui-color-ideal-y"))
+		env.add(attr.Class("ui-color-ideal-y"))
 	}
 	p := plan{
 		fills:      Horizontal | Vertical,
-		attrs:      domi.Group(a...),
 		background: new(cmp.Or(f.color, "#000")),
 	}
 	return build(env, p)

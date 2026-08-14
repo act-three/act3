@@ -3,7 +3,6 @@ package ui
 import (
 	"cmp"
 
-	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
 
@@ -39,17 +38,16 @@ func (s scrollNode) render(env environment) box {
 	}[s.along], "ui-scroll-none")
 	// The scroll viewport is a single-cell grid establishing no axes.
 	// It is equivalent to the root view context in a scrolling web page.
-	a := []domi.Attr{attr.Class("ui-scroll", variant)}
+	env.add(attr.Class("ui-scroll", variant))
 	if env.unbounded.hasAll(Horizontal) {
-		a = append(a, attr.Class("ui-scroll-ideal-x"))
+		env.add(attr.Class("ui-scroll-ideal-x"))
 	}
 	if env.unbounded.hasAll(Vertical) {
-		a = append(a, attr.Class("ui-scroll-ideal-y"))
+		env.add(attr.Class("ui-scroll-ideal-y"))
 	}
 	content, _ := subviewsRendered(inner, s.contents)
 	p := plan{
 		fills:   Horizontal | Vertical,
-		attrs:   domi.Group(a...),
 		content: content,
 	}
 	return build(env, p)
