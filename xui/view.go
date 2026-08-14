@@ -146,20 +146,20 @@ func (env environment) shapeClass() domi.Attr {
 
 // A plan is an HTML element under construction.
 type plan struct {
+	content domi.Node
 	fills   AxisSet // A fill request is the physical axes a box wants to fill.
 	rigid   AxisSet
 	attrs   domi.Attr
 	layout  sheet.StyleSet // layout declarations only
-	pres    presentation
-	content domi.Node
+	presentation
 }
 
 func (p *plan) add(a domi.Attr) { p.attrs = domi.Group(p.attrs, a) }
 
-// setLayoutStyle adds a resolved CSS layout declaration to x.
+// setLayoutStyle adds a resolved CSS layout declaration to p.
 // Setting the same property again replaces its value.
 // Do not call setLayoutStyle for non-layout properties.
-// Use plan.pres instead.
+// Use the presentation fields instead.
 func (p *plan) setLayoutStyle(property, value string) { p.layout.Set(property, value) }
 
 // A box is a rendered node.
@@ -196,13 +196,13 @@ func build(env environment, p plan) box {
 		p.add(attr.Class(c))
 	}
 	p.add(env.attrs)
-	p.pres.color = env.fg
+	p.color = env.fg
 	// A fill request on an unbounded axis is meaningless, so clear it.
 	fills := p.fills &^ env.unbounded
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
 	ss := p.layout
-	p.pres.lower(&ss)
+	p.presentation.lower(&ss)
 	var style domi.Attr
 	if !ss.IsEmpty() {
 		style = attr.Class(env.sheet.ClassFor(ss))

@@ -113,9 +113,9 @@ func (f colorFillNode) render(env environment) box {
 		a = append(a, attr.Class("ui-color-ideal-y"))
 	}
 	p := plan{
-		fills: Horizontal | Vertical,
-		attrs: domi.Group(a...),
+		fills:      Horizontal | Vertical,
+		attrs:      domi.Group(a...),
+		background: new(cmp.Or(f.color, "#000")),
 	}
-	p.pres.background = new(cmp.Or(f.color, "#000"))
 	return build(env, p)
 }
