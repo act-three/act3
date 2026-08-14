@@ -196,13 +196,15 @@ func build(env environment, p plan) box {
 		p.add(attr.Class(c))
 	}
 	p.add(env.attrs)
-	p.color = env.fg
 	// A fill request on an unbounded axis is meaningless, so clear it.
 	fills := p.fills &^ env.unbounded
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
 	ss := p.layout
 	p.presentation.lower(&ss)
+	if env.fg != nil {
+		ss.Set("color", string(*env.fg))
+	}
 	var style domi.Attr
 	if !ss.IsEmpty() {
 		style = attr.Class(env.sheet.ClassFor(ss))
