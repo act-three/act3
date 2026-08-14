@@ -11,18 +11,17 @@ import (
 // and the wrapper forwards the subview's fill request and rigid axes,
 // staying layout-transparent.
 // A frame masks the forwarded axes its own geometry governs.
-// wrapSubview takes env's mise before the subview renders,
-// so it cannot land on the subview's plan,
-// and returns it for the caller to build its plan with.
-func wrapSubview(env environment, n node) (plan, mise) {
-	m := env.takeMise()
+// wrapSubview strips env's box values before the subview renders,
+// so they cannot land on the subview's box.
+func wrapSubview(env environment, n node) plan {
+	env.boxenv = boxenv{}
 	env.container = containerGrid
 	b := n.render(env)
 	return plan{
 		fills:   b.fills,
 		rigid:   b.rigid,
 		content: b.node,
-	}, m
+	}
 }
 
 // LayerUnder displays u under v.
@@ -73,13 +72,13 @@ func (w wrapLayer) render(env environment) box {
 	if w.alignment != Center {
 		attrs = append(attrs, attr.Class(w.alignment.placeClass()))
 	}
-	p, m := wrapSubview(env, w.node)
+	p := wrapSubview(env, w.node)
 	p.content = domi.Fragment(
 		html.Div(attr.Class("ui-layer-base"))(p.content),
 		html.Div(attrs...)(renderLayer(env, w.view)),
 	)
 	p.add(attr.Class("ui-layers"))
-	return build(env, m, p)
+	return build(env, p)
 }
 
 // renderLayer renders a view inside its grid layer,
@@ -87,7 +86,7 @@ func (w wrapLayer) render(env environment) box {
 // v's fill requests don't propagate outside the layer.
 func renderLayer(env environment, v View) domi.Node {
 	env = environment{lc: axes[axisZ].lc, container: containerGrid, sheet: env.sheet}
-	content, _, _ := subviewsRendered(env, v)
+	content, _ := subviewsRendered(env, v)
 	return content
 }
 
@@ -103,8 +102,8 @@ type wrapPadding struct {
 func (w wrapPadding) modify(n node) node { w.node = n; return w }
 
 func (w wrapPadding) render(env environment) box {
-	p, m := wrapSubview(env, w.node)
+	p := wrapSubview(env, w.node)
 	p.add(attr.Class("ui-padding"))
 	w.space.setPadding(&p)
-	return build(env, m, p)
+	return build(env, p)
 }

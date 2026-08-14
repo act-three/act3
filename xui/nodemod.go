@@ -81,8 +81,7 @@ func (m modAttr) modify(n node) node { return nodeEnv{f: m.environment, node: n}
 // keeping an inner modifier's attributes before an outer's,
 // so they land on the consuming box in application order.
 func (m modAttr) environment(env environment) environment {
-	a, _ := env.attrs.Take()
-	env.attrs.Set(domi.Group(m.attr, a))
+	env.attrs = domi.Group(m.attr, env.attrs)
 	return env
 }
 
@@ -97,12 +96,12 @@ func Background(c Color) Modifier { return wrapBackground{c: c} }
 func (w wrapBackground) modify(n node) node { w.node = n; return w }
 
 func (w wrapBackground) render(env environment) box {
-	p, m := wrapSubview(env, w.node)
+	p := wrapSubview(env, w.node)
 	p.add(attr.Class("ui-mod"))
 	if w.c != "" {
 		p.pres.background = &w.c
 	}
-	return build(env, m, p)
+	return build(env, p)
 }
 
 type modBorderShape struct{ s Shape }
@@ -121,7 +120,7 @@ func BorderShape(s Shape) Modifier { return modBorderShape{s} }
 func (m modBorderShape) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modBorderShape) environment(env environment) environment {
-	env.shape.Set(m.s)
+	env.shape = &m.s
 	return env
 }
 
@@ -131,12 +130,11 @@ type modFixedSize struct{}
 func (m modFixedSize) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 // environment gives the subtree unbounded available space on both axes,
-// so the first box takes its ideal size (see [mise]).
-// The marker class rides the mise's attrs.
+// so the first box takes its ideal size (see [build]).
+// The marker class rides the environment's attrs.
 func (modFixedSize) environment(env environment) environment {
 	env.unbounded = Horizontal | Vertical
-	a, _ := env.attrs.Take()
-	env.attrs.Set(domi.Group(attr.Class("ui-fixed-size"), a))
+	env.attrs = domi.Group(attr.Class("ui-fixed-size"), env.attrs)
 	return env
 }
 
@@ -149,7 +147,7 @@ func (m modFont) modify(n node) node { return nodeEnv{f: m.environment, node: n}
 
 func (m modFont) environment(env environment) environment {
 	if m.f.class() != "" {
-		env.font.Set(m.f)
+		env.font = m.f
 	}
 	return env
 }
@@ -164,7 +162,7 @@ func (m modForeground) modify(n node) node { return nodeEnv{f: m.environment, no
 
 func (m modForeground) environment(env environment) environment {
 	if m.c != "" {
-		env.fg.Set(m.c)
+		env.fg = &m.c
 	}
 	return env
 }
@@ -182,10 +180,10 @@ func Opacity(x float64) Modifier { return wrapOpacity{x: x} }
 func (w wrapOpacity) modify(n node) node { w.node = n; return w }
 
 func (w wrapOpacity) render(env environment) box {
-	p, m := wrapSubview(env, w.node)
+	p := wrapSubview(env, w.node)
 	p.add(attr.Class("ui-mod"))
 	p.pres.opacity = &w.x
-	return build(env, m, p)
+	return build(env, p)
 }
 
 // NOTE: no exported construcor.
@@ -194,6 +192,6 @@ type modTag struct{ name string }
 func (m modTag) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modTag) environment(env environment) environment {
-	env.tag.Set(m.name)
+	env.tag = m.name
 	return env
 }

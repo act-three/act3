@@ -7,7 +7,6 @@ import (
 	"ily.dev/domi/attr"
 
 	"ily.dev/act3/xui/internal/sheet"
-	"ily.dev/act3/xui/internal/slot"
 )
 
 // A View is a user interface element,
@@ -122,57 +121,27 @@ type environment struct {
 	container containerKind
 	unbounded AxisSet
 	sheet     *sheet.Sheet
-
-	// Consumed by render when constructing a box.
-	shape slot.Slot[Shape]
-	attrs slot.Slot[domi.Attr]
-	tag   slot.Slot[string]
-	fg    slot.Slot[Color]
-	font  slot.Slot[FontSize]
+	boxenv    // must be zeroed before rendering a subview
 }
 
-// shapeClass consumes the pending border shape as its class attribute.
-// It returns nil when no shape is pending.
-func (env *environment) shapeClass() domi.Attr {
-	if s, ok := env.shape.Take(); ok {
-		return attr.Class(s.class())
+// boxenv contains environment values
+// that must be cleared before rendering a subview.
+// They are "one-shot" or "one-box" values.
+type boxenv struct {
+	shape *Shape
+	attrs domi.Attr
+	tag   string
+	fg    *Color
+	font  FontSize
+}
+
+// shapeClass returns the pending border shape's class attribute,
+// or nil when no shape is pending.
+func (env environment) shapeClass() domi.Attr {
+	if env.shape != nil {
+		return attr.Class(env.shape.class())
 	}
 	return nil
-}
-
-// fontClass consumes the pending font size as its class attribute.
-// It returns nil when no font size is pending.
-func (env *environment) fontClass() domi.Attr {
-	if f, ok := env.font.Take(); ok {
-		return attr.Class(f.class())
-	}
-	return nil
-}
-
-// mise is a set of consumed environment values to apply at build.
-type mise struct {
-	attrs     domi.Attr // added to the box, including the shape's and font's classes
-	tag       string    // the box's tag
-	unbounded AxisSet   // axes on which the box takes its ideal size
-	color     *Color    // foreground color, if any
-}
-
-// takeMise consumes the environment's pending modifier effects.
-// A node that produces a box takes them before rendering subviews,
-// so each effect stops at the first box under its modifier.
-func (env *environment) takeMise() mise {
-	m := mise{
-		attrs:     domi.Group(env.shapeClass(), env.fontClass()),
-		unbounded: env.unbounded,
-	}
-	if a, ok := env.attrs.Take(); ok {
-		m.attrs = domi.Group(m.attrs, a)
-	}
-	m.tag, _ = env.tag.Take()
-	if c, ok := env.fg.Take(); ok {
-		m.color = &c
-	}
-	return m
 }
 
 // A plan is an HTML element under construction.
@@ -215,11 +184,10 @@ type box struct {
 
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views and merges their fill requests.
-// It takes env's mise before any subview renders,
-// so it cannot land on a subview's plan,
-// and returns it for the caller to build its own plan with.
-func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, mise) {
-	m := env.takeMise()
+// It strips env's box values before any subview renders,
+// so they cannot land on a subview's box.
+func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
+	env.boxenv = boxenv{}
 	var ns []domi.Node
 	var f AxisSet
 	for _, v := range vs {
@@ -229,21 +197,25 @@ func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet, mise) {
 			ns = append(ns, b.node)
 		}
 	}
-	return domi.Fragment(ns...), f, m
+	return domi.Fragment(ns...), f
 }
 
-// build returns the box described by env, m, and p.
-func build(env environment, m mise, p plan) box {
-	p.add(m.attrs)
-	p.pres.color = m.color
+// build returns the box described by env and p.
+func build(env environment, p plan) box {
+	p.add(env.shapeClass())
+	if c := env.font.class(); c != "" {
+		p.add(attr.Class(c))
+	}
+	p.add(env.attrs)
+	p.pres.color = env.fg
 	// A fill request on an unbounded axis is meaningless, so clear it.
-	fills := p.fills &^ m.unbounded
+	fills := p.fills &^ env.unbounded
 	// A box is always rigid on an unbounded axis.
-	rigid := p.rigid | m.unbounded
+	rigid := p.rigid | env.unbounded
 	// Keep the generated class after the named classes in rendered output.
 	a := domi.Group(fills.fillAttr(env), rigid.rigidAttr(env), p.styleClass(env))
 	return box{
-		node:  domi.Tag(cmp.Or(m.tag, "div"), p.attrs, a)(p.content),
+		node:  domi.Tag(cmp.Or(env.tag, "div"), p.attrs, a)(p.content),
 		fills: fills,
 		rigid: rigid,
 	}
