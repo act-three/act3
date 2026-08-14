@@ -164,23 +164,19 @@ func (m modForeground) environment(env environment) environment {
 	return env
 }
 
-type wrapOpacity struct {
-	x    float64
-	node node
-}
+type modOpacity struct{ x float64 }
 
 // Opacity sets a view's opacity to x, from 0 (transparent) to 1 (opaque).
 // Nested opacities multiply:
 // v.Opacity(0.5).Opacity(0.5) draws v at a quarter of full opacity.
-func Opacity(x float64) Modifier { return wrapOpacity{x: x} }
+func Opacity(x float64) Modifier { return modOpacity{x} }
 
-func (w wrapOpacity) modify(n node) node { w.node = n; return w }
+func (m modOpacity) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
-func (w wrapOpacity) render(env environment) box {
-	p := wrapSubview(env, w.node)
-	env.add(attr.Class("ui-mod"))
-	p.opacity = &w.x
-	return build(env, p)
+func (m modOpacity) environment(env environment) environment {
+	a := 1 - env.trans
+	env.trans = 1 - m.x*a
+	return env
 }
 
 // NOTE: no exported construcor.

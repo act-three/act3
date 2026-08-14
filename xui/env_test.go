@@ -47,6 +47,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 			tag:   "b",
 			fg:    &c,
 			font:  Title,
+			trans: 0.5,
 		}
 	}
 	subview := func(t *testing.T, render func(environment, node)) {

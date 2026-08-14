@@ -2,6 +2,7 @@ package ui
 
 import (
 	"cmp"
+	"strconv"
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
@@ -133,6 +134,7 @@ type boxenv struct {
 	tag   string
 	fg    *Color
 	font  FontSize
+	trans float64
 }
 
 // add prepends attributes to the environment,
@@ -207,6 +209,9 @@ func build(env environment, p plan) box {
 	p.presentation.lower(&ss)
 	if env.fg != nil {
 		ss.Set("color", string(*env.fg))
+	}
+	if env.trans > 0 {
+		ss.Set("opacity", strconv.FormatFloat(1-env.trans, 'g', 4, 64))
 	}
 	var style domi.Attr
 	if !ss.IsEmpty() {

@@ -73,31 +73,45 @@ func TestModifierBeatsComponentChrome(t *testing.T) {
 	})
 }
 
-// TestOpacityNests pins the wrapper model for opacity: each
-// application is its own wrapper, so opacities multiply.
-func TestOpacityNests(t *testing.T) {
+// TestOpacityMultiplies pins the collapse: opacity applications
+// multiply into one product, consumed as a single declaration by the
+// first box below — no wrapper elements, and a product of 1 is free.
+func TestOpacityMultiplies(t *testing.T) {
 	stage(t, ui.Text("hi").Opacity(0.5).Opacity(0.5), func(s *uitest.Session) {
-		var ops []string
-		s.Eval(`[...document.querySelectorAll(".ui-mod")].map(e => getComputedStyle(e).opacity)`, &ops)
-		if len(ops) != 2 || ops[0] != "0.5" || ops[1] != "0.5" {
-			t.Errorf("nested wrapper opacities = %v, want [0.5 0.5]", ops)
+		var mods int
+		s.Eval(`document.querySelectorAll(".ui-mod").length`, &mods)
+		var op string
+		s.Eval(`getComputedStyle(document.querySelector(".ui-text")).opacity`, &op)
+		if mods != 0 || op != "0.25" {
+			t.Errorf("wrappers = %d, text opacity = %s, want none at 0.25", mods, op)
 		}
 	})
+
+	if html := render(t, ui.Text("x").Opacity(1)); strings.Contains(html, "opacity") || strings.Contains(html, "ui-mod") {
+		t.Errorf("Opacity(1) should render nothing extra:\n%s", html)
+	}
 }
 
-// TestOpacityComposesWithDisabled pins that a modifier opacity
-// multiplies with a component's own state opacity rather than either
-// clobbering the other.
+// TestOpacityComposesWithDisabled pins that the button's disabled
+// fade is an ordinary opacity application: server-known, it joins the
+// pending product, so a modifier opacity and the component fade
+// multiply onto the one button element.
 func TestOpacityComposesWithDisabled(t *testing.T) {
 	v := ui.Button(ui.Text("x"), struct{}{}).Disabled(true).Opacity(0.1)
 	stage(t, v, func(s *uitest.Session) {
-		var mod, btn string
-		s.Eval(`getComputedStyle(document.querySelector(".ui-mod")).opacity`, &mod)
+		var mods int
+		s.Eval(`document.querySelectorAll(".ui-mod").length`, &mods)
+		var btn string
 		s.Eval(`getComputedStyle(document.querySelector(".ui-button")).opacity`, &btn)
-		if mod != "0.1" || btn != "0.5" {
-			t.Errorf("opacities = %s x %s, want 0.1 x 0.5", mod, btn)
+		if mods != 0 || btn != "0.05" {
+			t.Errorf("wrappers = %d, button opacity = %s, want none at 0.05", mods, btn)
 		}
 	})
+
+	html := render(t, ui.Button(ui.Text("x"), struct{}{}).Disabled(true).Class("inner").Opacity(0.1))
+	if got := strings.Count(html, "inner"); got != 1 || !strings.Contains(html, `<button class="ui-hstack ui-button inner `) {
+		t.Errorf("modifiers should land on the button element:\n%s", html)
+	}
 }
 
 // TestBackgroundStacks pins the paint stack: an outer Background

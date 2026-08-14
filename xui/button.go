@@ -64,9 +64,12 @@ type buttonNode struct {
 // render delegates plan construction to the row the button is: an ordinary
 // HStack whose element carries the button name, chrome, and behavior.
 func (n buttonNode) render(env environment) box {
-	b := HStack(n.label).
+	v := HStack(n.label).
 		Tag("button").
 		Class("ui-button").
-		Attr(attr.Type("button"), n.onClick, n.role.attrs(), attr.Disabled(n.disabled)).(base)
-	return b[0].render(env)
+		Attr(attr.Type("button"), n.onClick, n.role.attrs(), attr.Disabled(n.disabled))
+	if n.disabled {
+		v = v.Opacity(0.5)
+	}
+	return v.(base)[0].render(env)
 }
