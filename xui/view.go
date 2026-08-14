@@ -162,17 +162,6 @@ func (p *plan) add(a domi.Attr) { p.attrs = domi.Group(p.attrs, a) }
 // Use plan.pres instead.
 func (p *plan) setLayoutStyle(property, value string) { p.layout.Set(property, value) }
 
-// styleClass returns the generated class for the plan's dynamic styles,
-// combining layout declarations and lowered presentation.
-func (p plan) styleClass(env environment) domi.Attr {
-	s := p.layout
-	p.pres.lower(&s)
-	if s.IsEmpty() {
-		return nil
-	}
-	return attr.Class(env.sheet.ClassFor(s))
-}
-
 // A box is a rendered node.
 // It contains the HTML node,
 // plus ancillary data needed by its consumer.
@@ -212,8 +201,14 @@ func build(env environment, p plan) box {
 	fills := p.fills &^ env.unbounded
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
+	ss := p.layout
+	p.pres.lower(&ss)
+	var style domi.Attr
+	if !ss.IsEmpty() {
+		style = attr.Class(env.sheet.ClassFor(ss))
+	}
 	// Keep the generated class after the named classes in rendered output.
-	a := domi.Group(fills.fillAttr(env), rigid.rigidAttr(env), p.styleClass(env))
+	a := domi.Group(fills.fillAttr(env), rigid.rigidAttr(env), style)
 	return box{
 		node:  domi.Tag(cmp.Or(env.tag, "div"), p.attrs, a)(p.content),
 		fills: fills,
