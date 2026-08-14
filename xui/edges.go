@@ -2,6 +2,8 @@ package ui
 
 import (
 	"fmt"
+
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // EdgeSpace specifies spacing distances for the edges of a rectangle.
@@ -48,12 +50,12 @@ func (s EdgeSpace) add(o EdgeSpace) EdgeSpace {
 	return s
 }
 
-// setPadding adds the shortest equivalent padding declarations to x.
-func (s EdgeSpace) setPadding(p *plan) {
+// setPadding adds the shortest equivalent padding declarations to ss.
+func (s EdgeSpace) setPadding(ss *sheet.StyleSet) {
 	t, b := cssPx(s.Top), cssPx(s.Bottom)
 	le, tr := cssPx(s.Leading), cssPx(s.Trailing)
 	if t == b && le == tr && t == le {
-		p.setLayoutStyle("padding", t)
+		ss.Set("padding", t)
 		return
 	}
 	block, inline := t, le
@@ -63,8 +65,8 @@ func (s EdgeSpace) setPadding(p *plan) {
 	if tr != le {
 		inline += " " + tr
 	}
-	p.setLayoutStyle("padding-block", block)
-	p.setLayoutStyle("padding-inline", inline)
+	ss.Set("padding-block", block)
+	ss.Set("padding-inline", inline)
 }
 
 func cssPx(v float64) string { return fmt.Sprintf("%gpx", v) }

@@ -134,6 +134,7 @@ type boxenv struct {
 	paint bool // set by every paint modifier
 	shape *Shape
 	attrs domi.Attr
+	style sheet.StyleSet
 	tag   string
 	fg    *Color
 	font  FontSize
@@ -162,13 +163,7 @@ type plan struct {
 	content domi.Node
 	fills   AxisSet // A fill request is the physical axes a box wants to fill.
 	rigid   AxisSet
-	layout  sheet.StyleSet // layout declarations only
 }
-
-// setLayoutStyle adds a resolved CSS layout declaration to p.
-// Setting the same property again replaces its value.
-// Do not call setLayoutStyle for non-layout properties.
-func (p *plan) setLayoutStyle(property, value string) { p.layout.Set(property, value) }
 
 // A box is a rendered node.
 // It contains the HTML node,
@@ -207,7 +202,7 @@ func build(env environment, p plan) box {
 	fills := p.fills &^ env.unbounded
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
-	ss := p.layout
+	ss := env.style
 	addBackgroundStylesTo(&ss, env.bg)
 	if env.fg != nil {
 		ss.Set("color", string(*env.fg))
