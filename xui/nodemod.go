@@ -36,7 +36,7 @@ type nodeTransform struct {
 }
 
 func (m nodeTransform) render(env environment) box {
-	if !env.paint {
+	if !env.hasPaint {
 		return m.node.render(m.f(env))
 	}
 	p := wrapSubview(env, nodeEnv{f: m.f, node: m.node})
@@ -108,7 +108,7 @@ func (m modBackground) modify(n node) node { return nodeEnv{f: m.environment, no
 func (m modBackground) environment(env environment) environment {
 	if m.c != "" {
 		env.bg = append(env.bg, m.c)
-		env.paint = true
+		env.hasPaint = true
 	}
 	return env
 }

@@ -131,15 +131,16 @@ type environment struct {
 // that must be cleared before rendering a subview.
 // They are "one-shot" or "one-box" values.
 type boxenv struct {
-	paint bool // set by every paint modifier
-	shape *Shape
+	tag   string
 	attrs domi.Attr
 	style sheet.StyleSet
-	tag   string
 	fg    *Color
+	bg    []Color
+	shape *Shape
 	font  FontSize
 	trans float64
-	bg    []Color
+
+	hasPaint bool // set by every paint modifier
 }
 
 // add prepends attributes to the environment,
