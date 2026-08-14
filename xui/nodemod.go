@@ -99,7 +99,7 @@ func (w wrapBackground) render(env environment) box {
 	p := wrapSubview(env, w.node)
 	p.add(attr.Class("ui-mod"))
 	if w.c != "" {
-		p.pres.background = &w.c
+		p.background = &w.c
 	}
 	return build(env, p)
 }
@@ -182,7 +182,7 @@ func (w wrapOpacity) modify(n node) node { w.node = n; return w }
 func (w wrapOpacity) render(env environment) box {
 	p := wrapSubview(env, w.node)
 	p.add(attr.Class("ui-mod"))
-	p.pres.opacity = &w.x
+	p.opacity = &w.x
 	return build(env, p)
 }
 
