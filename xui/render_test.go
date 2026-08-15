@@ -121,7 +121,7 @@ func TestAccountCard(t *testing.T) {
 		`border-radius:50%`,                        // BorderShape applied to the image frame
 		`ui-frame`,                                 // Size(48) introduces a frame wrapper
 		`width:48px`,                               // ...with the resolved size
-		`class="ui-spacer ui-spacer-h ui-grow"`,
+		`class="ui-spacer ui-grow `,
 		`class="ui-padding ui-button ui-role-primary `,
 		`class="ui-layers ui-cell-fill-x"`, // Underlay + Overlay decoration layers
 		`class="ui-underlay `,
@@ -163,7 +163,7 @@ func TestMoviePageFillPropagation(t *testing.T) {
 
 	// The For helper splices rows directly into the VStack, so there are two
 	// movie-row spacers plus the header spacer: three in total.
-	if got := strings.Count(html, "ui-spacer-h"); got != 3 {
+	if got := strings.Count(html, `class="ui-spacer `); got != 3 {
 		t.Errorf("ui-spacer count = %d, want 3\n\n%s", got, html)
 	}
 }
@@ -183,9 +183,9 @@ func TestTagNamesElement(t *testing.T) {
 		ui.Text("b"),
 	))
 	for _, w := range []string{
-		`<nav class="ui-frame ui-grow `,         // the tagged frame carries the fill
-		`class="ui-hstack ui-cell-fill-x `,      // ...and the root stack keeps it
-		`class="ui-spacer ui-spacer-h ui-grow"`, // the inner row distributes slack
+		`<nav class="ui-frame ui-grow `,    // the tagged frame carries the fill
+		`class="ui-hstack ui-cell-fill-x `, // ...and the root stack keeps it
+		`class="ui-spacer ui-grow `,        // the inner row distributes slack
 	} {
 		if !strings.Contains(html, w) {
 			t.Errorf("tagged-frame fill chain missing %q:\n%s", w, html)
@@ -468,14 +468,14 @@ func TestIdealSize(t *testing.T) {
 		{
 			"divider takes 10px along its length",
 			ui.VStack(ui.Divider()).FixedSize(),
-			[]string{"ui-divider-h", "ui-divider-ideal-x"},
-			[]string{"ui-divider-ideal-y"},
+			[]string{"height:1px", "width:10px"},
+			[]string{"height:10px"},
 		},
 		{
 			"vertical divider takes 10px along its length",
 			ui.HStack(ui.Divider()).FixedSize(),
-			[]string{"ui-divider-v", "ui-divider-ideal-y"},
-			[]string{"ui-divider-ideal-x"},
+			[]string{"width:1px", "height:10px"},
+			[]string{"width:10px"},
 		},
 		{
 			"decoration layer clears both axes",
@@ -597,12 +597,12 @@ func TestAlignProjectsOntoCrossAxis(t *testing.T) {
 // minor axis either way.
 func TestDividerAxisAware(t *testing.T) {
 	h := render(t, ui.HStack(ui.Text("a"), ui.Divider(), ui.Text("b")))
-	if !strings.Contains(h, "ui-divider-v ui-divider ui-stretch") {
+	if !strings.Contains(h, `class="ui-divider ui-stretch`) || !strings.Contains(h, "width:1px") {
 		t.Errorf("divider in HStack should be vertical and stretch:\n%s", h)
 	}
 
 	v := render(t, ui.VStack(ui.Text("a"), ui.Divider(), ui.Text("b")))
-	if !strings.Contains(v, "ui-divider-h ui-divider ui-stretch") {
+	if !strings.Contains(v, `class="ui-divider ui-stretch`) || !strings.Contains(v, "height:1px") {
 		t.Errorf("divider in VStack should be horizontal and stretch:\n%s", v)
 	}
 }

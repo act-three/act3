@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"ily.dev/domi"
 	"ily.dev/domi/attr"
 
 	"ily.dev/act3/xui/internal/sheet"
@@ -111,14 +110,17 @@ func Spacer() View { return base{spacerNode{}} }
 type spacerNode struct{}
 
 func (spacerNode) render(env environment) box {
-	var a domi.Attr
+	env.add(attr.Class("ui-spacer"))
+	env.style.Set("flex-basis", "0")
+	minWidth, minHeight := "0", "0"
 	if env.lc.majorAxis.hasAll(Horizontal) {
-		a = attr.Class("ui-spacer-h")
+		minWidth = "8px"
 	}
 	if env.lc.majorAxis.hasAll(Vertical) {
-		a = attr.Class("ui-spacer-v")
+		minHeight = "8px"
 	}
-	env.add(attr.Class("ui-spacer"), a)
+	env.style.Set("min-width", minWidth)
+	env.style.Set("min-height", minHeight)
 	return build(env, plan{fills: env.lc.majorAxis})
 }
 
@@ -135,15 +137,15 @@ func (dividerNode) render(env environment) box {
 	env.bg = append(env.bg, borderColor)
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
-		env.add(attr.Class("ui-divider-v"))
+		env.style.Set("width", "1px")
 		if env.unbounded.hasAll(Vertical) {
-			env.add(attr.Class("ui-divider-ideal-y"))
+			env.style.Set("height", "10px")
 		}
 	} else {
-		env.add(attr.Class("ui-divider-h"))
+		env.style.Set("height", "1px")
 		if env.unbounded.hasAll(Horizontal) {
-			env.add(attr.Class("ui-divider-ideal-x"))
+			env.style.Set("width", "10px")
 		}
 	}
-	return build(env, plan{fills: env.lc.minorAxes()})
+	return build(env, plan{fills: env.lc.minorAxes(), rigid: env.lc.majorAxis})
 }
