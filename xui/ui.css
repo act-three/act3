@@ -32,6 +32,7 @@
 		ui-root *::after { box-sizing: border-box; }
 
 		.ui-button {
+			border: 0;
 			color: inherit;
 			font: inherit;
 		}
@@ -194,30 +195,23 @@
 		line-height: 1.15;
 	}
 
-	.ui-card {
-		border: 1px solid var(--ui-color-border);
-		background: var(--ui-color-surface);
-	}
+	.ui-card { background: var(--ui-color-surface); }
 
 	.ui-color-ideal-x { width: 10px; }
 	.ui-color-ideal-y { height: 10px; }
 
 	.ui-button {
 		padding: 8px 12px;
-		border: 1px solid var(--ui-color-border);
 		background: var(--ui-color-surface);
 		cursor: pointer;
 	}
-	.ui-button:hover { border-color: var(--ui-color-muted); }
 	.ui-button:disabled { cursor: default; }
 	.ui-button.ui-role-primary {
 		background: var(--ui-color-accent);
-		border-color: var(--ui-color-accent);
 		color: #fff;
 	}
 	.ui-button.ui-role-destructive {
 		background: var(--ui-color-danger);
-		border-color: var(--ui-color-danger);
 		color: #fff;
 	}
 }
