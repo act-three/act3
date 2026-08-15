@@ -57,14 +57,6 @@
 		flex-direction: row;
 	}
 
-	.ui-spacer {
-		flex: 1 1 0;
-		min-width: 0;
-		min-height: 0;
-	}
-	.ui-spacer-h { min-width: 8px; }
-	.ui-spacer-v { min-height: 8px; }
-
 	.ui-grow { flex-grow: 1; }
 	.ui-stretch { align-self: stretch; }
 	.ui-cell-fill-x { justify-self: stretch; }
@@ -77,18 +69,6 @@
 		grid-template: 100% / 100%;
 	}
 	.ui-zstack > * { grid-area: 1 / 1; }
-
-	.ui-divider { flex: none; }
-	.ui-divider-h {
-		height: 1px;
-		width: auto;
-	}
-	.ui-divider-v {
-		width: 1px;
-		height: auto;
-	}
-	.ui-divider-ideal-x { width: 10px; }
-	.ui-divider-ideal-y { height: 10px; }
 
 	.ui-scroll {
 		display: grid;
