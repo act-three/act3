@@ -160,6 +160,131 @@ func TestBorderShapeRepetition(t *testing.T) {
 	}
 }
 
+// carrier returns the ::after block drawing the given stroke shadows.
+func carrier(shadows string) string {
+	return `&::after{border-radius:inherit;box-shadow:` + shadows + `;content:"";inset:0;pointer-events:none;position:absolute}`
+}
+
+// TestBorderStrokePaints pins the stroke lowering: a stroke is a ring
+// an ::after block in the element's own rule paints over the element —
+// no wrapper element.
+func TestBorderStrokePaints(t *testing.T) {
+	html := render(t, ui.Text("x").BorderStroke(2, "red"))
+	if strings.Contains(html, "ui-mod") {
+		t.Fatalf("BorderStroke should not produce a wrapper:\n%s", html)
+	}
+	if got := classRule(t, html, `class="ui-text (ui-\w+)"`); got != "position:relative;"+carrier("inset 0 0 0 2px red") {
+		t.Errorf("stroke rule = %q:\n%s", got, html)
+	}
+}
+
+// TestBorderStrokeStacks pins the stroke stack: strokes merge onto one
+// element as a shadow list, the outer stroke listed first, painting
+// over the inner one.
+func TestBorderStrokeStacks(t *testing.T) {
+	html := render(t, ui.Text("x").BorderStroke(2, "red").BorderStroke(4, "blue"))
+	got := classRule(t, html, `class="ui-text (ui-\w+)"`)
+	if got != "position:relative;"+carrier("inset 0 0 0 4px blue,inset 0 0 0 2px red") {
+		t.Errorf("stroke stack = %q, want the outer stroke over the inner:\n%s", got, html)
+	}
+}
+
+// TestBorderStrokeShapeOrder pins the shape's write order against the
+// stroke: a shape applied after a stroke shapes its ring; a stroke
+// applied after a shape rings the shaped box, unshaped.
+func TestBorderStrokeShapeOrder(t *testing.T) {
+	shaped := render(t, ui.Text("x").BorderStroke(2, "red").BorderShape(ui.Capsule))
+	if got := classRule(t, shaped, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px;position:relative;"+carrier("inset 0 0 0 2px red") {
+		t.Errorf("shape after stroke should shape the stroke, got %q:\n%s", got, shaped)
+	}
+
+	square := render(t, ui.Text("x").BorderShape(ui.Capsule).BorderStroke(2, "red"))
+	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
+		t.Errorf("stroke after shape should land on a wrapper, got %q:\n%s", got, square)
+	}
+	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px" {
+		t.Errorf("the shape should stay on the inner element, got %q:\n%s", got, square)
+	}
+}
+
+// TestBorderStrokeDoesNotInterceptClicks pins the carrier's
+// hit-test transparency: a stroked container's ring covers its
+// content without stealing its pointer events.
+func TestBorderStrokeDoesNotInterceptClicks(t *testing.T) {
+	v := ui.HStack(ui.Button(ui.Text("click"), struct{}{})).BorderStroke(4, "red")
+	stage(t, v, func(s *uitest.Session) {
+		var inButton bool
+		s.Eval(`(() => {
+			const r = document.querySelector(".ui-button").getBoundingClientRect();
+			return !!document.elementFromPoint(r.x + r.width/2, r.y + r.height/2).closest(".ui-button");
+		})()`, &inButton)
+		if !inButton {
+			t.Error("the element under the pointer is outside the button")
+		}
+	})
+}
+
+// TestBorderStrokeOnImage pins the replaced-element accommodation: an
+// img cannot host the carrier, so the strokes box out around it.
+func TestBorderStrokeOnImage(t *testing.T) {
+	html := render(t, ui.Image("/x.png").BorderStroke(2, "red"))
+	if got := classRule(t, html, `class="ui-mod (ui-\w+)"`); got != "place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
+		t.Errorf("image strokes should land on a wrapper, got %q:\n%s", got, html)
+	}
+	if !strings.Contains(html, `<img `) {
+		t.Errorf("the image should render inside:\n%s", html)
+	}
+}
+
+// TestBorderStrokeOnScroll pins the scroll accommodation: a carrier
+// on the viewport would scroll away with the content, so the strokes
+// box out around it.
+func TestBorderStrokeOnScroll(t *testing.T) {
+	html := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")).BorderStroke(2, "red"))
+	if got := classRule(t, html, `class="ui-mod [^"]*(ui-\w+)"`); got != "place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
+		t.Errorf("scroll strokes should land on a wrapper, got %q:\n%s", got, html)
+	}
+	if !strings.Contains(html, `class="ui-scroll ui-scroll-y`) {
+		t.Errorf("the viewport should render inside:\n%s", html)
+	}
+}
+
+// TestBorderStrokeOverLayers pins the ring against the layer
+// composite: on a layered box the carrier joins the z ladder above
+// the overlay, where its tree position alone would lose to the
+// layers' indexes.
+func TestBorderStrokeOverLayers(t *testing.T) {
+	html := render(t, ui.Text("x").LayerOver(ui.Center, ui.Text("o")).BorderStroke(2, "red"))
+	got := classRule(t, html, `class="ui-layers (ui-\w+)"`)
+	want := "position:relative;" + strings.Replace(carrier("inset 0 0 0 2px red"), "position:absolute}", "position:absolute;z-index:3}", 1)
+	if got != want {
+		t.Errorf("layered stroke rule = %q, want the ring on the z ladder:\n%s", got, html)
+	}
+}
+
+// TestBorderStrokeTakesNoSpace pins the stroke's layout contract in
+// the browser: the carrier draws the ring, and the stroked box is the
+// same size as an unstroked one.
+func TestBorderStrokeTakesNoSpace(t *testing.T) {
+	v := ui.VStack(
+		ui.Text("hello").Class("plain"),
+		ui.Text("hello").Class("stroked").BorderStroke(4, "red"),
+	)
+	stage(t, v, func(s *uitest.Session) {
+		var shadow string
+		s.Eval(`getComputedStyle(document.querySelector(".stroked"), "::after").boxShadow`, &shadow)
+		if !strings.Contains(shadow, "inset") || !strings.Contains(shadow, "4px") {
+			t.Errorf("carrier shadow = %q, want the 4px inset ring", shadow)
+		}
+		var pw, sw float64
+		s.Eval(`document.querySelector(".plain").getBoundingClientRect().width`, &pw)
+		s.Eval(`document.querySelector(".stroked").getBoundingClientRect().width`, &sw)
+		if pw == 0 || pw != sw {
+			t.Errorf("stroked width = %g, plain width = %g; a stroke must not affect layout", sw, pw)
+		}
+	})
+}
+
 // TestBorderShapeShapesColor pins render-time consumption: a Color
 // paints its own box, so the shape it consumes is realized there.
 func TestBorderShapeShapesColor(t *testing.T) {
