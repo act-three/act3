@@ -78,10 +78,7 @@
 	}
 	.ui-zstack > * { grid-area: 1 / 1; }
 
-	.ui-divider {
-		flex: none;
-		background: var(--ui-color-border);
-	}
+	.ui-divider { flex: none; }
 	.ui-divider-h {
 		height: 1px;
 		width: auto;
@@ -195,23 +192,14 @@
 		line-height: 1.15;
 	}
 
-	.ui-card { background: var(--ui-color-surface); }
-
 	.ui-color-ideal-x { width: 10px; }
 	.ui-color-ideal-y { height: 10px; }
 
 	.ui-button {
 		padding: 8px 12px;
-		background: var(--ui-color-surface);
 		cursor: pointer;
 	}
 	.ui-button:disabled { cursor: default; }
-	.ui-button.ui-role-primary {
-		background: var(--ui-color-accent);
-		color: #fff;
-	}
-	.ui-button.ui-role-destructive {
-		background: var(--ui-color-danger);
-		color: #fff;
-	}
+	.ui-button.ui-role-primary { color: #fff; }
+	.ui-button.ui-role-destructive { color: #fff; }
 }

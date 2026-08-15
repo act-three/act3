@@ -13,7 +13,8 @@ const (
 	Accent Color = "var(--ui-color-accent)"
 	Danger Color = "var(--ui-color-danger)"
 
-	borderColor Color = "var(--ui-color-border)"
+	borderColor  Color = "var(--ui-color-border)"
+	surfaceColor Color = "var(--ui-color-surface)"
 )
 
 // Color is a CSS color.
