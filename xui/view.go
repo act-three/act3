@@ -150,15 +150,6 @@ func (env *environment) add(a ...domi.Attr) {
 	env.attrs = domi.Group(domi.Group(a...), env.attrs)
 }
 
-// shapeClass returns the pending border shape's class attribute,
-// or nil when no shape is pending.
-func (env environment) shapeClass() domi.Attr {
-	if env.shape != nil {
-		return attr.Class(env.shape.class())
-	}
-	return nil
-}
-
 // A plan is an HTML element under construction.
 type plan struct {
 	content domi.Node
@@ -195,7 +186,7 @@ func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
 
 // build returns the box described by env and p.
 func build(env environment, p plan) box {
-	a := domi.Group(env.attrs, env.shapeClass())
+	a := env.attrs
 	if c := env.font.class(); c != "" {
 		a = domi.Group(a, attr.Class(c))
 	}
@@ -205,6 +196,9 @@ func build(env environment, p plan) box {
 	rigid := p.rigid | env.unbounded
 	ss := env.style
 	addBackgroundStylesTo(&ss, env.bg)
+	if env.shape != nil && *env.shape != Rectangle {
+		ss.Set("border-radius", env.shape.radius())
+	}
 	if env.fg != nil {
 		ss.Set("color", string(*env.fg))
 	}

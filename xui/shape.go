@@ -10,15 +10,16 @@ const (
 	Capsule
 )
 
-func (s Shape) class() string {
+// radius returns the CSS border-radius value for s.
+func (s Shape) radius() string {
 	switch s {
 	case Ellipse:
-		return "ui-border-ellipse"
+		return "50%"
 	case RoundedRectangle:
-		return "ui-border-rounded"
+		return "var(--ui-radius)"
 	case Capsule:
-		return "ui-border-capsule"
+		return "9999px"
 	default:
-		return "ui-border-rect"
+		return "0"
 	}
 }
