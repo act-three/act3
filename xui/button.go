@@ -63,22 +63,29 @@ type buttonNode struct {
 	disabled bool
 }
 
-// render delegates plan construction to the row the button is: an ordinary
-// HStack whose element carries the button name, chrome, and behavior.
 func (n buttonNode) render(env environment) box {
 	color := map[ButtonRole]Color{
 		RolePrimary:     Accent,
 		RoleDestructive: Danger,
 	}[n.role]
+	var fg Color
+	if color != "" {
+		fg = "#fff"
+	}
 	v := HStack(n.label).
+		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
 		Tag("button").
 		Class("ui-button").
+		Foreground(fg).
 		Background(cmp.Or(color, surfaceColor)).
 		BorderStroke(1, cmp.Or(color, borderColor)).
 		BorderShape(RoundedRectangle).
 		Attr(attr.Type("button"), n.onClick, n.role.attrs(), attr.Disabled(n.disabled))
+	cursor := "pointer"
 	if n.disabled {
+		cursor = "default"
 		v = v.Opacity(0.5)
 	}
+	env.style.Set("cursor", cursor)
 	return v.(base)[0].render(env)
 }

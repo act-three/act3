@@ -194,12 +194,4 @@
 
 	.ui-color-ideal-x { width: 10px; }
 	.ui-color-ideal-y { height: 10px; }
-
-	.ui-button {
-		padding: 8px 12px;
-		cursor: pointer;
-	}
-	.ui-button:disabled { cursor: default; }
-	.ui-button.ui-role-primary { color: #fff; }
-	.ui-button.ui-role-destructive { color: #fff; }
 }

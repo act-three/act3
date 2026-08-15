@@ -109,7 +109,7 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 	})
 
 	html := render(t, ui.Button(ui.Text("x"), struct{}{}).Disabled(true).Class("inner").Opacity(0.1))
-	if got := strings.Count(html, "inner"); got != 1 || !strings.Contains(html, `<button class="ui-hstack ui-button inner `) {
+	if got := strings.Count(html, "inner"); got != 1 || !strings.Contains(html, `<button class="ui-padding ui-button inner `) {
 		t.Errorf("modifiers should land on the button element:\n%s", html)
 	}
 }

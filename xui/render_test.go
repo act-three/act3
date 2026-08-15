@@ -122,7 +122,7 @@ func TestAccountCard(t *testing.T) {
 		`ui-frame`,                                 // Size(48) introduces a frame wrapper
 		`width:48px`,                               // ...with the resolved size
 		`class="ui-spacer ui-spacer-h ui-grow"`,
-		`class="ui-hstack ui-button ui-role-primary `,
+		`class="ui-padding ui-button ui-role-primary `,
 		`class="ui-layers ui-cell-fill-x"`, // Underlay + Overlay decoration layers
 		`class="ui-underlay `,
 		`class="ui-overlay `,
