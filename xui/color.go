@@ -12,6 +12,8 @@ const (
 	Muted  Color = "var(--ui-color-muted)"
 	Accent Color = "var(--ui-color-accent)"
 	Danger Color = "var(--ui-color-danger)"
+
+	borderColor Color = "var(--ui-color-border)"
 )
 
 // Color is a CSS color.

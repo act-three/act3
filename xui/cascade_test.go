@@ -114,6 +114,19 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 	}
 }
 
+// TestButtonBorderReset pins the normalize tier against the UA
+// stylesheet: the native button border is reset, leaving the stroke
+// channel as the border's only painter.
+func TestButtonBorderReset(t *testing.T) {
+	stage(t, ui.Button(ui.Text("x"), struct{}{}), func(s *uitest.Session) {
+		var w string
+		s.Eval(`getComputedStyle(document.querySelector(".ui-button")).borderTopWidth`, &w)
+		if w != "0px" {
+			t.Errorf("button border-width = %s, want 0px", w)
+		}
+	})
+}
+
 // TestBackgroundStacks pins the paint stack: an outer Background
 // paints behind an inner one on the same element, visible where the
 // inner is translucent — the outermost color as background-color,

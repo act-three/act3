@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"cmp"
+
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/event"
@@ -64,9 +66,14 @@ type buttonNode struct {
 // render delegates plan construction to the row the button is: an ordinary
 // HStack whose element carries the button name, chrome, and behavior.
 func (n buttonNode) render(env environment) box {
+	borderColor := cmp.Or(map[ButtonRole]Color{
+		RolePrimary:     Accent,
+		RoleDestructive: Danger,
+	}[n.role], borderColor)
 	v := HStack(n.label).
 		Tag("button").
 		Class("ui-button").
+		BorderStroke(1, borderColor).
 		BorderShape(RoundedRectangle).
 		Attr(attr.Type("button"), n.onClick, n.role.attrs(), attr.Disabled(n.disabled))
 	if n.disabled {
