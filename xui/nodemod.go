@@ -41,6 +41,7 @@ func (m nodeTransform) render(env environment) box {
 	}
 	p := wrapSubview(env, nodeEnv{f: m.f, node: m.node})
 	env.add(attr.Class("ui-mod"))
+	env.style.Set("place-items", Center.placeItems())
 	return build(env, p)
 }
 

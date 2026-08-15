@@ -3,6 +3,8 @@ package ui
 import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // A StackView displays its subviews in a line.
@@ -76,7 +78,8 @@ func (s stackNode) render(env environment) box {
 	inner.container = axes[s.dir].container
 	// The stack fills an axis when any subview does.
 	content, f := subviewsRendered(inner, s.subviews...)
-	env.add(attr.Class(axes[s.dir].class), s.alignAttr())
+	env.add(attr.Class(axes[s.dir].class))
+	s.addAlignStyleTo(&env.style)
 	if s.dir != axisZ {
 		env.style.Set("gap", cssPx(s.gap))
 	}
@@ -86,18 +89,16 @@ func (s stackNode) render(env environment) box {
 	})
 }
 
-// alignAttr returns the class for the stack's alignment.
-func (s stackNode) alignAttr() domi.Attr {
-	if s.align == Center {
-		return nil
-	}
+// addAlignStyleTo adds the stack's alignment declaration to ss:
+// the minor-axis projection for a line, both axes for a ZStack.
+func (s stackNode) addAlignStyleTo(ss *sheet.StyleSet) {
 	switch s.dir {
 	case axisV:
-		return alignClass(s.align.horizontal())
+		ss.Set("align-items", s.align.horizontal().keyword())
 	case axisH:
-		return alignClass(s.align.vertical())
+		ss.Set("align-items", s.align.vertical().keyword())
 	default:
-		return attr.Class(s.align.placeClass())
+		ss.Set("place-items", s.align.placeItems())
 	}
 }
 

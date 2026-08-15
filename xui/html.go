@@ -34,6 +34,7 @@ type nodeHTML struct{ node domi.Node }
 
 func (h nodeHTML) render(env environment) box {
 	env.add(attr.Class("ui-html"))
+	env.style.Set("place-items", Center.placeItems())
 	p := plan{
 		fills:   Horizontal | Vertical,
 		content: h.node,

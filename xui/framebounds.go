@@ -256,9 +256,7 @@ func (w wrapFrameBounds) render(env environment) box {
 	p.rigid &^= w.boundedAxes()
 	p.fills &^= capped
 	env.add(attr.Class("ui-frame"))
-	if w.align != Center {
-		env.add(attr.Class(w.align.placeClass()))
-	}
+	env.style.Set("place-items", w.align.placeItems())
 	env.add(w.setStyles(&env.style, ideal, capped))
 	return build(env, p)
 }
