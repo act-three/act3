@@ -132,7 +132,7 @@ func TestBackgroundShapeOrder(t *testing.T) {
 	// Background then shape: shape and paint share the element —
 	// a red capsule.
 	shaped := render(t, ui.Text("x").Background("red").BorderShape(ui.Capsule))
-	if got := classRule(t, shaped, `class="ui-text ui-border-capsule (ui-\w+)"`); got != "background-color:red" {
+	if got := classRule(t, shaped, `class="ui-text (ui-\w+)"`); got != "background-color:red;border-radius:9999px" {
 		t.Errorf("shape after paint should shape the paint, got %q:\n%s", got, shaped)
 	}
 
@@ -142,20 +142,20 @@ func TestBackgroundShapeOrder(t *testing.T) {
 	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "background-color:red" {
 		t.Errorf("paint after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
-	if !strings.Contains(square, `class="ui-text ui-border-capsule"`) {
-		t.Errorf("the shape should stay on the inner element:\n%s", square)
+	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px" {
+		t.Errorf("the shape should stay on the inner element, got %q:\n%s", got, square)
 	}
 }
 
 // TestBorderShapeRepetition pins shape inheritance: the shape descends
 // to the first box, so the innermost of two shapes wins and the outer
-// one is inert — no wrapper, no class.
+// one is inert — no wrapper, no declaration.
 func TestBorderShapeRepetition(t *testing.T) {
 	html := render(t, ui.Text("x").BorderShape(ui.RoundedRectangle).BorderShape(ui.Capsule))
-	if !strings.Contains(html, `class="ui-text ui-border-rounded"`) {
-		t.Errorf("innermost shape should land on the text element:\n%s", html)
+	if got := classRule(t, html, `class="ui-text (ui-\w+)"`); got != "border-radius:var(--ui-radius)" {
+		t.Errorf("innermost shape should land on the text element, got %q:\n%s", got, html)
 	}
-	if strings.Contains(html, "ui-border-capsule") || strings.Contains(html, "ui-mod") {
+	if strings.Contains(html, "9999px") || strings.Contains(html, "ui-mod") {
 		t.Errorf("outer shape should be inert:\n%s", html)
 	}
 }
@@ -164,8 +164,8 @@ func TestBorderShapeRepetition(t *testing.T) {
 // paints its own box, so the shape it consumes is realized there.
 func TestBorderShapeShapesColor(t *testing.T) {
 	html := render(t, ui.Color("red").BorderShape(ui.Ellipse))
-	if !strings.Contains(html, `class="ui-color ui-border-ellipse`) {
-		t.Errorf("shape should land on the color's element:\n%s", html)
+	if got := classRule(t, html, `class="ui-color [^"]*(ui-\w+)"`); got != "background-color:red;border-radius:50%" {
+		t.Errorf("shape should land on the color's element, got %q:\n%s", got, html)
 	}
 }
 

@@ -118,7 +118,7 @@ func TestAccountCard(t *testing.T) {
 		`<ui-root>`, // root
 		`class="ui-hstack ui-card ui-cell-fill-x `, // Card: a VStack with the surface class
 		`class="ui-hstack ui-grow`,                 // the Spacer's fill stretches the row across the card
-		`ui-border-ellipse`,                        // BorderShape applied to the image frame
+		`border-radius:50%`,                        // BorderShape applied to the image frame
 		`ui-frame`,                                 // Size(48) introduces a frame wrapper
 		`width:48px`,                               // ...with the resolved size
 		`class="ui-spacer ui-spacer-h ui-grow"`,
@@ -126,7 +126,7 @@ func TestAccountCard(t *testing.T) {
 		`class="ui-layers ui-cell-fill-x"`, // Underlay + Overlay decoration layers
 		`class="ui-underlay"`,
 		`class="ui-overlay ui-place-start-end"`,
-		`ui-border-capsule`, // the Badge's pill
+		`border-radius:9999px`, // the Badge's pill
 		`Pro`,
 		`Ada Lovelace`,
 	}
@@ -223,7 +223,7 @@ func TestHTMLHost(t *testing.T) {
 	}
 
 	mod := render(t, ui.HTML(domi.Text("raw")).BorderShape(ui.Ellipse).Class("x").Tag("section"))
-	for _, w := range []string{"<section", "ui-html", "x ui-border-ellipse", ">raw<"} {
+	for _, w := range []string{"<section", `class="ui-html x `, "border-radius:50%", ">raw<"} {
 		if !strings.Contains(mod, w) {
 			t.Errorf("host modifiers missing %q:\n%s", w, mod)
 		}

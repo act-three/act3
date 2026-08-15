@@ -181,10 +181,6 @@
 	}
 	.ui-overlay > * { pointer-events: auto; }
 
-	.ui-border-ellipse { border-radius: 50%; }
-	.ui-border-rounded { border-radius: var(--ui-radius); }
-	.ui-border-capsule { border-radius: 9999px; }
-
 	.ui-image {
 		min-width: 0;
 		min-height: 0;
@@ -213,7 +209,6 @@
 
 	.ui-card {
 		border: 1px solid var(--ui-color-border);
-		border-radius: var(--ui-radius);
 		background: var(--ui-color-surface);
 	}
 
@@ -223,7 +218,6 @@
 	.ui-button {
 		padding: 8px 12px;
 		border: 1px solid var(--ui-color-border);
-		border-radius: var(--ui-radius);
 		background: var(--ui-color-surface);
 		cursor: pointer;
 	}

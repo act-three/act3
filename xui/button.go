@@ -67,6 +67,7 @@ func (n buttonNode) render(env environment) box {
 	v := HStack(n.label).
 		Tag("button").
 		Class("ui-button").
+		BorderShape(RoundedRectangle).
 		Attr(attr.Type("button"), n.onClick, n.role.attrs(), attr.Disabled(n.disabled))
 	if n.disabled {
 		v = v.Opacity(0.5)
