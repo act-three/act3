@@ -35,6 +35,12 @@ type imageNode struct {
 }
 
 func (n imageNode) render(env environment) box {
+	// An img is a replaced element and cannot host the stroke
+	// carrier, so pending strokes box out around the image.
+	if len(env.stroke) > 0 {
+		return wrapMod(env, n)
+	}
+
 	env.tag = "img"
 	var alt domi.Attr
 	if n.alt != "" { // alt="" would mark the image as decorative.

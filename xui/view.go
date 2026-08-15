@@ -36,6 +36,10 @@ type View interface {
 	// BorderShape sets the shape of the receiver's border.
 	BorderShape(Shape) View
 
+	// BorderStroke draws a line of the given width and color over the
+	// inside edge of the receiver.
+	BorderStroke(px float64, c Color) View
+
 	// FixedSize fixes the receiver at its ideal size.
 	FixedSize() View
 
@@ -131,16 +135,23 @@ type environment struct {
 // that must be cleared before rendering a subview.
 // They are "one-shot" or "one-box" values.
 type boxenv struct {
-	tag   string
-	attrs domi.Attr
-	style sheet.StyleSet
-	fg    *Color
-	bg    []Color
-	shape Shape
-	font  FontSize
-	trans float64
+	tag    string
+	attrs  domi.Attr
+	style  sheet.StyleSet
+	fg     *Color
+	bg     []Color
+	stroke []stroke
+	shape  Shape
+	font   FontSize
+	trans  float64
 
 	hasPaint bool // set by every paint modifier
+}
+
+// A stroke is one pending border line.
+type stroke struct {
+	px float64
+	c  Color
 }
 
 // add prepends attributes to the environment,
@@ -196,6 +207,7 @@ func build(env environment, p plan) box {
 	rigid := p.rigid | env.unbounded
 	ss := env.style
 	addBackgroundStylesTo(&ss, env.bg)
+	addStrokeStylesTo(&ss, env.stroke)
 	if env.shape != Rectangle {
 		ss.Set("border-radius", env.shape.radius())
 	}
@@ -216,6 +228,27 @@ func build(env environment, p plan) box {
 		fills: fills,
 		rigid: rigid,
 	}
+}
+
+// addStrokeStylesTo adds the declarations for the stroke stack:
+// an ::after carrier covering the box,
+// drawing the strokes as a shadow list, listed outermost first,
+// so an outer stroke paints over an inner one.
+func addStrokeStylesTo(ss *sheet.StyleSet, s []stroke) {
+	if len(s) == 0 {
+		return
+	}
+	var shadows []string
+	for _, s := range s {
+		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+string(cmp.Or(s.c, "#000")))
+	}
+	ss.Set("position", "relative")
+	ss.SetPseudo("::after", "content", `""`)
+	ss.SetPseudo("::after", "position", "absolute")
+	ss.SetPseudo("::after", "inset", "0")
+	ss.SetPseudo("::after", "border-radius", "inherit")
+	ss.SetPseudo("::after", "pointer-events", "none")
+	ss.SetPseudo("::after", "box-shadow", strings.Join(shadows, ","))
 }
 
 // addBackgroundStylesTo adds the declarations for the paint stack bg:

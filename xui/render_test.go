@@ -100,7 +100,7 @@ func classRule(t *testing.T, html, pattern string) string {
 	if m == nil {
 		t.Fatalf("no element matching %q in:\n%s", pattern, html)
 	}
-	r := regexp.MustCompile(regexp.QuoteMeta("."+m[1]) + `\{([^}]*)\}`).FindStringSubmatch(html)
+	r := regexp.MustCompile(regexp.QuoteMeta("."+m[1]) + `\{((?:[^{}]|\{[^{}]*\})*)\}`).FindStringSubmatch(html)
 	if r == nil {
 		t.Fatalf("no rule for class %s in:\n%s", m[1], html)
 	}

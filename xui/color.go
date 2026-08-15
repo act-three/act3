@@ -83,6 +83,11 @@ func (c Color) Opacity(x float64) View { return c.view().Opacity(x) }
 // BorderShape sets the shape of c's border.
 func (c Color) BorderShape(s Shape) View { return c.view().BorderShape(s) }
 
+// BorderStroke draws a line
+// of the given width and color
+// over the inside edge of c.
+func (c Color) BorderStroke(px float64, s Color) View { return c.view().BorderStroke(px, s) }
+
 // Modify applies the given modifiers to c in order from left to right.
 func (c Color) Modify(mods ...Modifier) View { return c.view().Modify(mods...) }
 

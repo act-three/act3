@@ -28,6 +28,12 @@ type scrollNode struct {
 }
 
 func (s scrollNode) render(env environment) box {
+	// A stroke's carrier would sit in the scrollable overflow and
+	// scroll away with the content, so pending strokes box out
+	// around the viewport.
+	if len(env.stroke) > 0 {
+		return wrapMod(env, s)
+	}
 	// Along a scroll axis, the content's available space is unbounded.
 	// On a non-scrolling axis the available space is the viewport's own size.
 	inner := environment{unbounded: s.along, sheet: env.sheet}

@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strconv"
+
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
@@ -24,6 +26,15 @@ func wrapSubview(env environment, n node) plan {
 		rigid:   b.rigid,
 		content: b.node,
 	}
+}
+
+// wrapMod builds a pass-through wrapper box around n,
+// consuming the environment's pending box values.
+func wrapMod(env environment, n node) box {
+	p := wrapSubview(env, n)
+	env.add(attr.Class("ui-mod"))
+	env.style.Set("place-items", Center.placeItems())
+	return build(env, p)
 }
 
 // LayerUnder displays u under v.
@@ -51,6 +62,17 @@ func (v base) Padding(s ...EdgeSpace) View {
 	}
 	return v.Modify(wrapPadding{space: sum})
 }
+
+// The z ladder of a box's composite: its layers,
+// and the stroke ring painted over all of them.
+// The static ui-underlay, ui-layer-base, and ui-overlay rules
+// in ui.css use the same values.
+const (
+	zUnderlay = iota
+	zLayerBase
+	zOverlay
+	zStroke
+)
 
 // wrapLayer layers a view over or under a base view.
 // It lowers to CSS absolute positioning.
@@ -82,6 +104,11 @@ func (w wrapLayer) render(env environment) box {
 		html.Div(attr.Class(class), classFor(lss))(renderLayer(env, w.view)),
 	)
 	env.add(attr.Class("ui-layers"))
+	// A pending stroke's ring must clear the layers' z ladder.
+	// Elsewhere, its tree position suffices.
+	if len(env.stroke) > 0 {
+		env.style.SetPseudo("::after", "z-index", strconv.Itoa(zStroke))
+	}
 	return build(env, p)
 }
 
