@@ -59,6 +59,57 @@ func TestSetReplaces(t *testing.T) {
 	}
 }
 
+func TestSetPseudoNests(t *testing.T) {
+	var sh Sheet
+	var s StyleSet
+	s.Set("position", "relative")
+	s.SetPseudo("::after", "inset", "0")
+	s.SetPseudo("::after", "content", `""`)
+	s.SetPseudo(":hover", "color", "red")
+	s.SetPseudo(":nth-child(2n)", "color", "blue")
+	sh.ClassFor(s)
+	want := `{position:relative;&::after{content:"";inset:0}&:hover{color:red}&:nth-child(2n){color:blue}}`
+	if css := sh.CSS(); !strings.Contains(css, want) {
+		t.Errorf("nested rule body not in canonical order:\n%s", css)
+	}
+}
+
+func TestSetPseudoDistinguishes(t *testing.T) {
+	var sh Sheet
+	var a, b StyleSet
+	a.Set("color", "red")
+	b.SetPseudo(":hover", "color", "red")
+	if ca, cb := sh.ClassFor(a), sh.ClassFor(b); ca == cb {
+		t.Errorf("element and pseudo declarations share class %q", ca)
+	}
+}
+
+func TestPseudoOnlySetHasClass(t *testing.T) {
+	var sh Sheet
+	var s StyleSet
+	s.SetPseudo("::after", "content", `""`)
+	if class := sh.ClassFor(s); class == "" {
+		t.Error("pseudo-only StyleSet has no class")
+	}
+	if want := `{&::after{content:""}}`; !strings.Contains(sh.CSS(), want) {
+		t.Errorf("pseudo-only rule body missing:\n%s", sh.CSS())
+	}
+}
+
+func TestInvalidPseudosPanic(t *testing.T) {
+	for _, pseudo := range []string{"", "after", "::after{", ":not(x)}", ":hover;x", ":hover\n"} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("SetPseudo(%q, ...) did not panic", pseudo)
+				}
+			}()
+			var s StyleSet
+			s.SetPseudo(pseudo, "color", "red")
+		}()
+	}
+}
+
 func TestStyleSetCopies(t *testing.T) {
 	var a StyleSet
 	a.Set("gap", "8px")
@@ -67,6 +118,14 @@ func TestStyleSetCopies(t *testing.T) {
 	var sh Sheet
 	if ca, cb := sh.ClassFor(a), sh.ClassFor(b); ca == cb {
 		t.Error("Set after copy affected the original")
+	}
+
+	var c StyleSet
+	c.SetPseudo("::after", "inset", "0")
+	d := c
+	d.SetPseudo("::after", "inset", "2px")
+	if cc, cd := sh.ClassFor(c), sh.ClassFor(d); cc == cd {
+		t.Error("SetPseudo after copy affected the original")
 	}
 }
 
