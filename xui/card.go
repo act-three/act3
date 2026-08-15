@@ -4,6 +4,7 @@ package ui
 func Card(subview View) View {
 	return HStack(subview).
 		Class("ui-card").
+		Background(surfaceColor).
 		BorderStroke(1, borderColor).
 		BorderShape(RoundedRectangle)
 }

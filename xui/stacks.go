@@ -132,6 +132,7 @@ type dividerNode struct{}
 
 func (dividerNode) render(env environment) box {
 	env.add(attr.Class("ui-divider"))
+	env.bg = append(env.bg, borderColor)
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
 		env.add(attr.Class("ui-divider-v"))
