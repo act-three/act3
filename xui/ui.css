@@ -49,13 +49,11 @@
 	.ui-vstack {
 		display: inline-flex;
 		flex-direction: column;
-		align-items: center;
 	}
 
 	.ui-hstack {
 		display: inline-flex;
 		flex-direction: row;
-		align-items: center;
 	}
 
 	.ui-spacer {
@@ -76,7 +74,6 @@
 	.ui-zstack {
 		display: grid;
 		grid-template: 100% / 100%;
-		place-items: center;
 	}
 	.ui-zstack > * { grid-area: 1 / 1; }
 
@@ -97,7 +94,6 @@
 
 	.ui-scroll {
 		display: grid;
-		place-items: start;
 		min-width: 0;
 		min-height: 0;
 		overscroll-behavior: contain;
@@ -118,14 +114,12 @@
 	.ui-padding {
 		display: grid;
 		grid-template: 100% / 100%;
-		place-items: center;
 	}
 
 	/* A pass-through box carrying one style modifier. */
 	.ui-mod {
 		display: grid;
 		grid-template: 100% / 100%;
-		place-items: center;
 	}
 
 	/* The host element of an HTML view. Unlike its lookalikes above,
@@ -134,13 +128,11 @@
 	.ui-html {
 		display: grid;
 		grid-template: 100% / 100%;
-		place-items: center;
 	}
 
 	.ui-frame {
 		display: grid;
 		grid-template: 100% / 100%;
-		place-items: center;
 	}
 	/* Zero a frame track's intrinsic contribution
 	   so an explicit min-* is the axis's floor. */
@@ -161,7 +153,6 @@
 		z-index: 1;
 		display: grid;
 		grid-template: 100% / 100%;
-		place-items: center;
 	}
 	.ui-underlay,
 	.ui-overlay {
@@ -170,13 +161,9 @@
 		display: grid;
 		grid-template: 100% / 100%;
 	}
-	.ui-underlay {
-		z-index: 0;
-		place-items: center;
-	}
+	.ui-underlay { z-index: 0; }
 	.ui-overlay {
 		z-index: 2;
-		place-items: center;
 		pointer-events: none;
 	}
 	.ui-overlay > * { pointer-events: auto; }
@@ -233,24 +220,4 @@
 		border-color: var(--ui-color-danger);
 		color: #fff;
 	}
-
-	/* Alignment. Stacks carry ui-align-* (cross axis);
-	   grid containers carry ui-place-* (block axis first).
-	   These follow the component rules so they override
-	   the centered defaults. */
-	.ui-align-start { align-items: start; }
-	.ui-align-end { align-items: end; }
-	.ui-align-baseline { align-items: baseline; }
-
-	.ui-place-start-start { place-items: start start; }
-	.ui-place-start-center { place-items: start center; }
-	.ui-place-start-end { place-items: start end; }
-	.ui-place-center-start { place-items: center start; }
-	.ui-place-center-end { place-items: center end; }
-	.ui-place-end-start { place-items: end start; }
-	.ui-place-end-center { place-items: end center; }
-	.ui-place-end-end { place-items: end end; }
-	.ui-place-baseline-start { place-items: baseline start; }
-	.ui-place-baseline-center { place-items: baseline center; }
-	.ui-place-baseline-end { place-items: baseline end; }
 }

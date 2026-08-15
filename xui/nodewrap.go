@@ -4,6 +4,8 @@ import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
+
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // wrapSubview renders n as the content of a fresh wrapper plan.
@@ -64,18 +66,20 @@ type wrapLayer struct {
 func (w wrapLayer) modify(n node) node { w.node = n; return w }
 
 func (w wrapLayer) render(env environment) box {
+	var bss, lss sheet.StyleSet
+	classFor := func(ss sheet.StyleSet) domi.Attr {
+		return attr.Class(env.sheet.ClassFor(ss))
+	}
 	class := "ui-underlay"
 	if w.over {
 		class = "ui-overlay"
 	}
-	attrs := []domi.Attr{attr.Class(class)}
-	if w.alignment != Center {
-		attrs = append(attrs, attr.Class(w.alignment.placeClass()))
-	}
+	bss.Set("place-items", Center.placeItems())
+	lss.Set("place-items", w.alignment.placeItems())
 	p := wrapSubview(env, w.node)
 	p.content = domi.Fragment(
-		html.Div(attr.Class("ui-layer-base"))(p.content),
-		html.Div(attrs...)(renderLayer(env, w.view)),
+		html.Div(attr.Class("ui-layer-base"), classFor(bss))(p.content),
+		html.Div(attr.Class(class), classFor(lss))(renderLayer(env, w.view)),
 	)
 	env.add(attr.Class("ui-layers"))
 	return build(env, p)
@@ -104,6 +108,7 @@ func (w wrapPadding) modify(n node) node { w.node = n; return w }
 func (w wrapPadding) render(env environment) box {
 	p := wrapSubview(env, w.node)
 	env.add(attr.Class("ui-padding"))
+	env.style.Set("place-items", Center.placeItems())
 	w.space.setPadding(&env.style)
 	return build(env, p)
 }

@@ -42,10 +42,10 @@ func TestInheritedModifierCollapses(t *testing.T) {
 	if strings.Contains(html, "ui-mod") {
 		t.Fatalf("Foreground should not produce a wrapper:\n%s", html)
 	}
-	if got := classRule(t, html, `class="ui-vstack (ui-\w+)"`); got != "color:red;gap:8px" {
+	if got := classRule(t, html, `class="ui-vstack (ui-\w+)"`); got != "align-items:center;color:red;gap:8px" {
 		t.Errorf("stack box rule = %q, want the consumed color in the stack's own set", got)
 	}
-	m := regexp.MustCompile(`\.(ui-\w+)\{color:red;gap:8px\}`).FindStringSubmatch(html)
+	m := regexp.MustCompile(`\.(ui-\w+)\{align-items:center;color:red;gap:8px\}`).FindStringSubmatch(html)
 	if m == nil {
 		t.Fatalf("no color rule in the sheet:\n%s", html)
 	}
@@ -139,7 +139,7 @@ func TestBackgroundShapeOrder(t *testing.T) {
 	// Shape then background: the shape stays on the text element and
 	// the paint boxes out around it, unshaped — a red rectangle.
 	square := render(t, ui.Text("x").BorderShape(ui.Capsule).Background("red"))
-	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "background-color:red" {
+	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "background-color:red;place-items:center" {
 		t.Errorf("paint after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
 	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px" {

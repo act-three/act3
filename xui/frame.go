@@ -54,9 +54,7 @@ func (w wrapFrame) render(env environment) box {
 	p.fills &^= w.definite()
 	p.rigid |= w.definite()
 	env.add(attr.Class("ui-frame"))
-	if w.align != Center {
-		env.add(attr.Class(w.align.placeClass()))
-	}
+	env.style.Set("place-items", w.align.placeItems())
 	if w.h.definite {
 		env.style.Set("width", w.h.css())
 	}

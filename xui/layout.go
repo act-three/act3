@@ -154,25 +154,12 @@ func (a Alignment) horizontal() Alignment { return a & (Leading | Trailing) }
 // vertical returns the alignment's vertical component.
 func (a Alignment) vertical() Alignment { return a & (Top | Bottom | FirstBaseline) }
 
-// placeClass maps an alignment to the class carrying its place-items
-// value, which takes the block component first,
+// placeItems maps an alignment to its place-items value,
+// which takes the block component first,
 // which in this package is always the vertical axis.
-// Center has no class; it is the stylesheet default.
-func (a Alignment) placeClass() string {
+func (a Alignment) placeItems() string {
 	if a == Center {
-		return ""
+		return "center"
 	}
-	return "ui-place-" + a.vertical().keyword() + "-" + a.horizontal().keyword()
-}
-
-// alignClass maps an alignment's projection onto one axis
-// to the class carrying its align-items keyword.
-// An alignment can project to Center on one axis without being Center
-// (such as Top on a VStack's cross axis);
-// Center has no class, as it is the stylesheet default.
-func alignClass(projection Alignment) domi.Attr {
-	if projection == Center {
-		return nil
-	}
-	return attr.Class("ui-align-" + projection.keyword())
+	return a.vertical().keyword() + " " + a.horizontal().keyword()
 }

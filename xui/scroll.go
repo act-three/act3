@@ -39,6 +39,7 @@ func (s scrollNode) render(env environment) box {
 	// The scroll viewport is a single-cell grid establishing no axes.
 	// It is equivalent to the root view context in a scrolling web page.
 	env.add(attr.Class("ui-scroll", variant))
+	env.style.Set("place-items", "start")
 	if env.unbounded.hasAll(Horizontal) {
 		env.add(attr.Class("ui-scroll-ideal-x"))
 	}

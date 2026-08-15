@@ -124,9 +124,10 @@ func TestAccountCard(t *testing.T) {
 		`class="ui-spacer ui-spacer-h ui-grow"`,
 		`class="ui-hstack ui-button ui-role-primary `,
 		`class="ui-layers ui-cell-fill-x"`, // Underlay + Overlay decoration layers
-		`class="ui-underlay"`,
-		`class="ui-overlay ui-place-start-end"`,
-		`border-radius:9999px`, // the Badge's pill
+		`class="ui-underlay `,
+		`class="ui-overlay `,
+		`place-items:start end`, // the Overlay's alignment
+		`border-radius:9999px`,  // the Badge's pill
 		`Pro`,
 		`Ada Lovelace`,
 	}
@@ -182,7 +183,7 @@ func TestTagNamesElement(t *testing.T) {
 		ui.Text("b"),
 	))
 	for _, w := range []string{
-		`<nav class="ui-frame ui-grow"`,         // the tagged frame carries the fill
+		`<nav class="ui-frame ui-grow `,         // the tagged frame carries the fill
 		`class="ui-hstack ui-cell-fill-x `,      // ...and the root stack keeps it
 		`class="ui-spacer ui-spacer-h ui-grow"`, // the inner row distributes slack
 	} {
@@ -218,7 +219,7 @@ func TestTagInnermostWins(t *testing.T) {
 // host rather than on the node.
 func TestHTMLHost(t *testing.T) {
 	html := render(t, ui.HTML(domi.Text("raw")))
-	if want := `<div class="ui-html ui-cell-fill-x ui-cell-fill-y">raw</div>`; !strings.Contains(html, want) {
+	if want := regexp.MustCompile(`<div class="ui-html ui-cell-fill-x ui-cell-fill-y ui-\w+">raw</div>`); !want.MatchString(html) {
 		t.Errorf("missing %q:\n%s", want, html)
 	}
 
@@ -244,19 +245,19 @@ func TestHTMLFill(t *testing.T) {
 		{
 			"both axes at the root grid",
 			ui.HTML(domi.Text("raw")),
-			[]string{`class="ui-html ui-cell-fill-x ui-cell-fill-y"`},
+			[]string{`class="ui-html ui-cell-fill-x ui-cell-fill-y `},
 			nil,
 		},
 		{
 			"a row grows it, stretches it, and inherits the fill",
 			ui.HStack(ui.HTML(domi.Text("raw"))),
-			[]string{`class="ui-html ui-grow ui-stretch"`, `class="ui-hstack ui-cell-fill-x ui-cell-fill-y `},
+			[]string{`class="ui-html ui-grow ui-stretch `, `class="ui-hstack ui-cell-fill-x ui-cell-fill-y `},
 			nil,
 		},
 		{
 			"FixedSize clears the fill axes",
 			ui.HTML(domi.Text("raw")).FixedSize(),
-			[]string{`class="ui-html ui-fixed-size"`},
+			[]string{`class="ui-html ui-fixed-size `},
 			[]string{"ui-cell-fill"},
 		},
 	} {
@@ -281,11 +282,11 @@ func TestHTMLFill(t *testing.T) {
 // stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
 	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background("red"))
-	if got := classRule(t, html, `class="ui-padding ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:red;padding:4px" {
+	if got := classRule(t, html, `class="ui-padding ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:red;padding:4px;place-items:center" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
-	if !strings.Contains(html, `class="ui-html ui-cell-fill-x ui-cell-fill-y">raw<`) {
-		t.Errorf("host should stay untouched inside:\n%s", html)
+	if got := classRule(t, html, `class="ui-html ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "place-items:center" {
+		t.Errorf("host should stay untouched inside, got %q:\n%s", got, html)
 	}
 }
 
@@ -336,7 +337,7 @@ func TestColorAsView(t *testing.T) {
 	}
 	// Underlay layers content behind the color.
 	under := render(t, ui.Color("#0008").LayerUnder(ui.Center, ui.Text("behind")))
-	for _, w := range []string{`class="ui-underlay"`, "behind"} {
+	for _, w := range []string{`class="ui-underlay `, "behind"} {
 		if !strings.Contains(under, w) {
 			t.Errorf("Underlay behind a color missing %q:\n%s", w, under)
 		}
@@ -570,24 +571,24 @@ func TestForKeyLikeIdiom(t *testing.T) {
 // block for an HStack.
 func TestAlignProjectsOntoCrossAxis(t *testing.T) {
 	h := render(t, ui.HStack(ui.Text("a")).Alignment(ui.TopTrailing))
-	if !strings.Contains(h, "ui-align-start") {
+	if !strings.Contains(h, "align-items:start") {
 		t.Errorf("HStack TopTrailing should align to the top:\n%s", h)
 	}
 	v := render(t, ui.VStack(ui.Text("a")).Alignment(ui.TopTrailing))
-	if !strings.Contains(v, "ui-align-end") {
+	if !strings.Contains(v, "align-items:end") {
 		t.Errorf("VStack TopTrailing should align to the trailing edge:\n%s", v)
 	}
 
 	f := render(t, ui.Text("a").Frame(ui.Width(100), ui.BottomTrailing))
-	if !strings.Contains(f, "ui-place-end-end") {
+	if !strings.Contains(f, "place-items:end end") {
 		t.Errorf("frame Align should place the content in both axes:\n%s", f)
 	}
 
-	// An alignment whose relevant axis projects to center emits no
-	// class: center is the stylesheet default.
+	// An alignment whose relevant axis projects to center emits the
+	// center it projects to.
 	c := render(t, ui.VStack(ui.Text("a")).Alignment(ui.Top))
-	if strings.Contains(c, "ui-align") {
-		t.Errorf("VStack Top projects to center on the cross axis, want no class:\n%s", c)
+	if !strings.Contains(c, "align-items:center") {
+		t.Errorf("VStack Top projects to center on the cross axis:\n%s", c)
 	}
 }
 
@@ -689,7 +690,7 @@ func TestScrollView(t *testing.T) {
 func TestFrameBounds(t *testing.T) {
 	bounded := render(t, ui.Text("x").FrameBounds(ui.MinWidth(96), ui.MaxWidth(320), ui.MinHeight(24), ui.MaxHeight(48), ui.Leading))
 	for _, w := range []string{
-		"min-width:96px", "max-width:320px", "min-height:24px", "max-height:48px", "ui-place-center-start",
+		"min-width:96px", "max-width:320px", "min-height:24px", "max-height:48px", "place-items:center start",
 		// An explicit minimum zeroes the axis's intrinsic track so the
 		// min-* declaration is the floor.
 		"ui-min-track-x", "ui-min-track-y",
