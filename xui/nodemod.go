@@ -121,7 +121,7 @@ func BorderShape(s Shape) Modifier { return modBorderShape{s} }
 func (m modBorderShape) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
 
 func (m modBorderShape) environment(env environment) environment {
-	env.shape = &m.s
+	env.shape = m.s
 	return env
 }
 

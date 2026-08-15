@@ -42,7 +42,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 	pending := func() environment {
 		c, s := Color("red"), Capsule
 		return environment{
-			shape: &s,
+			shape: s,
 			attrs: attr.Class("x"),
 			tag:   "b",
 			fg:    &c,

@@ -136,7 +136,7 @@ type boxenv struct {
 	style sheet.StyleSet
 	fg    *Color
 	bg    []Color
-	shape *Shape
+	shape Shape
 	font  FontSize
 	trans float64
 
@@ -196,7 +196,7 @@ func build(env environment, p plan) box {
 	rigid := p.rigid | env.unbounded
 	ss := env.style
 	addBackgroundStylesTo(&ss, env.bg)
-	if env.shape != nil && *env.shape != Rectangle {
+	if env.shape != Rectangle {
 		ss.Set("border-radius", env.shape.radius())
 	}
 	if env.fg != nil {
