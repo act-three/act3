@@ -7,6 +7,11 @@ import (
 	"ily.dev/act3/xui/internal/sheet"
 )
 
+// BUG(em): When a FrameBounds modifier has unbounded available space
+// and a maximum smaller than the size of its enclosing container,
+// it leaves the frame at the Top or Leading edge of the axis,
+// ignoring its container's alignment.
+
 // FrameBounds positions v inside an invisible frame
 // with the given bounds and alignment.
 //
@@ -249,7 +254,14 @@ func (w wrapFrameBounds) render(env environment) box {
 	// adding a maximum must never make the subview bigger.
 	inner.unbounded &^= ideal
 	p := wrapSubview(inner, w.node)
-	capped := w.cappedFills(p.fills) &^ ideal
+	// A capped fill ends at the frame, which satisfies it out of the
+	// frame's own available space, up to the maximum. That requires
+	// available space to pass on to the subview.
+	// On an unbounded axis the maximum
+	// would become the frame's size outright, making the subview
+	// bigger (which merely adding a maximum must not do).
+	// So in that case, we don't cap the subview's fill.
+	capped := w.cappedFills(p.fills) &^ ideal &^ env.unbounded
 	// An axis with no bounds takes the subview's sizing and its
 	// rigidity with it. A bounded axis tracks space between its
 	// bounds instead, regardless of the subview's rigidity.

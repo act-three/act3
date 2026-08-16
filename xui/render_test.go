@@ -365,13 +365,16 @@ func TestPaddingComposes(t *testing.T) {
 	}
 }
 
-// TestIdealSize pins the unbounded-space context: FixedSize marks its
-// subtree's available space as unbounded; the space-adaptive views take
-// a deliberate default on each unbounded axis (Color 10px, ScrollView
-// 100px, Divider 10px along its length); and unbounded clears per axis
-// wherever a box makes real space available again — a frame's definite
-// axes, a decoration layer, a
-// scroll viewport.
+// TestIdealSize pins the unbounded-space contract: FixedSize marks its
+// subtree's available space as unbounded; the space-adaptive views
+// answer each unbounded axis with a deliberate ideal (Color 10px,
+// ScrollView 100px, Divider 10px along its length), contributed as a
+// minimum where the box also fills the axis and taken as its size
+// where it does not; fills survive unbounded space but are stripped at
+// fill boundaries — scroll content along a scroll axis, a FixedSize
+// subtree's outermost box; and unbounded clears per axis wherever a
+// box makes real space available again — a frame's definite axes, a
+// decoration layer, a scroll viewport.
 func TestIdealSize(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -380,58 +383,65 @@ func TestIdealSize(t *testing.T) {
 		rejects []string
 	}{
 		{
+			// The color's own box is the FixedSize boundary: its
+			// fills are stripped, so it takes its ideal as its size.
 			"direct FixedSize",
 			ui.Muted.FixedSize(),
-			[]string{"ui-color-ideal-x", "ui-color-ideal-y"},
-			nil,
+			[]string{"width:10px", "height:10px"},
+			[]string{"min-width", "min-height"},
 		},
 		{
+			// The stack is the boundary; the color inside keeps its
+			// fills and contributes its ideal as a minimum.
 			"FixedSize on an ancestor",
 			ui.VStack(ui.Muted).FixedSize(),
-			[]string{"ui-color-ideal-x", "ui-color-ideal-y"},
+			[]string{"min-width:10px", "min-height:10px"},
 			nil,
 		},
 		{
 			"definite frame axis clears its axis only",
 			ui.VStack(ui.Muted).Frame(ui.Width(200)).FixedSize(),
-			[]string{"ui-color-ideal-y"},
-			[]string{"ui-color-ideal-x"},
+			[]string{"min-height:10px"},
+			[]string{"min-width"},
 		},
 		{
 			"both definite axes clear both",
 			ui.VStack(ui.Muted).Frame(ui.Width(200), ui.Height(100)).FixedSize(),
 			nil,
-			[]string{"ui-color-ideal"},
+			[]string{"10px"},
 		},
 		{
 			"scroll viewport takes 100px; content unbounded on the scroll axis",
 			ui.ScrollView(ui.Vertical, ui.Muted).FixedSize(),
-			[]string{"ui-scroll-ideal-x", "ui-scroll-ideal-y", "ui-color-ideal-y"},
-			[]string{"ui-color-ideal-x"},
+			[]string{"ui-scroll-ideal-x", "ui-scroll-ideal-y", "height:10px"},
+			[]string{"width:10px"},
 		},
 		{
+			// The color's fill is stripped on the scroll axis only,
+			// so its ideal is its size there, and it keeps filling
+			// the bounded cross axis.
 			"scroll axis is unbounded without FixedSize",
 			ui.ScrollView(ui.Vertical, ui.Muted),
-			[]string{"ui-color-ideal-y", "ui-cell-fill-x"},
-			[]string{"ui-color-ideal-x"},
+			[]string{"height:10px", "ui-cell-fill-x"},
+			[]string{"width:10px"},
 		},
 		{
 			"both-axes scroll makes both content axes unbounded",
 			ui.ScrollView(ui.Horizontal|ui.Vertical, ui.Muted),
-			[]string{"ui-color-ideal-x", "ui-color-ideal-y"},
+			[]string{"width:10px", "height:10px"},
 			nil,
 		},
 		{
 			"no-axis scroll makes neither content axis unbounded",
 			ui.ScrollView(ui.AxisSet(0), ui.Muted).FixedSize(),
 			[]string{"ui-scroll-ideal-x", "ui-scroll-ideal-y", "ui-scroll-none"},
-			[]string{"ui-color-ideal"},
+			[]string{"10px"},
 		},
 		{
 			"bounds frame takes its ideal and makes it the subview's space",
 			ui.VStack(ui.Muted).FrameBounds(ui.IdealWidth(200), ui.IdealHeight(80)).FixedSize(),
 			[]string{"width:200px", "height:80px"},
-			[]string{"ui-color-ideal"},
+			[]string{"10px"},
 		},
 		{
 			"bounds frame ideal is inert in bounded space",
@@ -443,10 +453,11 @@ func TestIdealSize(t *testing.T) {
 			// Bounds clamp sizes, not queries: adding a maximum must
 			// never make the subview bigger. The color takes the same
 			// 10px defaults it would take without the frame, and the
-			// max clamps only the frame's answer.
+			// max clamps only the frame's answer — with no available
+			// space to track, the frame does not absorb the fill.
 			"a definite max passes the query through",
 			ui.VStack(ui.Muted).FrameBounds(ui.MaxWidth(300)).FixedSize(),
-			[]string{"ui-color-ideal-x", "ui-color-ideal-y", "max-width:300px"},
+			[]string{"min-width:10px", "min-height:10px", "max-width:300px"},
 			[]string{"grid-template"},
 		},
 		{
@@ -466,22 +477,22 @@ func TestIdealSize(t *testing.T) {
 			nil,
 		},
 		{
-			"divider takes 10px along its length",
+			"divider contributes 10px along its length",
 			ui.VStack(ui.Divider()).FixedSize(),
-			[]string{"height:1px", "width:10px"},
-			[]string{"height:10px"},
+			[]string{"height:1px", "min-width:10px", "ui-stretch"},
+			[]string{"min-height"},
 		},
 		{
-			"vertical divider takes 10px along its length",
+			"vertical divider contributes 10px along its length",
 			ui.HStack(ui.Divider()).FixedSize(),
-			[]string{"width:1px", "height:10px"},
-			[]string{"width:10px"},
+			[]string{"width:1px", "min-height:10px", "ui-stretch"},
+			[]string{"min-width"},
 		},
 		{
 			"decoration layer clears both axes",
 			ui.Text("x").LayerOver(ui.Center, ui.Muted).FixedSize(),
 			nil,
-			[]string{"ui-color-ideal"},
+			[]string{"10px"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

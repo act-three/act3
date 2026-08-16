@@ -111,15 +111,9 @@ type colorFillNode struct{ color Color }
 
 func (f colorFillNode) render(env environment) box {
 	env.add(attr.Class("ui-color"))
-	// A color adapts to any space and has no content-derived size of
-	// its own; an axis with unbounded available space takes a 10px
-	// default, and the rest adapt.
-	if env.unbounded.hasAll(Horizontal) {
-		env.add(attr.Class("ui-color-ideal-x"))
-	}
-	if env.unbounded.hasAll(Vertical) {
-		env.add(attr.Class("ui-color-ideal-y"))
-	}
 	env.bg = append(env.bg, cmp.Or(f.color, "#000"))
-	return build(env, plan{fills: Horizontal | Vertical})
+	return build(env, plan{
+		fills: Horizontal | Vertical,
+		ideal: rect{width: newSize(10), height: newSize(10)},
+	})
 }

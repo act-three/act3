@@ -9,6 +9,8 @@ type Length interface {
 	int | float64
 }
 
+type rect struct{ width, height size }
+
 // size is either a fixed length in CSS pixels or the special value Auto.
 // The meaning of Auto is determined by context.
 // It has no universally-defined lowering form.

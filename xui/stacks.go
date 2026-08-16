@@ -135,17 +135,14 @@ type dividerNode struct{}
 func (dividerNode) render(env environment) box {
 	env.add(attr.Class("ui-divider"))
 	env.bg = append(env.bg, borderColor)
+	p := plan{fills: env.lc.minorAxes(), rigid: env.lc.majorAxis}
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
 		env.style.Set("width", "1px")
-		if env.unbounded.hasAll(Vertical) {
-			env.style.Set("height", "10px")
-		}
+		p.ideal.height = newSize(10)
 	} else {
 		env.style.Set("height", "1px")
-		if env.unbounded.hasAll(Horizontal) {
-			env.style.Set("width", "10px")
-		}
+		p.ideal.width = newSize(10)
 	}
-	return build(env, plan{fills: env.lc.minorAxes(), rigid: env.lc.majorAxis})
+	return build(env, p)
 }
