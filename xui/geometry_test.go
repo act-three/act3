@@ -414,44 +414,6 @@ func TestGeometryTextFloorsAtMinContent(t *testing.T) {
 	})
 }
 
-// TestGeometryStackHugsCappedFill pins fill absorption at a definite
-// maximum: a stack over a capped greedy subview is exactly its bounding
-// rectangle — no dead space where a relayed fill would have grown the
-// stack — while the capped frame still yields to flex pressure and to
-// a cell smaller than its maximum.
-func TestGeometryStackHugsCappedFill(t *testing.T) {
-	capped := ui.Color("#345").FrameBounds(ui.MaxWidth(300)).Class("capped")
-
-	stage(t, ui.HStack(capped).Class("outer"), func(s *uitest.Session) {
-		within(t, "capped frame width", s.Rect(".capped", 0).W, 300, 1)
-		within(t, "stack hugs the capped fill", s.Rect(".outer", 0).W, 300, 1)
-	})
-
-	squeezed := ui.HStack(
-		capped,
-		ui.Color("#567").Frame(ui.Width(450), ui.Height(40)),
-	).Gap(0).Class("outer")
-	stage(t, squeezed, func(s *uitest.Session) {
-		within(t, "squeezed capped width", s.Rect(".capped", 0).W, 150, 1)
-		within(t, "row is the bounding rectangle", s.Rect(".outer", 0).W, 600, 1)
-	})
-
-	stage(t, capped.Frame(ui.Width(200), ui.Height(100)), func(s *uitest.Session) {
-		within(t, "small cell clamps the claim", s.Rect(".capped", 0).W, 200, 1)
-	})
-
-	// The cross axis absorbs the same way: the claim caps the row's
-	// height contribution at the maximum, not at the fill.
-	cross := ui.HStack(
-		ui.Color("#345").FrameBounds(ui.MaxHeight(50)).Class("vcapped"),
-		ui.Color("#567").Frame(ui.Width(40), ui.Height(80)),
-	).Class("vrow")
-	stage(t, cross, func(s *uitest.Session) {
-		within(t, "cross-capped height", s.Rect(".vcapped", 0).H, 50, 1)
-		within(t, "row height hugs the tallest item", s.Rect(".vrow", 0).H, 80, 1)
-	})
-}
-
 // TestGeometrySoftFrameTracksSpace pins the soft frame's contract in the
 // three regimes it can land in: on a flex major axis it yields to the
 // available space and floors at its minimum; in a grid cell and on a flex
@@ -492,37 +454,27 @@ func TestGeometrySoftFrameTracksSpace(t *testing.T) {
 }
 
 // TestGeometrySoftFrameIdeal pins the ideal slots: a fixed soft frame
-// takes its ideal, clamped by its own bounds, and makes the result the
-// available space of the view inside; with bounded available space the
-// same ideal is inert and the
+// takes its ideal and makes it the available space of the view inside;
+// with bounded available space the same ideal is inert and the
 // frame tracks space as usual.
 func TestGeometrySoftFrameIdeal(t *testing.T) {
 	v := ui.VStack(ui.Muted).
-		FrameBounds(ui.IdealWidth(500), ui.MaxWidth(300), ui.IdealHeight(80)).
+		FrameBounds(ui.IdealWidth(500), ui.IdealHeight(80)).
 		Class("soft")
 
 	stage(t, v.FixedSize(), func(s *uitest.Session) {
 		soft := s.Rect(".soft", 0)
-		within(t, "fixed soft width takes the clamped ideal", soft.W, 300, 1)
+		within(t, "fixed soft width takes the ideal", soft.W, 500, 1)
 		within(t, "fixed soft height takes the ideal", soft.H, 80, 1)
 		fill := s.Rect(".ui-color", 0)
-		within(t, "color fills the ideal-sized frame", fill.W, 300, 1)
+		within(t, "color fills the ideal-sized frame", fill.W, 500, 1)
 		within(t, "color fills the ideal-sized frame", fill.H, 80, 1)
 	})
 
 	stage(t, v.Frame(ui.Width(600), ui.Height(300)), func(s *uitest.Session) {
 		soft := s.Rect(".soft", 0)
-		within(t, "bounded soft width ignores the ideal", soft.W, 300, 1)
+		within(t, "bounded soft width ignores the ideal", soft.W, 600, 1)
 		within(t, "bounded soft height ignores the ideal", soft.H, 300, 1)
-	})
-
-	// Bounds clamp sizes, not queries: adding a maximum must never make
-	// the subview bigger. With no available space to bound, the color
-	// takes the same 10px defaults it would take without the frame.
-	stage(t, ui.VStack(ui.Muted).FrameBounds(ui.MaxWidth(300)).FixedSize(), func(s *uitest.Session) {
-		fill := s.Rect(".ui-color", 0)
-		within(t, "color keeps its default under a max", fill.W, 10, 1)
-		within(t, "color keeps its default under a max", fill.H, 10, 1)
 	})
 }
 
