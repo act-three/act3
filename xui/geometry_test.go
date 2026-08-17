@@ -94,6 +94,41 @@ func TestGeometryDividerSpansMinorAxis(t *testing.T) {
 	})
 }
 
+// TestGeometryDividerSpansMinorAxisUnbounded pins minor-axis fills in
+// unbounded available space: the row's height is resolved from its
+// tallest sibling, and each divider expands to that extent — through
+// a padding wrapper too — instead of taking its 10px ideal.
+func TestGeometryDividerSpansMinorAxisUnbounded(t *testing.T) {
+	row := ui.HStack(
+		ui.Text("a"),
+		ui.Divider(),
+		ui.Divider().Padding(ui.Edges(1)),
+		ui.Text("tall").Padding(ui.Edges(32)),
+	)
+	check := func(name string) func(*uitest.Session) {
+		return func(s *uitest.Session) {
+			h := s.Rect(".ui-hstack", 0).H
+			if h > 200 {
+				t.Errorf("%s: row height = %g, want content height, not the viewport's", name, h)
+			}
+			within(t, name+": bare divider height", s.Rect(".ui-divider", 0).H, h, 1)
+			within(t, name+": padded divider height", s.Rect(".ui-divider", 1).H, h-2, 1)
+		}
+	}
+	stage(t, ui.ScrollView(ui.Vertical, row), check("scroll"))
+	stage(t, row.FixedSize(), check("fixedsize"))
+}
+
+// TestGeometryFixedSizeColor pins the fill boundary: a FixedSize color
+// keeps its 10px ideal even in a container with slack to offer.
+func TestGeometryFixedSizeColor(t *testing.T) {
+	stage(t, ui.Color("#567").FixedSize(), func(s *uitest.Session) {
+		c := s.Rect(".ui-color", 0)
+		within(t, "color width", c.W, 10, 0.5)
+		within(t, "color height", c.H, 10, 0.5)
+	})
+}
+
 func TestGeometryFrameSubviewKeepsIntrinsicSize(t *testing.T) {
 	stage(t, ui.Text("hi").Frame(ui.Width(120), ui.Height(120)), func(s *uitest.Session) {
 		frame, text := s.Rect(".ui-frame", 0), s.Rect(".ui-text", 0)

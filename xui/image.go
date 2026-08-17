@@ -56,7 +56,7 @@ func (n imageNode) render(env environment) box {
 	} else {
 		// A scaling mode is a statement about meeting an imposed box: the
 		// img is fully flexible, and object-fit fits the picture to
-		// whatever box it lands in. On an unbounded axis there is no box
+		// whatever box it lands in. At a fill boundary there is no box
 		// to meet, so the fill drops away and the img's intrinsic
 		// geometry answers — its natural size, or the other axis scaled
 		// through the picture's ratio.

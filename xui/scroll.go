@@ -36,7 +36,6 @@ func (s scrollNode) render(env environment) box {
 	}
 	// Along a scroll axis, the content's available space is unbounded.
 	// On a non-scrolling axis the available space is the viewport's own size.
-	inner := environment{unbounded: s.along, sheet: env.sheet}
 	variant := cmp.Or(map[AxisSet]string{
 		Horizontal:            "ui-scroll-x",
 		Vertical:              "ui-scroll-y",
@@ -46,13 +45,22 @@ func (s scrollNode) render(env environment) box {
 	// It is equivalent to the root view context in a scrolling web page.
 	env.add(attr.Class("ui-scroll", variant))
 	env.style.Set("place-items", "start")
+	// TODO: fold these classes into plan.ideal. Its min-* lowering
+	// assumes a box's content contributes nothing beyond the ideal,
+	// but an overflow box contributes its full content size, so the
+	// viewport needs a definite size to force overflow. contain: size
+	// + contain-intrinsic-size would cap the contribution at the
+	// ideal, making plan.ideal's contract hold here too.
 	if env.unbounded.hasAll(Horizontal) {
 		env.add(attr.Class("ui-scroll-ideal-x"))
 	}
 	if env.unbounded.hasAll(Vertical) {
 		env.add(attr.Class("ui-scroll-ideal-y"))
 	}
-	content, _ := subviewsRendered(inner, s.contents)
+	content, _ := subviewsRendered(environment{sheet: env.sheet},
+		s.contents.
+			Modify(modFixedSize{axes: s.along}),
+	)
 	p := plan{
 		fills:   Horizontal | Vertical,
 		content: content,

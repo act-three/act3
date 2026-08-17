@@ -145,6 +145,10 @@ type boxenv struct {
 	font   FontSize
 	trans  float64
 
+	// fillMask is the set of axes to be stripped
+	// from the box's fill request.
+	// It is set at the outermost box of an unbounded subtree.
+	fillMask AxisSet
 	hasPaint bool // set by every paint modifier
 }
 
@@ -166,6 +170,7 @@ type plan struct {
 	content domi.Node
 	fills   AxisSet // A fill request is the physical axes a box wants to fill.
 	rigid   AxisSet
+	ideal   rect // ideal is a box's size when available space is unbounded.
 }
 
 // A box is a rendered node.
@@ -201,11 +206,11 @@ func build(env environment, p plan) box {
 	if c := env.font.class(); c != "" {
 		a = domi.Group(a, attr.Class(c))
 	}
-	// A fill request on an unbounded axis is meaningless, so clear it.
-	fills := p.fills &^ env.unbounded
+	fills := p.fills &^ env.fillMask
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
 	ss := env.style
+	addIdealStylesTo(&ss, p.ideal, env.unbounded, fills)
 	addBackgroundStylesTo(&ss, env.bg)
 	addStrokeStylesTo(&ss, env.stroke)
 	if env.shape != Rectangle {
@@ -227,6 +232,33 @@ func build(env environment, p plan) box {
 		node:  domi.Tag(cmp.Or(env.tag, "div"), a)(p.content),
 		fills: fills,
 		rigid: rigid,
+	}
+}
+
+// addIdealStylesTo adds CSS declarations for a box's ideal size.
+// An ideal size applies only on an axis with unbounded available space.
+// A box with no fill request simply uses its ideal size.
+// A box with a fill request can expand beyond its ideal size.
+// It contributes the ideal as a minimum length
+// to the enclosing container's resolved extent,
+// then expands to that extent.
+func addIdealStylesTo(ss *sheet.StyleSet, i rect, unbounded, fills AxisSet) {
+	for _, a := range [...]struct {
+		axis AxisSet
+		name string
+		size size
+	}{
+		{Horizontal, "width", i.width},
+		{Vertical, "height", i.height},
+	} {
+		if !a.size.definite || !unbounded.hasAll(a.axis) {
+			continue
+		}
+		if fills.hasAll(a.axis) {
+			ss.Set("min-"+a.name, a.size.css())
+		} else {
+			ss.Set(a.name, a.size.css())
+		}
 	}
 }
 

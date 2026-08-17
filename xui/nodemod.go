@@ -75,7 +75,11 @@ func (v base) Class(c ...string) View { return v.Modify(modAttr{attr: attr.Class
 
 // FixedSize fixes v at its ideal size.
 // This can cause it to exceed the bounds of its container.
-func (v base) FixedSize() View { return v.Modify(modFixedSize{}) }
+func (v base) FixedSize() View {
+	return v.
+		Modify(modFixedSize{Horizontal | Vertical}).
+		Class("ui-fixed-size")
+}
 
 // Font sets the font size for text in v.
 func (v base) Font(f FontSize) View { return v.Modify(Font(f)) }
@@ -155,16 +159,18 @@ func (m modBorderStroke) environment(env environment) environment {
 }
 
 // NOTE: no exported construcor.
-type modFixedSize struct{}
+type modFixedSize struct{ axes AxisSet }
 
 func (m modFixedSize) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
-// environment gives the subtree unbounded available space on both axes,
-// so the first box takes its ideal size (see [build]).
-// The marker class rides the environment's attrs.
-func (modFixedSize) environment(env environment) environment {
-	env.unbounded = Horizontal | Vertical
-	env.add(attr.Class("ui-fixed-size"))
+// environment gives the subtree unbounded available space on the given axes,
+// so the subtree resolves to its ideal size there (see [build]).
+// The subtree's outermost box is a fill boundary:
+// it must sit in its real container at that resolved size,
+// even when the container has slack to offer.
+func (m modFixedSize) environment(env environment) environment {
+	env.unbounded |= m.axes
+	env.fillMask |= m.axes
 	return env
 }
 
