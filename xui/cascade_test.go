@@ -262,6 +262,18 @@ func TestBorderStrokeOnScroll(t *testing.T) {
 	}
 }
 
+// TestLayerIsolatesSubview pins the subview's stacking isolation:
+// the subview forms its own stacking context, so no z-index inside
+// it — app CSS included — can climb the composite's z ladder past
+// the layers.
+func TestLayerIsolatesSubview(t *testing.T) {
+	html := render(t, ui.Text("x").LayerOver(ui.Center, ui.Text("o")))
+	got := classRule(t, html, `class="ui-text (ui-\w+)"`)
+	if got != "isolation:isolate" {
+		t.Errorf("layered subview rule = %q, want isolation", got)
+	}
+}
+
 // TestBorderStrokeOverLayers pins the ring against the layer
 // composite: on a layered box the carrier joins the z ladder above
 // the overlay, where its tree position alone would lose to the
@@ -269,7 +281,8 @@ func TestBorderStrokeOnScroll(t *testing.T) {
 func TestBorderStrokeOverLayers(t *testing.T) {
 	html := render(t, ui.Text("x").LayerOver(ui.Center, ui.Text("o")).BorderStroke(2, "red"))
 	got := classRule(t, html, `class="ui-layers (ui-\w+)"`)
-	want := "isolation:isolate;overflow:visible;position:relative;" +
+	want := "display:grid;grid-template-columns:100%;grid-template-rows:100%;" +
+		"isolation:isolate;overflow:visible;place-items:center;position:relative;" +
 		strings.Replace(carrier("inset 0 0 0 2px red"), "position:absolute}", "position:absolute;z-index:3}", 1)
 	if got != want {
 		t.Errorf("layered stroke rule = %q, want the ring on the z ladder:\n%s", got, html)

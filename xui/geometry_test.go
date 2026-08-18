@@ -275,6 +275,22 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 	})
 }
 
+// TestGeometryLayerCoincidesUnderStretch pins the layer composite's
+// coincidence: when a granted fill stretches a layered box past its
+// content size, the base subview and the layer both track the
+// container's box.
+func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
+	layered := ui.VStack(ui.Text("base"), ui.Muted).LayerUnder(ui.Center, ui.Color("#00f"))
+	v := ui.HStack(ui.Text("tall").Padding(ui.Edges(140)), layered)
+	stage(t, v, func(s *uitest.Session) {
+		box := s.Rect(".ui-layers", 0)
+		within(t, "container height", box.H, s.Rect(".ui-hstack", 0).H, 1)
+		within(t, "subview height", s.Rect(".ui-layers > .ui-vstack", 0).H, box.H, 1)
+		within(t, "underlay height", s.Rect(".ui-underlay", 0).H, box.H, 1)
+		within(t, "underlay width", s.Rect(".ui-underlay", 0).W, box.W, 1)
+	})
+}
+
 // TestGeometryScrollContributesItsIdeal pins the viewport's sizing:
 // its contents never contribute to an enclosing container's intrinsic
 // sizing, so a content-sized row resolves from its siblings and the
