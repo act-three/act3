@@ -462,8 +462,8 @@ func TestIdealSize(t *testing.T) {
 			// the image's own fill is dropped on the scroll axis.
 			"scaled image keeps its fill on the bounded cross axis",
 			ui.ScrollView(ui.Vertical, ui.Image("/x.png").FramedAs(ui.ScaledToFill)),
-			[]string{`class="ui-image ui-fm-cover ui-cell-fill-x"`},
-			nil,
+			[]string{`class="ui-image ui-fm-cover ui-cell-fill-x`},
+			[]string{"ui-fm-cover ui-cell-fill-x ui-cell-fill-y"},
 		},
 		{
 			"divider contributes 10px along its length",
