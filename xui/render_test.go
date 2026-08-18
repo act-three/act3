@@ -539,6 +539,32 @@ func TestTextRunsPreserveType(t *testing.T) {
 	}
 }
 
+// TestFontSpecifiesWholeType pins that a font is a complete type
+// setting: inside a Title subtree, each slot's size, weight, and
+// line height are its own, while a box with no font set inherits
+// and emits nothing.
+func TestFontSpecifiesWholeType(t *testing.T) {
+	for _, tt := range []struct {
+		f     ui.FontSize
+		wants []string
+	}{
+		{ui.Body, []string{"font-size:1rem", "font-weight:400", "line-height:1.4"}},
+		{ui.Caption, []string{"font-size:0.75rem", "font-weight:400", "line-height:1.3"}},
+		{ui.Headline, []string{"font-size:1.125rem", "font-weight:600", "line-height:1.4"}},
+		{ui.LargeTitle, []string{"font-size:2rem", "font-weight:700", "line-height:1.15"}},
+	} {
+		html := render(t, ui.VStack(ui.Text("x").Font(tt.f)).Font(ui.Title))
+		for _, w := range tt.wants {
+			if !strings.Contains(html, w) {
+				t.Errorf("Font(%q) should emit %q:\n%s", tt.f, w, html)
+			}
+		}
+	}
+	if html := render(t, ui.Text("x")); strings.Contains(html, "font-size") {
+		t.Errorf("an unset font should emit nothing:\n%s", html)
+	}
+}
+
 // TestTextWholeTextRule pins the whole-text rule: a text modifier applied
 // after Concat styles all runs, while a run styled before Concat keeps its
 // own styling.
