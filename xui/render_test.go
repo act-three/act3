@@ -450,17 +450,6 @@ func TestIdealSize(t *testing.T) {
 			[]string{"width"},
 		},
 		{
-			// Bounds clamp sizes, not queries: adding a maximum must
-			// never make the subview bigger. The color takes the same
-			// 10px defaults it would take without the frame, and the
-			// max clamps only the frame's answer — with no available
-			// space to track, the frame does not absorb the fill.
-			"a definite max passes the query through",
-			ui.VStack(ui.Muted).FrameBounds(ui.MaxWidth(300)).FixedSize(),
-			[]string{"min-width:10px", "min-height:10px", "max-width:300px"},
-			[]string{"grid-template"},
-		},
-		{
 			// A scaling mode meets an imposed box; with no box to
 			// meet, the img's intrinsic geometry answers instead.
 			"scaled image drops its fills on unbounded axes",
@@ -695,13 +684,12 @@ func TestScrollView(t *testing.T) {
 }
 
 // TestFrameBounds checks the bounds frame's lowering: bounds and alignment on
-// its own box, fill requests relayed above a minimum but absorbed into
-// the frame's own size at a definite maximum, and Auto bounds emitting
-// nothing.
+// its own box, fill requests relayed above a minimum, and Auto bounds
+// emitting nothing.
 func TestFrameBounds(t *testing.T) {
-	bounded := render(t, ui.Text("x").FrameBounds(ui.MinWidth(96), ui.MaxWidth(320), ui.MinHeight(24), ui.MaxHeight(48), ui.Leading))
+	bounded := render(t, ui.Text("x").FrameBounds(ui.MinWidth(96), ui.MinHeight(24), ui.Leading))
 	for _, w := range []string{
-		"min-width:96px", "max-width:320px", "min-height:24px", "max-height:48px", "place-items:center start",
+		"min-width:96px", "min-height:24px", "place-items:center start",
 		// An explicit minimum zeroes the axis's intrinsic track so the
 		// min-* declaration is the floor.
 		"ui-min-track-x", "ui-min-track-y",
@@ -716,59 +704,20 @@ func TestFrameBounds(t *testing.T) {
 		t.Errorf("a min-bounded frame should relay its subview's fill:\n%s", relay)
 	}
 
-	// A fill request meeting a definite max is absorbed: the frame
-	// claims the max through its own track and relays nothing. The
-	// subview still fills the frame's cell; the frame itself must not
-	// carry the fill upward.
-	capped := render(t, ui.HStack(ui.Spacer()).FrameBounds(ui.MaxWidth(320)))
-	for _, want := range []string{"grid-template-columns:minmax(0,320px)", "max-width:320px"} {
-		if !strings.Contains(capped, want) {
-			t.Errorf("a max-bounded frame should claim its max, missing %q:\n%s", want, capped)
-		}
-	}
-	if strings.Contains(capped, "ui-frame ui-cell-fill-x") {
-		t.Errorf("a max-bounded frame should absorb its subview's fill:\n%s", capped)
-	}
-
-	auto := render(t, ui.Text("x").FrameBounds(ui.MinWidth(ui.Auto{}), ui.MaxWidth(ui.Auto{})))
-	for _, r := range []string{"min-width", "max-width", "grid-template", "ui-min-track"} {
+	auto := render(t, ui.Text("x").FrameBounds(ui.MinWidth(ui.Auto{}), ui.IdealWidth(ui.Auto{})))
+	for _, r := range []string{"min-width", "width", "grid-template", "ui-min-track"} {
 		if strings.Contains(auto, r) {
 			t.Errorf("Auto bound should emit nothing, got %q:\n%s", r, auto)
 		}
 	}
 
-	// Conflicting bounds apply in order: the later bound adjusts the
-	// earlier one to itself.
-	minThenMax := render(t, ui.Text("x").FrameBounds(ui.MinWidth(100), ui.MaxWidth(50)))
-	for _, w := range []string{"min-width:50px", "max-width:50px"} {
-		if !strings.Contains(minThenMax, w) {
-			t.Errorf("later max should adjust the earlier min, missing %q:\n%s", w, minThenMax)
-		}
-	}
-	maxThenMin := render(t, ui.Text("x").FrameBounds(ui.MaxWidth(50), ui.MinWidth(100)))
-	for _, w := range []string{"min-width:100px", "max-width:100px"} {
-		if !strings.Contains(maxThenMin, w) {
-			t.Errorf("later min should adjust the earlier max, missing %q:\n%s", w, maxThenMin)
-		}
-	}
-
-	// The ideal and the bounds also apply in order, each adjusting an
+	// The ideal and the bounds apply in order, each adjusting an
 	// earlier conflicting slot to itself.
 	for _, tt := range []struct {
 		name  string
 		v     ui.View
 		wants []string
 	}{
-		{
-			"later ideal raises an earlier max",
-			ui.Text("x").FrameBounds(ui.MaxWidth(50), ui.IdealWidth(100)).FixedSize(),
-			[]string{"width:100px", "max-width:100px"},
-		},
-		{
-			"later max lowers an earlier ideal",
-			ui.Text("x").FrameBounds(ui.IdealWidth(100), ui.MaxWidth(50)).FixedSize(),
-			[]string{"width:50px", "max-width:50px"},
-		},
 		{
 			"later ideal lowers an earlier min",
 			ui.Text("x").FrameBounds(ui.MinWidth(200), ui.IdealWidth(100)).FixedSize(),
@@ -791,9 +740,6 @@ func TestFrameBounds(t *testing.T) {
 	fill := render(t, ui.HStack(ui.Spacer()))
 	if !strings.Contains(fill, "ui-cell-fill-x") {
 		t.Errorf("a fill request should lower to a fill class:\n%s", fill)
-	}
-	if strings.Contains(fill, "max-width") {
-		t.Errorf("a fill request should not emit a size bound:\n%s", fill)
 	}
 }
 

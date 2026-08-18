@@ -7,11 +7,6 @@ import (
 	"ily.dev/act3/xui/internal/sheet"
 )
 
-// BUG(em): When a FrameBounds modifier has unbounded available space
-// and a maximum smaller than the size of its enclosing container,
-// it leaves the frame at the Top or Leading edge of the axis,
-// ignoring its container's alignment.
-
 // FrameBounds positions v inside an invisible frame
 // with the given bounds and alignment.
 //
@@ -31,53 +26,20 @@ func (v base) FrameBounds(o ...FrameBoundsOption) View {
 // Later options override earlier ones.
 // For instance:
 //
-//	view.FrameBounds(MinHeight(100), MaxHeight(50)) //  50 px min AND max height
-//	view.FrameBounds(MaxHeight(50), MinHeight(100)) // 100 px min AND max height
+//	view.FrameBounds(MinWidth(100), IdealWidth(50)) //  50 px min AND ideal width
+//	view.FrameBounds(IdealWidth(50), MinWidth(100)) // 100 px min AND ideal width
 //
 // Type [Alignment] satisfies FrameBoundsOption.
-// To specify a bottom-center-aligned frame at most 100px wide:
+// To specify a bottom-center-aligned frame at least 100px wide:
 //
-//	view.FrameBounds(MaxWidth(100), Bottom)
+//	view.FrameBounds(MinWidth(100), Bottom)
 type FrameBoundsOption interface{ applyFrameBounds(*wrapFrameBounds) }
 
 type frameBoundsOption func(*wrapFrameBounds)
 
 func (o frameBoundsOption) applyFrameBounds(w *wrapFrameBounds) { o(w) }
 
-// MaxHeight sets the frame's maximum height.
-//
-// If h is less than the frame's minimum height,
-// MaxHeight also sets the minimum to h.
-//
-// If h is less than the frame's ideal height,
-// MaxHeight also sets the ideal to h.
-//
-// If h is Auto, the height is unbounded.
-// The default is unbounded height.
-func MaxHeight[L Length | Auto](h L) FrameBoundsOption {
-	s := newSize(h)
-	return frameBoundsOption(func(w *wrapFrameBounds) { w.v.setMax(s) })
-}
-
-// MaxWidth sets the frame's maximum width.
-//
-// If w is less than the frame's minimum width,
-// MaxWidth also sets the minimum to w.
-//
-// If w is less than the frame's ideal width,
-// MaxWidth also sets the ideal to w.
-//
-// If w is Auto, the width is unbounded.
-// The default is unbounded width.
-func MaxWidth[L Length | Auto](w L) FrameBoundsOption {
-	s := newSize(w)
-	return frameBoundsOption(func(w *wrapFrameBounds) { w.h.setMax(s) })
-}
-
 // MinHeight sets the frame's minimum height.
-//
-// If h is greater than the frame's maximum height,
-// MinHeight also sets the maximum to h.
 //
 // If h is greater than the frame's ideal height,
 // MinHeight also sets the ideal to h.
@@ -90,9 +52,6 @@ func MinHeight[L Length | Auto](h L) FrameBoundsOption {
 }
 
 // MinWidth sets the frame's minimum width.
-//
-// If w is greater than the frame's maximum width,
-// MinWidth also sets the maximum to w.
 //
 // If w is greater than the frame's ideal width,
 // MinWidth also sets the ideal to w.
@@ -113,9 +72,6 @@ func MinWidth[L Length | Auto](w L) FrameBoundsOption {
 // If h is less than the frame's minimum height,
 // IdealHeight also sets the minimum to h.
 //
-// If h is greater than the frame's maximum height,
-// IdealHeight also sets the maximum to h.
-//
 // If h is Auto, the frame adopts the ideal height of the view inside.
 // The default ideal height is Auto.
 func IdealHeight[L Length | Auto](h L) FrameBoundsOption {
@@ -132,9 +88,6 @@ func IdealHeight[L Length | Auto](h L) FrameBoundsOption {
 // If w is less than the frame's minimum width,
 // IdealWidth also sets the minimum to w.
 //
-// If w is greater than the frame's maximum width,
-// IdealWidth also sets the maximum to w.
-//
 // If w is Auto, the frame adopts the ideal width of the view inside.
 // The default ideal width is Auto.
 func IdealWidth[L Length | Auto](w L) FrameBoundsOption {
@@ -143,29 +96,16 @@ func IdealWidth[L Length | Auto](w L) FrameBoundsOption {
 }
 
 // axisBounds is one axis of a bounds frame.
-// it specifies the lower and upper bounds
+// it specifies the lower bound
 // as well as the ideal size the axis takes
 // when its available space is unbounded.
-// invariant: min ≤ ideal ≤ max (for any concrete values among those fields).
-type axisBounds struct{ min, ideal, max size }
+// invariant: min ≤ ideal (when both are concrete values).
+type axisBounds struct{ min, ideal size }
 
 func (x *axisBounds) setMin(s size) {
 	x.min = s
 	if s.definite && x.ideal.definite && x.ideal.px < s.px {
 		x.ideal = s
-	}
-	if s.definite && x.max.definite && x.max.px < s.px {
-		x.max = s
-	}
-}
-
-func (x *axisBounds) setMax(s size) {
-	x.max = s
-	if s.definite && x.ideal.definite && x.ideal.px > s.px {
-		x.ideal = s
-	}
-	if s.definite && x.min.definite && x.min.px > s.px {
-		x.min = s
 	}
 }
 
@@ -173,9 +113,6 @@ func (x *axisBounds) setIdeal(s size) {
 	x.ideal = s
 	if s.definite && x.min.definite && x.min.px > s.px {
 		x.min = s
-	}
-	if s.definite && x.max.definite && x.max.px < s.px {
-		x.max = s
 	}
 }
 
@@ -186,12 +123,10 @@ func (x *axisBounds) setIdeal(s size) {
 // Bounds are not definite sizes:
 // the frame stays transparent to fill requests
 // and to unbounded available space,
-// and its box tracks available space between the bounds wherever it lands.
-// One exception is an axis with unbounded available space and a set
+// and its box tracks available space above the bounds wherever it lands.
+// The exception is an axis with unbounded available space and a set
 // ideal size: the ideal, being definite, settles the axis — fills stop,
 // and the subview gets real available space.
-// The other is a fill request on an axis with a definite maximum,
-// which the frame absorbs rather than relays (see cappedFills).
 type wrapFrameBounds struct {
 	h, v  axisBounds
 	align Alignment
@@ -215,28 +150,10 @@ func (w wrapFrameBounds) idealAxes(env environment) (a AxisSet) {
 // A bounded axis's sizing is governed by the frame,
 // so the subview's rigidity does not pass through it.
 func (w wrapFrameBounds) boundedAxes() (a AxisSet) {
-	if w.h.ideal.definite || w.h.min.definite || w.h.max.definite {
+	if w.h.ideal.definite || w.h.min.definite {
 		a |= Horizontal
 	}
-	if w.v.ideal.definite || w.v.min.definite || w.v.max.definite {
-		a |= Vertical
-	}
-	return a
-}
-
-// cappedFills is the set of axes on which a fill request from the subview
-// meets a definite maximum.
-// The frame is greedy only up to the maximum,
-// so it absorbs the fill on those axes:
-// it claims the maximum as its own size,
-// yielding under pressure like any available-space tracker,
-// and relays nothing upward —
-// ancestors would grow to provide space the frame cannot use.
-func (w wrapFrameBounds) cappedFills(f AxisSet) (a AxisSet) {
-	if f.hasAll(Horizontal) && w.h.max.definite {
-		a |= Horizontal
-	}
-	if f.hasAll(Vertical) && w.v.max.definite {
+	if w.v.ideal.definite || w.v.min.definite {
 		a |= Vertical
 	}
 	return a
@@ -248,74 +165,38 @@ func (w wrapFrameBounds) render(env environment) box {
 	// An axis that takes its ideal has a definite size —
 	// real available space for the subview, no longer unbounded.
 	// Bounds never clear unboundedness: they clamp sizes, not queries.
-	// A maximum clamps the space the subview lays out against
-	// and the answer the frame reports (max-*),
-	// but it cannot turn the absence of available space into space —
-	// adding a maximum must never make the subview bigger.
 	inner.unbounded &^= ideal
 	p := wrapSubview(inner, w.node)
-	// A capped fill ends at the frame, which satisfies it out of the
-	// frame's own available space, up to the maximum. That requires
-	// available space to pass on to the subview.
-	// On an unbounded axis the maximum
-	// would become the frame's size outright, making the subview
-	// bigger (which merely adding a maximum must not do).
-	// So in that case, we don't cap the subview's fill.
-	capped := w.cappedFills(p.fills) &^ ideal &^ env.unbounded
 	// An axis with no bounds takes the subview's sizing and its
-	// rigidity with it. A bounded axis tracks space between its
+	// rigidity with it. A bounded axis tracks space above its
 	// bounds instead, regardless of the subview's rigidity.
 	p.rigid &^= w.boundedAxes()
-	p.fills &^= capped
 	env.add(attr.Class("ui-frame"))
 	env.style.Set("place-items", w.align.placeItems())
-	env.add(w.setStyles(&env.style, ideal, capped))
+	env.add(w.setStyles(&env.style, ideal))
 	return build(env, p)
 }
 
 // setStyles adds the frame's size and track declarations to ss,
 // and returns the frame's track classes.
-func (w wrapFrameBounds) setStyles(ss *sheet.StyleSet, ideal, capped AxisSet) (a domi.Attr) {
-	// An absorbed fill claims the maximum through the frame's own
-	// track: minmax(0, max) makes the frame's max-content size the
-	// maximum — hugging ancestors size themselves around the full
-	// claim — and its min-content size zero, so the claim yields
-	// under pressure, flooring at any explicit min-*. A size property
-	// could not encode this: it would set both intrinsic sizes at
-	// once, either poisoning the container's floor or (flex-basis)
-	// vanishing from its max-content entirely.
+func (w wrapFrameBounds) setStyles(ss *sheet.StyleSet, ideal AxisSet) (a domi.Attr) {
 	if ideal.hasAll(Horizontal) {
 		ss.Set("width", w.h.ideal.css())
-	} else if capped.hasAll(Horizontal) {
-		ss.Set("grid-template-columns", "minmax(0,"+w.h.max.css()+")")
 	}
 	if ideal.hasAll(Vertical) {
 		ss.Set("height", w.v.ideal.css())
-	} else if capped.hasAll(Vertical) {
-		ss.Set("grid-template-rows", "minmax(0,"+w.v.max.css()+")")
 	}
 	// An explicit minimum replaces the axis's content-derived floor:
 	// without intervention the frame's min-content size is its subview's,
 	// and CSS min-* can only raise a floor, never lower one. Zeroing
-	// the track's intrinsic contribution makes min-* the floor. A
-	// capped axis's track is already zeroed.
+	// the track's intrinsic contribution makes min-* the floor.
 	if w.h.min.definite {
 		ss.Set("min-width", w.h.min.css())
-		if !capped.hasAll(Horizontal) {
-			a = domi.Group(a, attr.Class("ui-min-track-x"))
-		}
-	}
-	if w.h.max.definite {
-		ss.Set("max-width", w.h.max.css())
+		a = domi.Group(a, attr.Class("ui-min-track-x"))
 	}
 	if w.v.min.definite {
 		ss.Set("min-height", w.v.min.css())
-		if !capped.hasAll(Vertical) {
-			a = domi.Group(a, attr.Class("ui-min-track-y"))
-		}
-	}
-	if w.v.max.definite {
-		ss.Set("max-height", w.v.max.css())
+		a = domi.Group(a, attr.Class("ui-min-track-y"))
 	}
 	return a
 }
