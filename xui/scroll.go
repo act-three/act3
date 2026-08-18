@@ -45,24 +45,14 @@ func (s scrollNode) render(env environment) box {
 	// It is equivalent to the root view context in a scrolling web page.
 	env.add(attr.Class("ui-scroll", variant))
 	env.style.Set("place-items", "start")
-	// TODO: fold these classes into plan.ideal. Its min-* lowering
-	// assumes a box's content contributes nothing beyond the ideal,
-	// but an overflow box contributes its full content size, so the
-	// viewport needs a definite size to force overflow. contain: size
-	// + contain-intrinsic-size would cap the contribution at the
-	// ideal, making plan.ideal's contract hold here too.
-	if env.unbounded.hasAll(Horizontal) {
-		env.add(attr.Class("ui-scroll-ideal-x"))
-	}
-	if env.unbounded.hasAll(Vertical) {
-		env.add(attr.Class("ui-scroll-ideal-y"))
-	}
+	env.style.Set("contain", "size") // Viewport size doesn't depend on its contents.
 	content, _ := subviewsRendered(environment{sheet: env.sheet},
 		s.contents.
 			Modify(modFixedSize{axes: s.along}),
 	)
 	p := plan{
 		fills:   Horizontal | Vertical,
+		ideal:   rect{width: newSize(100), height: newSize(100)},
 		content: content,
 	}
 	return build(env, p)

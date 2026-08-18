@@ -275,6 +275,55 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 	})
 }
 
+// TestGeometryScrollContributesItsIdeal pins the viewport's sizing:
+// its contents never contribute to an enclosing container's intrinsic
+// sizing, so a content-sized row resolves from its siblings and the
+// scroll axis survives. In unbounded space the viewport contributes
+// its 100px ideal as a floor, with its fill stretching it past the
+// ideal when a sibling resolves taller; in bounded space the ideal is
+// inert, even below 100px.
+func TestGeometryScrollContributesItsIdeal(t *testing.T) {
+	var rows []ui.View
+	for i := range 20 {
+		rows = append(rows, ui.Text("Episode "+strconv.Itoa(i)))
+	}
+	page := func(sibling ui.View) ui.View {
+		return ui.ScrollView(ui.Vertical, ui.HStack(
+			sibling,
+			ui.ScrollView(ui.Vertical, ui.VStack(rows...)),
+		))
+	}
+	check := func(name string, wantH func(s *uitest.Session) float64) func(*uitest.Session) {
+		return func(s *uitest.Session) {
+			scroll, want := s.Rect(".ui-scroll", 1), wantH(s)
+			within(t, name+": viewport height", scroll.H, want, 1)
+			within(t, name+": row height", s.Rect(".ui-hstack", 0).H, want, 1)
+			var contentH float64
+			s.Eval(`document.querySelectorAll(".ui-scroll")[1].scrollHeight`, &contentH)
+			if contentH <= scroll.H {
+				t.Errorf("%s: content height = %g, want overflow to scroll against", name, contentH)
+			}
+		}
+	}
+	sibling := func(s *uitest.Session) float64 { return s.Rect(".ui-hstack > .ui-padding", 0).H }
+	// A short sibling: the viewport's own 100px floor wins.
+	stage(t, page(ui.Text("tall").Padding(ui.Edges(32))),
+		check("short sibling", func(*uitest.Session) float64 { return 100 }))
+	// A tall sibling: the viewport stretches past its ideal.
+	stage(t, page(ui.Text("tall").Padding(ui.Edges(140))), check("tall sibling", sibling))
+	// An 80px cell: the floor does not force overflow past given space.
+	stage(t, ui.ScrollView(ui.Vertical, ui.VStack(rows...)).Frame(ui.Height(80)),
+		func(s *uitest.Session) {
+			scroll := s.Rect(".ui-scroll", 0)
+			within(t, "bounded: viewport height", scroll.H, 80, 1)
+			var contentH float64
+			s.Eval(`document.querySelectorAll(".ui-scroll")[0].scrollHeight`, &contentH)
+			if contentH <= scroll.H {
+				t.Errorf("bounded: content height = %g, want overflow to scroll against", contentH)
+			}
+		})
+}
+
 // TestGeometryDefiniteFrameIsStrict pins the strictness of a definite
 // frame: the frame is exactly its declared size even when its content
 // wants more — the declared size caps the frame's automatic minimum.
