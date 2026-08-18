@@ -413,7 +413,7 @@ func TestIdealSize(t *testing.T) {
 		{
 			"scroll viewport takes 100px; content unbounded on the scroll axis",
 			ui.ScrollView(ui.Vertical, ui.Muted).FixedSize(),
-			[]string{"ui-scroll-ideal-x", "ui-scroll-ideal-y", "height:10px"},
+			[]string{"width:100px", "height:100px", "height:10px"},
 			[]string{"width:10px"},
 		},
 		{
@@ -434,7 +434,7 @@ func TestIdealSize(t *testing.T) {
 		{
 			"no-axis scroll makes neither content axis unbounded",
 			ui.ScrollView(ui.AxisSet(0), ui.Muted).FixedSize(),
-			[]string{"ui-scroll-ideal-x", "ui-scroll-ideal-y", "ui-scroll-none"},
+			[]string{"width:100px", "height:100px", "ui-scroll-none"},
 			[]string{"10px"},
 		},
 		{

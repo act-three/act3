@@ -86,8 +86,6 @@
 	}
 	.ui-scroll-xy { overflow: auto; }
 	.ui-scroll-none { overflow: clip; }
-	.ui-scroll-ideal-x { width: 100px; }
-	.ui-scroll-ideal-y { height: 100px; }
 
 	.ui-padding {
 		display: grid;
