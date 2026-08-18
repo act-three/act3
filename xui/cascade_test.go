@@ -269,7 +269,8 @@ func TestBorderStrokeOnScroll(t *testing.T) {
 func TestBorderStrokeOverLayers(t *testing.T) {
 	html := render(t, ui.Text("x").LayerOver(ui.Center, ui.Text("o")).BorderStroke(2, "red"))
 	got := classRule(t, html, `class="ui-layers (ui-\w+)"`)
-	want := "position:relative;" + strings.Replace(carrier("inset 0 0 0 2px red"), "position:absolute}", "position:absolute;z-index:3}", 1)
+	want := "isolation:isolate;overflow:visible;position:relative;" +
+		strings.Replace(carrier("inset 0 0 0 2px red"), "position:absolute}", "position:absolute;z-index:3}", 1)
 	if got != want {
 		t.Errorf("layered stroke rule = %q, want the ring on the z ladder:\n%s", got, html)
 	}
