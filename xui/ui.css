@@ -107,10 +107,6 @@
 	}
 
 	.ui-frame { display: grid; }
-	.ui-fixed-size {
-		width: max-content;
-		height: max-content;
-	}
 
 	.ui-layers {
 		position: relative;

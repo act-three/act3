@@ -171,6 +171,13 @@ func (m modFixedSize) modify(n node) node { return nodeEnv{f: m.environment, nod
 func (m modFixedSize) environment(env environment) environment {
 	env.unbounded |= m.axes
 	env.fillMask |= m.axes
+	// Note that a box can override max-content with its own declaration.
+	if m.axes.hasAll(Horizontal) {
+		env.style.Set("width", "max-content")
+	}
+	if m.axes.hasAll(Vertical) {
+		env.style.Set("height", "max-content")
+	}
 	return env
 }
 
