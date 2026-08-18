@@ -102,12 +102,9 @@ func (w wrapLayer) render(env environment) box {
 	} else {
 		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}
-	p := wrapSubview(env, nodeEnv{node: w.node, f: func(env environment) environment {
-		// Prevent high-z-index subviews
-		// from painting on top of the overlay or border stroke.
-		env.style.Set("isolation", "isolate")
-		return env
-	}})
+	// Prevent high-z-index subviews
+	// from painting on top of the overlay or border stroke.
+	p := wrapSubview(env, modStyle{"isolation", "isolate"}.modify(w.node))
 	p.content = domi.Fragment(
 		p.content,
 		html.Div(attr.Class(class, env.sheet.ClassFor(lss)))(
