@@ -3,11 +3,10 @@ package ui
 import "ily.dev/act3/xui/internal/sheet"
 
 // FontSize selects a slot on the type scale.
-// The zero FontSize is the body font.
 type FontSize string
 
 const (
-	Body       FontSize = ""
+	Body       FontSize = "body"
 	Caption    FontSize = "caption"
 	Headline   FontSize = "headline"
 	Title      FontSize = "title"
@@ -24,12 +23,18 @@ func (f FontSize) class() string {
 // setStyles adds f's declarations to ss.
 func (f FontSize) setStyles(ss *sheet.StyleSet) {
 	switch f {
+	case Body:
+		ss.Set("font-size", "1rem")
+		ss.Set("font-weight", "400")
+		ss.Set("line-height", "1.4")
 	case Caption:
 		ss.Set("font-size", "0.75rem")
+		ss.Set("font-weight", "400")
 		ss.Set("line-height", "1.3")
 	case Headline:
 		ss.Set("font-size", "1.125rem")
 		ss.Set("font-weight", "600")
+		ss.Set("line-height", "1.4")
 	case Title:
 		ss.Set("font-size", "1.5rem")
 		ss.Set("font-weight", "700")
