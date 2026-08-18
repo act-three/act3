@@ -685,14 +685,14 @@ func TestScrollView(t *testing.T) {
 
 // TestFrameBounds checks the bounds frame's lowering: bounds and alignment on
 // its own box, fill requests relayed above a minimum, and Auto bounds
-// emitting nothing.
+// emitting no sizing declarations.
 func TestFrameBounds(t *testing.T) {
 	bounded := render(t, ui.Text("x").FrameBounds(ui.MinWidth(96), ui.MinHeight(24), ui.Leading))
 	for _, w := range []string{
 		"min-width:96px", "min-height:24px", "place-items:center start",
 		// An explicit minimum zeroes the axis's intrinsic track so the
 		// min-* declaration is the floor.
-		"ui-min-track-x", "ui-min-track-y",
+		"grid-template-columns:minmax(0, 100%)", "grid-template-rows:minmax(0, 100%)",
 	} {
 		if !strings.Contains(bounded, w) {
 			t.Errorf("bounded frame missing %q\n\n%s", w, bounded)
@@ -705,7 +705,7 @@ func TestFrameBounds(t *testing.T) {
 	}
 
 	auto := render(t, ui.Text("x").FrameBounds(ui.MinWidth(ui.Auto{}), ui.IdealWidth(ui.Auto{})))
-	for _, r := range []string{"min-width", "width", "grid-template", "ui-min-track"} {
+	for _, r := range []string{"min-width", "width", "minmax"} {
 		if strings.Contains(auto, r) {
 			t.Errorf("Auto bound should emit nothing, got %q:\n%s", r, auto)
 		}

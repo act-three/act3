@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"ily.dev/domi"
 	"ily.dev/domi/attr"
 
 	"ily.dev/act3/xui/internal/sheet"
@@ -173,30 +172,31 @@ func (w wrapFrameBounds) render(env environment) box {
 	p.rigid &^= w.boundedAxes()
 	env.add(attr.Class("ui-frame"))
 	env.style.Set("place-items", w.align.placeItems())
-	env.add(w.setStyles(&env.style, ideal))
+	w.setStyles(&env.style, ideal)
 	return build(env, p)
 }
 
-// setStyles adds the frame's size and track declarations to ss,
-// and returns the frame's track classes.
-func (w wrapFrameBounds) setStyles(ss *sheet.StyleSet, ideal AxisSet) (a domi.Attr) {
+// setStyles adds the frame's size and track declarations to ss.
+func (w wrapFrameBounds) setStyles(ss *sheet.StyleSet, ideal AxisSet) {
 	if ideal.hasAll(Horizontal) {
 		ss.Set("width", w.h.ideal.css())
 	}
 	if ideal.hasAll(Vertical) {
 		ss.Set("height", w.v.ideal.css())
 	}
-	// An explicit minimum replaces the axis's content-derived floor:
-	// without intervention the frame's min-content size is its subview's,
-	// and CSS min-* can only raise a floor, never lower one. Zeroing
+	// A floored axis's track gives up its intrinsic contribution.
+	// Without intervention, the frame's min-content size is its subview's,
+	// and CSS min-* can only raise a floor, not lower it. Zeroing
 	// the track's intrinsic contribution makes min-* the floor.
+	cols, rows := "100%", "100%"
 	if w.h.min.definite {
 		ss.Set("min-width", w.h.min.css())
-		a = domi.Group(a, attr.Class("ui-min-track-x"))
+		cols = "minmax(0, 100%)"
 	}
 	if w.v.min.definite {
 		ss.Set("min-height", w.v.min.css())
-		a = domi.Group(a, attr.Class("ui-min-track-y"))
+		rows = "minmax(0, 100%)"
 	}
-	return a
+	ss.Set("grid-template-columns", cols)
+	ss.Set("grid-template-rows", rows)
 }

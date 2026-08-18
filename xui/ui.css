@@ -106,14 +106,7 @@
 		grid-template: 100% / 100%;
 	}
 
-	.ui-frame {
-		display: grid;
-		grid-template: 100% / 100%;
-	}
-	/* Zero a frame track's intrinsic contribution
-	   so an explicit min-* is the axis's floor. */
-	.ui-min-track-x { grid-template-columns: minmax(0, 100%); }
-	.ui-min-track-y { grid-template-rows: minmax(0, 100%); }
+	.ui-frame { display: grid; }
 	.ui-fixed-size {
 		width: max-content;
 		height: max-content;
