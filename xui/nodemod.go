@@ -223,6 +223,18 @@ func (m modOpacity) environment(env environment) environment {
 	return env
 }
 
+// NOTE: no exported constructor.
+// modStyle seeds one CSS declaration onto a subview's own box.
+// Containers use it to impose a style on their direct subviews.
+type modStyle struct{ property, value string }
+
+func (m modStyle) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
+
+func (m modStyle) environment(env environment) environment {
+	env.style.Set(m.property, m.value)
+	return env
+}
+
 // NOTE: no exported construcor.
 type modTag struct{ name string }
 

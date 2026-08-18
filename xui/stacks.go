@@ -75,8 +75,11 @@ func (s stackNode) render(env environment) box {
 	inner := env
 	inner.lc = axes[s.dir].lc
 	inner.container = axes[s.dir].container
-	// The stack fills an axis when any subview does.
-	content, f := subviewsRendered(inner, s.subviews...)
+	subviews := Group(s.subviews...)
+	if s.dir == axisZ {
+		subviews = subviews.Modify(modStyle{"grid-area", "1 / 1"})
+	}
+	content, f := subviewsRendered(inner, subviews)
 	env.add(attr.Class(axes[s.dir].class))
 	s.addAlignStyleTo(&env.style)
 	if s.dir != axisZ {
