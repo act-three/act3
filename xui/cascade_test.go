@@ -134,7 +134,7 @@ func TestButtonBorderReset(t *testing.T) {
 func TestBackgroundStacks(t *testing.T) {
 	html := render(t, ui.Text("x").Background("#0008").Background("#fff"))
 	got := classRule(t, html, `class="ui-text (ui-\w+)"`)
-	if got != "background-color:#fff;background-image:linear-gradient(#0008,#0008)" {
+	if got != "background-color:#fff;background-image:linear-gradient(#0008,#0008);display:block;overflow-wrap:break-word" {
 		t.Errorf("paint stack = %q, want the outer color under the inner layer:\n%s", got, html)
 	}
 }
@@ -145,7 +145,7 @@ func TestBackgroundShapeOrder(t *testing.T) {
 	// Background then shape: shape and paint share the element —
 	// a red capsule.
 	shaped := render(t, ui.Text("x").Background("red").BorderShape(ui.Capsule))
-	if got := classRule(t, shaped, `class="ui-text (ui-\w+)"`); got != "background-color:red;border-radius:9999px" {
+	if got := classRule(t, shaped, `class="ui-text (ui-\w+)"`); got != "background-color:red;border-radius:9999px;display:block;overflow-wrap:break-word" {
 		t.Errorf("shape after paint should shape the paint, got %q:\n%s", got, shaped)
 	}
 
@@ -155,7 +155,7 @@ func TestBackgroundShapeOrder(t *testing.T) {
 	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "background-color:red;place-items:center" {
 		t.Errorf("paint after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
-	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px" {
+	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
 		t.Errorf("the shape should stay on the inner element, got %q:\n%s", got, square)
 	}
 }
@@ -165,7 +165,7 @@ func TestBackgroundShapeOrder(t *testing.T) {
 // one is inert — no wrapper, no declaration.
 func TestBorderShapeRepetition(t *testing.T) {
 	html := render(t, ui.Text("x").BorderShape(ui.RoundedRectangle).BorderShape(ui.Capsule))
-	if got := classRule(t, html, `class="ui-text (ui-\w+)"`); got != "border-radius:var(--ui-radius)" {
+	if got := classRule(t, html, `class="ui-text (ui-\w+)"`); got != "border-radius:var(--ui-radius);display:block;overflow-wrap:break-word" {
 		t.Errorf("innermost shape should land on the text element, got %q:\n%s", got, html)
 	}
 	if strings.Contains(html, "9999px") || strings.Contains(html, "ui-mod") {
@@ -186,7 +186,7 @@ func TestBorderStrokePaints(t *testing.T) {
 	if strings.Contains(html, "ui-mod") {
 		t.Fatalf("BorderStroke should not produce a wrapper:\n%s", html)
 	}
-	if got := classRule(t, html, `class="ui-text (ui-\w+)"`); got != "position:relative;"+carrier("inset 0 0 0 2px red") {
+	if got := classRule(t, html, `class="ui-text (ui-\w+)"`); got != "display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px red") {
 		t.Errorf("stroke rule = %q:\n%s", got, html)
 	}
 }
@@ -197,7 +197,7 @@ func TestBorderStrokePaints(t *testing.T) {
 func TestBorderStrokeStacks(t *testing.T) {
 	html := render(t, ui.Text("x").BorderStroke(2, "red").BorderStroke(4, "blue"))
 	got := classRule(t, html, `class="ui-text (ui-\w+)"`)
-	if got != "position:relative;"+carrier("inset 0 0 0 4px blue,inset 0 0 0 2px red") {
+	if got != "display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 4px blue,inset 0 0 0 2px red") {
 		t.Errorf("stroke stack = %q, want the outer stroke over the inner:\n%s", got, html)
 	}
 }
@@ -207,7 +207,7 @@ func TestBorderStrokeStacks(t *testing.T) {
 // applied after a shape rings the shaped box, unshaped.
 func TestBorderStrokeShapeOrder(t *testing.T) {
 	shaped := render(t, ui.Text("x").BorderStroke(2, "red").BorderShape(ui.Capsule))
-	if got := classRule(t, shaped, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px;position:relative;"+carrier("inset 0 0 0 2px red") {
+	if got := classRule(t, shaped, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px red") {
 		t.Errorf("shape after stroke should shape the stroke, got %q:\n%s", got, shaped)
 	}
 
@@ -215,7 +215,7 @@ func TestBorderStrokeShapeOrder(t *testing.T) {
 	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
 		t.Errorf("stroke after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
-	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px" {
+	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
 		t.Errorf("the shape should stay on the inner element, got %q:\n%s", got, square)
 	}
 }
@@ -269,7 +269,7 @@ func TestBorderStrokeOnScroll(t *testing.T) {
 func TestLayerIsolatesSubview(t *testing.T) {
 	html := render(t, ui.Text("x").LayerOver(ui.Center, ui.Text("o")))
 	got := classRule(t, html, `class="ui-text (ui-\w+)"`)
-	if got != "isolation:isolate" {
+	if got != "display:block;isolation:isolate;overflow-wrap:break-word" {
 		t.Errorf("layered subview rule = %q, want isolation", got)
 	}
 }

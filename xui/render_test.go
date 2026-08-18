@@ -570,7 +570,7 @@ func TestFontSpecifiesWholeType(t *testing.T) {
 // own styling.
 func TestTextWholeTextRule(t *testing.T) {
 	html := render(t, ui.Text("a").Concat(ui.Text("b").Italic()).Bold())
-	if !strings.Contains(html, `<div class="ui-text"><span class="ui-bold`) {
+	if !regexp.MustCompile(`<div class="ui-text[^"]*"><span class="ui-bold`).MatchString(html) {
 		t.Errorf("whole-text Bold should land on a span enclosing every run:\n%s", html)
 	}
 	if !strings.Contains(html, `class="ui-italic`) {
