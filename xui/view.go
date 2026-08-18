@@ -210,6 +210,7 @@ func build(env environment, p plan) box {
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
 	ss := env.style
+	env.font.setStyles(&ss)
 	addIdealStylesTo(&ss, p.ideal, env.unbounded, fills)
 	addBackgroundStylesTo(&ss, env.bg)
 	addStrokeStylesTo(&ss, env.stroke)

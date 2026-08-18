@@ -43,10 +43,6 @@
 		overflow-wrap: break-word;
 	}
 
-	.ui-mono { font-family: var(--ui-font-mono); }
-	.ui-bold { font-weight: 600; }
-	.ui-italic { font-style: italic; }
-
 	.ui-vstack {
 		display: inline-flex;
 		flex-direction: column;
@@ -111,23 +107,4 @@
 	}
 	.ui-fm-contain { object-fit: contain; }
 	.ui-fm-cover { object-fit: cover; }
-
-	.ui-font-caption {
-		font-size: 0.75rem;
-		line-height: 1.3;
-	}
-	.ui-font-headline {
-		font-size: 1.125rem;
-		font-weight: 600;
-	}
-	.ui-font-title {
-		font-size: 1.5rem;
-		font-weight: 700;
-		line-height: 1.2;
-	}
-	.ui-font-large-title {
-		font-size: 2rem;
-		font-weight: 700;
-		line-height: 1.15;
-	}
 }

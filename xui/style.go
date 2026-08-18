@@ -1,5 +1,7 @@
 package ui
 
+import "ily.dev/act3/xui/internal/sheet"
+
 // FontSize selects a slot on the type scale.
 // The zero FontSize is the body font.
 type FontSize string
@@ -17,6 +19,26 @@ func (f FontSize) class() string {
 		return ""
 	}
 	return "ui-font-" + string(f)
+}
+
+// setStyles adds f's declarations to ss.
+func (f FontSize) setStyles(ss *sheet.StyleSet) {
+	switch f {
+	case Caption:
+		ss.Set("font-size", "0.75rem")
+		ss.Set("line-height", "1.3")
+	case Headline:
+		ss.Set("font-size", "1.125rem")
+		ss.Set("font-weight", "600")
+	case Title:
+		ss.Set("font-size", "1.5rem")
+		ss.Set("font-weight", "700")
+		ss.Set("line-height", "1.2")
+	case LargeTitle:
+		ss.Set("font-size", "2rem")
+		ss.Set("font-weight", "700")
+		ss.Set("line-height", "1.15")
+	}
 }
 
 // A FramingMode controls how an [Image] fills its available space.

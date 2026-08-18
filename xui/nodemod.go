@@ -189,7 +189,7 @@ func Font(f FontSize) Modifier { return modFont{f} }
 func (m modFont) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modFont) environment(env environment) environment {
-	if m.f.class() != "" {
+	if m.f != "" {
 		env.font = m.f
 	}
 	return env
