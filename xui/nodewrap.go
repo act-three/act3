@@ -91,13 +91,14 @@ func (w wrapLayer) render(env environment) box {
 	lss.Set("position", "absolute")
 	lss.Set("inset", "0")
 	class := "ui-underlay"
+	view := w.view
 	if w.over {
 		class = "ui-overlay"
 		lss.Set("z-index", strconv.Itoa(zOverlay))
 		// The overlay box blankets the base; input falls through it
-		// to the base, and only the layered subviews take hits
-		// (see the .ui-overlay > * rule).
+		// to the base, and only the layered subviews take hits.
 		lss.Set("pointer-events", "none")
+		view = view.Modify(modStyle{"pointer-events", "auto"})
 	} else {
 		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}
@@ -110,7 +111,7 @@ func (w wrapLayer) render(env environment) box {
 	p.content = domi.Fragment(
 		p.content,
 		html.Div(attr.Class(class, env.sheet.ClassFor(lss)))(
-			renderLayer(env, w.view),
+			renderLayer(env, view),
 		),
 	)
 	env.add(attr.Class("ui-layers"))
