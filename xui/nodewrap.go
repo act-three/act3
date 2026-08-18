@@ -63,15 +63,6 @@ func (v base) Padding(s ...EdgeSpace) View {
 	return v.Modify(wrapPadding{space: sum})
 }
 
-// The z ladder of a box's composite: its layers,
-// and the stroke ring painted over all of them.
-const (
-	zUnderlay = iota
-	zLayerBase
-	zOverlay
-	zStroke
-)
-
 // wrapLayer layers a view over or under a base view.
 // It lowers to CSS absolute positioning.
 // The base negotiates its layout independently of the layer,
@@ -86,18 +77,16 @@ type wrapLayer struct {
 func (w wrapLayer) modify(n node) node { w.node = n; return w }
 
 func (w wrapLayer) render(env environment) box {
-	var bss, lss sheet.StyleSet
-	classFor := func(ss sheet.StyleSet) domi.Attr {
-		return attr.Class(env.sheet.ClassFor(ss))
-	}
-	for _, ss := range []*sheet.StyleSet{&bss, &lss} {
-		ss.Set("display", "grid")
-		ss.Set("grid-template-columns", "100%")
-		ss.Set("grid-template-rows", "100%")
-	}
-	bss.Set("place-items", Center.placeItems())
-	bss.Set("position", "relative")
-	bss.Set("z-index", strconv.Itoa(zLayerBase))
+	const (
+		zUnderlay = -1
+		// base view has z-index auto
+		zOverlay = 2
+		zStroke  = 3
+	)
+	var lss sheet.StyleSet
+	lss.Set("display", "grid")
+	lss.Set("grid-template-columns", "100%")
+	lss.Set("grid-template-rows", "100%")
 	lss.Set("place-items", w.alignment.placeItems())
 	lss.Set("position", "absolute")
 	lss.Set("inset", "0")
@@ -112,12 +101,26 @@ func (w wrapLayer) render(env environment) box {
 	} else {
 		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}
-	p := wrapSubview(env, w.node)
+	p := wrapSubview(env, nodeEnv{node: w.node, f: func(env environment) environment {
+		// Prevent high-z-index subviews
+		// from painting on top of the overlay or border stroke.
+		env.style.Set("isolation", "isolate")
+		return env
+	}})
 	p.content = domi.Fragment(
-		html.Div(attr.Class("ui-layer-base"), classFor(bss))(p.content),
-		html.Div(attr.Class(class), classFor(lss))(renderLayer(env, w.view)),
+		p.content,
+		html.Div(attr.Class(class, env.sheet.ClassFor(lss)))(
+			renderLayer(env, w.view),
+		),
 	)
 	env.add(attr.Class("ui-layers"))
+	// The container hosts the base subview in its own single-cell
+	// grid; the isolated z ladder sandwiches the in-flow subview
+	// between the layers.
+	env.style.Set("display", "grid")
+	env.style.Set("grid-template-columns", "100%")
+	env.style.Set("grid-template-rows", "100%")
+	env.style.Set("place-items", Center.placeItems())
 	env.style.Set("position", "relative")
 	env.style.Set("isolation", "isolate")
 	env.style.Set("overflow", "visible")
