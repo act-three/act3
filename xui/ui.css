@@ -108,29 +108,6 @@
 
 	.ui-frame { display: grid; }
 
-	.ui-layers {
-		position: relative;
-		isolation: isolate;
-		overflow: visible;
-	}
-	.ui-layer-base {
-		position: relative;
-		z-index: 1;
-		display: grid;
-		grid-template: 100% / 100%;
-	}
-	.ui-underlay,
-	.ui-overlay {
-		position: absolute;
-		inset: 0;
-		display: grid;
-		grid-template: 100% / 100%;
-	}
-	.ui-underlay { z-index: 0; }
-	.ui-overlay {
-		z-index: 2;
-		pointer-events: none;
-	}
 	.ui-overlay > * { pointer-events: auto; }
 
 	.ui-image {

@@ -65,8 +65,6 @@ func (v base) Padding(s ...EdgeSpace) View {
 
 // The z ladder of a box's composite: its layers,
 // and the stroke ring painted over all of them.
-// The static ui-underlay, ui-layer-base, and ui-overlay rules
-// in ui.css use the same values.
 const (
 	zUnderlay = iota
 	zLayerBase
@@ -92,18 +90,37 @@ func (w wrapLayer) render(env environment) box {
 	classFor := func(ss sheet.StyleSet) domi.Attr {
 		return attr.Class(env.sheet.ClassFor(ss))
 	}
+	for _, ss := range []*sheet.StyleSet{&bss, &lss} {
+		ss.Set("display", "grid")
+		ss.Set("grid-template-columns", "100%")
+		ss.Set("grid-template-rows", "100%")
+	}
+	bss.Set("place-items", Center.placeItems())
+	bss.Set("position", "relative")
+	bss.Set("z-index", strconv.Itoa(zLayerBase))
+	lss.Set("place-items", w.alignment.placeItems())
+	lss.Set("position", "absolute")
+	lss.Set("inset", "0")
 	class := "ui-underlay"
 	if w.over {
 		class = "ui-overlay"
+		lss.Set("z-index", strconv.Itoa(zOverlay))
+		// The overlay box blankets the base; input falls through it
+		// to the base, and only the layered subviews take hits
+		// (see the .ui-overlay > * rule).
+		lss.Set("pointer-events", "none")
+	} else {
+		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}
-	bss.Set("place-items", Center.placeItems())
-	lss.Set("place-items", w.alignment.placeItems())
 	p := wrapSubview(env, w.node)
 	p.content = domi.Fragment(
 		html.Div(attr.Class("ui-layer-base"), classFor(bss))(p.content),
 		html.Div(attr.Class(class), classFor(lss))(renderLayer(env, w.view)),
 	)
 	env.add(attr.Class("ui-layers"))
+	env.style.Set("position", "relative")
+	env.style.Set("isolation", "isolate")
+	env.style.Set("overflow", "visible")
 	// A pending stroke's ring must clear the layers' z ladder.
 	// Elsewhere, its tree position suffices.
 	if len(env.stroke) > 0 {

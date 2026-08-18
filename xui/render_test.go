@@ -123,7 +123,7 @@ func TestAccountCard(t *testing.T) {
 		`width:48px`,                               // ...with the resolved size
 		`class="ui-spacer ui-grow `,
 		`class="ui-padding ui-button ui-role-primary `,
-		`class="ui-layers ui-cell-fill-x"`, // Underlay + Overlay decoration layers
+		`class="ui-layers ui-cell-fill-x `, // Underlay + Overlay decoration layers
 		`class="ui-underlay `,
 		`class="ui-overlay `,
 		`place-items:start end`, // the Overlay's alignment
