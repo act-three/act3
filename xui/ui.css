@@ -106,8 +106,6 @@
 		grid-template: 100% / 100%;
 	}
 
-	.ui-frame { display: grid; }
-
 	.ui-overlay > * { pointer-events: auto; }
 
 	.ui-image {

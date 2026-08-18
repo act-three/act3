@@ -172,6 +172,7 @@ func (w wrapFrameBounds) render(env environment) box {
 	p.rigid &^= w.boundedAxes()
 	env.add(attr.Class("ui-frame"))
 	env.style.Set("place-items", w.align.placeItems())
+	env.style.Set("display", "grid")
 	w.setStyles(&env.style, ideal)
 	return build(env, p)
 }
