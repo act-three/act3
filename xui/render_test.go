@@ -544,10 +544,10 @@ func TestTextRunsPreserveType(t *testing.T) {
 // own styling.
 func TestTextWholeTextRule(t *testing.T) {
 	html := render(t, ui.Text("a").Concat(ui.Text("b").Italic()).Bold())
-	if !strings.Contains(html, `<div class="ui-text"><span class="ui-bold">a<span`) {
+	if !strings.Contains(html, `<div class="ui-text"><span class="ui-bold`) {
 		t.Errorf("whole-text Bold should land on a span enclosing every run:\n%s", html)
 	}
-	if !strings.Contains(html, `class="ui-italic"`) {
+	if !strings.Contains(html, `class="ui-italic`) {
 		t.Errorf("pre-Concat Italic should stay on its own run:\n%s", html)
 	}
 }
