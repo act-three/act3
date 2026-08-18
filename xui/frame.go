@@ -55,6 +55,7 @@ func (w wrapFrame) render(env environment) box {
 	p.rigid |= w.definite()
 	env.add(attr.Class("ui-frame"))
 	env.style.Set("place-items", w.align.placeItems())
+	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
 	if w.h.definite {
