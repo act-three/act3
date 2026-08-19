@@ -88,9 +88,6 @@ func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
 	if s.color != "" {
 		ss.Set("color", string(s.color))
 	}
-	if ss.IsEmpty() {
-		return nil
-	}
 	return attr.Class(sh.ClassFor(ss))
 }
 
