@@ -43,9 +43,9 @@ func (o frameBoundsOption) applyFrameBounds(w *wrapFrameBounds) { o(w) }
 // If h is greater than the frame's ideal height,
 // MinHeight also sets the ideal to h.
 //
-// Auto adopts the minimum height of the view inside.
+// If h is Auto, the frame adopts the minimum height of the view inside.
 // The default minimum height is Auto.
-func MinHeight[L Length | Auto](h L) FrameBoundsOption {
+func MinHeight[Size int | float64 | Auto](h Size) FrameBoundsOption {
 	s := newSize(h)
 	return frameBoundsOption(func(w *wrapFrameBounds) { w.v.setMin(s) })
 }
@@ -55,9 +55,9 @@ func MinHeight[L Length | Auto](h L) FrameBoundsOption {
 // If w is greater than the frame's ideal width,
 // MinWidth also sets the ideal to w.
 //
-// Auto adopts the minimum width of the view inside.
+// If w is Auto, the frame adopts the minimum width of the view inside.
 // The default minimum width is Auto.
-func MinWidth[L Length | Auto](w L) FrameBoundsOption {
+func MinWidth[Size int | float64 | Auto](w Size) FrameBoundsOption {
 	s := newSize(w)
 	return frameBoundsOption(func(w *wrapFrameBounds) { w.h.setMin(s) })
 }
@@ -73,7 +73,7 @@ func MinWidth[L Length | Auto](w L) FrameBoundsOption {
 //
 // If h is Auto, the frame adopts the ideal height of the view inside.
 // The default ideal height is Auto.
-func IdealHeight[L Length | Auto](h L) FrameBoundsOption {
+func IdealHeight[Size int | float64 | Auto](h Size) FrameBoundsOption {
 	s := newSize(h)
 	return frameBoundsOption(func(w *wrapFrameBounds) { w.v.setIdeal(s) })
 }
@@ -89,7 +89,7 @@ func IdealHeight[L Length | Auto](h L) FrameBoundsOption {
 //
 // If w is Auto, the frame adopts the ideal width of the view inside.
 // The default ideal width is Auto.
-func IdealWidth[L Length | Auto](w L) FrameBoundsOption {
+func IdealWidth[Size int | float64 | Auto](w Size) FrameBoundsOption {
 	s := newSize(w)
 	return frameBoundsOption(func(w *wrapFrameBounds) { w.h.setIdeal(s) })
 }
