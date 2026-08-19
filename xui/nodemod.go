@@ -115,15 +115,18 @@ func (m modAttr) environment(env environment) environment {
 type modBackground struct{ c Color }
 
 // Background fills the background of a view with c.
-func Background(c Color) Modifier { return modBackground{c} }
+func Background(c Color) Modifier {
+	if c == "" {
+		return nil
+	}
+	return modBackground{c}
+}
 
 func (m modBackground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modBackground) environment(env environment) environment {
-	if m.c != "" {
-		env.bg = append(env.bg, m.c)
-		env.hasPaint = true
-	}
+	env.bg = append(env.bg, m.c)
+	env.hasPaint = true
 	return env
 }
 
@@ -153,15 +156,18 @@ type modBorderStroke struct {
 // It takes no layout space.
 // To add a border around the outside of a view,
 // add padding inside the border.
-func BorderStroke(px float64, c Color) Modifier { return modBorderStroke{px, c} }
+func BorderStroke(px float64, c Color) Modifier {
+	if !(px > 0) || c == "" { // this is written weird b/c of NaNs lmao
+		return nil
+	}
+	return modBorderStroke{px, c}
+}
 
 func (m modBorderStroke) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modBorderStroke) environment(env environment) environment {
-	if m.px > 0 {
-		env.stroke = append(env.stroke, stroke{m.px, m.c})
-		env.hasPaint = true
-	}
+	env.stroke = append(env.stroke, stroke{m.px, m.c})
+	env.hasPaint = true
 	return env
 }
 
@@ -191,14 +197,17 @@ func (m modFixedSize) environment(env environment) environment {
 type modFont struct{ f FontSize }
 
 // Font sets the font size for text in a view.
-func Font(f FontSize) Modifier { return modFont{f} }
+func Font(f FontSize) Modifier {
+	if f == "" {
+		return nil
+	}
+	return modFont{f}
+}
 
 func (m modFont) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modFont) environment(env environment) environment {
-	if m.f != "" {
-		env.font = m.f
-	}
+	env.font = m.f
 	return env
 }
 
@@ -206,14 +215,17 @@ type modForeground struct{ c Color }
 
 // Foreground uses c to draw foreground elements in a view,
 // such as text.
-func Foreground(c Color) Modifier { return modForeground{c} }
+func Foreground(c Color) Modifier {
+	if c == "" {
+		return nil
+	}
+	return modForeground{c}
+}
 
 func (m modForeground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modForeground) environment(env environment) environment {
-	if m.c != "" {
-		env.fg = &m.c
-	}
+	env.fg = &m.c
 	return env
 }
 
