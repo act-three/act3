@@ -11,6 +11,8 @@ import (
 // It can be applied with [View.Modify].
 //
 // It is usually more convenient to call modifier methods directly on View.
+//
+// A nil Modifier has no effect.
 type Modifier interface {
 	modify(node) node
 }
@@ -47,6 +49,9 @@ func (m nodeTransform) render(env environment) box {
 // Modify applies the given modifiers to v in order from left to right.
 func (v base) Modify(mods ...Modifier) View {
 	for _, m := range mods {
+		if m == nil {
+			continue
+		}
 		out := make(base, len(v))
 		for i, n := range v {
 			out[i] = m.modify(n)
