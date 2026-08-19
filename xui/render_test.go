@@ -285,7 +285,7 @@ func TestHTMLWrappers(t *testing.T) {
 	if got := classRule(t, html, `class="ui-padding ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;background-color:red;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;padding:4px;place-items:center" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
-	if got := classRule(t, html, `class="ui-html ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;justify-self:stretch;place-items:center" {
+	if got := classRule(t, html, `class="ui-html ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;place-items:center" {
 		t.Errorf("host should stay untouched inside, got %q:\n%s", got, html)
 	}
 }
