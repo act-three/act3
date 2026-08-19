@@ -254,7 +254,7 @@ func TestBorderStrokeOnImage(t *testing.T) {
 // box out around it.
 func TestBorderStrokeOnScroll(t *testing.T) {
 	html := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")).BorderStroke(2, "red"))
-	if got := classRule(t, html, `class="ui-mod [^"]*(ui-\w+)"`); got != "place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
+	if got := classRule(t, html, `class="ui-mod [^"]*(ui-\w+)"`); got != "align-self:stretch;justify-self:stretch;place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
 		t.Errorf("scroll strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
 	if !strings.Contains(html, `class="ui-scroll ui-scroll-y`) {
@@ -316,7 +316,7 @@ func TestBorderStrokeTakesNoSpace(t *testing.T) {
 // paints its own box, so the shape it consumes is realized there.
 func TestBorderShapeShapesColor(t *testing.T) {
 	html := render(t, ui.Color("red").BorderShape(ui.Ellipse))
-	if got := classRule(t, html, `class="ui-color [^"]*(ui-\w+)"`); got != "background-color:red;border-radius:50%" {
+	if got := classRule(t, html, `class="ui-color [^"]*(ui-\w+)"`); got != "align-self:stretch;background-color:red;border-radius:50%;justify-self:stretch" {
 		t.Errorf("shape should land on the color's element, got %q:\n%s", got, html)
 	}
 }

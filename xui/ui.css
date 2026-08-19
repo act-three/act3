@@ -38,13 +38,6 @@
 		}
 	}
 
-	.ui-grow { flex-grow: 1; }
-	.ui-stretch { align-self: stretch; }
-	.ui-cell-fill-x { justify-self: stretch; }
-	.ui-cell-fill-y { align-self: stretch; }
-
-	.ui-rigid { flex-shrink: 0; }
-
 	.ui-scroll {
 		display: grid;
 		min-width: 0;
