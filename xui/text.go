@@ -110,6 +110,8 @@ type textNode struct {
 
 func (n textNode) render(env environment) box {
 	env.add(attr.Class("ui-text"))
+	env.style.Set("display", "block")
+	env.style.Set("overflow-wrap", "break-word")
 	return build(env, plan{content: n.html(env.sheet)})
 }
 

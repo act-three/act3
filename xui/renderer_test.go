@@ -39,11 +39,12 @@ func TestRendererAccumulatesRules(t *testing.T) {
 // It must be the first child of ui-root
 // and include the configured nonce.
 func TestRendererStyleElement(t *testing.T) {
-	plain := renderWith(t, new(ui.Renderer), ui.Text("x"))
+	// A native image is the one view with no declarations of its own.
+	plain := renderWith(t, new(ui.Renderer), ui.Image("/x.png"))
 	if !strings.Contains(plain, "<ui-root><style>@layer xui{}</style>") {
 		t.Errorf("empty style element not first in ui-root:\n%s", plain)
 	}
-	nonced := renderWith(t, &ui.Renderer{Nonce: "abc123"}, ui.Text("x"))
+	nonced := renderWith(t, &ui.Renderer{Nonce: "abc123"}, ui.Image("/x.png"))
 	if !strings.Contains(nonced, `<ui-root><style nonce="abc123">`) {
 		t.Errorf("style element does not carry the nonce:\n%s", nonced)
 	}

@@ -38,11 +38,6 @@
 		}
 	}
 
-	.ui-text {
-		display: block;
-		overflow-wrap: break-word;
-	}
-
 	.ui-vstack {
 		display: inline-flex;
 		flex-direction: column;
