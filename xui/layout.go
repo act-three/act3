@@ -5,6 +5,8 @@ import (
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // AxisSet is a set of the two-dimensional cartesian axes:
@@ -28,7 +30,7 @@ func (s AxisSet) complement() AxisSet { return (Horizontal | Vertical) &^ s }
 // fillAttr lowers the receiver as a fill request, picking the CSS
 // mechanism the parent context responds to: grow or stretch as a flex item,
 // self-stretch in a grid cell. A single mechanism cannot serve both.
-func (s AxisSet) fillAttr(env environment) (a domi.Attr) {
+func (s AxisSet) fillAttr(env environment, ss *sheet.StyleSet) (a domi.Attr) {
 	if s == 0 {
 		return nil
 	}
@@ -36,16 +38,20 @@ func (s AxisSet) fillAttr(env environment) (a domi.Attr) {
 	case containerFlex:
 		if s.hasAny(env.lc.majorAxis) {
 			a = domi.Group(a, attr.Class("ui-grow"))
+			ss.Set("flex-grow", "1")
 		}
 		if s.hasAny(env.lc.minorAxes()) {
 			a = domi.Group(a, attr.Class("ui-stretch"))
+			ss.Set("align-self", "stretch")
 		}
 	default:
 		if s.hasAll(Horizontal) {
 			a = domi.Group(a, attr.Class("ui-cell-fill-x"))
+			ss.Set("justify-self", "stretch")
 		}
 		if s.hasAll(Vertical) {
 			a = domi.Group(a, attr.Class("ui-cell-fill-y"))
+			ss.Set("align-self", "stretch")
 		}
 	}
 	return a
@@ -56,11 +62,12 @@ func (s AxisSet) fillAttr(env environment) (a domi.Attr) {
 // This is only necessary along a flex major axis,
 // where flex shrink would compress the box.
 // Everywhere else a fixed size is rigid by default in CSS.
-func (s AxisSet) rigidAttr(env environment) domi.Attr {
+func (s AxisSet) rigidAttr(env environment, ss *sheet.StyleSet) domi.Attr {
 	if env.container != containerFlex {
 		return nil
 	}
 	if s.hasAll(env.lc.majorAxis) {
+		ss.Set("flex-shrink", "0")
 		return attr.Class("ui-rigid")
 	}
 	return nil

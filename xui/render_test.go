@@ -282,10 +282,10 @@ func TestHTMLFill(t *testing.T) {
 // stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
 	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background("red"))
-	if got := classRule(t, html, `class="ui-padding ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:red;padding:4px;place-items:center" {
+	if got := classRule(t, html, `class="ui-padding ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;background-color:red;justify-self:stretch;padding:4px;place-items:center" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
-	if got := classRule(t, html, `class="ui-html ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "place-items:center" {
+	if got := classRule(t, html, `class="ui-html ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;justify-self:stretch;place-items:center" {
 		t.Errorf("host should stay untouched inside, got %q:\n%s", got, html)
 	}
 }
@@ -312,7 +312,7 @@ func TestImmutableModifiers(t *testing.T) {
 // black, and generic modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
 	html := render(t, ui.Muted)
-	if got := classRule(t, html, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:var(--ui-color-muted)" {
+	if got := classRule(t, html, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;background-color:var(--ui-color-muted);justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
 	if zero := render(t, ui.Color("")); !strings.Contains(zero, "background-color:#000") {
@@ -326,7 +326,7 @@ func TestColorAsView(t *testing.T) {
 	// visible where c is translucent — ordinary painting order, not a
 	// decoration layer, and the Modify spelling is the same lowering.
 	bg := render(t, ui.Color("#0008").Background("#fff"))
-	if got := classRule(t, bg, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "background-color:#fff;background-image:linear-gradient(#0008,#0008)" {
+	if got := classRule(t, bg, `class="ui-color ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;background-color:#fff;background-image:linear-gradient(#0008,#0008);justify-self:stretch" {
 		t.Errorf("Background should layer under the color, got %q:\n%s", got, bg)
 	}
 	if strings.Contains(bg, "ui-underlay") {
@@ -688,7 +688,7 @@ func TestImageNative(t *testing.T) {
 	if strings.Contains(html, "ui-image") {
 		t.Errorf("native image should have no wrapper:\n%s", html)
 	}
-	if want := `<img alt="pic" class="ui-rigid" src="/x.png">`; !strings.Contains(html, want) {
+	if want := `<img alt="pic" class="ui-rigid ui-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
 		t.Errorf("native image missing %q:\n%s", want, html)
 	}
 }

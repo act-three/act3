@@ -223,12 +223,11 @@ func build(env environment, p plan) box {
 	if env.trans > 0 {
 		ss.Set("opacity", strconv.FormatFloat(1-env.trans, 'g', 4, 64))
 	}
-	var style domi.Attr
-	if !ss.IsEmpty() {
-		style = attr.Class(env.sheet.ClassFor(ss))
-	}
+	a = domi.Group(a, fills.fillAttr(env, &ss), rigid.rigidAttr(env, &ss))
 	// Keep the generated class after the named classes in rendered output.
-	a = domi.Group(a, fills.fillAttr(env), rigid.rigidAttr(env), style)
+	if !ss.IsEmpty() {
+		a = domi.Group(a, attr.Class(env.sheet.ClassFor(ss)))
+	}
 	return box{
 		node:  domi.Tag(cmp.Or(env.tag, "div"), a)(p.content),
 		fills: fills,
