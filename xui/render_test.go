@@ -309,14 +309,14 @@ func TestImmutableModifiers(t *testing.T) {
 
 // TestColorAsView pins Color's View implementation: a Color renders as a
 // solid fill of itself requesting fill on both axes, the zero Color renders
-// black, and generic modifiers reach the fill's box.
+// transparent, and generic modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
 	html := render(t, ui.Muted)
 	if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:var(--ui-color-muted);justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
-	if zero := render(t, ui.Color("")); !strings.Contains(zero, "background-color:#000") {
-		t.Errorf("zero color view should render black:\n%s", zero)
+	if zero := render(t, ui.Color("")); !strings.Contains(zero, "background-color:transparent") {
+		t.Errorf("zero color view should render transparent:\n%s", zero)
 	}
 	if mod := render(t, ui.Color("#eee").Opacity(0.5)); !strings.Contains(mod, "opacity:0.5") {
 		t.Errorf("modifier on a color view should reach its box:\n%s", mod)

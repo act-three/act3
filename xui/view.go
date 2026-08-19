@@ -268,7 +268,7 @@ func addStrokeStylesTo(ss *sheet.StyleSet, s []stroke) {
 	}
 	var shadows []string
 	for _, s := range s {
-		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+string(cmp.Or(s.c, "#000")))
+		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+string(cmp.Or(s.c, "transparent")))
 	}
 	ss.Set("position", "relative")
 	ss.SetPseudo("::after", "content", `""`)
