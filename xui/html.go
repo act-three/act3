@@ -1,8 +1,9 @@
 package ui
 
 import (
+	"cmp"
+
 	"ily.dev/domi"
-	"ily.dev/domi/attr"
 )
 
 // HTML displays node inside an adapter HTML element.
@@ -34,7 +35,7 @@ func HTML(node domi.Node) View { return base{nodeHTML{node: node}} }
 type nodeHTML struct{ node domi.Node }
 
 func (h nodeHTML) render(env environment) box {
-	env.add(attr.Class("ui-html"))
+	env.tag = cmp.Or(env.tag, "ui-html")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")

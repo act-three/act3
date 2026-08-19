@@ -75,7 +75,6 @@ func (n buttonNode) render(env environment) box {
 	v := HStack(n.label).
 		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
 		Tag("button").
-		Class("ui-button").
 		Foreground(fg).
 		Background(cmp.Or(color, surfaceColor)).
 		BorderStroke(1, cmp.Or(color, borderColor)).
