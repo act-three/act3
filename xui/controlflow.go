@@ -18,10 +18,10 @@ func Empty() View { return base(nil) }
 // A modifier applied to a Group is applied to each member individually.
 // These are equivalent:
 //
-//	Group(a, b).Background("red").Padding(8)
+//	Group(a, b).Background(Danger).Padding(8)
 //	Group(
-//	    a.Background("red").Padding(8),
-//	    b.Background("red").Padding(8),
+//	    a.Background(Danger).Padding(8),
+//	    b.Background(Danger).Padding(8),
 //	)
 func Group(v ...View) View {
 	var b base

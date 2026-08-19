@@ -7,7 +7,7 @@ func Badge(label string) View {
 	return Text(label).
 		Bold().
 		Font(Caption).
-		Foreground("#fff").
+		Foreground(CSSColor("#fff")).
 		Padding(EdgesLetterbox(2), EdgesPillarbox(8)).
 		Background(Accent).
 		BorderShape(Capsule)

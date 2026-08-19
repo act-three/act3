@@ -49,7 +49,7 @@ func accountCard(user User) ui.View {
 		).Gap(12).Alignment(ui.Center),
 	).
 		Padding(ui.Edges(16)).
-		LayerUnder(ui.Center, ui.Color("#fff")).
+		LayerUnder(ui.Center, ui.CSSColor("#fff")).
 		LayerOver(ui.TopTrailing, ui.Badge("Pro"))
 }
 
@@ -281,7 +281,7 @@ func TestHTMLFill(t *testing.T) {
 // wrapper element appears outside it, carrying the paint, and the node
 // stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
-	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background("red"))
+	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background(ui.CSSColor("red")))
 	if got := classRule(t, html, `<ui-padding class="(ui-\w+)"`); got != "align-self:stretch;background-color:red;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;padding:4px;place-items:center" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
@@ -315,32 +315,32 @@ func TestColorAsView(t *testing.T) {
 	if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:var(--ui-color-muted);justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
-	if mod := render(t, ui.Color("#eee").Opacity(0.5)); !strings.Contains(mod, "opacity:0.5") {
+	if mod := render(t, ui.CSSColor("#eee").Opacity(0.5)); !strings.Contains(mod, "opacity:0.5") {
 		t.Errorf("modifier on a color view should reach its box:\n%s", mod)
 	}
 
 	// Background layers behind the color on the color's own element,
 	// visible where c is translucent — ordinary painting order, not a
 	// decoration layer, and the Modify spelling is the same lowering.
-	bg := render(t, ui.Color("#0008").Background("#fff"))
+	bg := render(t, ui.CSSColor("#0008").Background(ui.CSSColor("#fff")))
 	if got := classRule(t, bg, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:#fff;background-image:linear-gradient(#0008,#0008);justify-self:stretch" {
 		t.Errorf("Background should layer under the color, got %q:\n%s", got, bg)
 	}
 	if strings.Contains(bg, "ui-underlay") {
 		t.Errorf("Background on a color should merge, not add a layer:\n%s", bg)
 	}
-	if mod := render(t, ui.Color("#0008").Modify(ui.Background("#fff"))); mod != bg {
+	if mod := render(t, ui.CSSColor("#0008").Modify(ui.Background(ui.CSSColor("#fff")))); mod != bg {
 		t.Errorf("Modify(Background) diverged from the Background method:\n%s", mod)
 	}
 	// Underlay layers content behind the color.
-	under := render(t, ui.Color("#0008").LayerUnder(ui.Center, ui.Text("behind")))
+	under := render(t, ui.CSSColor("#0008").LayerUnder(ui.Center, ui.Text("behind")))
 	for _, w := range []string{`<ui-underlay `, "behind"} {
 		if !strings.Contains(under, w) {
 			t.Errorf("Underlay behind a color missing %q:\n%s", w, under)
 		}
 	}
 	// Modifiers with no possible effect on a color are no-ops.
-	if noop := render(t, ui.Muted.Foreground("#fff").Font(ui.Title)); noop != html {
+	if noop := render(t, ui.Muted.Foreground(ui.CSSColor("#fff")).Font(ui.Title)); noop != html {
 		t.Errorf("no-effect modifiers on a color should be no-ops:\n%s", noop)
 	}
 }
@@ -872,8 +872,8 @@ func TestEmptyControlFlow(t *testing.T) {
 // TestModifierOrder checks that decoration order is preserved: padding-then-
 // underlay wraps the padded box, the reverse pads the decorated box.
 func TestModifierOrder(t *testing.T) {
-	paddedThenBg := render(t, ui.Text("x").Padding(ui.Edges(8)).LayerUnder(ui.Center, ui.Color("#eee")))
-	bgThenPadded := render(t, ui.Text("x").LayerUnder(ui.Center, ui.Color("#eee")).Padding(ui.Edges(8)))
+	paddedThenBg := render(t, ui.Text("x").Padding(ui.Edges(8)).LayerUnder(ui.Center, ui.CSSColor("#eee")))
+	bgThenPadded := render(t, ui.Text("x").LayerUnder(ui.Center, ui.CSSColor("#eee")).Padding(ui.Edges(8)))
 	if paddedThenBg == bgThenPadded {
 		t.Errorf("modifier order should change the lowering, but both rendered identically:\n%s", paddedThenBg)
 	}

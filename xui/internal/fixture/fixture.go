@@ -143,20 +143,20 @@ func dividerColumn() View {
 
 func zstackDemo() View {
 	return ZStack(
-		Color("#312e81").
+		CSSColor("#312e81").
 			Frame(Width(120), Height(120)).
 			BorderShape(RoundedRectangle),
 		Text("ZStack with Long Text").
-			TextForeground("#fff").
+			TextForeground(CSSColor("#fff")).
 			Font(Headline),
 	).LayerOver(
 		BottomTrailing,
 		Text("layered").
-			TextForeground("#c7d2fe").
+			TextForeground(CSSColor("#c7d2fe")).
 			Font(Caption),
 	).
 		Padding(Edges(8)).
-		Background("#888")
+		Background(CSSColor("#888"))
 }
 
 func scrollDemo() View {

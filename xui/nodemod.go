@@ -112,15 +112,10 @@ func (m modAttr) environment(env environment) environment {
 	return env
 }
 
-type modBackground struct{ c Color }
+type modBackground struct{ c color }
 
 // Background fills the background of a view with c.
-func Background(c Color) Modifier {
-	if c == "" {
-		panic("ui: empty Color")
-	}
-	return modBackground{c}
-}
+func Background(c Color) Modifier { return modBackground{c.color()} }
 
 func (m modBackground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
@@ -144,7 +139,7 @@ func (m modBorderShape) environment(env environment) environment {
 
 type modBorderStroke struct {
 	px float64
-	c  Color
+	c  color
 }
 
 // BorderStroke draws a line
@@ -160,10 +155,7 @@ func BorderStroke(px float64, c Color) Modifier {
 	if !(px > 0) { // this is written weird b/c of NaNs lmao
 		return nil
 	}
-	if c == "" {
-		panic("ui: empty Color")
-	}
-	return modBorderStroke{px, c}
+	return modBorderStroke{px, c.color()}
 }
 
 func (m modBorderStroke) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
@@ -214,21 +206,16 @@ func (m modFont) environment(env environment) environment {
 	return env
 }
 
-type modForeground struct{ c Color }
+type modForeground struct{ c color }
 
 // Foreground uses c to draw foreground elements in a view,
 // such as text.
-func Foreground(c Color) Modifier {
-	if c == "" {
-		panic("ui: empty Color")
-	}
-	return modForeground{c}
-}
+func Foreground(c Color) Modifier { return modForeground{c.color()} }
 
 func (m modForeground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modForeground) environment(env environment) environment {
-	env.fg = &m.c
+	env.fg = m.c
 	return env
 }
 

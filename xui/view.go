@@ -138,8 +138,8 @@ type boxenv struct {
 	tag    string
 	attrs  domi.Attr
 	style  sheet.StyleSet
-	fg     *Color
-	bg     []Color
+	fg     color
+	bg     []color
 	stroke []stroke
 	shape  Shape
 	font   FontSize
@@ -155,7 +155,7 @@ type boxenv struct {
 // A stroke is one pending border line.
 type stroke struct {
 	px float64
-	c  Color
+	c  color
 }
 
 // add prepends attributes to the environment,
@@ -215,7 +215,7 @@ func build(env environment, p plan) box {
 		ss.Set("border-radius", env.shape.radius())
 	}
 	if env.fg != nil {
-		ss.Set("color", string(*env.fg))
+		ss.Set("color", env.fg.colorCSS())
 	}
 	if env.trans > 0 {
 		ss.Set("opacity", strconv.FormatFloat(1-env.trans, 'g', 4, 64))
@@ -268,7 +268,7 @@ func addStrokeStylesTo(ss *sheet.StyleSet, s []stroke) {
 	}
 	var shadows []string
 	for _, s := range s {
-		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+string(s.c))
+		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+s.c.colorCSS())
 	}
 	ss.Set("position", "relative")
 	ss.SetPseudo("::after", "content", `""`)
@@ -282,17 +282,17 @@ func addStrokeStylesTo(ss *sheet.StyleSet, s []stroke) {
 // addBackgroundStylesTo adds the declarations for the paint stack bg:
 // the outermost color as background-color,
 // and the inner colors as image layers listed innermost first.
-func addBackgroundStylesTo(ss *sheet.StyleSet, bg []Color) {
+func addBackgroundStylesTo(ss *sheet.StyleSet, bg []color) {
 	if len(bg) == 0 {
 		return
 	}
-	ss.Set("background-color", string(bg[0]))
+	ss.Set("background-color", bg[0].colorCSS())
 	if len(bg) == 1 {
 		return
 	}
 	var img []string
 	for _, c := range slices.Backward(bg[1:]) {
-		img = append(img, "linear-gradient("+string(c)+","+string(c)+")")
+		img = append(img, "linear-gradient("+c.colorCSS()+","+c.colorCSS()+")")
 	}
 	ss.Set("background-image", strings.Join(img, ","))
 }
