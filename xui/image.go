@@ -61,6 +61,9 @@ func (n imageNode) render(env environment) box {
 		// geometry answers — its natural size, or the other axis scaled
 		// through the picture's ratio.
 		env.add(attr.Src(n.src), alt, attr.Class("ui-image", n.fit.class()))
+		env.style.Set("min-width", "0")
+		env.style.Set("min-height", "0")
+		env.style.Set("object-fit", n.fit.objectFit())
 		p = plan{fills: Horizontal | Vertical}
 	}
 	return build(env, p)

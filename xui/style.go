@@ -72,3 +72,13 @@ func (m FramingMode) class() string {
 	}
 	panic("unreached")
 }
+
+func (m FramingMode) objectFit() string {
+	switch m {
+	case ScaledToFit:
+		return "contain"
+	case ScaledToFill:
+		return "cover"
+	}
+	panic("unreached")
+}
