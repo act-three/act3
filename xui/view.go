@@ -223,9 +223,7 @@ func build(env environment, p plan) box {
 	fills.addFillStylesTo(&ss, env)
 	rigid.addRigidStylesTo(&ss, env)
 	// Keep the generated class after the named classes in rendered output.
-	if !ss.IsEmpty() {
-		a = domi.Group(a, attr.Class(env.sheet.ClassFor(ss)))
-	}
+	a = domi.Group(a, attr.Class(env.sheet.ClassFor(ss)))
 	return box{
 		node:  domi.Tag(cmp.Or(env.tag, "div"), a)(p.content),
 		fills: fills,
