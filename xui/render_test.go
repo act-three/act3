@@ -115,15 +115,15 @@ func TestAccountCard(t *testing.T) {
 	}))
 
 	wants := []string{
-		`<ui-root>`,                       // root
-		`<ui-card class="ui-cell-fill-x `, // Card: an HStack named by its tag
-		`<ui-hstack class="ui-grow`,       // the Spacer's fill stretches the row across the card
-		`border-radius:50%`,               // BorderShape applied to the image frame
-		`<ui-frame`,                       // Size(48) introduces a frame wrapper
-		`width:48px`,                      // ...with the resolved size
-		`<ui-spacer class="ui-grow `,
-		`<button class="ui-role-primary `,
-		`<ui-layer class="ui-cell-fill-x `, // Underlay + Overlay decoration layers
+		`<ui-root>`,         // root
+		`<ui-card `,         // Card: an HStack named by its tag
+		`flex-grow:1`,       // the Spacer's fill stretches the row across the card
+		`border-radius:50%`, // BorderShape applied to the image frame
+		`<ui-frame`,         // Size(48) introduces a frame wrapper
+		`width:48px`,        // ...with the resolved size
+		`<ui-spacer `,
+		`<button `,
+		`<ui-layer `, // Underlay + Overlay decoration layers
 		`<ui-underlay `,
 		`<ui-overlay `,
 		`place-items:start end`, // the Overlay's alignment
@@ -147,10 +147,10 @@ func TestMoviePageFillPropagation(t *testing.T) {
 	wants := []string{
 		// The header HStack contains a Spacer, so it fills horizontally —
 		// the minor axis of the enclosing VStack, lowered as a self-stretch.
-		`<ui-hstack class="ui-stretch `,
+		`align-self:stretch`,
 		// The outer VStack inherits that horizontal fill; at the root, a
 		// grid, it lowers to a cell stretch.
-		`<ui-vstack class="ui-cell-fill-x`,
+		`justify-self:stretch`,
 		// Both movie rows rendered via For, each with its own Spacer.
 		`Metropolis`,
 		`Solaris`,
@@ -182,13 +182,13 @@ func TestTagNamesElement(t *testing.T) {
 		ui.HStack(ui.Text("a"), ui.Spacer()).Frame().Tag("nav"),
 		ui.Text("b"),
 	))
-	for _, w := range []string{
-		`<nav class="ui-grow `,              // the tagged frame carries the fill
-		`<ui-hstack class="ui-cell-fill-x `, // ...and the root stack keeps it
-		`<ui-spacer class="ui-grow `,        // the inner row distributes slack
+	for _, tt := range []struct{ pattern, want string }{
+		{`<nav class="(ui-\w+)"`, "flex-grow:1"},                // the tagged frame carries the fill
+		{`<ui-hstack class="(ui-\w+)"`, "justify-self:stretch"}, // ...and the root stack keeps it
+		{`<ui-spacer class="(ui-\w+)"`, "flex-grow:1"},          // the inner row distributes slack
 	} {
-		if !strings.Contains(html, w) {
-			t.Errorf("tagged-frame fill chain missing %q:\n%s", w, html)
+		if got := classRule(t, html, tt.pattern); !strings.Contains(got, tt.want) {
+			t.Errorf("tagged-frame fill chain: %s rule = %q, want %q:\n%s", tt.pattern, got, tt.want, html)
 		}
 	}
 }
@@ -219,7 +219,7 @@ func TestTagInnermostWins(t *testing.T) {
 // host rather than on the node.
 func TestHTMLHost(t *testing.T) {
 	html := render(t, ui.HTML(domi.Text("raw")))
-	if want := regexp.MustCompile(`<ui-html class="ui-cell-fill-x ui-cell-fill-y ui-\w+">raw</ui-html>`); !want.MatchString(html) {
+	if want := regexp.MustCompile(`<ui-html class="ui-\w+">raw</ui-html>`); !want.MatchString(html) {
 		t.Errorf("missing %q:\n%s", want, html)
 	}
 
@@ -245,20 +245,20 @@ func TestHTMLFill(t *testing.T) {
 		{
 			"both axes at the root grid",
 			ui.HTML(domi.Text("raw")),
-			[]string{`<ui-html class="ui-cell-fill-x ui-cell-fill-y `},
+			[]string{"align-self:stretch", "justify-self:stretch"},
 			nil,
 		},
 		{
 			"a row grows it, stretches it, and inherits the fill",
 			ui.HStack(ui.HTML(domi.Text("raw"))),
-			[]string{`<ui-html class="ui-grow ui-stretch `, `<ui-hstack class="ui-cell-fill-x ui-cell-fill-y `},
+			[]string{"flex-grow:1", "align-self:stretch", "justify-self:stretch"},
 			nil,
 		},
 		{
 			"FixedSize clears the fill axes",
 			ui.HTML(domi.Text("raw")).FixedSize(),
 			[]string{`<ui-html class="ui-fixed-size `},
-			[]string{"ui-cell-fill"},
+			[]string{"align-self:stretch", "justify-self:stretch"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -282,10 +282,10 @@ func TestHTMLFill(t *testing.T) {
 // stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
 	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background("red"))
-	if got := classRule(t, html, `<ui-padding class="ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;background-color:red;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;padding:4px;place-items:center" {
+	if got := classRule(t, html, `<ui-padding class="(ui-\w+)"`); got != "align-self:stretch;background-color:red;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;padding:4px;place-items:center" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
-	if got := classRule(t, html, `<ui-html class="ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;place-items:center" {
+	if got := classRule(t, html, `<ui-html class="(ui-\w+)"`); got != "align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;place-items:center" {
 		t.Errorf("host should stay untouched inside, got %q:\n%s", got, html)
 	}
 }
@@ -312,7 +312,7 @@ func TestImmutableModifiers(t *testing.T) {
 // black, and generic modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
 	html := render(t, ui.Muted)
-	if got := classRule(t, html, `<ui-color class="ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;background-color:var(--ui-color-muted);justify-self:stretch" {
+	if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:var(--ui-color-muted);justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
 	if zero := render(t, ui.Color("")); !strings.Contains(zero, "background-color:#000") {
@@ -326,7 +326,7 @@ func TestColorAsView(t *testing.T) {
 	// visible where c is translucent — ordinary painting order, not a
 	// decoration layer, and the Modify spelling is the same lowering.
 	bg := render(t, ui.Color("#0008").Background("#fff"))
-	if got := classRule(t, bg, `<ui-color class="ui-cell-fill-x ui-cell-fill-y (ui-\w+)"`); got != "align-self:stretch;background-color:#fff;background-image:linear-gradient(#0008,#0008);justify-self:stretch" {
+	if got := classRule(t, bg, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:#fff;background-image:linear-gradient(#0008,#0008);justify-self:stretch" {
 		t.Errorf("Background should layer under the color, got %q:\n%s", got, bg)
 	}
 	if strings.Contains(bg, "ui-underlay") {
@@ -422,7 +422,7 @@ func TestIdealSize(t *testing.T) {
 			// the bounded cross axis.
 			"scroll axis is unbounded without FixedSize",
 			ui.ScrollView(ui.Vertical, ui.Muted),
-			[]string{"height:10px", "ui-cell-fill-x"},
+			[]string{"height:10px;justify-self:stretch"},
 			[]string{"width:10px"},
 		},
 		{
@@ -434,7 +434,7 @@ func TestIdealSize(t *testing.T) {
 		{
 			"no-axis scroll makes neither content axis unbounded",
 			ui.ScrollView(ui.AxisSet(0), ui.Muted).FixedSize(),
-			[]string{"width:100px", "height:100px", "ui-scroll-none"},
+			[]string{"width:100px", "height:100px", "overflow-x:clip;overflow-y:clip"},
 			[]string{"10px"},
 		},
 		{
@@ -454,27 +454,27 @@ func TestIdealSize(t *testing.T) {
 			// meet, the img's intrinsic geometry answers instead.
 			"scaled image drops its fills on unbounded axes",
 			ui.Image("/x.png").FramedAs(ui.ScaledToFill).FixedSize(),
-			[]string{"ui-fm-cover"},
-			[]string{"ui-cell-fill"},
+			[]string{"object-fit:cover"},
+			[]string{"justify-self", "align-self"},
 		},
 		{
 			// The viewport itself stays greedy on both axes; only
 			// the image's own fill is dropped on the scroll axis.
 			"scaled image keeps its fill on the bounded cross axis",
 			ui.ScrollView(ui.Vertical, ui.Image("/x.png").FramedAs(ui.ScaledToFill)),
-			[]string{`class="ui-fm-cover ui-cell-fill-x`},
-			[]string{"ui-fm-cover ui-cell-fill-x ui-cell-fill-y"},
+			[]string{"justify-self:stretch;min-height:0;min-width:0;object-fit:cover"},
+			[]string{"align-self:stretch;justify-self:stretch;min-height"},
 		},
 		{
 			"divider contributes 10px along its length",
 			ui.VStack(ui.Divider()).FixedSize(),
-			[]string{"height:1px", "min-width:10px", "ui-stretch"},
+			[]string{"height:1px", "min-width:10px", "align-self:stretch"},
 			[]string{"min-height"},
 		},
 		{
 			"vertical divider contributes 10px along its length",
 			ui.HStack(ui.Divider()).FixedSize(),
-			[]string{"width:1px", "min-height:10px", "ui-stretch"},
+			[]string{"width:1px", "min-height:10px", "align-self:stretch"},
 			[]string{"min-width"},
 		},
 		{
@@ -527,7 +527,7 @@ func TestTextRunsPreserveType(t *testing.T) {
 		TextForeground(ui.Muted)
 
 	html := render(t, v)
-	for _, w := range []string{"ui-bold", "ui-italic", "Status: ", "Draft"} {
+	for _, w := range []string{"font-weight:600", "font-style:italic", "Status: ", "Draft"} {
 		if !strings.Contains(html, w) {
 			t.Errorf("rich text missing %q\n\n%s", w, html)
 		}
@@ -570,11 +570,11 @@ func TestFontSpecifiesWholeType(t *testing.T) {
 // own styling.
 func TestTextWholeTextRule(t *testing.T) {
 	html := render(t, ui.Text("a").Concat(ui.Text("b").Italic()).Bold())
-	if !regexp.MustCompile(`<ui-text[^>]*><span class="ui-bold`).MatchString(html) {
-		t.Errorf("whole-text Bold should land on a span enclosing every run:\n%s", html)
+	if got := classRule(t, html, `<ui-text[^>]*><span class="(ui-\w+)"`); got != "font-weight:600" {
+		t.Errorf("whole-text Bold should land on a span enclosing every run, got %q:\n%s", got, html)
 	}
-	if !strings.Contains(html, `class="ui-italic`) {
-		t.Errorf("pre-Concat Italic should stay on its own run:\n%s", html)
+	if got := classRule(t, html, `>a<span class="(ui-\w+)"`); got != "font-style:italic" {
+		t.Errorf("pre-Concat Italic should stay on its own run, got %q:\n%s", got, html)
 	}
 }
 
@@ -623,13 +623,13 @@ func TestAlignProjectsOntoCrossAxis(t *testing.T) {
 // minor axis either way.
 func TestDividerAxisAware(t *testing.T) {
 	h := render(t, ui.HStack(ui.Text("a"), ui.Divider(), ui.Text("b")))
-	if !strings.Contains(h, `<ui-divider class="ui-stretch`) || !strings.Contains(h, "width:1px") {
-		t.Errorf("divider in HStack should be vertical and stretch:\n%s", h)
+	if got := classRule(t, h, `<ui-divider class="(ui-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "width:1px") {
+		t.Errorf("divider in HStack should be vertical and stretch, got %q:\n%s", got, h)
 	}
 
 	v := render(t, ui.VStack(ui.Text("a"), ui.Divider(), ui.Text("b")))
-	if !strings.Contains(v, `<ui-divider class="ui-stretch`) || !strings.Contains(v, "height:1px") {
-		t.Errorf("divider in VStack should be horizontal and stretch:\n%s", v)
+	if got := classRule(t, v, `<ui-divider class="(ui-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "height:1px") {
+		t.Errorf("divider in VStack should be horizontal and stretch, got %q:\n%s", got, v)
 	}
 }
 
@@ -685,10 +685,10 @@ func TestForNilKeyUnkeyed(t *testing.T) {
 // the default mode.
 func TestImageNative(t *testing.T) {
 	html := render(t, ui.HStack(ui.Image("/x.png").Alt("pic")))
-	if strings.Contains(html, "ui-fm-") {
+	if strings.Contains(html, "object-fit") {
 		t.Errorf("native image should have no framing mode:\n%s", html)
 	}
-	if want := `<img alt="pic" class="ui-rigid ui-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
+	if want := `<img alt="pic" class="ui-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
 		t.Errorf("native image missing %q:\n%s", want, html)
 	}
 }
@@ -696,10 +696,10 @@ func TestImageNative(t *testing.T) {
 // TestScrollView checks the requested axis selects the right overflow variant.
 func TestScrollView(t *testing.T) {
 	cases := map[ui.AxisSet]string{
-		ui.Vertical:                 `<ui-scroll class="ui-scroll-y`,
-		ui.Horizontal:               `<ui-scroll class="ui-scroll-x`,
-		ui.Horizontal | ui.Vertical: `<ui-scroll class="ui-scroll-xy`,
-		ui.AxisSet(0):               `<ui-scroll class="ui-scroll-none`,
+		ui.Vertical:                 "overflow-x:hidden;overflow-y:auto",
+		ui.Horizontal:               "overflow-x:auto;overflow-y:hidden",
+		ui.Horizontal | ui.Vertical: "overflow-x:auto;overflow-y:auto",
+		ui.AxisSet(0):               "overflow-x:clip;overflow-y:clip",
 	}
 	for axis, want := range cases {
 		html := render(t, ui.ScrollView(axis, ui.Text("content")))
@@ -726,7 +726,7 @@ func TestFrameBounds(t *testing.T) {
 	}
 
 	relay := render(t, ui.HStack(ui.Spacer()).FrameBounds(ui.MinWidth(96)))
-	if !strings.Contains(relay, "ui-cell-fill-x") {
+	if !strings.Contains(relay, "justify-self:stretch") {
 		t.Errorf("a min-bounded frame should relay its subview's fill:\n%s", relay)
 	}
 
@@ -764,8 +764,8 @@ func TestFrameBounds(t *testing.T) {
 	}
 
 	fill := render(t, ui.HStack(ui.Spacer()))
-	if !strings.Contains(fill, "ui-cell-fill-x") {
-		t.Errorf("a fill request should lower to a fill class:\n%s", fill)
+	if !strings.Contains(fill, "justify-self:stretch") {
+		t.Errorf("a fill request should lower to a fill declaration:\n%s", fill)
 	}
 }
 
@@ -786,8 +786,8 @@ func TestFrameRigid(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.v)
-			if got := strings.Contains(html, "ui-rigid"); got != tt.rigid {
-				t.Errorf("ui-rigid = %v, want %v:\n%s", got, tt.rigid, html)
+			if got := strings.Contains(html, "flex-shrink:0"); got != tt.rigid {
+				t.Errorf("flex-shrink:0 = %v, want %v:\n%s", got, tt.rigid, html)
 			}
 		})
 	}

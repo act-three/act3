@@ -13,13 +13,6 @@ const (
 	LargeTitle FontSize = "large-title"
 )
 
-func (f FontSize) class() string {
-	if f == "" {
-		return ""
-	}
-	return "ui-font-" + string(f)
-}
-
 // setStyles adds f's declarations to ss.
 func (f FontSize) setStyles(ss *sheet.StyleSet) {
 	switch f {
@@ -62,16 +55,6 @@ const (
 	// display as much of the image as possible without distortion.
 	ScaledToFill
 )
-
-func (m FramingMode) class() string {
-	switch m {
-	case ScaledToFit:
-		return "ui-fm-contain"
-	case ScaledToFill:
-		return "ui-fm-cover"
-	}
-	panic("unreached")
-}
 
 func (m FramingMode) objectFit() string {
 	switch m {

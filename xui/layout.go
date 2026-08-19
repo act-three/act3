@@ -3,9 +3,6 @@ package ui
 import (
 	"fmt"
 
-	"ily.dev/domi"
-	"ily.dev/domi/attr"
-
 	"ily.dev/act3/xui/internal/sheet"
 )
 
@@ -27,50 +24,40 @@ func (s AxisSet) hasAny(x AxisSet) bool { return s&x != 0 }
 
 func (s AxisSet) complement() AxisSet { return (Horizontal | Vertical) &^ s }
 
-// fillAttr lowers the receiver as a fill request, picking the CSS
+// addFillStylesTo lowers the receiver as a fill request, picking the CSS
 // mechanism the parent context responds to: grow or stretch as a flex item,
 // self-stretch in a grid cell. A single mechanism cannot serve both.
-func (s AxisSet) fillAttr(env environment, ss *sheet.StyleSet) (a domi.Attr) {
-	if s == 0 {
-		return nil
-	}
+func (s AxisSet) addFillStylesTo(ss *sheet.StyleSet, env environment) {
 	switch env.container {
 	case containerFlex:
 		if s.hasAny(env.lc.majorAxis) {
-			a = domi.Group(a, attr.Class("ui-grow"))
 			ss.Set("flex-grow", "1")
 		}
 		if s.hasAny(env.lc.minorAxes()) {
-			a = domi.Group(a, attr.Class("ui-stretch"))
 			ss.Set("align-self", "stretch")
 		}
 	default:
 		if s.hasAll(Horizontal) {
-			a = domi.Group(a, attr.Class("ui-cell-fill-x"))
 			ss.Set("justify-self", "stretch")
 		}
 		if s.hasAll(Vertical) {
-			a = domi.Group(a, attr.Class("ui-cell-fill-y"))
 			ss.Set("align-self", "stretch")
 		}
 	}
-	return a
 }
 
-// rigidAttr lowers a box's rigid axes, such as the axes of a fixed-size
-// frame, to avoid CSS default shrink behavior.
+// addRigidStylesTo lowers a box's rigid axes, such as the axes of a
+// fixed-size frame, to avoid CSS default shrink behavior.
 // This is only necessary along a flex major axis,
 // where flex shrink would compress the box.
 // Everywhere else a fixed size is rigid by default in CSS.
-func (s AxisSet) rigidAttr(env environment, ss *sheet.StyleSet) domi.Attr {
+func (s AxisSet) addRigidStylesTo(ss *sheet.StyleSet, env environment) {
 	if env.container != containerFlex {
-		return nil
+		return
 	}
 	if s.hasAll(env.lc.majorAxis) {
 		ss.Set("flex-shrink", "0")
-		return attr.Class("ui-rigid")
 	}
-	return nil
 }
 
 // stackAxis is the major-axis direction a stack establishes for its subviews.

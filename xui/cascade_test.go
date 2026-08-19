@@ -266,7 +266,7 @@ func TestBorderStrokeOnScroll(t *testing.T) {
 	if got := classRule(t, html, `<ui-box class="[^"]*(ui-\w+)"`); got != "align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
 		t.Errorf("scroll strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
-	if !strings.Contains(html, `<ui-scroll class="ui-scroll-y`) {
+	if !strings.Contains(html, `<ui-scroll `) {
 		t.Errorf("the viewport should render inside:\n%s", html)
 	}
 }
@@ -336,17 +336,17 @@ func TestBorderShapeShapesColor(t *testing.T) {
 // auto axis, which takes the subview's sizing.
 func TestWrapperKeepsRigidity(t *testing.T) {
 	for _, tt := range []struct {
-		name string
-		v    ui.View
-		want string
+		name    string
+		v       ui.View
+		pattern string
 	}{
-		{"transform box", ui.HStack(ui.Text("x").FixedSize().Opacity(0.5).Background("red")), `<ui-box class="ui-rigid`},
-		{"frame auto axis", ui.HStack(ui.Text("x").FixedSize().Frame(ui.Height(40))), `<ui-frame class="ui-rigid`},
+		{"transform box", ui.HStack(ui.Text("x").FixedSize().Opacity(0.5).Background("red")), `<ui-box class="(ui-\w+)"`},
+		{"frame auto axis", ui.HStack(ui.Text("x").FixedSize().Frame(ui.Height(40))), `<ui-frame class="(ui-\w+)"`},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.v)
-			if !strings.Contains(html, tt.want) {
-				t.Errorf("wrapper should carry its subview's rigidity, want %q:\n%s", tt.want, html)
+			if got := classRule(t, html, tt.pattern); !strings.Contains(got, "flex-shrink:0") {
+				t.Errorf("wrapper should carry its subview's rigidity, got %q:\n%s", got, html)
 			}
 		})
 	}
@@ -360,7 +360,7 @@ func TestTextStyleInnermostWins(t *testing.T) {
 		t.Errorf("repeated TextForeground should keep the first color:\n%s", html)
 	}
 	html = render(t, ui.Text("x").TextFont(ui.Title).TextFont(ui.Caption))
-	if !strings.Contains(html, "ui-font-title") || strings.Contains(html, "ui-font-caption") {
+	if !strings.Contains(html, "font-size:1.5rem") || strings.Contains(html, "font-size:0.75rem") {
 		t.Errorf("repeated TextFont should keep the first size:\n%s", html)
 	}
 }

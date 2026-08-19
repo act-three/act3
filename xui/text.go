@@ -73,32 +73,25 @@ type textStyle struct {
 }
 
 func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
-	var a []domi.Attr
 	var ss sheet.StyleSet
 	if s.mono {
-		a = append(a, attr.Class("ui-mono"))
 		ss.Set("font-family", "var(--ui-font-mono)")
 	}
 	if s.bold {
-		a = append(a, attr.Class("ui-bold"))
 		ss.Set("font-weight", "600")
 	}
 	if s.italic {
-		a = append(a, attr.Class("ui-italic"))
 		ss.Set("font-style", "italic")
 	}
 	// The type scale's weight beats Bold's, matching the write order.
-	if c := s.font.class(); c != "" {
-		a = append(a, attr.Class(c))
-	}
 	s.font.setStyles(&ss)
 	if s.color != "" {
 		ss.Set("color", string(s.color))
 	}
-	if !ss.IsEmpty() {
-		a = append(a, attr.Class(sh.ClassFor(ss)))
+	if ss.IsEmpty() {
+		return nil
 	}
-	return domi.Group(a...)
+	return attr.Class(sh.ClassFor(ss))
 }
 
 // textNode is a tree of styled text nodes. It has 2 cases:
