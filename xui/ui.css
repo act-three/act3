@@ -37,11 +37,4 @@
 			font: inherit;
 		}
 	}
-
-	.ui-image {
-		min-width: 0;
-		min-height: 0;
-	}
-	.ui-fm-contain { object-fit: contain; }
-	.ui-fm-cover { object-fit: cover; }
 }
