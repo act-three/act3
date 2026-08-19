@@ -33,9 +33,9 @@ func (v StackView) Alignment(a Alignment) StackView {
 
 // Gap sets the distance between adjacent subviews in v.
 // The default gap is 8 px.
-func (v StackView) Gap[L Length](px L) StackView {
+func (v StackView) Gap(px float64) StackView {
 	n := v.base[0].(stackNode)
-	n.gap = float64(px)
+	n.gap = px
 	v.base = base{n}
 	return v
 }

@@ -81,7 +81,7 @@ func (o frameOption) applyFrame(w *wrapFrame) { o(w) }
 //
 // If h is Auto, the frame adopts the height of the view inside.
 // The default height is Auto.
-func Height[L Length | Auto](h L) FrameOption {
+func Height[Size int | float64 | Auto](h Size) FrameOption {
 	s := newSize(h)
 	return frameOption(func(w *wrapFrame) { w.v = s })
 }
@@ -90,7 +90,7 @@ func Height[L Length | Auto](h L) FrameOption {
 //
 // If w is Auto, the frame adopts the width of the view inside.
 // The default width is Auto.
-func Width[L Length | Auto](w L) FrameOption {
+func Width[Size int | float64 | Auto](w Size) FrameOption {
 	s := newSize(w)
 	return frameOption(func(f *wrapFrame) { f.h = s })
 }

@@ -12,34 +12,31 @@ type EdgeSpace struct {
 }
 
 // Edges sets all four edges to px pixels.
-func Edges[L Length](px L) EdgeSpace {
-	v := float64(px)
-	return EdgeSpace{v, v, v, v}
+func Edges(px float64) EdgeSpace {
+	return EdgeSpace{px, px, px, px}
 }
 
 // EdgesPillarbox sets the leading and trailing edges to px pixels.
-func EdgesPillarbox[L Length](px L) EdgeSpace {
-	v := float64(px)
-	return EdgeSpace{Leading: v, Trailing: v}
+func EdgesPillarbox(px float64) EdgeSpace {
+	return EdgeSpace{Leading: px, Trailing: px}
 }
 
 // EdgesLetterbox sets the top and bottom edges to px pixels.
-func EdgesLetterbox[L Length](px L) EdgeSpace {
-	v := float64(px)
-	return EdgeSpace{Top: v, Bottom: v}
+func EdgesLetterbox(px float64) EdgeSpace {
+	return EdgeSpace{Top: px, Bottom: px}
 }
 
 // EdgeTop sets the top edge to px pixels.
-func EdgeTop[L Length](px L) EdgeSpace { return EdgeSpace{Top: float64(px)} }
+func EdgeTop(px float64) EdgeSpace { return EdgeSpace{Top: px} }
 
 // EdgeBottom sets the bottom edge to px pixels.
-func EdgeBottom[L Length](px L) EdgeSpace { return EdgeSpace{Bottom: float64(px)} }
+func EdgeBottom(px float64) EdgeSpace { return EdgeSpace{Bottom: px} }
 
 // EdgeLeading sets the leading edge to px pixels.
-func EdgeLeading[L Length](px L) EdgeSpace { return EdgeSpace{Leading: float64(px)} }
+func EdgeLeading(px float64) EdgeSpace { return EdgeSpace{Leading: px} }
 
 // EdgeTrailing sets the trailing edge to px pixels.
-func EdgeTrailing[L Length](px L) EdgeSpace { return EdgeSpace{Trailing: float64(px)} }
+func EdgeTrailing(px float64) EdgeSpace { return EdgeSpace{Trailing: px} }
 
 // add returns s with o's spacing added to each edge.
 func (s EdgeSpace) add(o EdgeSpace) EdgeSpace {

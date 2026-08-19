@@ -4,23 +4,17 @@ import (
 	"fmt"
 )
 
-// A Length is a fixed length in CSS pixels.
-type Length interface {
-	int | float64
-}
-
 type rect struct{ width, height size }
 
 // size is either a fixed length in CSS pixels or the special value Auto.
 // The meaning of Auto is determined by context.
-// It has no universally-defined lowering form.
 type size struct {
 	definite bool
 	px       float64
 }
 
-// newSize lowers a [Length] or [Auto] argument to its internal representation.
-func newSize[L Length | Auto](v L) size {
+// newSize converts a generic size to its internal representation.
+func newSize[Size int | float64 | Auto](v Size) size {
 	switch v := any(v).(type) {
 	case Auto:
 		return size{}
