@@ -38,27 +38,12 @@
 		}
 	}
 
-	.ui-vstack {
-		display: inline-flex;
-		flex-direction: column;
-	}
-
-	.ui-hstack {
-		display: inline-flex;
-		flex-direction: row;
-	}
-
 	.ui-grow { flex-grow: 1; }
 	.ui-stretch { align-self: stretch; }
 	.ui-cell-fill-x { justify-self: stretch; }
 	.ui-cell-fill-y { align-self: stretch; }
 
 	.ui-rigid { flex-shrink: 0; }
-
-	.ui-zstack {
-		display: grid;
-		grid-template: 100% / 100%;
-	}
 
 	.ui-scroll {
 		display: grid;
