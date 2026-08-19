@@ -38,23 +38,6 @@
 		}
 	}
 
-	.ui-scroll {
-		display: grid;
-		min-width: 0;
-		min-height: 0;
-		overscroll-behavior: contain;
-	}
-	.ui-scroll-x {
-		overflow-x: auto;
-		overflow-y: hidden;
-	}
-	.ui-scroll-y {
-		overflow-x: hidden;
-		overflow-y: auto;
-	}
-	.ui-scroll-xy { overflow: auto; }
-	.ui-scroll-none { overflow: clip; }
-
 	.ui-padding {
 		display: grid;
 		grid-template: 100% / 100%;

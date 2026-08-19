@@ -36,14 +36,21 @@ func (s scrollNode) render(env environment) box {
 	}
 	// Along a scroll axis, the content's available space is unbounded.
 	// On a non-scrolling axis the available space is the viewport's own size.
-	variant := cmp.Or(map[AxisSet]string{
-		Horizontal:            "ui-scroll-x",
-		Vertical:              "ui-scroll-y",
-		Horizontal | Vertical: "ui-scroll-xy",
-	}[s.along], "ui-scroll-none")
+	type variant struct{ class, x, y string }
+	v := cmp.Or(map[AxisSet]variant{
+		Horizontal:            {"ui-scroll-x", "auto", "hidden"},
+		Vertical:              {"ui-scroll-y", "hidden", "auto"},
+		Horizontal | Vertical: {"ui-scroll-xy", "auto", "auto"},
+	}[s.along], variant{"ui-scroll-none", "clip", "clip"})
 	// The scroll viewport is a single-cell grid establishing no axes.
 	// It is equivalent to the root view context in a scrolling web page.
-	env.add(attr.Class("ui-scroll", variant))
+	env.add(attr.Class("ui-scroll", v.class))
+	env.style.Set("display", "grid")
+	env.style.Set("min-width", "0")
+	env.style.Set("min-height", "0")
+	env.style.Set("overflow-x", v.x)
+	env.style.Set("overflow-y", v.y)
+	env.style.Set("overscroll-behavior", "contain")
 	env.style.Set("place-items", "start")
 	env.style.Set("contain", "size") // Viewport size doesn't depend on its contents.
 	content, _ := subviewsRendered(environment{sheet: env.sheet},
