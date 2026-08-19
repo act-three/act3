@@ -152,7 +152,7 @@ func TestBackgroundShapeOrder(t *testing.T) {
 	// Shape then background: the shape stays on the text element and
 	// the paint boxes out around it, unshaped — a red rectangle.
 	square := render(t, ui.Text("x").BorderShape(ui.Capsule).Background("red"))
-	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "background-color:red;place-items:center" {
+	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "background-color:red;display:grid;grid-template-columns:100%;grid-template-rows:100%;place-items:center" {
 		t.Errorf("paint after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
 	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
@@ -212,7 +212,7 @@ func TestBorderStrokeShapeOrder(t *testing.T) {
 	}
 
 	square := render(t, ui.Text("x").BorderShape(ui.Capsule).BorderStroke(2, "red"))
-	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
+	if got := classRule(t, square, `class="ui-mod (ui-\w+)"`); got != "display:grid;grid-template-columns:100%;grid-template-rows:100%;place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
 		t.Errorf("stroke after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
 	if got := classRule(t, square, `class="ui-text (ui-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
@@ -241,7 +241,7 @@ func TestBorderStrokeDoesNotInterceptClicks(t *testing.T) {
 // img cannot host the carrier, so the strokes box out around it.
 func TestBorderStrokeOnImage(t *testing.T) {
 	html := render(t, ui.Image("/x.png").BorderStroke(2, "red"))
-	if got := classRule(t, html, `class="ui-mod (ui-\w+)"`); got != "place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
+	if got := classRule(t, html, `class="ui-mod (ui-\w+)"`); got != "display:grid;grid-template-columns:100%;grid-template-rows:100%;place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
 		t.Errorf("image strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
 	if !strings.Contains(html, `<img `) {
@@ -254,7 +254,7 @@ func TestBorderStrokeOnImage(t *testing.T) {
 // box out around it.
 func TestBorderStrokeOnScroll(t *testing.T) {
 	html := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")).BorderStroke(2, "red"))
-	if got := classRule(t, html, `class="ui-mod [^"]*(ui-\w+)"`); got != "align-self:stretch;justify-self:stretch;place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
+	if got := classRule(t, html, `class="ui-mod [^"]*(ui-\w+)"`); got != "align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
 		t.Errorf("scroll strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
 	if !strings.Contains(html, `class="ui-scroll ui-scroll-y`) {

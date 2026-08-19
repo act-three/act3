@@ -33,6 +33,9 @@ func wrapSubview(env environment, n node) plan {
 func wrapMod(env environment, n node) box {
 	p := wrapSubview(env, n)
 	env.add(attr.Class("ui-mod"))
+	env.style.Set("display", "grid")
+	env.style.Set("grid-template-columns", "100%")
+	env.style.Set("grid-template-rows", "100%")
 	env.style.Set("place-items", Center.placeItems())
 	return build(env, p)
 }
@@ -153,6 +156,9 @@ func (w wrapPadding) modify(n node) node { w.node = n; return w }
 func (w wrapPadding) render(env environment) box {
 	p := wrapSubview(env, w.node)
 	env.add(attr.Class("ui-padding"))
+	env.style.Set("display", "grid")
+	env.style.Set("grid-template-columns", "100%")
+	env.style.Set("grid-template-rows", "100%")
 	env.style.Set("place-items", Center.placeItems())
 	w.space.setPadding(&env.style)
 	return build(env, p)

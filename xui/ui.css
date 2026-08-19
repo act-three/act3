@@ -38,17 +38,6 @@
 		}
 	}
 
-	.ui-padding {
-		display: grid;
-		grid-template: 100% / 100%;
-	}
-
-	/* A pass-through box carrying one style modifier. */
-	.ui-mod {
-		display: grid;
-		grid-template: 100% / 100%;
-	}
-
 	/* The host element of an HTML view. Unlike its lookalikes above,
 	   its interior layout is public interface (see HTML), and app CSS
 	   may override it. */
