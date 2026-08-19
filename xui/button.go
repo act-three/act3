@@ -19,18 +19,6 @@ const (
 	RoleDestructive
 )
 
-// attrs returns the class indicating the role visually, if any.
-func (r ButtonRole) attrs() domi.Attr {
-	switch r {
-	case RolePrimary:
-		return attr.Class("ui-role-primary")
-	case RoleDestructive:
-		return attr.Class("ui-role-destructive")
-	default:
-		return nil
-	}
-}
-
 // A ButtonView is a control that sends an event when clicked.
 type ButtonView struct{ base }
 
@@ -79,7 +67,7 @@ func (n buttonNode) render(env environment) box {
 		Background(cmp.Or(color, surfaceColor)).
 		BorderStroke(1, cmp.Or(color, borderColor)).
 		BorderShape(RoundedRectangle).
-		Attr(attr.Type("button"), n.onClick, n.role.attrs(), attr.Disabled(n.disabled))
+		Attr(attr.Type("button"), n.onClick, attr.Disabled(n.disabled))
 	cursor := "pointer"
 	if n.disabled {
 		cursor = "default"

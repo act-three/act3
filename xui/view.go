@@ -203,9 +203,6 @@ func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
 // build returns the box described by env and p.
 func build(env environment, p plan) box {
 	a := env.attrs
-	if c := env.font.class(); c != "" {
-		a = domi.Group(a, attr.Class(c))
-	}
 	fills := p.fills &^ env.fillMask
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
@@ -223,7 +220,8 @@ func build(env environment, p plan) box {
 	if env.trans > 0 {
 		ss.Set("opacity", strconv.FormatFloat(1-env.trans, 'g', 4, 64))
 	}
-	a = domi.Group(a, fills.fillAttr(env, &ss), rigid.rigidAttr(env, &ss))
+	fills.addFillStylesTo(&ss, env)
+	rigid.addRigidStylesTo(&ss, env)
 	// Keep the generated class after the named classes in rendered output.
 	if !ss.IsEmpty() {
 		a = domi.Group(a, attr.Class(env.sheet.ClassFor(ss)))

@@ -2,8 +2,6 @@ package ui
 
 import (
 	"cmp"
-
-	"ily.dev/domi/attr"
 )
 
 // A ScrollView displays v inside a viewport
@@ -36,16 +34,15 @@ func (s scrollNode) render(env environment) box {
 	}
 	// Along a scroll axis, the content's available space is unbounded.
 	// On a non-scrolling axis the available space is the viewport's own size.
-	type variant struct{ class, x, y string }
-	v := cmp.Or(map[AxisSet]variant{
-		Horizontal:            {"ui-scroll-x", "auto", "hidden"},
-		Vertical:              {"ui-scroll-y", "hidden", "auto"},
-		Horizontal | Vertical: {"ui-scroll-xy", "auto", "auto"},
-	}[s.along], variant{"ui-scroll-none", "clip", "clip"})
+	type overflow struct{ x, y string }
+	v := cmp.Or(map[AxisSet]overflow{
+		Horizontal:            {"auto", "hidden"},
+		Vertical:              {"hidden", "auto"},
+		Horizontal | Vertical: {"auto", "auto"},
+	}[s.along], overflow{"clip", "clip"})
 	// The scroll viewport is a single-cell grid establishing no axes.
 	// It is equivalent to the root view context in a scrolling web page.
 	env.tag = cmp.Or(env.tag, "ui-scroll")
-	env.add(attr.Class(v.class))
 	env.style.Set("display", "grid")
 	env.style.Set("min-width", "0")
 	env.style.Set("min-height", "0")
