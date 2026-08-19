@@ -730,7 +730,7 @@ func AppSeriesSearchResults(results []model.SeriesSearchResult) domi.Node {
 								return seriesResultLink(t.Local.EditorPath())
 							},
 						),
-						TextNode(LineClamp3)(domi.Safe(t.Show.Summary)),
+						TextNode(LineClamp3)(domi.HTML(t.Show.Summary)),
 					),
 				),
 			)

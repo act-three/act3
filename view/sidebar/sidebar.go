@@ -100,7 +100,7 @@ func sidebarContent(c Config) domi.Node {
 			Link("/")(
 				FlexRow(Style("align-items:center;gap:0.5rem"))(
 					Box(Class("v-wordmark")),
-					Box()(domi.Safe("&beta;")),
+					Box()(domi.HTML("&beta;")),
 				),
 			),
 		),

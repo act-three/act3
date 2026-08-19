@@ -16,14 +16,10 @@ func Text(s string, attrs ...domi.Attr) domi.Node {
 }
 
 func TextNode(attrs ...domi.Attr) domi.Element {
-	return func(nodes ...domi.Node) domi.Node {
-		return html.Div(
-			Class("u-text"),
-			group(attrs...),
-		)(
-			nodes...,
-		)
-	}
+	return html.Div(
+		Class("u-text"),
+		group(attrs...),
+	)
 }
 
 var (

@@ -209,6 +209,12 @@
         syncTextareaValue(text.parentNode);
         break;
       }
+      case "SpliceText": {
+        const text = walk(root, p.Path);
+        text.replaceData(p.At, p.Len, p.Value ?? "");
+        syncTextareaValue(text.parentNode);
+        break;
+      }
       case "SetAttr": {
         const el = walk(root, p.Path);
         el.setAttribute(p.Name, p.Value ?? "");

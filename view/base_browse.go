@@ -13,7 +13,7 @@ import (
 	"ily.dev/act3/web/static"
 )
 
-func browse(uploads []model.Upload, washImages ...model.Image) domi.Element {
+func browse(uploads []model.Upload, washImages ...model.Image) func(child ...domi.Node) domi.Node {
 	return func(child ...domi.Node) domi.Node {
 		return domi.Fragment(
 			browseWash(washImages),

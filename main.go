@@ -68,7 +68,7 @@ func main() {
 	}
 	mainPackagePrefix := bi.Main.Path + "/"
 	base := newLogHandler(os.Stderr, level, mainPackagePrefix)
-	slog.SetDefault(slog.New(logcontext.Handler(base, domiSessionLogAttrs)))
+	slog.SetDefault(slog.New(logcontext.Handler(base, domiInstanceLogAttrs)))
 	slog.Info("startup", "mod", bi.Main.Path, "version", bi.Main.Version)
 
 	dbPath := filepath.Join(databaseDir, "act3.db")
@@ -151,12 +151,12 @@ func main() {
 	panic(http.ListenAndServe(listen, h))
 }
 
-// domiSessionLogAttrs is a logcontext extractor
-// that surfaces the domi session ID on log lines
+// domiInstanceLogAttrs is a logcontext extractor
+// that surfaces the domi instance ID on log lines
 // emitted within an App or Cmd.
-func domiSessionLogAttrs(ctx context.Context) []slog.Attr {
-	if id := domi.SessionID(ctx); id != "" {
-		return []slog.Attr{slog.Group("domi", "sessionid", id)}
+func domiInstanceLogAttrs(ctx context.Context) []slog.Attr {
+	if id := domi.InstanceID(ctx); id != "" {
+		return []slog.Attr{slog.Group("domi", "instanceid", id)}
 	}
 	return nil
 }

@@ -7,7 +7,7 @@ import (
 
 var SettingsHover = Class("u-settings-item-hover")
 
-func SettingsPage() domi.Element {
+func SettingsPage() func(nodes ...domi.Node) domi.Node {
 	return func(nodes ...domi.Node) domi.Node {
 		return html.Div(Class("u-settings-page"))(
 			FlexCol()(

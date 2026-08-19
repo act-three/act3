@@ -14,7 +14,7 @@ const dialogController = "dialog"
 // view renders it: close is delivered by the dialog's X button and
 // by the Escape key, and should remove the dialog from the app
 // state.
-func Dialog[Msg any](close Msg, attrs ...domi.Attr) domi.Element {
+func Dialog[Msg any](close Msg, attrs ...domi.Attr) func(children ...domi.Node) domi.Node {
 	return dialog(close, html.Div(Class("u-dialog-panel")), attrs)
 }
 
@@ -22,7 +22,7 @@ func Dialog[Msg any](close Msg, attrs ...domi.Attr) domi.Element {
 // the given aspect ratio that fits the viewport (minus a 3rem gutter
 // on each side). Use for dialogs whose contents are a single image
 // of known intrinsic aspect.
-func ImageDialog[Msg any](close Msg, a Aspect, attrs ...domi.Attr) domi.Element {
+func ImageDialog[Msg any](close Msg, a Aspect, attrs ...domi.Attr) func(children ...domi.Node) domi.Node {
 	panel := html.Div(
 		Class("u-dialog-panel-image"),
 		Stylef("--aspect-w: %d; --aspect-h: %d", a.W, a.H),
@@ -30,7 +30,7 @@ func ImageDialog[Msg any](close Msg, a Aspect, attrs ...domi.Attr) domi.Element 
 	return dialog(close, panel, attrs)
 }
 
-func dialog[Msg any](close Msg, panel domi.Element, attrs []domi.Attr) domi.Element {
+func dialog[Msg any](close Msg, panel domi.Element, attrs []domi.Attr) func(children ...domi.Node) domi.Node {
 	return func(children ...domi.Node) domi.Node {
 		return html.Dialog(
 			Class("u-dialog"),

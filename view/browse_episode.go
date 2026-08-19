@@ -50,7 +50,7 @@ func BrowseEpisode(
 					playableSubtitleSelect(subOpts),
 				),
 				Box(Class("v-detail-summary"))(
-					TextNode()(domi.Safe(ep.Summary())),
+					TextNode()(domi.HTML(ep.Summary())),
 					Box(Class("v-detail-spoiler-overlay")),
 				),
 			),

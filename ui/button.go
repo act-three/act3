@@ -6,23 +6,19 @@ import (
 )
 
 func Button(attrs ...domi.Attr) domi.Element {
-	return func(nodes ...domi.Node) domi.Node {
-		return html.Button(
-			Class("u-button"),
-			group(attrs...),
-		)(nodes...)
-	}
+	return html.Button(
+		Class("u-button"),
+		group(attrs...),
+	)
 }
 
 // ButtonLink renders a button-styled link, as an <a> with the given href.
 func ButtonLink(href string, attrs ...domi.Attr) domi.Element {
-	return func(nodes ...domi.Node) domi.Node {
-		return html.A(
-			Class("u-button"),
-			Href(href),
-			group(attrs...),
-		)(nodes...)
-	}
+	return html.A(
+		Class("u-button"),
+		Href(href),
+		group(attrs...),
+	)
 }
 
 // Variants — set data-button on the button or any ancestor to inherit.

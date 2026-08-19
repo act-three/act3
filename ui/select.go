@@ -12,18 +12,16 @@ import (
 var SelectValue = stimulus.Value("select", "current")
 
 func Select(attrs ...domi.Attr) domi.Element {
-	return func(nodes ...domi.Node) domi.Node {
-		return html.Output(
-			Class("u-select"),
-			attr.Role("presentation"),
-			stimulus.Controller("select"),
-			stimulus.Action("keydown->select#keydown"),
-			group(attrs...),
-		)(nodes...)
-	}
+	return html.Output(
+		Class("u-select"),
+		attr.Role("presentation"),
+		stimulus.Controller("select"),
+		stimulus.Action("keydown->select#keydown"),
+		group(attrs...),
+	)
 }
 
-func SelectTrigger(attrs ...domi.Attr) domi.Element {
+func SelectTrigger(attrs ...domi.Attr) func(nodes ...domi.Node) domi.Node {
 	return func(nodes ...domi.Node) domi.Node {
 		return html.Button(
 			attr.Type("button"),
@@ -35,28 +33,24 @@ func SelectTrigger(attrs ...domi.Attr) domi.Element {
 }
 
 func SelectContent(attrs ...domi.Attr) domi.Element {
-	return func(nodes ...domi.Node) domi.Node {
-		return html.Div(
-			Class("u-select-content"),
-			stimulus.Target("select", "content"),
-			stimulus.Action("toggle->select#toggled"),
-			attr.Popover("auto"),
-			group(attrs...),
-		)(nodes...)
-	}
+	return html.Div(
+		Class("u-select-content"),
+		stimulus.Target("select", "content"),
+		stimulus.Action("toggle->select#toggled"),
+		attr.Popover("auto"),
+		group(attrs...),
+	)
 }
 
 func SelectItem(value string, attrs ...domi.Attr) domi.Element {
-	return func(nodes ...domi.Node) domi.Node {
-		return html.Div(
-			Class("u-select-item"),
-			stimulus.Target("select", "item"),
-			stimulus.Action("click->select#selectItem"),
-			Attr("data-select-value-param")(value),
-			Attr("tabindex")("-1"),
-			group(attrs...),
-		)(nodes...)
-	}
+	return html.Div(
+		Class("u-select-item"),
+		stimulus.Target("select", "item"),
+		stimulus.Action("click->select#selectItem"),
+		Attr("data-select-value-param")(value),
+		Attr("tabindex")("-1"),
+		group(attrs...),
+	)
 }
 
 // SelectLabel renders the text label inside a trigger.

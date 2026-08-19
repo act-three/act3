@@ -10,7 +10,7 @@ import (
 )
 
 // buttonUpload renders a file-upload form.
-func buttonUpload() domi.Element {
+func buttonUpload() func(nodes ...domi.Node) domi.Node {
 	return func(nodes ...domi.Node) domi.Node {
 		return html.Form(
 			Class("v-button-upload"),
