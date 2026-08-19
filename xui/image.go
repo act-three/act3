@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
 
@@ -42,11 +41,10 @@ func (n imageNode) render(env environment) box {
 	}
 
 	env.tag = "img"
-	var alt domi.Attr
+	env.add(attr.Src(n.src))
 	if n.alt != "" { // alt="" would mark the image as decorative.
-		alt = attr.Alt(n.alt)
+		env.add(attr.Alt(n.alt))
 	}
-	env.add(attr.Src(n.src), alt)
 	var p plan
 	if n.fit == Native {
 		// At native size the img's intrinsic geometry is the whole
