@@ -402,10 +402,11 @@ func TestGeometryNativeImageHolds(t *testing.T) {
 }
 
 // TestGeometryScaledImageIdeal pins the scaling modes on unbounded
-// axes: with no box to meet, the img's intrinsic geometry answers —
-// natural size under FixedSize, and in a vertical scroll the bounded
-// cross axis is met while the height scales through the picture's
-// ratio, giving the viewport real overflow to scroll against.
+// axes: with no definite space to fill, the img's intrinsic
+// geometry answers — natural size under FixedSize, and in a
+// vertical scroll the definite cross axis is filled while the
+// height scales through the picture's ratio, giving the viewport
+// real overflow to scroll against.
 func TestGeometryScaledImageIdeal(t *testing.T) {
 	stage(t, ui.Image(natImage(200, 150)).FramedAs(ui.ScaledToFill).FixedSize(), func(s *uitest.Session) {
 		img := s.Rect("img", 0)

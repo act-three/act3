@@ -52,12 +52,13 @@ func (n imageNode) render(env environment) box {
 		// mediate between the box and the available space.
 		p = plan{rigid: Horizontal | Vertical}
 	} else {
-		// A scaling mode is a statement about meeting an imposed box: the
-		// img is fully flexible, and object-fit fits the picture to
-		// whatever box it lands in. At a fill boundary there is no box
-		// to meet, so the fill drops away and the img's intrinsic
-		// geometry answers — its natural size, or the other axis scaled
-		// through the picture's ratio.
+		// A scaling mode is a statement about filling available
+		// space: the img is fully flexible, and object-fit fits the
+		// picture to the space it fills. On an axis with unbounded
+		// available space, there is nothing to fill, so the img's
+		// intrinsic geometry applies. When both axes are unbounded,
+		// this is its natural size. Otherwise, the definite axis is
+		// scaled by the img's ratio to apply to the unbounded axis.
 		env.style.Set("min-width", "0")
 		env.style.Set("min-height", "0")
 		env.style.Set("object-fit", n.fit.objectFit())
