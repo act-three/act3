@@ -50,7 +50,7 @@ func BrowseMovieEdition(
 					playableAudioSelect(audioOpts),
 					playableSubtitleSelect(subOpts),
 				),
-				TextNode()(domi.Safe(med.Summary())),
+				TextNode()(domi.HTML(med.Summary())),
 			),
 			Box(),
 			Box(ColSpan4)(

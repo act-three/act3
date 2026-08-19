@@ -13,7 +13,7 @@ import (
 // the view renders it: close is delivered by the Escape key and by
 // clicking the backdrop outside the panel, and should remove the
 // popover from the app state.
-func Popover[Msg any](close Msg, triggerID string, attrs ...domi.Attr) domi.Element {
+func Popover[Msg any](close Msg, triggerID string, attrs ...domi.Attr) func(children ...domi.Node) domi.Node {
 	backdropID := triggerID + "-popover"
 	return func(children ...domi.Node) domi.Node {
 		return html.Div(

@@ -71,7 +71,7 @@ func BrowseSeriesEdition(sed *model.SeriesEdition, editions []*model.SeriesWork,
 						return browseSeriesEditionSelect(editions, sed)
 					}),
 
-					TextNode(Size3, LineClamp5)(domi.Safe(sed.Summary())),
+					TextNode(Size3, LineClamp5)(domi.HTML(sed.Summary())),
 				),
 				FlexCol(Style("gap:5rem"))(
 					rangeSeq(seasons, browseSeriesSeason),
@@ -141,7 +141,7 @@ func browseSeriesEpisode(ep *model.Episode) domi.Node {
 				),
 			),
 			Box(Class("v-series-episode-summary"))(
-				TextNode(Size2, LineClamp4)(domi.Safe(ep.Summary())),
+				TextNode(Size2, LineClamp4)(domi.HTML(ep.Summary())),
 				Box(Class("v-series-spoiler-overlay")),
 			),
 		),
