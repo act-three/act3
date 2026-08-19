@@ -81,27 +81,34 @@ func (s stackNode) render(env environment) box {
 	}
 	content, f := subviewsRendered(inner, subviews)
 	env.add(attr.Class(axes[s.dir].class))
-	s.addAlignStyleTo(&env.style)
-	if s.dir != axisZ {
-		env.style.Set("gap", cssPx(s.gap))
-	}
+	s.addStackStylesTo(&env.style)
 	return build(env, plan{
 		fills:   f,
 		content: content,
 	})
 }
 
-// addAlignStyleTo adds the stack's alignment declaration to ss:
-// the minor-axis projection for a line, both axes for a ZStack.
-func (s stackNode) addAlignStyleTo(ss *sheet.StyleSet) {
+// addStackStylesTo adds the stack's declarations to ss:
+// its display and flow, its gap,
+// and its alignment — the minor-axis projection for a line,
+// both axes for a ZStack.
+func (s stackNode) addStackStylesTo(ss *sheet.StyleSet) {
 	switch s.dir {
-	case axisV:
-		ss.Set("align-items", s.align.horizontal().keyword())
-	case axisH:
-		ss.Set("align-items", s.align.vertical().keyword())
-	default:
+	case axisZ:
+		ss.Set("display", "grid")
+		ss.Set("grid-template-columns", "100%")
+		ss.Set("grid-template-rows", "100%")
 		ss.Set("place-items", s.align.placeItems())
+		return
+	case axisH:
+		ss.Set("flex-direction", "row")
+		ss.Set("align-items", s.align.vertical().keyword())
+	case axisV:
+		ss.Set("flex-direction", "column")
+		ss.Set("align-items", s.align.horizontal().keyword())
 	}
+	ss.Set("display", "inline-flex")
+	ss.Set("gap", cssPx(s.gap))
 }
 
 // A Spacer occupies empty space.
