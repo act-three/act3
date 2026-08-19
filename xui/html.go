@@ -14,7 +14,8 @@ import (
 // Initially, it has the following CSS declarations:
 //
 //	display: grid;
-//	grid-template: 100% / 100%;
+//	grid-template-columns: 100%;
+//	grid-template-rows: 100%;
 //	place-items: center;
 //
 // Client code is free to customize
@@ -34,6 +35,9 @@ type nodeHTML struct{ node domi.Node }
 
 func (h nodeHTML) render(env environment) box {
 	env.add(attr.Class("ui-html"))
+	env.style.Set("display", "grid")
+	env.style.Set("grid-template-columns", "100%")
+	env.style.Set("grid-template-rows", "100%")
 	env.style.Set("place-items", Center.placeItems())
 	p := plan{
 		fills:   Horizontal | Vertical,
