@@ -117,7 +117,7 @@ type modBackground struct{ c Color }
 // Background fills the background of a view with c.
 func Background(c Color) Modifier {
 	if c == "" {
-		return nil
+		panic("ui: empty Color")
 	}
 	return modBackground{c}
 }
@@ -157,8 +157,11 @@ type modBorderStroke struct {
 // To add a border around the outside of a view,
 // add padding inside the border.
 func BorderStroke(px float64, c Color) Modifier {
-	if !(px > 0) || c == "" { // this is written weird b/c of NaNs lmao
+	if !(px > 0) { // this is written weird b/c of NaNs lmao
 		return nil
+	}
+	if c == "" {
+		panic("ui: empty Color")
 	}
 	return modBorderStroke{px, c}
 }
@@ -217,7 +220,7 @@ type modForeground struct{ c Color }
 // such as text.
 func Foreground(c Color) Modifier {
 	if c == "" {
-		return nil
+		panic("ui: empty Color")
 	}
 	return modForeground{c}
 }

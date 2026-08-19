@@ -42,6 +42,9 @@ func (v TextView) TextFont(f FontSize) TextView {
 //
 // It is equivalent to [View.Foreground], but it returns a TextView.
 func (v TextView) TextForeground(c Color) TextView {
+	if c == "" {
+		panic("ui: empty Color")
+	}
 	return v.styledWith(func(s *textStyle) {
 		if s.color == "" {
 			s.color = c

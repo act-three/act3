@@ -56,14 +56,14 @@ func (n buttonNode) render(env environment) box {
 		RolePrimary:     Accent,
 		RoleDestructive: Danger,
 	}[n.role]
-	var fg Color
+	var fg Modifier
 	if color != "" {
-		fg = "#fff"
+		fg = Foreground("#fff")
 	}
 	v := HStack(n.label).
 		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
 		Tag("button").
-		Foreground(fg).
+		Modify(fg).
 		Background(cmp.Or(color, surfaceColor)).
 		BorderStroke(1, cmp.Or(color, borderColor)).
 		BorderShape(RoundedRectangle).
