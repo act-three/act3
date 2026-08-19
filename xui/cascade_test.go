@@ -8,6 +8,7 @@ import (
 	ui "ily.dev/act3/xui"
 	"ily.dev/act3/xui/internal/uitest"
 	"ily.dev/domi"
+	"ily.dev/domi/html"
 )
 
 // TestForegroundInnermostWins pins the wrapper model for inherited
@@ -116,15 +117,23 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 
 // TestButtonBorderReset pins the normalize tier against the UA
 // stylesheet: the native button border is reset, leaving the stroke
-// channel as the border's only painter.
+// channel as the border's only painter. The reset covers every
+// button under the root, including ones in HTML view content.
 func TestButtonBorderReset(t *testing.T) {
-	stage(t, ui.Button(ui.Text("x"), struct{}{}), func(s *uitest.Session) {
-		var w string
-		s.Eval(`getComputedStyle(document.querySelector(".ui-button")).borderTopWidth`, &w)
-		if w != "0px" {
-			t.Errorf("button border-width = %s, want 0px", w)
-		}
-	})
+	for name, v := range map[string]ui.View{
+		"component": ui.Button(ui.Text("x"), struct{}{}),
+		"html":      ui.HTML(html.Button()(domi.Text("x"))),
+	} {
+		t.Run(name, func(t *testing.T) {
+			stage(t, v, func(s *uitest.Session) {
+				var w string
+				s.Eval(`getComputedStyle(document.querySelector("button")).borderTopWidth`, &w)
+				if w != "0px" {
+					t.Errorf("button border-width = %s, want 0px", w)
+				}
+			})
+		})
+	}
 }
 
 // TestBackgroundStacks pins the paint stack: an outer Background
