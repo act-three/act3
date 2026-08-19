@@ -4,7 +4,6 @@ import (
 	"cmp"
 
 	"ily.dev/domi"
-	"ily.dev/domi/attr"
 )
 
 // Theme color tokens.
@@ -110,7 +109,7 @@ func (c Color) Attr(a ...domi.Attr) View { return c.view().Attr(a...) }
 type colorFillNode struct{ color Color }
 
 func (f colorFillNode) render(env environment) box {
-	env.add(attr.Class("ui-color"))
+	env.tag = cmp.Or(env.tag, "ui-color")
 	env.bg = append(env.bg, cmp.Or(f.color, "#000"))
 	return build(env, plan{
 		fills: Horizontal | Vertical,

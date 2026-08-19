@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"cmp"
+
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
@@ -109,7 +111,7 @@ type textNode struct {
 }
 
 func (n textNode) render(env environment) box {
-	env.add(attr.Class("ui-text"))
+	env.tag = cmp.Or(env.tag, "ui-text")
 	env.style.Set("display", "block")
 	env.style.Set("overflow-wrap", "break-word")
 	return build(env, plan{content: n.html(env.sheet)})

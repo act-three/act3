@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"ily.dev/domi/attr"
+	"cmp"
 
 	"ily.dev/act3/xui/internal/sheet"
 )
@@ -80,7 +80,7 @@ func (s stackNode) render(env environment) box {
 		subviews = subviews.Modify(modStyle{"grid-area", "1 / 1"})
 	}
 	content, f := subviewsRendered(inner, subviews)
-	env.add(attr.Class(axes[s.dir].class))
+	env.tag = cmp.Or(env.tag, axes[s.dir].tag)
 	s.addStackStylesTo(&env.style)
 	return build(env, plan{
 		fills:   f,
@@ -120,7 +120,7 @@ func Spacer() View { return base{spacerNode{}} }
 type spacerNode struct{}
 
 func (spacerNode) render(env environment) box {
-	env.add(attr.Class("ui-spacer"))
+	env.tag = cmp.Or(env.tag, "ui-spacer")
 	env.style.Set("flex-basis", "0")
 	minWidth, minHeight := "0", "0"
 	if env.lc.majorAxis.hasAll(Horizontal) {
@@ -143,7 +143,7 @@ func Divider() View { return base{dividerNode{}} }
 type dividerNode struct{}
 
 func (dividerNode) render(env environment) box {
-	env.add(attr.Class("ui-divider"))
+	env.tag = cmp.Or(env.tag, "ui-divider")
 	env.bg = append(env.bg, borderColor)
 	p := plan{fills: env.lc.minorAxes(), rigid: env.lc.majorAxis}
 	if env.lc.majorAxis.hasAll(Horizontal) {

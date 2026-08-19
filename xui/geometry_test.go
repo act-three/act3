@@ -40,18 +40,18 @@ func within(t *testing.T, what string, got, want, tol float64) {
 
 func TestGeometrySpacerAbsorbsSlack(t *testing.T) {
 	stage(t, ui.HStack(ui.Text("a"), ui.Spacer(), ui.Text("b")), func(s *uitest.Session) {
-		within(t, "row width", s.Rect(".ui-hstack", 0).W, 600, 1)
-		if w := s.Rect(".ui-spacer", 0).W; w < 400 {
+		within(t, "row width", s.Rect("ui-hstack", 0).W, 600, 1)
+		if w := s.Rect("ui-spacer", 0).W; w < 400 {
 			t.Errorf("spacer width = %g, want most of the row's slack", w)
 		}
-		within(t, "trailing text right edge", s.Rect(".ui-text", 1).Right(), 600, 1)
+		within(t, "trailing text right edge", s.Rect("ui-text", 1).Right(), 600, 1)
 	})
 	stage(t, ui.VStack(ui.Text("a"), ui.Spacer(), ui.Text("b")), func(s *uitest.Session) {
-		within(t, "column height", s.Rect(".ui-vstack", 0).H, 400, 1)
-		if h := s.Rect(".ui-spacer", 0).H; h < 300 {
+		within(t, "column height", s.Rect("ui-vstack", 0).H, 400, 1)
+		if h := s.Rect("ui-spacer", 0).H; h < 300 {
 			t.Errorf("spacer height = %g, want most of the column's slack", h)
 		}
-		within(t, "trailing text bottom edge", s.Rect(".ui-text", 1).Bottom(), 400, 1)
+		within(t, "trailing text bottom edge", s.Rect("ui-text", 1).Bottom(), 400, 1)
 	})
 }
 
@@ -65,7 +65,7 @@ func TestGeometryRootIsViewport(t *testing.T) {
 		within(t, "root y", root.Y, 0, 0.5)
 		within(t, "root width", root.W, 600, 1)
 		within(t, "root height", root.H, 400, 1)
-		fill := s.Rect(".ui-color", 0)
+		fill := s.Rect("ui-color", 0)
 		within(t, "color fills the viewport", fill.W, 600, 1)
 		within(t, "color fills the viewport", fill.H, 400, 1)
 	})
@@ -78,17 +78,17 @@ func TestGeometryRootIsViewport(t *testing.T) {
 func TestGeometrySpacerMinimumLength(t *testing.T) {
 	rigid := func(w int) ui.View { return ui.Color("#567").Frame(ui.Width(w), ui.Height(40)) }
 	stage(t, ui.HStack(rigid(300), ui.Spacer(), rigid(300)).Gap(0), func(s *uitest.Session) {
-		within(t, "squeezed spacer floors at the minimum", s.Rect(".ui-spacer", 0).W, 8, 1)
+		within(t, "squeezed spacer floors at the minimum", s.Rect("ui-spacer", 0).W, 8, 1)
 	})
 	stage(t, ui.HStack(ui.Text("a"), ui.Spacer(), ui.Text("b")).Gap(0).FixedSize(), func(s *uitest.Session) {
-		within(t, "fixed spacer takes the minimum", s.Rect(".ui-spacer", 0).W, 8, 1)
+		within(t, "fixed spacer takes the minimum", s.Rect("ui-spacer", 0).W, 8, 1)
 	})
 }
 
 func TestGeometryDividerSpansMinorAxis(t *testing.T) {
 	v := ui.HStack(ui.Text("a"), ui.Divider(), ui.Text("tall").Padding(ui.Edges(32)))
 	stage(t, v, func(s *uitest.Session) {
-		row, div := s.Rect(".ui-hstack", 0), s.Rect(".ui-divider", 0)
+		row, div := s.Rect("ui-hstack", 0), s.Rect("ui-divider", 0)
 		within(t, "divider height", div.H, row.H, 1)
 		within(t, "divider width", div.W, 1, 0.5)
 	})
@@ -107,12 +107,12 @@ func TestGeometryDividerSpansMinorAxisUnbounded(t *testing.T) {
 	)
 	check := func(name string) func(*uitest.Session) {
 		return func(s *uitest.Session) {
-			h := s.Rect(".ui-hstack", 0).H
+			h := s.Rect("ui-hstack", 0).H
 			if h > 200 {
 				t.Errorf("%s: row height = %g, want content height, not the viewport's", name, h)
 			}
-			within(t, name+": bare divider height", s.Rect(".ui-divider", 0).H, h, 1)
-			within(t, name+": padded divider height", s.Rect(".ui-divider", 1).H, h-2, 1)
+			within(t, name+": bare divider height", s.Rect("ui-divider", 0).H, h, 1)
+			within(t, name+": padded divider height", s.Rect("ui-divider", 1).H, h-2, 1)
 		}
 	}
 	stage(t, ui.ScrollView(ui.Vertical, row), check("scroll"))
@@ -123,7 +123,7 @@ func TestGeometryDividerSpansMinorAxisUnbounded(t *testing.T) {
 // keeps its 10px ideal even in a container with slack to offer.
 func TestGeometryFixedSizeColor(t *testing.T) {
 	stage(t, ui.Color("#567").FixedSize(), func(s *uitest.Session) {
-		c := s.Rect(".ui-color", 0)
+		c := s.Rect("ui-color", 0)
 		within(t, "color width", c.W, 10, 0.5)
 		within(t, "color height", c.H, 10, 0.5)
 	})
@@ -131,7 +131,7 @@ func TestGeometryFixedSizeColor(t *testing.T) {
 
 func TestGeometryFrameSubviewKeepsIntrinsicSize(t *testing.T) {
 	stage(t, ui.Text("hi").Frame(ui.Width(120), ui.Height(120)), func(s *uitest.Session) {
-		frame, text := s.Rect(".ui-frame", 0), s.Rect(".ui-text", 0)
+		frame, text := s.Rect("ui-frame", 0), s.Rect("ui-text", 0)
 		within(t, "frame width", frame.W, 120, 1)
 		within(t, "frame height", frame.H, 120, 1)
 		if text.W > 100 {
@@ -148,8 +148,8 @@ func TestGeometryFrameSubviewKeepsIntrinsicSize(t *testing.T) {
 func TestGeometryDefiniteFrameDoesNotGrow(t *testing.T) {
 	v := ui.HStack(ui.Spacer().Frame(ui.Width(100)), ui.Text("b"))
 	stage(t, v, func(s *uitest.Session) {
-		within(t, "framed spacer width", s.Rect(".ui-frame", 0).W, 100, 1)
-		if w := s.Rect(".ui-hstack", 0).W; w > 300 {
+		within(t, "framed spacer width", s.Rect("ui-frame", 0).W, 100, 1)
+		if w := s.Rect("ui-hstack", 0).W; w > 300 {
 			t.Errorf("row width = %g, want shrink-wrapped: the definite frame settled the only fill", w)
 		}
 	})
@@ -173,7 +173,7 @@ func TestGeometryDefiniteFillThroughContainers(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			stage(t, c.v, func(s *uitest.Session) {
-				w := s.Rect(".ui-hstack", 0).W
+				w := s.Rect("ui-hstack", 0).W
 				if c.wantGrow {
 					within(t, "row width", w, 600, 1)
 				} else if w > 300 {
@@ -193,7 +193,7 @@ func TestGeometryFrameCentersOversizedSubview(t *testing.T) {
 		FixedSize().
 		Frame(ui.Width(100), ui.Height(100))
 	stage(t, v, func(s *uitest.Session) {
-		frame, text := s.Rect(".ui-frame", 0), s.Rect(".ui-text", 0)
+		frame, text := s.Rect("ui-frame", 0), s.Rect("ui-text", 0)
 		if text.W <= frame.W {
 			t.Fatalf("text width = %g, want wider than the %g frame", text.W, frame.W)
 		}
@@ -223,7 +223,7 @@ func TestGeometryOverlayHitTest(t *testing.T) {
 
 		var passThrough bool
 		s.Eval(`(() => {
-			const overlay = document.querySelector(".ui-overlay");
+			const overlay = document.querySelector("ui-overlay");
 			const r = overlay.getBoundingClientRect();
 			// The overlay's bottom-left corner is empty: the badge sits
 			// top-trailing.
@@ -239,7 +239,7 @@ func TestGeometryOverlayHitTest(t *testing.T) {
 func TestGeometryFillTerminatesAtDefiniteAncestor(t *testing.T) {
 	v := ui.VStack(ui.HStack(ui.Text("a"), ui.Spacer())).Frame(ui.Width(300))
 	stage(t, v, func(s *uitest.Session) {
-		within(t, "row width", s.Rect(".ui-hstack", 0).W, 300, 1)
+		within(t, "row width", s.Rect("ui-hstack", 0).W, 300, 1)
 	})
 }
 
@@ -252,8 +252,8 @@ func TestGeometryTagFrameCarriesFill(t *testing.T) {
 		if w := s.Rect("nav", 0).W; w < 400 {
 			t.Errorf("nav width = %g, want the row's slack to flow through the tagged frame", w)
 		}
-		within(t, "trailing text right edge", s.Rect(".ui-text", 1).Right(), 600, 1)
-		if w := s.Rect(".ui-spacer", 0).W; w < 400 {
+		within(t, "trailing text right edge", s.Rect("ui-text", 1).Right(), 600, 1)
+		if w := s.Rect("ui-spacer", 0).W; w < 400 {
 			t.Errorf("spacer width = %g, want the slack the tagged frame carried in", w)
 		}
 	})
@@ -266,10 +266,10 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 	}
 	v := ui.ScrollView(ui.Vertical, ui.VStack(rows...)).Frame(ui.Width(220), ui.Height(160))
 	stage(t, v, func(s *uitest.Session) {
-		scroll := s.Rect(".ui-scroll", 0)
+		scroll := s.Rect("ui-scroll", 0)
 		within(t, "viewport width", scroll.W, 220, 1)
 		within(t, "viewport height", scroll.H, 160, 1)
-		if h := s.Rect(".ui-scroll > .ui-vstack", 0).H; h <= 160 {
+		if h := s.Rect("ui-scroll > ui-vstack", 0).H; h <= 160 {
 			t.Errorf("content height = %g, want overflow to scroll against", h)
 		}
 	})
@@ -283,11 +283,11 @@ func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
 	layered := ui.VStack(ui.Text("base"), ui.Muted).LayerUnder(ui.Center, ui.Color("#00f"))
 	v := ui.HStack(ui.Text("tall").Padding(ui.Edges(140)), layered)
 	stage(t, v, func(s *uitest.Session) {
-		box := s.Rect(".ui-layers", 0)
-		within(t, "container height", box.H, s.Rect(".ui-hstack", 0).H, 1)
-		within(t, "subview height", s.Rect(".ui-layers > .ui-vstack", 0).H, box.H, 1)
-		within(t, "underlay height", s.Rect(".ui-underlay", 0).H, box.H, 1)
-		within(t, "underlay width", s.Rect(".ui-underlay", 0).W, box.W, 1)
+		box := s.Rect("ui-layer", 0)
+		within(t, "container height", box.H, s.Rect("ui-hstack", 0).H, 1)
+		within(t, "subview height", s.Rect("ui-layer > ui-vstack", 0).H, box.H, 1)
+		within(t, "underlay height", s.Rect("ui-underlay", 0).H, box.H, 1)
+		within(t, "underlay width", s.Rect("ui-underlay", 0).W, box.W, 1)
 	})
 }
 
@@ -311,17 +311,17 @@ func TestGeometryScrollContributesItsIdeal(t *testing.T) {
 	}
 	check := func(name string, wantH func(s *uitest.Session) float64) func(*uitest.Session) {
 		return func(s *uitest.Session) {
-			scroll, want := s.Rect(".ui-scroll", 1), wantH(s)
+			scroll, want := s.Rect("ui-scroll", 1), wantH(s)
 			within(t, name+": viewport height", scroll.H, want, 1)
-			within(t, name+": row height", s.Rect(".ui-hstack", 0).H, want, 1)
+			within(t, name+": row height", s.Rect("ui-hstack", 0).H, want, 1)
 			var contentH float64
-			s.Eval(`document.querySelectorAll(".ui-scroll")[1].scrollHeight`, &contentH)
+			s.Eval(`document.querySelectorAll("ui-scroll")[1].scrollHeight`, &contentH)
 			if contentH <= scroll.H {
 				t.Errorf("%s: content height = %g, want overflow to scroll against", name, contentH)
 			}
 		}
 	}
-	sibling := func(s *uitest.Session) float64 { return s.Rect(".ui-hstack > .ui-padding", 0).H }
+	sibling := func(s *uitest.Session) float64 { return s.Rect("ui-hstack > ui-padding", 0).H }
 	// A short sibling: the viewport's own 100px floor wins.
 	stage(t, page(ui.Text("tall").Padding(ui.Edges(32))),
 		check("short sibling", func(*uitest.Session) float64 { return 100 }))
@@ -330,10 +330,10 @@ func TestGeometryScrollContributesItsIdeal(t *testing.T) {
 	// An 80px cell: the floor does not force overflow past given space.
 	stage(t, ui.ScrollView(ui.Vertical, ui.VStack(rows...)).Frame(ui.Height(80)),
 		func(s *uitest.Session) {
-			scroll := s.Rect(".ui-scroll", 0)
+			scroll := s.Rect("ui-scroll", 0)
 			within(t, "bounded: viewport height", scroll.H, 80, 1)
 			var contentH float64
-			s.Eval(`document.querySelectorAll(".ui-scroll")[0].scrollHeight`, &contentH)
+			s.Eval(`document.querySelectorAll("ui-scroll")[0].scrollHeight`, &contentH)
 			if contentH <= scroll.H {
 				t.Errorf("bounded: content height = %g, want overflow to scroll against", contentH)
 			}
@@ -346,7 +346,7 @@ func TestGeometryScrollContributesItsIdeal(t *testing.T) {
 func TestGeometryDefiniteFrameIsStrict(t *testing.T) {
 	long := strings.Repeat("overflow ", 40)
 	stage(t, ui.Text(long).Frame(ui.Width(200), ui.Height(100)), func(s *uitest.Session) {
-		frame := s.Rect(".ui-frame", 0)
+		frame := s.Rect("ui-frame", 0)
 		within(t, "frame width", frame.W, 200, 1)
 		within(t, "frame height", frame.H, 100, 1)
 	})
@@ -366,7 +366,7 @@ func TestGeometryImageScalingModesFill(t *testing.T) {
 		FramedAs(ui.ScaledToFill).
 		Frame(ui.Width(120), ui.Height(80))
 	stage(t, v, func(s *uitest.Session) {
-		r := s.Rect(".ui-image", 0)
+		r := s.Rect("img", 0)
 		within(t, "img width", r.W, 120, 1)
 		within(t, "img height", r.H, 80, 1)
 	})
@@ -376,7 +376,7 @@ func TestGeometryImageScalingModesFill(t *testing.T) {
 		ui.Color("#345").Frame(ui.Width(500), ui.Height(40)),
 	).Gap(0).Frame(ui.Width(600), ui.Height(100))
 	stage(t, row, func(s *uitest.Session) {
-		r := s.Rect(".ui-image", 0)
+		r := s.Rect("img", 0)
 		within(t, "squeezed img width", r.W, 100, 1)
 		within(t, "stretched img height", r.H, 100, 1)
 	})
@@ -393,7 +393,7 @@ func TestGeometryNativeImageHolds(t *testing.T) {
 		ui.Text("hi"),
 	).Frame(ui.Width(100), ui.Height(100), ui.Trailing)
 	stage(t, v, func(s *uitest.Session) {
-		img, row, frame, text := s.Rect("img", 0), s.Rect(".ui-hstack", 0), s.Rect(".ui-frame", 0), s.Rect(".ui-text", 0)
+		img, row, frame, text := s.Rect("img", 0), s.Rect("ui-hstack", 0), s.Rect("ui-frame", 0), s.Rect("ui-text", 0)
 		within(t, "img natural width", img.W, 200, 1)
 		within(t, "img natural height", img.H, 200, 1)
 		within(t, "row encloses the img and text", row.W, 208+text.W, 1)
@@ -408,7 +408,7 @@ func TestGeometryNativeImageHolds(t *testing.T) {
 // ratio, giving the viewport real overflow to scroll against.
 func TestGeometryScaledImageIdeal(t *testing.T) {
 	stage(t, ui.Image(natImage(200, 150)).FramedAs(ui.ScaledToFill).FixedSize(), func(s *uitest.Session) {
-		img := s.Rect(".ui-image", 0)
+		img := s.Rect("img", 0)
 		within(t, "img natural width", img.W, 200, 1)
 		within(t, "img natural height", img.H, 150, 1)
 	})
@@ -416,7 +416,7 @@ func TestGeometryScaledImageIdeal(t *testing.T) {
 	v := ui.ScrollView(ui.Vertical, ui.Image(natImage(200, 150)).FramedAs(ui.ScaledToFit)).
 		Frame(ui.Width(400), ui.Height(100))
 	stage(t, v, func(s *uitest.Session) {
-		img := s.Rect(".ui-image", 0)
+		img := s.Rect("img", 0)
 		within(t, "img fills the viewport width", img.W, 400, 1)
 		within(t, "img height scales through the ratio", img.H, 300, 1)
 	})
@@ -446,7 +446,7 @@ func TestGeometryStackEnclosesItems(t *testing.T) {
 		ui.Text("hi"),
 	).Frame(ui.Width(100), ui.Height(100), ui.Leading)
 	stage(t, v, func(s *uitest.Session) {
-		frame, row, text := s.Rect(".ui-frame", 0), s.Rect(".ui-hstack", 0), s.Rect(".ui-text", 0)
+		frame, row, text := s.Rect("ui-frame", 0), s.Rect("ui-hstack", 0), s.Rect("ui-text", 0)
 		within(t, "frame width", frame.W, 100, 1)
 		if text.W < 5 {
 			t.Errorf("text width = %g, want its min-content floor, not squeezed away", text.W)
@@ -531,7 +531,7 @@ func TestGeometrySoftFrameIdeal(t *testing.T) {
 		soft := s.Rect(".soft", 0)
 		within(t, "fixed soft width takes the ideal", soft.W, 500, 1)
 		within(t, "fixed soft height takes the ideal", soft.H, 80, 1)
-		fill := s.Rect(".ui-color", 0)
+		fill := s.Rect("ui-color", 0)
 		within(t, "color fills the ideal-sized frame", fill.W, 500, 1)
 		within(t, "color fills the ideal-sized frame", fill.H, 80, 1)
 	})
@@ -553,7 +553,7 @@ func TestGeometryGalleryFits(t *testing.T) {
 	uitest.Run(t, 1000, 800, html, func(s *uitest.Session) {
 		var over bool
 		s.Eval(`(() => {
-			const e = document.querySelector(".ui-scroll");
+			const e = document.querySelector("ui-scroll");
 			return e.scrollWidth > e.clientWidth;
 		})()`, &over)
 		if over {

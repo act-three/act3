@@ -1,11 +1,11 @@
 package ui
 
 import (
+	"cmp"
 	"strconv"
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
-	"ily.dev/domi/html"
 
 	"ily.dev/act3/xui/internal/sheet"
 )
@@ -32,7 +32,7 @@ func wrapSubview(env environment, n node) plan {
 // consuming the environment's pending box values.
 func wrapMod(env environment, n node) box {
 	p := wrapSubview(env, n)
-	env.add(attr.Class("ui-mod"))
+	env.tag = cmp.Or(env.tag, "ui-box")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
@@ -93,10 +93,10 @@ func (w wrapLayer) render(env environment) box {
 	lss.Set("place-items", w.alignment.placeItems())
 	lss.Set("position", "absolute")
 	lss.Set("inset", "0")
-	class := "ui-underlay"
+	tag := "ui-underlay"
 	view := w.view
 	if w.over {
-		class = "ui-overlay"
+		tag = "ui-overlay"
 		lss.Set("z-index", strconv.Itoa(zOverlay))
 		// The overlay box blankets the base; input falls through it
 		// to the base, and only the layered subviews take hits.
@@ -110,11 +110,11 @@ func (w wrapLayer) render(env environment) box {
 	p := wrapSubview(env, modStyle{"isolation", "isolate"}.modify(w.node))
 	p.content = domi.Fragment(
 		p.content,
-		html.Div(attr.Class(class, env.sheet.ClassFor(lss)))(
+		domi.Tag(tag, attr.Class(env.sheet.ClassFor(lss)))(
 			renderLayer(env, view),
 		),
 	)
-	env.add(attr.Class("ui-layers"))
+	env.tag = cmp.Or(env.tag, "ui-layer")
 	// The container hosts the base subview in its own single-cell
 	// grid; the isolated z ladder sandwiches the in-flow subview
 	// between the layers.
@@ -155,7 +155,7 @@ func (w wrapPadding) modify(n node) node { w.node = n; return w }
 
 func (w wrapPadding) render(env environment) box {
 	p := wrapSubview(env, w.node)
-	env.add(attr.Class("ui-padding"))
+	env.tag = cmp.Or(env.tag, "ui-padding")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")

@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"cmp"
+
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
@@ -242,5 +244,14 @@ func (m modTag) modify(n node) node { return nodeEnv{f: m.environment, node: n} 
 
 func (m modTag) environment(env environment) environment {
 	env.tag = m.name
+	return env
+}
+
+type modTagDefault struct{ name string }
+
+func (m modTagDefault) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
+
+func (m modTagDefault) environment(env environment) environment {
+	env.tag = cmp.Or(env.tag, m.name)
 	return env
 }

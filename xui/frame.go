@@ -1,8 +1,6 @@
 package ui
 
-import (
-	"ily.dev/domi/attr"
-)
+import "cmp"
 
 // Frame positions v inside an invisible frame
 // with the given dimensions and alignment.
@@ -53,7 +51,7 @@ func (w wrapFrame) render(env environment) box {
 	p := wrapSubview(inner, w.node)
 	p.fills &^= w.definite()
 	p.rigid |= w.definite()
-	env.add(attr.Class("ui-frame"))
+	env.tag = cmp.Or(env.tag, "ui-frame")
 	env.style.Set("place-items", w.align.placeItems())
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")

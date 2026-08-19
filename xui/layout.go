@@ -83,10 +83,10 @@ const (
 )
 
 // axes is each stack axis's whole lowering personality:
-// its CSS class, the kind of container its subviews sit in,
+// its element tag, the kind of container its subviews sit in,
 // and the layout context it establishes for them.
 var axes = [...]struct {
-	class     string
+	tag       string
 	container containerKind
 	lc        layoutContext
 }{

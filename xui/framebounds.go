@@ -1,7 +1,7 @@
 package ui
 
 import (
-	"ily.dev/domi/attr"
+	"cmp"
 
 	"ily.dev/act3/xui/internal/sheet"
 )
@@ -170,7 +170,7 @@ func (w wrapFrameBounds) render(env environment) box {
 	// rigidity with it. A bounded axis tracks space above its
 	// bounds instead, regardless of the subview's rigidity.
 	p.rigid &^= w.boundedAxes()
-	env.add(attr.Class("ui-frame"))
+	env.tag = cmp.Or(env.tag, "ui-frame")
 	env.style.Set("place-items", w.align.placeItems())
 	env.style.Set("display", "grid")
 	w.setStyles(&env.style, ideal)
