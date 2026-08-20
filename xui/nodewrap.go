@@ -40,32 +40,6 @@ func wrapMod(env environment, n node) box {
 	return build(env, p)
 }
 
-// LayerUnder displays u under v.
-// Opaque regions of v obscure u where they overlap.
-//
-// The given Alignment sets the position of u relative to v.
-func (v base) LayerUnder(a Alignment, u View) View {
-	return v.Modify(wrapLayer{view: u, over: false, alignment: a})
-}
-
-// LayerOver displays o over v.
-// Opaque regions of o obscure v where they overlap.
-//
-// The given Alignment sets the position of o relative to v.
-func (v base) LayerOver(a Alignment, o View) View {
-	return v.Modify(wrapLayer{view: o, over: true, alignment: a})
-}
-
-// Padding adds the empty space defined by s around v.
-// If more than one value s is provided, they are all added.
-func (v base) Padding(s ...EdgeSpace) View {
-	var sum EdgeSpace
-	for _, s := range s {
-		sum = sum.add(s)
-	}
-	return v.Modify(wrapPadding{space: sum})
-}
-
 // wrapLayer layers a view over or under a base view.
 // It lowers to CSS absolute positioning.
 // The base negotiates its layout independently of the layer,

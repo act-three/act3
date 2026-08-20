@@ -41,6 +41,7 @@ type View interface {
 	BorderStroke(px float64, c Color) View
 
 	// FixedSize fixes the receiver at its ideal size.
+	// This can cause it to exceed the bounds of its container.
 	FixedSize() View
 
 	// Font sets the font size for text in the receiver.
@@ -100,14 +101,6 @@ type View interface {
 
 	nodes() []node
 }
-
-// base is the shared concrete View implementation.
-// A view is a list of nodes rendered in sequence.
-// Most views hold a single node, but  [Group] and [For] hold one per member.
-// An applied modifier modifies each node individually.
-type base []node
-
-func (v base) nodes() []node { return v }
 
 // A node is a unary view.
 // Its whole job is to lower itself to a single box.
