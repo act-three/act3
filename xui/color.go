@@ -25,8 +25,6 @@ const (
 //
 // Color also implements [View].
 // As a view, a Color fills the available space.
-//
-// The zero Color is transparent.
 type Color string
 
 // Color implements [View] without embedding base. Modifiers with a possible
@@ -109,8 +107,11 @@ func (c Color) Attr(a ...domi.Attr) View { return c.view().Attr(a...) }
 type colorFillNode struct{ color Color }
 
 func (f colorFillNode) render(env environment) box {
+	if f.color == "" {
+		panic("ui: empty Color")
+	}
 	env.tag = cmp.Or(env.tag, "ui-color")
-	env.bg = append(env.bg, cmp.Or(f.color, "transparent"))
+	env.bg = append(env.bg, f.color)
 	return build(env, plan{
 		fills: Horizontal | Vertical,
 		ideal: rect{width: newSize(10), height: newSize(10)},
