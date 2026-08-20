@@ -1,115 +1,72 @@
 package ui
 
-import (
-	"cmp"
-
-	"ily.dev/domi"
-)
+import "cmp"
 
 // Theme color tokens.
-const (
-	Muted  Color = "var(--ui-color-muted)"
-	Accent Color = "var(--ui-color-accent)"
-	Danger Color = "var(--ui-color-danger)"
+var (
+	Muted  Color = CSSColor("var(--ui-color-muted)")
+	Accent Color = CSSColor("var(--ui-color-accent)")
+	Danger Color = CSSColor("var(--ui-color-danger)")
 
-	borderColor  Color = "var(--ui-color-border)"
-	surfaceColor Color = "var(--ui-color-surface)"
+	borderColor  Color = CSSColor("var(--ui-color-border)")
+	surfaceColor Color = CSSColor("var(--ui-color-surface)")
 )
 
-// Color is a CSS color.
+// A Color represents a color.
+//
+// Some view modifiers take a Color as an argument.
+// For instance, [View.Foreground] sets the color of foreground elements like text.
+//
+// A Color is also a View.
+// When used as a View, a Color expands to fill the available space.
+type Color interface {
+	View
+
+	// color always returns a non-nil color.
+	color() color
+}
+
+// CSSColor returns the color given by expr.
 // It can be any valid CSS color expression,
-// such as a literal like "#fff" or a variable like "var(--my-color)".
-//
-// Colors are used in view modifiers
-// to affect the background and foreground colors.
-//
-// Color also implements [View].
-// As a view, a Color fills the available space.
-type Color string
+// such as "#fff" or "var(--my-color)".
+func CSSColor(expr string) Color {
+	return colorView{base{colorFillNode{cssColor(expr)}}}
+}
 
-// Color implements [View] without embedding base. Modifiers with a possible
-// effect delegate to the solid fill the color renders as; the rest — text
-// styling, fills a color already requests — are no-ops, preferring the
-// smaller markup. The assertion keeps the method set complete as View grows.
-var _ View = Color("")
+// A color is the internal representation of a color.
+// Unlike Color, it is not a View.
+type color interface {
+	// colorCSS returns a representation of the receiver
+	// as a CSS color expression.
+	colorCSS() string
+}
 
-func (c Color) nodes() []node { return c.view() }
+type cssColor string
 
-// view is the view a Color renders as: a solid view of the color.
-func (c Color) view() base { return base{colorFillNode{color: c}} }
+func (c cssColor) colorCSS() string {
+	return string(c)
+}
 
-// Frame positions c inside an invisible frame
-// with the given dimensions and alignment.
-//
-// Note that type [Alignment] satisfies FrameOption.
-func (c Color) Frame(o ...FrameOption) View { return c.view().Frame(o...) }
+type colorView struct{ base }
 
-// FrameBounds positions c inside an invisible frame
-// with the given bounds and alignment.
-//
-// Note that type [Alignment] satisfies FrameBoundsOption.
-func (c Color) FrameBounds(o ...FrameBoundsOption) View { return c.view().FrameBounds(o...) }
+func (c colorView) color() color { return c.base[0].(colorFillNode).color }
 
-// FixedSize fixes c at its ideal size.
-// This can cause it to exceed the bounds of its container.
-func (c Color) FixedSize() View { return c.view().FixedSize() }
+// Font has no effect because color contains no text.
+// This overrides the embedded method Font
+// to avoid emitting useless style declarations.
+func (c colorView) Font(FontSize) View { return c }
 
-// Padding adds the empty space defined by s around c.
-// If more than one value s is provided, they are added together.
-func (c Color) Padding(s ...EdgeSpace) View { return c.view().Padding(s...) }
-
-// LayerUnder displays u under c at alignment a.
-// Opaque regions of c obscure u where they overlap.
-func (c Color) LayerUnder(a Alignment, u View) View { return c.view().LayerUnder(a, u) }
-
-// Background fills the background of c with bg.
-func (c Color) Background(bg Color) View { return c.view().Background(bg) }
-
-// LayerOver displays o over c at alignment a.
-// Opaque regions of o obscure c where they overlap.
-func (c Color) LayerOver(a Alignment, o View) View { return c.view().LayerOver(a, o) }
-
-// Font sets the font size for text in c.
-// Note that a Color contains no text, so this has no effect.
-func (c Color) Font(FontSize) View { return c }
-
-// Foreground uses c to draw foreground elements in c, such as text.
-// Note that a Color contains no text, so this has no effect.
-func (c Color) Foreground(Color) View { return c }
-
-// Opacity sets c's opacity to x, from 0 (transparent) to 1 (opaque).
-func (c Color) Opacity(x float64) View { return c.view().Opacity(x) }
-
-// BorderShape sets the shape of c's border.
-func (c Color) BorderShape(s Shape) View { return c.view().BorderShape(s) }
-
-// BorderStroke draws a line
-// of the given width and color
-// over the inside edge of c.
-func (c Color) BorderStroke(px float64, s Color) View { return c.view().BorderStroke(px, s) }
-
-// Modify applies the given modifiers to c in order from left to right.
-func (c Color) Modify(mods ...Modifier) View { return c.view().Modify(mods...) }
-
-// Tag sets the HTML tag name
-// of the outermost HTML element generated by c.
-func (c Color) Tag(name string) View { return c.view().Tag(name) }
-
-// Class adds the given CSS classes
-// to the outermost HTML element generated by c.
-func (c Color) Class(classes ...string) View { return c.view().Class(classes...) }
-
-// Attr adds the given HTML attributes
-// to the outermost HTML element generated by c.
-func (c Color) Attr(a ...domi.Attr) View { return c.view().Attr(a...) }
+// Foreground has no effect because color contains no foreground elements.
+// This overrides the embedded method Foreground
+// to avoid emitting useless style declarations.
+func (c colorView) Foreground(Color) View { return c }
 
 // colorFillNode paints a solid color.
-type colorFillNode struct{ color Color }
+type colorFillNode struct {
+	color color // must not be nil
+}
 
 func (f colorFillNode) render(env environment) box {
-	if f.color == "" {
-		panic("ui: empty Color")
-	}
 	env.tag = cmp.Or(env.tag, "ui-color")
 	env.bg = append(env.bg, f.color)
 	return build(env, plan{

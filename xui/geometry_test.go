@@ -76,7 +76,7 @@ func TestGeometryRootIsViewport(t *testing.T) {
 // instead of letting its neighbors fuse, and with unbounded available
 // space the same minimum is its answer.
 func TestGeometrySpacerMinimumLength(t *testing.T) {
-	rigid := func(w int) ui.View { return ui.Color("#567").Frame(ui.Width(w), ui.Height(40)) }
+	rigid := func(w int) ui.View { return ui.CSSColor("#567").Frame(ui.Width(w), ui.Height(40)) }
 	stage(t, ui.HStack(rigid(300), ui.Spacer(), rigid(300)).Gap(0), func(s *uitest.Session) {
 		within(t, "squeezed spacer floors at the minimum", s.Rect("ui-spacer", 0).W, 8, 1)
 	})
@@ -122,7 +122,7 @@ func TestGeometryDividerSpansMinorAxisUnbounded(t *testing.T) {
 // TestGeometryFixedSizeColor pins the fill boundary: a FixedSize color
 // keeps its 10px ideal even in a container with slack to offer.
 func TestGeometryFixedSizeColor(t *testing.T) {
-	stage(t, ui.Color("#567").FixedSize(), func(s *uitest.Session) {
+	stage(t, ui.CSSColor("#567").FixedSize(), func(s *uitest.Session) {
 		c := s.Rect("ui-color", 0)
 		within(t, "color width", c.W, 10, 0.5)
 		within(t, "color height", c.H, 10, 0.5)
@@ -280,7 +280,7 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 // content size, the base subview and the layer both track the
 // container's box.
 func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
-	layered := ui.VStack(ui.Text("base"), ui.Muted).LayerUnder(ui.Center, ui.Color("#00f"))
+	layered := ui.VStack(ui.Text("base"), ui.Muted).LayerUnder(ui.Center, ui.CSSColor("#00f"))
 	v := ui.HStack(ui.Text("tall").Padding(ui.Edges(140)), layered)
 	stage(t, v, func(s *uitest.Session) {
 		box := s.Rect("ui-layer", 0)
@@ -373,7 +373,7 @@ func TestGeometryImageScalingModesFill(t *testing.T) {
 
 	row := ui.HStack(
 		ui.Image(natImage(400, 400)).FramedAs(ui.ScaledToFill),
-		ui.Color("#345").Frame(ui.Width(500), ui.Height(40)),
+		ui.CSSColor("#345").Frame(ui.Width(500), ui.Height(40)),
 	).Gap(0).Frame(ui.Width(600), ui.Height(100))
 	stage(t, row, func(s *uitest.Session) {
 		r := s.Rect("img", 0)
@@ -428,8 +428,8 @@ func TestGeometryScaledImageIdeal(t *testing.T) {
 // overflows — instead of being compressed by flex shrink.
 func TestGeometryRigidFrameHolds(t *testing.T) {
 	v := ui.HStack(
-		ui.Color("#345").Frame(ui.Width(400), ui.Height(40)).Class("a"),
-		ui.Color("#567").Frame(ui.Width(300), ui.Height(40)).Class("b"),
+		ui.CSSColor("#345").Frame(ui.Width(400), ui.Height(40)).Class("a"),
+		ui.CSSColor("#567").Frame(ui.Width(300), ui.Height(40)).Class("b"),
 	)
 	stage(t, v, func(s *uitest.Session) {
 		within(t, "first frame width", s.Rect(".a", 0).W, 400, 1)
@@ -443,7 +443,7 @@ func TestGeometryRigidFrameHolds(t *testing.T) {
 // available space.
 func TestGeometryStackEnclosesItems(t *testing.T) {
 	v := ui.HStack(
-		ui.Color("#345").Frame(ui.Width(200), ui.Height(40)),
+		ui.CSSColor("#345").Frame(ui.Width(200), ui.Height(40)),
 		ui.Text("hi"),
 	).Frame(ui.Width(100), ui.Height(100), ui.Leading)
 	stage(t, v, func(s *uitest.Session) {
@@ -465,7 +465,7 @@ func TestGeometryStackEnclosesItems(t *testing.T) {
 func TestGeometryTextFloorsAtMinContent(t *testing.T) {
 	v := ui.VStack(
 		ui.HStack(
-			ui.Color("#345").Frame(ui.Width(550), ui.Height(20)),
+			ui.CSSColor("#345").Frame(ui.Width(550), ui.Height(20)),
 			ui.Text("wrappable words").Class("probe"),
 		).Class("row"),
 		ui.Text("wrappable").FixedSize().Class("ref"),
@@ -485,8 +485,8 @@ func TestGeometryTextFloorsAtMinContent(t *testing.T) {
 // available space and floors at its minimum; in a grid cell and on a flex
 // cross axis it shrinks to fit the cell's available space.
 func TestGeometrySoftFrameTracksSpace(t *testing.T) {
-	rigid := func(w int) ui.View { return ui.Color("#567").Frame(ui.Width(w), ui.Height(40)) }
-	soft := ui.Color("#345").
+	rigid := func(w int) ui.View { return ui.CSSColor("#567").Frame(ui.Width(w), ui.Height(40)) }
+	soft := ui.CSSColor("#345").
 		Frame(ui.Width(500), ui.Height(40)).FrameBounds(
 
 		ui.MinWidth(120)).

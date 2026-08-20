@@ -52,20 +52,20 @@ type buttonNode struct {
 }
 
 func (n buttonNode) render(env environment) box {
-	color := map[ButtonRole]Color{
+	c := map[ButtonRole]Color{
 		RolePrimary:     Accent,
 		RoleDestructive: Danger,
 	}[n.role]
 	var fg Modifier
-	if color != "" {
-		fg = Foreground("#fff")
+	if c != nil {
+		fg = Foreground(CSSColor("#fff"))
 	}
 	v := HStack(n.label).
 		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
 		Tag("button").
 		Modify(fg).
-		Background(cmp.Or(color, surfaceColor)).
-		BorderStroke(1, cmp.Or(color, borderColor)).
+		Background(cmp.Or(c, surfaceColor)).
+		BorderStroke(1, cmp.Or(c, borderColor)).
 		BorderShape(RoundedRectangle).
 		Attr(attr.Type("button"), n.onClick, attr.Disabled(n.disabled))
 	cursor := "pointer"

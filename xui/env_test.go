@@ -40,12 +40,11 @@ func (n envProbe) render(env environment) box {
 // the first box under its modifier.
 func TestSubviewHelpersStrip(t *testing.T) {
 	pending := func() environment {
-		c, s := Color("red"), Capsule
 		return environment{
-			shape: s,
+			shape: Capsule,
 			attrs: attr.Class("x"),
 			tag:   "b",
-			fg:    &c,
+			fg:    cssColor("red"),
 			font:  Title,
 			trans: 0.5,
 		}

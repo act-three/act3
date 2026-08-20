@@ -42,12 +42,10 @@ func (v TextView) TextFont(f FontSize) TextView {
 //
 // It is equivalent to [View.Foreground], but it returns a TextView.
 func (v TextView) TextForeground(c Color) TextView {
-	if c == "" {
-		panic("ui: empty Color")
-	}
+	cc := c.color()
 	return v.styledWith(func(s *textStyle) {
-		if s.color == "" {
-			s.color = c
+		if s.color == nil {
+			s.color = cc
 		}
 	})
 }
@@ -72,7 +70,7 @@ func (v TextView) styledWith(f func(*textStyle)) TextView {
 type textStyle struct {
 	bold, italic, mono bool
 	font               FontSize
-	color              Color
+	color              color
 }
 
 func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
@@ -88,8 +86,8 @@ func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
 	}
 	// The type scale's weight beats Bold's, matching the write order.
 	s.font.setStyles(&ss)
-	if s.color != "" {
-		ss.Set("color", string(s.color))
+	if s.color != nil {
+		ss.Set("color", s.color.colorCSS())
 	}
 	return attr.Class(sh.ClassFor(ss))
 }
