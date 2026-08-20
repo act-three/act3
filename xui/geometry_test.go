@@ -275,6 +275,21 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 	})
 }
 
+// TestGeometryOverlayAtAnchors pins the two-point geometry: the
+// overlay's anchor point coincides with the base's at point, here a
+// badge centered on the base's top-trailing corner.
+func TestGeometryOverlayAtAnchors(t *testing.T) {
+	v := ui.Text("base").
+		Frame(ui.Width(300), ui.Height(100)).
+		OverlayAt(ui.TopTrailing, ui.Center, ui.Badge("3").Class("probe"))
+	stage(t, v, func(s *uitest.Session) {
+		layer := s.Rect("ui-layer", 0)
+		badge := s.Rect(".probe", 0)
+		within(t, "badge center x", badge.X+badge.W/2, layer.Right(), 1)
+		within(t, "badge center y", badge.Y+badge.H/2, layer.Y, 1)
+	})
+}
+
 // TestGeometryLayerCoincidesUnderStretch pins the layer composite's
 // coincidence: when a granted fill stretches a layered box past its
 // content size, the base subview and the layer both track the

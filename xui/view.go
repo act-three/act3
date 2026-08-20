@@ -67,13 +67,45 @@ type View interface {
 	// regions of o obscure the receiver where they overlap.
 	//
 	// The given Alignment sets the position of o relative to the receiver.
+	//
+	// Overlay(a, o) is equivalent to OverlayAt(a, a, o).
 	Overlay(a Alignment, o View) View
+
+	// OverlayAt displays o as a layer on top of the receiver.
+	// It places the anchor point on o at the point on the
+	// receiver specified by at.
+	//
+	// To place a badge centered at the top trailing corner of a view:
+	//
+	//     view.OverlayAt(TopTrailing, Center, badge)
+	//
+	// To place a menu below a view on the leading edge:
+	//
+	//     view.OverlayAt(BottomLeading, TopLeading, menu)
+	//
+	// To place a popover centered below a view:
+	//
+	//     view.OverlayAt(Bottom, Top, popover)
+	//
+	// When at and anchor are different, neither point can include
+	// FirstBaseline. If either one does, the view panics.
+	OverlayAt(at, anchor Alignment, o View) View
 
 	// Underlay displays u as a layer beneath the receiver. Opaque
 	// regions of the receiver obscure u where they overlap.
 	//
 	// The given Alignment sets the position of u relative to the receiver.
+	//
+	// Underlay(a, u) is equivalent to UnderlayAt(a, a, u).
 	Underlay(a Alignment, u View) View
+
+	// UnderlayAt displays u as a layer beneath the receiver.
+	// It places the anchor point on u at the point on the
+	// receiver specified by at.
+	//
+	// When at and anchor are different, neither point can include
+	// FirstBaseline. If either one does, the view panics.
+	UnderlayAt(at, anchor Alignment, u View) View
 
 	// Opacity sets the receiver's opacity to x, from 0 (transparent) to
 	// 1 (opaque).

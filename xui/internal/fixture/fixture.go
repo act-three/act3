@@ -62,11 +62,7 @@ func accountCard(user User) View {
 			Gap(12),
 	).
 		Padding(Edges(16)).
-		Overlay(
-			TopTrailing,
-			Badge("Pro").
-				Padding(Edges(8)),
-		)
+		OverlayAt(TopTrailing, Center, Badge("Pro"))
 }
 
 func moviePage(movies []Movie) View {
@@ -219,7 +215,7 @@ func Page() View {
 	return VStack(
 		Text("ui component library").
 			Font(LargeTitle),
-		section("Account card (Card + HStack + Spacer + Overlay badge)", accountCard(user)),
+		section("Account card (Card + HStack + Spacer + OverlayAt badge)", accountCard(user)),
 		section("Movie page (Frame fill + keyed rows + For-style list)", moviePage(movies)),
 		section("Dividers in an HStack (minor-axis, vertical)", dividerRow().Class("demo-bordered")),
 		section("Dividers in a VStack (minor-axis, horizontal)", dividerColumn().Class("demo-bordered")),

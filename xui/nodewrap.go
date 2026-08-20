@@ -45,10 +45,11 @@ func wrapMod(env environment, n node) box {
 // The base negotiates its layout independently of the layer,
 // and the layer receives available space defined by the layout's box.
 type wrapLayer struct {
-	view      View
-	over      bool
-	alignment Alignment // placement within the layer
-	node      node
+	view   View
+	over   bool
+	at     Alignment // point in the base view where the layer view is placed
+	anchor Alignment // point in the layer view placed onto at
+	node   node
 }
 
 func (w wrapLayer) modify(n node) node { w.node = n; return w }
@@ -64,11 +65,19 @@ func (w wrapLayer) render(env environment) box {
 	lss.Set("display", "grid")
 	lss.Set("grid-template-columns", "100%")
 	lss.Set("grid-template-rows", "100%")
-	lss.Set("place-items", w.alignment.placeItems())
+	lss.Set("place-items", w.at.placeItems())
 	lss.Set("position", "absolute")
 	lss.Set("inset", "0")
 	tag := "ui-underlay"
 	view := w.view
+	if w.anchor != w.at {
+		// Placement puts the layer view's at-point onto the base's.
+		// Shift by the difference of the two points, in the layer's
+		// coordinates, so its anchor point lands there instead.
+		x := w.at.horizontal().point() - w.anchor.horizontal().point()
+		y := w.at.vertical().point() - w.anchor.vertical().point()
+		view = view.Modify(modStyle{"translate", strconv.Itoa(x) + "% " + strconv.Itoa(y) + "%"})
+	}
 	if w.over {
 		tag = "ui-overlay"
 		lss.Set("z-index", strconv.Itoa(zOverlay))
