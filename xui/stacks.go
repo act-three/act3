@@ -7,33 +7,41 @@ import (
 )
 
 // A StackView displays its subviews in a line.
-type StackView struct{ base }
+type StackView interface {
+	View
+
+	// Alignment aligns the subviews in the stack.
+	// They are placed along the stack's minor axis
+	// so their alignment points are colinear.
+	//
+	// The default alignment is Center.
+	Alignment(Alignment) StackView
+
+	// Gap sets the distance between adjacent subviews
+	// in the stack. The default gap is 8 px.
+	Gap(px float64) StackView
+}
 
 // A VStack arranges its subviews in a vertical line.
 func VStack(v ...View) StackView {
-	return StackView{base{stackNode{axisV, v, defaultGap, Center}}}
+	return stackView{base{stackNode{axisV, v, defaultGap, Center}}}
 }
 
 // An HStack arranges its subviews in a horizontal line.
 func HStack(v ...View) StackView {
-	return StackView{base{stackNode{axisH, v, defaultGap, Center}}}
+	return stackView{base{stackNode{axisH, v, defaultGap, Center}}}
 }
 
-// Alignment aligns the subviews in v.
-// They are placed along v's minor axis
-// so their alignment points are colinear.
-//
-// The default alignment is [Center].
-func (v StackView) Alignment(a Alignment) StackView {
+type stackView struct{ base }
+
+func (v stackView) Alignment(a Alignment) StackView {
 	n := v.base[0].(stackNode)
 	n.align = a
 	v.base = base{n}
 	return v
 }
 
-// Gap sets the distance between adjacent subviews in v.
-// The default gap is 8 px.
-func (v StackView) Gap(px float64) StackView {
+func (v stackView) Gap(px float64) StackView {
 	n := v.base[0].(stackNode)
 	n.gap = px
 	v.base = base{n}
