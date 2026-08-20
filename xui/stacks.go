@@ -53,17 +53,23 @@ func (v stackView) Gap(px float64) StackView {
 // It assigns each successive subview a higher z-axis value
 // than the one before it,
 // so later subviews obscure earlier ones where they overlap.
-type ZStackView struct{ base }
+type ZStackView interface {
+	View
+
+	// Alignment aligns the subviews in the stack on both axes.
+	//
+	// The default alignment is Center.
+	Alignment(Alignment) ZStackView
+}
 
 // ZStack overlays the given views.
 func ZStack(v ...View) ZStackView {
-	return ZStackView{base{stackNode{axisZ, v, defaultGap, Center}}}
+	return zstackView{base{stackNode{axisZ, v, defaultGap, Center}}}
 }
 
-// Alignment aligns the subviews in v on both axes.
-//
-// The default alignment is [Center].
-func (v ZStackView) Alignment(a Alignment) ZStackView {
+type zstackView struct{ base }
+
+func (v zstackView) Alignment(a Alignment) ZStackView {
 	n := v.base[0].(stackNode)
 	n.align = a
 	v.base = base{n}
