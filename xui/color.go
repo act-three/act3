@@ -68,7 +68,7 @@ type colorFillNode struct {
 
 func (f colorFillNode) render(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-color")
-	env.bg = append(env.bg, f.color)
+	env.bg = append(env.bg, term[color]{value: f.color})
 	return build(env, plan{
 		fills: Horizontal | Vertical,
 		ideal: rect{width: newSize(10), height: newSize(10)},

@@ -13,19 +13,35 @@ type base []node
 
 func (v base) nodes() []node { return v }
 
-func (v base) Modify(mods ...Modifier) View {
-	for _, m := range mods {
-		if m == nil {
-			continue
-		}
-		out := make(base, len(v))
-		for i, n := range v {
-			out[i] = m.modify(n)
-		}
-		v = out
+func (v base) Modify(m Modifier, states ...State) View {
+	if m == nil {
+		return v
 	}
-	return v
+	var s State
+	for _, x := range states {
+		s |= x
+	}
+	if s != 0 {
+		sf, ok := m.(stateful)
+		if !ok {
+			panic("ui: modifier cannot be state-scoped")
+		}
+		m = sf.withState(s)
+	}
+	out := make(base, len(v))
+	for i, n := range v {
+		out[i] = m.modify(n)
+	}
+	return out
 }
+
+func (v base) WhileHovered(m Modifier) View     { return v.Modify(m, Hovered) }
+func (v base) WhileFocused(m Modifier) View     { return v.Modify(m, Focused) }
+func (v base) WhilePressed(m Modifier) View     { return v.Modify(m, Pressed) }
+func (v base) WhileDisabled(m Modifier) View    { return v.Modify(m, Disabled) }
+func (v base) WhileChecked(m Modifier) View     { return v.Modify(m, Checked) }
+func (v base) WhileInvalid(m Modifier) View     { return v.Modify(m, Invalid) }
+func (v base) WhilePlaceholder(m Modifier) View { return v.Modify(m, Placeholder) }
 
 func (v base) Attr(a ...domi.Attr) View {
 	return v.Modify(modAttr{attr: domi.Group(a...)})

@@ -13,6 +13,7 @@ import (
 
 	. "ily.dev/act3/xui"
 	"ily.dev/domi"
+	"ily.dev/domi/attr"
 )
 
 type Msg struct {
@@ -194,6 +195,18 @@ func textLayout() View {
 	)
 }
 
+func stateDemo() View {
+	return Text("Hover, focus, or press me").
+		TextForeground(CSSColor("#fff")).
+		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
+		WhilePressed(Background(CSSColor("#6d28d9"))).
+		WhileHovered(Background(CSSColor("#4338ca"))).
+		Background(CSSColor("#312e81")).
+		WhileFocused(BorderStroke(2, CSSColor("#f59e0b"))).
+		BorderShape(RoundedRectangle).
+		Attr(attr.TabIndex("0"))
+}
+
 func section(title string, body View) View {
 	return VStack(
 		Text(title).
@@ -223,6 +236,7 @@ func Page() View {
 		section("ScrollView (contained in a Frame)", scrollDemo()),
 		section("Rich text (per-run bold/italic/mono, whole-text color)", richText()),
 		section("Text Layout", textLayout()),
+		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
 	).
 		Gap(32).
 		Alignment(Leading).
