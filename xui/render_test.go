@@ -879,6 +879,42 @@ func TestModifierOrder(t *testing.T) {
 	}
 }
 
+// TestOverlayAt pins the two-point lowering: the layer keeps its
+// single-point placement at the base's at point, and the layered view
+// is shifted by the two points' difference, in percentages of its own
+// box, so its anchor point lands on at.
+func TestOverlayAt(t *testing.T) {
+	over := render(t, ui.Text("x").OverlayAt(ui.TopTrailing, ui.Center, ui.Text("o").Class("probe")))
+	if got := classRule(t, over, `<ui-overlay class="(ui-\w+)"`); !strings.Contains(got, "place-items:start end") {
+		t.Errorf("overlay placement should follow at, got %q:\n%s", got, over)
+	}
+	if got := classRule(t, over, `<ui-text class="probe (ui-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
+		t.Errorf("overlay view should shift its anchor onto at, got %q:\n%s", got, over)
+	}
+	// elm-ui's below: the underlay hangs off the base's bottom edge.
+	under := render(t, ui.Text("x").UnderlayAt(ui.Bottom, ui.Top, ui.Text("u").Class("probe")))
+	if got := classRule(t, under, `<ui-text class="probe (ui-\w+)"`); !strings.Contains(got, "translate:0% 100%") {
+		t.Errorf("underlay view should shift its anchor onto at, got %q:\n%s", got, under)
+	}
+	// Coincident points shift nothing, matching Overlay's lowering.
+	same := render(t, ui.Text("x").OverlayAt(ui.TopTrailing, ui.TopTrailing, ui.Text("o").Class("probe")))
+	if strings.Contains(same, "translate") {
+		t.Errorf("coincident points should not shift the overlay view:\n%s", same)
+	}
+}
+
+// TestOverlayAtBaselinePanics pins the fixed-point contract: when the
+// two points differ, FirstBaseline does not name a point to shift from,
+// and rendering panics.
+func TestOverlayAtBaselinePanics(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Error("a two-point overlay at FirstBaseline did not panic")
+		}
+	}()
+	render(t, ui.Text("x").OverlayAt(ui.FirstBaseline, ui.Center, ui.Text("o")))
+}
+
 // TestRenderRootWrapsGroup pins the root's multiview rule: the viewport
 // frames a single view, so a view of more than one node is wrapped in a
 // VStack rather than distributed over.

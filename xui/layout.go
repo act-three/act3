@@ -142,6 +142,22 @@ func (a Alignment) keyword() string {
 	panic(fmt.Sprintf("ui: invalid Alignment %#b", int(a)))
 }
 
+// point maps a single-axis projection to the point it names,
+// as a percentage along the box: 0 (leading/top), 50 (center),
+// or 100 (trailing/bottom).
+// It panics on FirstBaseline, which does not name a fixed point.
+func (a Alignment) point() int {
+	switch a {
+	case Center:
+		return 50
+	case Leading, Top:
+		return 0
+	case Trailing, Bottom:
+		return 100
+	}
+	panic(fmt.Sprintf("ui: Alignment %#b does not name a point", int(a)))
+}
+
 // horizontal returns the alignment's horizontal component.
 func (a Alignment) horizontal() Alignment { return a & (Leading | Trailing) }
 

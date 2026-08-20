@@ -70,11 +70,19 @@ func (v base) Tag(name string) View {
 }
 
 func (v base) Underlay(a Alignment, u View) View {
-	return v.Modify(wrapLayer{view: u, over: false, alignment: a})
+	return v.UnderlayAt(a, a, u)
+}
+
+func (v base) UnderlayAt(at, anchor Alignment, u View) View {
+	return v.Modify(wrapLayer{view: u, over: false, at: at, anchor: anchor})
 }
 
 func (v base) Overlay(a Alignment, o View) View {
-	return v.Modify(wrapLayer{view: o, over: true, alignment: a})
+	return v.OverlayAt(a, a, o)
+}
+
+func (v base) OverlayAt(at, anchor Alignment, o View) View {
+	return v.Modify(wrapLayer{view: o, over: true, at: at, anchor: anchor})
 }
 
 func (v base) Padding(s ...EdgeSpace) View {
