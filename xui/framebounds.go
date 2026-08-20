@@ -6,18 +6,6 @@ import (
 	"ily.dev/act3/xui/internal/sheet"
 )
 
-// FrameBounds positions v inside an invisible frame
-// with the given bounds and alignment.
-//
-// Note that type [Alignment] satisfies FrameBoundsOption.
-func (v base) FrameBounds(o ...FrameBoundsOption) View {
-	var w wrapFrameBounds
-	for _, o := range o {
-		o.applyFrameBounds(&w)
-	}
-	return v.Modify(w)
-}
-
 // A FrameBoundsOption configures the bounds and alignment of a frame.
 // The available space for the view inside the frame
 // is clamped to the configured bounds.

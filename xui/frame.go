@@ -2,18 +2,6 @@ package ui
 
 import "cmp"
 
-// Frame positions v inside an invisible frame
-// with the given dimensions and alignment.
-//
-// Note that type [Alignment] satisfies FrameOption.
-func (v base) Frame(o ...FrameOption) View {
-	var w wrapFrame
-	for _, o := range o {
-		o.applyFrame(&w)
-	}
-	return v.Modify(w)
-}
-
 // wrapFrame is a sizing frame. It is a single-cell grid that places a
 // view within it.
 //
