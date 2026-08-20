@@ -276,7 +276,7 @@ func TestBorderStrokeOnScroll(t *testing.T) {
 // it — app CSS included — can climb the composite's z ladder past
 // the layers.
 func TestLayerIsolatesSubview(t *testing.T) {
-	html := render(t, ui.Text("x").LayerOver(ui.Center, ui.Text("o")))
+	html := render(t, ui.Text("x").Overlay(ui.Center, ui.Text("o")))
 	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
 	if got != "display:block;isolation:isolate;overflow-wrap:break-word" {
 		t.Errorf("layered subview rule = %q, want isolation", got)
@@ -288,7 +288,7 @@ func TestLayerIsolatesSubview(t *testing.T) {
 // the overlay, where its tree position alone would lose to the
 // layers' indexes.
 func TestBorderStrokeOverLayers(t *testing.T) {
-	html := render(t, ui.Text("x").LayerOver(ui.Center, ui.Text("o")).BorderStroke(2, ui.CSSColor("red")))
+	html := render(t, ui.Text("x").Overlay(ui.Center, ui.Text("o")).BorderStroke(2, ui.CSSColor("red")))
 	got := classRule(t, html, `<ui-layer class="(ui-\w+)"`)
 	want := "display:grid;grid-template-columns:100%;grid-template-rows:100%;" +
 		"isolation:isolate;overflow:visible;place-items:center;position:relative;" +

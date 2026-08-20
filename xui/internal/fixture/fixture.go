@@ -62,7 +62,7 @@ func accountCard(user User) View {
 			Gap(12),
 	).
 		Padding(Edges(16)).
-		LayerOver(
+		Overlay(
 			TopTrailing,
 			Badge("Pro").
 				Padding(Edges(8)),
@@ -149,7 +149,7 @@ func zstackDemo() View {
 		Text("ZStack with Long Text").
 			TextForeground(CSSColor("#fff")).
 			Font(Headline),
-	).LayerOver(
+	).Overlay(
 		BottomTrailing,
 		Text("layered").
 			TextForeground(CSSColor("#c7d2fe")).
