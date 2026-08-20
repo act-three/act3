@@ -20,24 +20,32 @@ const (
 )
 
 // A ButtonView is a control that sends an event when clicked.
-type ButtonView struct{ base }
+type ButtonView interface {
+	View
+
+	// Role sets the semantic role of the receiver.
+	Role(ButtonRole) ButtonView
+
+	// Disabled disables the receiver when d is true.
+	Disabled(d bool) ButtonView
+}
 
 // Button returns a button with the given label.
 // It sends msg when clicked.
 func Button[Msg any](label View, msg Msg) ButtonView {
-	return ButtonView{base{buttonNode{label: label, onClick: event.Click(msg)}}}
+	return buttonView{base{buttonNode{label: label, onClick: event.Click(msg)}}}
 }
 
-// Role sets the semantic role of v.
-func (v ButtonView) Role(r ButtonRole) ButtonView {
+type buttonView struct{ base }
+
+func (v buttonView) Role(r ButtonRole) ButtonView {
 	n := v.base[0].(buttonNode)
 	n.role = r
 	v.base = base{n}
 	return v
 }
 
-// Disabled disables v when d is true.
-func (v ButtonView) Disabled(d bool) ButtonView {
+func (v buttonView) Disabled(d bool) ButtonView {
 	n := v.base[0].(buttonNode)
 	n.disabled = d
 	v.base = base{n}
