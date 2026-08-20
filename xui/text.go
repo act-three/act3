@@ -11,26 +11,48 @@ import (
 )
 
 // A TextView displays one or more lines of read-only text.
-type TextView struct{ base }
+type TextView interface {
+	View
+
+	// Concat concatenates the receiver with t.
+	Concat(t TextView) TextView
+
+	// Bold uses a bold font to draw the text in the receiver.
+	Bold() TextView
+
+	// Italic uses an italic font to draw the text in the receiver.
+	Italic() TextView
+
+	// Monospace uses a monospace font to draw the text in the receiver.
+	Monospace() TextView
+
+	// TextFont sets the font size for the text in the receiver.
+	//
+	// It is equivalent to Font, but it returns a TextView.
+	TextFont(FontSize) TextView
+
+	// TextForeground uses c to draw the text in the receiver.
+	//
+	// It is equivalent to Foreground, but it returns a TextView.
+	TextForeground(c Color) TextView
+
+	node() textNode
+}
 
 // Text displays s.
 func Text(s string) TextView {
-	return TextView{base{textNode{text: s}}}
+	return textView{base{textNode{text: s}}}
 }
 
-// Bold uses a bold font to draw the text in v.
-func (v TextView) Bold() TextView { return v.styledWith(func(s *textStyle) { s.bold = true }) }
+type textView struct{ base }
 
-// Italic uses an italic font to draw the text in v.
-func (v TextView) Italic() TextView { return v.styledWith(func(s *textStyle) { s.italic = true }) }
+func (v textView) Bold() TextView { return v.styledWith(func(s *textStyle) { s.bold = true }) }
 
-// Monospace uses a monospace font to draw the text in v.
-func (v TextView) Monospace() TextView { return v.styledWith(func(s *textStyle) { s.mono = true }) }
+func (v textView) Italic() TextView { return v.styledWith(func(s *textStyle) { s.italic = true }) }
 
-// TextFont sets the font size for the text in v.
-//
-// It is equivalent to [View.Font], but it returns a TextView.
-func (v TextView) TextFont(f FontSize) TextView {
+func (v textView) Monospace() TextView { return v.styledWith(func(s *textStyle) { s.mono = true }) }
+
+func (v textView) TextFont(f FontSize) TextView {
 	return v.styledWith(func(s *textStyle) {
 		if s.font == "" {
 			s.font = f
@@ -38,10 +60,7 @@ func (v TextView) TextFont(f FontSize) TextView {
 	})
 }
 
-// TextForeground uses c to draw the text in v.
-//
-// It is equivalent to [View.Foreground], but it returns a TextView.
-func (v TextView) TextForeground(c Color) TextView {
+func (v textView) TextForeground(c Color) TextView {
 	cc := c.color()
 	return v.styledWith(func(s *textStyle) {
 		if s.color == nil {
@@ -50,16 +69,15 @@ func (v TextView) TextForeground(c Color) TextView {
 	})
 }
 
-// Concat concatenates v and t.
-func (v TextView) Concat(t TextView) TextView {
+func (v textView) Concat(t TextView) TextView {
 	v.base = base{textNode{parts: []textNode{v.node(), t.node()}}}
 	return v
 }
 
-func (v TextView) node() textNode { return v.base[0].(textNode) }
+func (v textView) node() textNode { return v.base[0].(textNode) }
 
 // styledWith returns a copy of v with f applied to its style.
-func (v TextView) styledWith(f func(*textStyle)) TextView {
+func (v textView) styledWith(f func(*textStyle)) TextView {
 	n := v.node()
 	f(&n.style)
 	v.base = base{n}
