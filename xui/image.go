@@ -5,23 +5,31 @@ import (
 )
 
 // An ImageView displays an image.
-type ImageView struct{ base }
+type ImageView interface {
+	View
+
+	// Alt sets the alt text for the receiver.
+	Alt(string) ImageView
+
+	// FramedAs sets the framing mode for the receiver.
+	//
+	// The default framing mode is Native.
+	FramedAs(FramingMode) ImageView
+}
 
 // Image displays the image at url.
-func Image(url string) ImageView { return ImageView{base{imageNode{src: url}}} }
+func Image(url string) ImageView { return imageView{base{imageNode{src: url}}} }
 
-// Alt sets the alt text for v.
-func (v ImageView) Alt(s string) ImageView {
+type imageView struct{ base }
+
+func (v imageView) Alt(s string) ImageView {
 	n := v.base[0].(imageNode)
 	n.alt = s
 	v.base = base{n}
 	return v
 }
 
-// FramedAs sets the framing mode for v.
-//
-// The default framing mode is Native.
-func (v ImageView) FramedAs(f FramingMode) ImageView {
+func (v imageView) FramedAs(f FramingMode) ImageView {
 	n := v.base[0].(imageNode)
 	n.fit = f
 	v.base = base{n}
