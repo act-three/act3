@@ -63,17 +63,17 @@ type View interface {
 	// Note that type Alignment satisfies FrameBoundsOption.
 	FrameBounds(...FrameBoundsOption) View
 
-	// LayerOver displays o over the receiver. Opaque regions of o
-	// obscure the receiver where they overlap.
+	// Overlay displays o as a layer on top of the receiver. Opaque
+	// regions of o obscure the receiver where they overlap.
 	//
 	// The given Alignment sets the position of o relative to the receiver.
-	LayerOver(a Alignment, o View) View
+	Overlay(a Alignment, o View) View
 
-	// LayerUnder displays u under the receiver. Opaque regions of the
-	// receiver obscure u where they overlap.
+	// Underlay displays u as a layer beneath the receiver. Opaque
+	// regions of the receiver obscure u where they overlap.
 	//
 	// The given Alignment sets the position of u relative to the receiver.
-	LayerUnder(a Alignment, u View) View
+	Underlay(a Alignment, u View) View
 
 	// Opacity sets the receiver's opacity to x, from 0 (transparent) to
 	// 1 (opaque).

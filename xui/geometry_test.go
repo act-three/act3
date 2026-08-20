@@ -208,7 +208,7 @@ func TestGeometryFrameCentersOversizedSubview(t *testing.T) {
 func TestGeometryOverlayHitTest(t *testing.T) {
 	v := ui.Text("base").
 		Frame(ui.Width(300), ui.Height(100)).
-		LayerOver(ui.TopTrailing, ui.Badge("hit").Class("probe"))
+		Overlay(ui.TopTrailing, ui.Badge("hit").Class("probe"))
 	stage(t, v, func(s *uitest.Session) {
 		var badgeHit bool
 		s.Eval(`(() => {
@@ -280,7 +280,7 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 // content size, the base subview and the layer both track the
 // container's box.
 func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
-	layered := ui.VStack(ui.Text("base"), ui.Muted).LayerUnder(ui.Center, ui.CSSColor("#00f"))
+	layered := ui.VStack(ui.Text("base"), ui.Muted).Underlay(ui.Center, ui.CSSColor("#00f"))
 	v := ui.HStack(ui.Text("tall").Padding(ui.Edges(140)), layered)
 	stage(t, v, func(s *uitest.Session) {
 		box := s.Rect("ui-layer", 0)

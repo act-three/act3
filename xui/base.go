@@ -69,11 +69,11 @@ func (v base) Tag(name string) View {
 	return v.Modify(modTag{name: name})
 }
 
-func (v base) LayerUnder(a Alignment, u View) View {
+func (v base) Underlay(a Alignment, u View) View {
 	return v.Modify(wrapLayer{view: u, over: false, alignment: a})
 }
 
-func (v base) LayerOver(a Alignment, o View) View {
+func (v base) Overlay(a Alignment, o View) View {
 	return v.Modify(wrapLayer{view: o, over: true, alignment: a})
 }
 

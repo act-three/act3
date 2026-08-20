@@ -49,8 +49,8 @@ func accountCard(user User) ui.View {
 		).Gap(12).Alignment(ui.Center),
 	).
 		Padding(ui.Edges(16)).
-		LayerUnder(ui.Center, ui.CSSColor("#fff")).
-		LayerOver(ui.TopTrailing, ui.Badge("Pro"))
+		Underlay(ui.Center, ui.CSSColor("#fff")).
+		Overlay(ui.TopTrailing, ui.Badge("Pro"))
 }
 
 func moviePage(movies []Movie) ui.View {
@@ -333,7 +333,7 @@ func TestColorAsView(t *testing.T) {
 		t.Errorf("Modify(Background) diverged from the Background method:\n%s", mod)
 	}
 	// Underlay layers content behind the color.
-	under := render(t, ui.CSSColor("#0008").LayerUnder(ui.Center, ui.Text("behind")))
+	under := render(t, ui.CSSColor("#0008").Underlay(ui.Center, ui.Text("behind")))
 	for _, w := range []string{`<ui-underlay `, "behind"} {
 		if !strings.Contains(under, w) {
 			t.Errorf("Underlay behind a color missing %q:\n%s", w, under)
@@ -476,7 +476,7 @@ func TestIdealSize(t *testing.T) {
 		},
 		{
 			"decoration layer clears both axes",
-			ui.Text("x").LayerOver(ui.Center, ui.Muted).FixedSize(),
+			ui.Text("x").Overlay(ui.Center, ui.Muted).FixedSize(),
 			nil,
 			[]string{"10px"},
 		},
@@ -872,8 +872,8 @@ func TestEmptyControlFlow(t *testing.T) {
 // TestModifierOrder checks that decoration order is preserved: padding-then-
 // underlay wraps the padded box, the reverse pads the decorated box.
 func TestModifierOrder(t *testing.T) {
-	paddedThenBg := render(t, ui.Text("x").Padding(ui.Edges(8)).LayerUnder(ui.Center, ui.CSSColor("#eee")))
-	bgThenPadded := render(t, ui.Text("x").LayerUnder(ui.Center, ui.CSSColor("#eee")).Padding(ui.Edges(8)))
+	paddedThenBg := render(t, ui.Text("x").Padding(ui.Edges(8)).Underlay(ui.Center, ui.CSSColor("#eee")))
+	bgThenPadded := render(t, ui.Text("x").Underlay(ui.Center, ui.CSSColor("#eee")).Padding(ui.Edges(8)))
 	if paddedThenBg == bgThenPadded {
 		t.Errorf("modifier order should change the lowering, but both rendered identically:\n%s", paddedThenBg)
 	}
