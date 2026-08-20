@@ -158,7 +158,7 @@ type dividerNode struct{}
 
 func (dividerNode) render(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-divider")
-	env.bg = append(env.bg, borderColor.color())
+	env.bg = append(env.bg, term[color]{value: borderColor.color()})
 	p := plan{fills: env.lc.minorAxes(), rigid: env.lc.majorAxis}
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.

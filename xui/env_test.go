@@ -41,12 +41,12 @@ func (n envProbe) render(env environment) box {
 func TestSubviewHelpersStrip(t *testing.T) {
 	pending := func() environment {
 		return environment{
-			shape: Capsule,
-			attrs: attr.Class("x"),
-			tag:   "b",
-			fg:    cssColor("red"),
-			font:  Title,
-			trans: 0.5,
+			shape:   []term[Shape]{{value: Capsule}},
+			attrs:   attr.Class("x"),
+			tag:     "b",
+			fg:      []term[color]{{value: cssColor("red")}},
+			font:    []term[FontSize]{{value: Title}},
+			opacity: []term[float64]{{value: 0.5}},
 		}
 	}
 	subview := func(t *testing.T, render func(environment, node)) {

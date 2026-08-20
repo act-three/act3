@@ -16,6 +16,12 @@ type Modifier interface {
 	modify(node) node
 }
 
+// A stateful modifier can be scoped to a state set by [View.Modify].
+type stateful interface {
+	Modifier
+	withState(State) Modifier
+}
+
 // A nodeEnv adjusts the environment for its subtree.
 type nodeEnv struct {
 	f    func(environment) environment
@@ -55,35 +61,36 @@ func (m modAttr) environment(env environment) environment {
 	return env
 }
 
-type modBackground struct{ c color }
+type modBackground struct{ term[color] }
 
 // Background fills the background of a view with c.
-func Background(c Color) Modifier { return modBackground{c.color()} }
+func Background(c Color) Modifier { return modBackground{value: c.color()} }
+
+func (m modBackground) withState(s State) Modifier { m.state = s; return m }
 
 func (m modBackground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modBackground) environment(env environment) environment {
-	env.bg = append(env.bg, m.c)
+	env.bg = append(env.bg, m.term)
 	env.hasPaint = true
 	return env
 }
 
-type modBorderShape struct{ s Shape }
+type modBorderShape struct{ term[Shape] }
 
 // BorderShape sets the shape of a view's border.
-func BorderShape(s Shape) Modifier { return modBorderShape{s} }
+func BorderShape(s Shape) Modifier { return modBorderShape{value: s} }
+
+func (m modBorderShape) withState(s State) Modifier { m.state = s; return m }
 
 func (m modBorderShape) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
 
 func (m modBorderShape) environment(env environment) environment {
-	env.shape = m.s
+	env.shape = append(env.shape, m.term)
 	return env
 }
 
-type modBorderStroke struct {
-	px float64
-	c  color
-}
+type modBorderStroke struct{ term[stroke] }
 
 // BorderStroke draws a line
 // of the given width and color
@@ -98,13 +105,15 @@ func BorderStroke(px float64, c Color) Modifier {
 	if !(px > 0) { // this is written weird b/c of NaNs lmao
 		return nil
 	}
-	return modBorderStroke{px, c.color()}
+	return modBorderStroke{value: stroke{px, c.color()}}
 }
+
+func (m modBorderStroke) withState(s State) Modifier { m.state = s; return m }
 
 func (m modBorderStroke) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modBorderStroke) environment(env environment) environment {
-	env.stroke = append(env.stroke, stroke{m.px, m.c})
+	env.stroke = append(env.stroke, m.term)
 	env.hasPaint = true
 	return env
 }
@@ -132,46 +141,51 @@ func (m modFixedSize) environment(env environment) environment {
 	return env
 }
 
-type modFont struct{ f FontSize }
+type modFont struct{ term[FontSize] }
 
 // Font sets the font size for text in a view.
 func Font(f FontSize) Modifier {
 	if f == "" {
 		return nil
 	}
-	return modFont{f}
+	return modFont{value: f}
 }
+
+func (m modFont) withState(s State) Modifier { m.state = s; return m }
 
 func (m modFont) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modFont) environment(env environment) environment {
-	env.font = m.f
+	env.font = append(env.font, m.term)
 	return env
 }
 
-type modForeground struct{ c color }
+type modForeground struct{ term[color] }
 
 // Foreground uses c to draw foreground elements in a view,
 // such as text.
-func Foreground(c Color) Modifier { return modForeground{c.color()} }
+func Foreground(c Color) Modifier { return modForeground{value: c.color()} }
+
+func (m modForeground) withState(s State) Modifier { m.state = s; return m }
 
 func (m modForeground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modForeground) environment(env environment) environment {
-	env.fg = m.c
+	env.fg = append(env.fg, m.term)
 	return env
 }
 
-type modOpacity struct{ x float64 }
+type modOpacity struct{ term[float64] }
 
 // Opacity sets a view's opacity to x, from 0 (transparent) to 1 (opaque).
-func Opacity(x float64) Modifier { return modOpacity{x} }
+func Opacity(x float64) Modifier { return modOpacity{value: x} }
+
+func (m modOpacity) withState(s State) Modifier { m.state = s; return m }
 
 func (m modOpacity) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
 
 func (m modOpacity) environment(env environment) environment {
-	a := 1 - env.trans
-	env.trans = 1 - m.x*a
+	env.opacity = append(env.opacity, m.term)
 	return env
 }
 

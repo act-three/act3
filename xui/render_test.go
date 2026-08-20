@@ -100,7 +100,9 @@ func classRule(t *testing.T, html, pattern string) string {
 	if m == nil {
 		t.Fatalf("no element matching %q in:\n%s", pattern, html)
 	}
-	r := regexp.MustCompile(regexp.QuoteMeta("."+m[1]) + `\{((?:[^{}]|\{[^{}]*\})*)\}`).FindStringSubmatch(html)
+	// The body can nest two block levels deep: a media block holding
+	// pseudo-class blocks.
+	r := regexp.MustCompile(regexp.QuoteMeta("."+m[1]) + `\{((?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*)\}`).FindStringSubmatch(html)
 	if r == nil {
 		t.Fatalf("no rule for class %s in:\n%s", m[1], html)
 	}
@@ -876,6 +878,152 @@ func TestModifierOrder(t *testing.T) {
 	bgThenPadded := render(t, ui.Text("x").Underlay(ui.Center, ui.CSSColor("#eee")).Padding(ui.Edges(8)))
 	if paddedThenBg == bgThenPadded {
 		t.Errorf("modifier order should change the lowering, but both rendered identically:\n%s", paddedThenBg)
+	}
+}
+
+// TestStateModifiers pins the state lowering: each state set present
+// declares its differing properties under the matching pseudo-classes,
+// with hover variants gated to devices that can hover.
+func TestStateModifiers(t *testing.T) {
+	hovered := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.CSSColor("#00f"))))
+	if got := classRule(t, hovered, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover{color:#00f}}") {
+		t.Errorf("Hovered rule = %q, want a hover-gated color variant:\n%s", got, hovered)
+	}
+	focused := render(t, ui.Text("x").WhileFocused(ui.Foreground(ui.CSSColor("#00f"))))
+	if got := classRule(t, focused, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "&:focus-visible{color:#00f}") {
+		t.Errorf("Focused rule = %q, want a focus variant:\n%s", got, focused)
+	}
+	pressed := render(t, ui.Text("x").WhilePressed(ui.Font(ui.Title)))
+	if got := classRule(t, pressed, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "&:active{font-size:1.5rem;font-weight:700;line-height:1.2}") {
+		t.Errorf("Pressed rule = %q, want an active font variant:\n%s", got, pressed)
+	}
+	// A combination applies only while every given state is active,
+	// regardless of the order or repetition of the states.
+	both := render(t, ui.Text("x").Modify(ui.Background(ui.CSSColor("#eee")), ui.Pressed, ui.Hovered, ui.Pressed))
+	if got := classRule(t, both, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover:active{background-color:#eee}}") {
+		t.Errorf("combined rule = %q, want a hover+active variant:\n%s", got, both)
+	}
+	blue := ui.Foreground(ui.CSSColor("#00f"))
+	for _, tc := range []struct {
+		v    ui.View
+		want string
+	}{
+		{ui.Text("x").WhileDisabled(blue), "&:disabled{color:#00f}"},
+		{ui.Text("x").WhileChecked(blue), "&:checked{color:#00f}"},
+		{ui.Text("x").WhileInvalid(blue), "&:user-invalid{color:#00f}"},
+		{ui.Text("x").WhilePlaceholder(blue), "&:placeholder-shown{color:#00f}"},
+		{ui.Text("x").Modify(blue, ui.Disabled, ui.Checked), "&:disabled:checked{color:#00f}"},
+	} {
+		got := render(t, tc.v)
+		if rule := classRule(t, got, `<ui-text class="(ui-\w+)"`); !strings.Contains(rule, tc.want) {
+			t.Errorf("rule = %q, want %q", rule, tc.want)
+		}
+	}
+}
+
+// TestStateModifierOverride pins per-state independence: a base
+// modifier after a state-scoped one styles the other states only.
+func TestStateModifierOverride(t *testing.T) {
+	html := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.CSSColor("#00f"))).Foreground(ui.CSSColor("#f00")))
+	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	for _, w := range []string{"color:#f00", "@media (hover: hover){&:hover{color:#00f}}"} {
+		if !strings.Contains(got, w) {
+			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
+		}
+	}
+}
+
+// TestStateBackgroundStacking pins the DOM-48 layering design: each
+// state's rule declares its complete background list, with a
+// state-scoped layer slotted at its chain position.
+func TestStateBackgroundStacking(t *testing.T) {
+	html := render(t, ui.Text("x").
+		Background(ui.CSSColor("#a")).WhileHovered(
+
+		ui.Background(ui.CSSColor("#b"))).
+		Background(ui.CSSColor("#c")))
+	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	for _, w := range []string{
+		"background-color:#c;background-image:linear-gradient(#a,#a)",
+		"@media (hover: hover){&:hover{background-image:linear-gradient(#a,#a),linear-gradient(#b,#b)}}",
+	} {
+		if !strings.Contains(got, w) {
+			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
+		}
+	}
+}
+
+// TestStateStroke pins the stroke carrier sharing: a state-scoped
+// stroke draws on the same ::after carrier the base states declare.
+// The exact carrier block also pins that the base state draws no
+// stroke of its own.
+func TestStateStroke(t *testing.T) {
+	html := render(t, ui.Text("x").WhileFocused(ui.BorderStroke(2, ui.CSSColor("#00f"))))
+	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	for _, w := range []string{
+		`&::after{border-radius:inherit;content:"";inset:0;pointer-events:none;position:absolute}`,
+		"&:focus-visible::after{box-shadow:inset 0 0 0 2px #00f}",
+	} {
+		if !strings.Contains(got, w) {
+			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
+		}
+	}
+}
+
+// TestStateUnionComposes pins the union closure: when several states
+// style the same property, every union of the states declares their
+// combined effect, outweighing the narrower variants while it holds.
+func TestStateUnionComposes(t *testing.T) {
+	html := render(t, ui.Text("x").
+		Background(ui.CSSColor("#a")).WhileHovered(
+
+		ui.Background(ui.CSSColor("#b"))).WhilePressed(
+
+		ui.Background(ui.CSSColor("#d"))).
+		WhileFocused(
+
+			ui.Background(ui.CSSColor("#e"))))
+	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	for _, w := range []string{
+		"background-color:#a",
+		"&:active{background-color:#d;background-image:linear-gradient(#a,#a)}",
+		"&:hover{background-color:#b;background-image:linear-gradient(#a,#a)}",
+		"&:hover:active{background-color:#d;background-image:linear-gradient(#a,#a),linear-gradient(#b,#b)}",
+		"&:hover:focus-visible:active{background-color:#e;background-image:linear-gradient(#a,#a),linear-gradient(#b,#b),linear-gradient(#d,#d)}",
+	} {
+		if !strings.Contains(got, w) {
+			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
+		}
+	}
+}
+
+// TestStateNoChangeEmitsNothing pins the diffing: a state variant
+// equal to the base paint declares nothing.
+func TestStateNoChangeEmitsNothing(t *testing.T) {
+	plain := render(t, ui.Text("x").Foreground(ui.CSSColor("#f00")))
+	same := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.CSSColor("#f00"))).Foreground(ui.CSSColor("#f00")))
+	if plain != same {
+		t.Errorf("no-op state variant changed the rendering:\nplain:\n%s\nwith state:\n%s", plain, same)
+	}
+}
+
+// TestStateUnionRestoresBase pins the subset override: when one state
+// sets a property and another restores it to the base value, the
+// union variant must redeclare the base value, or the single-state
+// variant would still win while both states are active.
+func TestStateUnionRestoresBase(t *testing.T) {
+	got := render(t, ui.Text("x").WhilePressed(
+		ui.Foreground(ui.CSSColor("#f00"))).
+		WhileHovered(
+
+			ui.Foreground(ui.CSSColor("#00f"))).
+		Foreground(ui.CSSColor("#f00")))
+	rule := classRule(t, got, `<ui-text class="(ui-\w+)"`)
+	if !strings.Contains(rule, "&:hover:active{color:#f00}") {
+		t.Errorf("union variant should restore the base color, got %q", rule)
+	}
+	if strings.Contains(rule, "&:active{") {
+		t.Errorf("pressed variant equal to the base should declare nothing, got %q", rule)
 	}
 }
 

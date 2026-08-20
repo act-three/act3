@@ -2,6 +2,7 @@
 package sheet
 
 import (
+	"cmp"
 	"fmt"
 	"hash/fnv"
 	"maps"
@@ -11,13 +12,22 @@ import (
 )
 
 // A StyleSet holds the CSS declarations for one element,
-// including declarations under pseudo-classes and pseudo-elements.
+// including declarations under pseudo-classes and pseudo-elements,
+// optionally scoped to a media feature query.
 //
 // It may be copied.
 //
 // The zero value is an empty set, ready to use.
 type StyleSet struct {
-	m map[string]map[string]string // ":hover" → "color" → "red"
+	m map[scope]map[string]string // scope → "color" → "red"
+}
+
+// A scope locates declarations within a rule:
+// an optional media feature query gating them,
+// and an optional selector suffix.
+type scope struct {
+	media string // media feature query, such as "(hover: hover)", or ""
+	sel   string // selector suffix, such as ":hover" or "::after", or ""
 }
 
 // Style returns a new StyleSet containing one declaration.
@@ -32,7 +42,7 @@ func Style(property, value string) StyleSet {
 //
 // Set panics if the declaration cannot be safely inserted into a CSS rule.
 func (s *StyleSet) Set(property, value string) {
-	s.set("", property, value)
+	s.set(scope{}, property, value)
 }
 
 // SetPseudo assigns value to property
@@ -46,10 +56,28 @@ func (s *StyleSet) SetPseudo(pseudo, property, value string) {
 	if !validPseudo(pseudo) {
 		panic(fmt.Sprintf("sheet: invalid pseudo selector %q", pseudo))
 	}
-	s.set(pseudo, property, value)
+	s.set(scope{sel: pseudo}, property, value)
 }
 
-func (s *StyleSet) set(suffix, property, value string) {
+// SetMediaPseudo assigns value to property
+// under the given pseudo selector, like SetPseudo,
+// within a media block gated by the given media feature query,
+// such as "(hover: hover)".
+// It replaces the previous value, if any.
+//
+// SetMediaPseudo panics
+// if the declaration cannot be safely inserted into a CSS rule.
+func (s *StyleSet) SetMediaPseudo(media, pseudo, property, value string) {
+	if !validMedia(media) {
+		panic(fmt.Sprintf("sheet: invalid media query %q", media))
+	}
+	if !validPseudo(pseudo) {
+		panic(fmt.Sprintf("sheet: invalid pseudo selector %q", pseudo))
+	}
+	s.set(scope{media: media, sel: pseudo}, property, value)
+}
+
+func (s *StyleSet) set(sc scope, property, value string) {
 	if !validProperty(property) {
 		panic(fmt.Sprintf("sheet: invalid CSS property %q", property))
 	}
@@ -58,14 +86,14 @@ func (s *StyleSet) set(suffix, property, value string) {
 	}
 	m := maps.Clone(s.m)
 	if m == nil {
-		m = make(map[string]map[string]string, 1)
+		m = make(map[scope]map[string]string, 1)
 	}
-	d := maps.Clone(m[suffix])
+	d := maps.Clone(m[sc])
 	if d == nil {
 		d = make(map[string]string, 1)
 	}
 	d[property] = value
-	m[suffix] = d
+	m[sc] = d
 	s.m = m
 }
 
@@ -74,23 +102,42 @@ func (s StyleSet) IsEmpty() bool { return len(s.m) == 0 }
 
 // body returns the set as a rule body:
 // the element's declarations sorted by property,
-// followed by a nested block per pseudo selector, sorted by selector.
+// followed by a nested block per scoped selector,
+// sorted by media query and then selector,
+// with consecutive blocks under one media query
+// sharing one media block.
 func (s StyleSet) body() string {
 	var b strings.Builder
-	writeDecls(&b, s.m[""])
+	writeDecls(&b, s.m[scope{}])
 	sep := b.Len() > 0
-	for _, suffix := range slices.Sorted(maps.Keys(s.m)) {
-		if suffix == "" {
+	scopes := slices.SortedFunc(maps.Keys(s.m), func(a, b scope) int {
+		return cmp.Or(strings.Compare(a.media, b.media), strings.Compare(a.sel, b.sel))
+	})
+	var media string // the media block open in b, if any
+	for _, sc := range scopes {
+		if sc == (scope{}) {
 			continue
 		}
 		if sep {
 			b.WriteByte(';')
 			sep = false
 		}
+		if sc.media != media {
+			if media != "" {
+				b.WriteByte('}')
+			}
+			media = sc.media
+			b.WriteString("@media ")
+			b.WriteString(media)
+			b.WriteByte('{')
+		}
 		b.WriteByte('&')
-		b.WriteString(suffix)
+		b.WriteString(sc.sel)
 		b.WriteByte('{')
-		writeDecls(&b, s.m[suffix])
+		writeDecls(&b, s.m[sc])
+		b.WriteByte('}')
+	}
+	if media != "" {
 		b.WriteByte('}')
 	}
 	return b.String()
@@ -106,6 +153,14 @@ func writeDecls(b *strings.Builder, body map[string]string) {
 		b.WriteByte(':')
 		b.WriteString(body[p])
 	}
+}
+
+// validMedia reports whether m can be safely emitted as a media
+// feature query: it must be parenthesized and cannot escape its block.
+func validMedia(m string) bool {
+	return strings.HasPrefix(m, "(") &&
+		!strings.ContainsAny(m, "{};") &&
+		!strings.ContainsFunc(m, isCTL)
 }
 
 // validPseudo reports whether p can be safely nested as a selector suffix:

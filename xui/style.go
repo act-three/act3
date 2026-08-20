@@ -13,29 +13,34 @@ const (
 	LargeTitle FontSize = "large-title"
 )
 
-// setStyles adds f's declarations to ss.
-func (f FontSize) setStyles(ss *sheet.StyleSet) {
+// decls returns f's declarations.
+func (f FontSize) decls() []decl {
+	size := func(size, weight, height string) []decl {
+		return []decl{
+			{"font-size", size},
+			{"font-weight", weight},
+			{"line-height", height},
+		}
+	}
 	switch f {
 	case Body:
-		ss.Set("font-size", "1rem")
-		ss.Set("font-weight", "400")
-		ss.Set("line-height", "1.4")
+		return size("1rem", "400", "1.4")
 	case Caption:
-		ss.Set("font-size", "0.75rem")
-		ss.Set("font-weight", "400")
-		ss.Set("line-height", "1.3")
+		return size("0.75rem", "400", "1.3")
 	case Headline:
-		ss.Set("font-size", "1.125rem")
-		ss.Set("font-weight", "600")
-		ss.Set("line-height", "1.4")
+		return size("1.125rem", "600", "1.4")
 	case Title:
-		ss.Set("font-size", "1.5rem")
-		ss.Set("font-weight", "700")
-		ss.Set("line-height", "1.2")
+		return size("1.5rem", "700", "1.2")
 	case LargeTitle:
-		ss.Set("font-size", "2rem")
-		ss.Set("font-weight", "700")
-		ss.Set("line-height", "1.15")
+		return size("2rem", "700", "1.15")
+	}
+	return nil
+}
+
+// setStyles adds f's declarations to ss.
+func (f FontSize) setStyles(ss *sheet.StyleSet) {
+	for _, d := range f.decls() {
+		ss.Set(d.property, d.value)
 	}
 }
 

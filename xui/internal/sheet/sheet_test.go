@@ -74,6 +74,44 @@ func TestSetPseudoNests(t *testing.T) {
 	}
 }
 
+func TestSetMediaPseudoNests(t *testing.T) {
+	var sh Sheet
+	var s StyleSet
+	s.Set("color", "red")
+	s.SetPseudo(":active", "color", "blue")
+	s.SetMediaPseudo("(hover: hover)", ":hover:active", "color", "lime")
+	s.SetMediaPseudo("(hover: hover)", ":hover", "color", "green")
+	sh.ClassFor(s)
+	want := `{color:red;&:active{color:blue}@media (hover: hover){&:hover{color:green}&:hover:active{color:lime}}}`
+	if css := sh.CSS(); !strings.Contains(css, want) {
+		t.Errorf("media rule body not in canonical order:\n%s", css)
+	}
+}
+
+func TestSetMediaPseudoDistinguishes(t *testing.T) {
+	var sh Sheet
+	var a, b StyleSet
+	a.SetPseudo(":hover", "color", "red")
+	b.SetMediaPseudo("(hover: hover)", ":hover", "color", "red")
+	if ca, cb := sh.ClassFor(a), sh.ClassFor(b); ca == cb {
+		t.Errorf("bare and media-scoped pseudo declarations share class %q", ca)
+	}
+}
+
+func TestInvalidMediaPanics(t *testing.T) {
+	for _, media := range []string{"", "screen", "(hover: hover){", "(hover: hover);x", "(hover: hover)\n"} {
+		func() {
+			defer func() {
+				if recover() == nil {
+					t.Errorf("SetMediaPseudo(%q, ...) did not panic", media)
+				}
+			}()
+			var s StyleSet
+			s.SetMediaPseudo(media, ":hover", "color", "red")
+		}()
+	}
+}
+
 func TestSetPseudoDistinguishes(t *testing.T) {
 	var sh Sheet
 	var a, b StyleSet
