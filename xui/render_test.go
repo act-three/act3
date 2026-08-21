@@ -1181,13 +1181,23 @@ func TestFrameRatioAlignment(t *testing.T) {
 	}
 }
 
-// TestFrameRatioBaselineDegradesToTop pins the ratio frame's
-// treatment of a baseline alignment: it has no baseline, so the
-// alignment degrades to Top.
-func TestFrameRatioBaselineDegradesToTop(t *testing.T) {
-	html := render(t, ui.Text("x").FrameRatio(1, 1, ui.Horizontal, ui.FirstBaselineTrailing))
-	if !strings.Contains(html, "place-items:start end") || strings.Contains(html, "baseline") {
-		t.Errorf("baseline alignment should degrade to Top:\n%s", html)
+// TestFrameBaselineIsTop pins the frames' definition of a baseline
+// alignment: a frame has no baseline, so FirstBaseline is Top.
+func TestFrameBaselineIsTop(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		v    ui.View
+	}{
+		{"Frame", ui.Text("x").Frame(ui.Width(100), ui.FirstBaselineTrailing)},
+		{"FrameBounds", ui.Text("x").FrameBounds(ui.MinWidth(100), ui.FirstBaselineTrailing)},
+		{"FrameRatio", ui.Text("x").FrameRatio(1, 1, ui.Horizontal, ui.FirstBaselineTrailing)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, tt.v)
+			if !strings.Contains(html, "place-items:start end") || strings.Contains(html, "baseline") {
+				t.Errorf("FirstBaseline in a frame should be Top:\n%s", html)
+			}
+		})
 	}
 }
 
