@@ -105,6 +105,7 @@ func (lc layoutContext) minorAxes() AxisSet { return lc.majorAxis.complement() }
 //
 // Alignment also satisfies
 // [FrameOption], [FrameBoundsOption], and [FrameRatioOption].
+// On a frame, FirstBaseline is equivalent to Top.
 //
 // The default alignment is Center.
 type Alignment int
@@ -132,17 +133,26 @@ const (
 	FirstBaselineTrailing Alignment = FirstBaseline | Trailing
 )
 
-func (a Alignment) applyFrame(w *wrapFrame) { w.align = a }
+func (a Alignment) applyFrame(w *wrapFrame) {
+	w.align = a.withoutBaseline()
+}
 
-func (a Alignment) applyFrameBounds(w *wrapFrameBounds) { w.align = a }
+func (a Alignment) applyFrameBounds(w *wrapFrameBounds) {
+	w.align = a.withoutBaseline()
+}
 
-// A ratio frame has no baseline to align its subview to,
-// so FirstBaseline degrades to Top.
 func (a Alignment) applyFrameRatio(w *wrapFrameRatio) {
+	w.align = a.withoutBaseline()
+}
+
+// withoutBaseline returns a with FirstBaseline replaced by Top.
+// This provides a substitute definition
+// in contexts (such as a frame) where no baseline is defined.
+func (a Alignment) withoutBaseline() Alignment {
 	if a&FirstBaseline != 0 {
-		a = a&^FirstBaseline | Top
+		return a&^FirstBaseline | Top
 	}
-	w.align = a
+	return a
 }
 
 // keyword maps a single-axis projection to its CSS alignment keyword.

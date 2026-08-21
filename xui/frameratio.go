@@ -12,8 +12,6 @@ import (
 // aligned to the bottom of the frame:
 //
 //	view.FrameRatio(3, 2, Horizontal, Bottom)
-//
-// On a frame, FirstBaseline is equivalent to Top.
 type FrameRatioOption interface{ applyFrameRatio(*wrapFrameRatio) }
 
 // wrapFrameRatio is an aspect-ratio frame: a single-cell grid whose
