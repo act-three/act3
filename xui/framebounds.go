@@ -108,8 +108,8 @@ func (x *axisBounds) setIdeal(s size) {
 // clamped within its per-axis bounds.
 // it places the subview in the resulting box.
 // Bounds are not definite sizes:
-// the frame stays transparent to fill requests
-// and to unbounded available space,
+// the frame propagates fill requests outward
+// and unbounded available space inward,
 // and its box tracks available space above the bounds wherever it lands.
 // The exception is an axis with unbounded available space and a set
 // ideal size: the ideal, being definite, settles the axis — fills stop,

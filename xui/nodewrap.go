@@ -13,8 +13,8 @@ import (
 // wrapSubview renders n as the content of a fresh wrapper plan.
 // The subview sits in the wrapper's single-cell grid,
 // and the wrapper forwards the subview's fill request and rigid axes,
-// staying layout-transparent.
-// A frame masks the forwarded axes its own geometry governs.
+// so it is layout-preserving initially.
+// (A frame then masks the forwarded axes its own geometry governs.)
 // wrapSubview strips env's box values before the subview renders,
 // so they cannot land on the subview's box.
 func wrapSubview(env environment, n node) plan {
