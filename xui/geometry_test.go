@@ -559,6 +559,71 @@ func TestGeometrySoftFrameIdeal(t *testing.T) {
 	})
 }
 
+// TestGeometryGridColumns pins cell geometry: Columns divides the
+// available width, less the gaps, equally; subviews wrap into rows in
+// order; and a filling subview takes its whole cell.
+func TestGeometryGridColumns(t *testing.T) {
+	var cells []ui.View
+	for range 5 {
+		cells = append(cells, ui.CSSColor("#f00").Frame(ui.Height(20)))
+	}
+	stage(t, ui.VStack(ui.Grid(ui.Columns(3), cells...)), func(s *uitest.Session) {
+		grid := s.Rect("ui-grid", 0)
+		within(t, "grid width", grid.W, 600, 1)
+		cell := (600 - 2*8) / 3.0
+		for i := range 5 {
+			r := s.Rect("ui-color", i)
+			within(t, fmt.Sprintf("cell %d width", i), r.W, cell, 1)
+			within(t, fmt.Sprintf("cell %d left", i), r.X, float64(i%3)*(cell+8), 1)
+			within(t, fmt.Sprintf("cell %d top", i), r.Y-grid.Y, float64(i/3)*(20+8), 1)
+		}
+	})
+}
+
+// TestGeometryGridColumnsStayEqual pins the track contract under
+// pressure: a subview wider than its cell overflows it rather than
+// widening its column, so the other columns keep their share.
+func TestGeometryGridColumnsStayEqual(t *testing.T) {
+	wide := ui.CSSColor("#f00").Frame(ui.Width(500), ui.Height(20))
+	fill := ui.CSSColor("#00f").Frame(ui.Height(20))
+	stage(t, ui.VStack(ui.Grid(ui.Columns(3), wide, fill, fill)), func(s *uitest.Session) {
+		cell := (600 - 2*8) / 3.0
+		within(t, "wide subview width", s.Rect("ui-color", 0).W, 500, 1)
+		within(t, "second cell left", s.Rect("ui-color", 1).X, cell+8, 1)
+		within(t, "second cell width", s.Rect("ui-color", 1).W, cell, 1)
+		within(t, "third cell left", s.Rect("ui-color", 2).X, 2*(cell+8), 1)
+	})
+}
+
+// TestGeometryGridHugs pins the hugging size: a Columns grid of
+// non-filling subviews is as wide as its widest subview times its
+// column count, plus gaps, and sits at the stack's alignment.
+func TestGeometryGridHugs(t *testing.T) {
+	narrow := ui.CSSColor("#f00").Frame(ui.Width(30), ui.Height(20))
+	wide := ui.CSSColor("#00f").Frame(ui.Width(50), ui.Height(20))
+	stage(t, ui.VStack(ui.Grid(ui.Columns(3), narrow, wide, narrow, narrow)), func(s *uitest.Session) {
+		grid := s.Rect("ui-grid", 0)
+		within(t, "grid width", grid.W, 3*50+2*8, 1)
+		within(t, "grid centered", grid.X+grid.W/2, 300, 1)
+		within(t, "second column left", s.Rect("ui-color", 1).X-grid.X, 50+8, 1)
+	})
+}
+
+// TestGeometryGridCellMinWidth pins the adaptive layout: as many
+// columns as fit at the minimum width, each widened to share the rest.
+func TestGeometryGridCellMinWidth(t *testing.T) {
+	var cells []ui.View
+	for range 4 {
+		cells = append(cells, ui.CSSColor("#f00").Frame(ui.Height(20)))
+	}
+	// Three 150px columns and two gaps fit in 600px; four do not.
+	stage(t, ui.VStack(ui.Grid(ui.ColumnMinWidth(150), cells...)), func(s *uitest.Session) {
+		cell := (600 - 2*8) / 3.0
+		within(t, "cell width", s.Rect("ui-color", 0).W, cell, 1)
+		within(t, "fourth cell top", s.Rect("ui-color", 3).Y-s.Rect("ui-grid", 0).Y, 20+8, 1)
+	})
+}
+
 // TestGeometryGalleryFits loads the full fixture gallery and checks nothing
 // forces its scroll viewport to scroll horizontally.
 func TestGeometryGalleryFits(t *testing.T) {
