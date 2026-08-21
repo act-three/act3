@@ -624,6 +624,71 @@ func TestGeometryGridCellMinWidth(t *testing.T) {
 	})
 }
 
+// TestGeometryFrameRatioAnchors pins the ratio frame's contract in each
+// kind of parent: on the anchor axis the frame is sized as its subview
+// would be, and the other axis follows by the ratio.
+func TestGeometryFrameRatioAnchors(t *testing.T) {
+	color := func() ui.View { return ui.CSSColor("#f00") }
+	for _, tt := range []struct {
+		name string
+		v    ui.View
+		w, h float64
+	}{
+		// A fill anchored in a grid cell, a row's main axis,
+		// and a column's cross axis.
+		{"grid cell", ui.Grid(ui.Columns(3), color().FrameRatio(2, 3, ui.Horizontal)), (600 - 16) / 3.0, (600 - 16) / 3.0 * 1.5},
+		{"row main axis", ui.HStack(color().FrameRatio(3, 1, ui.Horizontal)), 600, 200},
+		{"column cross axis", ui.VStack(color().FrameRatio(3, 1, ui.Horizontal)), 600, 200},
+		{"column main axis", ui.VStack(color().FrameRatio(1, 2, ui.Vertical)), 200, 400},
+		{"row cross axis", ui.HStack(color().FrameRatio(1, 2, ui.Vertical)), 200, 400},
+		// A definite frame anchors the other axis.
+		{"definite width", color().Frame(ui.Width(90)).FrameRatio(3, 2, ui.Horizontal), 90, 60},
+		{"definite height", color().Frame(ui.Height(100)).FrameRatio(2, 1, ui.Vertical), 200, 100},
+		// An ideal size anchors under unbounded available space.
+		{"ideal width", ui.ScrollView(ui.Horizontal, color().FrameBounds(ui.IdealWidth(120)).FrameRatio(3, 1, ui.Horizontal)), 120, 40},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			stage(t, tt.v, func(s *uitest.Session) {
+				r := s.Rect("ui-aspect", 0)
+				within(t, "width", r.W, tt.w, 1)
+				within(t, "height", r.H, tt.h, 1)
+				c := s.Rect("ui-color", 0)
+				within(t, "subview width", c.W, tt.w, 1)
+				within(t, "subview height", c.H, tt.h, 1)
+			})
+		})
+	}
+	// A subview smaller than the frame sits at the frame's alignment,
+	// in the rotated frame too.
+	// A 20px square anchors each axis in turn; the derived axis is
+	// larger (40) or smaller (10) than the square.
+	small := func() ui.View { return ui.CSSColor("#00f").Frame(ui.Width(20), ui.Height(20)) }
+	for _, tt := range []struct {
+		name string
+		v    ui.View
+		w, h float64
+	}{
+		{"horizontal anchor", ui.VStack(small().FrameRatio(1, 2, ui.Horizontal, ui.TopLeading)), 20, 40},
+		{"vertical anchor", ui.VStack(small().FrameRatio(1, 2, ui.Vertical, ui.TopLeading)), 10, 20},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			stage(t, tt.v, func(s *uitest.Session) {
+				frame, sub := s.Rect("ui-aspect", 0), s.Rect("ui-color", 0)
+				within(t, "frame width", frame.W, tt.w, 1)
+				within(t, "frame height", frame.H, tt.h, 1)
+				within(t, "subview left", sub.X, frame.X, 1)
+				within(t, "subview top", sub.Y, frame.Y, 1)
+			})
+		})
+	}
+	// An intrinsic size anchors a non-filling view.
+	stage(t, ui.HStack(ui.Text("hello").FrameRatio(1, 1, ui.Horizontal), ui.Text("b")), func(s *uitest.Session) {
+		r := s.Rect("ui-aspect", 0)
+		within(t, "square", r.H, r.W, 1)
+		within(t, "width is the text's", r.W, s.Rect("ui-text", 0).W, 1)
+	})
+}
+
 // TestGeometryGalleryFits loads the full fixture gallery and checks nothing
 // forces its scroll viewport to scroll horizontally.
 func TestGeometryGalleryFits(t *testing.T) {

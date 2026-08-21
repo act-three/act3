@@ -60,6 +60,22 @@ type View interface {
 	// Note that type Alignment satisfies FrameBoundsOption.
 	FrameBounds(...FrameBoundsOption) View
 
+	// FrameRatio positions the receiver inside an invisible frame
+	// with a width:height aspect ratio of w:h.
+	//
+	// The anchor must be Horizontal or Vertical.
+	// On the anchor axis, the frame adopts the size of the receiver.
+	// On the other axis, its size is derived by the ratio.
+	//
+	// To display a 16:9 thumbnail, as wide as its available space:
+	//
+	//	Image(url).
+	//		FramedAs(ScaledToFill).
+	//		FrameRatio(16, 9, Horizontal)
+	//
+	// Note that type Alignment satisfies FrameRatioOption.
+	FrameRatio(w, h int, anchor AxisSet, o ...FrameRatioOption) View
+
 	// Overlay displays o as a layer on top of the receiver. Opaque
 	// regions of o obscure the receiver where they overlap.
 	//
@@ -184,6 +200,9 @@ type containerKind int
 const (
 	containerGrid containerKind = iota
 	containerFlex
+	// containerGridRotated is a grid whose writing mode is
+	// rotated a quarter turn, so its inline axis is vertical.
+	containerGridRotated
 )
 
 // environment carries the top-down state of a lowering pass.

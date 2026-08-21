@@ -36,6 +36,15 @@ func (s AxisSet) addFillStylesTo(ss *sheet.StyleSet, env environment) {
 		if s.hasAny(env.lc.minorAxes()) {
 			ss.Set("align-self", "stretch")
 		}
+	case containerGridRotated:
+		// Self-alignment is logical. In a rotated grid, justify-self
+		// runs vertically and align-self runs horizontally.
+		if s.hasAll(Horizontal) {
+			ss.Set("align-self", "stretch")
+		}
+		if s.hasAll(Vertical) {
+			ss.Set("justify-self", "stretch")
+		}
 	default:
 		if s.hasAll(Horizontal) {
 			ss.Set("justify-self", "stretch")
@@ -94,7 +103,8 @@ func (lc layoutContext) minorAxes() AxisSet { return lc.majorAxis.complement() }
 // For two views to be aligned,
 // they are placed so their alignment points coincide.
 //
-// Alignment also satisfies [FrameOption] and [FrameBoundsOption].
+// Alignment also satisfies
+// [FrameOption], [FrameBoundsOption], and [FrameRatioOption].
 //
 // The default alignment is Center.
 type Alignment int
@@ -102,6 +112,7 @@ type Alignment int
 var (
 	_ FrameOption       = Alignment(0)
 	_ FrameBoundsOption = Alignment(0)
+	_ FrameRatioOption  = Alignment(0)
 )
 
 const (
@@ -124,6 +135,15 @@ const (
 func (a Alignment) applyFrame(w *wrapFrame) { w.align = a }
 
 func (a Alignment) applyFrameBounds(w *wrapFrameBounds) { w.align = a }
+
+// A ratio frame has no baseline to align its subview to,
+// so FirstBaseline degrades to Top.
+func (a Alignment) applyFrameRatio(w *wrapFrameRatio) {
+	if a&FirstBaseline != 0 {
+		a = a&^FirstBaseline | Top
+	}
+	w.align = a
+}
 
 // keyword maps a single-axis projection to its CSS alignment keyword.
 // It panics on an alignment with more than one bit set in an axis,
@@ -172,4 +192,14 @@ func (a Alignment) placeItems() string {
 		return "center"
 	}
 	return a.vertical().keyword() + " " + a.horizontal().keyword()
+}
+
+// placeItemsRotated is placeItems for a container
+// whose writing mode is rotated a quarter turn,
+// so that its block axis is horizontal.
+func (a Alignment) placeItemsRotated() string {
+	if a == Center {
+		return "center"
+	}
+	return a.horizontal().keyword() + " " + a.vertical().keyword()
 }
