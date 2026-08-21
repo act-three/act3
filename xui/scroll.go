@@ -53,7 +53,7 @@ func (s scrollNode) render(env environment) box {
 	env.style.Set("contain", "size") // Viewport size doesn't depend on its contents.
 	content, _ := subviewsRendered(environment{sheet: env.sheet},
 		s.contents.
-			Modify(modFixedSize{axes: s.along}),
+			modify(modFixedSize{axes: s.along}),
 	)
 	p := plan{
 		fills:   Horizontal | Vertical,
