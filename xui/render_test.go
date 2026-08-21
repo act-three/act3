@@ -1126,6 +1126,92 @@ func TestGridFill(t *testing.T) {
 	}
 }
 
+// TestFrameRatio pins the lowering: the ratio is declared, the
+// anchor axis keeps the subview's fill, and the derived axis issues
+// none, so no stretch can override the ratio.
+func TestFrameRatio(t *testing.T) {
+	wide := render(t, ui.VStack(ui.CSSColor("#f00").FrameRatio(2, 3, ui.Horizontal)))
+	rule := classRule(t, wide, `<ui-aspect class="(ui-\w+)"`)
+	for _, w := range []string{"aspect-ratio:2 / 3", "align-self:stretch", "min-height:0"} {
+		if !strings.Contains(rule, w) {
+			t.Errorf("width-anchored rule missing %q: %q", w, rule)
+		}
+	}
+	if strings.Contains(rule, "flex-grow") {
+		t.Errorf("derived height should not fill the column, got %q", rule)
+	}
+	tall := render(t, ui.HStack(ui.CSSColor("#f00").FrameRatio(2, 3, ui.Vertical)))
+	rule = classRule(t, tall, `<ui-aspect class="(ui-\w+)"`)
+	for _, w := range []string{"aspect-ratio:2 / 3", "align-self:stretch", "min-width:0", "flex-shrink:0", "writing-mode:vertical-lr"} {
+		if !strings.Contains(rule, w) {
+			t.Errorf("height-anchored rule missing %q: %q", w, rule)
+		}
+	}
+	if strings.Contains(rule, "flex-grow") {
+		t.Errorf("derived width should not fill the row, got %q", rule)
+	}
+	// The rotated frame's subview is rotated back, and its fills
+	// are lowered in the frame's rotated axes.
+	sub := classRule(t, tall, `<ui-color class="(ui-\w+)"`)
+	for _, w := range []string{"writing-mode:horizontal-tb", "justify-self:stretch", "align-self:stretch"} {
+		if !strings.Contains(sub, w) {
+			t.Errorf("rotated frame's subview rule missing %q: %q", w, sub)
+		}
+	}
+	half := render(t, ui.HStack(ui.Text("x").FrameRatio(2, 3, ui.Vertical)))
+	if sub := classRule(t, half, `<ui-text class="(ui-\w+)"`); strings.Contains(sub, "stretch") {
+		t.Errorf("non-filling subview should not stretch in the rotated frame, got %q", sub)
+	}
+}
+
+// TestFrameRatioAlignment pins placement in the ratio frame: the
+// alignment lowers directly for a horizontal anchor and on swapped
+// axes for the rotated vertical anchor, which also keeps Leading on
+// the leading edge in a right-to-left document.
+func TestFrameRatioAlignment(t *testing.T) {
+	wide := classRule(t, render(t, ui.Text("x").FrameRatio(2, 3, ui.Horizontal, ui.BottomLeading)), `<ui-aspect class="(ui-\w+)"`)
+	if !strings.Contains(wide, "place-items:end start") {
+		t.Errorf("width-anchored rule should place bottom leading, got %q", wide)
+	}
+	tall := classRule(t, render(t, ui.Text("x").FrameRatio(2, 3, ui.Vertical, ui.BottomLeading)), `<ui-aspect class="(ui-\w+)"`)
+	for _, w := range []string{"place-items:start end", "&:dir(rtl){writing-mode:vertical-rl}"} {
+		if !strings.Contains(tall, w) {
+			t.Errorf("height-anchored rule missing %q: %q", w, tall)
+		}
+	}
+}
+
+// TestFrameRatioBaselineDegradesToTop pins the ratio frame's
+// treatment of a baseline alignment: it has no baseline, so the
+// alignment degrades to Top.
+func TestFrameRatioBaselineDegradesToTop(t *testing.T) {
+	html := render(t, ui.Text("x").FrameRatio(1, 1, ui.Horizontal, ui.FirstBaselineTrailing))
+	if !strings.Contains(html, "place-items:start end") || strings.Contains(html, "baseline") {
+		t.Errorf("baseline alignment should degrade to Top:\n%s", html)
+	}
+}
+
+// TestFrameRatioPanics pins the constructor's contract.
+func TestFrameRatioPanics(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		f    func()
+	}{
+		{"zero ratio", func() { ui.Text("x").FrameRatio(0, 1, ui.Horizontal) }},
+		{"both axes", func() { ui.Text("x").FrameRatio(1, 1, ui.Horizontal|ui.Vertical) }},
+		{"no axis", func() { ui.Text("x").FrameRatio(1, 1, 0) }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if recover() == nil {
+					t.Error("did not panic")
+				}
+			}()
+			tt.f()
+		})
+	}
+}
+
 // TestGridLayoutPanics pins the layout constructors' contracts.
 func TestGridLayoutPanics(t *testing.T) {
 	for _, tt := range []struct {

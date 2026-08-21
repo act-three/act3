@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 )
@@ -123,4 +125,18 @@ func (v base) FrameBounds(o ...FrameBoundsOption) View {
 		o.applyFrameBounds(&w)
 	}
 	return v.modify(w)
+}
+
+func (v base) FrameRatio(w, h int, anchor AxisSet, o ...FrameRatioOption) View {
+	if !(w > 0 && h > 0) {
+		panic(fmt.Sprintf("ui: FrameRatio(%d, %d) is not a ratio", w, h))
+	}
+	if anchor != Horizontal && anchor != Vertical {
+		panic("ui: FrameRatio anchor must be Horizontal or Vertical")
+	}
+	f := wrapFrameRatio{w: w, h: h, anchor: anchor}
+	for _, o := range o {
+		o.applyFrameRatio(&f)
+	}
+	return v.modify(f)
 }

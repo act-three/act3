@@ -232,6 +232,20 @@ func gridDemo() View {
 		Gap(16)
 }
 
+func posterWall() View {
+	var posters []View
+	for _, c := range []string{"#f59e0b", "#0ea5e9", "#65a30d", "#e11d48", "#8b5cf6", "#14b8a6", "#f97316", "#ec4899"} {
+		posters = append(
+			posters,
+			Image(placeholderImage(120, 180, c)).
+				FramedAs(ScaledToFill).
+				FrameRatio(2, 3, Horizontal).
+				BorderShape(RoundedRectangle),
+		)
+	}
+	return Grid(Columns(6), posters...)
+}
+
 func section(title string, body View) View {
 	return VStack(
 		Text(title).
@@ -263,6 +277,7 @@ func Page() View {
 		section("Text Layout", textLayout()),
 		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
 		section("Grid (Columns(4), then CellMinWidth(120))", gridDemo()),
+		section("FrameRatio (2:3 posters anchored on width, in Columns(6))", posterWall()),
 	).
 		Gap(32).
 		Alignment(Leading).

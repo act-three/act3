@@ -18,8 +18,13 @@ import (
 // wrapSubview strips env's box values before the subview renders,
 // so they cannot land on the subview's box.
 func wrapSubview(env environment, n node) plan {
+	return wrapSubviewIn(env, containerGrid, n)
+}
+
+// wrapSubviewIn is wrapSubview for a wrapper of the given container kind.
+func wrapSubviewIn(env environment, kind containerKind, n node) plan {
 	env.boxenv = boxenv{}
-	env.container = containerGrid
+	env.container = kind
 	b := n.render(env)
 	return plan{
 		fills:   b.fills,
