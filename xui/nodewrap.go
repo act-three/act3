@@ -76,7 +76,7 @@ func (w wrapLayer) render(env environment) box {
 		// coordinates, so its anchor point lands there instead.
 		x := w.at.horizontal().point() - w.anchor.horizontal().point()
 		y := w.at.vertical().point() - w.anchor.vertical().point()
-		view = view.Modify(modStyle{"translate", strconv.Itoa(x) + "% " + strconv.Itoa(y) + "%"})
+		view = view.modify(modStyle{"translate", strconv.Itoa(x) + "% " + strconv.Itoa(y) + "%"})
 	}
 	if w.over {
 		tag = "ui-overlay"
@@ -84,7 +84,7 @@ func (w wrapLayer) render(env environment) box {
 		// The overlay box blankets the base; input falls through it
 		// to the base, and only the layered subviews take hits.
 		lss.Set("pointer-events", "none")
-		view = view.Modify(modStyle{"pointer-events", "auto"})
+		view = view.modify(modStyle{"pointer-events", "auto"})
 	} else {
 		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}

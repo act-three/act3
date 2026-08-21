@@ -21,12 +21,12 @@ func (v base) Modify(m Modifier, states ...State) View {
 	for _, x := range states {
 		s |= x
 	}
-	if s != 0 {
-		sf, ok := m.(stateful)
-		if !ok {
-			panic("ui: modifier cannot be state-scoped")
-		}
-		m = sf.withState(s)
+	return v.modify(m.withState(s))
+}
+
+func (v base) modify(m modifier) View {
+	if m == nil {
+		return v
 	}
 	out := make(base, len(v))
 	for i, n := range v {
@@ -44,7 +44,7 @@ func (v base) WhileInvalid(m Modifier) View     { return v.Modify(m, Invalid) }
 func (v base) WhilePlaceholder(m Modifier) View { return v.Modify(m, Placeholder) }
 
 func (v base) Attr(a ...domi.Attr) View {
-	return v.Modify(modAttr{attr: domi.Group(a...)})
+	return v.modify(modAttr{attr: domi.Group(a...)})
 }
 
 func (v base) Background(c Color) View {
@@ -60,12 +60,12 @@ func (v base) BorderStroke(px float64, c Color) View {
 }
 
 func (v base) Class(c ...string) View {
-	return v.Modify(modAttr{attr: attr.Class(c...)})
+	return v.modify(modAttr{attr: attr.Class(c...)})
 }
 
 func (v base) FixedSize() View {
 	return v.
-		Modify(modFixedSize{Horizontal | Vertical}).
+		modify(modFixedSize{Horizontal | Vertical}).
 		Class("ui-fixed-size")
 }
 
@@ -82,7 +82,7 @@ func (v base) Opacity(x float64) View {
 }
 
 func (v base) Tag(name string) View {
-	return v.Modify(modTag{name: name})
+	return v.modify(modTag{name: name})
 }
 
 func (v base) Underlay(a Alignment, u View) View {
@@ -90,7 +90,7 @@ func (v base) Underlay(a Alignment, u View) View {
 }
 
 func (v base) UnderlayAt(at, anchor Alignment, u View) View {
-	return v.Modify(wrapLayer{view: u, over: false, at: at, anchor: anchor})
+	return v.modify(wrapLayer{view: u, over: false, at: at, anchor: anchor})
 }
 
 func (v base) Overlay(a Alignment, o View) View {
@@ -98,7 +98,7 @@ func (v base) Overlay(a Alignment, o View) View {
 }
 
 func (v base) OverlayAt(at, anchor Alignment, o View) View {
-	return v.Modify(wrapLayer{view: o, over: true, at: at, anchor: anchor})
+	return v.modify(wrapLayer{view: o, over: true, at: at, anchor: anchor})
 }
 
 func (v base) Padding(s ...EdgeSpace) View {
@@ -106,7 +106,7 @@ func (v base) Padding(s ...EdgeSpace) View {
 	for _, s := range s {
 		sum = sum.add(s)
 	}
-	return v.Modify(wrapPadding{space: sum})
+	return v.modify(wrapPadding{space: sum})
 }
 
 func (v base) Frame(o ...FrameOption) View {
@@ -114,7 +114,7 @@ func (v base) Frame(o ...FrameOption) View {
 	for _, o := range o {
 		o.applyFrame(&w)
 	}
-	return v.Modify(w)
+	return v.modify(w)
 }
 
 func (v base) FrameBounds(o ...FrameBoundsOption) View {
@@ -122,5 +122,5 @@ func (v base) FrameBounds(o ...FrameBoundsOption) View {
 	for _, o := range o {
 		o.applyFrameBounds(&w)
 	}
-	return v.Modify(w)
+	return v.modify(w)
 }

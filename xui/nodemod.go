@@ -13,13 +13,14 @@ import (
 //
 // A nil Modifier has no effect.
 type Modifier interface {
-	modify(node) node
+	modifier
+	withState(State) Modifier
 }
 
-// A stateful modifier can be scoped to a state set by [View.Modify].
-type stateful interface {
-	Modifier
-	withState(State) Modifier
+// A modifier configures the behavior of a View.
+// It can be applied with View.modify.
+type modifier interface {
+	modify(node) node
 }
 
 // A nodeEnv adjusts the environment for its subtree.
