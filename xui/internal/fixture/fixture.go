@@ -207,6 +207,31 @@ func stateDemo() View {
 		Attr(attr.TabIndex("0"))
 }
 
+func gridDemo() View {
+	var cells []View
+	for i, c := range []string{
+		"#f59e0b", "#0ea5e9", "#65a30d", "#e11d48", "#8b5cf6", "#14b8a6", "#f97316",
+		"#ec4899", "#3b82f6", "#84cc16", "#a855f7", "#06b6d4", "#ef4444",
+	} {
+		cells = append(
+			cells,
+			ZStack(
+				CSSColor(c).
+					Frame(Height(48)),
+				Text(strconv.Itoa(i+1)).
+					TextForeground(CSSColor("#fff")),
+			).
+				BorderShape(RoundedRectangle),
+		)
+	}
+	return VStack(
+		Grid(Columns(4), cells...),
+		Grid(ColumnMinWidth(120), cells...).
+			Gap(4),
+	).
+		Gap(16)
+}
+
 func section(title string, body View) View {
 	return VStack(
 		Text(title).
@@ -237,6 +262,7 @@ func Page() View {
 		section("Rich text (per-run bold/italic/mono, whole-text color)", richText()),
 		section("Text Layout", textLayout()),
 		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
+		section("Grid (Columns(4), then CellMinWidth(120))", gridDemo()),
 	).
 		Gap(32).
 		Alignment(Leading).

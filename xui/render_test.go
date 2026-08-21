@@ -1076,3 +1076,72 @@ func TestRenderRootWrapsGroup(t *testing.T) {
 		t.Errorf("a single root view should not be wrapped:\n%s", single)
 	}
 }
+
+// TestGrid pins the grid lowering: the layout becomes the column
+// template, the grid carries the library's default gap and alignment,
+// a filling subview stretches across its cell, and its fill request
+// propagates to the grid.
+func TestGrid(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		layout ui.GridLayout
+		want   string
+	}{
+		{"Columns", ui.Columns(3), "grid-template-columns:repeat(3, minmax(0, 1fr))"},
+		{"CellMinWidth", ui.ColumnMinWidth(120), "grid-template-columns:repeat(auto-fill, minmax(120px, 1fr))"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, ui.VStack(ui.Grid(tt.layout, ui.CSSColor("#f00"), ui.Text("x"))))
+			grid := classRule(t, html, `<ui-grid class="(ui-\w+)"`)
+			for _, w := range []string{"display:grid", tt.want, "gap:8px", "place-items:center", "align-self:stretch"} {
+				if !strings.Contains(grid, w) {
+					t.Errorf("grid rule missing %q: %q", w, grid)
+				}
+			}
+			cell := classRule(t, html, `<ui-color class="(ui-\w+)"`)
+			if !strings.Contains(cell, "justify-self:stretch") {
+				t.Errorf("filling subview should stretch across its cell, got %q", cell)
+			}
+		})
+	}
+	custom := classRule(t, render(t, ui.Grid(ui.Columns(2), ui.Text("x")).Gap(0).Alignment(ui.TopLeading)), `<ui-grid class="(ui-\w+)"`)
+	for _, w := range []string{"gap:0px", "place-items:start start"} {
+		if !strings.Contains(custom, w) {
+			t.Errorf("grid rule missing %q: %q", w, custom)
+		}
+	}
+}
+
+// TestGridFill pins who asks for width: a Columns grid of non-filling
+// subviews hugs them like a stack, while a CellMinWidth grid fills
+// its available width regardless, since its column count depends on it.
+func TestGridFill(t *testing.T) {
+	hug := classRule(t, render(t, ui.VStack(ui.Grid(ui.Columns(2), ui.Text("x")))), `<ui-grid class="(ui-\w+)"`)
+	if strings.Contains(hug, "align-self:stretch") {
+		t.Errorf("Columns grid of non-filling subviews should hug them, got %q", hug)
+	}
+	fill := classRule(t, render(t, ui.VStack(ui.Grid(ui.ColumnMinWidth(100), ui.Text("x")))), `<ui-grid class="(ui-\w+)"`)
+	if !strings.Contains(fill, "align-self:stretch") {
+		t.Errorf("CellMinWidth grid should fill its width, got %q", fill)
+	}
+}
+
+// TestGridLayoutPanics pins the layout constructors' contracts.
+func TestGridLayoutPanics(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		f    func()
+	}{
+		{"Columns(0)", func() { ui.Columns(0) }},
+		{"CellMinWidth(0)", func() { ui.ColumnMinWidth(0) }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			defer func() {
+				if recover() == nil {
+					t.Error("did not panic")
+				}
+			}()
+			tt.f()
+		})
+	}
+}
