@@ -908,11 +908,11 @@ func TestStateModifiers(t *testing.T) {
 		v    ui.View
 		want string
 	}{
-		{ui.Text("x").WhileDisabled(blue), "&:disabled{color:#00f}"},
+		{ui.Text("x").WhileDisabled(blue), `&:is(:disabled, [aria-disabled="true"]){color:#00f}`},
 		{ui.Text("x").WhileChecked(blue), "&:checked{color:#00f}"},
 		{ui.Text("x").WhileInvalid(blue), "&:user-invalid{color:#00f}"},
 		{ui.Text("x").WhilePlaceholder(blue), "&:placeholder-shown{color:#00f}"},
-		{ui.Text("x").Modify(blue, ui.Disabled, ui.Checked), "&:disabled:checked{color:#00f}"},
+		{ui.Text("x").Modify(blue, ui.Disabled, ui.Checked), `&:is(:disabled, [aria-disabled="true"]):checked{color:#00f}`},
 	} {
 		got := render(t, tc.v)
 		if rule := classRule(t, got, `<ui-text class="(ui-\w+)"`); !strings.Contains(rule, tc.want) {
