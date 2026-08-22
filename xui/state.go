@@ -50,7 +50,9 @@ var pseudoClasses = [...]struct {
 	{Hovered, ":hover"},
 	{Focused, ":focus-visible"},
 	{Pressed, ":active"},
-	{Disabled, ":disabled"},
+	// Elements with no disabled attribute, such as anchors,
+	// are disabled by aria-disabled instead.
+	{Disabled, `:is(:disabled, [aria-disabled="true"])`},
 	{Checked, ":checked"},
 	{Invalid, ":user-invalid"},
 	{Placeholder, ":placeholder-shown"},

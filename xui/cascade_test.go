@@ -8,6 +8,7 @@ import (
 	ui "ily.dev/act3/xui"
 	"ily.dev/act3/xui/internal/uitest"
 	"ily.dev/domi"
+	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
 )
 
@@ -72,6 +73,28 @@ func TestModifierBeatsComponentChrome(t *testing.T) {
 			t.Errorf("button color = %s, want the modifier's rgb(255, 0, 0)", color)
 		}
 	})
+}
+
+// TestDisabledStateMatchesARIA pins that Disabled is active on a
+// control disabled either natively or by aria-disabled, so views
+// lowered to elements without a disabled attribute take part.
+func TestDisabledStateMatchesARIA(t *testing.T) {
+	red := ui.Foreground(ui.CSSColor("rgb(255, 0, 0)"))
+	for name, v := range map[string]ui.View{
+		"native": ui.Text("x").Tag("button").Attr(attr.Disabled(true)).WhileDisabled(red),
+		"aria":   ui.Text("x").Attr(domi.Name("aria-disabled", "true")).WhileDisabled(red),
+		"none":   ui.Text("x").Tag("button").WhileDisabled(red),
+	} {
+		t.Run(name, func(t *testing.T) {
+			stage(t, v, func(s *uitest.Session) {
+				var color string
+				s.Eval(`getComputedStyle(document.querySelector("ui-text, button")).color`, &color)
+				if want := name != "none"; (color == "rgb(255, 0, 0)") != want {
+					t.Errorf("color = %s, want disabled styling = %v", color, want)
+				}
+			})
+		})
+	}
 }
 
 // TestOpacityMultiplies pins the collapse: opacity applications
