@@ -7,6 +7,7 @@ import (
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+	"ily.dev/domi/event"
 	"ily.dev/domi/html"
 
 	"ily.dev/act3/database/schema"
@@ -45,7 +46,7 @@ func AppSeriesEpisode(
 func appSeries(s []*model.SeriesWork, selectedID string, detail domi.Node, notFound bool) domi.Node {
 	return FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
-			Button(onClick(&msg.SeriesAddOpen{}), ButtonSurface)(
+			Button(event.Click(&msg.SeriesAddOpen{}), ButtonSurface)(
 				Text("Add Series"),
 			),
 		),
@@ -186,7 +187,7 @@ func appSeriesDetail(
 							SettingsItemLabelTitle("New Season"),
 						),
 
-						Button(onClick(&msg.SeasonAdd{EditionID: sed.ID()}),
+						Button(event.Click(&msg.SeasonAdd{EditionID: sed.ID()}),
 							ButtonGhost, ButtonSize2,
 						)(Text("Add")),
 					),
@@ -199,7 +200,7 @@ func appSeriesDetail(
 							SettingsItemLabelDescription("Create a new edition by duplicating this one"),
 						),
 
-						Button(onClick(&msg.SeriesEditionAdd{EditionID: sed.ID()}),
+						Button(event.Click(&msg.SeriesEditionAdd{EditionID: sed.ID()}),
 							ButtonGhost, ButtonSize2,
 						)(Text("Duplicate")),
 					),
@@ -326,7 +327,7 @@ func appSeriesDetailSeasonItem(sn *model.Season) domi.Node {
 				),
 			),
 			FlexRow(Gap2)(
-				Button(onClick(&msg.EpisodeCreate{SeasonID: sn.ID()}),
+				Button(event.Click(&msg.EpisodeCreate{SeasonID: sn.ID()}),
 					ButtonGhost, ButtonSize2,
 				)(Text("Add Episode")),
 				trashForm(kind.Season{}, sn.ID()),
@@ -374,7 +375,7 @@ func appSeriesDetailEpisodeListItem(ep *model.Episode) domi.Node {
 // box and its results. While a search is in flight, searching shows
 // a spinner in place of the previous results.
 func AppSeriesAddDialog(query string, searching bool, results []model.SeriesSearchResult) domi.Node {
-	return dialog(&msg.DialogClose{})(
+	return Dialog(&msg.DialogClose{})(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				Class("v-media-dialog-fixed"),
@@ -577,7 +578,7 @@ func AppEpisodeEditionButton(seasonID, episodeID string, inEdition bool, undoSor
 	return expr.IfElse(inEdition,
 		func() domi.Node {
 			return Button(
-				onClick(&msg.SeasonRemoveEpisode{SeasonID: seasonID, EpisodeID: episodeID}),
+				event.Click(&msg.SeasonRemoveEpisode{SeasonID: seasonID, EpisodeID: episodeID}),
 				Destructive, SettingsHover,
 			)(
 				Text("Remove"),
@@ -586,7 +587,7 @@ func AppEpisodeEditionButton(seasonID, episodeID string, inEdition bool, undoSor
 		func() domi.Node {
 			return FlexRow(Gap4, Style("align-items:center"))(
 				Button(
-					onClick(&msg.SeasonAddEpisode{SeasonID: seasonID, EpisodeID: episodeID, SortKey: undoSortKey}),
+					event.Click(&msg.SeasonAddEpisode{SeasonID: seasonID, EpisodeID: episodeID, SortKey: undoSortKey}),
 					ButtonGhost,
 				)(
 					Text("Undo"),
@@ -619,12 +620,12 @@ func appEpisodeDialogVideo(ep *model.Episode, v *model.Video) domi.Node {
 		),
 		FlexRow(Gap2, Style("margin-top: 0.5rem"))(
 			activeVideoControl(v, &msg.EpisodeVideoSetActive{EpisodeID: ep.ID(), VideoID: v.ID()}),
-			Button(onClick(&msg.VideoReimport{ID: v.ID()}), Destructive)(
+			Button(event.Click(&msg.VideoReimport{ID: v.ID()}), Destructive)(
 				domi.Text("Re-import"),
 			),
 			expr.IfElse(v.OriginalKey() != "",
 				func() domi.Node {
-					return Button(onClick(&msg.VideoReencode{ID: v.ID()}), Destructive)(
+					return Button(event.Click(&msg.VideoReencode{ID: v.ID()}), Destructive)(
 						domi.Text("Re-encode"),
 					)
 				},
@@ -636,7 +637,7 @@ func appEpisodeDialogVideo(ep *model.Episode, v *model.Video) domi.Node {
 }
 
 func episodeTypeButton(ep *model.Episode, value, label string) domi.Node {
-	return settingsButtonRowItem(ep.Type() == value, &msg.EpisodeSetType{
+	return SettingsButtonRowItem(ep.Type() == value, &msg.EpisodeSetType{
 		ID:   ep.ID(),
 		Type: value,
 	}, Text(label))
@@ -651,7 +652,7 @@ func activeVideoControl(v *model.Video, setActive msg.Msg) domi.Node {
 	case v.Active():
 		return TextNode(TextBold)(domi.Text("Active"))
 	case v.Playable():
-		return Button(onClick(setActive))(domi.Text("Set active"))
+		return Button(event.Click(setActive))(domi.Text("Set active"))
 	default:
 		return Group()
 	}
@@ -722,7 +723,7 @@ func AppSeriesSearchResults(results []model.SeriesSearchResult) domi.Node {
 						expr.IfElse(t.Local == nil,
 							func() domi.Node {
 								return Button(
-									onClick(&msg.SeriesAdd{TVmazeID: t.Show.ID}),
+									event.Click(&msg.SeriesAdd{TVmazeID: t.Show.ID}),
 									ButtonSurface,
 								)(domi.Text("Add"))
 							},

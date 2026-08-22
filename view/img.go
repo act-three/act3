@@ -27,7 +27,7 @@ func imgAttrs(im model.Image) domi.Attr {
 func AppImageDialog(k kind.ImageOwner, id string, im model.Image) domi.Node {
 	w, h := im.Kind.Aspect()
 	a := Aspect{W: w, H: h}
-	return imageDialog(&msg.DialogClose{}, a)(
+	return ImageDialog(&msg.DialogClose{}, a)(
 		buttonUpload()(
 			Hidden("kind", k.String()),
 			Hidden("id", id),

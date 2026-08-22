@@ -6,27 +6,9 @@ import (
 	"errors"
 
 	"ily.dev/domi"
-	"ily.dev/domi/event"
 
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
-	. "ily.dev/act3/ui"
-)
-
-// onClick delivers m when the element is clicked.
-var onClick = event.Click[msg.Msg]
-
-// The generic ui components that take a message value, specialized
-// to the application message type. (Handlers must return exactly
-// msg.Msg, so inference from a concrete message would panic at
-// render; components that take a func(value) msg.Msg infer correctly
-// and need no specialization. See domi.On.)
-var (
-	dialog                = Dialog[msg.Msg]
-	imageDialog           = ImageDialog[msg.Msg]
-	popover               = Popover[msg.Msg]
-	settingsToggle        = SettingsToggle[msg.Msg]
-	settingsButtonRowItem = SettingsButtonRowItem[msg.Msg]
 )
 
 // errNotAMove discards a change event that did not come from the

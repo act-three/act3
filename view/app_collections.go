@@ -5,6 +5,7 @@ import (
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+	"ily.dev/domi/event"
 	"ily.dev/domi/html"
 
 	"ily.dev/act3/model"
@@ -20,7 +21,7 @@ func AppCollections(
 ) (title string, n domi.Node) {
 	return "Collections", FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
-			Button(onClick(&msg.CollectionAdd{}), ButtonSurface)(Text("Add Collection")),
+			Button(event.Click(&msg.CollectionAdd{}), ButtonSurface)(Text("Add Collection")),
 		),
 		Split()(
 			List()(
@@ -105,7 +106,7 @@ func appCollectionDetail(col *model.Collection) domi.Node {
 									domi.Textf("%d Movies", len(col.Movies())),
 								),
 							),
-							Button(onClick(&msg.CollectionMovieAddOpen{CollectionID: col.ID()}), ButtonGhost)(
+							Button(event.Click(&msg.CollectionMovieAddOpen{CollectionID: col.ID()}), ButtonGhost)(
 								Text("Add Movie"),
 							),
 						),
@@ -119,7 +120,7 @@ func appCollectionDetail(col *model.Collection) domi.Node {
 									domi.Textf("%d Series", len(col.Series())),
 								),
 							),
-							Button(onClick(&msg.CollectionSeriesAddOpen{CollectionID: col.ID()}), ButtonGhost)(
+							Button(event.Click(&msg.CollectionSeriesAddOpen{CollectionID: col.ID()}), ButtonGhost)(
 								Text("Add Series"),
 							),
 						),
@@ -144,7 +145,7 @@ func appCollectionDetail(col *model.Collection) domi.Node {
 // AppCollectionMovieAddDialog renders the add-movie-to-collection
 // picker: a library search box and its results.
 func AppCollectionMovieAddDialog(colID, query string, results []model.CollectionMovieSearchResult) domi.Node {
-	return dialog(&msg.DialogClose{})(
+	return Dialog(&msg.DialogClose{})(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				Class("v-media-dialog-fixed"),
@@ -180,7 +181,7 @@ func AppCollectionMovieSearchResults(colID string, results []model.CollectionMov
 		rangeNodes(results, func(r model.CollectionMovieSearchResult) domi.Node {
 			mw := r.Movie
 			return html.Button(
-				onClick(&msg.CollectionMovieAdd{
+				event.Click(&msg.CollectionMovieAdd{
 					CollectionID: colID,
 					MovieID:      mw.MovieHead.ID(),
 				}),
@@ -219,7 +220,7 @@ func collectionMovieItems(col *model.Collection) domi.Node {
 				SettingsItemLabelIcon()(Icon("line/film-01")),
 				SettingsItemLabelTitle(mo.Title()+" ("+mo.Year()+")"),
 			),
-			Button(onClick(&msg.CollectionMovieRemove{
+			Button(event.Click(&msg.CollectionMovieRemove{
 				CollectionID: col.ID(),
 				MovieID:      mo.MovieHead.ID(),
 			}), SettingsHover, ButtonGhost)(Text("Remove")),
@@ -230,7 +231,7 @@ func collectionMovieItems(col *model.Collection) domi.Node {
 // AppCollectionSeriesAddDialog renders the add-series-to-collection
 // picker: a library search box and its results.
 func AppCollectionSeriesAddDialog(colID, query string, results []model.CollectionSeriesSearchResult) domi.Node {
-	return dialog(&msg.DialogClose{})(
+	return Dialog(&msg.DialogClose{})(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				Class("v-media-dialog-fixed"),
@@ -266,7 +267,7 @@ func AppCollectionSeriesSearchResults(colID string, results []model.CollectionSe
 		rangeNodes(results, func(r model.CollectionSeriesSearchResult) domi.Node {
 			sw := r.Series
 			return html.Button(
-				onClick(&msg.CollectionSeriesAdd{
+				event.Click(&msg.CollectionSeriesAdd{
 					CollectionID: colID,
 					SeriesID:     sw.SeriesHead.ID(),
 				}),
@@ -303,7 +304,7 @@ func collectionSeriesItems(col *model.Collection) domi.Node {
 				SettingsItemLabelIcon()(Icon("line/tv-03")),
 				SettingsItemLabelTitle(sw.Title()),
 			),
-			Button(onClick(&msg.CollectionSeriesRemove{
+			Button(event.Click(&msg.CollectionSeriesRemove{
 				CollectionID: col.ID(),
 				SeriesID:     sw.SeriesHead.ID(),
 			}), SettingsHover, ButtonGhost)(Text("Remove")),
