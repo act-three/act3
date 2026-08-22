@@ -36,5 +36,10 @@
 			color: inherit;
 			font: inherit;
 		}
+
+		ui-root a {
+			color: inherit;
+			text-decoration: none;
+		}
 	}
 }

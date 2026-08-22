@@ -195,6 +195,56 @@ func TestTagNamesElement(t *testing.T) {
 	}
 }
 
+// TestButtonAction pins the lowering of each kind of button action:
+// a message sends from a button element, a URL navigates from an
+// anchor, and disabling either one removes its means of activation.
+func TestButtonAction(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		v            ui.View
+		want, absent []string
+	}{
+		{
+			"send",
+			ui.Button(Msg{}, ui.Text("x")),
+			[]string{`<button `, ` type="button"`},
+			[]string{` disabled`},
+		},
+		{
+			"send disabled",
+			ui.Button(Msg{}, ui.Text("x")).Disabled(true),
+			[]string{`<button `, ` disabled`},
+			nil,
+		},
+		{
+			"navigate",
+			ui.Button("/movies", ui.Text("x")),
+			[]string{`<a `, ` href="/movies"`},
+			[]string{`aria-disabled`},
+		},
+		{
+			"navigate disabled",
+			ui.Button("/movies", ui.Text("x")).Disabled(true),
+			[]string{`<a `, ` aria-disabled="true"`},
+			[]string{` href=`},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, tt.v)
+			for _, s := range tt.want {
+				if !strings.Contains(html, s) {
+					t.Errorf("missing %q:\n%s", s, html)
+				}
+			}
+			for _, s := range tt.absent {
+				if strings.Contains(html, s) {
+					t.Errorf("unexpected %q:\n%s", s, html)
+				}
+			}
+		})
+	}
+}
+
 // TestTagInnermostWins pins Tag's contract: the innermost tag names the
 // element, so a view's intrinsic tag beats a Tag modifier, and the Tag
 // nearest the view beats a repetition.
