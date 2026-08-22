@@ -2,6 +2,7 @@ package ui_test
 
 import (
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -163,25 +164,37 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 	}
 }
 
-// TestButtonBorderReset pins the normalize tier against the UA
-// stylesheet: the native button border is reset, leaving the stroke
-// channel as the border's only painter. The reset covers every
-// button under the root, including ones in HTML view content.
-func TestButtonBorderReset(t *testing.T) {
-	for name, v := range map[string]ui.View{
-		"component": ui.Button(struct{}{}, ui.Text("x")),
-		"html":      ui.HTML(html.Button()(domi.Text("x"))),
-	} {
-		t.Run(name, func(t *testing.T) {
+// TestElementReset pins the normalize tier against the UA
+// stylesheet: an element under the root has no styling of its own,
+// whatever its tag, so a view's appearance is whatever its lowering
+// sets. HTML view content is the exception and keeps the browser's
+// styling.
+func TestElementReset(t *testing.T) {
+	const props = `["borderTopWidth","paddingTop","marginTop","textAlign","appearance","textDecorationLine","color","fontSize","fontWeight","display","cursor"]`
+	styleOf := func(s *uitest.Session, sel string) string {
+		var out string
+		s.Eval(`(() => { const c = getComputedStyle(document.querySelector(`+strconv.Quote(sel)+`)); return `+props+`.map(k => c[k]).join(";") })()`, &out)
+		return out
+	}
+	for _, tag := range []string{"button", "a", "h1", "ul", "pre", "code", "fieldset"} {
+		t.Run(tag, func(t *testing.T) {
+			v := ui.HStack(ui.Text("x"), ui.Text("x").Tag(tag).Attr(attr.Href("/")))
 			stage(t, v, func(s *uitest.Session) {
-				var w string
-				s.Eval(`getComputedStyle(document.querySelector("button")).borderTopWidth`, &w)
-				if w != "0px" {
-					t.Errorf("button border-width = %s, want 0px", w)
+				if plain, tagged := styleOf(s, "ui-text"), styleOf(s, tag); plain != tagged {
+					t.Errorf("%s = %s\nui-text = %s", tag, tagged, plain)
 				}
 			})
 		})
 	}
+	t.Run("html", func(t *testing.T) {
+		stage(t, ui.HTML(html.Button()(domi.Text("x"))), func(s *uitest.Session) {
+			var w string
+			s.Eval(`getComputedStyle(document.querySelector("button")).borderTopWidth`, &w)
+			if w == "0px" {
+				t.Errorf("HTML content button border-width = %s, want the browser's", w)
+			}
+		})
+	})
 }
 
 // TestBackgroundStacks pins the paint stack: an outer Background

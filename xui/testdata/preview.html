@@ -28,19 +28,12 @@
 
 	@layer normalize {
 		ui-root,
-		ui-root *,
-		ui-root *::before,
-		ui-root *::after { box-sizing: border-box; }
-
-		ui-root button {
-			border: 0;
-			color: inherit;
-			font: inherit;
-		}
-
-		ui-root a {
-			color: inherit;
-			text-decoration: none;
+		ui-root :not(style, ui-html *),
+		ui-root :not(ui-html *)::before,
+		ui-root :not(ui-html *)::after {
+			all: unset;
+			box-sizing: border-box;
+			outline: revert;
 		}
 	}
 }
