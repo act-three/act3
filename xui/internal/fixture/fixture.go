@@ -72,6 +72,7 @@ func moviePage(movies []Movie) View {
 			Text("Movies").
 				Font(Title),
 			Spacer(),
+			Button("/movies/trash", Text("Trash")),
 			Button(Msg{New: true}, Text("New")).
 				Role(RolePrimary),
 		),

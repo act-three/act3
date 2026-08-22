@@ -116,6 +116,31 @@ func TestOpacityMultiplies(t *testing.T) {
 	}
 }
 
+// TestButtonDisabledState pins that a disabled button enters the
+// Disabled state whatever its action, and that an enabled one does not.
+func TestButtonDisabledState(t *testing.T) {
+	red := ui.Foreground(ui.CSSColor("rgb(255, 0, 0)"))
+	for name, tc := range map[string]struct {
+		v    ui.View
+		want bool
+	}{
+		"send":              {ui.Button(struct{}{}, ui.Text("x")).WhileDisabled(red), false},
+		"send disabled":     {ui.Button(struct{}{}, ui.Text("x")).Disabled(true).WhileDisabled(red), true},
+		"navigate":          {ui.Button("/x", ui.Text("x")).WhileDisabled(red), false},
+		"navigate disabled": {ui.Button("/x", ui.Text("x")).Disabled(true).WhileDisabled(red), true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			stage(t, tc.v, func(s *uitest.Session) {
+				var color string
+				s.Eval(`getComputedStyle(document.querySelector("button, a")).color`, &color)
+				if got := color == "rgb(255, 0, 0)"; got != tc.want {
+					t.Errorf("color = %s, want disabled styling = %v", color, tc.want)
+				}
+			})
+		})
+	}
+}
+
 // TestOpacityComposesWithDisabled pins that the button's disabled
 // fade is an ordinary opacity application: server-known, it joins the
 // pending product, so a modifier opacity and the component fade
