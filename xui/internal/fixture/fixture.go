@@ -57,7 +57,7 @@ func accountCard(user User) View {
 				Gap(4).
 				Alignment(Leading),
 			Spacer(),
-			Button(Text("Edit"), Msg{Edit: true}).
+			Button(Msg{Edit: true}, Text("Edit")).
 				Role(RolePrimary),
 		).
 			Gap(12),
@@ -72,7 +72,7 @@ func moviePage(movies []Movie) View {
 			Text("Movies").
 				Font(Title),
 			Spacer(),
-			Button(Text("New"), Msg{New: true}).
+			Button(Msg{New: true}, Text("New")).
 				Role(RolePrimary),
 		),
 
@@ -103,7 +103,7 @@ func movieRow(movie Movie) View {
 			Gap(4).
 			Alignment(Leading),
 		Spacer(),
-		Button(Text("Watched"), Msg{Watched: movie.ID}),
+		Button(Msg{Watched: movie.ID}, Text("Watched")),
 	).
 		Gap(12).
 		Padding(Edges(12))

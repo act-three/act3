@@ -45,7 +45,7 @@ func accountCard(user User) ui.View {
 				ui.Text(user.Email).Foreground(ui.Muted),
 			).Gap(4).Alignment(ui.Leading),
 			ui.Spacer(),
-			ui.Button(ui.Text("Edit"), Msg{EditProfile: true}).Role(ui.RolePrimary),
+			ui.Button(Msg{EditProfile: true}, ui.Text("Edit")).Role(ui.RolePrimary),
 		).Gap(12).Alignment(ui.Center),
 	).
 		Padding(ui.Edges(16)).
@@ -58,7 +58,7 @@ func moviePage(movies []Movie) ui.View {
 		ui.HStack(
 			ui.Text("Movies").Font(ui.Title),
 			ui.Spacer(),
-			ui.Button(ui.Text("New"), Msg{NewMovie: true}).Role(ui.RolePrimary),
+			ui.Button(Msg{NewMovie: true}, ui.Text("New")).Role(ui.RolePrimary),
 		).Alignment(ui.Center),
 		ui.For(movies, movieKey, movieRow),
 	).
@@ -79,7 +79,7 @@ func movieRow(movie Movie) ui.View {
 			ui.Text(movie.Summary).Foreground(ui.Muted),
 		).Gap(4),
 		ui.Spacer(),
-		ui.Button(ui.Text("Watched"), Msg{Watched: movie.ID}),
+		ui.Button(Msg{Watched: movie.ID}, ui.Text("Watched")),
 	).Gap(12).Padding(ui.Edges(12))
 }
 
@@ -204,7 +204,7 @@ func TestTagInnermostWins(t *testing.T) {
 		v    ui.View
 		want string
 	}{
-		{"intrinsic tag", ui.Button(ui.Text("x"), Msg{}).Tag("figure"), "<button"},
+		{"intrinsic tag", ui.Button(Msg{}, ui.Text("x")).Tag("figure"), "<button"},
 		{"double Tag", ui.VStack().Tag("ul").Tag("ol"), "<ul"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
