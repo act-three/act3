@@ -32,7 +32,7 @@ type ButtonView interface {
 
 // Button returns a button with the given label.
 // It sends msg when clicked.
-func Button[Msg any](label View, msg Msg) ButtonView {
+func Button[Msg any](msg Msg, label View) ButtonView {
 	return buttonView{base{buttonNode{label: label, onClick: event.Click(msg)}}}
 }
 

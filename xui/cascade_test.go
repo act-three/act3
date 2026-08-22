@@ -60,7 +60,7 @@ func TestInheritedModifierCollapses(t *testing.T) {
 // button element itself, where its font:inherit and color:inherit —
 // the absence of an opinion — must yield to them.
 func TestModifierBeatsComponentChrome(t *testing.T) {
-	v := ui.Button(ui.Text("x"), struct{}{}).Font(ui.Title).Foreground(ui.CSSColor("rgb(255, 0, 0)"))
+	v := ui.Button(struct{}{}, ui.Text("x")).Font(ui.Title).Foreground(ui.CSSColor("rgb(255, 0, 0)"))
 	stage(t, v, func(s *uitest.Session) {
 		var size, color string
 		s.Eval(`getComputedStyle(document.querySelector("button")).fontSize`, &size)
@@ -98,7 +98,7 @@ func TestOpacityMultiplies(t *testing.T) {
 // pending product, so a modifier opacity and the component fade
 // multiply onto the one button element.
 func TestOpacityComposesWithDisabled(t *testing.T) {
-	v := ui.Button(ui.Text("x"), struct{}{}).Disabled(true).Opacity(0.1)
+	v := ui.Button(struct{}{}, ui.Text("x")).Disabled(true).Opacity(0.1)
 	stage(t, v, func(s *uitest.Session) {
 		var mods int
 		s.Eval(`document.querySelectorAll("ui-box").length`, &mods)
@@ -109,7 +109,7 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 		}
 	})
 
-	html := render(t, ui.Button(ui.Text("x"), struct{}{}).Disabled(true).Class("inner").Opacity(0.1))
+	html := render(t, ui.Button(struct{}{}, ui.Text("x")).Disabled(true).Class("inner").Opacity(0.1))
 	if got := strings.Count(html, "inner"); got != 1 || !strings.Contains(html, `<button class="inner `) {
 		t.Errorf("modifiers should land on the button element:\n%s", html)
 	}
@@ -121,7 +121,7 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 // button under the root, including ones in HTML view content.
 func TestButtonBorderReset(t *testing.T) {
 	for name, v := range map[string]ui.View{
-		"component": ui.Button(ui.Text("x"), struct{}{}),
+		"component": ui.Button(struct{}{}, ui.Text("x")),
 		"html":      ui.HTML(html.Button()(domi.Text("x"))),
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -233,7 +233,7 @@ func TestBorderStrokeShapeOrder(t *testing.T) {
 // hit-test transparency: a stroked container's ring covers its
 // content without stealing its pointer events.
 func TestBorderStrokeDoesNotInterceptClicks(t *testing.T) {
-	v := ui.HStack(ui.Button(ui.Text("click"), struct{}{})).BorderStroke(4, ui.CSSColor("red"))
+	v := ui.HStack(ui.Button(struct{}{}, ui.Text("click"))).BorderStroke(4, ui.CSSColor("red"))
 	stage(t, v, func(s *uitest.Session) {
 		var inButton bool
 		s.Eval(`(() => {
