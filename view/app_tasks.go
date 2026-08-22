@@ -3,6 +3,7 @@ package view
 import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+	"ily.dev/domi/event"
 	"ily.dev/domi/html"
 
 	"ily.dev/act3/expr"
@@ -35,7 +36,7 @@ func AppTasks(running []*model.RunningTask, queued, failed []*model.Task) (strin
 									TableCell()(domi.Text(t.ID())),
 									TableCell()(domi.Text(t.Args())),
 									TableCell()(
-										Button(onClick(&msg.TaskKill{ID: t.ID()}), Destructive)(
+										Button(event.Click(&msg.TaskKill{ID: t.ID()}), Destructive)(
 											domi.Text("Kill"),
 										),
 									),
@@ -106,7 +107,7 @@ func taskRow(t *model.Task, runLabel string) domi.Node {
 			TableCell()(domi.Text(t.Type())),
 			TableCell()(
 				domi.Text(t.ID()),
-				Button(onClick(&msg.TaskDelete{ID: t.ID()}), ButtonGhost)(
+				Button(event.Click(&msg.TaskDelete{ID: t.ID()}), ButtonGhost)(
 					domi.Text("Delete"),
 				),
 			),
@@ -117,7 +118,7 @@ func taskRow(t *model.Task, runLabel string) domi.Node {
 					return domi.Textf("%v", t.NextRun())
 				}),
 
-				Button(onClick(&msg.TaskRun{ID: t.ID()}), ButtonGhost)(
+				Button(event.Click(&msg.TaskRun{ID: t.ID()}), ButtonGhost)(
 					domi.Text(runLabel),
 				),
 			),

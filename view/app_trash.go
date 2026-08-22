@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"ily.dev/domi"
+	"ily.dev/domi/event"
 
 	"ily.dev/act3/model"
 	"ily.dev/act3/model/kind"
@@ -113,7 +114,7 @@ func appTrashDetail(it model.TrashItem) domi.Node {
 								SettingsItemLabelTitle("Restore"),
 								SettingsItemLabelDescription("Return this item to the library"),
 							),
-							Button(onClick(&msg.Restore{ID: it.ID}),
+							Button(event.Click(&msg.Restore{ID: it.ID}),
 								ButtonGhost, ButtonSize2,
 							)(Text("Restore")),
 						),
@@ -123,7 +124,7 @@ func appTrashDetail(it model.TrashItem) domi.Node {
 								SettingsItemLabelTitle("Purge"),
 								SettingsItemLabelDescription("Permanently delete this item"),
 							),
-							Button(onClick(&msg.Purge{ID: it.ID}),
+							Button(event.Click(&msg.Purge{ID: it.ID}),
 								Destructive, ButtonGhost, ButtonSize2,
 							)(Text("Purge")),
 						),
@@ -137,7 +138,7 @@ func appTrashDetail(it model.TrashItem) domi.Node {
 func appTrashDetailPath(id string) string { return "/app/trash/" + id }
 
 func trashForm(k kind.Trash, id string) domi.Node {
-	return Button(onClick(&msg.Trash{Kind: k, ID: id}),
+	return Button(event.Click(&msg.Trash{Kind: k, ID: id}),
 		Destructive, ButtonGhost, ButtonSize2,
 	)(Text("Delete"))
 }

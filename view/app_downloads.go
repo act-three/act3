@@ -10,6 +10,7 @@ import (
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+	"ily.dev/domi/event"
 	"ily.dev/domi/html"
 
 	"ily.dev/act3/expr"
@@ -268,7 +269,7 @@ func appDownloadsImportControl(dl *model.Download) domi.Node {
 				SettingsItemLabelTitle("Import"),
 				SettingsItemLabelDescription("Import downloaded files into the library"),
 			),
-			Button(onClick(&msg.DownloadImport{ID: dl.InfoHash()}),
+			Button(event.Click(&msg.DownloadImport{ID: dl.InfoHash()}),
 				ButtonGhost, ButtonSize2,
 			)(domi.Text("Import")),
 		)
@@ -278,7 +279,7 @@ func appDownloadsImportControl(dl *model.Download) domi.Node {
 				SettingsItemLabelTitle("Auto-Import"),
 				SettingsItemLabelDescription("Automatically import when download completes"),
 			),
-			settingsToggle(dl.AutoImport(), &msg.DownloadSetAutoImport{
+			SettingsToggle(dl.AutoImport(), &msg.DownloadSetAutoImport{
 				ID: dl.InfoHash(),
 				On: !dl.AutoImport(),
 			}),
@@ -321,7 +322,7 @@ func AppDownloadFileAttachPopover(
 			attachedEps = append(attachedEps, ep)
 		}
 	}
-	return popover(&msg.DialogClose{}, downloadFileAttachTriggerID(infoHash, filePath))(
+	return Popover(&msg.DialogClose{}, downloadFileAttachTriggerID(infoHash, filePath))(
 		FlexCol(
 			Style("width: 300px; height: 350px"),
 			stimulus.Controller("picker"),
@@ -378,7 +379,7 @@ func downloadAttachPickerEpisodes(
 					return Theme(Style("color:var(--text-3)"))(Icon("line/paperclip"))
 				}),
 
-				settingsToggle(attached, &msg.EpisodeVideoSet{
+				SettingsToggle(attached, &msg.EpisodeVideoSet{
 					InfoHash:  infoHash,
 					Path:      filePath,
 					EpisodeID: ep.ID(),
@@ -390,7 +391,7 @@ func downloadAttachPickerEpisodes(
 					return html.Button(
 						attr.Type("button"),
 						Style("position: absolute; inset: 0; background: none; border: none; cursor: pointer"),
-						onClick(&msg.DownloadFileAttachPick{
+						event.Click(&msg.DownloadFileAttachPick{
 							InfoHash:  infoHash,
 							Path:      filePath,
 							EpisodeID: ep.ID(),
@@ -452,7 +453,7 @@ func appDownloadsFileGroup(dir string, dfs []*model.DownloadFile) domi.Node {
 				iff(df.SeriesEdition() != nil, func() domi.Node {
 					return Button(
 						attr.ID(downloadFileAttachTriggerID(df.InfoHash(), df.Path())),
-						onClick(&msg.DownloadFileAttachOpen{
+						event.Click(&msg.DownloadFileAttachOpen{
 							InfoHash: df.InfoHash(),
 							Path:     df.Path(),
 						}),

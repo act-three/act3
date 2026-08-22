@@ -2,6 +2,7 @@ package view
 
 import (
 	"ily.dev/domi"
+	"ily.dev/domi/event"
 	"ily.dev/domi/html"
 
 	"ily.dev/act3/model"
@@ -14,7 +15,7 @@ func buttonImageEdit(open msg.Msg, im model.Image, a Aspect) domi.Node {
 		Class("v-button-image-edit"),
 		Stylef("aspect-ratio: %s", a),
 	)(
-		html.Button(onClick(open))(
+		html.Button(event.Click(open))(
 			PosterImg(a, PosterFill, imgAttrs(im)),
 		),
 		html.Div(Class("v-button-image-edit-overlay"))(

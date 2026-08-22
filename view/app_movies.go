@@ -3,6 +3,7 @@ package view
 import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+	"ily.dev/domi/event"
 	"ily.dev/domi/html"
 
 	"ily.dev/act3/expr"
@@ -29,10 +30,10 @@ func AppMovies(
 	return title, FlexCol(Class("v-media-page"))(
 		ToolbarPrimary()(
 			FlexRow(Gap4)(
-				Button(onClick(&msg.MovieAddOpen{}), ButtonSurface)(
+				Button(event.Click(&msg.MovieAddOpen{}), ButtonSurface)(
 					Text("Add Movie"),
 				),
-				Button(onClick(&msg.MovieCreate{}), ButtonSurface)(
+				Button(event.Click(&msg.MovieCreate{}), ButtonSurface)(
 					Text("New Movie"),
 				),
 			),
@@ -207,7 +208,7 @@ func appMoviesDetail(
 							SettingsItemLabelDescription("Create a new edition by duplicating this one"),
 						),
 
-						Button(onClick(&msg.MovieEditionAdd{EditionID: med.ID()}),
+						Button(event.Click(&msg.MovieEditionAdd{EditionID: med.ID()}),
 							ButtonGhost, ButtonSize2,
 						)(Text("Duplicate")),
 					),
@@ -246,7 +247,7 @@ func appMoviesDetail(
 // and its results. While a search is in flight, searching shows a
 // spinner in place of the previous results.
 func AppMovieAddDialog(query string, searching bool, results []model.MovieSearchResult) domi.Node {
-	return dialog(&msg.DialogClose{})(
+	return Dialog(&msg.DialogClose{})(
 		FlexCol(Gap2, Class("v-media-dialog"))(
 			html.Div(
 				Class("v-media-dialog-fixed"),
@@ -329,7 +330,7 @@ func movieSearchAction(t model.MovieSearchResult) domi.Node {
 		return movieResultLink(t.Local.EditorPath())
 	}
 	return Button(
-		onClick(&msg.MovieAdd{TMDBID: t.Movie.ID}),
+		event.Click(&msg.MovieAdd{TMDBID: t.Movie.ID}),
 		ButtonSurface,
 	)(domi.Text("Add"))
 }
@@ -364,7 +365,7 @@ func appMoviesEditionList(editions []*model.MovieWork, current *model.MovieEditi
 					),
 
 					iff(ed.MovieEditionHead.ID() == current.ID() && ed.MovieEditionHead.Slug() != "", func() domi.Node {
-						return Button(onClick(&msg.MovieEditionSetDefault{ID: ed.MovieEditionHead.ID()}),
+						return Button(event.Click(&msg.MovieEditionSetDefault{ID: ed.MovieEditionHead.ID()}),
 							ButtonGhost, ButtonSize2,
 						)(Text("Make Default"))
 					}),
@@ -407,12 +408,12 @@ func appMoviesDetailVideos(med *model.MovieEdition) domi.Node {
 				),
 				FlexRow(Gap2, Style("margin-top: 0.5rem"))(
 					activeVideoControl(v, &msg.MovieVideoSetActive{MovieEditionID: med.ID(), VideoID: v.ID()}),
-					Button(onClick(&msg.VideoReimport{ID: v.ID()}), Destructive)(
+					Button(event.Click(&msg.VideoReimport{ID: v.ID()}), Destructive)(
 						domi.Text("Re-import"),
 					),
 					expr.IfElse(v.OriginalKey() != "",
 						func() domi.Node {
-							return Button(onClick(&msg.VideoReencode{ID: v.ID()}), Destructive)(
+							return Button(event.Click(&msg.VideoReencode{ID: v.ID()}), Destructive)(
 								domi.Text("Re-encode"),
 							)
 						},
