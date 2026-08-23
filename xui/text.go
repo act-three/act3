@@ -36,7 +36,7 @@ type TextView interface {
 	// It is equivalent to Foreground, but it returns a TextView.
 	TextForeground(c Color) TextView
 
-	node() textNode
+	text() textRun
 }
 
 // Text displays s.
@@ -62,16 +62,24 @@ func (v textView) TextForeground(c Color) TextView {
 }
 
 func (v textView) Concat(t TextView) TextView {
-	v.base = base{textNode{textConcat{v.node().run, t.node().run}}}
+	v.base = base{textNode{textConcat{v.text(), t.text()}}}
 	return v
 }
 
-func (v textView) node() textNode { return v.base[0].(textNode) }
+func (v textView) text() textRun { return v.base[0].(textBox).text() }
 
 // styledWith returns a copy of v whose run is modified by f.
 func (v textView) styledWith(f func(*textStyle)) TextView {
-	v.base = base{textNode{textMod{f: f, run: v.node().run}}}
+	v.base = base{textNode{textMod{f: f, run: v.text()}}}
 	return v
+}
+
+// A textBox is the box of a text view.
+// It lowers a run of text as a block,
+// and exposes the run for use in a larger text.
+type textBox interface {
+	node
+	text() textRun
 }
 
 // textStyle is the pending styling of a text run.
@@ -104,9 +112,10 @@ func (s textStyle) setStyles(ss *sheet.StyleSet) {
 	}
 }
 
-// textNode is the box of a text view.
-// It lowers the view's run as a block of text.
+// textNode is the box of a plain text view.
 type textNode struct{ run textRun }
+
+func (n textNode) text() textRun { return n.run }
 
 func (n textNode) render(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-text")
