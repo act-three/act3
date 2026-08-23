@@ -194,6 +194,20 @@ func linkText() View {
 		Concat(Text(" anything, though."))
 }
 
+func lineLimitDemo() View {
+	soliloquy := Text("To be, or not to be, that is the question: " +
+		"whether 'tis nobler in the mind to suffer " +
+		"the slings and arrows of outrageous fortune, " +
+		"or to take arms against a sea of troubles " +
+		"and by opposing end them.")
+	return VStack(
+		soliloquy.LineLimit(2),
+		soliloquy.LineLimit(1),
+	).
+		Gap(8).
+		Frame(Width(260))
+}
+
 func textLayout() View {
 	var t = Text("To be, or not to be, that is the question.")
 	return VStack(
@@ -286,6 +300,7 @@ func Page() View {
 		section("ScrollView (contained in a Frame)", scrollDemo()),
 		section("Rich text (per-run bold/italic/mono, whole-text color)", richText()),
 		section("Links in text (navigate, send, disabled)", linkText()),
+		section("LineLimit (2 lines, then 1)", lineLimitDemo()),
 		section("Text Layout", textLayout()),
 		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
 		section("Grid (Columns(4), then CellMinWidth(120))", gridDemo()),

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"cmp"
+	"strconv"
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
@@ -121,6 +122,12 @@ func (n textNode) render(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-text")
 	env.style.Set("display", "block")
 	env.style.Set("overflow-wrap", "break-word")
+	if env.lineLimit > 0 {
+		env.style.Set("display", "-webkit-box")
+		env.style.Set("-webkit-box-orient", "vertical")
+		env.style.Set("-webkit-line-clamp", strconv.Itoa(env.lineLimit))
+		env.style.Set("overflow", "clip")
+	}
 	return build(env, plan{content: n.run.html(textenv{sheet: env.sheet})})
 }
 

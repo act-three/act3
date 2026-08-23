@@ -203,6 +203,16 @@ func (m modStyle) environment(env environment) environment {
 }
 
 // NOTE: no exported construcor.
+type modLineLimit struct{ n int }
+
+func (m modLineLimit) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
+
+func (m modLineLimit) environment(env environment) environment {
+	env.lineLimit = m.n
+	return env
+}
+
+// NOTE: no exported construcor.
 type modTag struct{ name string }
 
 func (m modTag) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
