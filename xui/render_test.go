@@ -680,21 +680,21 @@ func TestLinkDisabled(t *testing.T) {
 	}{
 		{
 			"navigate",
-			ui.Text("a").Concat(ui.Link("/docs", ui.Text("x")).Disabled(true)),
+			ui.Text("a").Concat(ui.Link("/docs", ui.Text("x"))).Disabled(true),
 			`<a aria-disabled="true" class="(ui-\w+)" role="link">x</a>`,
 			[]string{"cursor:default", "opacity:0.5"},
 			[]string{` href=`},
 		},
 		{
 			"send",
-			ui.Text("a").Concat(ui.Link(Msg{}, ui.Text("x")).Disabled(true)),
+			ui.Text("a").Concat(ui.Link(Msg{}, ui.Text("x"))).Disabled(true),
 			`<button class="(ui-\w+)" disabled domi-msg-click="[^"]*" type="button">x</button>`,
 			[]string{"cursor:default", "opacity:0.5"},
 			nil,
 		},
 		{
 			"enabled",
-			ui.Text("a").Concat(ui.Link("/docs", ui.Text("x")).Disabled(false)),
+			ui.Text("a").Concat(ui.Link("/docs", ui.Text("x"))).Disabled(false),
 			`<a class="(ui-\w+)" href="/docs">x</a>`,
 			[]string{"cursor:pointer"},
 			[]string{"opacity", "aria-disabled"},
@@ -742,6 +742,27 @@ func TestLinkRequirePageLoad(t *testing.T) {
 			html := render(t, tc.v)
 			if got := strings.Contains(html, "domi-bypass"); got != tc.want {
 				t.Errorf("bypass annotation = %v, want %v:\n%s", got, tc.want, html)
+			}
+		})
+	}
+}
+
+// TestDisabledSubtree pins Disabled's reach and stickiness: it
+// disables every control below the modifier, and a control inside a
+// disabled view cannot be re-enabled.
+func TestDisabledSubtree(t *testing.T) {
+	for name, v := range map[string]ui.View{
+		"button":  ui.VStack(ui.Button(Msg{}, ui.Text("x"))).Disabled(true),
+		"sticky":  ui.VStack(ui.Button(Msg{}, ui.Text("x")).Disabled(false)).Disabled(true),
+		"navlink": ui.VStack(ui.Text("a").Concat(ui.Link("/x", ui.Text("x")))).Disabled(true),
+	} {
+		t.Run(name, func(t *testing.T) {
+			html := render(t, v)
+			if !strings.Contains(html, " disabled") && !strings.Contains(html, `aria-disabled="true"`) {
+				t.Errorf("control should be disabled:\n%s", html)
+			}
+			if strings.Contains(html, " href=") {
+				t.Errorf("disabled link should drop its URL:\n%s", html)
 			}
 		})
 	}

@@ -37,6 +37,20 @@ type View interface {
 	// inside edge of the receiver.
 	BorderStroke(px float64, c Color) View
 
+	// Disabled makes the receiver non-interactive. Controls such as
+	// buttons, links, and text fields do not respond to input events.
+	//
+	// If any enclosing view sets Disabled(true), the view is disabled,
+	// even when an inner view sets Disabled(false).
+	// In this example, the button is disabled:
+	//
+	//     HStack(
+	//         Button("/", Text("Home")).
+	//             Disabled(false),
+	//     ).
+	//         Disabled(true)
+	Disabled(d bool) View
+
 	// FixedSize fixes the receiver at its ideal size.
 	// This can cause it to exceed the bounds of its container.
 	FixedSize() View
@@ -214,6 +228,7 @@ type environment struct {
 	lc        layoutContext
 	container containerKind
 	unbounded AxisSet
+	disabled  bool
 	lineLimit int // max lines per text, or 0 for no limit
 	sheet     *sheet.Sheet
 	boxenv    // must be zeroed before rendering a subview

@@ -128,7 +128,8 @@ func (n textNode) render(env environment) box {
 		env.style.Set("-webkit-line-clamp", strconv.Itoa(env.lineLimit))
 		env.style.Set("overflow", "clip")
 	}
-	return build(env, plan{content: n.run.html(textenv{sheet: env.sheet})})
+	tenv := textenv{sheet: env.sheet, disabled: env.disabled}
+	return build(env, plan{content: n.run.html(tenv)})
 }
 
 // A textRun is a unary text node.
@@ -139,8 +140,9 @@ type textRun interface {
 
 // textenv carries the top-down state of a text lowering pass.
 type textenv struct {
-	sheet *sheet.Sheet
-	style textStyle // must be consumed before lowering a subrun
+	sheet    *sheet.Sheet
+	disabled bool
+	style    textStyle // must be consumed before lowering a subrun
 }
 
 // styled lowers content inside the pending style, if any,
