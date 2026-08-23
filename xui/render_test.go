@@ -627,6 +627,65 @@ func TestTextWholeTextRule(t *testing.T) {
 	}
 }
 
+// TestLink pins the lowering of each kind of link action: a URL
+// navigates from an anchor, a message sends from a button element,
+// and either one is an inline run that carries the pending style.
+func TestLink(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		v       ui.View
+		pattern string
+		want    []string
+	}{
+		{
+			"navigate",
+			ui.Text("see ").Concat(ui.Link("/docs", ui.Text("docs"))),
+			`<a class="(ui-\w+)" href="/docs">docs</a>`,
+			[]string{"cursor:pointer", "color:var(--ui-color-accent)"},
+		},
+		{
+			"send",
+			ui.Text("or ").Concat(ui.Link(Msg{}, ui.Text("retry"))),
+			`<button class="(ui-\w+)" domi-msg-click="[^"]*" type="button">retry</button>`,
+			[]string{"cursor:pointer", "color:var(--ui-color-accent)"},
+		},
+		{
+			"outer style",
+			ui.Link("/docs", ui.Text("docs")).Bold(),
+			`<a class="(ui-\w+)" href="/docs">docs</a>`,
+			[]string{"color:var(--ui-color-accent)", "font-weight:600"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, tt.v)
+			got := classRule(t, html, tt.pattern)
+			for _, w := range tt.want {
+				if !strings.Contains(got, w) {
+					t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
+				}
+			}
+		})
+	}
+}
+
+// TestLinkColor pins the link color as a color set at the link:
+// a color set inside the label wins over it,
+// and it wins over a color set outside the link.
+func TestLinkColor(t *testing.T) {
+	inner := render(t, ui.Link("/", ui.Text("x").TextForeground(ui.Muted)))
+	if got := classRule(t, inner, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:var(--ui-color-accent)") {
+		t.Errorf("link rule = %q, want the accent color:\n%s", got, inner)
+	}
+	if got := classRule(t, inner, `<span class="(ui-\w+)"`); got != "color:var(--ui-color-muted)" {
+		t.Errorf("label rule = %q, want its own color inside the link:\n%s", got, inner)
+	}
+
+	outer := render(t, ui.Link("/", ui.Text("x")).TextForeground(ui.Muted))
+	if got := classRule(t, outer, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:var(--ui-color-accent)") || strings.Contains(outer, "muted") {
+		t.Errorf("link rule = %q, want the accent color to replace the outer color:\n%s", got, outer)
+	}
+}
+
 // Guard against an accidental change to the keyed-row idiom shown in the doc.
 func TestForKeyLikeIdiom(t *testing.T) {
 	items := []Movie{{ID: 7}, {ID: 42}}

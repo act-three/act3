@@ -83,6 +83,11 @@ type textStyle struct {
 
 func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
 	var ss sheet.StyleSet
+	s.setStyles(&ss)
+	return attr.Class(sh.ClassFor(ss))
+}
+
+func (s textStyle) setStyles(ss *sheet.StyleSet) {
 	if s.mono {
 		ss.Set("font-family", "var(--ui-font-mono)")
 	}
@@ -93,11 +98,10 @@ func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
 		ss.Set("font-style", "italic")
 	}
 	// The type scale's weight beats Bold's, matching the write order.
-	s.font.setStyles(&ss)
+	s.font.setStyles(ss)
 	if s.color != nil {
 		ss.Set("color", s.color.colorCSS())
 	}
-	return attr.Class(sh.ClassFor(ss))
 }
 
 // textNode is the box of a text view.
