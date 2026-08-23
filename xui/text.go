@@ -41,7 +41,7 @@ type TextView interface {
 
 // Text displays s.
 func Text(s string) TextView {
-	return textView{base{textNode{text: s}}}
+	return textView{base{textNode{textLeaf(s)}}}
 }
 
 type textView struct{ base }
@@ -53,38 +53,28 @@ func (v textView) Italic() TextView { return v.styledWith(func(s *textStyle) { s
 func (v textView) Monospace() TextView { return v.styledWith(func(s *textStyle) { s.mono = true }) }
 
 func (v textView) TextFont(f FontSize) TextView {
-	return v.styledWith(func(s *textStyle) {
-		if s.font == "" {
-			s.font = f
-		}
-	})
+	return v.styledWith(func(s *textStyle) { s.font = f })
 }
 
 func (v textView) TextForeground(c Color) TextView {
 	cc := c.color()
-	return v.styledWith(func(s *textStyle) {
-		if s.color == nil {
-			s.color = cc
-		}
-	})
+	return v.styledWith(func(s *textStyle) { s.color = cc })
 }
 
 func (v textView) Concat(t TextView) TextView {
-	v.base = base{textNode{parts: []textNode{v.node(), t.node()}}}
+	v.base = base{textNode{textConcat{v.node().run, t.node().run}}}
 	return v
 }
 
 func (v textView) node() textNode { return v.base[0].(textNode) }
 
-// styledWith returns a copy of v with f applied to its style.
+// styledWith returns a copy of v whose run is modified by f.
 func (v textView) styledWith(f func(*textStyle)) TextView {
-	n := v.node()
-	f(&n.style)
-	v.base = base{n}
+	v.base = base{textNode{textMod{f: f, run: v.node().run}}}
 	return v
 }
 
-// textStyle is the styling a text node applies to its whole subtree.
+// textStyle is the pending styling of a text run.
 type textStyle struct {
 	bold, italic, mono bool
 	font               FontSize
@@ -110,39 +100,68 @@ func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
 	return attr.Class(sh.ClassFor(ss))
 }
 
-// textNode is a tree of styled text nodes. It has 2 cases:
-//   - leaf text
-//   - concatenation of subtrees
-type textNode struct {
-	text  string     // leaf text
-	parts []textNode // concatenation members, or nil for leaf text
-	style textStyle
-}
+// textNode is the box of a text view.
+// It lowers the view's run as a block of text.
+type textNode struct{ run textRun }
 
 func (n textNode) render(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-text")
 	env.style.Set("display", "block")
 	env.style.Set("overflow-wrap", "break-word")
-	return build(env, plan{content: n.html(env.sheet)})
+	return build(env, plan{content: n.run.html(textenv{sheet: env.sheet})})
 }
 
-// html lowers n (with its own style, if any).
-func (n textNode) html(sh *sheet.Sheet) domi.Node {
-	if n.style == (textStyle{}) {
-		return n.content(sh)
-	}
-	return html.Span(n.style.attr(sh))(n.content(sh))
+// A textRun is a unary text node.
+// Its whole job is to lower itself to HTML.
+type textRun interface {
+	html(textenv) domi.Node
 }
 
-// content lowers n's content without its own style.
-// Any subtrees still lower their style.
-func (n textNode) content(sh *sheet.Sheet) domi.Node {
-	if n.parts == nil {
-		return domi.Text(n.text)
+// textenv carries the top-down state of a text lowering pass.
+type textenv struct {
+	sheet *sheet.Sheet
+	style textStyle // must be consumed before lowering a subrun
+}
+
+// styled lowers content inside the pending style, if any,
+// consuming it so that no subrun applies it again.
+func (env textenv) styled(content func(textenv) domi.Node) domi.Node {
+	s := env.style
+	if s == (textStyle{}) {
+		return content(env)
 	}
-	var out []domi.Node
-	for _, p := range n.parts {
-		out = append(out, p.html(sh))
-	}
-	return domi.Fragment(out...)
+	env.style = textStyle{}
+	return html.Span(s.attr(env.sheet))(content(env))
+}
+
+// textLeaf is a run of plain text.
+type textLeaf string
+
+func (l textLeaf) html(env textenv) domi.Node {
+	return env.styled(func(textenv) domi.Node {
+		return domi.Text(string(l))
+	})
+}
+
+// textConcat is the concatenation of its runs.
+type textConcat []textRun
+
+func (c textConcat) html(env textenv) domi.Node {
+	return env.styled(func(env textenv) (n domi.Node) {
+		for _, r := range c {
+			n = domi.Fragment(n, r.html(env))
+		}
+		return n
+	})
+}
+
+// textMod applies f to the pending style of its run.
+type textMod struct {
+	f   func(*textStyle)
+	run textRun
+}
+
+func (m textMod) html(env textenv) domi.Node {
+	m.f(&env.style)
+	return m.run.html(env)
 }
