@@ -184,6 +184,14 @@ func richText() View {
 		TextForeground(Muted)
 }
 
+func linkText() View {
+	return Text("Read the ").
+		Concat(Link("/docs", Text("documentation"))).
+		Concat(Text(", or ")).
+		Concat(Link(Msg{New: true}, Text("start a new movie"))).
+		Concat(Text(" right here."))
+}
+
 func textLayout() View {
 	var t = Text("To be, or not to be, that is the question.")
 	return VStack(
@@ -275,6 +283,7 @@ func Page() View {
 		section("ZStack (layered, all subviews size the stack)", zstackDemo()),
 		section("ScrollView (contained in a Frame)", scrollDemo()),
 		section("Rich text (per-run bold/italic/mono, whole-text color)", richText()),
+		section("Links in text (navigate, then send)", linkText()),
 		section("Text Layout", textLayout()),
 		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
 		section("Grid (Columns(4), then CellMinWidth(120))", gridDemo()),
