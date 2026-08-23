@@ -495,6 +495,27 @@ func TestGeometryTextFloorsAtMinContent(t *testing.T) {
 	})
 }
 
+// TestGeometryLineLimit pins the clamp: limited text is exactly as
+// tall as its line count allows, and text within the limit keeps its
+// natural height.
+func TestGeometryLineLimit(t *testing.T) {
+	long := "to be or not to be that is the question whether tis nobler in the mind"
+	v := ui.VStack(
+		ui.Text(long).LineLimit(2).Class("clamped"),
+		ui.Text(long).Class("free"),
+		ui.Text("short").LineLimit(2).Class("short"),
+		ui.Text("ref").Class("ref"),
+	).Frame(ui.Width(160))
+	stage(t, v, func(s *uitest.Session) {
+		line := s.Rect(".ref", 0).H
+		within(t, "clamped text is two lines tall", s.Rect(".clamped", 0).H, 2*line, 1)
+		if free := s.Rect(".free", 0).H; free < 3*line {
+			t.Errorf("free text height = %g, want at least 3 lines (%g): the fixture does not overflow", free, 3*line)
+		}
+		within(t, "text within the limit keeps its height", s.Rect(".short", 0).H, line, 1)
+	})
+}
+
 // TestGeometrySoftFrameTracksSpace pins the soft frame's contract in the
 // three regimes it can land in: on a flex major axis it yields to the
 // available space and floors at its minimum; in a grid cell and on a flex

@@ -120,6 +120,10 @@ type View interface {
 	// FirstBaseline. If either one does, the view panics.
 	UnderlayAt(at, anchor Alignment, u View) View
 
+	// LineLimit limits the number of lines text can occupy
+	// in the receiver.
+	LineLimit(n int) View
+
 	// Opacity sets the receiver's opacity to x, from 0 (transparent) to
 	// 1 (opaque).
 	Opacity(x float64) View
@@ -210,6 +214,7 @@ type environment struct {
 	lc        layoutContext
 	container containerKind
 	unbounded AxisSet
+	lineLimit int // max lines per text, or 0 for no limit
 	sheet     *sheet.Sheet
 	boxenv    // must be zeroed before rendering a subview
 }

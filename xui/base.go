@@ -71,6 +71,10 @@ func (v base) FixedSize() View {
 		Class("ui-fixed-size")
 }
 
+func (v base) LineLimit(n int) View {
+	return v.modify(modLineLimit{n: max(n, 1)})
+}
+
 func (v base) Font(f FontSize) View {
 	return v.Modify(Font(f))
 }

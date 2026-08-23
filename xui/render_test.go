@@ -774,6 +774,41 @@ func TestLinkColor(t *testing.T) {
 	}
 }
 
+// TestLineLimit pins the lowering and reach of LineLimit: it clamps
+// the text it is applied to, reaches every text below the modifier,
+// and the limit nearest a text wins.
+func TestLineLimit(t *testing.T) {
+	direct := render(t, ui.Text("x").LineLimit(2))
+	if got := classRule(t, direct, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "-webkit-line-clamp:2") {
+		t.Errorf("rule = %q, want -webkit-line-clamp:2:\n%s", got, direct)
+	}
+
+	subtree := render(t, ui.VStack(ui.Text("a"), ui.Text("b").LineLimit(1)).LineLimit(3))
+	for want, n := range map[string]int{"-webkit-line-clamp:3": 1, "-webkit-line-clamp:1": 1} {
+		if got := strings.Count(subtree, want); got != n {
+			t.Errorf("%s count = %d, want %d:\n%s", want, got, n, subtree)
+		}
+	}
+
+	// The limit survives boundaries that establish a new layout
+	// context for their contents.
+	for name, v := range map[string]ui.View{
+		"scroll":  ui.ScrollView(ui.Vertical, ui.Text("x")).LineLimit(2),
+		"overlay": ui.VStack().Overlay(ui.Center, ui.Text("x")).LineLimit(2),
+	} {
+		if got := render(t, v); !strings.Contains(got, "-webkit-line-clamp:2") {
+			t.Errorf("%s content should clamp:\n%s", name, got)
+		}
+	}
+}
+
+func TestLineLimitClamps(t *testing.T) {
+	html := render(t, ui.Text("x").LineLimit(0))
+	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "-webkit-line-clamp:1") {
+		t.Errorf("rule = %q, want a limit below 1 raised to 1:\n%s", got, html)
+	}
+}
+
 // Guard against an accidental change to the keyed-row idiom shown in the doc.
 func TestForKeyLikeIdiom(t *testing.T) {
 	items := []Movie{{ID: 7}, {ID: 42}}
