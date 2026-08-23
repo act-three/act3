@@ -4,13 +4,19 @@ import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/event"
-	"ily.dev/domi/html"
 
 	"ily.dev/act3/xui/internal/sheet"
 )
 
-// A Link displays the given label
-// and activates when clicked.
+// A LinkView is a span of text that performs an action when clicked.
+type LinkView interface {
+	TextView
+
+	// Disabled disables the receiver when d is true.
+	Disabled(d bool) LinkView
+}
+
+// Link returns a link with the given label.
 //
 // If a is a string, it must be a URL,
 // and the link navigates to it.
@@ -18,36 +24,87 @@ import (
 //
 // If a is not a string
 // or the app's Msg type or a type that implements it,
-// the returned TextView panics.
-func Link[Action any](a Action, label TextView) TextView {
+// the LinkView panics.
+func Link[Action any](a Action, label TextView) LinkView {
 	var action any = a
 	if _, ok := action.(string); !ok {
 		action = event.Click(a)
 	}
-	return textView{base{textNode{textLink{
+	return linkView{textView{base{linkNode{textLink{
 		action: action,
-		run:    label.node().run,
-	}}}}
+		run:    label.text(),
+	}}}}}
+}
+
+type linkView struct{ textView }
+
+func (v linkView) Disabled(d bool) LinkView {
+	n := v.base[0].(linkNode)
+	n.disabled = d
+	v.base = base{n}
+	return v
+}
+
+// linkNode is the box of a link view.
+// The box is itself the element that performs the action,
+// so that box modifiers apply to the link.
+type linkNode struct{ textLink }
+
+func (n linkNode) text() textRun { return n.textLink }
+
+func (n linkNode) render(env environment) box {
+	env.tag = n.tag()
+	env.add(n.attrs())
+	n.setStyles(&env.style)
+	linkColor := func(s *textStyle) { s.color = Accent.color() }
+	return textNode{textMod{f: linkColor, run: n.run}}.render(env)
 }
 
 // textLink performs an action when clicked.
 type textLink struct {
-	action any // URL string or onclick domi.Attr
-	run    textRun
+	action   any // URL string or onclick domi.Attr
+	disabled bool
+	run      textRun
 }
 
 func (l textLink) html(env textenv) domi.Node {
 	env.style.color = Accent.color()
 	var ss sheet.StyleSet
-	ss.Set("cursor", "pointer")
+	l.setStyles(&ss)
 	env.style.setStyles(&ss)
 	env.style = textStyle{}
 	class := attr.Class(env.sheet.ClassFor(ss))
+	return domi.Tag(l.tag(), l.attrs(), class)(l.run.html(env))
+}
+
+// tag returns the name of the element that performs the action.
+func (l textLink) tag() string {
+	if _, ok := l.action.(string); ok {
+		return "a"
+	}
+	return "button"
+}
+
+// attrs returns the attributes that perform the action,
+// or that mark the element disabled.
+func (l textLink) attrs() domi.Attr {
 	switch action := l.action.(type) {
 	case string:
-		return html.A(attr.Href(action), class)(l.run.html(env))
+		if l.disabled {
+			return domi.Group(attr.Role("link"), domi.Name("aria-disabled", "true"))
+		}
+		return attr.Href(action)
 	case domi.Attr:
-		return html.Button(attr.Type("button"), action, class)(l.run.html(env))
+		return domi.Group(attr.Type("button"), attr.Disabled(l.disabled), action)
 	}
 	panic("ui: unreachable")
+}
+
+func (l textLink) setStyles(ss *sheet.StyleSet) {
+	if l.disabled {
+		ss.Set("cursor", "default")
+		ss.Set("opacity", "0.5")
+	} else {
+		ss.Set("cursor", "pointer")
+	}
 }

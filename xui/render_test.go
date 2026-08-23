@@ -668,11 +668,67 @@ func TestLink(t *testing.T) {
 	}
 }
 
+// TestLinkDisabled pins that a disabled link of either kind loses its
+// means of activation and is faded, while an enabled one is not.
+func TestLinkDisabled(t *testing.T) {
+	for _, tt := range []struct {
+		name    string
+		v       ui.View
+		pattern string
+		want    []string
+		absent  []string
+	}{
+		{
+			"navigate",
+			ui.Text("a").Concat(ui.Link("/docs", ui.Text("x")).Disabled(true)),
+			`<a aria-disabled="true" class="(ui-\w+)" role="link">x</a>`,
+			[]string{"cursor:default", "opacity:0.5"},
+			[]string{` href=`},
+		},
+		{
+			"send",
+			ui.Text("a").Concat(ui.Link(Msg{}, ui.Text("x")).Disabled(true)),
+			`<button class="(ui-\w+)" disabled domi-msg-click="[^"]*" type="button">x</button>`,
+			[]string{"cursor:default", "opacity:0.5"},
+			nil,
+		},
+		{
+			"enabled",
+			ui.Text("a").Concat(ui.Link("/docs", ui.Text("x")).Disabled(false)),
+			`<a class="(ui-\w+)" href="/docs">x</a>`,
+			[]string{"cursor:pointer"},
+			[]string{"opacity", "aria-disabled"},
+		},
+		{
+			"block",
+			ui.Link("/docs", ui.Text("x")).Disabled(true),
+			`<a aria-disabled="true" class="(ui-\w+)" role="link"><span`,
+			[]string{"cursor:default", "opacity:0.5", "display:block"},
+			[]string{` href=`, "ui-text"},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, tt.v)
+			got := classRule(t, html, tt.pattern)
+			for _, w := range tt.want {
+				if !strings.Contains(got, w) {
+					t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
+				}
+			}
+			for _, s := range tt.absent {
+				if strings.Contains(html, s) {
+					t.Errorf("unexpected %q:\n%s", s, html)
+				}
+			}
+		})
+	}
+}
+
 // TestLinkColor pins the link color as a color set at the link:
 // a color set inside the label wins over it,
 // and it wins over a color set outside the link.
 func TestLinkColor(t *testing.T) {
-	inner := render(t, ui.Link("/", ui.Text("x").TextForeground(ui.Muted)))
+	inner := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x").TextForeground(ui.Muted))))
 	if got := classRule(t, inner, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:var(--ui-color-accent)") {
 		t.Errorf("link rule = %q, want the accent color:\n%s", got, inner)
 	}
@@ -680,9 +736,18 @@ func TestLinkColor(t *testing.T) {
 		t.Errorf("label rule = %q, want its own color inside the link:\n%s", got, inner)
 	}
 
-	outer := render(t, ui.Link("/", ui.Text("x")).TextForeground(ui.Muted))
+	outer := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x")).TextForeground(ui.Muted)))
 	if got := classRule(t, outer, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:var(--ui-color-accent)") || strings.Contains(outer, "muted") {
 		t.Errorf("link rule = %q, want the accent color to replace the outer color:\n%s", got, outer)
+	}
+
+	// As a box, the link's label carries the color.
+	block := render(t, ui.Link("/", ui.Text("x")))
+	if got := classRule(t, block, `<a class="(ui-\w+)" href="/"><span`); strings.Contains(got, "color") {
+		t.Errorf("block link rule = %q, want no color on the box:\n%s", got, block)
+	}
+	if got := classRule(t, block, `<span class="(ui-\w+)">x`); got != "color:var(--ui-color-accent)" {
+		t.Errorf("block label rule = %q, want the accent color:\n%s", got, block)
 	}
 }
 
