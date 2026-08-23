@@ -120,6 +120,16 @@ func (m modBorderStroke) environment(env environment) environment {
 }
 
 // NOTE: no exported construcor.
+type modDisabled struct{ d bool }
+
+func (m modDisabled) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
+
+func (m modDisabled) environment(env environment) environment {
+	env.disabled = env.disabled || m.d
+	return env
+}
+
+// NOTE: no exported construcor.
 type modFixedSize struct{ axes AxisSet }
 
 func (m modFixedSize) modify(n node) node { return nodeEnv{f: m.environment, node: n} }

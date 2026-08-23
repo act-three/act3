@@ -65,6 +65,10 @@ func (v base) Class(c ...string) View {
 	return v.modify(modAttr{attr: attr.Class(c...)})
 }
 
+func (v base) Disabled(d bool) View {
+	return v.modify(modDisabled{d: d})
+}
+
 func (v base) FixedSize() View {
 	return v.
 		modify(modFixedSize{Horizontal | Vertical}).

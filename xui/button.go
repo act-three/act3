@@ -25,9 +25,6 @@ type ButtonView interface {
 
 	// Role sets the semantic role of the receiver.
 	Role(ButtonRole) ButtonView
-
-	// Disabled disables the receiver when d is true.
-	Disabled(d bool) ButtonView
 }
 
 // Button returns a button with the given label.
@@ -59,18 +56,10 @@ func (v buttonView) Role(r ButtonRole) ButtonView {
 	return v
 }
 
-func (v buttonView) Disabled(d bool) ButtonView {
-	n := v.base[0].(buttonNode)
-	n.disabled = d
-	v.base = base{n}
-	return v
-}
-
 type buttonNode struct {
-	label    View
-	action   any // URL string or onclick domi.Attr
-	role     ButtonRole
-	disabled bool
+	label  View
+	action any // URL string or onclick domi.Attr
+	role   ButtonRole
 }
 
 func (n buttonNode) render(env environment) box {
@@ -89,7 +78,7 @@ func (n buttonNode) render(env environment) box {
 		BorderStroke(1, cmp.Or(c, borderColor)).
 		BorderShape(RoundedRectangle)
 	cursor := "pointer"
-	if n.disabled {
+	if env.disabled {
 		cursor = "default"
 		v = v.Opacity(0.5)
 	}
@@ -97,7 +86,7 @@ func (n buttonNode) render(env environment) box {
 	switch action := n.action.(type) {
 	case string:
 		v = v.Tag("a")
-		if n.disabled {
+		if env.disabled {
 			v = v.Attr(
 				attr.Role("link"),
 				domi.Name("aria-disabled", "true"),
@@ -110,7 +99,7 @@ func (n buttonNode) render(env environment) box {
 			Tag("button").
 			Attr(
 				attr.Type("button"),
-				attr.Disabled(n.disabled),
+				attr.Disabled(env.disabled),
 				action,
 			)
 	}
