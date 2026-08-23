@@ -724,6 +724,29 @@ func TestLinkDisabled(t *testing.T) {
 	}
 }
 
+// TestLinkRequirePageLoad pins RequirePageLoad: a navigating link
+// gains the domi bypass annotation, and a sending or disabled one
+// is unaffected.
+func TestLinkRequirePageLoad(t *testing.T) {
+	for name, tc := range map[string]struct {
+		v    ui.View
+		want bool
+	}{
+		"navigate": {ui.Link("/docs", ui.Text("x")).RequirePageLoad(), true},
+		"run":      {ui.Text("a").Concat(ui.Link("/docs", ui.Text("x")).RequirePageLoad()), true},
+		"send":     {ui.Link(Msg{}, ui.Text("x")).RequirePageLoad(), false},
+		"disabled": {ui.Link("/docs", ui.Text("x")).RequirePageLoad().Disabled(true), false},
+		"without":  {ui.Link("/docs", ui.Text("x")), false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			html := render(t, tc.v)
+			if got := strings.Contains(html, "domi-bypass"); got != tc.want {
+				t.Errorf("bypass annotation = %v, want %v:\n%s", got, tc.want, html)
+			}
+		})
+	}
+}
+
 // TestLinkColor pins the link color as a color set at the link:
 // a color set inside the label wins over it,
 // and it wins over a color set outside the link.

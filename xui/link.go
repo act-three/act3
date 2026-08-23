@@ -12,6 +12,18 @@ import (
 type LinkView interface {
 	TextView
 
+	// RequirePageLoad requires a URL link to use the browser's
+	// built-in navigation.
+	//
+	// Ordinarily, a link to a same-origin URL is handled by domi,
+	// which updates the URL bar and patches the DOM instead of
+	// using the browser's built-in navigation to load the new URL.
+	// RequirePageLoad bypasses this behavior.
+	//
+	// If the receiver is a link that sends a message,
+	// RequirePageLoad has no effect.
+	RequirePageLoad() LinkView
+
 	// Disabled disables the receiver when d is true.
 	Disabled(d bool) LinkView
 }
@@ -38,6 +50,13 @@ func Link[Action any](a Action, label TextView) LinkView {
 
 type linkView struct{ textView }
 
+func (v linkView) RequirePageLoad() LinkView {
+	n := v.base[0].(linkNode)
+	n.bypass = true
+	v.base = base{n}
+	return v
+}
+
 func (v linkView) Disabled(d bool) LinkView {
 	n := v.base[0].(linkNode)
 	n.disabled = d
@@ -63,6 +82,7 @@ func (n linkNode) render(env environment) box {
 // textLink performs an action when clicked.
 type textLink struct {
 	action   any // URL string or onclick domi.Attr
+	bypass   bool
 	disabled bool
 	run      textRun
 }
@@ -92,6 +112,9 @@ func (l textLink) attrs() domi.Attr {
 	case string:
 		if l.disabled {
 			return domi.Group(attr.Role("link"), domi.Name("aria-disabled", "true"))
+		}
+		if l.bypass {
+			return domi.Group(attr.Href(action), domi.Bypass)
 		}
 		return attr.Href(action)
 	case domi.Attr:
