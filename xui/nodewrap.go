@@ -125,7 +125,9 @@ func (w wrapLayer) render(env environment) box {
 // where, as in a ZStack, both axes are minor.
 // v's fill requests don't propagate outside the layer.
 func renderLayer(env environment, v View) domi.Node {
-	env = environment{lc: axes[axisZ].lc, container: containerGrid, sheet: env.sheet}
+	env.lc = axes[axisZ].lc
+	env.container = containerGrid
+	env.unbounded = 0
 	content, _ := subviewsRendered(env, v)
 	return content
 }
