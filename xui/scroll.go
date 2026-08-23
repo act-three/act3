@@ -51,7 +51,11 @@ func (s scrollNode) render(env environment) box {
 	env.style.Set("overscroll-behavior", "contain")
 	env.style.Set("place-items", "start")
 	env.style.Set("contain", "size") // Viewport size doesn't depend on its contents.
-	content, _ := subviewsRendered(environment{sheet: env.sheet},
+	inner := env
+	inner.lc = layoutContext{}
+	inner.container = containerGrid
+	inner.unbounded = 0
+	content, _ := subviewsRendered(inner,
 		s.contents.
 			modify(modFixedSize{axes: s.along}),
 	)
