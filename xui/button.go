@@ -44,6 +44,9 @@ func Button[Action any](a Action, label View) ButtonView {
 	if _, ok := action.(string); !ok {
 		action = event.Click(a)
 	}
+	if len(label.nodes()) != 1 {
+		label = HStack(label)
+	}
 	return buttonView{base{buttonNode{label: label, action: action}}}
 }
 
@@ -79,7 +82,7 @@ func (n buttonNode) render(env environment) box {
 	if c != nil {
 		fg = Foreground(CSSColor("#fff"))
 	}
-	v := HStack(n.label).
+	v := n.label.
 		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
 		Modify(fg).
 		Background(cmp.Or(c, surfaceColor)).
