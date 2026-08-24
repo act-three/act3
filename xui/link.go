@@ -72,14 +72,14 @@ func (l textLink) render(env environment) box {
 	return buildText(env, l.run)
 }
 
-func (l textLink) html(env textenv) domi.Node {
-	env.style.color = Accent.color()
+func (l textLink) html(env environment) domi.Node {
+	env.text.color = Accent.color()
 	var ss sheet.StyleSet
 	l.setStyles(&ss, env.disabled)
-	env.style.setStyles(&ss)
+	env.text.setStyles(&ss)
 	class := attr.Class(env.sheet.ClassFor(ss))
 	attrs := l.attrs(env.disabled)
-	env.style = textStyle{}
+	env.boxenv = boxenv{}
 	return domi.Tag(l.tag(), attrs, class)(l.run.html(env))
 }
 

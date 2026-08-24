@@ -116,8 +116,9 @@ func buildText(env environment, r textRun) box {
 		env.style.Set("-webkit-line-clamp", strconv.Itoa(env.lineLimit))
 		env.style.Set("overflow", "clip")
 	}
-	tenv := textenv{sheet: env.sheet, disabled: env.disabled}
-	return build(env, plan{content: r.html(tenv)})
+	inner := env
+	inner.boxenv = boxenv{}
+	return build(env, plan{content: r.html(inner)})
 }
 
 // A textRun is a unary text node.
@@ -125,24 +126,17 @@ func buildText(env environment, r textRun) box {
 // or renders itself as a box when it is the whole view.
 type textRun interface {
 	node
-	html(textenv) domi.Node
+	html(environment) domi.Node
 }
 
-// textenv carries the top-down state of a text lowering pass.
-type textenv struct {
-	sheet    *sheet.Sheet
-	disabled bool
-	style    textStyle // must be consumed before lowering a subrun
-}
-
-// styled lowers content inside the pending style, if any,
+// styled lowers content inside the pending text styling, if any,
 // consuming it so that no subrun applies it again.
-func (env textenv) styled(content func(textenv) domi.Node) domi.Node {
-	s := env.style
+func (env environment) styled(content func(environment) domi.Node) domi.Node {
+	s := env.text
+	env.boxenv = boxenv{}
 	if s == (textStyle{}) {
 		return content(env)
 	}
-	env.style = textStyle{}
 	return html.Span(s.attr(env.sheet))(content(env))
 }
 
@@ -153,8 +147,8 @@ func (l textLeaf) render(env environment) box {
 	return buildText(env, l)
 }
 
-func (l textLeaf) html(env textenv) domi.Node {
-	return env.styled(func(textenv) domi.Node {
+func (l textLeaf) html(env environment) domi.Node {
+	return env.styled(func(environment) domi.Node {
 		return domi.Text(string(l))
 	})
 }
@@ -166,8 +160,8 @@ func (c textConcat) render(env environment) box {
 	return buildText(env, c)
 }
 
-func (c textConcat) html(env textenv) domi.Node {
-	return env.styled(func(env textenv) (n domi.Node) {
+func (c textConcat) html(env environment) domi.Node {
+	return env.styled(func(env environment) (n domi.Node) {
 		for _, r := range c {
 			n = domi.Fragment(n, r.html(env))
 		}
@@ -186,7 +180,7 @@ func (m textMod) render(env environment) box {
 	return m.run.render(env)
 }
 
-func (m textMod) html(env textenv) domi.Node {
-	m.f(&env.style)
+func (m textMod) html(env environment) domi.Node {
+	m.f(&env.text)
 	return m.run.html(env)
 }
