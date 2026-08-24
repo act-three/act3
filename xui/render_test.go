@@ -615,12 +615,12 @@ func TestFontSpecifiesWholeType(t *testing.T) {
 }
 
 // TestTextWholeTextRule pins the whole-text rule: a text modifier applied
-// after Concat styles all runs, while a run styled before Concat keeps its
-// own styling.
+// after Concat styles all runs, landing on the text's own element, while
+// a run styled before Concat keeps its own styling.
 func TestTextWholeTextRule(t *testing.T) {
 	html := render(t, ui.Text("a").Concat(ui.Text("b").Italic()).Bold())
-	if got := classRule(t, html, `<ui-text[^>]*><span class="(ui-\w+)"`); got != "font-weight:600" {
-		t.Errorf("whole-text Bold should land on a span enclosing every run, got %q:\n%s", got, html)
+	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "font-weight:600") {
+		t.Errorf("whole-text Bold should land on the text element, got %q:\n%s", got, html)
 	}
 	if got := classRule(t, html, `>a<span class="(ui-\w+)"`); got != "font-style:italic" {
 		t.Errorf("pre-Concat Italic should stay on its own run, got %q:\n%s", got, html)
@@ -630,6 +630,8 @@ func TestTextWholeTextRule(t *testing.T) {
 // TestLink pins the lowering of each kind of link action: a URL
 // navigates from an anchor, a message sends from a button element,
 // and either one is an inline run that carries the pending style.
+// A link used as a box stays the anchor element, and text modifiers
+// applied outside the link lower to the class on that element.
 func TestLink(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -652,7 +654,7 @@ func TestLink(t *testing.T) {
 		{
 			"outer style",
 			ui.Link("/docs", ui.Text("docs")).Bold(),
-			`<a class="(ui-\w+)" href="/docs">docs</a>`,
+			`</style><a class="(ui-\w+)" href="/docs">docs</a>`,
 			[]string{"color:var(--ui-color-accent)", "font-weight:600"},
 		},
 	} {
@@ -702,7 +704,7 @@ func TestLinkDisabled(t *testing.T) {
 		{
 			"block",
 			ui.Link("/docs", ui.Text("x")).Disabled(true),
-			`<a aria-disabled="true" class="(ui-\w+)" role="link"><span`,
+			`<a aria-disabled="true" class="(ui-\w+)" role="link">x</a>`,
 			[]string{"cursor:default", "opacity:0.5", "display:block"},
 			[]string{` href=`, "ui-text"},
 		},
@@ -785,13 +787,10 @@ func TestLinkColor(t *testing.T) {
 		t.Errorf("link rule = %q, want the accent color to replace the outer color:\n%s", got, outer)
 	}
 
-	// As a box, the link's label carries the color.
+	// As a box, the link's own element carries the color.
 	block := render(t, ui.Link("/", ui.Text("x")))
-	if got := classRule(t, block, `<a class="(ui-\w+)" href="/"><span`); strings.Contains(got, "color") {
-		t.Errorf("block link rule = %q, want no color on the box:\n%s", got, block)
-	}
-	if got := classRule(t, block, `<span class="(ui-\w+)">x`); got != "color:var(--ui-color-accent)" {
-		t.Errorf("block label rule = %q, want the accent color:\n%s", got, block)
+	if got := classRule(t, block, `</style><a class="(ui-\w+)" href="/">x</a>`); !strings.Contains(got, "color:var(--ui-color-accent)") {
+		t.Errorf("block link rule = %q, want the accent color on the box:\n%s", got, block)
 	}
 }
 
