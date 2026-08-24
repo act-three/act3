@@ -23,7 +23,7 @@ func wrapSubview(env environment, n node) plan {
 
 // wrapSubviewIn is wrapSubview for a wrapper of the given container kind.
 func wrapSubviewIn(env environment, kind containerKind, n node) plan {
-	env.boxenv = boxenv{}
+	env.nextenv = nextenv{}
 	env.container = kind
 	b := n.render(env)
 	return plan{

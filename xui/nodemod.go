@@ -35,7 +35,7 @@ func (m nodeEnv) render(env environment) box {
 
 // A nodeTransform adjusts the environment for its subtree, like nodeEnv.
 // Additionally, if the environment has any paint modifiers
-// (as indicated by boxenv.paint),
+// (as indicated by nextenv.hasPaint),
 // it first emits a layout-preserving wrapper box
 // that applies all env modifiers,
 // thus clearing any pending paint modifiers

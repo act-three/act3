@@ -117,7 +117,7 @@ func buildText(env environment, r textRun) box {
 		env.style.Set("overflow", "clip")
 	}
 	inner := env
-	inner.boxenv = boxenv{}
+	inner.nextenv = nextenv{}
 	return build(env, plan{content: r.renderText(inner)})
 }
 
@@ -133,7 +133,7 @@ type textRun interface {
 // consuming it so that no subrun applies it again.
 func (env environment) styled(content func(environment) domi.Node) domi.Node {
 	s := env.text
-	env.boxenv = boxenv{}
+	env.nextenv = nextenv{}
 	if s == (textStyle{}) {
 		return content(env)
 	}
