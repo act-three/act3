@@ -28,7 +28,7 @@ func TestRenderVisitsEachNodeOnce(t *testing.T) {
 		return countingNode{inner: n, visits: visits}
 	}
 	wrap := func(n node) View { return base{count(n)} }
-	leaf := func(s string) node { return count(textNode{textLeaf(s)}) }
+	leaf := func(s string) node { return count(textLeaf(s)) }
 
 	// A deep chain interleaving the shapes whose lowering most tempts a
 	// per-level re-walk: stacks resolving subview fills, definite frames

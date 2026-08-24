@@ -42,7 +42,7 @@ type TextView interface {
 
 // Text displays s.
 func Text(s string) TextView {
-	return textView{base{textNode{textLeaf(s)}}}
+	return textView{base{textLeaf(s)}}
 }
 
 type textView struct{ base }
@@ -63,24 +63,16 @@ func (v textView) TextForeground(c Color) TextView {
 }
 
 func (v textView) Concat(t TextView) TextView {
-	v.base = base{textNode{textConcat{v.text(), t.text()}}}
+	v.base = base{textConcat{v.text(), t.text()}}
 	return v
 }
 
-func (v textView) text() textRun { return v.base[0].(textBox).text() }
+func (v textView) text() textRun { return v.base[0].(textRun) }
 
 // styledWith returns a copy of v whose run is modified by f.
 func (v textView) styledWith(f func(*textStyle)) TextView {
-	v.base = base{textNode{textMod{f: f, run: v.text()}}}
+	v.base = base{textMod{f: f, run: v.text()}}
 	return v
-}
-
-// A textBox is the box of a text view.
-// It lowers a run of text as a block,
-// and exposes the run for use in a larger text.
-type textBox interface {
-	node
-	text() textRun
 }
 
 // textStyle is the pending styling of a text run.
@@ -113,12 +105,8 @@ func (s textStyle) setStyles(ss *sheet.StyleSet) {
 	}
 }
 
-// textNode is the box of a plain text view.
-type textNode struct{ run textRun }
-
-func (n textNode) text() textRun { return n.run }
-
-func (n textNode) render(env environment) box {
+// buildText lowers r as a text block.
+func buildText(env environment, r textRun) box {
 	env.tag = cmp.Or(env.tag, "ui-text")
 	env.style.Set("display", "block")
 	env.style.Set("overflow-wrap", "break-word")
@@ -129,12 +117,14 @@ func (n textNode) render(env environment) box {
 		env.style.Set("overflow", "clip")
 	}
 	tenv := textenv{sheet: env.sheet, disabled: env.disabled}
-	return build(env, plan{content: n.run.html(tenv)})
+	return build(env, plan{content: r.html(tenv)})
 }
 
 // A textRun is a unary text node.
-// Its whole job is to lower itself to HTML.
+// It lowers itself to inline HTML as part of an enclosing text,
+// or renders itself as a box when it is the whole view.
 type textRun interface {
+	node
 	html(textenv) domi.Node
 }
 
@@ -159,6 +149,10 @@ func (env textenv) styled(content func(textenv) domi.Node) domi.Node {
 // textLeaf is a run of plain text.
 type textLeaf string
 
+func (l textLeaf) render(env environment) box {
+	return buildText(env, l)
+}
+
 func (l textLeaf) html(env textenv) domi.Node {
 	return env.styled(func(textenv) domi.Node {
 		return domi.Text(string(l))
@@ -167,6 +161,10 @@ func (l textLeaf) html(env textenv) domi.Node {
 
 // textConcat is the concatenation of its runs.
 type textConcat []textRun
+
+func (c textConcat) render(env environment) box {
+	return buildText(env, c)
+}
 
 func (c textConcat) html(env textenv) domi.Node {
 	return env.styled(func(env textenv) (n domi.Node) {
@@ -181,6 +179,11 @@ func (c textConcat) html(env textenv) domi.Node {
 type textMod struct {
 	f   func(*textStyle)
 	run textRun
+}
+
+func (m textMod) render(env environment) box {
+	m.f(&env.text)
+	return m.run.render(env)
 }
 
 func (m textMod) html(env textenv) domi.Node {

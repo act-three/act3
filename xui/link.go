@@ -39,34 +39,19 @@ func Link[Action any](a Action, label TextView) LinkView {
 	if _, ok := action.(string); !ok {
 		action = event.Click(a)
 	}
-	return linkView{textView{base{linkNode{textLink{
+	return linkView{textView{base{textLink{
 		action: action,
 		run:    label.text(),
-	}}}}}
+	}}}}
 }
 
 type linkView struct{ textView }
 
 func (v linkView) RequirePageLoad() LinkView {
-	n := v.base[0].(linkNode)
+	n := v.base[0].(textLink)
 	n.bypass = true
 	v.base = base{n}
 	return v
-}
-
-// linkNode is the box of a link view.
-// The box is itself the element that performs the action,
-// so that box modifiers apply to the link.
-type linkNode struct{ textLink }
-
-func (n linkNode) text() textRun { return n.textLink }
-
-func (n linkNode) render(env environment) box {
-	env.tag = n.tag()
-	env.add(n.attrs(env.disabled))
-	n.setStyles(&env.style, env.disabled)
-	linkColor := func(s *textStyle) { s.color = Accent.color() }
-	return textNode{textMod{f: linkColor, run: n.run}}.render(env)
 }
 
 // textLink performs an action when clicked.
@@ -74,6 +59,17 @@ type textLink struct {
 	action any // URL string or onclick domi.Attr
 	bypass bool
 	run    textRun
+}
+
+// render lowers the link as a box.
+// The box is itself the element that performs the action,
+// so that box modifiers apply to the link.
+func (l textLink) render(env environment) box {
+	env.tag = l.tag()
+	env.add(l.attrs(env.disabled))
+	l.setStyles(&env.style, env.disabled)
+	env.text.color = Accent.color()
+	return buildText(env, l.run)
 }
 
 func (l textLink) html(env textenv) domi.Node {
