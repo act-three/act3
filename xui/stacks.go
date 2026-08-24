@@ -93,13 +93,10 @@ func (s stackNode) render(env environment) box {
 	if s.dir == axisZ {
 		subviews = subviews.modify(modStyle{"grid-area", "1 / 1"})
 	}
-	content, f := subviewsRendered(inner, subviews)
+	p := subviewsRendered(inner, subviews)
 	env.tag = cmp.Or(env.tag, axes[s.dir].tag)
 	s.addStackStylesTo(&env.style)
-	return build(env, plan{
-		fills:   f,
-		content: content,
-	})
+	return build(env, p)
 }
 
 // addStackStylesTo adds the stack's declarations to ss:

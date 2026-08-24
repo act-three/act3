@@ -37,7 +37,7 @@ func (r *Renderer) Render(root View) (page domi.Node) {
 	if len(root.nodes()) > 1 {
 		root = VStack(root)
 	}
-	content, _ := subviewsRendered(environment{sheet: &r.sheet}, root)
+	p := subviewsRendered(environment{sheet: &r.sheet}, root)
 	var nonce domi.Attr
 	if r.Nonce != "" {
 		nonce = attr.Nonce(r.Nonce)
@@ -46,5 +46,5 @@ func (r *Renderer) Render(root View) (page domi.Node) {
 	// so its rules are available before the content is painted.
 	// Emit it even when empty to keep the tree stable.
 	style := domi.Tag("style", nonce)(domi.Text("@layer xui{" + r.sheet.CSS() + "}"))
-	return domi.Tag("ui-root")(style, content)
+	return domi.Tag("ui-root")(style, p.content)
 }

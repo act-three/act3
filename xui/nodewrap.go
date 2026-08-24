@@ -128,8 +128,7 @@ func renderLayer(env environment, v View) domi.Node {
 	env.lc = axes[axisZ].lc
 	env.container = containerGrid
 	env.unbounded = 0
-	content, _ := subviewsRendered(env, v)
-	return content
+	return subviewsRendered(env, v).content
 }
 
 // wrapPadding is a padded box.

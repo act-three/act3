@@ -55,14 +55,11 @@ func (s scrollNode) render(env environment) box {
 	inner.lc = layoutContext{}
 	inner.container = containerGrid
 	inner.unbounded = 0
-	content, _ := subviewsRendered(inner,
+	p := subviewsRendered(inner,
 		s.contents.
 			modify(modFixedSize{axes: s.along}),
 	)
-	p := plan{
-		fills:   Horizontal | Vertical,
-		ideal:   rect{width: newSize(100), height: newSize(100)},
-		content: content,
-	}
+	p.fills = Horizontal | Vertical
+	p.ideal = rect{width: newSize(100), height: newSize(100)}
 	return build(env, p)
 }
