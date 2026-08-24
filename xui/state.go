@@ -125,7 +125,7 @@ type paint struct {
 
 // paintUnder folds b's paint terms into the effective paint
 // under state set s.
-func (b boxenv) paintUnder(s State) paint {
+func (b nextenv) paintUnder(s State) paint {
 	opacity := 1.0
 	for _, t := range b.opacity {
 		if t.appliesUnder(s) {
@@ -146,7 +146,7 @@ func (b boxenv) paintUnder(s State) paint {
 // in ascending order. The sets are closed under union: when several
 // active states style the same property, the union set carries their
 // combined effect and outweighs each state's own variant.
-func (b boxenv) states() []State {
+func (b nextenv) states() []State {
 	var sets []State
 	add := func(s State) {
 		if s != 0 && !slices.Contains(sets, s) {
@@ -168,7 +168,7 @@ func (b boxenv) states() []State {
 }
 
 // termStates returns the state of every paint term in b.
-func (b boxenv) termStates() []State {
+func (b nextenv) termStates() []State {
 	var ss []State
 	for _, t := range b.font {
 		ss = append(ss, t.state)
@@ -254,7 +254,7 @@ func shadowList(strokes []stroke) string {
 // variant of any subset of its states, even at the zero-state value:
 // those variants match too while the union is active,
 // and only a redeclaration outweighs them.
-func addPaintStylesTo(ss *sheet.StyleSet, b boxenv) {
+func addPaintStylesTo(ss *sheet.StyleSet, b nextenv) {
 	base := b.paintUnder(0)
 	for _, d := range base.decls(false) {
 		ss.Set(d.property, d.value)

@@ -81,7 +81,7 @@ func (l textLink) renderText(env environment) domi.Node {
 	env.text.setStyles(&ss)
 	class := attr.Class(env.sheet.ClassFor(ss))
 	attrs := l.attrs(env.disabled)
-	env.boxenv = boxenv{}
+	env.nextenv = nextenv{}
 	return domi.Tag(l.tag(), attrs, class)(l.run.renderText(env))
 }
 

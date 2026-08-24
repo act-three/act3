@@ -54,7 +54,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 		var got environment
 		render(pending(), envProbe{&got})
 		want := pending()
-		want.boxenv = boxenv{}
+		want.nextenv = nextenv{}
 		want.container = got.container // not a box value
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("subview env = %+v, want %+v", got, want)

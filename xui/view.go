@@ -231,13 +231,13 @@ type environment struct {
 	disabled  bool
 	lineLimit int // max lines per text, or 0 for no limit
 	sheet     *sheet.Sheet
-	boxenv    // must be zeroed before rendering a subview
+	nextenv   // must be zeroed before rendering a subview
 }
 
-// boxenv contains environment values
+// nextenv contains environment values
 // that must be cleared before rendering a subview.
-// They are "one-shot" or "one-box" values.
-type boxenv struct {
+// They are "one-shot" values.
+type nextenv struct {
 	tag     string
 	attrs   domi.Attr
 	style   sheet.StyleSet
@@ -292,7 +292,7 @@ type box struct {
 // It strips env's box values before any subview renders,
 // so they cannot land on a subview's box.
 func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
-	env.boxenv = boxenv{}
+	env.nextenv = nextenv{}
 	var ns []domi.Node
 	var f AxisSet
 	for _, v := range vs {
@@ -312,7 +312,7 @@ func build(env environment, p plan) box {
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
 	ss := env.style
-	addPaintStylesTo(&ss, env.boxenv)
+	addPaintStylesTo(&ss, env.nextenv)
 	// Text styling is written closest to the view, so it beats the
 	// paint modifiers.
 	// BUG: a state-scoped paint modifier overrides text styling while
