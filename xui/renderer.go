@@ -31,9 +31,11 @@ type Renderer struct {
 // The returned page should be placed directly inside the "body" element.
 //
 //	func (app *App) View(ctx context.Context) (string, domi.Node) {
-//	    return "Greeting", app.ui.Render(Text("Hello, world!"))
+//		return app.ui.Render(Text("Hello, world!"))
 //	}
-func (r *Renderer) Render(root View) (page domi.Node) {
+//
+// The page's title can be set by [View.Title].
+func (r *Renderer) Render(root View) (title string, page domi.Node) {
 	if len(root.nodes()) > 1 {
 		root = VStack(root)
 	}
@@ -46,5 +48,5 @@ func (r *Renderer) Render(root View) (page domi.Node) {
 	// so its rules are available before the content is painted.
 	// Emit it even when empty to keep the tree stable.
 	style := domi.Tag("style", nonce)(domi.Text("@layer xui{" + r.sheet.CSS() + "}"))
-	return domi.Tag("ui-root")(style, p.content)
+	return p.title, domi.Tag("ui-root")(style, p.content)
 }

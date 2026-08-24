@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"cmp"
 	"fmt"
 
 	"ily.dev/domi"
@@ -93,6 +94,13 @@ func (v base) Opacity(x float64) View {
 
 func (v base) Tag(name string) View {
 	return v.modify(modTag{name: name})
+}
+
+func (v base) Title(t string) View {
+	return v.modify(modBox{f: func(b box) box {
+		b.title = cmp.Or(b.title, t)
+		return b
+	}})
 }
 
 func (v base) Underlay(a Alignment, u View) View {

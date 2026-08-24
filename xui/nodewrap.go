@@ -12,7 +12,8 @@ import (
 
 // wrapSubview renders n as the content of a fresh wrapper plan.
 // The subview sits in the wrapper's single-cell grid,
-// and the wrapper forwards the subview's fill request and rigid axes,
+// and the wrapper forwards the subview's fill request, rigid axes,
+// and ancillary data,
 // so it is layout-preserving initially.
 // (A frame then masks the forwarded axes its own geometry governs.)
 // wrapSubview strips env's box values before the subview renders,
@@ -30,6 +31,7 @@ func wrapSubviewIn(env environment, kind containerKind, n node) plan {
 		fills:   b.fills,
 		rigid:   b.rigid,
 		content: b.node,
+		title:   b.title,
 	}
 }
 
@@ -96,12 +98,14 @@ func (w wrapLayer) render(env environment) box {
 	// Prevent high-z-index subviews
 	// from painting on top of the overlay or border stroke.
 	p := wrapSubview(env, modStyle{"isolation", "isolate"}.modify(w.node))
+	layer := renderLayer(env, view)
 	p.content = domi.Fragment(
 		p.content,
 		domi.Tag(tag, attr.Class(env.sheet.ClassFor(lss)))(
-			renderLayer(env, view),
+			layer.content,
 		),
 	)
+	p.title = cmp.Or(p.title, layer.title)
 	env.tag = cmp.Or(env.tag, "ui-layer")
 	// The container hosts the base subview in its own single-cell
 	// grid; the isolated z ladder sandwiches the in-flow subview
@@ -124,11 +128,13 @@ func (w wrapLayer) render(env environment) box {
 // renderLayer renders a view inside its grid layer,
 // where, as in a ZStack, both axes are minor.
 // v's fill requests don't propagate outside the layer.
-func renderLayer(env environment, v View) domi.Node {
+func renderLayer(env environment, v View) plan {
 	env.lc = axes[axisZ].lc
 	env.container = containerGrid
 	env.unbounded = 0
-	return subviewsRendered(env, v).content
+	p := subviewsRendered(env, v)
+	p.fills = 0
+	return p
 }
 
 // wrapPadding is a padded box.

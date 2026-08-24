@@ -243,3 +243,16 @@ func (m modTagDefault) environment(env environment) environment {
 	env.tag = cmp.Or(env.tag, m.name)
 	return env
 }
+
+// NOTE: no exported construcor.
+// modBox calls f to modify the box rendered by n.
+type modBox struct {
+	f func(box) box
+	n node
+}
+
+func (m modBox) modify(n node) node { m.n = n; return m }
+
+func (m modBox) render(env environment) box {
+	return m.f(m.n.render(env))
+}
