@@ -115,12 +115,14 @@ func allUnder[T any](terms []term[T], s State) (vs []T) {
 // paint is a box's effective paint while a given state set is active:
 // each term list folded down to its final value.
 type paint struct {
-	font    FontSize
-	fg      color
-	bg      []color
-	stroke  []stroke
-	shape   Shape
-	opacity float64 // 1 is opaque
+	fontSize   string
+	fontWeight string
+	lineHeight string
+	fg         color
+	bg         []color
+	stroke     []stroke
+	shape      Shape
+	opacity    float64 // 1 is opaque
 }
 
 // paintUnder folds b's paint terms into the effective paint
@@ -133,12 +135,14 @@ func (b nextenv) paintUnder(s State) paint {
 		}
 	}
 	return paint{
-		font:    lastUnder(b.font, s),
-		fg:      lastUnder(b.fg, s),
-		bg:      allUnder(b.bg, s),
-		stroke:  allUnder(b.stroke, s),
-		shape:   lastUnder(b.shape, s),
-		opacity: opacity,
+		fontSize:   lastUnder(b.fontSize, s),
+		fontWeight: lastUnder(b.fontWeight, s),
+		lineHeight: lastUnder(b.lineHeight, s),
+		fg:         lastUnder(b.fg, s),
+		bg:         allUnder(b.bg, s),
+		stroke:     allUnder(b.stroke, s),
+		shape:      lastUnder(b.shape, s),
+		opacity:    opacity,
 	}
 }
 
@@ -170,7 +174,13 @@ func (b nextenv) states() []State {
 // termStates returns the state of every paint term in b.
 func (b nextenv) termStates() []State {
 	var ss []State
-	for _, t := range b.font {
+	for _, t := range b.fontSize {
+		ss = append(ss, t.state)
+	}
+	for _, t := range b.fontWeight {
+		ss = append(ss, t.state)
+	}
+	for _, t := range b.lineHeight {
 		ss = append(ss, t.state)
 	}
 	for _, t := range b.fg {
@@ -201,7 +211,16 @@ type decl struct{ property, value string }
 // A complete paint also declares properties at their default values,
 // which a state variant needs to override its base.
 func (p paint) decls(complete bool) []decl {
-	ds := p.font.decls()
+	var ds []decl
+	for _, d := range []decl{
+		{"font-size", p.fontSize},
+		{"font-weight", p.fontWeight},
+		{"line-height", p.lineHeight},
+	} {
+		if d.value != "" {
+			ds = append(ds, d)
+		}
+	}
 	if len(p.bg) > 0 {
 		// The outermost color paints as the background color, and the
 		// inner colors as image layers listed innermost first.

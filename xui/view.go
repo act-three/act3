@@ -238,15 +238,17 @@ type environment struct {
 // that must be cleared before rendering a subview.
 // They are "one-shot" values.
 type nextenv struct {
-	tag     string
-	attrs   domi.Attr
-	style   sheet.StyleSet
-	fg      []term[color]
-	bg      []term[color]
-	stroke  []term[stroke]
-	shape   []term[Shape]
-	font    []term[FontSize]
-	opacity []term[float64]
+	tag        string
+	attrs      domi.Attr
+	style      sheet.StyleSet
+	fg         []term[color]
+	bg         []term[color]
+	stroke     []term[stroke]
+	shape      []term[Shape]
+	fontSize   []term[string]
+	fontWeight []term[string]
+	lineHeight []term[string]
+	opacity    []term[float64]
 
 	text textStyle
 
