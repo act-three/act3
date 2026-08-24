@@ -1,7 +1,5 @@
 package ui
 
-import "ily.dev/act3/xui/internal/sheet"
-
 // FontSize selects a slot on the type scale.
 type FontSize string
 
@@ -29,17 +27,6 @@ func (f FontSize) values() (size, weight, height string) {
 		return "2rem", "700", "1.15"
 	}
 	return "", "", ""
-}
-
-// setStyles adds f's declarations to ss.
-func (f FontSize) setStyles(ss *sheet.StyleSet) {
-	size, weight, height := f.values()
-	if size == "" {
-		return
-	}
-	ss.Set("font-size", size)
-	ss.Set("font-weight", weight)
-	ss.Set("line-height", height)
 }
 
 // A FramingMode controls how an [Image] fills its available space.

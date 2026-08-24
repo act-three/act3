@@ -115,7 +115,9 @@ func allUnder[T any](terms []term[T], s State) (vs []T) {
 // paint is a box's effective paint while a given state set is active:
 // each term list folded down to its final value.
 type paint struct {
+	fontFamily string
 	fontSize   string
+	fontStyle  string
 	fontWeight string
 	lineHeight string
 	fg         color
@@ -135,7 +137,9 @@ func (b nextenv) paintUnder(s State) paint {
 		}
 	}
 	return paint{
+		fontFamily: lastUnder(b.fontFamily, s),
 		fontSize:   lastUnder(b.fontSize, s),
+		fontStyle:  lastUnder(b.fontStyle, s),
 		fontWeight: lastUnder(b.fontWeight, s),
 		lineHeight: lastUnder(b.lineHeight, s),
 		fg:         lastUnder(b.fg, s),
@@ -174,7 +178,13 @@ func (b nextenv) states() []State {
 // termStates returns the state of every paint term in b.
 func (b nextenv) termStates() []State {
 	var ss []State
+	for _, t := range b.fontFamily {
+		ss = append(ss, t.state)
+	}
 	for _, t := range b.fontSize {
+		ss = append(ss, t.state)
+	}
+	for _, t := range b.fontStyle {
 		ss = append(ss, t.state)
 	}
 	for _, t := range b.fontWeight {
@@ -213,7 +223,9 @@ type decl struct{ property, value string }
 func (p paint) decls(complete bool) []decl {
 	var ds []decl
 	for _, d := range []decl{
+		{"font-family", p.fontFamily},
 		{"font-size", p.fontSize},
+		{"font-style", p.fontStyle},
 		{"font-weight", p.fontWeight},
 		{"line-height", p.lineHeight},
 	} {

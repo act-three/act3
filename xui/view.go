@@ -245,12 +245,12 @@ type nextenv struct {
 	bg         []term[color]
 	stroke     []term[stroke]
 	shape      []term[Shape]
+	fontFamily []term[string]
 	fontSize   []term[string]
+	fontStyle  []term[string]
 	fontWeight []term[string]
 	lineHeight []term[string]
 	opacity    []term[float64]
-
-	text textStyle
 
 	// fillMask is the set of axes to be stripped
 	// from the box's fill request.
@@ -315,11 +315,6 @@ func build(env environment, p plan) box {
 	rigid := p.rigid | env.unbounded
 	ss := env.style
 	addPaintStylesTo(&ss, env.nextenv)
-	// Text styling is written closest to the view, so it beats the
-	// paint modifiers.
-	// BUG: a state-scoped paint modifier overrides text styling while
-	// its states are active; it should not.
-	env.text.setStyles(&ss)
 	addIdealStylesTo(&ss, p.ideal, env.unbounded, fills)
 	fills.addFillStylesTo(&ss, env)
 	rigid.addRigidStylesTo(&ss, env)
