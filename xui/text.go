@@ -118,7 +118,7 @@ func buildText(env environment, r textRun) box {
 	}
 	inner := env
 	inner.boxenv = boxenv{}
-	return build(env, plan{content: r.html(inner)})
+	return build(env, plan{content: r.renderText(inner)})
 }
 
 // A textRun is a unary text node.
@@ -126,7 +126,7 @@ func buildText(env environment, r textRun) box {
 // or renders itself as a box when it is the whole view.
 type textRun interface {
 	node
-	html(environment) domi.Node
+	renderText(environment) domi.Node
 }
 
 // styled lowers content inside the pending text styling, if any,
@@ -143,11 +143,13 @@ func (env environment) styled(content func(environment) domi.Node) domi.Node {
 // textLeaf is a run of plain text.
 type textLeaf string
 
+var _ textRun = textLeaf("")
+
 func (l textLeaf) render(env environment) box {
 	return buildText(env, l)
 }
 
-func (l textLeaf) html(env environment) domi.Node {
+func (l textLeaf) renderText(env environment) domi.Node {
 	return env.styled(func(environment) domi.Node {
 		return domi.Text(string(l))
 	})
@@ -156,14 +158,16 @@ func (l textLeaf) html(env environment) domi.Node {
 // textConcat is the concatenation of its runs.
 type textConcat []textRun
 
+var _ textRun = textConcat(nil)
+
 func (c textConcat) render(env environment) box {
 	return buildText(env, c)
 }
 
-func (c textConcat) html(env environment) domi.Node {
+func (c textConcat) renderText(env environment) domi.Node {
 	return env.styled(func(env environment) (n domi.Node) {
 		for _, r := range c {
-			n = domi.Fragment(n, r.html(env))
+			n = domi.Fragment(n, r.renderText(env))
 		}
 		return n
 	})
@@ -175,12 +179,14 @@ type textMod struct {
 	run textRun
 }
 
+var _ textRun = textMod{}
+
 func (m textMod) render(env environment) box {
 	m.f(&env.text)
 	return m.run.render(env)
 }
 
-func (m textMod) html(env environment) domi.Node {
+func (m textMod) renderText(env environment) domi.Node {
 	m.f(&env.text)
-	return m.run.html(env)
+	return m.run.renderText(env)
 }
