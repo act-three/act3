@@ -61,6 +61,8 @@ type textLink struct {
 	run    textRun
 }
 
+var _ textRun = textLink{}
+
 // render lowers the link as a box.
 // The box is itself the element that performs the action,
 // so that box modifiers apply to the link.
@@ -72,7 +74,7 @@ func (l textLink) render(env environment) box {
 	return buildText(env, l.run)
 }
 
-func (l textLink) html(env environment) domi.Node {
+func (l textLink) renderText(env environment) domi.Node {
 	env.text.color = Accent.color()
 	var ss sheet.StyleSet
 	l.setStyles(&ss, env.disabled)
@@ -80,7 +82,7 @@ func (l textLink) html(env environment) domi.Node {
 	class := attr.Class(env.sheet.ClassFor(ss))
 	attrs := l.attrs(env.disabled)
 	env.boxenv = boxenv{}
-	return domi.Tag(l.tag(), attrs, class)(l.run.html(env))
+	return domi.Tag(l.tag(), attrs, class)(l.run.renderText(env))
 }
 
 // tag returns the name of the element that performs the action.
