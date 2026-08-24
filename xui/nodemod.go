@@ -167,7 +167,10 @@ func (m modFont) withState(s State) Modifier { m.state = s; return m }
 func (m modFont) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
 func (m modFont) environment(env environment) environment {
-	env.font = append(env.font, m.term)
+	size, weight, height := m.value.values()
+	env.fontSize = append(env.fontSize, term[string]{state: m.state, value: size})
+	env.fontWeight = append(env.fontWeight, term[string]{state: m.state, value: weight})
+	env.lineHeight = append(env.lineHeight, term[string]{state: m.state, value: height})
 	return env
 }
 

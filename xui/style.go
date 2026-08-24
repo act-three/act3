@@ -13,35 +13,33 @@ const (
 	LargeTitle FontSize = "large-title"
 )
 
-// decls returns f's declarations.
-func (f FontSize) decls() []decl {
-	size := func(size, weight, height string) []decl {
-		return []decl{
-			{"font-size", size},
-			{"font-weight", weight},
-			{"line-height", height},
-		}
-	}
+// values returns the font size, weight, and line height of the slot,
+// or empty strings if f is not defined.
+func (f FontSize) values() (size, weight, height string) {
 	switch f {
 	case Body:
-		return size("1rem", "400", "1.4")
+		return "1rem", "400", "1.4"
 	case Caption:
-		return size("0.75rem", "400", "1.3")
+		return "0.75rem", "400", "1.3"
 	case Headline:
-		return size("1.125rem", "600", "1.4")
+		return "1.125rem", "600", "1.4"
 	case Title:
-		return size("1.5rem", "700", "1.2")
+		return "1.5rem", "700", "1.2"
 	case LargeTitle:
-		return size("2rem", "700", "1.15")
+		return "2rem", "700", "1.15"
 	}
-	return nil
+	return "", "", ""
 }
 
 // setStyles adds f's declarations to ss.
 func (f FontSize) setStyles(ss *sheet.StyleSet) {
-	for _, d := range f.decls() {
-		ss.Set(d.property, d.value)
+	size, weight, height := f.values()
+	if size == "" {
+		return
 	}
+	ss.Set("font-size", size)
+	ss.Set("font-weight", weight)
+	ss.Set("line-height", height)
 }
 
 // A FramingMode controls how an [Image] fills its available space.
