@@ -47,19 +47,41 @@ func Text(s string) TextView {
 
 type textView struct{ base }
 
-func (v textView) Bold() TextView { return v.styledWith(func(s *textStyle) { s.bold = true }) }
+func (v textView) Bold() TextView {
+	return v.styledWith(func(env *environment) {
+		env.fontWeight = append(env.fontWeight, term[string]{value: "600"})
+	})
+}
 
-func (v textView) Italic() TextView { return v.styledWith(func(s *textStyle) { s.italic = true }) }
+func (v textView) Italic() TextView {
+	return v.styledWith(func(env *environment) {
+		env.fontStyle = append(env.fontStyle, term[string]{value: "italic"})
+	})
+}
 
-func (v textView) Monospace() TextView { return v.styledWith(func(s *textStyle) { s.mono = true }) }
+func (v textView) Monospace() TextView {
+	return v.styledWith(func(env *environment) {
+		env.fontFamily = append(env.fontFamily, term[string]{value: "var(--ui-font-mono)"})
+	})
+}
 
 func (v textView) TextFont(f FontSize) TextView {
-	return v.styledWith(func(s *textStyle) { s.font = f })
+	size, weight, height := f.values()
+	if size == "" {
+		return v
+	}
+	return v.styledWith(func(env *environment) {
+		env.fontSize = append(env.fontSize, term[string]{value: size})
+		env.fontWeight = append(env.fontWeight, term[string]{value: weight})
+		env.lineHeight = append(env.lineHeight, term[string]{value: height})
+	})
 }
 
 func (v textView) TextForeground(c Color) TextView {
 	cc := c.color()
-	return v.styledWith(func(s *textStyle) { s.color = cc })
+	return v.styledWith(func(env *environment) {
+		env.fg = append(env.fg, term[color]{value: cc})
+	})
 }
 
 func (v textView) Concat(t TextView) TextView {
@@ -70,39 +92,9 @@ func (v textView) Concat(t TextView) TextView {
 func (v textView) text() textRun { return v.base[0].(textRun) }
 
 // styledWith returns a copy of v whose run is modified by f.
-func (v textView) styledWith(f func(*textStyle)) TextView {
+func (v textView) styledWith(f func(*environment)) TextView {
 	v.base = base{textMod{f: f, run: v.text()}}
 	return v
-}
-
-// textStyle is the pending styling of a text run.
-type textStyle struct {
-	bold, italic, mono bool
-	font               FontSize
-	color              color
-}
-
-func (s textStyle) attr(sh *sheet.Sheet) domi.Attr {
-	var ss sheet.StyleSet
-	s.setStyles(&ss)
-	return attr.Class(sh.ClassFor(ss))
-}
-
-func (s textStyle) setStyles(ss *sheet.StyleSet) {
-	if s.mono {
-		ss.Set("font-family", "var(--ui-font-mono)")
-	}
-	if s.bold {
-		ss.Set("font-weight", "600")
-	}
-	if s.italic {
-		ss.Set("font-style", "italic")
-	}
-	// The type scale's weight beats Bold's, matching the write order.
-	s.font.setStyles(ss)
-	if s.color != nil {
-		ss.Set("color", s.color.colorCSS())
-	}
 }
 
 // buildText lowers r as a text block.
@@ -132,12 +124,16 @@ type textRun interface {
 // styled lowers content inside the pending text styling, if any,
 // consuming it so that no subrun applies it again.
 func (env environment) styled(content func(environment) domi.Node) domi.Node {
-	s := env.text
+	ds := env.paintUnder(0).decls(false)
 	env.nextenv = nextenv{}
-	if s == (textStyle{}) {
+	if len(ds) == 0 {
 		return content(env)
 	}
-	return html.Span(s.attr(env.sheet))(content(env))
+	var ss sheet.StyleSet
+	for _, d := range ds {
+		ss.Set(d.property, d.value)
+	}
+	return html.Span(attr.Class(env.sheet.ClassFor(ss)))(content(env))
 }
 
 // textLeaf is a run of plain text.
@@ -175,18 +171,18 @@ func (c textConcat) renderText(env environment) domi.Node {
 
 // textMod applies f to the pending style of its run.
 type textMod struct {
-	f   func(*textStyle)
+	f   func(*environment)
 	run textRun
 }
 
 var _ textRun = textMod{}
 
 func (m textMod) render(env environment) box {
-	m.f(&env.text)
+	m.f(&env)
 	return m.run.render(env)
 }
 
 func (m textMod) renderText(env environment) domi.Node {
-	m.f(&env.text)
+	m.f(&env)
 	return m.run.renderText(env)
 }

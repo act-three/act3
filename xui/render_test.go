@@ -612,6 +612,9 @@ func TestFontSpecifiesWholeType(t *testing.T) {
 	if html := render(t, ui.Text("x")); strings.Contains(html, "font-size") {
 		t.Errorf("an unset font should emit nothing:\n%s", html)
 	}
+	if html := render(t, ui.Text("x").TextFont("").Bold()); !strings.Contains(html, "font-weight:600") {
+		t.Errorf("an undefined TextFont should be a no-op:\n%s", html)
+	}
 }
 
 // TestTextWholeTextRule pins the whole-text rule: a text modifier applied
@@ -791,6 +794,26 @@ func TestLinkColor(t *testing.T) {
 	block := render(t, ui.Link("/", ui.Text("x")))
 	if got := classRule(t, block, `</style><a class="(ui-\w+)" href="/">x</a>`); !strings.Contains(got, "color:var(--ui-color-accent)") {
 		t.Errorf("block link rule = %q, want the accent color on the box:\n%s", got, block)
+	}
+}
+
+// TestTextStyleBeatsStatePaint pins that text styling is
+// unconditional: a state-scoped paint modifier applies while its
+// states are active, but never overrides a property the text
+// styling sets, which is written closest to the view.
+func TestTextStyleBeatsStatePaint(t *testing.T) {
+	// The link's accent is contended by a hovered color: no variant
+	// is emitted at all, and the accent holds in every state.
+	html := render(t, ui.Link("/", ui.Text("x")).WhileHovered(ui.Foreground(ui.Muted)))
+	if strings.Contains(html, "hover") || !strings.Contains(html, "color:var(--ui-color-accent)") {
+		t.Errorf("hovered color should lose to the accent entirely:\n%s", html)
+	}
+
+	// A hovered font contends only the weight: its size still
+	// applies on hover, while Bold keeps the weight in every state.
+	html = render(t, ui.Text("x").Bold().WhileHovered(ui.Font(ui.Caption)))
+	if !strings.Contains(html, "font-size:0.75rem") || !strings.Contains(html, "font-weight:600") || strings.Contains(html, "font-weight:400") {
+		t.Errorf("hovered font should apply its size but not its weight:\n%s", html)
 	}
 }
 

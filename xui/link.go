@@ -70,15 +70,17 @@ func (l textLink) render(env environment) box {
 	env.tag = l.tag()
 	env.add(l.attrs(env.disabled))
 	l.setStyles(&env.style, env.disabled)
-	env.text.color = Accent.color()
+	env.fg = append(env.fg, term[color]{value: Accent.color()})
 	return buildText(env, l.run)
 }
 
 func (l textLink) renderText(env environment) domi.Node {
-	env.text.color = Accent.color()
+	env.fg = append(env.fg, term[color]{value: Accent.color()})
 	var ss sheet.StyleSet
 	l.setStyles(&ss, env.disabled)
-	env.text.setStyles(&ss)
+	for _, d := range env.paintUnder(0).decls(false) {
+		ss.Set(d.property, d.value)
+	}
 	class := attr.Class(env.sheet.ClassFor(ss))
 	attrs := l.attrs(env.disabled)
 	env.nextenv = nextenv{}
