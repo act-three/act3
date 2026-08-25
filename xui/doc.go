@@ -11,7 +11,7 @@ then renders the View graph with a [Renderer].
 					Title("Movies").
 					Font(Title),
 				Image(bannerURL).
-					FramedAs(ScaleToFill).
+					ScaledToFill().
 					Frame(Width(800), Height(200)),
 				For(movies, movie.id, func(m *movie) View {
 					return HStack(

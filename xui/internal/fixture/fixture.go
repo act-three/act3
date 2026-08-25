@@ -46,7 +46,7 @@ func accountCard(user User) View {
 		HStack(
 			Image(user.PhotoURL).
 				Alt(user.Name).
-				FramedAs(ScaledToFill).
+				ScaledToFill().
 				Frame(Width(48), Height(48)).
 				BorderShape(Ellipse),
 			VStack(
@@ -92,7 +92,7 @@ func movieRow(movie Movie) View {
 	return HStack(
 		Image(movie.PosterURL).
 			Alt(movie.Title).
-			FramedAs(ScaledToFill).
+			ScaledToFill().
 			Frame(Width(56), Height(84)).
 			BorderShape(RoundedRectangle),
 		VStack(
@@ -269,7 +269,7 @@ func posterWall() View {
 		posters = append(
 			posters,
 			Image(placeholderImage(120, 180, c)).
-				FramedAs(ScaledToFill).
+				ScaledToFill().
 				FrameRatio(2, 3, Horizontal).
 				BorderShape(RoundedRectangle),
 		)

@@ -84,7 +84,7 @@ type View interface {
 	// To display a 16:9 thumbnail, as wide as its available space:
 	//
 	//	Image(url).
-	//		FramedAs(ScaledToFill).
+	//		ScaledToFill().
 	//		FrameRatio(16, 9, Horizontal)
 	//
 	// Note that type Alignment satisfies FrameRatioOption.
@@ -269,7 +269,7 @@ type nextenv struct {
 	alignment  Alignment
 	gap        *float64 // nil means defaultGap
 	imageAlt   string
-	framedAs   FramingMode
+	framedAs   framingMode
 }
 
 // A stroke is one pending border line.
