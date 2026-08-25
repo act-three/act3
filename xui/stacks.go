@@ -24,27 +24,23 @@ type StackView interface {
 
 // A VStack arranges its subviews in a vertical line.
 func VStack(v ...View) StackView {
-	return stackView{base{stackNode{axisV, v, defaultGap, Center}}}
+	return stackView{base{stackNode{axisV, v}}}
 }
 
 // An HStack arranges its subviews in a horizontal line.
 func HStack(v ...View) StackView {
-	return stackView{base{stackNode{axisH, v, defaultGap, Center}}}
+	return stackView{base{stackNode{axisH, v}}}
 }
 
 type stackView struct{ base }
 
 func (v stackView) Alignment(a Alignment) StackView {
-	n := v.base[0].(stackNode)
-	n.align = a
-	v.base = base{n}
+	v.base = v.modify(modStackAlign(a))
 	return v
 }
 
 func (v stackView) Gap(px float64) StackView {
-	n := v.base[0].(stackNode)
-	n.gap = px
-	v.base = base{n}
+	v.base = v.modify(modStackGap(px))
 	return v
 }
 
@@ -64,25 +60,21 @@ type ZStackView interface {
 
 // ZStack overlays the given views.
 func ZStack(v ...View) ZStackView {
-	return zstackView{base{stackNode{axisZ, v, defaultGap, Center}}}
+	return zstackView{base{stackNode{axisZ, v}}}
 }
 
 type zstackView struct{ base }
 
 func (v zstackView) Alignment(a Alignment) ZStackView {
-	n := v.base[0].(stackNode)
-	n.align = a
-	v.base = base{n}
+	v.base = v.modify(modStackAlign(a))
 	return v
 }
 
-const defaultGap = 8
+const defaultGap float64 = 8
 
 type stackNode struct {
 	dir      stackAxis
 	subviews []View
-	gap      float64
-	align    Alignment
 }
 
 func (s stackNode) render(env environment) box {
@@ -95,7 +87,8 @@ func (s stackNode) render(env environment) box {
 	}
 	p := subviewsRendered(inner, subviews)
 	env.tag = cmp.Or(env.tag, axes[s.dir].tag)
-	s.addStackStylesTo(&env.style)
+	gap := *cmp.Or(env.stackGap, new(defaultGap))
+	s.addStackStylesTo(&env.style, gap, env.stackAlign)
 	return build(env, p)
 }
 
@@ -103,23 +96,23 @@ func (s stackNode) render(env environment) box {
 // its display and flow, its gap,
 // and its alignment — the minor-axis projection for a line,
 // both axes for a ZStack.
-func (s stackNode) addStackStylesTo(ss *sheet.StyleSet) {
+func (s stackNode) addStackStylesTo(ss *sheet.StyleSet, gap float64, align Alignment) {
 	switch s.dir {
 	case axisZ:
 		ss.Set("display", "grid")
 		ss.Set("grid-template-columns", "100%")
 		ss.Set("grid-template-rows", "100%")
-		ss.Set("place-items", s.align.placeItems())
+		ss.Set("place-items", align.placeItems())
 		return
 	case axisH:
 		ss.Set("flex-direction", "row")
-		ss.Set("align-items", s.align.vertical().keyword())
+		ss.Set("align-items", align.vertical().keyword())
 	case axisV:
 		ss.Set("flex-direction", "column")
-		ss.Set("align-items", s.align.horizontal().keyword())
+		ss.Set("align-items", align.horizontal().keyword())
 	}
 	ss.Set("display", "inline-flex")
-	ss.Set("gap", cssPx(s.gap))
+	ss.Set("gap", cssPx(gap))
 }
 
 // A Spacer occupies empty space.

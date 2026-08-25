@@ -1129,6 +1129,52 @@ func TestGapDoesNotLeak(t *testing.T) {
 	}
 }
 
+// TestRepeatedStackModifiers pins that Gap and Alignment compose like
+// every other modifier: the innermost call wins, not the last one.
+func TestRepeatedStackModifiers(t *testing.T) {
+	tests := []struct {
+		name    string
+		view    ui.View
+		tag     string
+		want    string
+		rejects string
+	}{
+		{
+			name:    "gap",
+			view:    ui.VStack(ui.Text("a")).Gap(4).Gap(12),
+			tag:     "ui-vstack",
+			want:    "gap:4px",
+			rejects: "gap:12px",
+		},
+		{
+			name:    "alignment",
+			view:    ui.VStack(ui.Text("a")).Alignment(ui.Leading).Alignment(ui.Trailing),
+			tag:     "ui-vstack",
+			want:    "align-items:start",
+			rejects: "align-items:end",
+		},
+		{
+			name:    "zstack alignment",
+			view:    ui.ZStack(ui.Text("a")).Alignment(ui.TopLeading).Alignment(ui.BottomTrailing),
+			tag:     "ui-zstack",
+			want:    "place-items:start start",
+			rejects: "place-items:end end",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, tt.view)
+			rule := classRule(t, html, `<`+tt.tag+` class="(ui-\w+)"`)
+			if !strings.Contains(rule, tt.want) {
+				t.Errorf("rule = %q, want %q", rule, tt.want)
+			}
+			if strings.Contains(rule, tt.rejects) {
+				t.Errorf("rule = %q, must not contain %q", rule, tt.rejects)
+			}
+		})
+	}
+}
+
 // TestEmptyControlFlow checks that Empty and a false branch contribute no
 // markup, even with modifiers applied.
 func TestEmptyControlFlow(t *testing.T) {

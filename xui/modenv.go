@@ -40,6 +40,20 @@ func modFixedSize(axes AxisSet) modEnv {
 	}
 }
 
+func modStackAlign(a Alignment) modEnv {
+	return func(env environment) environment {
+		env.stackAlign = a
+		return env
+	}
+}
+
+func modStackGap(px float64) modEnv {
+	return func(env environment) environment {
+		env.stackGap = &px
+		return env
+	}
+}
+
 // modStyle emits one CSS declaration onto a subview's outermost box.
 // Containers can use it to apply a style to their direct subviews.
 func modStyle(property, value string) modEnv {
