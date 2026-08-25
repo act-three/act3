@@ -86,7 +86,8 @@ func movieRow(movie Movie) ui.View {
 func render(t *testing.T, v ui.View) string {
 	t.Helper()
 	var sb strings.Builder
-	if err := domi.RenderTo(&sb, new(ui.Renderer).Render(v)); err != nil {
+	_, page := new(ui.Renderer).Render(v)
+	if err := domi.RenderTo(&sb, page); err != nil {
 		t.Fatalf("render: %v", err)
 	}
 	return sb.String()

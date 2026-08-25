@@ -463,7 +463,8 @@ func stageApp(t *testing.T, appCSS string, v ui.View, fn func(*uitest.Session)) 
 	sb.WriteString("</style><style>")
 	sb.WriteString(ui.CSS)
 	sb.WriteString(`</style><body>`)
-	if err := domi.RenderTo(&sb, new(ui.Renderer).Render(v)); err != nil {
+	_, page := new(ui.Renderer).Render(v)
+	if err := domi.RenderTo(&sb, page); err != nil {
 		t.Fatalf("render: %v", err)
 	}
 	uitest.Run(t, 600, 400, sb.String(), fn)

@@ -5,9 +5,10 @@ Application code composes views,
 then renders the View graph with a [Renderer].
 
 	func (app *App) View(ctx context.Context) (string, domi.Node) {
-		return "Movies", app.ui.Render(
+		return app.ui.Render(
 			VStack(
 				Text("Movies").
+					Title("Movies").
 					Font(Title),
 				Image(bannerURL).
 					FramedAs(ScaleToFill).
