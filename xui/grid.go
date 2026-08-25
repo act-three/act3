@@ -105,14 +105,12 @@ func (g gridNode) render(env environment) box {
 	inner := env
 	inner.lc = layoutContext{}
 	inner.container = containerGrid
-	content, f := subviewsRendered(inner, g.subviews...)
+	p := subviewsRendered(inner, g.subviews...)
+	p.fills |= g.layout.fills()
 	env.tag = cmp.Or(env.tag, "ui-grid")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", g.layout.columns())
 	env.style.Set("gap", cssPx(g.gap))
 	env.style.Set("place-items", g.align.placeItems())
-	return build(env, plan{
-		fills:   g.layout.fills() | f,
-		content: content,
-	})
+	return build(env, p)
 }

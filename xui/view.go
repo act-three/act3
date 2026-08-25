@@ -290,21 +290,22 @@ type box struct {
 }
 
 // subviewsRendered is a generic combinator for lists of subviews.
-// It renders the given views and merges their fill requests.
+// It renders the given views into a plan with their merged fill requests.
 // It strips env's box values before any subview renders,
 // so they cannot land on a subview's box.
-func subviewsRendered(env environment, vs ...View) (domi.Node, AxisSet) {
+func subviewsRendered(env environment, vs ...View) plan {
 	env.nextenv = nextenv{}
 	var ns []domi.Node
-	var f AxisSet
+	var p plan
 	for _, v := range vs {
 		for _, n := range v.nodes() {
 			b := n.render(env)
-			f |= b.fills
+			p.fills |= b.fills
 			ns = append(ns, b.node)
 		}
 	}
-	return domi.Fragment(ns...), f
+	p.content = domi.Fragment(ns...)
+	return p
 }
 
 // build returns the box described by env and p.
