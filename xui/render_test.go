@@ -37,7 +37,7 @@ func accountCard(user User) ui.View {
 		ui.HStack(
 			ui.Image(user.PhotoURL).
 				Alt(user.Name).
-				FramedAs(ui.ScaledToFill).
+				ScaledToFill().
 				Frame(ui.Width(48), ui.Height(48)).
 				BorderShape(ui.Ellipse),
 			ui.VStack(
@@ -72,7 +72,7 @@ func movieRow(movie Movie) ui.View {
 	return ui.HStack(
 		ui.Image(movie.PosterURL).
 			Alt(movie.Title).
-			FramedAs(ui.ScaledToFill).
+			ScaledToFill().
 			Frame(ui.Width(64), ui.Height(96)),
 		ui.VStack(
 			ui.Text(movie.Title).Font(ui.Headline),
@@ -503,7 +503,7 @@ func TestIdealSize(t *testing.T) {
 			// A scaling mode meets an imposed box; with no box to
 			// meet, the img's intrinsic geometry answers instead.
 			"scaled image drops its fills on unbounded axes",
-			ui.Image("/x.png").FramedAs(ui.ScaledToFill).FixedSize(),
+			ui.Image("/x.png").ScaledToFill().FixedSize(),
 			[]string{"object-fit:cover"},
 			[]string{"justify-self", "align-self"},
 		},
@@ -511,7 +511,7 @@ func TestIdealSize(t *testing.T) {
 			// The viewport itself stays greedy on both axes; only
 			// the image's own fill is dropped on the scroll axis.
 			"scaled image keeps its fill on the bounded cross axis",
-			ui.ScrollView(ui.Vertical, ui.Image("/x.png").FramedAs(ui.ScaledToFill)),
+			ui.ScrollView(ui.Vertical, ui.Image("/x.png").ScaledToFill()),
 			[]string{"justify-self:stretch;min-height:0;min-width:0;object-fit:cover"},
 			[]string{"align-self:stretch;justify-self:stretch;min-height"},
 		},
@@ -971,7 +971,7 @@ func TestImageNative(t *testing.T) {
 // TestImageStroked pins that the wrapper a stroked image boxes out into
 // keeps the image's own alt text and framing mode.
 func TestImageStroked(t *testing.T) {
-	html := render(t, ui.Image("/x.png").Alt("pic").FramedAs(ui.ScaledToFill).BorderStroke(1, ui.Accent))
+	html := render(t, ui.Image("/x.png").Alt("pic").ScaledToFill().BorderStroke(1, ui.Accent))
 	if want := `<img alt="pic" class="ui-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
 		t.Errorf("stroked image missing %q:\n%s", want, html)
 	}

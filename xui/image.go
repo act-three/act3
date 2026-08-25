@@ -11,10 +11,16 @@ type ImageView interface {
 	// Alt sets the alt text for the receiver.
 	Alt(string) ImageView
 
-	// FramedAs sets the framing mode for the receiver.
-	//
-	// The default framing mode is Native.
-	FramedAs(FramingMode) ImageView
+	// ScaledToFill crops and resizes the image to fill its
+	// available space and display as much of the image as
+	// possible without distortion.
+	ScaledToFill() ImageView
+
+	// ScaledToFit displays the complete image, preserving
+	// its aspect ratio while resizing to fit within the
+	// available space. This is also known as "letterboxed"
+	// and "pillarboxed".
+	ScaledToFit() ImageView
 }
 
 // Image displays the image at url.
@@ -30,9 +36,17 @@ func (v imageView) Alt(s string) ImageView {
 	return v
 }
 
-func (v imageView) FramedAs(f FramingMode) ImageView {
+func (v imageView) ScaledToFill() ImageView {
 	v.base = v.modify(modEnv(func(env environment) environment {
-		env.framedAs = f
+		env.framedAs = scaledToFill
+		return env
+	}))
+	return v
+}
+
+func (v imageView) ScaledToFit() ImageView {
+	v.base = v.modify(modEnv(func(env environment) environment {
+		env.framedAs = scaledToFit
 		return env
 	}))
 	return v
@@ -58,7 +72,7 @@ func (n imageNode) render(env environment) box {
 		env.add(attr.Alt(env.imageAlt))
 	}
 	var p plan
-	if env.framedAs == Native {
+	if env.framedAs == nativeScale {
 		// At native size the img's intrinsic geometry is the whole
 		// contract, so the img is its own box, with no wrapper to
 		// mediate between the box and the available space.
@@ -73,8 +87,20 @@ func (n imageNode) render(env environment) box {
 		// scaled by the img's ratio to apply to the unbounded axis.
 		env.style.Set("min-width", "0")
 		env.style.Set("min-height", "0")
-		env.style.Set("object-fit", env.framedAs.objectFit())
+		env.style.Set("object-fit", map[framingMode]string{
+			scaledToFill: "cover",
+			scaledToFit:  "contain",
+		}[env.framedAs])
 		p = plan{fills: Horizontal | Vertical}
 	}
 	return build(env, p)
 }
+
+// A framingMode controls how an Image fills its available space.
+type framingMode int
+
+const (
+	nativeScale framingMode = iota
+	scaledToFill
+	scaledToFit
+)

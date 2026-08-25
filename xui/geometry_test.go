@@ -379,7 +379,7 @@ func natImage(w, h int) string {
 // and under flex pressure alike.
 func TestGeometryImageScalingModesFill(t *testing.T) {
 	v := ui.Image(natImage(400, 400)).
-		FramedAs(ui.ScaledToFill).
+		ScaledToFill().
 		Frame(ui.Width(120), ui.Height(80))
 	stage(t, v, func(s *uitest.Session) {
 		r := s.Rect("img", 0)
@@ -388,7 +388,7 @@ func TestGeometryImageScalingModesFill(t *testing.T) {
 	})
 
 	row := ui.HStack(
-		ui.Image(natImage(400, 400)).FramedAs(ui.ScaledToFill),
+		ui.Image(natImage(400, 400)).ScaledToFill(),
 		ui.CSSColor("#345").Frame(ui.Width(500), ui.Height(40)),
 	).Gap(0).Frame(ui.Width(600), ui.Height(100))
 	stage(t, row, func(s *uitest.Session) {
@@ -405,7 +405,7 @@ func TestGeometryImageScalingModesFill(t *testing.T) {
 // trailing edge.
 func TestGeometryNativeImageHolds(t *testing.T) {
 	v := ui.HStack(
-		ui.Image(natImage(200, 200)).FramedAs(ui.Native),
+		ui.Image(natImage(200, 200)),
 		ui.Text("hi"),
 	).Frame(ui.Width(100), ui.Height(100), ui.Trailing)
 	stage(t, v, func(s *uitest.Session) {
@@ -424,13 +424,13 @@ func TestGeometryNativeImageHolds(t *testing.T) {
 // height scales through the picture's ratio, giving the viewport
 // real overflow to scroll against.
 func TestGeometryScaledImageIdeal(t *testing.T) {
-	stage(t, ui.Image(natImage(200, 150)).FramedAs(ui.ScaledToFill).FixedSize(), func(s *uitest.Session) {
+	stage(t, ui.Image(natImage(200, 150)).ScaledToFill().FixedSize(), func(s *uitest.Session) {
 		img := s.Rect("img", 0)
 		within(t, "img natural width", img.W, 200, 1)
 		within(t, "img natural height", img.H, 150, 1)
 	})
 
-	v := ui.ScrollView(ui.Vertical, ui.Image(natImage(200, 150)).FramedAs(ui.ScaledToFit)).
+	v := ui.ScrollView(ui.Vertical, ui.Image(natImage(200, 150)).ScaledToFit()).
 		Frame(ui.Width(400), ui.Height(100))
 	stage(t, v, func(s *uitest.Session) {
 		img := s.Rect("img", 0)

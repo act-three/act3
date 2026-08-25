@@ -28,30 +28,3 @@ func (f FontSize) values() (size, weight, height string) {
 	}
 	return "", "", ""
 }
-
-// A FramingMode controls how an [Image] fills its available space.
-type FramingMode int
-
-const (
-	// Native displays the image at its native size.
-	Native FramingMode = iota
-
-	// ScaledToFit displays the complete image, preserving its aspect
-	// ratio while expanding as far as possible within the available
-	// space. This is also known as "letterboxed" and "pillarboxed".
-	ScaledToFit
-
-	// ScaledToFill crops the image to fill its available space and
-	// display as much of the image as possible without distortion.
-	ScaledToFill
-)
-
-func (m FramingMode) objectFit() string {
-	switch m {
-	case ScaledToFit:
-		return "contain"
-	case ScaledToFill:
-		return "cover"
-	}
-	panic("unreached")
-}
