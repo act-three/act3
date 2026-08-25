@@ -270,6 +270,7 @@ type nextenv struct {
 	gap        *float64 // nil means defaultGap
 	imageAlt   string
 	framedAs   framingMode
+	linkBypass bool
 }
 
 // A stroke is one pending border line.
