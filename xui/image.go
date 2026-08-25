@@ -23,38 +23,42 @@ func Image(url string) ImageView { return imageView{base{imageNode{src: url}}} }
 type imageView struct{ base }
 
 func (v imageView) Alt(s string) ImageView {
-	n := v.base[0].(imageNode)
-	n.alt = s
-	v.base = base{n}
+	v.base = v.modify(modEnv(func(env environment) environment {
+		env.imageAlt = s
+		return env
+	}))
 	return v
 }
 
 func (v imageView) FramedAs(f FramingMode) ImageView {
-	n := v.base[0].(imageNode)
-	n.fit = f
-	v.base = base{n}
+	v.base = v.modify(modEnv(func(env environment) environment {
+		env.framedAs = f
+		return env
+	}))
 	return v
 }
 
-type imageNode struct {
-	src, alt string
-	fit      FramingMode
-}
+type imageNode struct{ src string }
 
 func (n imageNode) render(env environment) box {
 	// An img is a replaced element and cannot host the stroke
 	// carrier, so pending strokes box out around the image.
 	if len(env.stroke) > 0 {
-		return wrapMod(env, n)
+		alt, framing := env.imageAlt, env.framedAs
+		m := modEnv(func(env environment) environment {
+			env.imageAlt, env.framedAs = alt, framing
+			return env
+		})
+		return wrapMod(env, m.modify(n))
 	}
 
 	env.tag = "img"
 	env.add(attr.Src(n.src))
-	if n.alt != "" { // alt="" would mark the image as decorative.
-		env.add(attr.Alt(n.alt))
+	if env.imageAlt != "" { // alt="" would mark the image as decorative.
+		env.add(attr.Alt(env.imageAlt))
 	}
 	var p plan
-	if n.fit == Native {
+	if env.framedAs == Native {
 		// At native size the img's intrinsic geometry is the whole
 		// contract, so the img is its own box, with no wrapper to
 		// mediate between the box and the available space.
@@ -69,7 +73,7 @@ func (n imageNode) render(env environment) box {
 		// scaled by the img's ratio to apply to the unbounded axis.
 		env.style.Set("min-width", "0")
 		env.style.Set("min-height", "0")
-		env.style.Set("object-fit", n.fit.objectFit())
+		env.style.Set("object-fit", env.framedAs.objectFit())
 		p = plan{fills: Horizontal | Vertical}
 	}
 	return build(env, p)
