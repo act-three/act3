@@ -35,12 +35,12 @@ func HStack(v ...View) StackView {
 type stackView struct{ base }
 
 func (v stackView) Alignment(a Alignment) StackView {
-	v.base = v.modify(modStackAlign(a))
+	v.base = v.modify(modAlignment(a))
 	return v
 }
 
 func (v stackView) Gap(px float64) StackView {
-	v.base = v.modify(modStackGap(px))
+	v.base = v.modify(modGap(px))
 	return v
 }
 
@@ -66,7 +66,7 @@ func ZStack(v ...View) ZStackView {
 type zstackView struct{ base }
 
 func (v zstackView) Alignment(a Alignment) ZStackView {
-	v.base = v.modify(modStackAlign(a))
+	v.base = v.modify(modAlignment(a))
 	return v
 }
 
@@ -87,8 +87,8 @@ func (s stackNode) render(env environment) box {
 	}
 	p := subviewsRendered(inner, subviews)
 	env.tag = cmp.Or(env.tag, axes[s.dir].tag)
-	gap := *cmp.Or(env.stackGap, new(defaultGap))
-	s.addStackStylesTo(&env.style, gap, env.stackAlign)
+	gap := *cmp.Or(env.gap, new(defaultGap))
+	s.addStackStylesTo(&env.style, gap, env.alignment)
 	return build(env, p)
 }
 

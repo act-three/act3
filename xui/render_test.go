@@ -1129,9 +1129,9 @@ func TestGapDoesNotLeak(t *testing.T) {
 	}
 }
 
-// TestRepeatedStackModifiers pins that Gap and Alignment compose like
+// TestRepeatedGapAlignment pins that Gap and Alignment compose like
 // every other modifier: the innermost call wins, not the last one.
-func TestRepeatedStackModifiers(t *testing.T) {
+func TestRepeatedGapAlignment(t *testing.T) {
 	tests := []struct {
 		name    string
 		view    ui.View
@@ -1157,6 +1157,20 @@ func TestRepeatedStackModifiers(t *testing.T) {
 			name:    "zstack alignment",
 			view:    ui.ZStack(ui.Text("a")).Alignment(ui.TopLeading).Alignment(ui.BottomTrailing),
 			tag:     "ui-zstack",
+			want:    "place-items:start start",
+			rejects: "place-items:end end",
+		},
+		{
+			name:    "grid gap",
+			view:    ui.Grid(ui.Columns(2), ui.Text("a")).Gap(4).Gap(12),
+			tag:     "ui-grid",
+			want:    "gap:4px",
+			rejects: "gap:12px",
+		},
+		{
+			name:    "grid alignment",
+			view:    ui.Grid(ui.Columns(2), ui.Text("a")).Alignment(ui.TopLeading).Alignment(ui.BottomTrailing),
+			tag:     "ui-grid",
 			want:    "place-items:start start",
 			rejects: "place-items:end end",
 		},

@@ -266,8 +266,8 @@ type nextenv struct {
 
 	// Component-specific fields.
 	buttonRole ButtonRole
-	stackAlign Alignment
-	stackGap   *float64 // nil means defaultGap
+	alignment  Alignment
+	gap        *float64 // nil means defaultGap
 }
 
 // A stroke is one pending border line.
