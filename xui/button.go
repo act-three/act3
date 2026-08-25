@@ -103,5 +103,5 @@ func (n buttonNode) render(env environment) box {
 				action,
 			)
 	}
-	return v.(base)[0].render(env)
+	return v.nodes()[0].render(env)
 }
