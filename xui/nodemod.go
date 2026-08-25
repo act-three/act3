@@ -45,34 +45,6 @@ func (m nodeTransform) render(env environment) box {
 	return wrapMod(env, nodeEnv{f: m.f, node: m.node})
 }
 
-type modBorderShape struct{ term[Shape] }
-
-// BorderShape sets the shape of a view's border.
-func BorderShape(s Shape) Modifier { return modBorderShape{value: s} }
-
-func (m modBorderShape) withState(s State) modifier { m.state = s; return m }
-
-func (m modBorderShape) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
-
-func (m modBorderShape) environment(env environment) environment {
-	env.shape = append(env.shape, m.term)
-	return env
-}
-
-type modOpacity struct{ term[float64] }
-
-// Opacity sets a view's opacity to x, from 0 (transparent) to 1 (opaque).
-func Opacity(x float64) Modifier { return modOpacity{value: x} }
-
-func (m modOpacity) withState(s State) modifier { m.state = s; return m }
-
-func (m modOpacity) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
-
-func (m modOpacity) environment(env environment) environment {
-	env.opacity = append(env.opacity, m.term)
-	return env
-}
-
 // NOTE: no exported construcor.
 // modBox calls f to modify the box rendered by n.
 type modBox struct {
