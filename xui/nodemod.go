@@ -45,21 +45,6 @@ func (m nodeTransform) render(env environment) box {
 	return wrapMod(env, nodeEnv{f: m.f, node: m.node})
 }
 
-type modBackground struct{ term[color] }
-
-// Background fills the background of a view with c.
-func Background(c Color) Modifier { return modBackground{value: c.color()} }
-
-func (m modBackground) withState(s State) modifier { m.state = s; return m }
-
-func (m modBackground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modBackground) environment(env environment) environment {
-	env.bg = append(env.bg, m.term)
-	env.hasPaint = true
-	return env
-}
-
 type modBorderShape struct{ term[Shape] }
 
 // BorderShape sets the shape of a view's border.
@@ -71,71 +56,6 @@ func (m modBorderShape) modify(n node) node { return nodeTransform{f: m.environm
 
 func (m modBorderShape) environment(env environment) environment {
 	env.shape = append(env.shape, m.term)
-	return env
-}
-
-type modBorderStroke struct{ term[stroke] }
-
-// BorderStroke draws a line
-// of the given width and color
-// over the inside edge of a view.
-//
-// The stroke paints over the view's content,
-// inside its border shape.
-// It takes no layout space.
-// To add a border around the outside of a view,
-// add padding inside the border.
-func BorderStroke(px float64, c Color) Modifier {
-	if !(px > 0) { // this is written weird b/c of NaNs lmao
-		return nil
-	}
-	return modBorderStroke{value: stroke{px, c.color()}}
-}
-
-func (m modBorderStroke) withState(s State) modifier { m.state = s; return m }
-
-func (m modBorderStroke) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modBorderStroke) environment(env environment) environment {
-	env.stroke = append(env.stroke, m.term)
-	env.hasPaint = true
-	return env
-}
-
-type modFont struct{ term[FontSize] }
-
-// Font sets the font size for text in a view.
-func Font(f FontSize) Modifier {
-	if f == "" {
-		return nil
-	}
-	return modFont{value: f}
-}
-
-func (m modFont) withState(s State) modifier { m.state = s; return m }
-
-func (m modFont) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modFont) environment(env environment) environment {
-	size, weight, height := m.value.values()
-	env.fontSize = append(env.fontSize, term[string]{state: m.state, value: size})
-	env.fontWeight = append(env.fontWeight, term[string]{state: m.state, value: weight})
-	env.lineHeight = append(env.lineHeight, term[string]{state: m.state, value: height})
-	return env
-}
-
-type modForeground struct{ term[color] }
-
-// Foreground uses c to draw foreground elements in a view,
-// such as text.
-func Foreground(c Color) Modifier { return modForeground{value: c.color()} }
-
-func (m modForeground) withState(s State) modifier { m.state = s; return m }
-
-func (m modForeground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modForeground) environment(env environment) environment {
-	env.fg = append(env.fg, m.term)
 	return env
 }
 
