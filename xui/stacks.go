@@ -91,7 +91,7 @@ func (s stackNode) render(env environment) box {
 	inner.container = axes[s.dir].container
 	subviews := Group(s.subviews...)
 	if s.dir == axisZ {
-		subviews = subviews.modify(modStyle{"grid-area", "1 / 1"})
+		subviews = subviews.modify(modStyle("grid-area", "1 / 1"))
 	}
 	p := subviewsRendered(inner, subviews)
 	env.tag = cmp.Or(env.tag, axes[s.dir].tag)

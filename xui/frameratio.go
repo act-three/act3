@@ -52,7 +52,7 @@ func (w wrapFrameRatio) render(env environment) box {
 		// so that Leading stays the leading edge.
 		env.style.Set("writing-mode", "vertical-lr")
 		env.style.SetPseudo(":dir(rtl)", "writing-mode", "vertical-rl")
-		node = modStyle{"writing-mode", "horizontal-tb"}.modify(node)
+		node = modStyle("writing-mode", "horizontal-tb").modify(node)
 		kind = containerGridRotated
 		placeItems = w.align.placeItemsRotated()
 	}

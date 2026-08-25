@@ -57,7 +57,7 @@ func (s scrollNode) render(env environment) box {
 	inner.unbounded = 0
 	p := subviewsRendered(inner,
 		s.contents.
-			modify(modFixedSize{axes: s.along}),
+			modify(modFixedSize(s.along)),
 	)
 	p.fills = Horizontal | Vertical
 	p.ideal = rect{width: newSize(100), height: newSize(100)}

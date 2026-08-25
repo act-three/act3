@@ -47,7 +47,7 @@ func (v base) WhileInvalid(m Modifier) View     { return v.Modify(m, Invalid) }
 func (v base) WhilePlaceholder(m Modifier) View { return v.Modify(m, Placeholder) }
 
 func (v base) Attr(a ...domi.Attr) View {
-	return v.modify(modAttr{attr: domi.Group(a...)})
+	return v.modify(modAttr(domi.Group(a...)))
 }
 
 func (v base) Background(c Color) View {
@@ -63,21 +63,27 @@ func (v base) BorderStroke(px float64, c Color) View {
 }
 
 func (v base) Class(c ...string) View {
-	return v.modify(modAttr{attr: attr.Class(c...)})
+	return v.modify(modAttr(attr.Class(c...)))
 }
 
 func (v base) Disabled(d bool) View {
-	return v.modify(modDisabled{d: d})
+	return v.modify(modEnv(func(env environment) environment {
+		env.disabled = env.disabled || d
+		return env
+	}))
 }
 
 func (v base) FixedSize() View {
 	return v.
-		modify(modFixedSize{Horizontal | Vertical}).
+		modify(modFixedSize(Horizontal | Vertical)).
 		Class("ui-fixed-size")
 }
 
 func (v base) LineLimit(n int) View {
-	return v.modify(modLineLimit{n: max(n, 1)})
+	return v.modify(modEnv(func(env environment) environment {
+		env.lineLimit = max(n, 1)
+		return env
+	}))
 }
 
 func (v base) Font(f FontSize) View {
@@ -93,7 +99,10 @@ func (v base) Opacity(x float64) View {
 }
 
 func (v base) Tag(name string) View {
-	return v.modify(modTag{name: name})
+	return v.modify(modEnv(func(env environment) environment {
+		env.tag = name
+		return env
+	}))
 }
 
 func (v base) Title(t string) View {
