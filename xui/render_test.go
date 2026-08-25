@@ -968,6 +968,18 @@ func TestImageNative(t *testing.T) {
 	}
 }
 
+// TestImageStroked pins that the wrapper a stroked image boxes out into
+// keeps the image's own alt text and framing mode.
+func TestImageStroked(t *testing.T) {
+	html := render(t, ui.Image("/x.png").Alt("pic").FramedAs(ui.ScaledToFill).BorderStroke(1, ui.Accent))
+	if want := `<img alt="pic" class="ui-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
+		t.Errorf("stroked image missing %q:\n%s", want, html)
+	}
+	if !strings.Contains(html, "object-fit:cover") {
+		t.Errorf("stroked image missing object-fit:cover:\n%s", html)
+	}
+}
+
 // TestScrollView checks the requested axis selects the right overflow variant.
 func TestScrollView(t *testing.T) {
 	cases := map[ui.AxisSet]string{

@@ -268,6 +268,8 @@ type nextenv struct {
 	buttonRole ButtonRole
 	alignment  Alignment
 	gap        *float64 // nil means defaultGap
+	imageAlt   string
+	framedAs   FramingMode
 }
 
 // A stroke is one pending border line.
