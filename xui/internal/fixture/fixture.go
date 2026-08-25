@@ -12,9 +12,10 @@ import (
 	"strconv"
 	"strings"
 
-	. "ily.dev/act3/xui"
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+
+	. "ily.dev/act3/xui"
 )
 
 type Msg struct {
@@ -158,18 +159,31 @@ func zstackDemo() View {
 		Background(CSSColor("#888"))
 }
 
-func scrollDemo() View {
-	var rows []View
-	for i := 1; i <= 20; i++ {
-		rows = append(
-			rows,
-			Text("Episode "+strconv.Itoa(i)).
-				Padding(Edges(8)),
-		)
+func count(n int) []int {
+	a := make([]int, n)
+	for i := range n {
+		a[i] = i + 1
 	}
-	return ScrollView(
-		Vertical,
-		VStack(rows...).
+	return a
+}
+
+func scrollDemo() View {
+	return ScrollView(Vertical,
+		VStack(For(count(3), nil, func(s int) View {
+			return VStack(
+				Text("Season "+strconv.Itoa(s)).
+					Font(Headline).
+					Padding(Edges(8)).
+					Background(CSSColor("#e0e7ff")).
+					Sticky(),
+				For(count(6), nil, func(e int) View {
+					return Text(fmt.Sprintf("Episode %d.%d", s, e)).
+						Padding(Edges(8))
+				}),
+			).
+				Gap(0).
+				Alignment(Leading)
+		})).
 			Alignment(Leading),
 	).
 		Frame(Height(160), Width(220)).
@@ -304,7 +318,7 @@ func Page() View {
 		section("Dividers in an HStack (minor-axis, vertical)", dividerRow().Class("demo-bordered")),
 		section("Dividers in a VStack (minor-axis, horizontal)", dividerColumn().Class("demo-bordered")),
 		section("ZStack (layered, all subviews size the stack)", zstackDemo()),
-		section("ScrollView (contained in a Frame)", scrollDemo()),
+		section("ScrollView (contained in a Frame, Sticky season headings)", scrollDemo()),
 		section("Rich text (per-run bold/italic/mono, whole-text color)", richText()),
 		section("Links in text (navigate, send, then a disabled line)", linkText()),
 		section("LineLimit (2 lines, then 1)", lineLimitDemo()),

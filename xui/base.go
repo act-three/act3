@@ -129,11 +129,11 @@ func (v base) OverlayAt(at, anchor Alignment, o View) View {
 }
 
 func (v base) Padding(s ...EdgeSpace) View {
-	var sum EdgeSpace
-	for _, s := range s {
-		sum = sum.add(s)
-	}
-	return v.modify(wrapPadding{space: sum})
+	return v.modify(wrapPadding{space: edgeSum(s...)})
+}
+
+func (v base) Sticky(s ...EdgeSpace) View {
+	return v.modify(wrapSticky{inset: edgeSum(s...)})
 }
 
 func (v base) Frame(o ...FrameOption) View {

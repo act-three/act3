@@ -8,10 +8,11 @@ import (
 	"strings"
 	"testing"
 
+	"ily.dev/domi"
+
 	ui "ily.dev/act3/xui"
 	"ily.dev/act3/xui/internal/fixture"
 	"ily.dev/act3/xui/internal/uitest"
-	"ily.dev/domi"
 )
 
 func TestMain(m *testing.M) { os.Exit(uitest.Main(m)) }
@@ -708,6 +709,64 @@ func TestGeometryFrameRatioAnchors(t *testing.T) {
 		r := s.Rect("ui-aspect", 0)
 		within(t, "square", r.H, r.W, 1)
 		within(t, "width is the text's", r.W, s.Rect("ui-text", 0).W, 1)
+	})
+}
+
+// TestGeometryStickyPins pins the sticky contract in a scrolling
+// viewport: a section heading holds at the viewport's top edge while
+// its section scrolls by, paints over the rows passing under it, and
+// is pushed out by its section's end as the next section arrives —
+// whereupon the next section's heading takes its place.
+func TestGeometryStickyPins(t *testing.T) {
+	section := func(i int) ui.View {
+		rows := []ui.View{
+			ui.Text(fmt.Sprintf("Heading %d", i)).
+				Padding(ui.Edges(8)).
+				Background(ui.Accent).
+				Sticky().
+				Class("heading"),
+		}
+		for r := range 5 {
+			rows = append(rows, ui.Text(fmt.Sprintf("Row %d.%d", i, r)).
+				Padding(ui.Edges(12)).
+				BorderStroke(1, ui.Muted))
+		}
+		return ui.VStack(rows...).Gap(0).Alignment(ui.Leading)
+	}
+	v := ui.ScrollView(ui.Vertical,
+		ui.VStack(section(0), section(1)).Gap(0).Alignment(ui.Leading),
+	).
+		Frame(ui.Width(300), ui.Height(200))
+	stage(t, v, func(s *uitest.Session) {
+		viewport := s.Rect("ui-scroll", 0)
+		sec := s.Rect("ui-vstack", 1)
+		heading := s.Rect(".heading", 0)
+		scroll := func(y float64) {
+			s.Eval(fmt.Sprintf(`document.querySelector("ui-scroll").scrollTop = %g`, y), nil)
+		}
+
+		// Half a heading into the first section:
+		// the heading holds at the viewport's top edge.
+		scroll(heading.H / 2)
+		h := s.Rect(".heading", 0)
+		within(t, "pinned heading top", h.Y, viewport.Y, 1)
+
+		// The pinned heading paints over the row scrolled under it.
+		var hit string
+		s.Eval(fmt.Sprintf(`document.elementFromPoint(%g, %g).textContent`, h.X+h.W/2, h.Y+h.H/2), &hit)
+		if hit != "Heading 0" {
+			t.Errorf("element painted over pinned heading center = %q, want %q", hit, "Heading 0")
+		}
+
+		// As the next section arrives, the first heading is pushed
+		// out along with its section's end.
+		scroll(sec.H - heading.H/2)
+		h = s.Rect(".heading", 0)
+		within(t, "pushed-out heading bottom", h.Bottom(), viewport.Y+heading.H/2, 1)
+
+		// The next section's heading holds in its place.
+		scroll(sec.H + heading.H)
+		within(t, "next pinned heading top", s.Rect(".heading", 1).Y, viewport.Y, 1)
 	})
 }
 

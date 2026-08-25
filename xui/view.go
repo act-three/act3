@@ -146,6 +146,38 @@ type View interface {
 	// more than one value s is provided, they are added together.
 	Padding(s ...EdgeSpace) View
 
+	// Sticky repositions the receiver to remain visible when it
+	// would otherwise be scrolled offscreen.
+	//
+	// Sticky works by applying an offset to the receiver's initial
+	// position (where it would be placed without Sticky) to obtain
+	// its actual position. The sum of the given EdgeSpace values
+	// defines a rectangle inset within the viewport of the nearest
+	// enclosing ScrollView. If part or all of the receiver's initial
+	// position are outside the bounds of this rectangle, the offset
+	// is adjusted to attempt to keep it in bounds.
+	//
+	// The actual position is always within the receiver's nearest
+	// enclosing view. Therefore, if the enclosing view is scrolled
+	// outside the viewport, the sticky view scrolls out too.
+	//
+	// This example keeps the sticky text in view while its enclosing
+	// VStack is in view.
+	//
+	//	ScrollView(Vertical, VStack(
+	//		For(sections, nil, func(s Section) View {
+	//			return VStack(
+	//				Text(s.Title).
+	//					Sticky(),
+	//				For(s.Items, nil, item),
+	//			)
+	//		}),
+	//	))
+	//
+	// As a consequence of these rules, if an enclosing modifier or
+	// view is the same size as the sticky view, Sticky has no effect.
+	Sticky(s ...EdgeSpace) View
+
 	// WhileHovered applies m to the receiver while in the Hovered state.
 	//
 	// It is equivalent to Modify(m, Hovered).
