@@ -208,7 +208,7 @@ type View interface {
 	// modify applies m to the receiver.
 	// It is the unexported equivalent of Modify,
 	// accepting any internal modifier.
-	modify(m modifier) View
+	modify(m modifier) base
 
 	nodes() []node
 }
@@ -263,6 +263,9 @@ type nextenv struct {
 	// It is set at the outermost box of an unbounded subtree.
 	fillMask AxisSet
 	hasPaint bool // set by every paint modifier
+
+	// Component-specific fields.
+	buttonRole ButtonRole
 }
 
 // A stroke is one pending border line.
