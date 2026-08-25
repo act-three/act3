@@ -1,11 +1,5 @@
 package ui
 
-import (
-	"cmp"
-
-	"ily.dev/domi"
-)
-
 // A Modifier configures the behavior of a View.
 // It can be applied with [View.Modify].
 //
@@ -50,16 +44,6 @@ func (m nodeTransform) render(env environment) box {
 		return m.node.render(m.f(env))
 	}
 	return wrapMod(env, nodeEnv{f: m.f, node: m.node})
-}
-
-// NOTE: no exported construcor.
-type modAttr struct{ attr domi.Attr }
-
-func (m modAttr) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modAttr) environment(env environment) environment {
-	env.add(m.attr)
-	return env
 }
 
 type modBackground struct{ term[color] }
@@ -119,39 +103,6 @@ func (m modBorderStroke) environment(env environment) environment {
 	return env
 }
 
-// NOTE: no exported construcor.
-type modDisabled struct{ d bool }
-
-func (m modDisabled) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modDisabled) environment(env environment) environment {
-	env.disabled = env.disabled || m.d
-	return env
-}
-
-// NOTE: no exported construcor.
-type modFixedSize struct{ axes AxisSet }
-
-func (m modFixedSize) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-// environment gives the subtree unbounded available space on the given axes,
-// so the subtree resolves to its ideal size there (see [build]).
-// The subtree's outermost box is a fill boundary:
-// it must sit in its real container at that resolved size,
-// even when the container has slack to offer.
-func (m modFixedSize) environment(env environment) environment {
-	env.unbounded |= m.axes
-	env.fillMask |= m.axes
-	// Note that a box can override max-content with its own declaration.
-	if m.axes.hasAll(Horizontal) {
-		env.style.Set("width", "max-content")
-	}
-	if m.axes.hasAll(Vertical) {
-		env.style.Set("height", "max-content")
-	}
-	return env
-}
-
 type modFont struct{ term[FontSize] }
 
 // Font sets the font size for text in a view.
@@ -200,47 +151,6 @@ func (m modOpacity) modify(n node) node { return nodeTransform{f: m.environment,
 
 func (m modOpacity) environment(env environment) environment {
 	env.opacity = append(env.opacity, m.term)
-	return env
-}
-
-// NOTE: no exported constructor.
-// modStyle emits one CSS declaration onto a subview's outermost box.
-// Containers can use it to apply a style to their direct subviews.
-type modStyle struct{ property, value string }
-
-func (m modStyle) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modStyle) environment(env environment) environment {
-	env.style.Set(m.property, m.value)
-	return env
-}
-
-// NOTE: no exported construcor.
-type modLineLimit struct{ n int }
-
-func (m modLineLimit) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modLineLimit) environment(env environment) environment {
-	env.lineLimit = m.n
-	return env
-}
-
-// NOTE: no exported construcor.
-type modTag struct{ name string }
-
-func (m modTag) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modTag) environment(env environment) environment {
-	env.tag = m.name
-	return env
-}
-
-type modTagDefault struct{ name string }
-
-func (m modTagDefault) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
-
-func (m modTagDefault) environment(env environment) environment {
-	env.tag = cmp.Or(env.tag, m.name)
 	return env
 }
 
