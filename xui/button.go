@@ -50,23 +50,23 @@ func Button[Action any](a Action, label View) ButtonView {
 type buttonView struct{ base }
 
 func (v buttonView) Role(r ButtonRole) ButtonView {
-	n := v.base[0].(buttonNode)
-	n.role = r
-	v.base = base{n}
+	v.base = v.modify(modEnv(func(env environment) environment {
+		env.buttonRole = r
+		return env
+	}))
 	return v
 }
 
 type buttonNode struct {
 	label  View
 	action any // URL string or onclick domi.Attr
-	role   ButtonRole
 }
 
 func (n buttonNode) render(env environment) box {
 	c := map[ButtonRole]Color{
 		RolePrimary:     Accent,
 		RoleDestructive: Danger,
-	}[n.role]
+	}[env.buttonRole]
 	var fg Modifier
 	if c != nil {
 		fg = Foreground(CSSColor("#fff"))

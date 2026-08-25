@@ -27,7 +27,7 @@ func (v base) Modify(m Modifier, states ...State) View {
 	return v.modify(m.withState(s))
 }
 
-func (v base) modify(m modifier) View {
+func (v base) modify(m modifier) base {
 	if m == nil {
 		return v
 	}
