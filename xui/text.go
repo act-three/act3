@@ -92,7 +92,7 @@ func (v textView) Concat(t TextView) TextView {
 func (v textView) text() textRun { return v.base[0].(textRun) }
 
 // styledWith returns a copy of v whose run is modified by f.
-func (v textView) styledWith(f func(*environment)) TextView {
+func (v textView) styledWith(f func(*environment)) textView {
 	v.base = base{textMod{f: f, run: v.text()}}
 	return v
 }

@@ -48,16 +48,15 @@ func Link[Action any](a Action, label TextView) LinkView {
 type linkView struct{ textView }
 
 func (v linkView) RequirePageLoad() LinkView {
-	n := v.base[0].(textLink)
-	n.bypass = true
-	v.base = base{n}
+	v.textView = v.styledWith(func(env *environment) {
+		env.linkBypass = true
+	})
 	return v
 }
 
 // textLink performs an action when clicked.
 type textLink struct {
 	action any // URL string or onclick domi.Attr
-	bypass bool
 	run    textRun
 }
 
@@ -68,7 +67,7 @@ var _ textRun = textLink{}
 // so that box modifiers apply to the link.
 func (l textLink) render(env environment) box {
 	env.tag = l.tag()
-	env.add(l.attrs(env.disabled))
+	env.add(l.attrs(env.disabled, env.linkBypass))
 	l.setStyles(&env.style, env.disabled)
 	env.fg = append(env.fg, term[color]{value: Accent.color()})
 	return buildText(env, l.run)
@@ -82,7 +81,7 @@ func (l textLink) renderText(env environment) domi.Node {
 		ss.Set(d.property, d.value)
 	}
 	class := attr.Class(env.sheet.ClassFor(ss))
-	attrs := l.attrs(env.disabled)
+	attrs := l.attrs(env.disabled, env.linkBypass)
 	env.nextenv = nextenv{}
 	return domi.Tag(l.tag(), attrs, class)(l.run.renderText(env))
 }
@@ -97,13 +96,13 @@ func (l textLink) tag() string {
 
 // attrs returns the attributes that perform the action,
 // or that mark the element disabled.
-func (l textLink) attrs(disabled bool) domi.Attr {
+func (l textLink) attrs(disabled, bypass bool) domi.Attr {
 	switch action := l.action.(type) {
 	case string:
 		if disabled {
 			return domi.Group(attr.Role("link"), domi.Name("aria-disabled", "true"))
 		}
-		if l.bypass {
+		if bypass {
 			return domi.Group(attr.Href(action), domi.Bypass)
 		}
 		return attr.Href(action)
