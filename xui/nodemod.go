@@ -7,8 +7,7 @@ package ui
 //
 // A nil Modifier has no effect.
 type Modifier interface {
-	modifier
-	withState(State) Modifier
+	withState(State) modifier
 }
 
 // A modifier configures the behavior of a View.
@@ -51,7 +50,7 @@ type modBackground struct{ term[color] }
 // Background fills the background of a view with c.
 func Background(c Color) Modifier { return modBackground{value: c.color()} }
 
-func (m modBackground) withState(s State) Modifier { m.state = s; return m }
+func (m modBackground) withState(s State) modifier { m.state = s; return m }
 
 func (m modBackground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
@@ -66,7 +65,7 @@ type modBorderShape struct{ term[Shape] }
 // BorderShape sets the shape of a view's border.
 func BorderShape(s Shape) Modifier { return modBorderShape{value: s} }
 
-func (m modBorderShape) withState(s State) Modifier { m.state = s; return m }
+func (m modBorderShape) withState(s State) modifier { m.state = s; return m }
 
 func (m modBorderShape) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
 
@@ -93,7 +92,7 @@ func BorderStroke(px float64, c Color) Modifier {
 	return modBorderStroke{value: stroke{px, c.color()}}
 }
 
-func (m modBorderStroke) withState(s State) Modifier { m.state = s; return m }
+func (m modBorderStroke) withState(s State) modifier { m.state = s; return m }
 
 func (m modBorderStroke) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
@@ -113,7 +112,7 @@ func Font(f FontSize) Modifier {
 	return modFont{value: f}
 }
 
-func (m modFont) withState(s State) Modifier { m.state = s; return m }
+func (m modFont) withState(s State) modifier { m.state = s; return m }
 
 func (m modFont) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
@@ -131,7 +130,7 @@ type modForeground struct{ term[color] }
 // such as text.
 func Foreground(c Color) Modifier { return modForeground{value: c.color()} }
 
-func (m modForeground) withState(s State) Modifier { m.state = s; return m }
+func (m modForeground) withState(s State) modifier { m.state = s; return m }
 
 func (m modForeground) modify(n node) node { return nodeEnv{f: m.environment, node: n} }
 
@@ -145,7 +144,7 @@ type modOpacity struct{ term[float64] }
 // Opacity sets a view's opacity to x, from 0 (transparent) to 1 (opaque).
 func Opacity(x float64) Modifier { return modOpacity{value: x} }
 
-func (m modOpacity) withState(s State) Modifier { m.state = s; return m }
+func (m modOpacity) withState(s State) modifier { m.state = s; return m }
 
 func (m modOpacity) modify(n node) node { return nodeTransform{f: m.environment, node: n} }
 
