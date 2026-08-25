@@ -28,7 +28,7 @@ type GridView interface {
 
 // Grid arranges the given views in the grid described by g.
 func Grid(g GridLayout, v ...View) GridView {
-	return gridView{base{gridNode{g, v, defaultGap, Center}}}
+	return gridView{base{gridNode{g, v}}}
 }
 
 // A GridLayout describes the columns of a [Grid].
@@ -81,24 +81,18 @@ func (gridCellMinWidth) fills() AxisSet { return Horizontal }
 type gridView struct{ base }
 
 func (v gridView) Alignment(a Alignment) GridView {
-	n := v.base[0].(gridNode)
-	n.align = a
-	v.base = base{n}
+	v.base = v.modify(modAlignment(a))
 	return v
 }
 
 func (v gridView) Gap(px float64) GridView {
-	n := v.base[0].(gridNode)
-	n.gap = px
-	v.base = base{n}
+	v.base = v.modify(modGap(px))
 	return v
 }
 
 type gridNode struct {
 	layout   GridLayout
 	subviews []View
-	gap      float64
-	align    Alignment
 }
 
 func (g gridNode) render(env environment) box {
@@ -110,7 +104,7 @@ func (g gridNode) render(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-grid")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", g.layout.columns())
-	env.style.Set("gap", cssPx(g.gap))
-	env.style.Set("place-items", g.align.placeItems())
+	env.style.Set("gap", cssPx(*cmp.Or(env.gap, new(defaultGap))))
+	env.style.Set("place-items", env.alignment.placeItems())
 	return build(env, p)
 }

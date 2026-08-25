@@ -13,6 +13,13 @@ func (m modEnv) modify(n node) node {
 	return nodeEnv{m, n}
 }
 
+func modAlignment(a Alignment) modEnv {
+	return func(env environment) environment {
+		env.alignment = a
+		return env
+	}
+}
+
 func modAttr(attr domi.Attr) modEnv {
 	return func(env environment) environment {
 		env.add(attr)
@@ -40,16 +47,9 @@ func modFixedSize(axes AxisSet) modEnv {
 	}
 }
 
-func modStackAlign(a Alignment) modEnv {
+func modGap(px float64) modEnv {
 	return func(env environment) environment {
-		env.stackAlign = a
-		return env
-	}
-}
-
-func modStackGap(px float64) modEnv {
-	return func(env environment) environment {
-		env.stackGap = &px
+		env.gap = &px
 		return env
 	}
 }
