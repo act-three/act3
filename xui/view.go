@@ -158,8 +158,9 @@ type View interface {
 	// is adjusted to attempt to keep it in bounds.
 	//
 	// The actual position is always within the receiver's nearest
-	// enclosing view. Therefore, if the enclosing view is scrolled
-	// outside the viewport, the sticky view scrolls out too.
+	// enclosing view (or its cell, in a Grid). Therefore, if the
+	// enclosing view is scrolled outside the viewport, the sticky
+	// view scrolls out too.
 	//
 	// This example keeps the sticky text in view while its enclosing
 	// VStack is in view.
