@@ -47,12 +47,22 @@ func (s EdgeSpace) add(o EdgeSpace) EdgeSpace {
 	return s
 }
 
-// setPadding adds the shortest equivalent padding declarations to ss.
-func (s EdgeSpace) setPadding(ss *sheet.StyleSet) {
+// edgeSum returns the given spacing values added together.
+func edgeSum(s ...EdgeSpace) (total EdgeSpace) {
+	for _, s := range s {
+		total = total.add(s)
+	}
+	return total
+}
+
+// setOn adds the shortest declarations equivalent to setting
+// property's edge values to s.
+// It works for edge-valued shorthands such as padding and inset.
+func (s EdgeSpace) setOn(ss *sheet.StyleSet, property string) {
 	t, b := cssPx(s.Top), cssPx(s.Bottom)
 	le, tr := cssPx(s.Leading), cssPx(s.Trailing)
 	if t == b && le == tr && t == le {
-		ss.Set("padding", t)
+		ss.Set(property, t)
 		return
 	}
 	block, inline := t, le
@@ -62,8 +72,8 @@ func (s EdgeSpace) setPadding(ss *sheet.StyleSet) {
 	if tr != le {
 		inline += " " + tr
 	}
-	ss.Set("padding-block", block)
-	ss.Set("padding-inline", inline)
+	ss.Set(property+"-block", block)
+	ss.Set(property+"-inline", inline)
 }
 
 func cssPx(v float64) string { return fmt.Sprintf("%gpx", v) }

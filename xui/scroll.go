@@ -50,7 +50,8 @@ func (s scrollNode) render(env environment) box {
 	env.style.Set("overflow-y", v.y)
 	env.style.Set("overscroll-behavior", "contain")
 	env.style.Set("place-items", "start")
-	env.style.Set("contain", "size") // Viewport size doesn't depend on its contents.
+	env.style.Set("contain", "size")      // Viewport size doesn't depend on its contents.
+	env.style.Set("isolation", "isolate") // Isolate the wrapSticky z-index.
 	inner := env
 	inner.lc = layoutContext{}
 	inner.container = containerGrid

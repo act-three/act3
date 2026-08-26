@@ -155,6 +155,28 @@ func (w wrapPadding) render(env environment) box {
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
 	env.style.Set("place-items", Center.placeItems())
-	w.space.setPadding(&env.style)
+	w.space.setOn(&env.style, "padding")
+	return build(env, p)
+}
+
+// wrapSticky wraps it's subview's box in an element
+// with CSS sticky positioning applied.
+type wrapSticky struct {
+	inset EdgeSpace
+	node  node
+}
+
+func (w wrapSticky) modify(n node) node { w.node = n; return w }
+
+func (w wrapSticky) render(env environment) box {
+	p := wrapSubview(env, w.node)
+	env.tag = cmp.Or(env.tag, "ui-sticky")
+	env.style.Set("display", "grid")
+	env.style.Set("grid-template-columns", "100%")
+	env.style.Set("grid-template-rows", "100%")
+	env.style.Set("place-items", Center.placeItems())
+	env.style.Set("position", "sticky")
+	w.inset.setOn(&env.style, "inset")
+	env.style.Set("z-index", "1") // The scroll viewport isolates the z-index.
 	return build(env, p)
 }

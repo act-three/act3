@@ -6,8 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	ui "ily.dev/act3/xui"
 	"ily.dev/domi"
+
+	ui "ily.dev/act3/xui"
 )
 
 // The examples from the DOM-45 design document, transcribed against the
@@ -993,6 +994,42 @@ func TestScrollView(t *testing.T) {
 		if !strings.Contains(html, want) {
 			t.Errorf("ScrollView(%v) missing %q\n\n%s", axis, want, html)
 		}
+		if !strings.Contains(html, "isolation:isolate") {
+			t.Errorf("ScrollView(%v) missing viewport isolation\n\n%s", axis, html)
+		}
+	}
+}
+
+func TestSticky(t *testing.T) {
+	html := render(t, ui.Text("h").Sticky())
+	rule := classRule(t, html, `<ui-sticky class="([^" ]+)`)
+	for _, w := range []string{"position:sticky", "inset:0px", "z-index:1"} {
+		if !strings.Contains(rule, w) {
+			t.Errorf("sticky box missing %q, got %q", w, rule)
+		}
+	}
+}
+
+func TestStickyInsetsAdd(t *testing.T) {
+	html := render(t, ui.Text("h").Sticky(ui.EdgeTop(60), ui.Edges(4)))
+	for _, w := range []string{"inset-block:64px 4px", "inset-inline:4px"} {
+		if !strings.Contains(html, w) {
+			t.Errorf("summed insets missing %q:\n%s", w, html)
+		}
+	}
+}
+
+// TestStickyModifierOrder pins the enclosure contract: a modifier
+// applied inside Sticky is held in view along with the receiver, while
+// one applied outside encloses the sticky box and confines it.
+func TestStickyModifierOrder(t *testing.T) {
+	inside := render(t, ui.Text("h").Padding(ui.Edges(8)).Sticky())
+	if s, p := strings.Index(inside, "<ui-sticky"), strings.Index(inside, "<ui-padding"); s < 0 || p < 0 || s > p {
+		t.Errorf("padding inside Sticky: want ui-sticky enclosing ui-padding:\n%s", inside)
+	}
+	outside := render(t, ui.Text("h").Sticky().Padding(ui.Edges(8)))
+	if s, p := strings.Index(outside, "<ui-sticky"), strings.Index(outside, "<ui-padding"); s < 0 || p < 0 || p > s {
+		t.Errorf("padding outside Sticky: want ui-padding enclosing ui-sticky:\n%s", outside)
 	}
 }
 
