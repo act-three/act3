@@ -1,6 +1,6 @@
 package ui
 
-// Stability
+// Stability Rule
 //
 // Any given view structure should result in a fixed lowering
 // structure regardless of the values given as arguments. View
@@ -62,3 +62,19 @@ package ui
 // Note that this rule is not formalized. It requires judgement
 // to apply correctly. The guiding principle is to avoid
 // surprising the app author with unexpected structural changes.
+//
+// Z-Index Rule
+//
+// The CSS property z-index must be applied only inside an explicit
+// stacking context. There is no global z-index. The stacking context
+// can be created by CSS property isolation:isolate or any other
+// reliable mechanism. An isolated stacking context creates a local
+// scope for z-index values. They are unable to conflict with paint
+// order outside the scope.
+//
+// This avoids so-called "z-index wars" where modifying a z-index
+// value in one part of an HTML document requires modifying one or
+// more z-index values in unrelated places.
+//
+// If cross-subtree layering is needed, it should use some sort of
+// portal mecanism.
