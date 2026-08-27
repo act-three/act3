@@ -358,6 +358,27 @@ func TestBorderStrokeOnScroll(t *testing.T) {
 	}
 }
 
+// TestZStackPaintsInOrder pins the ZStack's paint order in the
+// browser: a later subview paints over an earlier one, even when the
+// earlier one forms a stacking context, as a translucent one does,
+// and the later one does not.
+func TestZStackPaintsInOrder(t *testing.T) {
+	v := ui.ZStack(
+		ui.CSSColor("blue").Frame(ui.Width(120), ui.Height(60)).Opacity(0.5),
+		ui.Text("over").Class("over"),
+	)
+	stage(t, v, func(s *uitest.Session) {
+		var onTop bool
+		s.Eval(`(() => {
+			const r = document.querySelector(".over").getBoundingClientRect();
+			return !!document.elementFromPoint(r.x + r.width/2, r.y + r.height/2).closest(".over");
+		})()`, &onTop)
+		if !onTop {
+			t.Error("the earlier subview paints over the later text")
+		}
+	})
+}
+
 // TestLayerIsolatesSubview pins the subview's stacking isolation:
 // the subview forms its own stacking context, so no z-index inside
 // it — app CSS included — can climb the composite's z ladder past

@@ -83,7 +83,13 @@ func (s stackNode) render(env environment) box {
 	inner.container = axes[s.dir].container
 	subviews := Group(s.subviews...)
 	if s.dir == axisZ {
-		subviews = subviews.modify(modStyle("grid-area", "1 / 1"))
+		subviews = subviews.
+			modify(modStyle("grid-area", "1 / 1")).
+			// A subview that forms a stacking context, or is positioned,
+			// would otherwise paint above every later subview that does
+			// neither. With z-index:0, each subview paints in order,
+			// within the stack's own stacking context.
+			modify(modStyle("z-index", "0"))
 	}
 	p := subviewsRendered(inner, subviews)
 	env.tag = cmp.Or(env.tag, axes[s.dir].tag)
@@ -103,6 +109,7 @@ func (s stackNode) addStackStylesTo(ss *sheet.StyleSet, gap float64, align Align
 		ss.Set("grid-template-columns", "100%")
 		ss.Set("grid-template-rows", "100%")
 		ss.Set("place-items", align.placeItems())
+		ss.Set("isolation", "isolate") // Z-Index Rule. See theory.go.
 		return
 	case axisH:
 		ss.Set("flex-direction", "row")
