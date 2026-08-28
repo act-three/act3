@@ -48,8 +48,8 @@ func accountCard(user User) View {
 			Image(user.PhotoURL).
 				Alt(user.Name).
 				ScaledToFill().
-				Frame(Width(48), Height(48)).
-				BorderShape(Ellipse),
+				BorderShape(Ellipse).
+				Frame(Width(48), Height(48)),
 			VStack(
 				Text(user.Name).
 					Font(Headline),
@@ -94,8 +94,8 @@ func movieRow(movie Movie) View {
 		Image(movie.PosterURL).
 			Alt(movie.Title).
 			ScaledToFill().
-			Frame(Width(56), Height(84)).
-			BorderShape(RoundedRectangle),
+			BorderShape(RoundedRectangle).
+			Frame(Width(56), Height(84)),
 		VStack(
 			Text(movie.Title).
 				Font(Headline),
@@ -266,6 +266,7 @@ func gridDemo() View {
 				Text(strconv.Itoa(i+1)).
 					TextForeground(CSSColor("#fff")),
 			).
+				BorderClipped().
 				BorderShape(RoundedRectangle),
 		)
 	}
@@ -285,6 +286,7 @@ func posterWall() View {
 			Image(placeholderImage(120, 180, c)).
 				ScaledToFill().
 				FrameRatio(2, 3, Horizontal).
+				BorderClipped().
 				BorderShape(RoundedRectangle),
 		)
 	}
