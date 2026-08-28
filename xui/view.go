@@ -89,8 +89,7 @@ type View interface {
 	//
 	//	Image(url).
 	//		ScaledToFill().
-	//		FrameRatio(16, 9, Horizontal).
-	//		BorderClipped()
+	//		FrameRatio(16, 9, Horizontal)
 	//
 	// Note that type Alignment satisfies FrameRatioOption.
 	FrameRatio(w, h int, anchor AxisSet, o ...FrameRatioOption) View
