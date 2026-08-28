@@ -30,7 +30,7 @@ func Background(c Color) Modifier {
 // add padding inside the border.
 func BorderStroke(px float64, c Color) Modifier {
 	if !(px > 0) { // this is written weird b/c of NaNs lmao
-		return nil
+		px = 0
 	}
 	return modEnvState(func(env environment, s State) environment {
 		env.stroke = append(env.stroke, term[stroke]{s, stroke{px, c.color()}})
