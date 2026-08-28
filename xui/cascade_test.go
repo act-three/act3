@@ -400,7 +400,7 @@ func TestBorderStrokeOverLayers(t *testing.T) {
 	html := render(t, ui.Text("x").Overlay(ui.Center, ui.Text("o")).BorderStroke(2, ui.CSSColor("red")))
 	got := classRule(t, html, `<ui-layer class="(ui-\w+)"`)
 	want := "display:grid;grid-template-columns:100%;grid-template-rows:100%;" +
-		"isolation:isolate;overflow:visible;place-items:center;position:relative;" +
+		"isolation:isolate;place-items:center;position:relative;" +
 		strings.Replace(carrier("inset 0 0 0 2px red"), "position:absolute}", "position:absolute;z-index:3}", 1)
 	if got != want {
 		t.Errorf("layered stroke rule = %q, want the ring on the z ladder:\n%s", got, html)
@@ -533,5 +533,66 @@ func TestBorderStrokeZeroWidthKeepsStructure(t *testing.T) {
 		if !strings.Contains(html, "<ui-box ") {
 			t.Errorf("BorderStroke(%g) should keep the wrapper:\n%s", px, html)
 		}
+	}
+}
+
+// TestBorderClippedTransforms pins the clip as a transform: applied
+// outside a stroke, it lands on the view's own element with the stroke
+// and the shape, in either order, with no wrapper.
+func TestBorderClippedTransforms(t *testing.T) {
+	want := "border-radius:9999px;display:block;overflow-wrap:break-word;overflow-x:clip;overflow-y:clip;position:relative;" + carrier("inset 0 0 0 2px red")
+	for name, v := range map[string]ui.View{
+		"clip then shape": ui.Text("x").BorderStroke(2, ui.CSSColor("red")).BorderClipped().BorderShape(ui.Capsule),
+		"shape then clip": ui.Text("x").BorderStroke(2, ui.CSSColor("red")).BorderShape(ui.Capsule).BorderClipped(),
+	} {
+		html := render(t, v)
+		if strings.Contains(html, "ui-box") {
+			t.Errorf("%s: should not produce a wrapper:\n%s", name, html)
+		}
+		if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != want {
+			t.Errorf("%s: rule = %q:\n%s", name, got, html)
+		}
+	}
+}
+
+// TestBorderClippedStrokeOrder pins the clip's write order against
+// the stroke, as for the shape: a stroke outside a clip lands on a
+// wrapper, and rings that wrapper, which is not clipped.
+func TestBorderClippedStrokeOrder(t *testing.T) {
+	html := render(t, ui.Text("x").BorderClipped().BorderStroke(2, ui.CSSColor("red")))
+	if got := classRule(t, html, `<ui-box class="(ui-\w+)"`); got != "display:grid;grid-template-columns:100%;grid-template-rows:100%;place-items:center;position:relative;"+carrier("inset 0 0 0 2px red") {
+		t.Errorf("stroke outside clip should land on a wrapper, got %q:\n%s", got, html)
+	}
+	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != "display:block;overflow-wrap:break-word;overflow-x:clip;overflow-y:clip" {
+		t.Errorf("the clip should stay on the inner element, got %q:\n%s", got, html)
+	}
+}
+
+// TestBorderClippedOnScroll pins the scroll viewport against a clip:
+// the viewport already confines its content, so its own overflow
+// wins, and nothing boxes out.
+func TestBorderClippedOnScroll(t *testing.T) {
+	plain := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")))
+	clipped := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")).BorderClipped())
+	if clipped != plain {
+		t.Errorf("clip changed the scroll lowering:\nwant %s\ngot  %s", plain, clipped)
+	}
+}
+
+// TestBorderClippedOverLayers pins the clip against the layer
+// composite: a clip outside the layers confines them too, and one
+// inside confines only the base.
+func TestBorderClippedOverLayers(t *testing.T) {
+	outside := render(t, ui.Text("x").Overlay(ui.Center, ui.Text("o")).BorderClipped())
+	if got := classRule(t, outside, `<ui-layer class="(ui-\w+)"`); !strings.Contains(got, "overflow-x:clip;overflow-y:clip") {
+		t.Errorf("clip outside overlay should clip the composite, got %q:\n%s", got, outside)
+	}
+
+	inside := render(t, ui.Text("x").BorderClipped().Overlay(ui.Center, ui.Text("o")))
+	if got := classRule(t, inside, `<ui-layer class="(ui-\w+)"`); strings.Contains(got, "clip") {
+		t.Errorf("clip inside overlay should leave the composite unclipped, got %q:\n%s", got, inside)
+	}
+	if got := classRule(t, inside, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "overflow-x:clip;overflow-y:clip") {
+		t.Errorf("clip inside overlay should clip the base, got %q:\n%s", got, inside)
 	}
 }
