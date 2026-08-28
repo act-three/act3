@@ -30,6 +30,10 @@ type View interface {
 	// Background fills the background of the receiver.
 	Background(Color) View
 
+	// BorderClipped hides content in the receiver drawn outside
+	// its border. It does not affect layout.
+	BorderClipped() View
+
 	// BorderShape sets the shape of the receiver's border.
 	BorderShape(Shape) View
 
@@ -85,7 +89,8 @@ type View interface {
 	//
 	//	Image(url).
 	//		ScaledToFill().
-	//		FrameRatio(16, 9, Horizontal)
+	//		FrameRatio(16, 9, Horizontal).
+	//		BorderClipped()
 	//
 	// Note that type Alignment satisfies FrameRatioOption.
 	FrameRatio(w, h int, anchor AxisSet, o ...FrameRatioOption) View

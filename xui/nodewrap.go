@@ -116,7 +116,6 @@ func (w wrapLayer) render(env environment) box {
 	env.style.Set("place-items", Center.placeItems())
 	env.style.Set("position", "relative")
 	env.style.Set("isolation", "isolate")
-	env.style.Set("overflow", "visible")
 	// A pending stroke's ring must clear the layers' z ladder.
 	// Elsewhere, its tree position suffices.
 	if len(env.stroke) > 0 {
