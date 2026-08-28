@@ -1,6 +1,7 @@
 package ui_test
 
 import (
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -520,4 +521,17 @@ func TestAppCSSBeatsDynamicSheet(t *testing.T) {
 			t.Errorf("padding-top = %s, want the app's 0px", pad)
 		}
 	})
+}
+
+// TestBorderStrokeZeroWidthKeepsStructure pins the stability rule
+// against the stroke accommodations: a stroke that draws nothing
+// still boxes out around an image, so the lowering does not depend
+// on the width.
+func TestBorderStrokeZeroWidthKeepsStructure(t *testing.T) {
+	for _, px := range []float64{0, -1, math.NaN()} {
+		html := render(t, ui.Image("/x.png").BorderStroke(px, ui.CSSColor("red")))
+		if !strings.Contains(html, "<ui-box ") {
+			t.Errorf("BorderStroke(%g) should keep the wrapper:\n%s", px, html)
+		}
+	}
 }
