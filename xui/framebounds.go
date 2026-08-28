@@ -3,7 +3,7 @@ package ui
 import (
 	"cmp"
 
-	"ily.dev/act3/xui/internal/sheet"
+	"ily.dev/act3/xui/internal/canon"
 )
 
 // A FrameBoundsOption configures the bounds and alignment of a frame.
@@ -159,14 +159,14 @@ func (w wrapFrameBounds) render(env environment) box {
 	// bounds instead, regardless of the subview's rigidity.
 	p.rigid &^= w.boundedAxes()
 	env.tag = cmp.Or(env.tag, "ui-frame")
-	env.style.Set("place-items", w.align.placeItems())
+	w.align.setItemsOn(&env.style)
 	env.style.Set("display", "grid")
 	w.setStyles(&env.style, ideal)
 	return build(env, p)
 }
 
 // setStyles adds the frame's size and track declarations to ss.
-func (w wrapFrameBounds) setStyles(ss *sheet.StyleSet, ideal AxisSet) {
+func (w wrapFrameBounds) setStyles(ss *canon.StyleSet, ideal AxisSet) {
 	if ideal.hasAll(Horizontal) {
 		ss.Set("width", w.h.ideal.css())
 	}

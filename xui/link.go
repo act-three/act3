@@ -5,7 +5,7 @@ import (
 	"ily.dev/domi/attr"
 	"ily.dev/domi/event"
 
-	"ily.dev/act3/xui/internal/sheet"
+	"ily.dev/act3/xui/internal/canon"
 )
 
 // A LinkView is a span of text that performs an action when clicked.
@@ -70,17 +70,24 @@ func (l textLink) render(env environment) box {
 	env.add(l.attrs(env.disabled, env.linkBypass))
 	l.setStyles(&env.style, env.disabled)
 	env.fg = append(env.fg, term[color]{value: Accent.color()})
+	if env.disabled {
+		env.opacity = append(env.opacity, term[float64]{value: 0.5})
+	}
 	return buildText(env, l.run)
 }
 
 func (l textLink) renderText(env environment) domi.Node {
 	env.fg = append(env.fg, term[color]{value: Accent.color()})
-	var ss sheet.StyleSet
-	l.setStyles(&ss, env.disabled)
-	for _, d := range env.paintUnder(0).decls(false) {
-		ss.Set(d.property, d.value)
+	if env.disabled {
+		env.opacity = append(env.opacity, term[float64]{value: 0.5})
 	}
-	class := attr.Class(env.sheet.ClassFor(ss))
+	var ss canon.StyleSet
+	l.setStyles(&ss, env.disabled)
+	styles := ss.Decls()
+	for _, d := range env.paintUnder(0).decls(false) {
+		styles.Set(d.property, d.value)
+	}
+	class := attr.Class(env.sheet.ClassFor(styles))
 	attrs := l.attrs(env.disabled, env.linkBypass)
 	env.nextenv = nextenv{}
 	return domi.Tag(l.tag(), attrs, class)(l.run.renderText(env))
@@ -112,10 +119,9 @@ func (l textLink) attrs(disabled, bypass bool) domi.Attr {
 	panic("ui: unreachable")
 }
 
-func (l textLink) setStyles(ss *sheet.StyleSet, disabled bool) {
+func (l textLink) setStyles(ss *canon.StyleSet, disabled bool) {
 	if disabled {
 		ss.Set("cursor", "default")
-		ss.Set("opacity", "0.5")
 	} else {
 		ss.Set("cursor", "pointer")
 	}

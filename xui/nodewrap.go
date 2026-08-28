@@ -7,7 +7,7 @@ import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 
-	"ily.dev/act3/xui/internal/sheet"
+	"ily.dev/act3/xui/internal/canon"
 )
 
 // wrapSubview renders n as the content of a fresh wrapper plan.
@@ -43,7 +43,7 @@ func wrapMod(env environment, n node) box {
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
-	env.style.Set("place-items", Center.placeItems())
+	Center.setItemsOn(&env.style)
 	return build(env, p)
 }
 
@@ -68,13 +68,13 @@ func (w wrapLayer) render(env environment) box {
 		zOverlay = 2
 		zStroke  = 3
 	)
-	var lss sheet.StyleSet
+	var lss canon.StyleSet
 	lss.Set("display", "grid")
 	lss.Set("grid-template-columns", "100%")
 	lss.Set("grid-template-rows", "100%")
-	lss.Set("place-items", w.at.placeItems())
+	w.at.setItemsOn(&lss)
 	lss.Set("position", "absolute")
-	lss.Set("inset", "0")
+	EdgeSpace{}.setOn(&lss, "inset")
 	tag := "ui-underlay"
 	view := w.view
 	if w.anchor != w.at {
@@ -101,7 +101,7 @@ func (w wrapLayer) render(env environment) box {
 	layer := renderLayer(env, view)
 	p.content = domi.Fragment(
 		p.content,
-		domi.Tag(tag, attr.Class(env.sheet.ClassFor(lss)))(
+		domi.Tag(tag, attr.Class(env.sheet.ClassFor(lss.Decls())))(
 			layer.content,
 		),
 	)
@@ -113,7 +113,7 @@ func (w wrapLayer) render(env environment) box {
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
-	env.style.Set("place-items", Center.placeItems())
+	Center.setItemsOn(&env.style)
 	env.style.Set("position", "relative")
 	env.style.Set("isolation", "isolate")
 	// A pending stroke's ring must clear the layers' z ladder.
@@ -153,7 +153,7 @@ func (w wrapPadding) render(env environment) box {
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
-	env.style.Set("place-items", Center.placeItems())
+	Center.setItemsOn(&env.style)
 	w.space.setOn(&env.style, "padding")
 	return build(env, p)
 }
@@ -173,7 +173,7 @@ func (w wrapSticky) render(env environment) box {
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
-	env.style.Set("place-items", Center.placeItems())
+	Center.setItemsOn(&env.style)
 	env.style.Set("position", "sticky")
 	w.inset.setOn(&env.style, "inset")
 	env.style.Set("z-index", "1") // The scroll viewport isolates the z-index.

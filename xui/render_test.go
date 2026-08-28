@@ -130,8 +130,9 @@ func TestAccountCard(t *testing.T) {
 		`<ui-layer `, // Underlay + Overlay decoration layers
 		`<ui-underlay `,
 		`<ui-overlay `,
-		`place-items:start end`, // the Overlay's alignment
-		`border-radius:9999px`,  // the Badge's pill
+		`align-items:start`,    // the Overlay's alignment
+		`justify-items:end`,    // the Overlay's alignment
+		`border-radius:9999px`, // the Badge's pill
 		`Pro`,
 		`Ada Lovelace`,
 	}
@@ -336,10 +337,10 @@ func TestHTMLFill(t *testing.T) {
 // stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
 	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background(ui.CSSColor("red")))
-	if got := classRule(t, html, `<ui-padding class="(ui-\w+)"`); got != "align-self:stretch;background-color:red;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;padding:4px;place-items:center" {
+	if got := classRule(t, html, `<ui-padding class="(ui-\w+)"`); got != "align-items:center;align-self:stretch;background-color:red;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;padding-block-end:4px;padding-block-start:4px;padding-inline-end:4px;padding-inline-start:4px" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
-	if got := classRule(t, html, `<ui-html class="(ui-\w+)"`); got != "align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-self:stretch;place-items:center" {
+	if got := classRule(t, html, `<ui-html class="(ui-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch" {
 		t.Errorf("host should stay untouched inside, got %q:\n%s", got, html)
 	}
 }
@@ -353,7 +354,7 @@ func TestImmutableModifiers(t *testing.T) {
 	plain := header.Padding(ui.Edges(0))
 
 	ph := render(t, padded)
-	if !strings.Contains(ph, "padding:16px") {
+	if !strings.Contains(ph, "padding-block-start:16px") {
 		t.Errorf("padded view lost its padding:\n%s", ph)
 	}
 	if pl := render(t, plain); strings.Contains(pl, "16px") {
@@ -405,10 +406,10 @@ func TestColorAsView(t *testing.T) {
 func TestPaddingComposes(t *testing.T) {
 	html := render(t, ui.Text("hi").Padding(ui.EdgeTop(8)).Padding(ui.EdgesPillarbox(12)))
 	for _, w := range []string{
-		"padding-block:8px 0px",
-		"padding-inline:0px",
-		"padding-block:0px",
-		"padding-inline:12px",
+		"padding-block-start:8px",
+		"padding-inline-start:0px",
+		"padding-block-start:0px",
+		"padding-inline-start:12px",
 	} {
 		if !strings.Contains(html, w) {
 			t.Errorf("composed padding missing %q:\n%s", w, html)
@@ -556,8 +557,10 @@ func TestIdealSize(t *testing.T) {
 func TestPaddingAddsValues(t *testing.T) {
 	html := render(t, ui.Text("hi").Padding(ui.EdgeTop(8), ui.Edges(4)))
 	for _, w := range []string{
-		"padding-block:12px 4px",
-		"padding-inline:4px",
+		"padding-block-start:12px",
+		"padding-block-end:4px",
+		"padding-inline-start:4px",
+		"padding-inline-end:4px",
 	} {
 		if !strings.Contains(html, w) {
 			t.Errorf("summed padding missing %q:\n%s", w, html)
@@ -882,7 +885,7 @@ func TestAlignProjectsOntoCrossAxis(t *testing.T) {
 	}
 
 	f := render(t, ui.Text("a").Frame(ui.Width(100), ui.BottomTrailing))
-	if !strings.Contains(f, "place-items:end end") {
+	if !strings.Contains(f, "align-items:end") || !strings.Contains(f, "justify-items:end") {
 		t.Errorf("frame Align should place the content in both axes:\n%s", f)
 	}
 
@@ -1003,7 +1006,10 @@ func TestScrollView(t *testing.T) {
 func TestSticky(t *testing.T) {
 	html := render(t, ui.Text("h").Sticky())
 	rule := classRule(t, html, `<ui-sticky class="([^" ]+)`)
-	for _, w := range []string{"position:sticky", "inset:0px", "z-index:1"} {
+	for _, w := range []string{
+		"position:sticky", "z-index:1",
+		"inset-block-start:0px", "inset-block-end:0px", "inset-inline-start:0px", "inset-inline-end:0px",
+	} {
 		if !strings.Contains(rule, w) {
 			t.Errorf("sticky box missing %q, got %q", w, rule)
 		}
@@ -1012,7 +1018,7 @@ func TestSticky(t *testing.T) {
 
 func TestStickyInsetsAdd(t *testing.T) {
 	html := render(t, ui.Text("h").Sticky(ui.EdgeTop(60), ui.Edges(4)))
-	for _, w := range []string{"inset-block:64px 4px", "inset-inline:4px"} {
+	for _, w := range []string{"inset-block-start:64px", "inset-block-end:4px", "inset-inline-start:4px", "inset-inline-end:4px"} {
 		if !strings.Contains(html, w) {
 			t.Errorf("summed insets missing %q:\n%s", w, html)
 		}
@@ -1039,7 +1045,7 @@ func TestStickyModifierOrder(t *testing.T) {
 func TestFrameBounds(t *testing.T) {
 	bounded := render(t, ui.Text("x").FrameBounds(ui.MinWidth(96), ui.MinHeight(24), ui.Leading))
 	for _, w := range []string{
-		"min-width:96px", "min-height:24px", "place-items:center start",
+		"min-width:96px", "min-height:24px", "align-items:center", "justify-items:start",
 		// An explicit minimum zeroes the axis's intrinsic track so the
 		// min-* declaration is the floor.
 		"grid-template-columns:minmax(0, 100%)", "grid-template-rows:minmax(0, 100%)",
@@ -1170,11 +1176,11 @@ func TestGapDoesNotLeak(t *testing.T) {
 	html := render(t, ui.VStack(
 		ui.VStack(ui.Text("a"), ui.Text("b")),
 	).Gap(16))
-	if got := strings.Count(html, "gap:16px"); got != 1 {
-		t.Errorf("gap:16px declaration count = %d, want 1 (outer stack only)\n\n%s", got, html)
+	if got := strings.Count(html, "row-gap:16px"); got != 1 {
+		t.Errorf("row-gap:16px declaration count = %d, want 1 (outer stack only)\n\n%s", got, html)
 	}
-	if got := strings.Count(html, "gap:8px"); got != 1 {
-		t.Errorf("gap:8px declaration count = %d, want 1 (the inner stack's own default)\n\n%s", got, html)
+	if got := strings.Count(html, "row-gap:8px"); got != 1 {
+		t.Errorf("row-gap:8px declaration count = %d, want 1 (the inner stack's own default)\n\n%s", got, html)
 	}
 }
 
@@ -1206,8 +1212,8 @@ func TestRepeatedGapAlignment(t *testing.T) {
 			name:    "zstack alignment",
 			view:    ui.ZStack(ui.Text("a")).Alignment(ui.TopLeading).Alignment(ui.BottomTrailing),
 			tag:     "ui-zstack",
-			want:    "place-items:start start",
-			rejects: "place-items:end end",
+			want:    "justify-items:start",
+			rejects: "justify-items:end",
 		},
 		{
 			name:    "grid gap",
@@ -1220,8 +1226,8 @@ func TestRepeatedGapAlignment(t *testing.T) {
 			name:    "grid alignment",
 			view:    ui.Grid(ui.Columns(2), ui.Text("a")).Alignment(ui.TopLeading).Alignment(ui.BottomTrailing),
 			tag:     "ui-grid",
-			want:    "place-items:start start",
-			rejects: "place-items:end end",
+			want:    "justify-items:start",
+			rejects: "justify-items:end",
 		},
 	}
 	for _, tt := range tests {
@@ -1418,7 +1424,7 @@ func TestStateUnionRestoresBase(t *testing.T) {
 // box, so its anchor point lands on at.
 func TestOverlayAt(t *testing.T) {
 	over := render(t, ui.Text("x").OverlayAt(ui.TopTrailing, ui.Center, ui.Text("o").Class("probe")))
-	if got := classRule(t, over, `<ui-overlay class="(ui-\w+)"`); !strings.Contains(got, "place-items:start end") {
+	if got := classRule(t, over, `<ui-overlay class="(ui-\w+)"`); !strings.Contains(got, "align-items:start") || !strings.Contains(got, "justify-items:end") {
 		t.Errorf("overlay placement should follow at, got %q:\n%s", got, over)
 	}
 	if got := classRule(t, over, `<ui-text class="probe (ui-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
@@ -1478,7 +1484,7 @@ func TestGrid(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, ui.VStack(ui.Grid(tt.layout, ui.CSSColor("#f00"), ui.Text("x"))))
 			grid := classRule(t, html, `<ui-grid class="(ui-\w+)"`)
-			for _, w := range []string{"display:grid", tt.want, "gap:8px", "place-items:center", "align-self:stretch"} {
+			for _, w := range []string{"display:grid", tt.want, "row-gap:8px", "column-gap:8px", "align-items:center", "justify-items:center", "align-self:stretch"} {
 				if !strings.Contains(grid, w) {
 					t.Errorf("grid rule missing %q: %q", w, grid)
 				}
@@ -1490,7 +1496,7 @@ func TestGrid(t *testing.T) {
 		})
 	}
 	custom := classRule(t, render(t, ui.Grid(ui.Columns(2), ui.Text("x")).Gap(0).Alignment(ui.TopLeading)), `<ui-grid class="(ui-\w+)"`)
-	for _, w := range []string{"gap:0px", "place-items:start start"} {
+	for _, w := range []string{"row-gap:0px", "column-gap:0px", "align-items:start", "justify-items:start"} {
 		if !strings.Contains(custom, w) {
 			t.Errorf("grid rule missing %q: %q", w, custom)
 		}
@@ -1555,11 +1561,11 @@ func TestFrameRatio(t *testing.T) {
 // the leading edge in a right-to-left document.
 func TestFrameRatioAlignment(t *testing.T) {
 	wide := classRule(t, render(t, ui.Text("x").FrameRatio(2, 3, ui.Horizontal, ui.BottomLeading)), `<ui-aspect class="(ui-\w+)"`)
-	if !strings.Contains(wide, "place-items:end start") {
+	if !strings.Contains(wide, "align-items:end") || !strings.Contains(wide, "justify-items:start") {
 		t.Errorf("width-anchored rule should place bottom leading, got %q", wide)
 	}
 	tall := classRule(t, render(t, ui.Text("x").FrameRatio(2, 3, ui.Vertical, ui.BottomLeading)), `<ui-aspect class="(ui-\w+)"`)
-	for _, w := range []string{"place-items:start end", "&:dir(rtl){writing-mode:vertical-rl}"} {
+	for _, w := range []string{"align-items:start", "justify-items:end", "&:dir(rtl){writing-mode:vertical-rl}"} {
 		if !strings.Contains(tall, w) {
 			t.Errorf("height-anchored rule missing %q: %q", w, tall)
 		}
@@ -1579,7 +1585,7 @@ func TestFrameBaselineIsTop(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.v)
-			if !strings.Contains(html, "place-items:start end") || strings.Contains(html, "baseline") {
+			if !strings.Contains(html, "align-items:start") || !strings.Contains(html, "justify-items:end") || strings.Contains(html, "baseline") {
 				t.Errorf("FirstBaseline in a frame should be Top:\n%s", html)
 			}
 		})

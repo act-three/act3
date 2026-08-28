@@ -40,7 +40,7 @@ func (w wrapFrame) render(env environment) box {
 	p.fills &^= w.definite()
 	p.rigid |= w.definite()
 	env.tag = cmp.Or(env.tag, "ui-frame")
-	env.style.Set("place-items", w.align.placeItems())
+	w.align.setItemsOn(&env.style)
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
