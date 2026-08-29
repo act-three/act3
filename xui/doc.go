@@ -43,7 +43,7 @@ It can be a definite amount or unbounded.
 
 For instance, consider the following view graph.
 
-	ScrollView(
+	ScrollView(Vertical|Horizontal,
 		ZStack(
 			CSSColor("red"),
 		).
@@ -51,35 +51,35 @@ For instance, consider the following view graph.
 	)
 
 The available space for the ZStack is 100px square,
-determined by its enclosing frame view.
+determined by its enclosing frame.
 The available space for the color red is also 100px square,
 determined by its enclosing ZStack,
-which grants its own available space to all its subviews.
+which provides the 100px it gets from the frame to the Color.
 The available space for the frame is unbounded,
 which is determined by its enclosing scroll view.
 
-When determining available space,
-some views, like the frame above,
-grant a fixed amount of available space to their subviews.
-Other views, like a ZStack,
-grant whatever available space they have to their subviews.
-Still other views, like an HStack or VStack,
-have more complex behavior.
-In general, any enclosing view determines the available space
-for each of its subviews,
-possibly by incorporating its own available space.
+An enclosing view determines the available space
+for each of its subviews.
 
-When determining a view's size,
-some views, such as Color,
-expand to fill available space.
-Other views, such as the 100px frame above,
-occupy a fixed area regardless of the available space.
-Still other views, such as HStack, VStack, and Text,
-have more complex sizing behavior.
-In general, each view determines its own size,
-possibly by responding in some way to the available space.
+  - Some views, like the 100px frame above,
+    provide a fixed amount of available space to their subviews.
+  - Some views, like ZStack,
+    provide their own available space to their subviews.
+  - Some views, like an HStack or VStack,
+    have more complex behavior.
 
-It is possible for a view to exceed its available space.
+Each view determines its own size.
+
+  - Some views, such as Color, expand to fill available space.
+  - Some views, like VStack, HStack, and ZStack,
+    adopt a size based on their subviews.
+  - Some views, such as the 100px frame above,
+    occupy a fixed area regardless of the available space.
+  - Some views, such as Text,
+    have more complex sizing behavior.
+
+It is possible for a view to take a size
+that exceeds its available space.
 
 	HStack(
 		CSSColor("blue").
