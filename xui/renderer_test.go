@@ -4,8 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	ui "ily.dev/act3/xui"
 	"ily.dev/domi"
+
+	ui "ily.dev/act3/xui"
 )
 
 func renderWith(t *testing.T, r *ui.Renderer, v ui.View) string {
@@ -23,11 +24,11 @@ func renderWith(t *testing.T, r *ui.Renderer, v ui.View) string {
 func TestRendererAccumulatesRules(t *testing.T) {
 	var r ui.Renderer
 	first := renderWith(t, &r, ui.Text("a").Padding(ui.Edges(16)))
-	if !strings.Contains(first, "padding:16px") {
+	if !strings.Contains(first, "padding-block-start:16px") {
 		t.Fatalf("first render missing its rule:\n%s", first)
 	}
 	gone := renderWith(t, &r, ui.Text("a"))
-	if !strings.Contains(gone, "padding:16px") {
+	if !strings.Contains(gone, "padding-block-start:16px") {
 		t.Errorf("rule dropped when its view went away:\n%s", gone)
 	}
 	back := renderWith(t, &r, ui.Text("a").Padding(ui.Edges(16)))

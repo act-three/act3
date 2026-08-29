@@ -106,7 +106,8 @@ func buildText(env environment, r textRun) box {
 		env.style.Set("display", "-webkit-box")
 		env.style.Set("-webkit-box-orient", "vertical")
 		env.style.Set("-webkit-line-clamp", strconv.Itoa(env.lineLimit))
-		env.style.Set("overflow", "clip")
+		env.style.Set("overflow-x", "clip")
+		env.style.Set("overflow-y", "clip")
 	}
 	inner := env
 	inner.nextenv = nextenv{}

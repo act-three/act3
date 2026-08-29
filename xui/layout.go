@@ -3,7 +3,7 @@ package ui
 import (
 	"fmt"
 
-	"ily.dev/act3/xui/internal/sheet"
+	"ily.dev/act3/xui/internal/canon"
 )
 
 // AxisSet is a set of the two-dimensional cartesian axes:
@@ -27,7 +27,7 @@ func (s AxisSet) complement() AxisSet { return (Horizontal | Vertical) &^ s }
 // addFillStylesTo lowers the receiver as a fill request, picking the CSS
 // mechanism the parent context responds to: grow or stretch as a flex item,
 // self-stretch in a grid cell. A single mechanism cannot serve both.
-func (s AxisSet) addFillStylesTo(ss *sheet.StyleSet, env environment) {
+func (s AxisSet) addFillStylesTo(ss *canon.StyleSet, env environment) {
 	switch env.container {
 	case containerFlex:
 		if s.hasAny(env.lc.majorAxis) {
@@ -60,7 +60,7 @@ func (s AxisSet) addFillStylesTo(ss *sheet.StyleSet, env environment) {
 // This is only necessary along a flex major axis,
 // where flex shrink would compress the box.
 // Everywhere else a fixed size is rigid by default in CSS.
-func (s AxisSet) addRigidStylesTo(ss *sheet.StyleSet, env environment) {
+func (s AxisSet) addRigidStylesTo(ss *canon.StyleSet, env environment) {
 	if env.container != containerFlex {
 		return
 	}
@@ -194,22 +194,18 @@ func (a Alignment) horizontal() Alignment { return a & (Leading | Trailing) }
 // vertical returns the alignment's vertical component.
 func (a Alignment) vertical() Alignment { return a & (Top | Bottom | FirstBaseline) }
 
-// placeItems maps an alignment to its place-items value,
-// which takes the block component first,
+// setItemsOn declares a as the item alignment of a container:
+// align-items takes the block component,
 // which in this package is always the vertical axis.
-func (a Alignment) placeItems() string {
-	if a == Center {
-		return "center"
-	}
-	return a.vertical().keyword() + " " + a.horizontal().keyword()
+func (a Alignment) setItemsOn(ss *canon.StyleSet) {
+	ss.Set("align-items", a.vertical().keyword())
+	ss.Set("justify-items", a.horizontal().keyword())
 }
 
-// placeItemsRotated is placeItems for a container
+// setItemsRotatedOn is setItemsOn for a container
 // whose writing mode is rotated a quarter turn,
 // so that its block axis is horizontal.
-func (a Alignment) placeItemsRotated() string {
-	if a == Center {
-		return "center"
-	}
-	return a.horizontal().keyword() + " " + a.vertical().keyword()
+func (a Alignment) setItemsRotatedOn(ss *canon.StyleSet) {
+	ss.Set("align-items", a.horizontal().keyword())
+	ss.Set("justify-items", a.vertical().keyword())
 }

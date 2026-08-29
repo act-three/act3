@@ -104,7 +104,9 @@ func (g gridNode) render(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-grid")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", g.layout.columns())
-	env.style.Set("gap", cssPx(*cmp.Or(env.gap, new(defaultGap))))
-	env.style.Set("place-items", env.alignment.placeItems())
+	gap := cssPx(*cmp.Or(env.gap, new(defaultGap)))
+	env.style.Set("row-gap", gap)
+	env.style.Set("column-gap", gap)
+	env.alignment.setItemsOn(&env.style)
 	return build(env, p)
 }

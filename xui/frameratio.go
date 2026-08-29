@@ -40,7 +40,6 @@ func (w wrapFrameRatio) render(env environment) box {
 	inner.unbounded &^= derived
 	node := w.node
 	kind := containerGrid
-	placeItems := w.align.placeItems()
 	// With both frame dimensions automatic, intrinsic sizing resolves the
 	// inline size from content and aspect-ratio derives the block size. It
 	// does not derive inline size from an auto, content-sized block size.
@@ -54,7 +53,6 @@ func (w wrapFrameRatio) render(env environment) box {
 		env.style.SetPseudo(":dir(rtl)", "writing-mode", "vertical-rl")
 		node = modStyle("writing-mode", "horizontal-tb").modify(node)
 		kind = containerGridRotated
-		placeItems = w.align.placeItemsRotated()
 	}
 	p := wrapSubviewIn(inner, kind, node)
 	p.fills &^= derived
@@ -63,15 +61,16 @@ func (w wrapFrameRatio) render(env environment) box {
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
-	env.style.Set("place-items", placeItems)
 	env.style.Set("aspect-ratio", fmt.Sprintf("%d / %d", w.w, w.h))
 	// The derived axis has a content-based automatic minimum in
 	// CSS, which would break the ratio when the subview is larger
 	// than the derived size. Zeroing it keeps the ratio and lets
 	// the subview overflow instead.
 	if w.anchor == Vertical {
+		w.align.setItemsRotatedOn(&env.style)
 		env.style.Set("min-width", "0")
 	} else {
+		w.align.setItemsOn(&env.style)
 		env.style.Set("min-height", "0")
 	}
 	return build(env, p)

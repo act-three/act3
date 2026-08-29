@@ -3,7 +3,7 @@ package ui
 import (
 	"fmt"
 
-	"ily.dev/act3/xui/internal/sheet"
+	"ily.dev/act3/xui/internal/canon"
 )
 
 // EdgeSpace specifies spacing distances for the edges of a rectangle.
@@ -55,25 +55,13 @@ func edgeSum(s ...EdgeSpace) (total EdgeSpace) {
 	return total
 }
 
-// setOn adds the shortest declarations equivalent to setting
-// property's edge values to s.
-// It works for edge-valued shorthands such as padding and inset.
-func (s EdgeSpace) setOn(ss *sheet.StyleSet, property string) {
-	t, b := cssPx(s.Top), cssPx(s.Bottom)
-	le, tr := cssPx(s.Leading), cssPx(s.Trailing)
-	if t == b && le == tr && t == le {
-		ss.Set(property, t)
-		return
-	}
-	block, inline := t, le
-	if b != t {
-		block += " " + b
-	}
-	if tr != le {
-		inline += " " + tr
-	}
-	ss.Set(property+"-block", block)
-	ss.Set(property+"-inline", inline)
+// setOn declares s on each logical edge longhand of property,
+// such as padding or inset.
+func (s EdgeSpace) setOn(ss *canon.StyleSet, property string) {
+	ss.Set(property+"-block-start", cssPx(s.Top))
+	ss.Set(property+"-block-end", cssPx(s.Bottom))
+	ss.Set(property+"-inline-start", cssPx(s.Leading))
+	ss.Set(property+"-inline-end", cssPx(s.Trailing))
 }
 
 func cssPx(v float64) string { return fmt.Sprintf("%gpx", v) }

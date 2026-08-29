@@ -6,6 +6,7 @@ import (
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 
+	"ily.dev/act3/xui/internal/canon"
 	"ily.dev/act3/xui/internal/sheet"
 )
 
@@ -283,7 +284,7 @@ type environment struct {
 type nextenv struct {
 	tag        string
 	attrs      domi.Attr
-	style      sheet.StyleSet
+	style      canon.StyleSet
 	fg         []term[color]
 	bg         []term[color]
 	stroke     []term[stroke]
@@ -370,12 +371,13 @@ func build(env environment, p plan) box {
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
 	ss := env.style
-	addPaintStylesTo(&ss, env.nextenv)
 	addIdealStylesTo(&ss, p.ideal, env.unbounded, fills)
 	fills.addFillStylesTo(&ss, env)
 	rigid.addRigidStylesTo(&ss, env)
+	styles := ss.Decls()
+	addPaintStylesTo(&styles, env.nextenv)
 	// Keep the generated class after the named classes in rendered output.
-	a = domi.Group(a, attr.Class(env.sheet.ClassFor(ss)))
+	a = domi.Group(a, attr.Class(env.sheet.ClassFor(styles)))
 	return box{
 		node:  domi.Tag(cmp.Or(env.tag, "div"), a)(p.content),
 		fills: fills,
@@ -391,7 +393,7 @@ func build(env environment, p plan) box {
 // It contributes the ideal as a minimum length
 // to the enclosing container's resolved extent,
 // then expands to that extent.
-func addIdealStylesTo(ss *sheet.StyleSet, i rect, unbounded, fills AxisSet) {
+func addIdealStylesTo(ss *canon.StyleSet, i rect, unbounded, fills AxisSet) {
 	for _, a := range [...]struct {
 		axis AxisSet
 		name string

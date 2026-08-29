@@ -3,7 +3,7 @@ package ui
 import (
 	"cmp"
 
-	"ily.dev/act3/xui/internal/sheet"
+	"ily.dev/act3/xui/internal/canon"
 )
 
 // A StackView displays its subviews in a line.
@@ -84,7 +84,8 @@ func (s stackNode) render(env environment) box {
 	subviews := Group(s.subviews...)
 	if s.dir == axisZ {
 		subviews = subviews.
-			modify(modStyle("grid-area", "1 / 1")).
+			modify(modStyle("grid-row-start", "1")).
+			modify(modStyle("grid-column-start", "1")).
 			// A subview that forms a stacking context, or is positioned,
 			// would otherwise paint above every later subview that does
 			// neither. With z-index:0, each subview paints in order,
@@ -102,13 +103,13 @@ func (s stackNode) render(env environment) box {
 // its display and flow, its gap,
 // and its alignment — the minor-axis projection for a line,
 // both axes for a ZStack.
-func (s stackNode) addStackStylesTo(ss *sheet.StyleSet, gap float64, align Alignment) {
+func (s stackNode) addStackStylesTo(ss *canon.StyleSet, gap float64, align Alignment) {
 	switch s.dir {
 	case axisZ:
 		ss.Set("display", "grid")
 		ss.Set("grid-template-columns", "100%")
 		ss.Set("grid-template-rows", "100%")
-		ss.Set("place-items", align.placeItems())
+		align.setItemsOn(ss)
 		ss.Set("isolation", "isolate") // Z-Index Rule. See theory.go.
 		return
 	case axisH:
@@ -119,7 +120,8 @@ func (s stackNode) addStackStylesTo(ss *sheet.StyleSet, gap float64, align Align
 		ss.Set("align-items", align.horizontal().keyword())
 	}
 	ss.Set("display", "inline-flex")
-	ss.Set("gap", cssPx(gap))
+	ss.Set("row-gap", cssPx(gap))
+	ss.Set("column-gap", cssPx(gap))
 }
 
 // A Spacer occupies empty space.
