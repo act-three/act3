@@ -2,23 +2,21 @@
 Package ui is a UI toolkit for [ily.dev/domi] applications.
 
 Application code composes views,
-then renders the View graph with a [Renderer].
+then serves the View graph with a [Handler].
 
-	func (app *App) View(ctx context.Context) (string, domi.Node) {
-		return app.ui.Render(
-			VStack(
-				Text("Movies").
-					Title("Movies").
-					Font(Title),
-				Image(bannerURL).
-					ScaledToFill().
-					Frame(Width(800), Height(200)),
-				For(movies, movie.id, func(m *movie) View {
-					return HStack(
-						Text(m.title),
-					)
-				}),
-			),
+	func (app *App) View(ctx context.Context) View {
+		return VStack(
+			Text("Movies").
+				Title("Movies").
+				Font(Title),
+			Image(bannerURL).
+				ScaledToFill().
+				Frame(Width(800), Height(200)),
+			For(movies, movie.id, func(m *movie) View {
+				return HStack(
+					Text(m.title),
+				)
+			}),
 		)
 	}
 
@@ -96,12 +94,41 @@ Because the inner frame is larger than the outer frame,
 the blue square overlaps the word "Hello",
 which is an adjacent sibling of the outer frame.
 
-# CSS
+# Serving Client Assets
 
-The companion stylesheet is exposed as [CSS].
-Serve it once per page.
-A [Renderer] emits CSS for dynamic style values with each rendered page.
+A xui page requires two static assets:
+a CSS stylesheet and a JavaScript module.
+The default behavior of [Handler] includes both.
 
-All CSS rules are declared in the "xui" cascade layer.
+Apps that provide their own document shell (see [domi.Document])
+must serve these assets themselves.
+There are two ways to do it.
+
+  - Serve each asset directly,
+    using [Stylesheet] and [domi.ClientModule].
+  - Bundle the assets with additional CSS and JavaScript.
+
+Apps that serve their own CSS and JavaScript
+might wish to bundle the assets into those files.
+Obtain the filesystem paths of the asset sources by running:
+
+	go list -f '{{.Dir}}/ui.css' ily.dev/act3/xui
+	go list -f '{{.Dir}}/client.js' ily.dev/domi
+
+Include ui.css in the app's CSS bundle.
+Include client.js in the app's JavaScript bundle,
+then import the module and call run:
+
+	import * as Domi from "path/to/bundle.js";
+	Domi.run();
+
+# CSS Layer
+
+There are two types of CSS rules defined in this package.
+A static stylesheet is documented in Serving Client Assets.
+[Handler] also emits a dynamically-generated stylesheet
+in each rendered page.
+
+All CSS rules of both types are declared in the "xui" cascade layer.
 */
 package ui

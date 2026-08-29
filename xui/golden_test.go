@@ -14,7 +14,7 @@ var update = flag.Bool("update", false, "rewrite golden files with current outpu
 // any change to the lowering or the CSS shows up as a reviewable golden diff.
 // Refresh with: go test ./xui -run TestGolden -update
 func TestGolden(t *testing.T) {
-	got, err := fixture.Document()
+	got, err := fixture.Document(staticCSS)
 	if err != nil {
 		t.Fatalf("fixture.Document: %v", err)
 	}

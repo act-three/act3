@@ -23,9 +23,9 @@ func stage(t *testing.T, v ui.View, fn func(*uitest.Session)) {
 	t.Helper()
 	var sb strings.Builder
 	sb.WriteString("<!doctype html><meta charset=utf-8><style>")
-	sb.WriteString(ui.CSS)
+	sb.WriteString(staticCSS)
 	sb.WriteString(`</style><body>`)
-	_, page := new(ui.Renderer).Render(v)
+	_, page := ui.Render(v)
 	if err := domi.RenderTo(&sb, page); err != nil {
 		t.Fatalf("render: %v", err)
 	}
@@ -773,7 +773,7 @@ func TestGeometryStickyPins(t *testing.T) {
 // TestGeometryGalleryFits loads the full fixture gallery and checks nothing
 // forces its scroll viewport to scroll horizontally.
 func TestGeometryGalleryFits(t *testing.T) {
-	html, err := fixture.Document()
+	html, err := fixture.Document(staticCSS)
 	if err != nil {
 		t.Fatalf("fixture.Document: %v", err)
 	}
