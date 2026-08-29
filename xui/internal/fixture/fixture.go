@@ -1,5 +1,4 @@
-// Package fixture builds the demo page shared by the preview command
-// and the xui test suite.
+// Package fixture builds the demo page for the xui test suite.
 // The page exercises every component and layout mechanism once,
 // so it doubles as the golden-test corpus
 // and as the scene for browser geometry tests.
