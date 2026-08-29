@@ -38,16 +38,20 @@ type View interface {
 	// BorderShape sets the shape of the receiver's border.
 	BorderShape(Shape) View
 
-	// BorderStroke draws a line of the given width and color over the
-	// inside edge of the receiver.
+	// BorderStroke draws a line of the given width and color along
+	// the inside of the receiver's border.
+	//
+	// The stroke paints over the view's content. It takes no layout
+	// space. To add a border around the outside of a view, add
+	// padding inside the border.
 	BorderStroke(px float64, c Color) View
 
 	// Disabled makes the receiver non-interactive. Controls such as
 	// buttons, links, and text fields do not respond to input events.
 	//
 	// If any enclosing view sets Disabled(true), the view is disabled,
-	// even when an inner view sets Disabled(false).
-	// In this example, the button is disabled:
+	// even when an inner view sets Disabled(false). In this example,
+	// the button is disabled:
 	//
 	//     HStack(
 	//         Button("/", Text("Home")).
@@ -56,8 +60,8 @@ type View interface {
 	//         Disabled(true)
 	Disabled(d bool) View
 
-	// FixedSize fixes the receiver at its ideal size.
-	// This can cause it to exceed the bounds of its container.
+	// FixedSize fixes the receiver at its ideal size. It ignores its
+	// available space. This can cause it to be larger than its container.
 	FixedSize() View
 
 	// Font sets the font size for text in the receiver.
@@ -95,7 +99,7 @@ type View interface {
 	// Note that type Alignment satisfies FrameRatioOption.
 	FrameRatio(w, h int, anchor AxisSet, o ...FrameRatioOption) View
 
-	// Overlay displays o as a layer on top of the receiver. Opaque
+	// Overlay displays o as a layer in front of the receiver. Opaque
 	// regions of o obscure the receiver where they overlap.
 	//
 	// The given Alignment sets the position of o relative to the receiver.
@@ -103,7 +107,7 @@ type View interface {
 	// Overlay(a, o) is equivalent to OverlayAt(a, a, o).
 	Overlay(a Alignment, o View) View
 
-	// OverlayAt displays o as a layer on top of the receiver.
+	// OverlayAt displays o as a layer in front of the receiver.
 	// It places the anchor point on o at the point on the
 	// receiver specified by at.
 	//
@@ -123,7 +127,7 @@ type View interface {
 	// FirstBaseline. If either one does, the view panics.
 	OverlayAt(at, anchor Alignment, o View) View
 
-	// Underlay displays u as a layer beneath the receiver. Opaque
+	// Underlay displays u as a layer behind the receiver. Opaque
 	// regions of the receiver obscure u where they overlap.
 	//
 	// The given Alignment sets the position of u relative to the receiver.
@@ -131,7 +135,7 @@ type View interface {
 	// Underlay(a, u) is equivalent to UnderlayAt(a, a, u).
 	Underlay(a Alignment, u View) View
 
-	// UnderlayAt displays u as a layer beneath the receiver.
+	// UnderlayAt displays u as a layer behind the receiver.
 	// It places the anchor point on u at the point on the
 	// receiver specified by at.
 	//
@@ -143,8 +147,8 @@ type View interface {
 	// in the receiver.
 	LineLimit(n int) View
 
-	// Opacity sets the receiver's opacity to x, from 0 (transparent) to
-	// 1 (opaque).
+	// Opacity sets the receiver's opacity to x,
+	// from 0 (transparent) to 1 (opaque).
 	Opacity(x float64) View
 
 	// Padding adds the empty space defined by s around the receiver. If
@@ -159,11 +163,11 @@ type View interface {
 	// its actual position. The sum of the given EdgeSpace values
 	// defines a rectangle inset within the viewport of the nearest
 	// enclosing ScrollView. If part or all of the receiver's initial
-	// position are outside the bounds of this rectangle, the offset
+	// position is outside the bounds of this rectangle, the offset
 	// is adjusted to attempt to keep it in bounds.
 	//
 	// The actual position is always within the receiver's nearest
-	// enclosing view (or its cell, in a Grid). Therefore, if the
+	// enclosing view (or its cell, in a grid). Therefore, if the
 	// enclosing view is scrolled outside the viewport, the sticky
 	// view scrolls out too.
 	//
@@ -180,8 +184,9 @@ type View interface {
 	//		}),
 	//	))
 	//
-	// As a consequence of these rules, if an enclosing modifier or
-	// view is the same size as the sticky view, Sticky has no effect.
+	// Note that as a consequence of these rules, if an enclosing
+	// modifier or view is the same size as the sticky view, Sticky
+	// has no effect.
 	Sticky(s ...EdgeSpace) View
 
 	// WhileHovered applies m to the receiver while in the Hovered state.

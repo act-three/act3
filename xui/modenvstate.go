@@ -21,10 +21,9 @@ func Background(c Color) Modifier {
 
 // BorderStroke draws a line
 // of the given width and color
-// over the inside edge of a view.
+// along the inside of a view's border.
 //
-// The stroke paints over the view's content,
-// inside its border shape.
+// The stroke paints over the view's content.
 // It takes no layout space.
 // To add a border around the outside of a view,
 // add padding inside the border.

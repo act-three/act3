@@ -100,7 +100,7 @@ type layoutContext struct {
 func (lc layoutContext) minorAxes() AxisSet { return lc.majorAxis.complement() }
 
 // An Alignment specifies a point on a view's bounding rectangle.
-// For two views to be aligned,
+// When two views are aligned,
 // they are placed so their alignment points coincide.
 //
 // Alignment also satisfies
