@@ -40,7 +40,7 @@ type Config struct {
 }
 
 func Handle(mux *http.ServeMux, c *Config) {
-	mux.Handle("/", domi.Handler(
+	mux.Handle("/", domi.NewServer(
 		func(ctx context.Context, u *url.URL) (*app, cmd) {
 			return newApp(ctx, c, u)
 		},
