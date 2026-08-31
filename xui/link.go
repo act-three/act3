@@ -110,7 +110,7 @@ func (l textLink) attrs(disabled, bypass bool) domi.Attr {
 			return domi.Group(attr.Role("link"), domi.Name("aria-disabled", "true"))
 		}
 		if bypass {
-			return domi.Group(attr.Href(action), domi.Bypass)
+			return domi.Group(attr.Href(action), domi.HandleLink("no"))
 		}
 		return attr.Href(action)
 	case domi.Attr:

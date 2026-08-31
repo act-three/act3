@@ -238,7 +238,7 @@ type (
 
 func OnURLChange(u *url.URL) Msg { return &URLChange{u} }
 
-func OnURLRequest(u *url.URL, internal bool) Msg { return &URLRequest{u, internal} }
+func OnURLRequest(u *url.URL) Msg { return &URLRequest{u, !u.IsAbs()} }
 
 func (*CollectionAdd) msg()              {}
 func (*CollectionMovieAdd) msg()         {}

@@ -750,7 +750,7 @@ func TestLinkRequirePageLoad(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			html := render(t, tc.v)
-			if got := strings.Contains(html, "domi-bypass"); got != tc.want {
+			if got := strings.Contains(html, `domi-handle="no"`); got != tc.want {
 				t.Errorf("bypass annotation = %v, want %v:\n%s", got, tc.want, html)
 			}
 		})
