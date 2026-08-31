@@ -475,7 +475,7 @@ func TestTextStyleInnermostWins(t *testing.T) {
 	}
 }
 
-// stageApp is stage with unlayered app CSS placed before ui.CSS in the
+// stageApp is stage with unlayered app CSS placed before the xui stylesheet in the
 // document, so an app rule can win only through the xui cascade layer,
 // never through source order.
 func stageApp(t *testing.T, appCSS string, v ui.View, fn func(*uitest.Session)) {
@@ -484,9 +484,9 @@ func stageApp(t *testing.T, appCSS string, v ui.View, fn func(*uitest.Session)) 
 	sb.WriteString("<!doctype html><meta charset=utf-8><style>")
 	sb.WriteString(appCSS)
 	sb.WriteString("</style><style>")
-	sb.WriteString(ui.CSS)
+	sb.WriteString(staticCSS)
 	sb.WriteString(`</style><body>`)
-	_, page := new(ui.Renderer).Render(v)
+	_, page := ui.Render(v)
 	if err := domi.RenderTo(&sb, page); err != nil {
 		t.Fatalf("render: %v", err)
 	}

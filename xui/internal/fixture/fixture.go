@@ -335,15 +335,15 @@ func Page() View {
 
 // Document renders Page into a standalone document with the xui stylesheet
 // inlined, suitable for a browser or the golden test.
-func Document() (string, error) {
-	title, page := new(Renderer).Render(ScrollView(Vertical, Page()))
+func Document(css string) (string, error) {
+	title, page := Render(ScrollView(Vertical, Page()))
 	var sb strings.Builder
 	sb.WriteString("<!doctype html><html lang=en><head><meta charset=utf-8>")
 	sb.WriteString("<meta name=viewport content=\"width=device-width, initial-scale=1\">")
 	sb.WriteString("<title>")
 	sb.WriteString(html.EscapeString(title))
 	sb.WriteString("</title><style>\n")
-	sb.WriteString(CSS)
+	sb.WriteString(css)
 	sb.WriteString("\nbody{margin:0;background:#f5f6f8}")
 	sb.WriteString("\n.demo-bordered{border:1px solid var(--ui-color-border);border-radius:var(--ui-radius);background:#fff}")
 	sb.WriteString("\n</style></head><body>")
