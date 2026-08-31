@@ -61,9 +61,9 @@ func accountCard(user User) View {
 			Button(Msg{Edit: true}, Text("Edit")).
 				Role(RolePrimary),
 		).
-			Gap(12),
+			Gap(12).
+			Padding(Edges(16)),
 	).
-		Padding(Edges(16)).
 		OverlayAt(TopTrailing, Center, Badge("Pro"))
 }
 
@@ -84,8 +84,7 @@ func moviePage(movies []Movie) View {
 			movieRow,
 		)),
 	).
-		Gap(16).
-		Padding(Edges(24))
+		Gap(16)
 }
 
 func movieRow(movie Movie) View {
