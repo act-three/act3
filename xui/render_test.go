@@ -1025,10 +1025,10 @@ func TestScrollView(t *testing.T) {
 	}
 }
 
-// TestScrollViewWrapsGroup pins the scroll viewport's arity rule:
-// a multi-node view is arranged in a VStack, while a single node
+// TestScrollViewContentArity pins the scroll viewport's arity rule:
+// non-unary content is arranged in a VStack, while a single node
 // remains directly inside the viewport.
-func TestScrollViewWrapsGroup(t *testing.T) {
+func TestScrollViewContentArity(t *testing.T) {
 	group := render(t, ui.ScrollView(ui.Vertical,
 		ui.Group(ui.Text("a"), ui.Text("b"))))
 	if !strings.Contains(group, "<ui-scroll ") || !strings.Contains(group, "<ui-vstack ") {
@@ -1041,8 +1041,8 @@ func TestScrollViewWrapsGroup(t *testing.T) {
 	}
 
 	empty := render(t, ui.ScrollView(ui.Vertical, ui.Empty()))
-	if strings.Contains(empty, "<ui-vstack ") {
-		t.Errorf("an empty ScrollView should not be wrapped:\n%s", empty)
+	if !strings.Contains(empty, "<ui-vstack ") {
+		t.Errorf("an empty ScrollView should be wrapped in a VStack:\n%s", empty)
 	}
 }
 
@@ -1527,7 +1527,7 @@ func TestLayerArity(t *testing.T) {
 				view  ui.View
 				stack bool
 			}{
-				{"empty", ui.Empty(), false},
+				{"empty", ui.Empty(), true},
 				{"single", ui.Text("a"), false},
 				{"multiple", ui.Group(ui.Text("a"), ui.Text("b")), true},
 			} {
@@ -1573,10 +1573,9 @@ func TestOverlayAtBaselinePanics(t *testing.T) {
 	render(t, ui.Text("x").OverlayAt(ui.FirstBaseline, ui.Center, ui.Text("o")))
 }
 
-// TestRenderRootWrapsGroup pins the root's multiview rule: the viewport
-// frames a single view, so a view of more than one node is wrapped in a
-// VStack rather than distributed over.
-func TestRenderRootWrapsGroup(t *testing.T) {
+// TestRenderRootArity pins the root's arity rule: the viewport frames
+// a single node, so non-unary views are arranged in a VStack.
+func TestRenderRootArity(t *testing.T) {
 	group := render(t, ui.Group(ui.Text("a"), ui.Text("b")))
 	if !strings.Contains(group, "ui-vstack") {
 		t.Errorf("a root Group should be wrapped in a VStack:\n%s", group)
@@ -1586,8 +1585,8 @@ func TestRenderRootWrapsGroup(t *testing.T) {
 		t.Errorf("a single root view should not be wrapped:\n%s", single)
 	}
 	empty := render(t, ui.Empty())
-	if strings.Contains(empty, "ui-vstack") {
-		t.Errorf("an empty root view should not be wrapped:\n%s", empty)
+	if !strings.Contains(empty, "ui-vstack") {
+		t.Errorf("an empty root view should be wrapped in a VStack:\n%s", empty)
 	}
 }
 

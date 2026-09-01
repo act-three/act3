@@ -39,7 +39,7 @@ func TestRenderVisitsEachNodeOnce(t *testing.T) {
 			v,
 			wrap(spacerNode{}),
 			wrap(wrapFrame{h: newSize(40), node: leaf("framed")}),
-			wrap(wrapLayer{view: wrap(colorFillNode{cssColor("#000")}), node: leaf("decorated")}),
+			wrap(wrapLayer{layer: count(colorFillNode{cssColor("#000")}), node: leaf("decorated")}),
 		}})
 	}
 	Render(v)
