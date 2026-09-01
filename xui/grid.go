@@ -99,7 +99,7 @@ func (g gridNode) render(env environment) box {
 	inner := env
 	inner.lc = layoutContext{}
 	inner.container = containerGrid
-	p := subviewsRendered(inner, g.subviews...)
+	p := renderSubviewList(inner, g.subviews...)
 	p.fills |= g.layout.fills()
 	env.tag = cmp.Or(env.tag, "ui-grid")
 	env.style.Set("display", "grid")

@@ -374,13 +374,12 @@ func renderSubviewNode(env environment, n node) plan {
 	}
 }
 
-// subviewsRendered is a generic combinator for lists of subviews.
-// It renders the given views into a plan
+// renderSubviewList combines a list of subviews.
+// It renders the given views and combines them into a plan
 // with fill and rigid requests and ancillary data merged.
 // It strips env's box values before any subview renders,
 // so they cannot land on a subview's box.
-func subviewsRendered(env environment, vs ...View) plan {
-	var ns []domi.Node
+func renderSubviewList(env environment, vs ...View) plan {
 	p := plan{rigid: Horizontal | Vertical}
 	for _, v := range vs {
 		for _, n := range v.nodes() {
@@ -388,10 +387,9 @@ func subviewsRendered(env environment, vs ...View) plan {
 			p.fills |= q.fills
 			p.rigid &= q.rigid
 			p.title = cmp.Or(p.title, q.title)
-			ns = append(ns, q.content)
+			p.content = domi.Fragment(p.content, q.content)
 		}
 	}
-	p.content = domi.Fragment(ns...)
 	return p
 }
 
