@@ -350,17 +350,18 @@ type box struct {
 
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views into a plan
-// with fill requests and ancillary data merged.
+// with fill and rigid requests and ancillary data merged.
 // It strips env's box values before any subview renders,
 // so they cannot land on a subview's box.
 func subviewsRendered(env environment, vs ...View) plan {
 	env.nextenv = nextenv{}
 	var ns []domi.Node
-	var p plan
+	p := plan{rigid: Horizontal | Vertical}
 	for _, v := range vs {
 		for _, n := range v.nodes() {
 			b := n.render(env)
 			p.fills |= b.fills
+			p.rigid &= b.rigid
 			p.title = cmp.Or(p.title, b.title)
 			ns = append(ns, b.node)
 		}
