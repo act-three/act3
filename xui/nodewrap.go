@@ -47,6 +47,15 @@ func wrapMod(env environment, n node) box {
 	return build(env, p)
 }
 
+// layerContents gives a multi-node layer a single aggregate box.
+// A caller can select a different arrangement by supplying an explicit stack.
+func layerContents(v View) View {
+	if len(v.nodes()) > 1 {
+		return ZStack(v)
+	}
+	return v
+}
+
 // wrapLayer layers a view over or under a base view.
 // It lowers to CSS absolute positioning.
 // The base negotiates its layout independently of the layer,
