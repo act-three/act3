@@ -262,6 +262,15 @@ type node interface {
 	render(environment) box
 }
 
+// unary returns v's only node.
+// If v is not unary, combine first gives it a single aggregate node.
+func unary[V View](combine func(...View) V, v View) node {
+	if len(v.nodes()) != 1 {
+		v = combine(v)
+	}
+	return v.nodes()[0]
+}
+
 type containerKind int
 
 const (
@@ -348,22 +357,38 @@ type box struct {
 	title string
 }
 
+// renderSubviewNode renders n
+// and returns a plan containing n's box.
+// The plan forwards the box's fill and rigid requests
+// and its ancillary data.
+// It strips env's box values before n renders,
+// so they cannot land on the subview's box.
+func renderSubviewNode(env environment, n node) plan {
+	env.nextenv = nextenv{}
+	b := n.render(env)
+	return plan{
+		content: b.node,
+		fills:   b.fills,
+		rigid:   b.rigid,
+		title:   b.title,
+	}
+}
+
 // subviewsRendered is a generic combinator for lists of subviews.
 // It renders the given views into a plan
 // with fill and rigid requests and ancillary data merged.
 // It strips env's box values before any subview renders,
 // so they cannot land on a subview's box.
 func subviewsRendered(env environment, vs ...View) plan {
-	env.nextenv = nextenv{}
 	var ns []domi.Node
 	p := plan{rigid: Horizontal | Vertical}
 	for _, v := range vs {
 		for _, n := range v.nodes() {
-			b := n.render(env)
-			p.fills |= b.fills
-			p.rigid &= b.rigid
-			p.title = cmp.Or(p.title, b.title)
-			ns = append(ns, b.node)
+			q := renderSubviewNode(env, n)
+			p.fills |= q.fills
+			p.rigid &= q.rigid
+			p.title = cmp.Or(p.title, q.title)
+			ns = append(ns, q.content)
 		}
 	}
 	p.content = domi.Fragment(ns...)

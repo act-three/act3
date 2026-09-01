@@ -24,15 +24,8 @@ func wrapSubview(env environment, n node) plan {
 
 // wrapSubviewIn is wrapSubview for a wrapper of the given container kind.
 func wrapSubviewIn(env environment, kind containerKind, n node) plan {
-	env.nextenv = nextenv{}
 	env.container = kind
-	b := n.render(env)
-	return plan{
-		fills:   b.fills,
-		rigid:   b.rigid,
-		content: b.node,
-		title:   b.title,
-	}
+	return renderSubviewNode(env, n)
 }
 
 // wrapMod builds a pass-through wrapper box around n,
@@ -47,25 +40,16 @@ func wrapMod(env environment, n node) box {
 	return build(env, p)
 }
 
-// layerContents gives a multi-node layer a single aggregate box.
-// A caller can select a different arrangement by supplying an explicit stack.
-func layerContents(v View) View {
-	if len(v.nodes()) > 1 {
-		return ZStack(v)
-	}
-	return v
-}
-
 // wrapLayer layers a view over or under a base view.
 // It lowers to CSS absolute positioning.
 // The base negotiates its layout independently of the layer,
 // and the layer receives available space defined by the layout's box.
 type wrapLayer struct {
-	view   View
+	layer  node // the overlay or underlay layer
 	over   bool
 	at     Alignment // point in the base view where the layer view is placed
 	anchor Alignment // point in the layer view placed onto at
-	node   node
+	node   node      // the base layer
 }
 
 func (w wrapLayer) modify(n node) node { w.node = n; return w }
@@ -85,14 +69,14 @@ func (w wrapLayer) render(env environment) box {
 	lss.Set("position", "absolute")
 	EdgeSpace{}.setOn(&lss, "inset")
 	tag := "ui-underlay"
-	view := w.view
+	view := w.layer
 	if w.anchor != w.at {
 		// Placement puts the layer view's at-point onto the base's.
 		// Shift by the difference of the two points, in the layer's
 		// coordinates, so its anchor point lands there instead.
 		x := w.at.horizontal().point() - w.anchor.horizontal().point()
 		y := w.at.vertical().point() - w.anchor.vertical().point()
-		view = view.modify(modStyle("translate", strconv.Itoa(x)+"% "+strconv.Itoa(y)+"%"))
+		view = modStyle("translate", strconv.Itoa(x)+"% "+strconv.Itoa(y)+"%").modify(view)
 	}
 	if w.over {
 		tag = "ui-overlay"
@@ -100,7 +84,7 @@ func (w wrapLayer) render(env environment) box {
 		// The overlay box blankets the base; input falls through it
 		// to the base, and only the layered subviews take hits.
 		lss.Set("pointer-events", "none")
-		view = view.modify(modStyle("pointer-events", "auto"))
+		view = modStyle("pointer-events", "auto").modify(view)
 	} else {
 		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}
@@ -133,15 +117,16 @@ func (w wrapLayer) render(env environment) box {
 	return build(env, p)
 }
 
-// renderLayer renders a view inside its grid layer,
+// renderLayer renders a node inside its grid layer,
 // where, as in a ZStack, both axes are minor.
-// v's fill requests don't propagate outside the layer.
-func renderLayer(env environment, v View) plan {
+// Its fill and rigid requests don't propagate outside the layer.
+func renderLayer(env environment, n node) plan {
 	env.lc = axes[axisZ].lc
 	env.container = containerGrid
 	env.unbounded = 0
-	p := subviewsRendered(env, v)
+	p := renderSubviewNode(env, n)
 	p.fills = 0
+	p.rigid = 0
 	return p
 }
 

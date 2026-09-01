@@ -41,10 +41,10 @@ func Button[Action any](a Action, label View) ButtonView {
 	if _, ok := action.(string); !ok {
 		action = event.Click(a)
 	}
-	if len(label.nodes()) != 1 {
-		label = HStack(label)
-	}
-	return buttonView{base{buttonNode{label: label, action: action}}}
+	return buttonView{base{buttonNode{
+		label:  unary(HStack, label),
+		action: action,
+	}}}
 }
 
 type buttonView struct{ base }
@@ -58,7 +58,7 @@ func (v buttonView) Role(r ButtonRole) ButtonView {
 }
 
 type buttonNode struct {
-	label  View
+	label  node
 	action any // URL string or onclick domi.Attr
 }
 
@@ -71,7 +71,7 @@ func (n buttonNode) render(env environment) box {
 	if c != nil {
 		fg = Foreground(CSSColor("#fff"))
 	}
-	v := n.label.
+	v := base{n.label}.
 		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
 		Modify(fg).
 		Background(cmp.Or(c, surfaceColor)).

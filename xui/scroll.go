@@ -17,15 +17,15 @@ import (
 // The viewport expands to fill available space along both axes,
 // regardless of the specified scroll axis.
 func ScrollView(axis AxisSet, v View) View {
-	if len(v.nodes()) > 1 {
-		v = VStack(v)
-	}
-	return base{scrollNode{along: axis, contents: v}}
+	return base{scrollNode{
+		along:    axis,
+		contents: unary(VStack, v),
+	}}
 }
 
 type scrollNode struct {
 	along    AxisSet
-	contents View
+	contents node
 }
 
 func (s scrollNode) render(env environment) box {
@@ -60,11 +60,9 @@ func (s scrollNode) render(env environment) box {
 	inner.lc = layoutContext{}
 	inner.container = containerGrid
 	inner.unbounded = 0
-	p := subviewsRendered(inner,
-		s.contents.
-			modify(modFixedSize(s.along)),
-	)
+	p := renderSubviewNode(inner, modFixedSize(s.along).modify(s.contents))
 	p.fills = Horizontal | Vertical
+	p.rigid = 0 // Content rigidity does not escape its viewport.
 	p.ideal = rect{width: newSize(100), height: newSize(100)}
 	return build(env, p)
 }

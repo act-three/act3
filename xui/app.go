@@ -162,10 +162,8 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 // including those from earlier renders by the same instance.
 // A non-nil cssLink is included in the page to load the static stylesheet.
 func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
-	if len(root.nodes()) > 1 {
-		root = VStack(root)
-	}
-	p := subviewsRendered(environment{sheet: &in.sheet}, root)
+	env := environment{sheet: &in.sheet}
+	p := renderSubviewNode(env, unary(VStack, root))
 	var a domi.Attr
 	if in.nonce != "" {
 		a = attr.Nonce(in.nonce)
