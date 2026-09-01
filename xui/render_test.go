@@ -1166,6 +1166,31 @@ func TestFrameRigid(t *testing.T) {
 	}
 }
 
+// TestSubviewRigidIntersection pins rigidity's composition rule:
+// a container is rigid on an axis exactly when every subview is rigid
+// there, with an empty collection vacuously rigid.
+func TestSubviewRigidIntersection(t *testing.T) {
+	rigid := func() ui.View { return ui.Text("x").Frame(ui.Width(20)) }
+	for _, tt := range []struct {
+		name     string
+		subviews []ui.View
+		rigid    bool
+	}{
+		{"empty", nil, true},
+		{"all rigid", []ui.View{rigid(), rigid()}, true},
+		{"one flexible", []ui.View{rigid(), ui.Text("x")}, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			inner := ui.HStack(tt.subviews...).Class("inner")
+			html := render(t, ui.HStack(inner))
+			rule := classRule(t, html, `<ui-hstack class="inner (ui-\w+)"`)
+			if got := strings.Contains(rule, "flex-shrink:0"); got != tt.rigid {
+				t.Errorf("inner rigidity = %v, want %v; rule %q:\n%s", got, tt.rigid, rule, html)
+			}
+		})
+	}
+}
+
 // TestFrameOptionOverride pins the frame's option resolution: options apply
 // in order, a later option for the same setting replaces an earlier one, and
 // Auto restores the default.
