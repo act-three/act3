@@ -25,6 +25,35 @@
 		line-height: 1.4;
 	}
 
+	/* A root ScrollView delegates its scrolling to the document viewport. */
+	html:has(ui-root[scroll]) {
+		height: 100%;
+		overflow: hidden;
+	}
+
+	html:has(ui-root[scroll~="x"]) { overflow-x: auto; }
+
+	html:has(ui-root[scroll~="y"]) { overflow-y: auto; }
+
+	body:has(ui-root[scroll]) {
+		height: 100%;
+		margin: 0;
+		display: grid;
+	}
+
+	ui-root[scroll] {
+		position: static;
+		grid-template: none;
+		place-items: start;
+		min-width: 0;
+		min-height: 0;
+		isolation: isolate;
+	}
+
+	ui-root[scroll~="x"] { justify-self: start; }
+
+	ui-root[scroll~="y"] { align-self: start; }
+
 	@layer normalize {
 		ui-root,
 		ui-root :not(style, ui-html *),

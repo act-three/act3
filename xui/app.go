@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
@@ -162,16 +163,30 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 // including those from earlier renders by the same instance.
 // A non-nil cssLink is included in the page to load the static stylesheet.
 func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
-	env := environment{sheet: &in.sheet}
-	p := renderSubviewNode(env, unary(VStack, root))
+	env := environment{
+		sheet:  &in.sheet,
+		atRoot: true,
+	}
+	b := unary(VStack, root).render(env)
 	var a domi.Attr
 	if in.nonce != "" {
 		a = attr.Nonce(in.nonce)
 	}
 	style := domi.Tag("style", a)(domi.Text("@layer xui{" + in.sheet.CSS() + "}"))
+	var rootAttr domi.Attr
+	if b.pageScroll != 0 {
+		var axes []string
+		if b.pageScroll.hasAll(Horizontal) {
+			axes = append(axes, "x")
+		}
+		if b.pageScroll.hasAll(Vertical) {
+			axes = append(axes, "y")
+		}
+		rootAttr = domi.Name("scroll", strings.Join(axes, " "))
+	}
 	// Order matters, static stylesheet, then generated style, then content.
 	// Emit the style element even when empty to keep the tree stable.
-	return p.title, domi.Tag("ui-root")(in.cssLink, style, p.content)
+	return b.title, domi.Tag("ui-root", rootAttr)(in.cssLink, style, b.node)
 }
 
 // Render returns HTML representing root.

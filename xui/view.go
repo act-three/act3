@@ -296,6 +296,7 @@ type environment struct {
 // that must be cleared before rendering a subview.
 // They are "one-shot" values.
 type nextenv struct {
+	atRoot     bool // the box is the page's root view
 	tag        string
 	attrs      domi.Attr
 	style      canon.StyleSet
@@ -351,10 +352,11 @@ type plan struct {
 // It contains the HTML node,
 // plus ancillary data needed by its consumer.
 type box struct {
-	node  domi.Node
-	fills AxisSet
-	rigid AxisSet
-	title string
+	node       domi.Node
+	fills      AxisSet
+	rigid      AxisSet
+	title      string
+	pageScroll AxisSet
 }
 
 // renderSubviewNode renders n

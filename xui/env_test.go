@@ -63,3 +63,62 @@ func TestSubviewHelpersStrip(t *testing.T) {
 	subview(t, func(env environment, n node) { wrapSubview(env, n) })
 	subview(t, func(env environment, n node) { renderSubviewList(env, base{n}) })
 }
+
+// TestEnvironmentModifiersPreserveAtRoot pins ownership of root-specialized
+// lowering: modifiers describe the environment without deciding whether a
+// particular node can accommodate it at the root.
+func TestEnvironmentModifiersPreserveAtRoot(t *testing.T) {
+	cases := []struct {
+		name string
+		mod  modifier
+	}{
+		{"environment", modEnv(func(env environment) environment {
+			env.tag = "sentinel"
+			return env
+		})},
+		{"transform", modTransform(func(env environment) environment {
+			env.style.Set("overflow-x", "clip")
+			return env
+		})},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			var got environment
+			tt.mod.modify(envProbe{&got}).render(environment{atRoot: true})
+			if !got.atRoot {
+				t.Error("modifier consumed atRoot before the node could inspect it")
+			}
+		})
+	}
+}
+
+// TestCanScrollDocumentEnvironment pins ScrollView's own allowlist for its
+// hoisted root lowering. Persistent subtree context remains valid, while any
+// one-shot value intended for the removed viewport box rejects the lowering.
+func TestCanScrollDocumentEnvironment(t *testing.T) {
+	cases := []struct {
+		name string
+		env  environment
+		want bool
+	}{
+		{"root marker", environment{nextenv: nextenv{atRoot: true}}, true},
+		{"not root", environment{}, false},
+		{"persistent subtree context", environment{
+			disabled:  true,
+			lineLimit: 2,
+			nextenv:   nextenv{atRoot: true},
+		}, true},
+		{"tag", environment{nextenv: nextenv{atRoot: true, tag: "sentinel"}}, false},
+		{"paint", environment{nextenv: nextenv{
+			atRoot: true,
+			bg:     []term[color]{{value: cssColor("red")}},
+		}}, false},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := canScrollDocument(tt.env); got != tt.want {
+				t.Errorf("canScrollDocument = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}

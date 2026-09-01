@@ -486,7 +486,7 @@ func TestIdealSize(t *testing.T) {
 		},
 		{
 			"scroll viewport takes 100px; content unbounded on the scroll axis",
-			ui.ScrollView(ui.Vertical, ui.Muted).FixedSize(),
+			ui.ScrollView(ui.Vertical, ui.Muted).FixedSize().Padding(ui.Edges(0)),
 			[]string{"width:100px", "height:100px", "height:10px"},
 			[]string{"width:10px"},
 		},
@@ -495,19 +495,19 @@ func TestIdealSize(t *testing.T) {
 			// so its ideal is its size there, and it keeps filling
 			// the bounded cross axis.
 			"scroll axis is unbounded without FixedSize",
-			ui.ScrollView(ui.Vertical, ui.Muted),
+			ui.ScrollView(ui.Vertical, ui.Muted).Padding(ui.Edges(0)),
 			[]string{"height:10px;justify-self:stretch"},
 			[]string{"width:10px"},
 		},
 		{
 			"both-axes scroll makes both content axes unbounded",
-			ui.ScrollView(ui.Horizontal|ui.Vertical, ui.Muted),
+			ui.ScrollView(ui.Horizontal|ui.Vertical, ui.Muted).Padding(ui.Edges(0)),
 			[]string{"width:10px", "height:10px"},
 			nil,
 		},
 		{
 			"no-axis scroll makes neither content axis unbounded",
-			ui.ScrollView(ui.AxisSet(0), ui.Muted).FixedSize(),
+			ui.ScrollView(ui.AxisSet(0), ui.Muted).FixedSize().Padding(ui.Edges(0)),
 			[]string{"width:100px", "height:100px", "overflow-x:clip;overflow-y:clip"},
 			[]string{"10px"},
 		},
@@ -535,7 +535,7 @@ func TestIdealSize(t *testing.T) {
 			// The viewport itself stays greedy on both axes; only
 			// the image's own fill is dropped on the scroll axis.
 			"scaled image keeps its fill on the bounded cross axis",
-			ui.ScrollView(ui.Vertical, ui.Image("/x.png").ScaledToFill()),
+			ui.ScrollView(ui.Vertical, ui.Image("/x.png").ScaledToFill()).Padding(ui.Edges(0)),
 			[]string{"justify-self:stretch;min-height:0;min-width:0;object-fit:cover"},
 			[]string{"align-self:stretch;justify-self:stretch;min-height"},
 		},
@@ -1015,7 +1015,9 @@ func TestScrollView(t *testing.T) {
 		ui.AxisSet(0):               "overflow-x:clip;overflow-y:clip",
 	}
 	for axis, want := range cases {
-		html := render(t, ui.ScrollView(axis, ui.Text("content")))
+		// Padding makes the ScrollView a subview, so this test exercises
+		// the ordinary element viewport rather than page scrolling.
+		html := render(t, ui.ScrollView(axis, ui.Text("content")).Padding(ui.Edges(0)))
 		if !strings.Contains(html, want) {
 			t.Errorf("ScrollView(%v) missing %q\n\n%s", axis, want, html)
 		}
@@ -1030,19 +1032,86 @@ func TestScrollView(t *testing.T) {
 // remains directly inside the viewport.
 func TestScrollViewContentArity(t *testing.T) {
 	group := render(t, ui.ScrollView(ui.Vertical,
-		ui.Group(ui.Text("a"), ui.Text("b"))))
+		ui.Group(ui.Text("a"), ui.Text("b"))).Padding(ui.Edges(0)))
 	if !strings.Contains(group, "<ui-scroll ") || !strings.Contains(group, "<ui-vstack ") {
 		t.Errorf("a ScrollView Group should be wrapped in a VStack:\n%s", group)
 	}
 
-	single := render(t, ui.ScrollView(ui.Vertical, ui.Text("a")))
+	single := render(t, ui.ScrollView(ui.Vertical, ui.Text("a")).Padding(ui.Edges(0)))
 	if strings.Contains(single, "<ui-vstack ") {
 		t.Errorf("a single ScrollView node should not be wrapped:\n%s", single)
 	}
 
-	empty := render(t, ui.ScrollView(ui.Vertical, ui.Empty()))
+	empty := render(t, ui.ScrollView(ui.Vertical, ui.Empty()).Padding(ui.Edges(0)))
 	if !strings.Contains(empty, "<ui-vstack ") {
 		t.Errorf("an empty ScrollView should be wrapped in a VStack:\n%s", empty)
+	}
+}
+
+// TestScrollViewPageLowering pins the narrow root specialization: a bare root
+// ScrollView delegates scrolling to the document and splices out ui-scroll,
+// while an enclosing wrapper or rendering modifier keeps the ordinary element
+// viewport. Ancillary metadata remains transparent to the specialization.
+func TestScrollViewPageLowering(t *testing.T) {
+	cases := []struct {
+		axis ui.AxisSet
+		want string
+	}{
+		{ui.Horizontal, `scroll="x"`},
+		{ui.Vertical, `scroll="y"`},
+		{ui.Horizontal | ui.Vertical, `scroll="x y"`},
+	}
+	for _, tt := range cases {
+		html := render(t, ui.ScrollView(tt.axis, ui.Text("content")))
+		if !strings.Contains(html, `<ui-root `+tt.want+`>`) {
+			t.Errorf("ScrollView(%v) root missing %q:\n%s", tt.axis, tt.want, html)
+		}
+		if strings.Contains(html, "<ui-scroll ") {
+			t.Errorf("root ScrollView(%v) retained its element viewport:\n%s", tt.axis, html)
+		}
+	}
+
+	none := render(t, ui.ScrollView(ui.AxisSet(0), ui.Text("content")))
+	if !strings.HasPrefix(none, "<ui-root><style>") || strings.Contains(none, "<ui-scroll ") {
+		t.Errorf("a root ScrollView with no axes should lower as an ordinary page root:\n%s", none)
+	}
+
+	wrapped := render(t, ui.ScrollView(ui.Vertical, ui.Text("content")).Padding(ui.Edges(0)))
+	if !strings.HasPrefix(wrapped, "<ui-root><style>") || !strings.Contains(wrapped, "<ui-scroll ") {
+		t.Errorf("padding should prevent page lowering:\n%s", wrapped)
+	}
+
+	modified := []struct {
+		name string
+		view ui.View
+	}{
+		{"background", ui.ScrollView(ui.Vertical, ui.Text("content")).Background(ui.CSSColor("red"))},
+		{"class", ui.ScrollView(ui.Vertical, ui.Text("content")).Class("sentinel")},
+		{"attribute", ui.ScrollView(ui.Vertical, ui.Text("content")).Attr(domi.Name("data-sentinel", "true"))},
+		{"fixed size", ui.ScrollView(ui.Vertical, ui.Text("content")).FixedSize()},
+		{"clipping", ui.ScrollView(ui.Vertical, ui.Text("content")).BorderClipped()},
+	}
+	for _, tt := range modified {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, tt.view)
+			if !strings.HasPrefix(html, "<ui-root><style>") || !strings.Contains(html, "<ui-scroll ") {
+				t.Errorf("rendering modifier should prevent page lowering:\n%s", html)
+			}
+		})
+	}
+
+	background := render(t, modified[0].view)
+	if got := classRule(t, background, `<ui-scroll class="(ui-\w+)"`); !strings.Contains(got, "background-color:red") {
+		t.Errorf("background should remain on the element viewport, got %q", got)
+	}
+
+	titled := ui.ScrollView(ui.Vertical, ui.Text("content")).Title("title")
+	if title, _ := ui.Render(titled); title != "title" {
+		t.Errorf("root ScrollView title = %q, want title", title)
+	}
+	titledHTML := render(t, titled)
+	if !strings.Contains(titledHTML, `<ui-root scroll="y">`) || strings.Contains(titledHTML, "<ui-scroll ") {
+		t.Errorf("Title should preserve page lowering:\n%s", titledHTML)
 	}
 }
 
