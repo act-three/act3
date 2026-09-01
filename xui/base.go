@@ -125,7 +125,12 @@ func (v base) Underlay(a Alignment, u View) View {
 }
 
 func (v base) UnderlayAt(at, anchor Alignment, u View) View {
-	return v.modify(wrapLayer{view: u, over: false, at: at, anchor: anchor})
+	return v.modify(wrapLayer{
+		view:   layerContents(u),
+		over:   false,
+		at:     at,
+		anchor: anchor,
+	})
 }
 
 func (v base) Overlay(a Alignment, o View) View {
@@ -133,7 +138,12 @@ func (v base) Overlay(a Alignment, o View) View {
 }
 
 func (v base) OverlayAt(at, anchor Alignment, o View) View {
-	return v.modify(wrapLayer{view: o, over: true, at: at, anchor: anchor})
+	return v.modify(wrapLayer{
+		view:   layerContents(o),
+		over:   true,
+		at:     at,
+		anchor: anchor,
+	})
 }
 
 func (v base) Padding(s ...EdgeSpace) View {

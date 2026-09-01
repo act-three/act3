@@ -38,11 +38,16 @@ package ui
 // precisely, so the HTML structure should change only when the
 // authored view structure changes.
 //
-// A subtler example is button labels:
+// Lowering structure must not depend on argument values that
+// leave a view's arity unchanged. But a change in a subview's
+// arity may change the containment used to compose the
+// subview's nodes.
 //
-//     Button(msg, Group(Text("x"), Text("y")))
+// Consider button labels:
 //
-// Suppose this lowers to the following HTML:
+//     Button(msg, Group(Text("x"), If(show, Text("y"))))
+//
+// Suppose this lowers to the following HTML when show is true:
 //
 //     <button ...>
 //         <ui-hstack ...>
@@ -51,16 +56,26 @@ package ui
 //         </ui-hstack>
 //     </button>
 //
-// Changing the number of views in the button label should not
-// change the level of the HTML tree where the label is emitted.
-// It might be tempting to omit the ui-hstack element if the
-// label contains only a single view node, since in that case,
-// the HStack has no effect on the layout. This is also
-// prohibited. It would be surprising for the entire button
-// label to be replaced as a result of merely deleting "y".
+// Changing the number of views in the button label may change
+// the level of the HTML tree where the label is emitted. When
+// show is false, the lowering may omit the ui-hstack element
+// and include the subview directly:
 //
-// Note that this rule is not formalized. It requires judgement
-// to apply correctly. The guiding principle is to avoid
+//     <button ...>
+//         <ui-text ...>x</ui-text>
+//     </button>
+//
+// Consequently, a transition between one and multiple label
+// views may replace the surviving label subtree, even if keyed.
+//
+// App authors should wrap a variable-arity view in an explicit
+// container when stable containment is required. The following
+// view reliably remains at the same containment level:
+//
+//     Button(msg, HStack(Text("x"), If(show, Text("y"))))
+//
+// Note that the stability rule is not formalized. It requires
+// judgement to apply correctly. The guiding principle is to avoid
 // surprising the app author with unexpected structural changes.
 //
 // Z-Index Rule

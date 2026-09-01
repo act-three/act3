@@ -248,6 +248,28 @@ func TestButtonAction(t *testing.T) {
 	}
 }
 
+// TestButtonLabelArity pins the button label's arity rule:
+// empty and multi-node labels are arranged in an HStack,
+// while a single node remains direct.
+func TestButtonLabelArity(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		label ui.View
+		stack bool
+	}{
+		{"empty", ui.Empty(), true},
+		{"single", ui.Text("a"), false},
+		{"multiple", ui.Group(ui.Text("a"), ui.Text("b")), true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, ui.Button(Msg{}, tt.label))
+			if got := strings.Contains(html, "<ui-hstack "); got != tt.stack {
+				t.Errorf("HStack present = %v, want %v:\n%s", got, tt.stack, html)
+			}
+		})
+	}
+}
+
 // TestTagInnermostWins pins Tag's contract: the innermost tag names the
 // element, so a view's intrinsic tag beats a Tag modifier, and the Tag
 // nearest the view beats a repetition.
@@ -1003,6 +1025,27 @@ func TestScrollView(t *testing.T) {
 	}
 }
 
+// TestScrollViewWrapsGroup pins the scroll viewport's arity rule:
+// a multi-node view is arranged in a VStack, while a single node
+// remains directly inside the viewport.
+func TestScrollViewWrapsGroup(t *testing.T) {
+	group := render(t, ui.ScrollView(ui.Vertical,
+		ui.Group(ui.Text("a"), ui.Text("b"))))
+	if !strings.Contains(group, "<ui-scroll ") || !strings.Contains(group, "<ui-vstack ") {
+		t.Errorf("a ScrollView Group should be wrapped in a VStack:\n%s", group)
+	}
+
+	single := render(t, ui.ScrollView(ui.Vertical, ui.Text("a")))
+	if strings.Contains(single, "<ui-vstack ") {
+		t.Errorf("a single ScrollView node should not be wrapped:\n%s", single)
+	}
+
+	empty := render(t, ui.ScrollView(ui.Vertical, ui.Empty()))
+	if strings.Contains(empty, "<ui-vstack ") {
+		t.Errorf("an empty ScrollView should not be wrapped:\n%s", empty)
+	}
+}
+
 func TestSticky(t *testing.T) {
 	html := render(t, ui.Text("h").Sticky())
 	rule := classRule(t, html, `<ui-sticky class="([^" ]+)`)
@@ -1442,6 +1485,57 @@ func TestOverlayAt(t *testing.T) {
 	}
 }
 
+// TestLayerArity pins the layer arity rule: multi-node overlay and
+// underlay views are composed into a ZStack, while empty and unary
+// views remain direct.
+func TestLayerArity(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		layer func(ui.View) ui.View
+	}{
+		{"overlay", func(v ui.View) ui.View { return ui.Text("base").Overlay(ui.Center, v) }},
+		{"underlay", func(v ui.View) ui.View { return ui.Text("base").Underlay(ui.Center, v) }},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, arity := range []struct {
+				name  string
+				view  ui.View
+				stack bool
+			}{
+				{"empty", ui.Empty(), false},
+				{"single", ui.Text("a"), false},
+				{"multiple", ui.Group(ui.Text("a"), ui.Text("b")), true},
+			} {
+				t.Run(arity.name, func(t *testing.T) {
+					html := render(t, tt.layer(arity.view))
+					if got := strings.Contains(html, "<ui-zstack "); got != arity.stack {
+						t.Errorf("ZStack present = %v, want %v:\n%s", got, arity.stack, html)
+					}
+				})
+			}
+		})
+	}
+}
+
+// TestOverlayAtMovesGroupAsOne pins that two-point placement shifts
+// the aggregate ZStack rather than each member of a multi-node layer.
+func TestOverlayAtMovesGroupAsOne(t *testing.T) {
+	html := render(t, ui.Text("base").OverlayAt(
+		ui.TopTrailing,
+		ui.Center,
+		ui.Group(ui.Text("a"), ui.Text("b")),
+	))
+	if got := classRule(t, html, `<ui-zstack class="(ui-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
+		t.Errorf("overlay ZStack should shift its anchor onto at, got %q:\n%s", got, html)
+	}
+	for _, text := range []string{"a", "b"} {
+		pattern := `<ui-text class="(ui-\w+)">` + text
+		if got := classRule(t, html, pattern); strings.Contains(got, "translate:") {
+			t.Errorf("overlay member %q should not shift independently, got %q:\n%s", text, got, html)
+		}
+	}
+}
+
 // TestOverlayAtBaselinePanics pins the fixed-point contract: when the
 // two points differ, FirstBaseline does not name a point to shift from,
 // and rendering panics.
@@ -1465,6 +1559,10 @@ func TestRenderRootWrapsGroup(t *testing.T) {
 	single := render(t, ui.Text("a"))
 	if strings.Contains(single, "ui-vstack") {
 		t.Errorf("a single root view should not be wrapped:\n%s", single)
+	}
+	empty := render(t, ui.Empty())
+	if strings.Contains(empty, "ui-vstack") {
+		t.Errorf("an empty root view should not be wrapped:\n%s", empty)
 	}
 }
 

@@ -17,6 +17,9 @@ import (
 // The viewport expands to fill available space along both axes,
 // regardless of the specified scroll axis.
 func ScrollView(axis AxisSet, v View) View {
+	if len(v.nodes()) > 1 {
+		v = VStack(v)
+	}
 	return base{scrollNode{along: axis, contents: v}}
 }
 
