@@ -92,7 +92,7 @@ func (s stackNode) render(env environment) box {
 			// within the stack's own stacking context.
 			modify(modStyle("z-index", "0"))
 	}
-	p := subviewsRendered(inner, subviews)
+	p := renderSubviewList(inner, subviews)
 	env.tag = cmp.Or(env.tag, axes[s.dir].tag)
 	gap := *cmp.Or(env.gap, new(defaultGap))
 	s.addStackStylesTo(&env.style, gap, env.alignment)

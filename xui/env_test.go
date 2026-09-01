@@ -61,5 +61,5 @@ func TestSubviewHelpersStrip(t *testing.T) {
 		}
 	}
 	subview(t, func(env environment, n node) { wrapSubview(env, n) })
-	subview(t, func(env environment, n node) { subviewsRendered(env, base{n}) })
+	subview(t, func(env environment, n node) { renderSubviewList(env, base{n}) })
 }
