@@ -164,8 +164,8 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 // A non-nil cssLink is included in the page to load the static stylesheet.
 func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 	env := environment{
-		sheet:  &in.sheet,
-		atRoot: true,
+		sheet: &in.sheet,
+		root:  rootenv{atRoot: true},
 	}
 	b := unary(VStack, root).render(env)
 	var a domi.Attr

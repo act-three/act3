@@ -589,7 +589,7 @@ func TestBorderClippedOverLayers(t *testing.T) {
 		t.Errorf("clip outside overlay should clip the composite, got %q:\n%s", got, outside)
 	}
 
-	inside := render(t, ui.Text("x").BorderClipped().Overlay(ui.Center, ui.Text("o")))
+	inside := render(t, ui.Text("x").BorderClipped().Overlay(ui.Center, ui.Text("o")).Padding(ui.Edges(0)))
 	if got := classRule(t, inside, `<ui-layer class="(ui-\w+)"`); strings.Contains(got, "clip") {
 		t.Errorf("clip inside overlay should leave the composite unclipped, got %q:\n%s", got, inside)
 	}

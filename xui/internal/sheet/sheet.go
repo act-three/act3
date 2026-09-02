@@ -45,6 +45,28 @@ func (s *StyleSet) Set(property, value string) {
 	s.set(scope{}, property, value)
 }
 
+// Merge assigns every declaration in other to s.
+// A declaration in other replaces a declaration in s in the same scope
+// for the same property.
+func (s *StyleSet) Merge(other StyleSet) {
+	if len(other.m) == 0 {
+		return
+	}
+	m := maps.Clone(s.m)
+	if m == nil {
+		m = make(map[scope]map[string]string, len(other.m))
+	}
+	for sc, otherDecls := range other.m {
+		decls := maps.Clone(m[sc])
+		if decls == nil {
+			decls = make(map[string]string, len(otherDecls))
+		}
+		maps.Copy(decls, otherDecls)
+		m[sc] = decls
+	}
+	s.m = m
+}
+
 // SetPseudo assigns value to property
 // under the given pseudo-class or pseudo-element,
 // such as ":hover" or "::after".

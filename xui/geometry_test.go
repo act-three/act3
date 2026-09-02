@@ -344,6 +344,37 @@ func TestGeometryOverlayHitTest(t *testing.T) {
 	})
 }
 
+// TestGeometryRootOverlayUsesViewport pins the fixed root geometry across
+// document scrolling. Both overlay grids stay on the browser viewport and the
+// later overlay paints above the earlier one where their contents overlap.
+func TestGeometryRootOverlayUsesViewport(t *testing.T) {
+	v := ui.ScrollView(ui.Vertical,
+		ui.CSSColor("#567").Frame(ui.Width(600), ui.Height(1000))).
+		Overlay(ui.Center, ui.Badge("first").Class("first")).
+		Overlay(ui.Center, ui.Badge("second").Class("second"))
+	stage(t, v, func(s *uitest.Session) {
+		for i := range 2 {
+			r := s.Rect("ui-overlay", i)
+			within(t, "overlay left", r.X, 0, 0.5)
+			within(t, "overlay top", r.Y, 0, 0.5)
+			within(t, "overlay width", r.W, 600, 1)
+			within(t, "overlay height", r.H, 400, 1)
+		}
+		s.Eval(`window.scrollTo(0, 300)`, nil)
+		within(t, "scrolled first overlay top", s.Rect("ui-overlay", 0).Y, 0, 0.5)
+		within(t, "scrolled second overlay top", s.Rect("ui-overlay", 1).Y, 0, 0.5)
+
+		var secondOnTop bool
+		s.Eval(`(() => {
+			const r = document.querySelector(".second").getBoundingClientRect();
+			return document.elementFromPoint(r.x + r.width/2, r.y + r.height/2).closest(".second") !== null;
+		})()`, &secondOnTop)
+		if !secondOnTop {
+			t.Error("later root overlay does not paint above the earlier one")
+		}
+	})
+}
+
 func TestGeometryFillTerminatesAtDefiniteAncestor(t *testing.T) {
 	v := ui.VStack(ui.HStack(ui.Text("a"), ui.Spacer())).Frame(ui.Width(300))
 	stage(t, v, func(s *uitest.Session) {
@@ -383,19 +414,30 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 	})
 }
 
-// TestGeometryOverlayAtAnchors pins the two-point geometry: the
-// overlay's anchor point coincides with the base's at point, here a
-// badge centered on the base's top-trailing corner.
+// TestGeometryOverlayAtAnchors pins the two-point geometry. At the root, the
+// fixed overlay uses the viewport's at point; inside a wrapper, the ordinary
+// overlay uses the base composite's at point.
 func TestGeometryOverlayAtAnchors(t *testing.T) {
 	v := ui.Text("base").
 		Frame(ui.Width(300), ui.Height(100)).
 		OverlayAt(ui.TopTrailing, ui.Center, ui.Badge("3").Class("probe"))
-	stage(t, v, func(s *uitest.Session) {
-		layer := s.Rect("ui-layer", 0)
-		badge := s.Rect(".probe", 0)
-		within(t, "badge center x", badge.X+badge.W/2, layer.Right(), 1)
-		within(t, "badge center y", badge.Y+badge.H/2, layer.Y, 1)
-	})
+	for _, tt := range []struct {
+		name  string
+		view  ui.View
+		layer string
+	}{
+		{"root", v, "ui-overlay"},
+		{"wrapped", v.Padding(ui.Edges(0)), "ui-layer"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			stage(t, tt.view, func(s *uitest.Session) {
+				layer := s.Rect(tt.layer, 0)
+				badge := s.Rect(".probe", 0)
+				within(t, "badge center x", badge.X+badge.W/2, layer.Right(), 1)
+				within(t, "badge center y", badge.Y+badge.H/2, layer.Y, 1)
+			})
+		})
+	}
 }
 
 // TestGeometryLayerCoincidesUnderStretch pins the layer composite's

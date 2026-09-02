@@ -59,6 +59,32 @@ func TestSetReplaces(t *testing.T) {
 	}
 }
 
+func TestStyleSetMerge(t *testing.T) {
+	var base, other StyleSet
+	base.Set("color", "red")
+	base.Set("width", "10px")
+	base.SetPseudo(":hover", "color", "blue")
+	other.Set("color", "green")
+	other.Set("height", "20px")
+	other.SetPseudo(":hover", "color", "lime")
+
+	merged := base
+	merged.Merge(other)
+	var sh Sheet
+	sh.ClassFor(merged)
+	css := sh.CSS()
+	for _, want := range []string{"color:green", "height:20px", "width:10px", "&:hover{color:lime}"} {
+		if !strings.Contains(css, want) {
+			t.Errorf("merged rule missing %q:\n%s", want, css)
+		}
+	}
+
+	// Merge follows the same copy-on-write contract as Set.
+	if baseClass, mergedClass := sh.ClassFor(base), sh.ClassFor(merged); baseClass == mergedClass {
+		t.Error("Merge affected the copied source set")
+	}
+}
+
 func TestSetPseudoNests(t *testing.T) {
 	var sh Sheet
 	var s StyleSet
