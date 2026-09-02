@@ -573,8 +573,8 @@ func TestBorderClippedStrokeOrder(t *testing.T) {
 // the viewport already confines its content, so its own overflow
 // wins, and nothing boxes out.
 func TestBorderClippedOnScroll(t *testing.T) {
-	plain := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")))
-	clipped := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")).BorderClipped())
+	plain := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")).Padding(ui.Edges(0)))
+	clipped := render(t, ui.ScrollView(ui.Vertical, ui.Text("x")).BorderClipped().Padding(ui.Edges(0)))
 	if clipped != plain {
 		t.Errorf("clip changed the scroll lowering:\nwant %s\ngot  %s", plain, clipped)
 	}

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"cmp"
+	"reflect"
 )
 
 // A ScrollView displays v inside a viewport
@@ -16,6 +17,13 @@ import (
 //
 // The viewport expands to fill available space along both axes,
 // regardless of the specified scroll axis.
+//
+// When a ScrollView is the root view of the page,
+// it uses document viewport scrolling
+// instead of HTML element scrolling.
+// This lets the browser
+// navigate to page fragment anchors
+// and save scroll position during page reload and navigation.
 func ScrollView(axis AxisSet, v View) View {
 	return base{scrollNode{
 		along:    axis,
@@ -34,6 +42,17 @@ func (s scrollNode) render(env environment) box {
 	// around the viewport.
 	if len(env.stroke) > 0 {
 		return wrapMod(env, s)
+	}
+	inner := env
+	inner.atRoot = false
+	inner.lc = layoutContext{}
+	inner.container = containerGrid
+	inner.unbounded = 0
+	contents := modFixedSize(s.along).modify(s.contents)
+	if canScrollDocument(env) {
+		b := contents.render(inner)
+		b.pageScroll = s.along
+		return b
 	}
 	// Along a scroll axis, the content's available space is unbounded.
 	// On a non-scrolling axis the available space is the viewport's own size.
@@ -56,13 +75,26 @@ func (s scrollNode) render(env environment) box {
 	TopLeading.setItemsOn(&env.style)
 	env.style.Set("contain", "size")      // Viewport size doesn't depend on its contents.
 	env.style.Set("isolation", "isolate") // Isolate the wrapSticky z-index.
-	inner := env
-	inner.lc = layoutContext{}
-	inner.container = containerGrid
-	inner.unbounded = 0
-	p := renderSubviewNode(inner, modFixedSize(s.along).modify(s.contents))
+	p := renderSubviewNode(inner, contents)
 	p.fills = Horizontal | Vertical
 	p.rigid = 0 // Content rigidity does not escape its viewport.
 	p.ideal = rect{width: newSize(100), height: newSize(100)}
 	return build(env, p)
+}
+
+// canScrollDocument reports whether removing the ScrollView's viewport box
+// preserves every pending environment value. Persistent environment state is
+// subtree context and remains valid when applied to the contents. Of the
+// one-shot values destined for the viewport box, only atRoot participates in
+// the document lowering.
+//
+// Checking the whole remaining value makes future nextenv fields reject this
+// lowering by default until ScrollView explicitly accommodates them.
+func canScrollDocument(env environment) bool {
+	if !env.atRoot {
+		return false
+	}
+	pending := env.nextenv
+	pending.atRoot = false
+	return reflect.ValueOf(pending).IsZero()
 }

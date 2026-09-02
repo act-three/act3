@@ -73,6 +73,112 @@ func TestGeometryRootIsViewport(t *testing.T) {
 	})
 }
 
+// TestGeometryRootScrollUsesDocument pins the page ScrollView lowering:
+// ui-root hugs its content on each scrolling axis, stretches across each
+// non-scrolling axis, and delegates overflow to the document viewport.
+func TestGeometryRootScrollUsesDocument(t *testing.T) {
+	tests := []struct {
+		name      string
+		axis      ui.AxisSet
+		content   ui.View
+		wantRootW float64
+		wantRootH float64
+		wantX     string
+		wantY     string
+	}{
+		{
+			name:      "vertical",
+			axis:      ui.Vertical,
+			content:   ui.CSSColor("#567").Frame(ui.Width(40), ui.Height(1000)),
+			wantRootW: 600,
+			wantRootH: 1000,
+			wantX:     "hidden",
+			wantY:     "auto",
+		},
+		{
+			name:      "horizontal",
+			axis:      ui.Horizontal,
+			content:   ui.CSSColor("#567").Frame(ui.Width(1000), ui.Height(40)),
+			wantRootW: 1000,
+			wantRootH: 400,
+			wantX:     "auto",
+			wantY:     "hidden",
+		},
+		{
+			name:      "both",
+			axis:      ui.Horizontal | ui.Vertical,
+			content:   ui.CSSColor("#567").Frame(ui.Width(1000), ui.Height(1000)),
+			wantRootW: 1000,
+			wantRootH: 1000,
+			wantX:     "auto",
+			wantY:     "auto",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stage(t, ui.ScrollView(tt.axis, tt.content), func(s *uitest.Session) {
+				root := s.Rect("ui-root", 0)
+				within(t, "root width", root.W, tt.wantRootW, 1)
+				within(t, "root height", root.H, tt.wantRootH, 1)
+
+				var overflow [2]string
+				s.Eval(`(() => { const s = getComputedStyle(document.documentElement); return [s.overflowX, s.overflowY] })()`, &overflow)
+				if overflow != [2]string{tt.wantX, tt.wantY} {
+					t.Errorf("html overflow = %q, want [%q %q]", overflow, tt.wantX, tt.wantY)
+				}
+
+				var hasScroll bool
+				s.Eval(`document.querySelector("ui-scroll") !== null`, &hasScroll)
+				if hasScroll {
+					t.Error("root ScrollView retained an element viewport")
+				}
+
+				s.Eval(`window.scrollTo(300, 300)`, nil)
+				var offset [2]float64
+				s.Eval(`[window.scrollX, window.scrollY]`, &offset)
+				if tt.axis&ui.Horizontal != 0 && offset[0] < 299 {
+					t.Errorf("window.scrollX = %g, want document horizontal scrolling", offset[0])
+				}
+				if tt.axis&ui.Horizontal == 0 && offset[0] != 0 {
+					t.Errorf("window.scrollX = %g on a non-scrolling axis, want 0", offset[0])
+				}
+				if tt.axis&ui.Vertical != 0 && offset[1] < 299 {
+					t.Errorf("window.scrollY = %g, want document vertical scrolling", offset[1])
+				}
+				if tt.axis&ui.Vertical == 0 && offset[1] != 0 {
+					t.Errorf("window.scrollY = %g on a non-scrolling axis, want 0", offset[1])
+				}
+			})
+		})
+	}
+}
+
+func TestGeometryRootScrollShortContentHugsItsScrollAxis(t *testing.T) {
+	stage(t, ui.ScrollView(ui.Vertical, ui.Text("short")), func(s *uitest.Session) {
+		root := s.Rect("ui-root", 0)
+		within(t, "root width", root.W, 600, 1)
+		if root.H >= 100 {
+			t.Errorf("root height = %g, want short content height", root.H)
+		}
+		var heights [2]float64
+		s.Eval(`[document.scrollingElement.clientHeight, document.scrollingElement.scrollHeight]`, &heights)
+		if heights[1] != heights[0] {
+			t.Errorf("short page heights = %v, want no document overflow", heights)
+		}
+	})
+}
+
+func TestGeometryRootScrollStickyUsesDocumentViewport(t *testing.T) {
+	v := ui.ScrollView(ui.Vertical, ui.VStack(
+		ui.Text("heading").Sticky().Class("heading"),
+		ui.CSSColor("#567").Frame(ui.Height(1000)),
+	).Gap(0).Alignment(ui.Leading))
+	stage(t, v, func(s *uitest.Session) {
+		s.Eval(`window.scrollTo(0, 300)`, nil)
+		within(t, "sticky heading top", s.Rect(".heading", 0).Y, 0, 1)
+	})
+}
+
 // TestGeometrySpacerMinimumLength pins the spacer's floor: under
 // pressure a spacer holds a small minimum along its expansion axis
 // instead of letting its neighbors fuse, and with unbounded available
@@ -328,11 +434,11 @@ func TestGeometryScrollContributesItsIdeal(t *testing.T) {
 	}
 	check := func(name string, wantH func(s *uitest.Session) float64) func(*uitest.Session) {
 		return func(s *uitest.Session) {
-			scroll, want := s.Rect("ui-scroll", 1), wantH(s)
+			scroll, want := s.Rect("ui-scroll", 0), wantH(s)
 			within(t, name+": viewport height", scroll.H, want, 1)
 			within(t, name+": row height", s.Rect("ui-hstack", 0).H, want, 1)
 			var contentH float64
-			s.Eval(`document.querySelectorAll("ui-scroll")[1].scrollHeight`, &contentH)
+			s.Eval(`document.querySelectorAll("ui-scroll")[0].scrollHeight`, &contentH)
 			if contentH <= scroll.H {
 				t.Errorf("%s: content height = %g, want overflow to scroll against", name, contentH)
 			}
