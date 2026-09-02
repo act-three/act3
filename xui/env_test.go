@@ -40,7 +40,7 @@ func (n envProbe) render(env environment) box {
 // the first box under its modifier.
 func TestSubviewHelpersStrip(t *testing.T) {
 	pending := func() environment {
-		return environment{
+		env := environment{
 			shape:      []term[Shape]{{value: Capsule}},
 			attrs:      attr.Class("x"),
 			tag:        "b",
@@ -48,6 +48,9 @@ func TestSubviewHelpersStrip(t *testing.T) {
 			fontWeight: []term[string]{{value: "700"}},
 			opacity:    []term[float64]{{value: 0.5}},
 		}
+		env.root.atRoot = true
+		env.root.style.Set("isolation", "isolate")
+		return env
 	}
 	subview := func(t *testing.T, render func(environment, node)) {
 		t.Helper()
@@ -55,6 +58,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 		render(pending(), envProbe{&got})
 		want := pending()
 		want.nextenv = nextenv{}
+		want.root = rootenv{}
 		want.container = got.container // not a box value
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("subview env = %+v, want %+v", got, want)
@@ -84,8 +88,8 @@ func TestEnvironmentModifiersPreserveAtRoot(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			var got environment
-			tt.mod.modify(envProbe{&got}).render(environment{atRoot: true})
-			if !got.atRoot {
+			tt.mod.modify(envProbe{&got}).render(environment{root: rootenv{atRoot: true}})
+			if !got.root.atRoot {
 				t.Error("modifier consumed atRoot before the node could inspect it")
 			}
 		})
@@ -96,28 +100,63 @@ func TestEnvironmentModifiersPreserveAtRoot(t *testing.T) {
 // hoisted root lowering. Persistent subtree context remains valid, while any
 // one-shot value intended for the removed viewport box rejects the lowering.
 func TestCanScrollDocumentEnvironment(t *testing.T) {
+	rootWithStyle := rootenv{atRoot: true}
+	rootWithStyle.style.Set("isolation", "isolate")
 	cases := []struct {
 		name string
 		env  environment
 		want bool
 	}{
-		{"root marker", environment{nextenv: nextenv{atRoot: true}}, true},
+		{"root marker", environment{root: rootenv{atRoot: true}}, true},
 		{"not root", environment{}, false},
 		{"persistent subtree context", environment{
 			disabled:  true,
 			lineLimit: 2,
-			nextenv:   nextenv{atRoot: true},
+			root:      rootenv{atRoot: true},
 		}, true},
-		{"tag", environment{nextenv: nextenv{atRoot: true, tag: "sentinel"}}, false},
+		{"root base style", environment{root: rootWithStyle}, true},
+		{"tag", environment{root: rootenv{atRoot: true}, nextenv: nextenv{tag: "sentinel"}}, false},
 		{"paint", environment{nextenv: nextenv{
-			atRoot: true,
-			bg:     []term[color]{{value: cssColor("red")}},
-		}}, false},
+			bg: []term[color]{{value: cssColor("red")}},
+		}, root: rootenv{atRoot: true}}, false},
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := canScrollDocument(tt.env); got != tt.want {
 				t.Errorf("canScrollDocument = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestCanOverlayRootEnvironment pins Overlay's own allowlist for its hoisted
+// root lowering. Root context passes through the fixed layer lowering, while
+// values belonging to the ordinary composite box reject it.
+func TestCanOverlayRootEnvironment(t *testing.T) {
+	rootWithStyle := rootenv{atRoot: true}
+	rootWithStyle.style.Set("isolation", "isolate")
+	cases := []struct {
+		name string
+		env  environment
+		want bool
+	}{
+		{"root marker", environment{root: rootenv{atRoot: true}}, true},
+		{"root base style", environment{root: rootWithStyle}, true},
+		{"not root", environment{}, false},
+		{"persistent subtree context", environment{
+			disabled:  true,
+			lineLimit: 2,
+			root:      rootenv{atRoot: true},
+		}, true},
+		{"tag", environment{root: rootenv{atRoot: true}, nextenv: nextenv{tag: "sentinel"}}, false},
+		{"paint", environment{nextenv: nextenv{
+			bg: []term[color]{{value: cssColor("red")}},
+		}, root: rootenv{atRoot: true}}, false},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := canOverlayRoot(tt.env); got != tt.want {
+				t.Errorf("canOverlayRoot = %t, want %t", got, tt.want)
 			}
 		})
 	}

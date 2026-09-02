@@ -105,6 +105,10 @@ type View interface {
 	// The given Alignment sets the position of o relative to the receiver.
 	//
 	// Overlay(a, o) is equivalent to OverlayAt(a, a, o).
+	//
+	// When Overlay is the root view of the page, the receiver is also
+	// at the page root. In particular, if the receiver is a ScrollView,
+	// it uses document scrolling. See ScrollView.
 	Overlay(a Alignment, o View) View
 
 	// OverlayAt displays o as a layer in front of the receiver.
@@ -125,6 +129,10 @@ type View interface {
 	//
 	// When at and anchor are different, neither point can include
 	// FirstBaseline. If either one does, the view panics.
+	//
+	// When OverlayAt is the root view of the page, the receiver is also
+	// at the page root. In particular, if the receiver is a ScrollView,
+	// it uses document scrolling. See ScrollView.
 	OverlayAt(at, anchor Alignment, o View) View
 
 	// Underlay displays u as a layer behind the receiver. Opaque
@@ -289,14 +297,22 @@ type environment struct {
 	disabled  bool
 	lineLimit int // max lines per text, or 0 for no limit
 	sheet     *sheet.Sheet
+	root      rootenv
 	nextenv   // must be zeroed before rendering a subview
+}
+
+// rootenv is context for root-specialized lowering. Its base styles are not
+// attached to an authored view: they pass through specializations that remove
+// or hoist a box and land on whichever concrete box becomes the page base.
+type rootenv struct {
+	atRoot bool
+	style  canon.StyleSet
 }
 
 // nextenv contains environment values
 // that must be cleared before rendering a subview.
 // They are "one-shot" values.
 type nextenv struct {
-	atRoot     bool // the box is the page's root view
 	tag        string
 	attrs      domi.Attr
 	style      canon.StyleSet
@@ -363,10 +379,11 @@ type box struct {
 // and returns a plan containing n's box.
 // The plan forwards the box's fill and rigid requests
 // and its ancillary data.
-// It strips env's box values before n renders,
-// so they cannot land on the subview's box.
+// It strips env's pending box values and root context before n renders,
+// so they cannot land on or specialize the subview's box.
 func renderSubviewNode(env environment, n node) plan {
 	env.nextenv = nextenv{}
+	env.root = rootenv{}
 	b := n.render(env)
 	return plan{
 		content: b.node,
@@ -405,7 +422,8 @@ func build(env environment, p plan) box {
 	addIdealStylesTo(&ss, p.ideal, env.unbounded, fills)
 	fills.addFillStylesTo(&ss, env)
 	rigid.addRigidStylesTo(&ss, env)
-	styles := ss.Decls()
+	styles := env.root.style.Decls()
+	styles.Merge(ss.Decls())
 	addPaintStylesTo(&styles, env.nextenv)
 	// Keep the generated class after the named classes in rendered output.
 	a = domi.Group(a, attr.Class(env.sheet.ClassFor(styles)))

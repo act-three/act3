@@ -44,7 +44,7 @@ func (s scrollNode) render(env environment) box {
 		return wrapMod(env, s)
 	}
 	inner := env
-	inner.atRoot = false
+	inner.root.atRoot = false
 	inner.lc = layoutContext{}
 	inner.container = containerGrid
 	inner.unbounded = 0
@@ -83,18 +83,15 @@ func (s scrollNode) render(env environment) box {
 }
 
 // canScrollDocument reports whether removing the ScrollView's viewport box
-// preserves every pending environment value. Persistent environment state is
-// subtree context and remains valid when applied to the contents. Of the
-// one-shot values destined for the viewport box, only atRoot participates in
-// the document lowering.
+// preserves every pending next-box value. Persistent subtree context and root
+// environment requirements remain valid when applied to the contents; every
+// ordinary one-shot value remains destined for the viewport box.
 //
 // Checking the whole remaining value makes future nextenv fields reject this
 // lowering by default until ScrollView explicitly accommodates them.
 func canScrollDocument(env environment) bool {
-	if !env.atRoot {
+	if !env.root.atRoot {
 		return false
 	}
-	pending := env.nextenv
-	pending.atRoot = false
-	return reflect.ValueOf(pending).IsZero()
+	return reflect.ValueOf(env.nextenv).IsZero()
 }

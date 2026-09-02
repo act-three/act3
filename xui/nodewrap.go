@@ -2,6 +2,7 @@ package ui
 
 import (
 	"cmp"
+	"reflect"
 	"strconv"
 
 	"ily.dev/domi"
@@ -52,21 +53,61 @@ type wrapLayer struct {
 	node   node      // the base layer
 }
 
+const (
+	zUnderlay = -1
+	// base view has z-index auto
+	zOverlay     = 2
+	zLayerStroke = 3
+)
+
 func (w wrapLayer) modify(n node) node { w.node = n; return w }
 
 func (w wrapLayer) render(env environment) box {
-	const (
-		zUnderlay = -1
-		// base view has z-index auto
-		zOverlay = 2
-		zStroke  = 3
-	)
+	if w.over && canOverlayRoot(env) {
+		baseEnv := env
+		// Using modStyle here would eg make canScrollDocument return false.
+		baseEnv.root.style.Set("isolation", "isolate")
+		b := w.node.render(baseEnv)
+		layer, title := w.renderLayerElement(env, "fixed")
+		b.node = domi.Fragment(b.node, layer)
+		b.title = cmp.Or(b.title, title)
+		return b
+	}
+
+	// Prevent high-z-index subviews
+	// from painting on top of the overlay or border stroke.
+	p := wrapSubview(env, modStyle("isolation", "isolate").modify(w.node))
+	layer, layerTitle := w.renderLayerElement(env, "absolute")
+	p.content = domi.Fragment(p.content, layer)
+	p.title = cmp.Or(p.title, layerTitle)
+	env.tag = cmp.Or(env.tag, "ui-layer")
+	// The container hosts the base subview in its own single-cell
+	// grid; the isolated z ladder sandwiches the in-flow subview
+	// between the layers.
+	env.style.Set("display", "grid")
+	env.style.Set("grid-template-columns", "100%")
+	env.style.Set("grid-template-rows", "100%")
+	Center.setItemsOn(&env.style)
+	env.style.Set("position", "relative")
+	env.style.Set("isolation", "isolate")
+	// A pending stroke's ring must clear the layers' z ladder.
+	// Elsewhere, its tree position suffices.
+	if len(env.stroke) > 0 {
+		env.style.SetPseudo("::after", "z-index", strconv.Itoa(zLayerStroke))
+	}
+	return build(env, p)
+}
+
+// renderLayerElement renders the overlay or underlay view in a covering grid.
+// position is absolute for an ordinary layer and fixed for a hoisted root
+// overlay.
+func (w wrapLayer) renderLayerElement(env environment, position string) (domi.Node, string) {
 	var lss canon.StyleSet
 	lss.Set("display", "grid")
 	lss.Set("grid-template-columns", "100%")
 	lss.Set("grid-template-rows", "100%")
 	w.at.setItemsOn(&lss)
-	lss.Set("position", "absolute")
+	lss.Set("position", position)
 	EdgeSpace{}.setOn(&lss, "inset")
 	tag := "ui-underlay"
 	view := w.layer
@@ -88,33 +129,19 @@ func (w wrapLayer) render(env environment) box {
 	} else {
 		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}
-	// Prevent high-z-index subviews
-	// from painting on top of the overlay or border stroke.
-	p := wrapSubview(env, modStyle("isolation", "isolate").modify(w.node))
 	layer := renderLayer(env, view)
-	p.content = domi.Fragment(
-		p.content,
-		domi.Tag(tag, attr.Class(env.sheet.ClassFor(lss.Decls())))(
-			layer.content,
-		),
-	)
-	p.title = cmp.Or(p.title, layer.title)
-	env.tag = cmp.Or(env.tag, "ui-layer")
-	// The container hosts the base subview in its own single-cell
-	// grid; the isolated z ladder sandwiches the in-flow subview
-	// between the layers.
-	env.style.Set("display", "grid")
-	env.style.Set("grid-template-columns", "100%")
-	env.style.Set("grid-template-rows", "100%")
-	Center.setItemsOn(&env.style)
-	env.style.Set("position", "relative")
-	env.style.Set("isolation", "isolate")
-	// A pending stroke's ring must clear the layers' z ladder.
-	// Elsewhere, its tree position suffices.
-	if len(env.stroke) > 0 {
-		env.style.SetPseudo("::after", "z-index", strconv.Itoa(zStroke))
+	return domi.Tag(tag, attr.Class(env.sheet.ClassFor(lss.Decls())))(layer.content), layer.title
+}
+
+// canOverlayRoot reports whether removing the ordinary layer wrapper
+// preserves every pending box value. Root environment requirements pass
+// through this lowering by contract; any ordinary one-shot value belongs to
+// the composite box and keeps the ordinary lowering.
+func canOverlayRoot(env environment) bool {
+	if !env.root.atRoot {
+		return false
 	}
-	return build(env, p)
+	return reflect.ValueOf(env.nextenv).IsZero()
 }
 
 // renderLayer renders a node inside its grid layer,

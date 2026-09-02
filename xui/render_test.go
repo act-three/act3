@@ -1579,6 +1579,76 @@ func TestOverlayAt(t *testing.T) {
 	}
 }
 
+// TestOverlayPageLowering pins the narrow root specialization: the base keeps
+// the page-root lowering path, while the overlay becomes a fixed sibling. A
+// ScrollView base can therefore retain document scrolling, and chained
+// overlays become ordered fixed siblings. A modifier belonging to the layer
+// composite, a wrapper, or an Underlay retains the ordinary layer box.
+func TestOverlayPageLowering(t *testing.T) {
+	plain := render(t, ui.Text("base").Overlay(ui.Center, ui.Text("overlay")))
+	if strings.Contains(plain, "<ui-layer ") {
+		t.Errorf("root Overlay retained its composite wrapper:\n%s", plain)
+	}
+	if strings.Count(plain, "<ui-overlay ") != 1 {
+		t.Errorf("root Overlay should emit one overlay sibling:\n%s", plain)
+	}
+	if got := classRule(t, plain, `<ui-overlay class="(ui-\w+)"`); !strings.Contains(got, "position:fixed") || !strings.Contains(got, "pointer-events:none") || !strings.Contains(got, "z-index:2") {
+		t.Errorf("root overlay rule = %q, want a fixed hit-transparent front layer", got)
+	}
+	if got := classRule(t, plain, `<ui-text class="(ui-\w+)">base`); !strings.Contains(got, "isolation:isolate") {
+		t.Errorf("root overlay base rule = %q, want stacking isolation", got)
+	}
+	baseModified := render(t, ui.Text("base").Background(ui.CSSColor("red")).
+		Overlay(ui.Center, ui.Text("overlay")))
+	if strings.Contains(baseModified, "<ui-layer ") {
+		t.Errorf("a modifier owned by the base should preserve root Overlay lowering:\n%s", baseModified)
+	}
+	if got := classRule(t, baseModified, `<ui-text class="(ui-\w+)">base`); !strings.Contains(got, "background-color:red") {
+		t.Errorf("base background rule = %q, want the modifier on the base", got)
+	}
+
+	scrolling := render(t, ui.ScrollView(ui.Vertical,
+		ui.Text("content")).Overlay(ui.Top, ui.Text("toolbar")))
+	if !strings.Contains(scrolling, `<ui-root scroll="y">`) || strings.Contains(scrolling, "<ui-scroll ") || strings.Contains(scrolling, "<ui-layer ") {
+		t.Errorf("Overlay should preserve its ScrollView base's document lowering:\n%s", scrolling)
+	}
+	if got := classRule(t, scrolling, `<ui-text class="(ui-\w+)">content`); !strings.Contains(got, "isolation:isolate") {
+		t.Errorf("document ScrollView base rule = %q, want the root-carried isolation", got)
+	}
+
+	chained := render(t, ui.Text("base").
+		Overlay(ui.Center, ui.Text("first")).
+		Overlay(ui.Center, ui.Text("second")))
+	if strings.Count(chained, "<ui-overlay ") != 2 || strings.Contains(chained, "<ui-layer ") {
+		t.Errorf("chained root Overlays should emit two fixed siblings:\n%s", chained)
+	}
+	if first, second := strings.Index(chained, ">first<"), strings.Index(chained, ">second<"); first < 0 || second < first {
+		t.Errorf("chained root Overlays should retain application order:\n%s", chained)
+	}
+	fallbacks := []struct {
+		name string
+		view ui.View
+	}{
+		{"composite background", ui.Text("base").Overlay(ui.Center, ui.Text("overlay")).Background(ui.CSSColor("red"))},
+		{"wrapper", ui.Text("base").Overlay(ui.Center, ui.Text("overlay")).Padding(ui.Edges(0))},
+		{"underlay", ui.Text("base").Underlay(ui.Center, ui.Text("underlay"))},
+	}
+	for _, tt := range fallbacks {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, tt.view)
+			if !strings.Contains(html, "<ui-layer ") {
+				t.Errorf("%s should retain the ordinary layer composite:\n%s", tt.name, html)
+			}
+		})
+	}
+	scrollFallback := render(t, ui.ScrollView(ui.Vertical, ui.Text("base")).
+		Overlay(ui.Center, ui.Text("overlay")).
+		Background(ui.CSSColor("red")))
+	if !strings.Contains(scrollFallback, "<ui-layer ") || !strings.Contains(scrollFallback, "<ui-scroll ") {
+		t.Errorf("a modified Overlay composite should also keep its ScrollView base in element mode:\n%s", scrollFallback)
+	}
+}
+
 // TestLayerArity pins the layer arity rule: multi-node overlay and
 // underlay views are composed into a ZStack, while empty and unary
 // views remain direct.
