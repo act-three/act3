@@ -30,7 +30,8 @@ type Color interface {
 // It can be any valid CSS color expression,
 // such as "#fff" or "var(--my-color)".
 func CSSColor(expr string) Color {
-	return colorView{base{colorFillNode{cssColor(expr)}}}
+	c := cssColor(expr)
+	return colorView{base{colorFillNode{c}}, c}
 }
 
 // A color is the internal representation of a color.
@@ -47,9 +48,12 @@ func (c cssColor) colorCSS() string {
 	return string(c)
 }
 
-type colorView struct{ base }
+type colorView struct {
+	base
+	c color
+}
 
-func (c colorView) color() color { return c.base[0].(colorFillNode).color }
+func (c colorView) color() color { return c.c }
 
 // Font has no effect because color contains no text.
 // This overrides the embedded method Font
