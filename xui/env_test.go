@@ -88,7 +88,7 @@ func TestEnvironmentModifiersPreserveAtRoot(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			var got environment
-			tt.mod.modify(envProbe(&got))(environment{root: rootenv{atRoot: true}})
+			tt.mod(envProbe(&got))(environment{root: rootenv{atRoot: true}})
 			if !got.root.atRoot {
 				t.Error("modifier consumed atRoot before the node could inspect it")
 			}

@@ -6,25 +6,25 @@ import (
 	"ily.dev/domi"
 )
 
-// A modEnv modifies the environment given to a node.
-type modEnv func(environment) environment
-
-func (m modEnv) modify(n node) node {
-	return func(env environment) box { return n(m(env)) }
+// modEnv calls f to modify the environment given to a node.
+func modEnv(f func(environment) environment) modifier {
+	return func(n node) node {
+		return func(env environment) box { return n(f(env)) }
+	}
 }
 
-func modAlignment(a Alignment) modEnv {
-	return func(env environment) environment {
+func modAlignment(a Alignment) modifier {
+	return modEnv(func(env environment) environment {
 		env.alignment = a
 		return env
-	}
+	})
 }
 
-func modAttr(attr domi.Attr) modEnv {
-	return func(env environment) environment {
+func modAttr(attr domi.Attr) modifier {
+	return modEnv(func(env environment) environment {
 		env.add(attr)
 		return env
-	}
+	})
 }
 
 // modFixedSize gives the subtree unbounded available space on the given axes,
@@ -32,8 +32,8 @@ func modAttr(attr domi.Attr) modEnv {
 // The subtree's outermost box is a fill boundary:
 // it must sit in its real container at that resolved size,
 // even when the container has slack to offer.
-func modFixedSize(axes AxisSet) modEnv {
-	return func(env environment) environment {
+func modFixedSize(axes AxisSet) modifier {
+	return modEnv(func(env environment) environment {
 		env.unbounded |= axes
 		env.fillMask |= axes
 		// Note that a box can override max-content with its own declaration.
@@ -44,28 +44,28 @@ func modFixedSize(axes AxisSet) modEnv {
 			env.style.Set("height", "max-content")
 		}
 		return env
-	}
+	})
 }
 
-func modGap(px float64) modEnv {
-	return func(env environment) environment {
+func modGap(px float64) modifier {
+	return modEnv(func(env environment) environment {
 		env.gap = &px
 		return env
-	}
+	})
 }
 
 // modStyle emits one CSS declaration onto a subview's outermost box.
 // Containers can use it to apply a style to their direct subviews.
-func modStyle(property, value string) modEnv {
-	return func(env environment) environment {
+func modStyle(property, value string) modifier {
+	return modEnv(func(env environment) environment {
 		env.style.Set(property, value)
 		return env
-	}
+	})
 }
 
-func modTagDefault(name string) modEnv {
-	return func(env environment) environment {
+func modTagDefault(name string) modifier {
+	return modEnv(func(env environment) environment {
 		env.tag = cmp.Or(env.tag, name)
 		return env
-	}
+	})
 }

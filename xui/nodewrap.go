@@ -77,7 +77,7 @@ func (w wrapLayer) render(env environment, n node) box {
 
 	// Prevent high-z-index subviews
 	// from painting on top of the overlay or border stroke.
-	p := wrapSubview(env, modStyle("isolation", "isolate").modify(n))
+	p := wrapSubview(env, modStyle("isolation", "isolate")(n))
 	layer, layerTitle := w.renderLayerElement(env, "absolute")
 	p.content = domi.Fragment(p.content, layer)
 	p.title = cmp.Or(p.title, layerTitle)
@@ -118,7 +118,7 @@ func (w wrapLayer) renderLayerElement(env environment, position string) (domi.No
 		// coordinates, so its anchor point lands there instead.
 		x := w.at.horizontal().point() - w.anchor.horizontal().point()
 		y := w.at.vertical().point() - w.anchor.vertical().point()
-		view = modStyle("translate", strconv.Itoa(x)+"% "+strconv.Itoa(y)+"%").modify(view)
+		view = modStyle("translate", strconv.Itoa(x)+"% "+strconv.Itoa(y)+"%")(view)
 	}
 	if w.over {
 		tag = "ui-overlay"
@@ -126,7 +126,7 @@ func (w wrapLayer) renderLayerElement(env environment, position string) (domi.No
 		// The overlay box blankets the base; input falls through it
 		// to the base, and only the layered subviews take hits.
 		lss.Set("pointer-events", "none")
-		view = modStyle("pointer-events", "auto").modify(view)
+		view = modStyle("pointer-events", "auto")(view)
 	} else {
 		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}

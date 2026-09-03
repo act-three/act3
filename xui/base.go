@@ -33,7 +33,7 @@ func (v base) modify(m modifier) base {
 	}
 	out := make(base, len(v))
 	for i, n := range v {
-		out[i] = m.modify(n)
+		out[i] = m(n)
 	}
 	return out
 }
@@ -137,7 +137,7 @@ func (v base) UnderlayAt(at, anchor Alignment, u View) View {
 		over:   false,
 		at:     at,
 		anchor: anchor,
-	})
+	}.modify)
 }
 
 func (v base) Overlay(a Alignment, o View) View {
@@ -150,15 +150,15 @@ func (v base) OverlayAt(at, anchor Alignment, o View) View {
 		over:   true,
 		at:     at,
 		anchor: anchor,
-	})
+	}.modify)
 }
 
 func (v base) Padding(s ...EdgeSpace) View {
-	return v.modify(wrapPadding{space: edgeSum(s...)})
+	return v.modify(wrapPadding{space: edgeSum(s...)}.modify)
 }
 
 func (v base) Sticky(s ...EdgeSpace) View {
-	return v.modify(wrapSticky{inset: edgeSum(s...)})
+	return v.modify(wrapSticky{inset: edgeSum(s...)}.modify)
 }
 
 func (v base) Frame(o ...FrameOption) View {
@@ -166,7 +166,7 @@ func (v base) Frame(o ...FrameOption) View {
 	for _, o := range o {
 		o.applyFrame(&w)
 	}
-	return v.modify(w)
+	return v.modify(w.modify)
 }
 
 func (v base) FrameBounds(o ...FrameBoundsOption) View {
@@ -174,7 +174,7 @@ func (v base) FrameBounds(o ...FrameBoundsOption) View {
 	for _, o := range o {
 		o.applyFrameBounds(&w)
 	}
-	return v.modify(w)
+	return v.modify(w.modify)
 }
 
 func (v base) FrameRatio(w, h int, anchor AxisSet, o ...FrameRatioOption) View {
@@ -188,5 +188,5 @@ func (v base) FrameRatio(w, h int, anchor AxisSet, o ...FrameRatioOption) View {
 	for _, o := range o {
 		o.applyFrameRatio(&f)
 	}
-	return v.modify(f)
+	return v.modify(f.modify)
 }

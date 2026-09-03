@@ -12,14 +12,11 @@ type Modifier interface {
 
 // A modifier configures the behavior of a View.
 // It can be applied with View.modify.
-type modifier interface {
-	modify(node) node
-}
+type modifier func(node) node
 
-// NOTE: no exported construcor.
-// A modBox modifies the box rendered by a node.
-type modBox func(box) box
-
-func (m modBox) modify(n node) node {
-	return func(env environment) box { return m(n(env)) }
+// modBox calls f to modify the box rendered by a node.
+func modBox(f func(box) box) modifier {
+	return func(n node) node {
+		return func(env environment) box { return f(n(env)) }
+	}
 }
