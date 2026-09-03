@@ -59,10 +59,10 @@ func Link[Action any](a Action, label TextView) TextView {
 	if _, ok := action.(string); !ok {
 		action = event.Click(a)
 	}
-	return textView{base{textLink{
+	return newTextView(textLink{
 		action: action,
 		run:    label.text(),
-	}}}
+	})
 }
 
 // textLink performs an action when clicked.

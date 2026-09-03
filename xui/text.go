@@ -42,10 +42,15 @@ type TextView interface {
 
 // Text displays s.
 func Text(s string) TextView {
-	return textView{base{textLeaf(s)}}
+	return newTextView(textLeaf(s))
 }
 
-type textView struct{ base }
+type textView struct {
+	base
+	run textRun
+}
+
+func newTextView(r textRun) textView { return textView{base{r}, r} }
 
 func (v textView) Bold() TextView {
 	return v.styledWith(func(env *environment) {
@@ -85,16 +90,14 @@ func (v textView) TextForeground(c Color) TextView {
 }
 
 func (v textView) Concat(t TextView) TextView {
-	v.base = base{textConcat{v.text(), t.text()}}
-	return v
+	return newTextView(textConcat{v.run, t.text()})
 }
 
-func (v textView) text() textRun { return v.base[0].(textRun) }
+func (v textView) text() textRun { return v.run }
 
 // styledWith returns a copy of v whose run is modified by f.
 func (v textView) styledWith(f func(*environment)) textView {
-	v.base = base{textMod{f: f, run: v.text()}}
-	return v
+	return newTextView(textMod{f: f, run: v.run})
 }
 
 // buildText lowers r as a text block.
