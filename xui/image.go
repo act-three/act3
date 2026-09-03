@@ -65,7 +65,7 @@ func (n nodeImage) render(env environment) box {
 			env.imageAlt, env.framedAs = alt, framing
 			return env
 		})
-		return wrapMod(env, m.modify(n.render))
+		return wrapMod(env, m(n.render))
 	}
 
 	env.tag = "img"

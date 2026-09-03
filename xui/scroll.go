@@ -48,7 +48,7 @@ func (s nodeScroll) render(env environment) box {
 	inner.lc = layoutContext{}
 	inner.container = containerGrid
 	inner.unbounded = 0
-	contents := modFixedSize(s.along).modify(s.contents)
+	contents := modFixedSize(s.along)(s.contents)
 	if canScrollDocument(env) {
 		b := contents(inner)
 		b.pageScroll = s.along

@@ -10,21 +10,21 @@ func (m modTransformState) withState(s State) modifier {
 	})
 }
 
-// A modTransform modifies the environment given to a node, like modEnv.
+// modTransform calls f to modify the environment given to a node, like modEnv.
 // Additionally, if the environment has any paint modifiers
 // (as indicated by nextenv.hasPaint),
 // it first emits a layout-preserving wrapper box
 // that applies all env modifiers,
 // thus clearing any pending paint modifiers
-// before applying the transform and rendering the node.
-type modTransform func(environment) environment
-
-func (m modTransform) modify(n node) node {
-	return func(env environment) box {
-		if !env.hasPaint {
-			return n(m(env))
+// before applying f and rendering the node.
+func modTransform(f func(environment) environment) modifier {
+	return func(n node) node {
+		return func(env environment) box {
+			if !env.hasPaint {
+				return n(f(env))
+			}
+			return wrapMod(env, modEnv(f)(n))
 		}
-		return wrapMod(env, modEnv(m).modify(n))
 	}
 }
 

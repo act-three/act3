@@ -51,7 +51,7 @@ func (w wrapFrameRatio) render(env environment, n node) box {
 		// so that Leading stays the leading edge.
 		env.style.Set("writing-mode", "vertical-lr")
 		env.style.SetPseudo(":dir(rtl)", "writing-mode", "vertical-rl")
-		n = modStyle("writing-mode", "horizontal-tb").modify(n)
+		n = modStyle("writing-mode", "horizontal-tb")(n)
 		kind = containerGridRotated
 	}
 	p := wrapSubviewIn(inner, kind, n)
