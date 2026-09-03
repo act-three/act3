@@ -155,6 +155,10 @@ type View interface {
 	// in the receiver.
 	LineLimit(n int) View
 
+	// LinkPolicy sets the policy for links and buttons in the receiver.
+	// The default policy is HandleSameOrigin.
+	LinkPolicy(LinkPolicy) View
+
 	// Opacity sets the receiver's opacity to x,
 	// from 0 (transparent) to 1 (opaque).
 	Opacity(x float64) View
@@ -291,14 +295,15 @@ const (
 
 // environment carries the top-down state of a lowering pass.
 type environment struct {
-	lc        layoutContext
-	container containerKind
-	unbounded AxisSet
-	disabled  bool
-	lineLimit int // max lines per text, or 0 for no limit
-	sheet     *sheet.Sheet
-	root      rootenv
-	nextenv   // must be zeroed before rendering a subview
+	lc         layoutContext
+	container  containerKind
+	unbounded  AxisSet
+	disabled   bool
+	lineLimit  int // max lines per text, or 0 for no limit
+	linkPolicy LinkPolicy
+	sheet      *sheet.Sheet
+	root       rootenv
+	nextenv    // must be zeroed before rendering a subview
 }
 
 // rootenv is context for root-specialized lowering. Its base styles are not
@@ -339,7 +344,6 @@ type nextenv struct {
 	gap        *float64 // nil means defaultGap
 	imageAlt   string
 	framedAs   framingMode
-	linkBypass bool
 }
 
 // A stroke is one pending border line.

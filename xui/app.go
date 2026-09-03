@@ -73,8 +73,7 @@ type App[Msg any] interface {
 // and is cancelled when the instance ends.
 //
 // When the user clicks a link,
-// the Handler may intercept the navigation,
-// as configured per link (see [LinkView.RequirePageLoad]).
+// the Handler may intercept the navigation (see [LinkPolicy]).
 // It then calls onURLRequest to produce a Msg.
 // Same-origin links omit the URL origin.
 // Method Update decides how to handle the request,

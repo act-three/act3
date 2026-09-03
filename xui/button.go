@@ -92,7 +92,7 @@ func (n buttonNode) render(env environment) box {
 				domi.Name("aria-disabled", "true"),
 			)
 		} else {
-			v = v.Attr(attr.Href(action))
+			v = v.Attr(attr.Href(action), env.linkPolicy.attr())
 		}
 	case domi.Attr:
 		v = v.

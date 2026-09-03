@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/event"
@@ -8,21 +10,39 @@ import (
 	"ily.dev/act3/xui/internal/canon"
 )
 
-// A LinkView is a span of text that performs an action when clicked.
-type LinkView interface {
-	TextView
+// LinkPolicy specifies which link navigations the app handles
+// and which it leaves to the browser.
+// See [View.LinkPolicy].
+//
+// When the app handles a navigation,
+// it updates the page in place
+// instead of loading the new URL from scratch.
+type LinkPolicy int
 
-	// RequirePageLoad requires a URL link to use the browser's
-	// built-in navigation.
-	//
-	// Ordinarily, a link to a same-origin URL is handled by domi,
-	// which updates the URL bar and patches the DOM instead of
-	// using the browser's built-in navigation to load the new URL.
-	// RequirePageLoad bypasses this behavior.
-	//
-	// If the receiver is a link that sends a message,
-	// RequirePageLoad has no effect.
-	RequirePageLoad() LinkView
+const (
+	// HandleSameOrigin handles links to the app's own origin
+	// and leaves the rest to the browser.
+	HandleSameOrigin LinkPolicy = iota
+
+	// HandleAll handles every link.
+	HandleAll
+
+	// HandleNone leaves every link to the browser.
+	HandleNone
+)
+
+// attr returns the annotation that requests p on a navigating element,
+// or nil for the default policy.
+func (p LinkPolicy) attr() domi.Attr {
+	switch p {
+	case HandleSameOrigin:
+		return nil
+	case HandleAll:
+		return domi.HandleLink("yes")
+	case HandleNone:
+		return domi.HandleLink("no")
+	}
+	panic(fmt.Sprintf("ui: invalid LinkPolicy %d", p))
 }
 
 // Link returns a link with the given label.
@@ -33,25 +53,16 @@ type LinkView interface {
 //
 // If a is not a string
 // or the app's Msg type or a type that implements it,
-// the LinkView panics.
-func Link[Action any](a Action, label TextView) LinkView {
+// the link panics.
+func Link[Action any](a Action, label TextView) TextView {
 	var action any = a
 	if _, ok := action.(string); !ok {
 		action = event.Click(a)
 	}
-	return linkView{textView{base{textLink{
+	return textView{base{textLink{
 		action: action,
 		run:    label.text(),
-	}}}}
-}
-
-type linkView struct{ textView }
-
-func (v linkView) RequirePageLoad() LinkView {
-	v.textView = v.styledWith(func(env *environment) {
-		env.linkBypass = true
-	})
-	return v
+	}}}
 }
 
 // textLink performs an action when clicked.
@@ -67,7 +78,7 @@ var _ textRun = textLink{}
 // so that box modifiers apply to the link.
 func (l textLink) render(env environment) box {
 	env.tag = l.tag()
-	env.add(l.attrs(env.disabled, env.linkBypass))
+	env.add(l.attrs(env.disabled, env.linkPolicy))
 	l.setStyles(&env.style, env.disabled)
 	env.fg = append(env.fg, term[color]{value: Accent.color()})
 	if env.disabled {
@@ -88,7 +99,7 @@ func (l textLink) renderText(env environment) domi.Node {
 		styles.Set(d.property, d.value)
 	}
 	class := attr.Class(env.sheet.ClassFor(styles))
-	attrs := l.attrs(env.disabled, env.linkBypass)
+	attrs := l.attrs(env.disabled, env.linkPolicy)
 	env.nextenv = nextenv{}
 	return domi.Tag(l.tag(), attrs, class)(l.run.renderText(env))
 }
@@ -103,16 +114,13 @@ func (l textLink) tag() string {
 
 // attrs returns the attributes that perform the action,
 // or that mark the element disabled.
-func (l textLink) attrs(disabled, bypass bool) domi.Attr {
+func (l textLink) attrs(disabled bool, policy LinkPolicy) domi.Attr {
 	switch action := l.action.(type) {
 	case string:
 		if disabled {
 			return domi.Group(attr.Role("link"), domi.Name("aria-disabled", "true"))
 		}
-		if bypass {
-			return domi.Group(attr.Href(action), domi.HandleLink("no"))
-		}
-		return attr.Href(action)
+		return domi.Group(attr.Href(action), policy.attr())
 	case domi.Attr:
 		return domi.Group(attr.Type("button"), attr.Disabled(disabled), action)
 	}
