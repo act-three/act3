@@ -29,16 +29,16 @@ type wrapFrameRatio struct {
 	w, h   int
 	anchor AxisSet
 	align  Alignment
-	node   node
 }
 
-func (w wrapFrameRatio) modify(n node) node { w.node = n; return w }
+func (w wrapFrameRatio) modify(n node) node {
+	return func(env environment) box { return w.render(env, n) }
+}
 
-func (w wrapFrameRatio) render(env environment) box {
+func (w wrapFrameRatio) render(env environment, n node) box {
 	derived := w.anchor.complement()
 	inner := env
 	inner.unbounded &^= derived
-	node := w.node
 	kind := containerGrid
 	// With both frame dimensions automatic, intrinsic sizing resolves the
 	// inline size from content and aspect-ratio derives the block size. It
@@ -51,10 +51,10 @@ func (w wrapFrameRatio) render(env environment) box {
 		// so that Leading stays the leading edge.
 		env.style.Set("writing-mode", "vertical-lr")
 		env.style.SetPseudo(":dir(rtl)", "writing-mode", "vertical-rl")
-		node = modStyle("writing-mode", "horizontal-tb").modify(node)
+		n = modStyle("writing-mode", "horizontal-tb").modify(n)
 		kind = containerGridRotated
 	}
-	p := wrapSubviewIn(inner, kind, node)
+	p := wrapSubviewIn(inner, kind, n)
 	p.fills &^= derived
 	p.rigid |= derived
 	env.tag = cmp.Or(env.tag, "ui-aspect")

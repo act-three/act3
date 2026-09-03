@@ -117,10 +117,11 @@ func (x *axisBounds) setIdeal(s size) {
 type wrapFrameBounds struct {
 	h, v  axisBounds
 	align Alignment
-	node  node
 }
 
-func (w wrapFrameBounds) modify(n node) node { w.node = n; return w }
+func (w wrapFrameBounds) modify(n node) node {
+	return func(env environment) box { return w.render(env, n) }
+}
 
 // idealAxes is the set of axes on which the frame uses its ideal size in env.
 func (w wrapFrameBounds) idealAxes(env environment) (a AxisSet) {
@@ -146,14 +147,14 @@ func (w wrapFrameBounds) boundedAxes() (a AxisSet) {
 	return a
 }
 
-func (w wrapFrameBounds) render(env environment) box {
+func (w wrapFrameBounds) render(env environment, n node) box {
 	ideal := w.idealAxes(env)
 	inner := env
 	// An axis that takes its ideal has a definite size —
 	// real available space for the subview, no longer unbounded.
 	// Bounds never clear unboundedness: they clamp sizes, not queries.
 	inner.unbounded &^= ideal
-	p := wrapSubview(inner, w.node)
+	p := wrapSubview(inner, n)
 	// An axis with no bounds takes the subview's sizing and its
 	// rigidity with it. A bounded axis tracks space above its
 	// bounds instead, regardless of the subview's rigidity.

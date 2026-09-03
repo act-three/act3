@@ -15,10 +15,11 @@ import "cmp"
 type wrapFrame struct {
 	h, v  size
 	align Alignment
-	node  node
 }
 
-func (w wrapFrame) modify(n node) node { w.node = n; return w }
+func (w wrapFrame) modify(n node) node {
+	return func(env environment) box { return w.render(env, n) }
+}
 
 // definite is the set of axes the frame makes definite.
 func (w wrapFrame) definite() (a AxisSet) {
@@ -31,12 +32,12 @@ func (w wrapFrame) definite() (a AxisSet) {
 	return a
 }
 
-func (w wrapFrame) render(env environment) box {
+func (w wrapFrame) render(env environment, n node) box {
 	inner := env
 	// A definite axis is available space for the view inside,
 	// so it is no longer unbounded.
 	inner.unbounded &^= w.definite()
-	p := wrapSubview(inner, w.node)
+	p := wrapSubview(inner, n)
 	p.fills &^= w.definite()
 	p.rigid |= w.definite()
 	env.tag = cmp.Or(env.tag, "ui-frame")

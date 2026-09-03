@@ -41,10 +41,7 @@ func Button[Action any](a Action, label View) ButtonView {
 	if _, ok := action.(string); !ok {
 		action = event.Click(a)
 	}
-	return buttonView{base{buttonNode{
-		label:  unary(HStack, label),
-		action: action,
-	}}}
+	return buttonView{base{nodeButton(action, unary(HStack, label))}}
 }
 
 type buttonView struct{ base }
@@ -57,51 +54,48 @@ func (v buttonView) Role(r ButtonRole) ButtonView {
 	return v
 }
 
-type buttonNode struct {
-	label  node
-	action any // URL string or onclick domi.Attr
-}
-
-func (n buttonNode) render(env environment) box {
-	c := map[ButtonRole]Color{
-		RolePrimary:     Accent,
-		RoleDestructive: Danger,
-	}[env.buttonRole]
-	var fg Modifier
-	if c != nil {
-		fg = Foreground(CSSColor("#fff"))
-	}
-	v := base{n.label}.
-		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
-		Modify(fg).
-		Background(cmp.Or(c, surfaceColor)).
-		BorderStroke(1, cmp.Or(c, borderColor)).
-		BorderShape(RoundedRectangle)
-	cursor := "pointer"
-	if env.disabled {
-		cursor = "default"
-		v = v.Opacity(0.5)
-	}
-	env.style.Set("cursor", cursor)
-	switch action := n.action.(type) {
-	case string:
-		v = v.Tag("a")
-		if env.disabled {
-			v = v.Attr(
-				attr.Role("link"),
-				domi.Name("aria-disabled", "true"),
-			)
-		} else {
-			v = v.Attr(attr.Href(action), env.linkPolicy.attr())
+func nodeButton(action any, label node) node {
+	return func(env environment) box {
+		c := map[ButtonRole]Color{
+			RolePrimary:     Accent,
+			RoleDestructive: Danger,
+		}[env.buttonRole]
+		var fg Modifier
+		if c != nil {
+			fg = Foreground(CSSColor("#fff"))
 		}
-	case domi.Attr:
-		v = v.
-			Tag("button").
-			Attr(
-				attr.Type("button"),
-				attr.Disabled(env.disabled),
-				action,
-			)
+		v := base{label}.
+			Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
+			Modify(fg).
+			Background(cmp.Or(c, surfaceColor)).
+			BorderStroke(1, cmp.Or(c, borderColor)).
+			BorderShape(RoundedRectangle)
+		cursor := "pointer"
+		if env.disabled {
+			cursor = "default"
+			v = v.Opacity(0.5)
+		}
+		env.style.Set("cursor", cursor)
+		switch action := action.(type) {
+		case string:
+			v = v.Tag("a")
+			if env.disabled {
+				v = v.Attr(
+					attr.Role("link"),
+					domi.Name("aria-disabled", "true"),
+				)
+			} else {
+				v = v.Attr(attr.Href(action), env.linkPolicy.attr())
+			}
+		case domi.Attr:
+			v = v.
+				Tag("button").
+				Attr(
+					attr.Type("button"),
+					attr.Disabled(env.disabled),
+					action,
+				)
+		}
+		return v.nodes()[0](env)
 	}
-	return v.nodes()[0].render(env)
 }

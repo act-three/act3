@@ -30,19 +30,19 @@ import (
 //		Attr(attr.Style("display:flex")).
 //		Attr(attr.Style("gap:8px")).
 //		FixedSize()
-func HTML(node domi.Node) View { return base{nodeHTML{node: node}} }
+func HTML(node domi.Node) View { return base{nodeHTML(node)} }
 
-type nodeHTML struct{ node domi.Node }
-
-func (h nodeHTML) render(env environment) box {
-	env.tag = cmp.Or(env.tag, "ui-html")
-	env.style.Set("display", "grid")
-	env.style.Set("grid-template-columns", "100%")
-	env.style.Set("grid-template-rows", "100%")
-	Center.setItemsOn(&env.style)
-	p := plan{
-		fills:   Horizontal | Vertical,
-		content: h.node,
+func nodeHTML(content domi.Node) node {
+	return func(env environment) box {
+		env.tag = cmp.Or(env.tag, "ui-html")
+		env.style.Set("display", "grid")
+		env.style.Set("grid-template-columns", "100%")
+		env.style.Set("grid-template-rows", "100%")
+		Center.setItemsOn(&env.style)
+		p := plan{
+			fills:   Horizontal | Vertical,
+			content: content,
+		}
+		return build(env, p)
 	}
-	return build(env, p)
 }

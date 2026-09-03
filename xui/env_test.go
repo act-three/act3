@@ -16,7 +16,7 @@ import (
 func TestBoxIsInnermostWriter(t *testing.T) {
 	var env environment
 	env.tag = "picture" // an outer Tag modifier
-	b := imageNode{src: "x.png"}.render(env)
+	b := nodeImage{src: "x.png"}.render(env)
 	var sb strings.Builder
 	if err := domi.RenderTo(&sb, b.node); err != nil {
 		t.Fatalf("render: %v", err)
@@ -26,12 +26,12 @@ func TestBoxIsInnermostWriter(t *testing.T) {
 	}
 }
 
-// envProbe records the environment its render receives.
-type envProbe struct{ got *environment }
-
-func (n envProbe) render(env environment) box {
-	*n.got = env
-	return box{}
+// envProbe returns a node that records the environment it receives.
+func envProbe(got *environment) node {
+	return func(env environment) box {
+		*got = env
+		return box{}
+	}
 }
 
 // TestSubviewHelpersStrip pins that the subview helpers strip the
@@ -55,7 +55,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 	subview := func(t *testing.T, render func(environment, node)) {
 		t.Helper()
 		var got environment
-		render(pending(), envProbe{&got})
+		render(pending(), envProbe(&got))
 		want := pending()
 		want.nextenv = nextenv{}
 		want.root = rootenv{}
@@ -88,7 +88,7 @@ func TestEnvironmentModifiersPreserveAtRoot(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			var got environment
-			tt.mod.modify(envProbe{&got}).render(environment{root: rootenv{atRoot: true}})
+			tt.mod.modify(envProbe(&got))(environment{root: rootenv{atRoot: true}})
 			if !got.root.atRoot {
 				t.Error("modifier consumed atRoot before the node could inspect it")
 			}

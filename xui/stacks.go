@@ -24,12 +24,12 @@ type StackView interface {
 
 // A VStack arranges its subviews in a vertical line.
 func VStack(v ...View) StackView {
-	return stackView{base{stackNode{axisV, v}}}
+	return stackView{base{nodeStack(axisV, v)}}
 }
 
 // An HStack arranges its subviews in a horizontal line.
 func HStack(v ...View) StackView {
-	return stackView{base{stackNode{axisH, v}}}
+	return stackView{base{nodeStack(axisH, v)}}
 }
 
 type stackView struct{ base }
@@ -60,7 +60,7 @@ type ZStackView interface {
 
 // ZStack overlays the given views.
 func ZStack(v ...View) ZStackView {
-	return zstackView{base{stackNode{axisZ, v}}}
+	return zstackView{base{nodeStack(axisZ, v)}}
 }
 
 type zstackView struct{ base }
@@ -72,39 +72,36 @@ func (v zstackView) Alignment(a Alignment) ZStackView {
 
 const defaultGap float64 = 8
 
-type stackNode struct {
-	dir      stackAxis
-	subviews []View
-}
-
-func (s stackNode) render(env environment) box {
-	inner := env
-	inner.lc = axes[s.dir].lc
-	inner.container = axes[s.dir].container
-	subviews := Group(s.subviews...)
-	if s.dir == axisZ {
-		subviews = subviews.
-			modify(modStyle("grid-row-start", "1")).
-			modify(modStyle("grid-column-start", "1")).
-			// A subview that forms a stacking context, or is positioned,
-			// would otherwise paint above every later subview that does
-			// neither. With z-index:0, each subview paints in order,
-			// within the stack's own stacking context.
-			modify(modStyle("z-index", "0"))
+func nodeStack(dir stackAxis, subviews []View) node {
+	return func(env environment) box {
+		inner := env
+		inner.lc = axes[dir].lc
+		inner.container = axes[dir].container
+		subviews := Group(subviews...)
+		if dir == axisZ {
+			subviews = subviews.
+				modify(modStyle("grid-row-start", "1")).
+				modify(modStyle("grid-column-start", "1")).
+				// A subview that forms a stacking context, or is positioned,
+				// would otherwise paint above every later subview that does
+				// neither. With z-index:0, each subview paints in order,
+				// within the stack's own stacking context.
+				modify(modStyle("z-index", "0"))
+		}
+		p := renderSubviewList(inner, subviews)
+		env.tag = cmp.Or(env.tag, axes[dir].tag)
+		gap := *cmp.Or(env.gap, new(defaultGap))
+		dir.addStackStylesTo(&env.style, gap, env.alignment)
+		return build(env, p)
 	}
-	p := renderSubviewList(inner, subviews)
-	env.tag = cmp.Or(env.tag, axes[s.dir].tag)
-	gap := *cmp.Or(env.gap, new(defaultGap))
-	s.addStackStylesTo(&env.style, gap, env.alignment)
-	return build(env, p)
 }
 
-// addStackStylesTo adds the stack's declarations to ss:
+// addStackStylesTo adds the declarations of a stack along dir to ss:
 // its display and flow, its gap,
 // and its alignment — the minor-axis projection for a line,
 // both axes for a ZStack.
-func (s stackNode) addStackStylesTo(ss *canon.StyleSet, gap float64, align Alignment) {
-	switch s.dir {
+func (dir stackAxis) addStackStylesTo(ss *canon.StyleSet, gap float64, align Alignment) {
+	switch dir {
 	case axisZ:
 		ss.Set("display", "grid")
 		ss.Set("grid-template-columns", "100%")
@@ -128,11 +125,9 @@ func (s stackNode) addStackStylesTo(ss *canon.StyleSet, gap float64, align Align
 // It expands along the major axis of the nearest enclosing stack.
 // If there is no major axis, such as inside a [ZStack],
 // it takes no space.
-func Spacer() View { return base{spacerNode{}} }
+func Spacer() View { return base{nodeSpacer} }
 
-type spacerNode struct{}
-
-func (spacerNode) render(env environment) box {
+func nodeSpacer(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-spacer")
 	env.style.Set("flex-basis", "0")
 	minWidth, minHeight := "0", "0"
@@ -151,11 +146,9 @@ func (spacerNode) render(env environment) box {
 // It expands along the minor axis of the nearest enclosing stack.
 // If there is no major axis, such as inside a [ZStack],
 // it expands horizontally.
-func Divider() View { return base{dividerNode{}} }
+func Divider() View { return base{nodeDivider} }
 
-type dividerNode struct{}
-
-func (dividerNode) render(env environment) box {
+func nodeDivider(env environment) box {
 	env.tag = cmp.Or(env.tag, "ui-divider")
 	env.bg = append(env.bg, term[color]{value: borderColor.color()})
 	p := plan{fills: env.lc.minorAxes(), rigid: env.lc.majorAxis}

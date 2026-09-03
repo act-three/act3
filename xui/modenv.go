@@ -10,7 +10,7 @@ import (
 type modEnv func(environment) environment
 
 func (m modEnv) modify(n node) node {
-	return nodeEnv{m, n}
+	return func(env environment) box { return n(m(env)) }
 }
 
 func modAlignment(a Alignment) modEnv {

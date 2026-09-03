@@ -87,18 +87,15 @@ func For[T any, S ~[]T](items S, key func(T) string, f func(T) View) View {
 		if len(ns) != 1 {
 			panic(fmt.Sprintf("ui: For item with key %q has %d views, want exactly 1", key(it), len(ns)))
 		}
-		b = append(b, keyNode{key: key(it), node: ns[0]})
+		b = append(b, nodeKey(key(it), ns[0]))
 	}
 	return b
 }
 
-type keyNode struct {
-	key  string
-	node node
-}
-
-func (k keyNode) render(env environment) box {
-	b := k.node.render(env)
-	b.node = domi.WithKey(k.key, b.node)
-	return b
+func nodeKey(key string, n node) node {
+	return func(env environment) box {
+		b := n(env)
+		b.node = domi.WithKey(key, b.node)
+		return b
+	}
 }

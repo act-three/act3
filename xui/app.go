@@ -166,7 +166,7 @@ func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 		sheet: &in.sheet,
 		root:  rootenv{atRoot: true},
 	}
-	b := unary(VStack, root).render(env)
+	b := unary(VStack, root)(env)
 	var a domi.Attr
 	if in.nonce != "" {
 		a = attr.Nonce(in.nonce)

@@ -50,7 +50,7 @@ type textView struct {
 	run textRun
 }
 
-func newTextView(r textRun) textView { return textView{base{r}, r} }
+func newTextView(r textRun) textView { return textView{base{r.render}, r} }
 
 func (v textView) Bold() TextView {
 	return v.styledWith(func(env *environment) {
@@ -121,7 +121,7 @@ func buildText(env environment, r textRun) box {
 // It lowers itself to inline HTML as part of an enclosing text,
 // or renders itself as a box when it is the whole view.
 type textRun interface {
-	node
+	render(environment) box
 	renderText(environment) domi.Node
 }
 

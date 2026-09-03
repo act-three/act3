@@ -24,7 +24,9 @@ type ImageView interface {
 }
 
 // Image displays the image at url.
-func Image(url string) ImageView { return imageView{base{imageNode{src: url}}} }
+func Image(url string) ImageView {
+	return imageView{base{nodeImage{src: url}.render}}
+}
 
 type imageView struct{ base }
 
@@ -52,9 +54,9 @@ func (v imageView) ScaledToFit() ImageView {
 	return v
 }
 
-type imageNode struct{ src string }
+type nodeImage struct{ src string }
 
-func (n imageNode) render(env environment) box {
+func (n nodeImage) render(env environment) box {
 	// An img is a replaced element and cannot host the stroke
 	// carrier, so pending strokes box out around the image.
 	if len(env.stroke) > 0 {
@@ -63,7 +65,7 @@ func (n imageNode) render(env environment) box {
 			env.imageAlt, env.framedAs = alt, framing
 			return env
 		})
-		return wrapMod(env, m.modify(n))
+		return wrapMod(env, m.modify(n.render))
 	}
 
 	env.tag = "img"

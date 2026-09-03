@@ -50,7 +50,6 @@ type wrapLayer struct {
 	over   bool
 	at     Alignment // point in the base view where the layer view is placed
 	anchor Alignment // point in the layer view placed onto at
-	node   node      // the base layer
 }
 
 const (
@@ -60,14 +59,16 @@ const (
 	zLayerStroke = 3
 )
 
-func (w wrapLayer) modify(n node) node { w.node = n; return w }
+func (w wrapLayer) modify(n node) node {
+	return func(env environment) box { return w.render(env, n) }
+}
 
-func (w wrapLayer) render(env environment) box {
+func (w wrapLayer) render(env environment, n node) box {
 	if w.over && canOverlayRoot(env) {
 		baseEnv := env
 		// Using modStyle here would eg make canScrollDocument return false.
 		baseEnv.root.style.Set("isolation", "isolate")
-		b := w.node.render(baseEnv)
+		b := n(baseEnv)
 		layer, title := w.renderLayerElement(env, "fixed")
 		b.node = domi.Fragment(b.node, layer)
 		b.title = cmp.Or(b.title, title)
@@ -76,7 +77,7 @@ func (w wrapLayer) render(env environment) box {
 
 	// Prevent high-z-index subviews
 	// from painting on top of the overlay or border stroke.
-	p := wrapSubview(env, modStyle("isolation", "isolate").modify(w.node))
+	p := wrapSubview(env, modStyle("isolation", "isolate").modify(n))
 	layer, layerTitle := w.renderLayerElement(env, "absolute")
 	p.content = domi.Fragment(p.content, layer)
 	p.title = cmp.Or(p.title, layerTitle)
@@ -163,13 +164,14 @@ func renderLayer(env environment, n node) plan {
 // It is not CSS padding on the subview itself.
 type wrapPadding struct {
 	space EdgeSpace
-	node  node
 }
 
-func (w wrapPadding) modify(n node) node { w.node = n; return w }
+func (w wrapPadding) modify(n node) node {
+	return func(env environment) box { return w.render(env, n) }
+}
 
-func (w wrapPadding) render(env environment) box {
-	p := wrapSubview(env, w.node)
+func (w wrapPadding) render(env environment, n node) box {
+	p := wrapSubview(env, n)
 	env.tag = cmp.Or(env.tag, "ui-padding")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
@@ -183,13 +185,14 @@ func (w wrapPadding) render(env environment) box {
 // with CSS sticky positioning applied.
 type wrapSticky struct {
 	inset EdgeSpace
-	node  node
 }
 
-func (w wrapSticky) modify(n node) node { w.node = n; return w }
+func (w wrapSticky) modify(n node) node {
+	return func(env environment) box { return w.render(env, n) }
+}
 
-func (w wrapSticky) render(env environment) box {
-	p := wrapSubview(env, w.node)
+func (w wrapSticky) render(env environment, n node) box {
+	p := wrapSubview(env, n)
 	env.tag = cmp.Or(env.tag, "ui-sticky")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
