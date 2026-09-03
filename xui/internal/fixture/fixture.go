@@ -344,7 +344,7 @@ func Document(css string) (string, error) {
 	sb.WriteString("</title><style>\n")
 	sb.WriteString(css)
 	sb.WriteString("\nbody{margin:0;background:#f5f6f8}")
-	sb.WriteString("\n.demo-bordered{border:1px solid var(--ui-color-border);border-radius:var(--ui-radius);background:#fff}")
+	sb.WriteString("\n.demo-bordered{border:1px solid #e4e7ec;border-radius:var(--ui-radius);background:#fff}")
 	sb.WriteString("\n</style></head><body>")
 	if err := domi.RenderTo(&sb, page); err != nil {
 		return "", err
