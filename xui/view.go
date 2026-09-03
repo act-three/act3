@@ -270,9 +270,7 @@ type View interface {
 
 // A node is a unary view.
 // Its whole job is to lower itself to a single box.
-type node interface {
-	render(environment) box
-}
+type node func(environment) box
 
 // unary returns v's only node.
 // If v is not unary, combine first gives it a single aggregate node.
@@ -388,7 +386,7 @@ type box struct {
 func renderSubviewNode(env environment, n node) plan {
 	env.nextenv = nextenv{}
 	env.root = rootenv{}
-	b := n.render(env)
+	b := n(env)
 	return plan{
 		content: b.node,
 		fills:   b.fills,

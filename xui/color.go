@@ -31,7 +31,7 @@ type Color interface {
 // such as "#fff" or "var(--my-color)".
 func CSSColor(expr string) Color {
 	c := cssColor(expr)
-	return colorView{base{colorFillNode{c}}, c}
+	return colorView{base{nodeColor(c)}, c}
 }
 
 // A color is the internal representation of a color.
@@ -65,16 +65,14 @@ func (c colorView) Font(FontSize) View { return c }
 // to avoid emitting useless style declarations.
 func (c colorView) Foreground(Color) View { return c }
 
-// colorFillNode paints a solid color.
-type colorFillNode struct {
-	color color // must not be nil
-}
-
-func (f colorFillNode) render(env environment) box {
-	env.tag = cmp.Or(env.tag, "ui-color")
-	env.bg = append(env.bg, term[color]{value: f.color})
-	return build(env, plan{
-		fills: Horizontal | Vertical,
-		ideal: rect{width: newSize(10), height: newSize(10)},
-	})
+// nodeColor paints a solid color.
+func nodeColor(c color) node {
+	return func(env environment) box {
+		env.tag = cmp.Or(env.tag, "ui-color")
+		env.bg = append(env.bg, term[color]{value: c})
+		return build(env, plan{
+			fills: Horizontal | Vertical,
+			ideal: rect{width: newSize(10), height: newSize(10)},
+		})
+	}
 }

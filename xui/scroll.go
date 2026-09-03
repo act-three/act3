@@ -25,23 +25,23 @@ import (
 // navigate to page fragment anchors
 // and save scroll position during page reload and navigation.
 func ScrollView(axis AxisSet, v View) View {
-	return base{scrollNode{
+	return base{nodeScroll{
 		along:    axis,
 		contents: unary(VStack, v),
-	}}
+	}.render}
 }
 
-type scrollNode struct {
+type nodeScroll struct {
 	along    AxisSet
 	contents node
 }
 
-func (s scrollNode) render(env environment) box {
+func (s nodeScroll) render(env environment) box {
 	// A stroke's carrier would sit in the scrollable overflow and
 	// scroll away with the content, so pending strokes box out
 	// around the viewport.
 	if len(env.stroke) > 0 {
-		return wrapMod(env, s)
+		return wrapMod(env, s.render)
 	}
 	inner := env
 	inner.root.atRoot = false
@@ -50,7 +50,7 @@ func (s scrollNode) render(env environment) box {
 	inner.unbounded = 0
 	contents := modFixedSize(s.along).modify(s.contents)
 	if canScrollDocument(env) {
-		b := contents.render(inner)
+		b := contents(inner)
 		b.pageScroll = s.along
 		return b
 	}

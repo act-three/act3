@@ -28,7 +28,7 @@ type GridView interface {
 
 // Grid arranges the given views in the grid described by g.
 func Grid(g GridLayout, v ...View) GridView {
-	return gridView{base{gridNode{g, v}}}
+	return gridView{base{nodeGrid(g, v)}}
 }
 
 // A GridLayout describes the columns of a [Grid].
@@ -90,23 +90,20 @@ func (v gridView) Gap(px float64) GridView {
 	return v
 }
 
-type gridNode struct {
-	layout   GridLayout
-	subviews []View
-}
-
-func (g gridNode) render(env environment) box {
-	inner := env
-	inner.lc = layoutContext{}
-	inner.container = containerGrid
-	p := renderSubviewList(inner, g.subviews...)
-	p.fills |= g.layout.fills()
-	env.tag = cmp.Or(env.tag, "ui-grid")
-	env.style.Set("display", "grid")
-	env.style.Set("grid-template-columns", g.layout.columns())
-	gap := cssPx(*cmp.Or(env.gap, new(defaultGap)))
-	env.style.Set("row-gap", gap)
-	env.style.Set("column-gap", gap)
-	env.alignment.setItemsOn(&env.style)
-	return build(env, p)
+func nodeGrid(layout GridLayout, subviews []View) node {
+	return func(env environment) box {
+		inner := env
+		inner.lc = layoutContext{}
+		inner.container = containerGrid
+		p := renderSubviewList(inner, subviews...)
+		p.fills |= layout.fills()
+		env.tag = cmp.Or(env.tag, "ui-grid")
+		env.style.Set("display", "grid")
+		env.style.Set("grid-template-columns", layout.columns())
+		gap := cssPx(*cmp.Or(env.gap, new(defaultGap)))
+		env.style.Set("row-gap", gap)
+		env.style.Set("column-gap", gap)
+		env.alignment.setItemsOn(&env.style)
+		return build(env, p)
+	}
 }

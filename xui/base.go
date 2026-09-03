@@ -121,10 +121,10 @@ func (v base) Tag(name string) View {
 }
 
 func (v base) Title(t string) View {
-	return v.modify(modBox{f: func(b box) box {
+	return v.modify(modBox(func(b box) box {
 		b.title = cmp.Or(b.title, t)
 		return b
-	}})
+	}))
 }
 
 func (v base) Underlay(a Alignment, u View) View {
