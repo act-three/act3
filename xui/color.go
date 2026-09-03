@@ -1,6 +1,9 @@
 package ui
 
-import "cmp"
+import (
+	"cmp"
+	"fmt"
+)
 
 // Theme color tokens.
 var (
@@ -26,6 +29,39 @@ type Color interface {
 	color() color
 }
 
+// OKLCH returns the color with the given coordinates
+// in the OKLCH color space.
+//
+//   - Lightness (L) ranges from 0 (black) to 1 (white).
+//   - Chroma (C) is 0 for gray. Larger values are more colorful.
+//     Displayable colors have chroma of at most about 0.4.
+//   - Hue (h) is an angle in degrees.
+//
+// Lightness and chroma are clamped to their valid ranges.
+func OKLCH(L, C, h float64) Color {
+	return OKLCHA(L, C, h, 1)
+}
+
+// OKLCHA returns the color with the given coordinates
+// in the OKLCH color space with opacity channel α.
+//
+//   - Lightness (L) ranges from 0 (black) to 1 (white).
+//   - Chroma (C) is 0 for gray. Larger values are more colorful.
+//     Displayable colors have chroma of at most about 0.4.
+//   - Hue (h) is an angle in degrees.
+//   - Opacity (α) ranges from 0 (transparent) to 1 (opaque).
+//
+// Lightness, chroma, and opacity are clamped to their valid ranges.
+func OKLCHA(L, C, h, α float64) Color {
+	col := oklch{
+		l: min(max(L, 0), 1),
+		c: max(C, 0),
+		h: h,
+		a: min(max(α, 0), 1),
+	}
+	return colorView{base{nodeColor(col)}, col}
+}
+
 // CSSColor returns the color given by expr.
 // It can be any valid CSS color expression,
 // such as "#fff" or "var(--my-color)".
@@ -40,6 +76,15 @@ type color interface {
 	// colorCSS returns a representation of the receiver
 	// as a CSS color expression.
 	colorCSS() string
+}
+
+type oklch struct{ l, c, h, a float64 }
+
+func (c oklch) colorCSS() string {
+	if c.a < 1 {
+		return fmt.Sprintf("oklch(%g %g %g / %g)", c.l, c.c, c.h, c.a)
+	}
+	return fmt.Sprintf("oklch(%g %g %g)", c.l, c.c, c.h)
 }
 
 type cssColor string
