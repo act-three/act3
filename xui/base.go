@@ -87,6 +87,13 @@ func (v base) FixedSize() View {
 		Class("ui-fixed-size")
 }
 
+func (v base) LinkPolicy(p LinkPolicy) View {
+	return v.modify(modEnv(func(env environment) environment {
+		env.linkPolicy = p
+		return env
+	}))
+}
+
 func (v base) LineLimit(n int) View {
 	return v.modify(modEnv(func(env environment) environment {
 		env.lineLimit = max(n, 1)

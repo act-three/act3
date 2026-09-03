@@ -756,24 +756,34 @@ func TestLinkDisabled(t *testing.T) {
 	}
 }
 
-// TestLinkRequirePageLoad pins RequirePageLoad: a navigating link
-// gains the domi bypass annotation, and a sending or disabled one
-// is unaffected.
-func TestLinkRequirePageLoad(t *testing.T) {
+// TestLinkPolicy pins LinkPolicy: every navigating link and button
+// in the subtree gains the domi annotation for a non-default policy,
+// the innermost policy wins, and a sending or disabled link is
+// unaffected.
+func TestLinkPolicy(t *testing.T) {
 	for name, tc := range map[string]struct {
 		v    ui.View
-		want bool
+		want string // the domi-handle attribute value, or "" for none
 	}{
-		"navigate": {ui.Link("/docs", ui.Text("x")).RequirePageLoad(), true},
-		"run":      {ui.Text("a").Concat(ui.Link("/docs", ui.Text("x")).RequirePageLoad()), true},
-		"send":     {ui.Link(Msg{}, ui.Text("x")).RequirePageLoad(), false},
-		"disabled": {ui.Link("/docs", ui.Text("x")).RequirePageLoad().Disabled(true), false},
-		"without":  {ui.Link("/docs", ui.Text("x")), false},
+		"none":     {ui.Link("/docs", ui.Text("x")).LinkPolicy(ui.HandleNone), "no"},
+		"all":      {ui.Link("/docs", ui.Text("x")).LinkPolicy(ui.HandleAll), "yes"},
+		"default":  {ui.Link("/docs", ui.Text("x")).LinkPolicy(ui.HandleSameOrigin), ""},
+		"run":      {ui.Text("a").Concat(ui.Link("/docs", ui.Text("x"))).LinkPolicy(ui.HandleNone), "no"},
+		"subtree":  {ui.VStack(ui.Link("/docs", ui.Text("x"))).LinkPolicy(ui.HandleNone), "no"},
+		"button":   {ui.Button("/docs", ui.Text("x")).LinkPolicy(ui.HandleNone), "no"},
+		"inner":    {ui.VStack(ui.Link("/docs", ui.Text("x")).LinkPolicy(ui.HandleAll)).LinkPolicy(ui.HandleNone), "yes"},
+		"send":     {ui.Link(Msg{}, ui.Text("x")).LinkPolicy(ui.HandleNone), ""},
+		"disabled": {ui.Link("/docs", ui.Text("x")).LinkPolicy(ui.HandleNone).Disabled(true), ""},
+		"without":  {ui.Link("/docs", ui.Text("x")), ""},
 	} {
 		t.Run(name, func(t *testing.T) {
 			html := render(t, tc.v)
-			if got := strings.Contains(html, `domi-handle="no"`); got != tc.want {
-				t.Errorf("bypass annotation = %v, want %v:\n%s", got, tc.want, html)
+			var got string
+			if m := regexp.MustCompile(`domi-handle="([^"]*)"`).FindStringSubmatch(html); m != nil {
+				got = m[1]
+			}
+			if got != tc.want {
+				t.Errorf("domi-handle = %q, want %q:\n%s", got, tc.want, html)
 			}
 		})
 	}
