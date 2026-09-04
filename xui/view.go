@@ -299,6 +299,7 @@ type environment struct {
 	disabled   bool
 	lineLimit  int // max lines per text, or 0 for no limit
 	linkPolicy LinkPolicy
+	theme      theme
 	sheet      *sheet.Sheet
 	root       rootenv
 	nextenv    // must be zeroed before rendering a subview
@@ -426,7 +427,7 @@ func build(env environment, p plan) box {
 	rigid.addRigidStylesTo(&ss, env)
 	styles := env.root.style.Decls()
 	styles.Merge(ss.Decls())
-	addPaintStylesTo(&styles, env.nextenv)
+	addPaintStylesTo(&styles, env)
 	// Keep the generated class after the named classes in rendered output.
 	a = domi.Group(a, attr.Class(env.sheet.ClassFor(styles)))
 	return box{

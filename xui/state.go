@@ -220,7 +220,7 @@ type decl struct{ property, value string }
 //
 // A complete paint also declares properties at their default values,
 // which a state variant needs to override its base.
-func (p paint) decls(complete bool) []decl {
+func (p paint) decls(t theme, complete bool) []decl {
 	var ds []decl
 	for _, d := range []decl{
 		{"font-family", p.fontFamily},
@@ -236,11 +236,12 @@ func (p paint) decls(complete bool) []decl {
 	if len(p.bg) > 0 {
 		// The outermost color paints as the background color, and the
 		// inner colors as image layers listed innermost first.
-		ds = append(ds, decl{"background-color", p.bg[0].colorCSS()})
+		ds = append(ds, decl{"background-color", p.bg[0].colorCSS(t)})
 		if len(p.bg) > 1 {
 			var img []string
 			for _, c := range slices.Backward(p.bg[1:]) {
-				img = append(img, "linear-gradient("+c.colorCSS()+","+c.colorCSS()+")")
+				css := c.colorCSS(t)
+				img = append(img, "linear-gradient("+css+","+css+")")
 			}
 			ds = append(ds, decl{"background-image", strings.Join(img, ",")})
 		}
@@ -249,7 +250,7 @@ func (p paint) decls(complete bool) []decl {
 		ds = append(ds, decl{"border-radius", p.shape.radius()})
 	}
 	if p.fg != nil {
-		ds = append(ds, decl{"color", p.fg.colorCSS()})
+		ds = append(ds, decl{"color", p.fg.colorCSS(t)})
 	}
 	if complete || p.opacity < 1 {
 		ds = append(ds, decl{"opacity", strconv.FormatFloat(p.opacity, 'g', 4, 64)})
@@ -258,19 +259,19 @@ func (p paint) decls(complete bool) []decl {
 }
 
 // carrierDecls returns p's declarations for the ::after stroke carrier.
-func (p paint) carrierDecls() []decl {
+func (p paint) carrierDecls(t theme) []decl {
 	if len(p.stroke) == 0 {
 		return nil
 	}
-	return []decl{{"box-shadow", shadowList(p.stroke)}}
+	return []decl{{"box-shadow", shadowList(t, p.stroke)}}
 }
 
 // shadowList returns the strokes as a box-shadow list,
 // listed outermost first, so an outer stroke paints over an inner one.
-func shadowList(strokes []stroke) string {
+func shadowList(t theme, strokes []stroke) string {
 	var shadows []string
 	for _, s := range strokes {
-		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+s.c.colorCSS())
+		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+s.c.colorCSS(t))
 	}
 	return strings.Join(shadows, ",")
 }
@@ -285,9 +286,10 @@ func shadowList(strokes []stroke) string {
 // variant of any subset of its states, even at the zero-state value:
 // those variants match too while the union is active,
 // and only a redeclaration outweighs them.
-func addPaintStylesTo(ss *sheet.StyleSet, b nextenv) {
+func addPaintStylesTo(ss *sheet.StyleSet, env environment) {
+	b, t := env.nextenv, env.theme
 	base := b.paintUnder(0)
-	for _, d := range base.decls(false) {
+	for _, d := range base.decls(t, false) {
 		ss.Set(d.property, d.value)
 	}
 	if len(b.stroke) > 0 {
@@ -299,7 +301,7 @@ func addPaintStylesTo(ss *sheet.StyleSet, b nextenv) {
 		ss.SetPseudo("::after", "inset", "0")
 		ss.SetPseudo("::after", "border-radius", "inherit")
 		ss.SetPseudo("::after", "pointer-events", "none")
-		for _, d := range base.carrierDecls() {
+		for _, d := range base.carrierDecls(t) {
 			ss.SetPseudo("::after", d.property, d.value)
 		}
 	}
@@ -314,8 +316,8 @@ func addPaintStylesTo(ss *sheet.StyleSet, b nextenv) {
 			suffix     string
 			base, want []decl
 		}{
-			{"", base.decls(true), v.decls(true)},
-			{"::after", base.carrierDecls(), v.carrierDecls()},
+			{"", base.decls(t, true), v.decls(t, true)},
+			{"::after", base.carrierDecls(t), v.carrierDecls(t)},
 		} {
 			baseValue := make(map[string]string)
 			for _, d := range sel.base {

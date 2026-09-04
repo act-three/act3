@@ -133,7 +133,7 @@ func TestHandlerStylesheet(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		h := Handler(newApp, onURL, onChange, domi.InternalURLPrefix("/-/x"))
 		body := get(t, h, "/").Body.String()
-		m := regexp.MustCompile(`<ui-root><link href="([^"]+)" rel="stylesheet">`).FindStringSubmatch(body)
+		m := regexp.MustCompile(`<ui-root class="ui-\w+"><link href="([^"]+)" rel="stylesheet">`).FindStringSubmatch(body)
 		if m == nil {
 			t.Fatalf("no stylesheet link in ui-root:\n%s", body)
 		}

@@ -84,6 +84,19 @@ func movieRow(movie Movie) ui.View {
 	).Gap(12).Padding(ui.Edges(12))
 }
 
+// Theme colors as rendered under the default theme.
+const (
+	accentCSS = "oklch(0.511 0.23 277)"
+	mutedCSS  = "oklch(0.544 0.035 265)"
+)
+
+// pageRoot reports whether html is a page whose ui-root element
+// carries the given attributes after its generated class,
+// with the style element as its first child.
+func pageRoot(html, attrs string) bool {
+	return regexp.MustCompile(`^<ui-root class="ui-\w+"` + regexp.QuoteMeta(attrs) + `><style>`).MatchString(html)
+}
+
 func render(t *testing.T, v ui.View) string {
 	t.Helper()
 	var sb strings.Builder
@@ -119,7 +132,7 @@ func TestAccountCard(t *testing.T) {
 	}))
 
 	wants := []string{
-		`<ui-root>`,         // root
+		`<ui-root `,         // root
 		`<ui-card `,         // Card: an HStack named by its tag
 		`flex-grow:1`,       // the Spacer's fill stretches the row across the card
 		`border-radius:50%`, // BorderShape applied to the image frame
@@ -389,7 +402,7 @@ func TestImmutableModifiers(t *testing.T) {
 // modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
 	html := render(t, ui.Muted)
-	if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:var(--ui-color-muted);justify-self:stretch" {
+	if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:"+mutedCSS+";justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
 	if mod := render(t, ui.CSSColor("#eee").Opacity(0.5)); !strings.Contains(mod, "opacity:0.5") {
@@ -610,7 +623,7 @@ func TestTextRunsPreserveType(t *testing.T) {
 	}
 	// TextColor applies to the whole text: once, on the enclosing element,
 	// where every run inherits it.
-	if got := strings.Count(html, "var(--ui-color-muted)"); got != 1 {
+	if got := strings.Count(html, mutedCSS); got != 1 {
 		t.Errorf("muted color count = %d, want 1 (whole-text color)\n\n%s", got, html)
 	}
 }
@@ -673,19 +686,19 @@ func TestLink(t *testing.T) {
 			"navigate",
 			ui.Text("see ").Concat(ui.Link("/docs", ui.Text("docs"))),
 			`<a class="(ui-\w+)" href="/docs">docs</a>`,
-			[]string{"cursor:pointer", "color:var(--ui-color-accent)"},
+			[]string{"cursor:pointer", "color:" + accentCSS},
 		},
 		{
 			"send",
 			ui.Text("or ").Concat(ui.Link(Msg{}, ui.Text("retry"))),
 			`<button class="(ui-\w+)" domi-msg-click="[^"]*" type="button">retry</button>`,
-			[]string{"cursor:pointer", "color:var(--ui-color-accent)"},
+			[]string{"cursor:pointer", "color:" + accentCSS},
 		},
 		{
 			"outer style",
 			ui.Link("/docs", ui.Text("docs")).Bold(),
 			`</style><a class="(ui-\w+)" href="/docs">docs</a>`,
-			[]string{"color:var(--ui-color-accent)", "font-weight:600"},
+			[]string{"color:" + accentCSS, "font-weight:600"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -815,21 +828,21 @@ func TestDisabledSubtree(t *testing.T) {
 // and it wins over a color set outside the link.
 func TestLinkColor(t *testing.T) {
 	inner := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x").TextForeground(ui.Muted))))
-	if got := classRule(t, inner, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:var(--ui-color-accent)") {
+	if got := classRule(t, inner, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+accentCSS) {
 		t.Errorf("link rule = %q, want the accent color:\n%s", got, inner)
 	}
-	if got := classRule(t, inner, `<span class="(ui-\w+)"`); got != "color:var(--ui-color-muted)" {
+	if got := classRule(t, inner, `<span class="(ui-\w+)"`); got != "color:"+mutedCSS {
 		t.Errorf("label rule = %q, want its own color inside the link:\n%s", got, inner)
 	}
 
 	outer := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x")).TextForeground(ui.Muted)))
-	if got := classRule(t, outer, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:var(--ui-color-accent)") || strings.Contains(outer, "muted") {
+	if got := classRule(t, outer, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+accentCSS) || strings.Contains(outer, mutedCSS) {
 		t.Errorf("link rule = %q, want the accent color to replace the outer color:\n%s", got, outer)
 	}
 
 	// As a box, the link's own element carries the color.
 	block := render(t, ui.Link("/", ui.Text("x")))
-	if got := classRule(t, block, `</style><a class="(ui-\w+)" href="/">x</a>`); !strings.Contains(got, "color:var(--ui-color-accent)") {
+	if got := classRule(t, block, `</style><a class="(ui-\w+)" href="/">x</a>`); !strings.Contains(got, "color:"+accentCSS) {
 		t.Errorf("block link rule = %q, want the accent color on the box:\n%s", got, block)
 	}
 }
@@ -842,7 +855,7 @@ func TestTextStyleBeatsStatePaint(t *testing.T) {
 	// The link's accent is contended by a hovered color: no variant
 	// is emitted at all, and the accent holds in every state.
 	html := render(t, ui.Link("/", ui.Text("x")).WhileHovered(ui.Foreground(ui.Muted)))
-	if strings.Contains(html, "hover") || !strings.Contains(html, "color:var(--ui-color-accent)") {
+	if strings.Contains(html, "hover") || !strings.Contains(html, "color:"+accentCSS) {
 		t.Errorf("hovered color should lose to the accent entirely:\n%s", html)
 	}
 
@@ -1073,7 +1086,7 @@ func TestScrollViewPageLowering(t *testing.T) {
 	}
 	for _, tt := range cases {
 		html := render(t, ui.ScrollView(tt.axis, ui.Text("content")))
-		if !strings.Contains(html, `<ui-root `+tt.want+`>`) {
+		if !pageRoot(html, " "+tt.want) {
 			t.Errorf("ScrollView(%v) root missing %q:\n%s", tt.axis, tt.want, html)
 		}
 		if strings.Contains(html, "<ui-scroll ") {
@@ -1082,12 +1095,12 @@ func TestScrollViewPageLowering(t *testing.T) {
 	}
 
 	none := render(t, ui.ScrollView(ui.AxisSet(0), ui.Text("content")))
-	if !strings.HasPrefix(none, "<ui-root><style>") || strings.Contains(none, "<ui-scroll ") {
+	if !pageRoot(none, "") || strings.Contains(none, "<ui-scroll ") {
 		t.Errorf("a root ScrollView with no axes should lower as an ordinary page root:\n%s", none)
 	}
 
 	wrapped := render(t, ui.ScrollView(ui.Vertical, ui.Text("content")).Padding(ui.Edges(0)))
-	if !strings.HasPrefix(wrapped, "<ui-root><style>") || !strings.Contains(wrapped, "<ui-scroll ") {
+	if !pageRoot(wrapped, "") || !strings.Contains(wrapped, "<ui-scroll ") {
 		t.Errorf("padding should prevent page lowering:\n%s", wrapped)
 	}
 
@@ -1104,7 +1117,7 @@ func TestScrollViewPageLowering(t *testing.T) {
 	for _, tt := range modified {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.view)
-			if !strings.HasPrefix(html, "<ui-root><style>") || !strings.Contains(html, "<ui-scroll ") {
+			if !pageRoot(html, "") || !strings.Contains(html, "<ui-scroll ") {
 				t.Errorf("rendering modifier should prevent page lowering:\n%s", html)
 			}
 		})
@@ -1120,7 +1133,7 @@ func TestScrollViewPageLowering(t *testing.T) {
 		t.Errorf("root ScrollView title = %q, want title", title)
 	}
 	titledHTML := render(t, titled)
-	if !strings.Contains(titledHTML, `<ui-root scroll="y">`) || strings.Contains(titledHTML, "<ui-scroll ") {
+	if !pageRoot(titledHTML, ` scroll="y"`) || strings.Contains(titledHTML, "<ui-scroll ") {
 		t.Errorf("Title should preserve page lowering:\n%s", titledHTML)
 	}
 }
@@ -1619,7 +1632,7 @@ func TestOverlayPageLowering(t *testing.T) {
 
 	scrolling := render(t, ui.ScrollView(ui.Vertical,
 		ui.Text("content")).Overlay(ui.Top, ui.Text("toolbar")))
-	if !strings.Contains(scrolling, `<ui-root scroll="y">`) || strings.Contains(scrolling, "<ui-scroll ") || strings.Contains(scrolling, "<ui-layer ") {
+	if !pageRoot(scrolling, ` scroll="y"`) || strings.Contains(scrolling, "<ui-scroll ") || strings.Contains(scrolling, "<ui-layer ") {
 		t.Errorf("Overlay should preserve its ScrollView base's document lowering:\n%s", scrolling)
 	}
 	if got := classRule(t, scrolling, `<ui-text class="(ui-\w+)">content`); !strings.Contains(got, "isolation:isolate") {
@@ -1943,7 +1956,8 @@ func TestRenderTitle(t *testing.T) {
 }
 
 // TestRenderStyleElement verifies that the style element is always present,
-// as the first child of ui-root.
+// as the first child of ui-root,
+// holding only the root's own rule when no view contributes one.
 func TestRenderStyleElement(t *testing.T) {
 	// A native image is the one view with no declarations of its own.
 	var sb strings.Builder
@@ -1951,7 +1965,9 @@ func TestRenderStyleElement(t *testing.T) {
 	if err := domi.RenderTo(&sb, page); err != nil {
 		t.Fatalf("render: %v", err)
 	}
-	if !strings.Contains(sb.String(), "<ui-root><style>@layer xui{}</style>") {
-		t.Errorf("empty style element not first in ui-root:\n%s", sb.String())
+	html := sb.String()
+	m := regexp.MustCompile(`^<ui-root class="(ui-\w+)"><style>@layer xui\{\.(ui-\w+)\{[^{}]*\}\}</style>`).FindStringSubmatch(html)
+	if m == nil || m[1] != m[2] {
+		t.Errorf("style element holding only the root rule not first in ui-root:\n%s", html)
 	}
 }

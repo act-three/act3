@@ -128,7 +128,7 @@ type textRun interface {
 // styled lowers content inside the pending text styling, if any,
 // consuming it so that no subrun applies it again.
 func (env environment) styled(content func(environment) domi.Node) domi.Node {
-	ds := env.paintUnder(0).decls(false)
+	ds := env.paintUnder(0).decls(env.theme, false)
 	env.nextenv = nextenv{}
 	if len(ds) == 0 {
 		return content(env)

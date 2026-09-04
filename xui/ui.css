@@ -7,13 +7,6 @@
 		grid-template: 100% / 100%;
 		place-items: center;
 
-		--ui-color-fg: #101828;
-		--ui-color-muted: #667085;
-		--ui-color-border: #e4e7ec;
-		--ui-color-surface: #ffffff;
-		--ui-color-accent: #4f46e5;
-		--ui-color-danger: #d92d20;
-
 		--ui-font-body: system-ui, -apple-system, sans-serif;
 		--ui-font-mono: ui-monospace, "SF Mono", monospace;
 
@@ -21,7 +14,6 @@
 		--ui-radius-sm: 0.25rem;
 
 		font-family: var(--ui-font-body);
-		color: var(--ui-color-fg);
 		line-height: 1.4;
 	}
 

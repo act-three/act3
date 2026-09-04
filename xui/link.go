@@ -95,7 +95,7 @@ func (l textLink) renderText(env environment) domi.Node {
 	var ss canon.StyleSet
 	l.setStyles(&ss, env.disabled)
 	styles := ss.Decls()
-	for _, d := range env.paintUnder(0).decls(false) {
+	for _, d := range env.paintUnder(0).decls(env.theme, false) {
 		styles.Set(d.property, d.value)
 	}
 	class := attr.Class(env.sheet.ClassFor(styles))

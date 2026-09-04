@@ -92,9 +92,13 @@ func Handler[Msg any, A App[Msg]](
 	o ...Option,
 ) http.Handler {
 	var styleNonce func(context.Context) string
+	th := defaultTheme
 	for _, o := range o {
-		if o, ok := o.(optionStyleNonce); ok {
+		switch o := o.(type) {
+		case optionStyleNonce:
 			styleNonce = o.f
+		case optionTheme:
+			th = o.theme
 		}
 	}
 	// cssLink is filled in below, after the server exists to be asked
@@ -103,7 +107,7 @@ func Handler[Msg any, A App[Msg]](
 	sv := domi.NewServer(
 		func(ctx context.Context, u *url.URL) (*instance[Msg, A], domi.Cmd[Msg]) {
 			app, cmd := f(ctx, u)
-			in := &instance[Msg, A]{app: app, cssLink: cssLink}
+			in := &instance[Msg, A]{app: app, cssLink: cssLink, theme: th}
 			if styleNonce != nil {
 				in.nonce = styleNonce(ctx)
 			}
@@ -132,6 +136,7 @@ type instance[Msg any, A App[Msg]] struct {
 	app     A
 	nonce   string
 	cssLink domi.Node // loads the static stylesheet; nil with a custom document
+	theme   theme
 	sheet   sheet.Sheet
 }
 
@@ -163,16 +168,17 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 // A non-nil cssLink is included in the page to load the static stylesheet.
 func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 	env := environment{
+		theme: in.theme,
 		sheet: &in.sheet,
 		root:  rootenv{atRoot: true},
 	}
 	b := unary(VStack, root)(env)
+	rootAttr := attr.Class(in.sheet.ClassFor(in.theme.styles()))
 	var a domi.Attr
 	if in.nonce != "" {
 		a = attr.Nonce(in.nonce)
 	}
 	style := domi.Tag("style", a)(domi.Text("@layer xui{" + in.sheet.CSS() + "}"))
-	var rootAttr domi.Attr
 	if b.pageScroll != 0 {
 		var axes []string
 		if b.pageScroll.hasAll(Horizontal) {
@@ -181,10 +187,9 @@ func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 		if b.pageScroll.hasAll(Vertical) {
 			axes = append(axes, "y")
 		}
-		rootAttr = domi.Name("scroll", strings.Join(axes, " "))
+		rootAttr = domi.Group(rootAttr, domi.Name("scroll", strings.Join(axes, " ")))
 	}
 	// Order matters, static stylesheet, then generated style, then content.
-	// Emit the style element even when empty to keep the tree stable.
 	return b.title, domi.Tag("ui-root", rootAttr)(in.cssLink, style, b.node)
 }
 
@@ -192,7 +197,7 @@ func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 // It is intended for tests.
 // Applications serve their views with [Handler].
 func Render(root View) (title string, page domi.Node) {
-	var in instance[struct{}, App[struct{}]]
+	in := instance[struct{}, App[struct{}]]{theme: defaultTheme}
 	return in.render(root)
 }
 
