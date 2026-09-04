@@ -18,6 +18,7 @@ func TestOKLCH(t *testing.T) {
 		{"clamped alpha", ui.OKLCHA(0.7, 0.15, 250, 1.5), "oklch(0.7 0.15 250)"},
 		{"clamped negative alpha", ui.OKLCHA(0.7, 0.15, 250, -0.5), "oklch(0.7 0.15 250 / 0)"},
 		{"clamped lightness and chroma", ui.OKLCH(1.5, -0.1, 250), "oklch(1 0 250)"},
+		{"clamped high chroma", ui.OKLCH(0.5, 1, 250), "oklch(0.5 0.5 250)"},
 		{"clamped negative lightness", ui.OKLCH(-0.5, 0.15, 250), "oklch(0 0.15 250)"},
 		{"unclamped hue", ui.OKLCH(0.7, 0.15, 400), "oklch(0.7 0.15 400)"},
 		{"translucent", ui.OKLCHA(0.7, 0.15, 250, 0.5), "oklch(0.7 0.15 250 / 0.5)"},

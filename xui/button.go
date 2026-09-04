@@ -58,7 +58,7 @@ func nodeButton(action any, label node) node {
 	return func(env environment) box {
 		c := map[ButtonRole]Color{
 			RolePrimary:     Accent,
-			RoleDestructive: Danger,
+			RoleDestructive: Red,
 		}[env.buttonRole]
 		var fg Modifier
 		if c != nil {
@@ -67,7 +67,7 @@ func nodeButton(action any, label node) node {
 		v := base{label}.
 			Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
 			Modify(fg).
-			Background(cmp.Or(c, surfaceColor)).
+			Background(cmp.Or(c, backgroundColor)).
 			BorderStroke(1, cmp.Or(c, borderColor)).
 			BorderShape(RoundedRectangle)
 		cursor := "pointer"
