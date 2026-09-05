@@ -42,8 +42,8 @@ func accountCard(user User) ui.View {
 				Frame(ui.Width(48), ui.Height(48)).
 				BorderShape(ui.Ellipse),
 			ui.VStack(
-				ui.Text(user.Name).Font(ui.Headline),
-				ui.Text(user.Email).Foreground(ui.Muted),
+				ui.Text(user.Name).Font(ui.HeadlineFont),
+				ui.Text(user.Email).Foreground(ui.Secondary),
 			).Gap(4).Alignment(ui.Leading),
 			ui.Spacer(),
 			ui.Button(Msg{EditProfile: true}, ui.Text("Edit")).Role(ui.RolePrimary),
@@ -76,8 +76,8 @@ func movieRow(movie Movie) ui.View {
 			ScaledToFill().
 			Frame(ui.Width(64), ui.Height(96)),
 		ui.VStack(
-			ui.Text(movie.Title).Font(ui.Headline),
-			ui.Text(movie.Summary).Foreground(ui.Muted),
+			ui.Text(movie.Title).Font(ui.HeadlineFont),
+			ui.Text(movie.Summary).Foreground(ui.Secondary),
 		).Gap(4),
 		ui.Spacer(),
 		ui.Button(Msg{Watched: movie.ID}, ui.Text("Watched")),
@@ -87,7 +87,7 @@ func movieRow(movie Movie) ui.View {
 // Theme colors as rendered under the default theme.
 const (
 	accentCSS = "oklch(0.511 0.23 277)"
-	mutedCSS  = "oklch(0.544 0.035 265)"
+	mutedCSS  = "oklch(0.345 0.0033 0)"
 )
 
 // pageRoot reports whether html is a page whose ui-root element
@@ -401,7 +401,7 @@ func TestImmutableModifiers(t *testing.T) {
 // solid fill of itself requesting fill on both axes, and generic
 // modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
-	html := render(t, ui.Muted)
+	html := render(t, ui.Secondary)
 	if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:"+mutedCSS+";justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
@@ -430,7 +430,7 @@ func TestColorAsView(t *testing.T) {
 		}
 	}
 	// Modifiers with no possible effect on a color are no-ops.
-	if noop := render(t, ui.Muted.Foreground(ui.CSSColor("#fff")).Font(ui.Title)); noop != html {
+	if noop := render(t, ui.Secondary.Foreground(ui.CSSColor("#fff")).Font(ui.Title)); noop != html {
 		t.Errorf("no-effect modifiers on a color should be no-ops:\n%s", noop)
 	}
 }
@@ -473,7 +473,7 @@ func TestIdealSize(t *testing.T) {
 			// The color's own box is the FixedSize boundary: its
 			// fills are stripped, so it takes its ideal as its size.
 			"direct FixedSize",
-			ui.Muted.FixedSize(),
+			ui.Secondary.FixedSize(),
 			[]string{"width:10px", "height:10px"},
 			[]string{"min-width", "min-height"},
 		},
@@ -481,25 +481,25 @@ func TestIdealSize(t *testing.T) {
 			// The stack is the boundary; the color inside keeps its
 			// fills and contributes its ideal as a minimum.
 			"FixedSize on an ancestor",
-			ui.VStack(ui.Muted).FixedSize(),
+			ui.VStack(ui.Secondary).FixedSize(),
 			[]string{"min-width:10px", "min-height:10px"},
 			nil,
 		},
 		{
 			"definite frame axis clears its axis only",
-			ui.VStack(ui.Muted).Frame(ui.Width(200)).FixedSize(),
+			ui.VStack(ui.Secondary).Frame(ui.Width(200)).FixedSize(),
 			[]string{"min-height:10px"},
 			[]string{"min-width"},
 		},
 		{
 			"both definite axes clear both",
-			ui.VStack(ui.Muted).Frame(ui.Width(200), ui.Height(100)).FixedSize(),
+			ui.VStack(ui.Secondary).Frame(ui.Width(200), ui.Height(100)).FixedSize(),
 			nil,
 			[]string{"10px"},
 		},
 		{
 			"scroll viewport takes 100px; content unbounded on the scroll axis",
-			ui.ScrollView(ui.Vertical, ui.Muted).FixedSize().Padding(ui.Edges(0)),
+			ui.ScrollView(ui.Vertical, ui.Secondary).FixedSize().Padding(ui.Edges(0)),
 			[]string{"width:100px", "height:100px", "height:10px"},
 			[]string{"width:10px"},
 		},
@@ -508,25 +508,25 @@ func TestIdealSize(t *testing.T) {
 			// so its ideal is its size there, and it keeps filling
 			// the bounded cross axis.
 			"scroll axis is unbounded without FixedSize",
-			ui.ScrollView(ui.Vertical, ui.Muted).Padding(ui.Edges(0)),
+			ui.ScrollView(ui.Vertical, ui.Secondary).Padding(ui.Edges(0)),
 			[]string{"height:10px;justify-self:stretch"},
 			[]string{"width:10px"},
 		},
 		{
 			"both-axes scroll makes both content axes unbounded",
-			ui.ScrollView(ui.Horizontal|ui.Vertical, ui.Muted).Padding(ui.Edges(0)),
+			ui.ScrollView(ui.Horizontal|ui.Vertical, ui.Secondary).Padding(ui.Edges(0)),
 			[]string{"width:10px", "height:10px"},
 			nil,
 		},
 		{
 			"no-axis scroll makes neither content axis unbounded",
-			ui.ScrollView(ui.AxisSet(0), ui.Muted).FixedSize().Padding(ui.Edges(0)),
+			ui.ScrollView(ui.AxisSet(0), ui.Secondary).FixedSize().Padding(ui.Edges(0)),
 			[]string{"width:100px", "height:100px", "overflow-x:clip;overflow-y:clip"},
 			[]string{"10px"},
 		},
 		{
 			"bounds frame takes its ideal and makes it the subview's space",
-			ui.VStack(ui.Muted).FrameBounds(ui.IdealWidth(200), ui.IdealHeight(80)).FixedSize(),
+			ui.VStack(ui.Secondary).FrameBounds(ui.IdealWidth(200), ui.IdealHeight(80)).FixedSize(),
 			[]string{"width:200px", "height:80px"},
 			[]string{"10px"},
 		},
@@ -566,7 +566,7 @@ func TestIdealSize(t *testing.T) {
 		},
 		{
 			"decoration layer clears both axes",
-			ui.Text("x").Overlay(ui.Center, ui.Muted).FixedSize(),
+			ui.Text("x").Overlay(ui.Center, ui.Secondary).FixedSize(),
 			nil,
 			[]string{"10px"},
 		},
@@ -613,7 +613,7 @@ func TestTextRunsPreserveType(t *testing.T) {
 	v := ui.Text("Status: ").
 		Bold().
 		Concat(ui.Text("Draft").Italic()).
-		TextForeground(ui.Muted)
+		TextForeground(ui.Secondary)
 
 	html := render(t, v)
 	for _, w := range []string{"font-weight:600", "font-style:italic", "Status: ", "Draft"} {
@@ -639,7 +639,7 @@ func TestFontSpecifiesWholeType(t *testing.T) {
 	}{
 		{ui.Body, []string{"font-size:1rem", "font-weight:400", "line-height:1.4"}},
 		{ui.Caption, []string{"font-size:0.75rem", "font-weight:400", "line-height:1.3"}},
-		{ui.Headline, []string{"font-size:1.125rem", "font-weight:600", "line-height:1.4"}},
+		{ui.HeadlineFont, []string{"font-size:1.125rem", "font-weight:600", "line-height:1.4"}},
 		{ui.LargeTitle, []string{"font-size:2rem", "font-weight:700", "line-height:1.15"}},
 	} {
 		html := render(t, ui.VStack(ui.Text("x").Font(tt.f)).Font(ui.Title))
@@ -827,7 +827,7 @@ func TestDisabledSubtree(t *testing.T) {
 // a color set inside the label wins over it,
 // and it wins over a color set outside the link.
 func TestLinkColor(t *testing.T) {
-	inner := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x").TextForeground(ui.Muted))))
+	inner := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x").TextForeground(ui.Secondary))))
 	if got := classRule(t, inner, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+accentCSS) {
 		t.Errorf("link rule = %q, want the accent color:\n%s", got, inner)
 	}
@@ -835,7 +835,7 @@ func TestLinkColor(t *testing.T) {
 		t.Errorf("label rule = %q, want its own color inside the link:\n%s", got, inner)
 	}
 
-	outer := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x")).TextForeground(ui.Muted)))
+	outer := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x")).TextForeground(ui.Secondary)))
 	if got := classRule(t, outer, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+accentCSS) || strings.Contains(outer, mutedCSS) {
 		t.Errorf("link rule = %q, want the accent color to replace the outer color:\n%s", got, outer)
 	}
@@ -854,7 +854,7 @@ func TestLinkColor(t *testing.T) {
 func TestTextStyleBeatsStatePaint(t *testing.T) {
 	// The link's accent is contended by a hovered color: no variant
 	// is emitted at all, and the accent holds in every state.
-	html := render(t, ui.Link("/", ui.Text("x")).WhileHovered(ui.Foreground(ui.Muted)))
+	html := render(t, ui.Link("/", ui.Text("x")).WhileHovered(ui.Foreground(ui.Secondary)))
 	if strings.Contains(html, "hover") || !strings.Contains(html, "color:"+accentCSS) {
 		t.Errorf("hovered color should lose to the accent entirely:\n%s", html)
 	}

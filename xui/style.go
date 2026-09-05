@@ -4,11 +4,11 @@ package ui
 type FontSize string
 
 const (
-	Body       FontSize = "body"
-	Caption    FontSize = "caption"
-	Headline   FontSize = "headline"
-	Title      FontSize = "title"
-	LargeTitle FontSize = "large-title"
+	Body         FontSize = "body"
+	Caption      FontSize = "caption"
+	HeadlineFont FontSize = "headline"
+	Title        FontSize = "title"
+	LargeTitle   FontSize = "large-title"
 )
 
 // values returns the font size, weight, and line height of the slot,
@@ -19,7 +19,7 @@ func (f FontSize) values() (size, weight, height string) {
 		return "1rem", "400", "1.4"
 	case Caption:
 		return "0.75rem", "400", "1.3"
-	case Headline:
+	case HeadlineFont:
 		return "1.125rem", "600", "1.4"
 	case Title:
 		return "1.5rem", "700", "1.2"

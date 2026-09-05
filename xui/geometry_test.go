@@ -61,7 +61,7 @@ func TestGeometrySpacerAbsorbsSlack(t *testing.T) {
 // covers the viewport exactly, and the viewport acts as a definite
 // frame — the root view's fills on both axes terminate at it.
 func TestGeometryRootIsViewport(t *testing.T) {
-	stage(t, ui.Muted, func(s *uitest.Session) {
+	stage(t, ui.Secondary, func(s *uitest.Session) {
 		root := s.Rect("ui-root", 0)
 		within(t, "root x", root.X, 0, 0.5)
 		within(t, "root y", root.Y, 0, 0.5)
@@ -445,7 +445,7 @@ func TestGeometryOverlayAtAnchors(t *testing.T) {
 // content size, the base subview and the layer both track the
 // container's box.
 func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
-	layered := ui.VStack(ui.Text("base"), ui.Muted).Underlay(ui.Center, ui.CSSColor("#00f"))
+	layered := ui.VStack(ui.Text("base"), ui.Secondary).Underlay(ui.Center, ui.CSSColor("#00f"))
 	v := ui.HStack(ui.Text("tall").Padding(ui.Edges(140)), layered)
 	stage(t, v, func(s *uitest.Session) {
 		box := s.Rect("ui-layer", 0)
@@ -710,7 +710,7 @@ func TestGeometrySoftFrameTracksSpace(t *testing.T) {
 // with bounded available space the same ideal is inert and the
 // frame tracks space as usual.
 func TestGeometrySoftFrameIdeal(t *testing.T) {
-	v := ui.VStack(ui.Muted).
+	v := ui.VStack(ui.Secondary).
 		FrameBounds(ui.IdealWidth(500), ui.IdealHeight(80)).
 		Class("soft")
 
@@ -877,7 +877,7 @@ func TestGeometryStickyPins(t *testing.T) {
 		for r := range 5 {
 			rows = append(rows, ui.Text(fmt.Sprintf("Row %d.%d", i, r)).
 				Padding(ui.Edges(12)).
-				BorderStroke(1, ui.Muted))
+				BorderStroke(1, ui.Secondary))
 		}
 		return ui.VStack(rows...).Gap(0).Alignment(ui.Leading)
 	}

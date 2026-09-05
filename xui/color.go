@@ -3,16 +3,7 @@ package ui
 import (
 	"cmp"
 	"fmt"
-)
-
-// Theme color tokens.
-var (
-	Muted  Color = OKLCH(0.544, 0.035, 265)
-	Accent Color = colorView{base{nodeColor(accentColor{})}, accentColor{}}
-	Danger Color = OKLCH(0.576, 0.209, 29.5)
-
-	borderColor  Color = OKLCH(0.927, 0.007, 261)
-	surfaceColor Color = colorView{base{nodeColor(baseColor{})}, baseColor{}}
+	"math"
 )
 
 // A Color represents a color.
@@ -61,21 +52,15 @@ func OKLCH(L, C, h float64) OKLCHColor {
 //
 // Lightness, chroma, and opacity are clamped to their valid ranges.
 func OKLCHA(L, C, h, α float64) OKLCHColor {
-	col := oklch{
-		l: min(max(L, 0), 1),
-		c: max(C, 0),
-		h: h,
-		a: min(max(α, 0), 1),
-	}
-	return viewOKLCH{colorView{base{nodeColor(col)}, col}, col}
+	c := newOKLCH(L, C, h, α)
+	return viewOKLCH{newColor(c), c}
 }
 
 // CSSColor returns the color given by expr.
 // It can be any valid CSS color expression,
 // such as "#fff" or "var(--my-color)".
 func CSSColor(expr string) Color {
-	c := cssColor(expr)
-	return colorView{base{nodeColor(c)}, c}
+	return newColor(cssColor(expr))
 }
 
 // A color is the internal representation of a color.
@@ -94,6 +79,33 @@ type color interface {
 
 type oklch struct{ l, c, h, a float64 }
 
+func newOKLCH(l, c, h, a float64) oklch {
+	const maxChroma = 0.5 // Beyond the reach of any display.
+	return oklch{
+		l: min(max(l, 0), 1),
+		c: min(max(c, 0), maxChroma),
+		h: h,
+		a: min(max(a, 0), 1),
+	}
+}
+
+// mix returns the color a fraction w of the way from a to b.
+func mix(a, b oklch, w float64) oklch {
+	lerp := func(x, y float64) float64 { return x + (y-x)*w }
+	la, aa, ba := a.lab()
+	lb, ab, bb := b.lab()
+	return fromLab(lerp(la, lb), lerp(aa, ab), lerp(ba, bb), lerp(a.a, b.a))
+}
+
+// fromLab returns the color with the given OKLab coordinates and opacity.
+func fromLab(l, a, b, alpha float64) oklch {
+	h := math.Atan2(b, a) * 180 / math.Pi
+	if h < 0 {
+		h += 360
+	}
+	return oklch{l: l, c: math.Hypot(a, b), h: h, a: alpha}
+}
+
 func (c oklch) colorCSS(theme) string {
 	if c.a < 1 {
 		return fmt.Sprintf("oklch(%g %g %g / %g)", c.l, c.c, c.h, c.a)
@@ -103,13 +115,13 @@ func (c oklch) colorCSS(theme) string {
 
 func (c oklch) colorCoords(theme) oklch { return c }
 
-// lightThreshold is the lightness above which a color is light.
-const lightThreshold = 0.57
-
 // isLight reports whether c is a light color.
 // Foreground content on a light color background
 // is drawn in dark colors, and vice versa.
-func (c oklch) isLight() bool { return c.l > lightThreshold }
+func (c oklch) isLight() bool {
+	const threshold = 0.57
+	return c.l > threshold
+}
 
 // colorScheme returns a suitable CSS color-scheme value
 // for a background color of c.
@@ -120,7 +132,7 @@ func (c oklch) colorScheme() string {
 	return "dark"
 }
 
-// text returns the base foreground color for a background color of c.
+// text returns a suitable foreground color for a background color of c.
 // Black when c is light or white when c is dark,
 // tinted with c's hue at half its chroma.
 func (c oklch) text() oklch {
@@ -131,6 +143,27 @@ func (c oklch) text() oklch {
 	return t
 }
 
+// lab returns c's coordinates in the OKLab color space.
+func (c oklch) lab() (l, a, b float64) {
+	h := c.h * math.Pi / 180
+	return c.l, c.c * math.Cos(h), c.c * math.Sin(h)
+}
+
+// A compositeColor takes its lightness, chroma, hue, and opacity
+// from four other colors.
+type compositeColor struct{ l, c, h, a color }
+
+func (cc compositeColor) colorCSS(t theme) string { return cc.colorCoords(t).colorCSS(t) }
+
+func (cc compositeColor) colorCoords(t theme) oklch {
+	return oklch{
+		l: cc.l.colorCoords(t).l,
+		c: cc.c.colorCoords(t).c,
+		h: cc.h.colorCoords(t).h,
+		a: cc.a.colorCoords(t).a,
+	}
+}
+
 type cssColor string
 
 func (c cssColor) colorCSS(theme) string { return string(c) }
@@ -139,21 +172,13 @@ func (c cssColor) colorCoords(theme) oklch {
 	panic(fmt.Sprintf("ui: coordinates of CSS color %q are unknown", string(c)))
 }
 
-// baseColor is the theme's base color.
-type baseColor struct{}
-
-func (baseColor) colorCSS(t theme) string   { return t.base.colorCSS(t) }
-func (baseColor) colorCoords(t theme) oklch { return t.base }
-
-// accentColor is the theme's accent color.
-type accentColor struct{}
-
-func (accentColor) colorCSS(t theme) string   { return t.accent.colorCSS(t) }
-func (accentColor) colorCoords(t theme) oklch { return t.accent }
-
 type colorView struct {
 	base
 	c color
+}
+
+func newColor(c color) colorView {
+	return colorView{base{nodeColor(c)}, c}
 }
 
 func (c colorView) color() color { return c.c }

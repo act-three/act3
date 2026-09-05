@@ -51,9 +51,9 @@ func accountCard(user User) View {
 				Frame(Width(48), Height(48)),
 			VStack(
 				Text(user.Name).
-					Font(Headline),
+					Font(HeadlineFont),
 				Text(user.Email).
-					Foreground(Muted),
+					Foreground(Secondary),
 			).
 				Gap(4).
 				Alignment(Leading),
@@ -96,9 +96,9 @@ func movieRow(movie Movie) View {
 			Frame(Width(56), Height(84)),
 		VStack(
 			Text(movie.Title).
-				Font(Headline),
+				Font(HeadlineFont),
 			Text(movie.Summary).
-				Foreground(Muted).
+				Foreground(Secondary).
 				Font(Caption),
 		).
 			Gap(4).
@@ -117,7 +117,7 @@ func dividerRow() View {
 		Text("Duplicate"),
 		Divider(),
 		Text("Delete").
-			Foreground(Danger),
+			Foreground(Red),
 	).
 		Gap(12).
 		Padding(Edges(12))
@@ -126,13 +126,13 @@ func dividerRow() View {
 func dividerColumn() View {
 	return VStack(
 		Text("Profile").
-			Font(Headline),
+			Font(HeadlineFont),
 		Divider(),
 		Text("Account").
-			Foreground(Muted),
+			Foreground(Secondary),
 		Divider(),
 		Text("Billing").
-			Foreground(Muted),
+			Foreground(Secondary),
 	).
 		Alignment(Leading).
 		Padding(Edges(12)).
@@ -146,7 +146,7 @@ func zstackDemo() View {
 			BorderShape(RoundedRectangle),
 		Text("ZStack with Long Text").
 			TextForeground(CSSColor("#fff")).
-			Font(Headline),
+			Font(HeadlineFont),
 	).Overlay(
 		BottomTrailing,
 		Text("layered").
@@ -170,7 +170,7 @@ func scrollDemo() View {
 		VStack(For(count(3), nil, func(s int) View {
 			return VStack(
 				Text("Season "+strconv.Itoa(s)).
-					Font(Headline).
+					Font(HeadlineFont).
 					Padding(Edges(8)).
 					Background(CSSColor("#e0e7ff")).
 					Sticky(),
@@ -194,7 +194,7 @@ func richText() View {
 		Bold().
 		Concat(Text("Draft ").Italic()).
 		Concat(Text("v2").Monospace()).
-		TextForeground(Muted)
+		TextForeground(Secondary)
 }
 
 func linkText() View {
@@ -294,7 +294,7 @@ func posterWall() View {
 func section(title string, body View) View {
 	return VStack(
 		Text(title).
-			TextForeground(Muted).
+			TextForeground(Secondary).
 			TextFont(Caption),
 		body,
 	).
