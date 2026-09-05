@@ -34,12 +34,12 @@ var defaultTheme = theme{
 // Contrast influences how far derived colors differ from the background.
 // It ranges from 15 (subtle) to 100 (stark).
 // Values outside this range are clamped.
-func Theme(background, accent OKLCHColor, contrast float64) Option {
-	b := background.coords()
+func Theme(background, accent Color, contrast float64) Option {
+	b := background.color().colorCoords(defaultTheme)
 	b.a = 1
 	return optionTheme{theme: theme{
 		base:     b,
-		accent:   accent.coords(),
+		accent:   accent.color().colorCoords(defaultTheme),
 		contrast: min(max(contrast, 15), 100),
 	}}
 }

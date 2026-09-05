@@ -20,14 +20,6 @@ type Color interface {
 	color() color
 }
 
-// An OKLCHColor is a Color with known coordinates
-// in the OKLCH color space.
-type OKLCHColor interface {
-	Color
-
-	coords() oklch
-}
-
 // OKLCH returns the color with the given coordinates
 // in the OKLCH color space.
 //
@@ -37,7 +29,7 @@ type OKLCHColor interface {
 //   - Hue (h) is an angle in degrees.
 //
 // Lightness and chroma are clamped to their valid ranges.
-func OKLCH(L, C, h float64) OKLCHColor {
+func OKLCH(L, C, h float64) Color {
 	return OKLCHA(L, C, h, 1)
 }
 
@@ -51,9 +43,8 @@ func OKLCH(L, C, h float64) OKLCHColor {
 //   - Opacity (α) ranges from 0 (transparent) to 1 (opaque).
 //
 // Lightness, chroma, and opacity are clamped to their valid ranges.
-func OKLCHA(L, C, h, α float64) OKLCHColor {
-	c := newOKLCH(L, C, h, α)
-	return viewOKLCH{newColor(c), c}
+func OKLCHA(L, C, h, α float64) Color {
+	return newColor(newOKLCH(L, C, h, α))
 }
 
 // A color is the internal representation of a color.
@@ -170,13 +161,6 @@ func (c colorView) Font(FontSize) View { return c }
 // This overrides the embedded method Foreground
 // to avoid emitting useless style declarations.
 func (c colorView) Foreground(Color) View { return c }
-
-type viewOKLCH struct {
-	colorView
-	oklch oklch
-}
-
-func (c viewOKLCH) coords() oklch { return c.oklch }
 
 // nodeColor paints a solid color.
 func nodeColor(c color) node {
