@@ -9,13 +9,13 @@ import (
 
 // A theme holds the inputs from which theme colors are derived.
 type theme struct {
-	base     oklch // always opaque
+	bgbase   oklch // always opaque
 	accent   oklch
 	contrast float64
 }
 
 var defaultTheme = theme{
-	base:     oklch{l: 0.982, c: 0.0013, h: 100, a: 1},
+	bgbase:   oklch{l: 0.982, c: 0.0013, h: 100, a: 1},
 	accent:   oklch{l: 0.511, c: 0.23, h: 277, a: 1},
 	contrast: 30,
 }
@@ -38,7 +38,7 @@ func Theme(background, accent Color, contrast float64) Option {
 	b := background.color().colorCoords(defaultTheme)
 	b.a = 1
 	return optionTheme{theme: theme{
-		base:     b,
+		bgbase:   b,
 		accent:   accent.color().colorCoords(defaultTheme),
 		contrast: min(max(contrast, 15), 100),
 	}}
@@ -55,9 +55,9 @@ type optionTheme struct {
 // the background color, the foreground color for text on it, and the matching color scheme.
 func (t theme) styles() sheet.StyleSet {
 	var ss sheet.StyleSet
-	ss.Set("background-color", t.base.css())
+	ss.Set("background-color", t.bgbase.css())
 	ss.Set("color", Primary.color().colorCoords(t).css())
-	ss.Set("color-scheme", t.base.colorScheme())
+	ss.Set("color-scheme", t.bgbase.colorScheme())
 	return ss
 }
 
@@ -176,7 +176,7 @@ type themeColor struct {
 
 func (tc themeColor) colorCoords(t theme) oklch {
 	o := tc.from.colorCoords(t)
-	f := tc.s.factor(o, t.base, t.contrast)
+	f := tc.s.factor(o, t.bgbase, t.contrast)
 	// Only lightness has a direction that depends on the mode.
 	cf := math.Abs(f)
 	if tc.s == ForegroundScale {
@@ -189,7 +189,7 @@ func (tc themeColor) colorCoords(t theme) oklch {
 type modeColor struct{ light, dark color }
 
 func (m modeColor) in(t theme) color {
-	if t.base.isLight() {
+	if t.bgbase.isLight() {
 		return m.light
 	}
 	return m.dark
@@ -200,12 +200,12 @@ func (m modeColor) colorCoords(t theme) oklch { return m.in(t).colorCoords(t) }
 // themeBackground is the theme's background color.
 type themeBackground struct{}
 
-func (themeBackground) colorCoords(t theme) oklch { return t.base }
+func (themeBackground) colorCoords(t theme) oklch { return t.bgbase }
 
 // themeForeground is the theme's foreground color.
 type themeForeground struct{}
 
-func (themeForeground) colorCoords(t theme) oklch { return t.base.text() }
+func (themeForeground) colorCoords(t theme) oklch { return t.bgbase.text() }
 
 // themeAccent is the theme's accent color.
 type themeAccent struct{}
@@ -240,8 +240,8 @@ type selectedColor struct{}
 
 func (selectedColor) colorCoords(t theme) oklch {
 	w := 0.05
-	if t.base.isLight() {
+	if t.bgbase.isLight() {
 		w = 0.18
 	}
-	return mix(t.base, t.accent, min(w*(1+t.base.c/0.09), 1))
+	return mix(t.bgbase, t.accent, min(w*(1+t.bgbase.c/0.09), 1))
 }
