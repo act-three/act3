@@ -122,7 +122,7 @@ func (v base) ThemeBackground(c Color) View {
 		}
 		env.theme.base = bg
 		env.bg = append(env.bg, term[color]{value: bg})
-		env.fg = append(env.fg, term[color]{value: themeForeground{}})
+		env.fg = append(env.fg, term[color]{value: Primary.color()})
 		env.hasPaint = true
 		return env
 	}))

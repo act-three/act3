@@ -54,10 +54,10 @@ var (
 
 	// shadeColor is the background of an inset region,
 	// such as a card or a text field.
-	// shadeColor Color = ModeColor(
-	//	ThemeColor(0.047, 0, BackgroundScale),
-	//	ThemeColor(0.017, 0.0017, BackgroundScale),
-	// )
+	shadeColor Color = ModeColor(
+		ThemeColor(0.047, 0, BackgroundScale),
+		ThemeColor(0.017, 0.0017, BackgroundScale),
+	)
 	// shadeHover Color = ModeColor(
 	//	ThemeColor(0.060, 0, BackgroundScale),
 	//	ThemeColor(0.026, 0.0033, BackgroundScale),
@@ -131,14 +131,14 @@ var (
 	// )
 
 	// Faces of secondary and tertiary controls.
-	// controlSecondary Color = ModeColor(
-	//	ThemeColor(-0.052, 0, ControlScale),
-	//	ThemeColor(0.103, 0.0025, ControlScale),
-	// )
-	// controlSecondaryHover Color = ModeColor(
-	//	ThemeColor(0.052, -0.0033, ControlScale),
-	//	ThemeColor(0.207, 0.0058, ControlScale),
-	// )
+	controlSecondary Color = ModeColor(
+		ThemeColor(-0.052, 0, ControlScale),
+		ThemeColor(0.103, 0.0025, ControlScale),
+	)
+	controlSecondaryHover Color = ModeColor(
+		ThemeColor(0.052, -0.0033, ControlScale),
+		ThemeColor(0.207, 0.0058, ControlScale),
+	)
 	// controlSecondarySelected Color = ModeColor(
 	//	ThemeColor(0.078, -0.0033, ControlScale),
 	//	ThemeColor(0.293, 0.0058, ControlScale),
@@ -158,12 +158,10 @@ var (
 
 	// accentTextColor is the foreground color for text
 	// set on top of the accent color.
-	accentTextColor Color = newColor(accentText{})
+	accentTextColor Color = textOn(themeAccent{})
 
-	// accentHover Color = ModeColor(
-	//	newColor(themeColor{themeAccent{}, 0.052, -0.0067, BackgroundScale}),
-	//	newColor(themeColor{themeAccent{}, 0.043, 0.0067, BackgroundScale}),
-	// )
+	// accentHover is the face of a hovered accent control.
+	accentHover Color = hoverOf(themeAccent{})
 
 	headline = newColor(compositeColor{
 		l: ModeColor(

@@ -60,20 +60,21 @@ func TestInheritedModifierCollapses(t *testing.T) {
 }
 
 // TestModifierBeatsComponentChrome pins the collapse against
-// component chrome: consumed Font and Foreground values land on the
-// button element itself, where its font:inherit and color:inherit —
-// the absence of an opinion — must yield to them.
+// component chrome: a consumed Font value lands on the button element
+// itself, where its font:inherit — the absence of an opinion — must
+// yield to it. The button has an opinion about its text color, so a
+// label color is applied to the label.
 func TestModifierBeatsComponentChrome(t *testing.T) {
-	v := ui.Button(struct{}{}, ui.Text("x")).Font(ui.Title).Foreground(ui.Red)
+	v := ui.Button(struct{}{}, ui.Text("x").Foreground(ui.Red)).Font(ui.Title)
 	stage(t, v, func(s *uitest.Session) {
 		var size, color string
 		s.Eval(`getComputedStyle(document.querySelector("button")).fontSize`, &size)
-		s.Eval(`getComputedStyle(document.querySelector("button")).color`, &color)
+		s.Eval(`getComputedStyle(document.querySelector("button ui-text")).color`, &color)
 		if size != "24px" { // Title, 1.5rem
 			t.Errorf("button font-size = %s, want the modifier's 24px", size)
 		}
 		if color != redCSS {
-			t.Errorf("button color = %s, want the modifier's %s", color, redCSS)
+			t.Errorf("label color = %s, want the label's %s", color, redCSS)
 		}
 	})
 }
@@ -122,22 +123,22 @@ func TestOpacityMultiplies(t *testing.T) {
 // TestButtonDisabledState pins that a disabled button enters the
 // Disabled state whatever its action, and that an enabled one does not.
 func TestButtonDisabledState(t *testing.T) {
-	red := ui.Foreground(ui.Red)
+	title := ui.Font(ui.Title)
 	for name, tc := range map[string]struct {
 		v    ui.View
 		want bool
 	}{
-		"send":              {ui.Button(struct{}{}, ui.Text("x")).WhileDisabled(red), false},
-		"send disabled":     {ui.Button(struct{}{}, ui.Text("x")).Disabled(true).WhileDisabled(red), true},
-		"navigate":          {ui.Button("/x", ui.Text("x")).WhileDisabled(red), false},
-		"navigate disabled": {ui.Button("/x", ui.Text("x")).Disabled(true).WhileDisabled(red), true},
+		"send":              {ui.Button(struct{}{}, ui.Text("x")).WhileDisabled(title), false},
+		"send disabled":     {ui.Button(struct{}{}, ui.Text("x")).Disabled(true).WhileDisabled(title), true},
+		"navigate":          {ui.Button("/x", ui.Text("x")).WhileDisabled(title), false},
+		"navigate disabled": {ui.Button("/x", ui.Text("x")).Disabled(true).WhileDisabled(title), true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			stage(t, tc.v, func(s *uitest.Session) {
-				var color string
-				s.Eval(`getComputedStyle(document.querySelector("button, a")).color`, &color)
-				if got := color == redCSS; got != tc.want {
-					t.Errorf("color = %s, want disabled styling = %v", color, tc.want)
+				var size string
+				s.Eval(`getComputedStyle(document.querySelector("button, a")).fontSize`, &size)
+				if got := size == "24px"; got != tc.want { // Title, 1.5rem
+					t.Errorf("font-size = %s, want disabled styling = %v", size, tc.want)
 				}
 			})
 		})

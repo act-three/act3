@@ -80,7 +80,7 @@ func (l textLink) render(env environment) box {
 	env.tag = l.tag()
 	env.add(l.attrs(env.disabled, env.linkPolicy))
 	l.setStyles(&env.style, env.disabled)
-	env.fg = append(env.fg, term[color]{value: Accent.color()})
+	env.fg = append(env.fg, term[color]{value: linkColor.color()})
 	if env.disabled {
 		env.opacity = append(env.opacity, term[float64]{value: 0.5})
 	}
@@ -88,7 +88,7 @@ func (l textLink) render(env environment) box {
 }
 
 func (l textLink) renderText(env environment) domi.Node {
-	env.fg = append(env.fg, term[color]{value: Accent.color()})
+	env.fg = append(env.fg, term[color]{value: linkColor.color()})
 	if env.disabled {
 		env.opacity = append(env.opacity, term[float64]{value: 0.5})
 	}

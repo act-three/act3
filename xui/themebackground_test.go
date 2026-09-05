@@ -8,19 +8,19 @@ import (
 )
 
 // TestThemeBackground pins what a theme background establishes on its
-// box: its color as the background, the foreground color for text on
-// it, and a color scheme only when its lightness crosses the light-dark
-// boundary of the enclosing theme.
+// box: its color as the background, Primary derived from it as the
+// text color, and a color scheme only when its lightness crosses the
+// light-dark boundary of the enclosing theme.
 func TestThemeBackground(t *testing.T) {
 	tests := []struct {
 		name string
 		c    ui.Color
 		want string
 	}{
-		{"dark on light", ui.OKLCH(0.2, 0.03, 215), "background-color:oklch(0.2 0.03 215);color:oklch(1 0.015 215);color-scheme:dark;display:block;overflow-wrap:break-word"},
-		{"light on light", ui.OKLCH(0.9, 0, 0), "background-color:oklch(0.9 0 0);color:oklch(0 0 0);display:block;overflow-wrap:break-word"},
-		{"opacity ignored", ui.OKLCHA(0.2, 0, 0, 0.5), "background-color:oklch(0.2 0 0);color:oklch(1 0 0);color-scheme:dark;display:block;overflow-wrap:break-word"},
-		{"theme color", ui.ThemeColor(0.1, 0, ui.BackgroundScale), "background-color:oklch(0.882 0.0013 100);color:oklch(0 0.00065 100);display:block;overflow-wrap:break-word"},
+		{"dark on light", ui.OKLCH(0.2, 0.03, 215), "background-color:oklch(0.2 0.03 215);color:oklch(0.9312 0.0183 215);color-scheme:dark;display:block;overflow-wrap:break-word"},
+		{"light on light", ui.OKLCH(0.9, 0, 0), "background-color:oklch(0.9 0 0);color:oklch(0.1548 0.0033 0);display:block;overflow-wrap:break-word"},
+		{"opacity ignored", ui.OKLCHA(0.2, 0, 0, 0.5), "background-color:oklch(0.2 0 0);color:oklch(0.9312 0.0033 0);color-scheme:dark;display:block;overflow-wrap:break-word"},
+		{"theme color", ui.ThemeColor(0.1, 0, ui.BackgroundScale), "background-color:oklch(0.882 0.0013 100);color:oklch(0.1517 0.00395 100);display:block;overflow-wrap:break-word"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -63,7 +63,7 @@ func TestThemeBackgroundRebases(t *testing.T) {
 	// The theme background's own text color is set inside a foreground
 	// set outside it, so the theme background's wins.
 	fg := render(t, ui.Text("x").ThemeBackground(ui.OKLCH(0.2, 0, 0)).Foreground(shifted))
-	if got := classRule(t, fg, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "color:oklch(1 0 0)") {
+	if got := classRule(t, fg, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "color:oklch(0.9312 0.0033 0)") {
 		t.Errorf("foreground outside a theme background = %q, want its text color", got)
 	}
 }

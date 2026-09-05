@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"cmp"
-
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
 	"ily.dev/domi/event"
@@ -56,19 +54,16 @@ func (v buttonView) Role(r ButtonRole) ButtonView {
 
 func nodeButton(action any, label node) node {
 	return func(env environment) box {
-		c := map[ButtonRole]Color{
-			RolePrimary:     Accent,
-			RoleDestructive: Red,
+		style := map[ButtonRole]struct{ face, hover, label Color }{
+			RoleDefault:     {controlSecondary, controlSecondaryHover, Primary},
+			RolePrimary:     {Accent, accentHover, accentTextColor},
+			RoleDestructive: {Red, hoverOf(Red.color()), textOn(Red.color())},
 		}[env.buttonRole]
-		var fg Modifier
-		if c != nil {
-			fg = Foreground(White)
-		}
 		v := base{label}.
 			Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
-			Modify(fg).
-			Background(cmp.Or(c, backgroundColor)).
-			BorderStroke(1, cmp.Or(c, borderColor)).
+			Foreground(style.label).
+			WhileHovered(Background(style.hover)).
+			Background(style.face).
 			BorderShape(RoundedRectangle)
 		cursor := "pointer"
 		if env.disabled {
