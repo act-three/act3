@@ -113,6 +113,21 @@ func (v base) Opacity(x float64) View {
 	return v.Modify(Opacity(x))
 }
 
+func (v base) ThemeBackground(c Color) View {
+	return v.modify(modTransform(func(env environment) environment {
+		bg := c.color().colorCoords(env.theme)
+		bg.a = 1
+		if bg.isLight() != env.theme.base.isLight() {
+			env.style.Set("color-scheme", bg.colorScheme())
+		}
+		env.theme.base = bg
+		env.bg = append(env.bg, term[color]{value: bg})
+		env.fg = append(env.fg, term[color]{value: themeForeground{}})
+		env.hasPaint = true
+		return env
+	}))
+}
+
 func (v base) Tag(name string) View {
 	return v.modify(modEnv(func(env environment) environment {
 		env.tag = name
