@@ -60,6 +60,7 @@ var canonical = map[string]bool{
 	"align-items":           true,
 	"align-self":            true,
 	"aspect-ratio":          true,
+	"color-scheme":          true,
 	"column-gap":            true,
 	"contain":               true,
 	"cursor":                true,
