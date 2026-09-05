@@ -58,8 +58,7 @@ func accountCard(user User) View {
 				Gap(4).
 				Alignment(Leading),
 			Spacer(),
-			Button(Msg{Edit: true}, Text("Edit")).
-				Role(RolePrimary),
+			Button(Msg{Edit: true}, Text("Edit")),
 		).
 			Gap(12).
 			Padding(Edges(16)),
