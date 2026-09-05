@@ -86,11 +86,11 @@ func movieRow(movie Movie) ui.View {
 
 // Theme colors as rendered under the default theme.
 const (
-	accentCSS = "oklch(0.511 0.23 277)"
-	redCSS    = "oklch(0.576 0.209 29.5)"
-	blueCSS   = "oklch(0.576 0.209 263)"
-	whiteCSS  = "oklch(1 0 0)"
-	mutedCSS  = "oklch(0.3388 0.00395 100)"
+	linkCSS  = "oklch(0.381 0.233 277)"
+	redCSS   = "oklch(0.576 0.209 29.5)"
+	blueCSS  = "oklch(0.576 0.209 263)"
+	whiteCSS = "oklch(1 0 0)"
+	mutedCSS = "oklch(0.3388 0.00395 100)"
 )
 
 // pageRoot reports whether html is a page whose ui-root element
@@ -689,19 +689,19 @@ func TestLink(t *testing.T) {
 			"navigate",
 			ui.Text("see ").Concat(ui.Link("/docs", ui.Text("docs"))),
 			`<a class="(ui-\w+)" href="/docs">docs</a>`,
-			[]string{"cursor:pointer", "color:" + accentCSS},
+			[]string{"cursor:pointer", "color:" + linkCSS},
 		},
 		{
 			"send",
 			ui.Text("or ").Concat(ui.Link(Msg{}, ui.Text("retry"))),
 			`<button class="(ui-\w+)" domi-msg-click="[^"]*" type="button">retry</button>`,
-			[]string{"cursor:pointer", "color:" + accentCSS},
+			[]string{"cursor:pointer", "color:" + linkCSS},
 		},
 		{
 			"outer style",
 			ui.Link("/docs", ui.Text("docs")).Bold(),
 			`</style><a class="(ui-\w+)" href="/docs">docs</a>`,
-			[]string{"color:" + accentCSS, "font-weight:600"},
+			[]string{"color:" + linkCSS, "font-weight:600"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -831,22 +831,22 @@ func TestDisabledSubtree(t *testing.T) {
 // and it wins over a color set outside the link.
 func TestLinkColor(t *testing.T) {
 	inner := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x").TextForeground(ui.Secondary))))
-	if got := classRule(t, inner, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+accentCSS) {
-		t.Errorf("link rule = %q, want the accent color:\n%s", got, inner)
+	if got := classRule(t, inner, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+linkCSS) {
+		t.Errorf("link rule = %q, want the link color:\n%s", got, inner)
 	}
 	if got := classRule(t, inner, `<span class="(ui-\w+)"`); got != "color:"+mutedCSS {
 		t.Errorf("label rule = %q, want its own color inside the link:\n%s", got, inner)
 	}
 
 	outer := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x")).TextForeground(ui.Secondary)))
-	if got := classRule(t, outer, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+accentCSS) || strings.Contains(outer, mutedCSS) {
-		t.Errorf("link rule = %q, want the accent color to replace the outer color:\n%s", got, outer)
+	if got := classRule(t, outer, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+linkCSS) || strings.Contains(outer, mutedCSS) {
+		t.Errorf("link rule = %q, want the link color to replace the outer color:\n%s", got, outer)
 	}
 
 	// As a box, the link's own element carries the color.
 	block := render(t, ui.Link("/", ui.Text("x")))
-	if got := classRule(t, block, `</style><a class="(ui-\w+)" href="/">x</a>`); !strings.Contains(got, "color:"+accentCSS) {
-		t.Errorf("block link rule = %q, want the accent color on the box:\n%s", got, block)
+	if got := classRule(t, block, `</style><a class="(ui-\w+)" href="/">x</a>`); !strings.Contains(got, "color:"+linkCSS) {
+		t.Errorf("block link rule = %q, want the link color on the box:\n%s", got, block)
 	}
 }
 
@@ -855,11 +855,11 @@ func TestLinkColor(t *testing.T) {
 // states are active, but never overrides a property the text
 // styling sets, which is written closest to the view.
 func TestTextStyleBeatsStatePaint(t *testing.T) {
-	// The link's accent is contended by a hovered color: no variant
-	// is emitted at all, and the accent holds in every state.
+	// The link's color is contended by a hovered color: no variant
+	// is emitted at all, and the link color holds in every state.
 	html := render(t, ui.Link("/", ui.Text("x")).WhileHovered(ui.Foreground(ui.Secondary)))
-	if strings.Contains(html, "hover") || !strings.Contains(html, "color:"+accentCSS) {
-		t.Errorf("hovered color should lose to the accent entirely:\n%s", html)
+	if strings.Contains(html, "hover") || !strings.Contains(html, "color:"+linkCSS) {
+		t.Errorf("hovered color should lose to the link color entirely:\n%s", html)
 	}
 
 	// A hovered font contends only the weight: its size still

@@ -12,7 +12,7 @@ import (
 )
 
 // TestThemeOption verifies that the Theme option sets the root's colors:
-// the background, white or black for text on it,
+// the background, Primary derived from it for text,
 // and the color scheme the background's lightness calls for.
 // The background is always opaque, and the contrast level is clamped.
 func TestThemeOption(t *testing.T) {
@@ -22,12 +22,12 @@ func TestThemeOption(t *testing.T) {
 		contrast float64
 		want     string
 	}{
-		{"light", OKLCH(0.95, 0.02, 80), 30, "background-color:oklch(0.95 0.02 80);color:oklch(0 0.01 80);color-scheme:light"},
-		{"theme color", ThemeColor(0.1, 0, BackgroundScale), 30, "background-color:oklch(0.882 0.0013 100);color:oklch(0 0.00065 100);color-scheme:light"},
-		{"dark", OKLCH(0.2, 0.03, 215), 30, "background-color:oklch(0.2 0.03 215);color:oklch(1 0.015 215);color-scheme:dark"},
-		{"mid light", OKLCH(0.65, 0, 0), 30, "background-color:oklch(0.65 0 0);color:oklch(0 0 0);color-scheme:light"},
-		{"mid dark", OKLCH(0.5, 0.3, 0), 30, "background-color:oklch(0.5 0.3 0);color:oklch(1 0.15 0);color-scheme:dark"},
-		{"translucent background", OKLCHA(0.2, 0.03, 215, 0.5), 30, "background-color:oklch(0.2 0.03 215);color:oklch(1 0.015 215);color-scheme:dark"},
+		{"light", OKLCH(0.95, 0.02, 80), 30, "background-color:oklch(0.95 0.02 80);color:oklch(0.1634 0.0133 80);color-scheme:light"},
+		{"theme color", ThemeColor(0.1, 0, BackgroundScale), 30, "background-color:oklch(0.882 0.0013 100);color:oklch(0.1517 0.00395 100);color-scheme:light"},
+		{"dark", OKLCH(0.2, 0.03, 215), 30, "background-color:oklch(0.2 0.03 215);color:oklch(0.9312 0.0183 215);color-scheme:dark"},
+		{"mid light", OKLCH(0.65, 0, 0), 30, "background-color:oklch(0.65 0 0);color:oklch(0.1118 0.0033 0);color-scheme:light"},
+		{"mid dark", OKLCH(0.5, 0.3, 0), 30, "background-color:oklch(0.5 0.3 0);color:oklch(0.957 0.1533 0);color-scheme:dark"},
+		{"translucent background", OKLCHA(0.2, 0.03, 215, 0.5), 30, "background-color:oklch(0.2 0.03 215);color:oklch(0.9312 0.0183 215);color-scheme:dark"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -231,7 +231,7 @@ func TestThemeColor(t *testing.T) {
 		},
 		{"base", darkTheme, backgroundColor, darkTheme.base},
 		{"accent", darkTheme, Accent, darkTheme.accent},
-		{"accent text", darkTheme, accentTextColor, oklch{l: 0, c: 0.1, h: 10, a: 1}},
+		{"accent text", darkTheme, accentTextColor, oklch{l: 0, c: 0.017, h: 10, a: 1}},
 		{"headline is achromatic", darkTheme, Headline, oklch{l: 1, c: 0, h: 215, a: 1}},
 	}
 	for _, tt := range tests {

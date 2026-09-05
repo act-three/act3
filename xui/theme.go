@@ -56,7 +56,7 @@ type optionTheme struct {
 func (t theme) styles() sheet.StyleSet {
 	var ss sheet.StyleSet
 	ss.Set("background-color", t.base.css())
-	ss.Set("color", t.base.text().css())
+	ss.Set("color", Primary.color().colorCoords(t).css())
 	ss.Set("color-scheme", t.base.colorScheme())
 	return ss
 }
@@ -212,10 +212,27 @@ type themeAccent struct{}
 
 func (themeAccent) colorCoords(t theme) oklch { return t.accent }
 
-// accentText is the foreground color for text on the theme's accent color.
-type accentText struct{}
+// textOn returns the foreground color for text on the face of a control
+// colored c: black or white, whichever reads better, faintly tinted
+// with c's hue.
+func textOn(c color) Color { return newColor(textOnColor{c}) }
 
-func (accentText) colorCoords(t theme) oklch { return t.accent.text() }
+type textOnColor struct{ on color }
+
+func (tc textOnColor) colorCoords(t theme) oklch {
+	const maxChroma = 0.017
+	o := tc.on.colorCoords(t).text()
+	o.c = min(o.c, maxChroma)
+	return o
+}
+
+// hoverOf returns the face of a hovered control whose face is c.
+func hoverOf(c color) Color {
+	return ModeColor(
+		newColor(themeColor{c, 0.052, -0.0067, BackgroundScale}),
+		newColor(themeColor{c, 0.043, 0.0067, BackgroundScale}),
+	)
+}
 
 // selectedColor is the background color tinted toward the accent.
 // A strongly chromatic background takes a stronger tint.
