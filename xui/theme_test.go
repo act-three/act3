@@ -72,15 +72,15 @@ func TestThemeContrastClamped(t *testing.T) {
 }
 
 var (
-	darkTheme  = theme{base: oklch{l: 0.2, c: 0.03, h: 215, a: 1}, accent: oklch{l: 0.6, c: 0.2, h: 10, a: 1}, contrast: 30}
-	lightTheme = theme{base: oklch{l: 0.95, c: 0.03, h: 215, a: 1}, accent: oklch{l: 0.6, c: 0.2, h: 10, a: 1}, contrast: 30}
+	darkTheme  = theme{bgbase: oklch{l: 0.2, c: 0.03, h: 215, a: 1}, accent: oklch{l: 0.6, c: 0.2, h: 10, a: 1}, contrast: 30}
+	lightTheme = theme{bgbase: oklch{l: 0.95, c: 0.03, h: 215, a: 1}, accent: oklch{l: 0.6, c: 0.2, h: 10, a: 1}, contrast: 30}
 )
 
 func near(a, b float64) bool { return math.Abs(a-b) < 1e-9 }
 
 // factor returns s's factor in th for a color derived from s's base color.
 func factor(s ColorScale, th theme) float64 {
-	return s.factor(s.base().colorCoords(th), th.base, th.contrast)
+	return s.factor(s.base().colorCoords(th), th.bgbase, th.contrast)
 }
 
 // TestScaleSign pins the sign convention: a scale's factor is positive
@@ -153,7 +153,7 @@ func TestForegroundScaleMidpoint(t *testing.T) {
 		{0.6, 0.12}, {0.95, 0.19}, {1, 0.2},
 	} {
 		th := darkTheme
-		th.base.l = tt.bg
+		th.bgbase.l = tt.bg
 		got := ThemeColor(0.2, 0, ForegroundScale).color().colorCoords(th)
 		if !near(got.l, tt.want) {
 			t.Errorf("background %v: foreground lightness = %v, want %v", tt.bg, got.l, tt.want)
@@ -181,7 +181,7 @@ func TestForegroundChroma(t *testing.T) {
 			for _, l := range []float64{0, 0.5, 0.55, 0.95, 1} {
 				for _, contrast := range []float64{15, 30, 100} {
 					th := darkTheme
-					th.base.l, th.contrast = l, contrast
+					th.bgbase.l, th.contrast = l, contrast
 					got := tt.c.color().colorCoords(th)
 					if !near(got.c, tt.want) {
 						t.Errorf("background %v, contrast %v: chroma = %v, want %v", l, contrast, got.c, tt.want)
@@ -229,7 +229,7 @@ func TestThemeColor(t *testing.T) {
 			"mode of theme color", darkTheme, ModeColor(OKLCH(0.1, 0, 0), ThemeColor(0.1, 0, BackgroundScale)),
 			oklch{l: 0.2 + 0.1*factor(BackgroundScale, darkTheme), c: 0.03, h: 215, a: 1},
 		},
-		{"base", darkTheme, backgroundColor, darkTheme.base},
+		{"bgbase", darkTheme, backgroundColor, darkTheme.bgbase},
 		{"accent", darkTheme, Accent, darkTheme.accent},
 		{"accent text", darkTheme, accentTextColor, oklch{l: 0, c: 0.017, h: 10, a: 1}},
 		{"headline is achromatic", darkTheme, Headline, oklch{l: 1, c: 0, h: 215, a: 1}},
@@ -263,19 +263,19 @@ func TestLinkHue(t *testing.T) {
 // the accent.
 func TestSelected(t *testing.T) {
 	gray, vivid := darkTheme, lightTheme
-	gray.base.c = 0
-	vivid.base.c = 1
+	gray.bgbase.c = 0
+	vivid.bgbase.c = 1
 	sel := selectedBackground.color().colorCoords(darkTheme)
 	graySel := selectedBackground.color().colorCoords(gray)
 	vividSel := selectedBackground.color().colorCoords(vivid)
-	if !(sel.l > darkTheme.base.l && sel.l < darkTheme.accent.l) {
-		t.Errorf("selected lightness %v not between background %v and accent %v", sel.l, darkTheme.base.l, darkTheme.accent.l)
+	if !(sel.l > darkTheme.bgbase.l && sel.l < darkTheme.accent.l) {
+		t.Errorf("selected lightness %v not between background %v and accent %v", sel.l, darkTheme.bgbase.l, darkTheme.accent.l)
 	}
-	if sel.l-darkTheme.base.l > darkTheme.accent.l-sel.l {
+	if sel.l-darkTheme.bgbase.l > darkTheme.accent.l-sel.l {
 		t.Errorf("selected lightness %v nearer the accent than the background", sel.l)
 	}
-	if graySel.l-gray.base.l >= sel.l-darkTheme.base.l {
-		t.Errorf("gray background tinted %v, chromatic background %v, want stronger tint on the chromatic background", graySel.l-gray.base.l, sel.l-darkTheme.base.l)
+	if graySel.l-gray.bgbase.l >= sel.l-darkTheme.bgbase.l {
+		t.Errorf("gray background tinted %v, chromatic background %v, want stronger tint on the chromatic background", graySel.l-gray.bgbase.l, sel.l-darkTheme.bgbase.l)
 	}
 	if !near(vividSel.l, vivid.accent.l) || !near(vividSel.c, vivid.accent.c) {
 		t.Errorf("vivid background selected = %+v, want the accent %+v", vividSel, vivid.accent)

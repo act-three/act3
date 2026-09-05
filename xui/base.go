@@ -117,10 +117,10 @@ func (v base) ThemeBackground(c Color) View {
 	return v.modify(modTransform(func(env environment) environment {
 		bg := c.color().colorCoords(env.theme)
 		bg.a = 1
-		if bg.isLight() != env.theme.base.isLight() {
+		if bg.isLight() != env.theme.bgbase.isLight() {
 			env.style.Set("color-scheme", bg.colorScheme())
 		}
-		env.theme.base = bg
+		env.theme.bgbase = bg
 		env.bg = append(env.bg, term[color]{value: bg})
 		env.fg = append(env.fg, term[color]{value: Primary.color()})
 		env.hasPaint = true
