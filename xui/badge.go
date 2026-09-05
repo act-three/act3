@@ -8,7 +8,7 @@ func Badge(label string) View {
 		Bold().
 		Font(Caption).
 		Padding(EdgesLetterbox(2), EdgesPillarbox(8)).
-		Foreground(textOn(Red.color())).
+		Foreground(White).
 		Background(Red).
 		BorderShape(Capsule)
 }
