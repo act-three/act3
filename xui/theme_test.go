@@ -121,6 +121,30 @@ func TestScaleContrast(t *testing.T) {
 	}
 }
 
+// TestIsLight pins the light-dark decision: a color is light when black
+// text has more WCAG contrast on it than white text, which for a gray
+// is a lightness just above 0.56, and which saturated colors of the
+// same lightness fall short of.
+func TestIsLight(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		c     Color
+		light bool
+	}{
+		{"white", White, true},
+		{"black", Black, false},
+		{"gray above", OKLCH(0.57, 0, 0), true},
+		{"gray below", OKLCH(0.56, 0, 0), false},
+		{"red", Red, false},
+		{"gray at red's lightness", OKLCH(0.576, 0, 0), true},
+		{"yellow", OKLCH(0.9, 0.2, 100), true},
+	} {
+		if got := tt.c.color().colorCoords(darkTheme).isLight(); got != tt.light {
+			t.Errorf("%s: isLight = %v, want %v", tt.name, got, tt.light)
+		}
+	}
+}
+
 // TestForegroundScaleMidpoint pins the symmetric lightness scaling
 // around middle gray, including backgrounds just below the mode threshold.
 func TestForegroundScaleMidpoint(t *testing.T) {
