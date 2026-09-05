@@ -20,7 +20,7 @@ func TestThemeBackground(t *testing.T) {
 		{"dark on light", ui.OKLCH(0.2, 0.03, 215), "background-color:oklch(0.2 0.03 215);color:oklch(1 0.015 215);color-scheme:dark;display:block;overflow-wrap:break-word"},
 		{"light on light", ui.OKLCH(0.9, 0, 0), "background-color:oklch(0.9 0 0);color:oklch(0 0 0);display:block;overflow-wrap:break-word"},
 		{"opacity ignored", ui.OKLCHA(0.2, 0, 0, 0.5), "background-color:oklch(0.2 0 0);color:oklch(1 0 0);color-scheme:dark;display:block;overflow-wrap:break-word"},
-		{"theme color", ui.ThemeColor(0.1, 0, ui.BackgroundScale), "background-color:oklch(0.9 0 0);color:oklch(0 0 0);display:block;overflow-wrap:break-word"},
+		{"theme color", ui.ThemeColor(0.1, 0, ui.BackgroundScale), "background-color:oklch(0.882 0.0013 100);color:oklch(0 0.00065 100);display:block;overflow-wrap:break-word"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestThemeBackgroundRebases(t *testing.T) {
 	// and resolves in the enclosing theme. On the page, the factor is
 	// -1, so the delta moves toward black.
 	outer := render(t, ui.Text("x").ThemeBackground(ui.OKLCH(0.2, 0, 0)).BorderStroke(1, shifted))
-	if got := classRule(t, outer, `<ui-box class="(ui-\w+)"`); !strings.Contains(got, "box-shadow:inset 0 0 0 1px oklch(0.9 0 0)") {
+	if got := classRule(t, outer, `<ui-box class="(ui-\w+)"`); !strings.Contains(got, "box-shadow:inset 0 0 0 1px oklch(0.882 0.0013 100)") {
 		t.Errorf("stroke outside a theme background = %q, want derived from the page", got)
 	}
 	if got := classRule(t, outer, `<ui-text class="(ui-\w+)"`); strings.Contains(got, "box-shadow") {

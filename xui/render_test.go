@@ -90,7 +90,7 @@ const (
 	redCSS    = "oklch(0.576 0.209 29.5)"
 	blueCSS   = "oklch(0.576 0.209 263)"
 	whiteCSS  = "oklch(1 0 0)"
-	mutedCSS  = "oklch(0.345 0.0033 0)"
+	mutedCSS  = "oklch(0.3388 0.00395 100)"
 )
 
 // pageRoot reports whether html is a page whose ui-root element
