@@ -236,11 +236,11 @@ func (p paint) decls(t theme, complete bool) []decl {
 	if len(p.bg) > 0 {
 		// The outermost color paints as the background color, and the
 		// inner colors as image layers listed innermost first.
-		ds = append(ds, decl{"background-color", p.bg[0].colorCSS(t)})
+		ds = append(ds, decl{"background-color", p.bg[0].colorCoords(t).css()})
 		if len(p.bg) > 1 {
 			var img []string
 			for _, c := range slices.Backward(p.bg[1:]) {
-				css := c.colorCSS(t)
+				css := c.colorCoords(t).css()
 				img = append(img, "linear-gradient("+css+","+css+")")
 			}
 			ds = append(ds, decl{"background-image", strings.Join(img, ",")})
@@ -250,7 +250,7 @@ func (p paint) decls(t theme, complete bool) []decl {
 		ds = append(ds, decl{"border-radius", p.shape.radius()})
 	}
 	if p.fg != nil {
-		ds = append(ds, decl{"color", p.fg.colorCSS(t)})
+		ds = append(ds, decl{"color", p.fg.colorCoords(t).css()})
 	}
 	if complete || p.opacity < 1 {
 		ds = append(ds, decl{"opacity", strconv.FormatFloat(p.opacity, 'g', 4, 64)})
@@ -271,7 +271,7 @@ func (p paint) carrierDecls(t theme) []decl {
 func shadowList(t theme, strokes []stroke) string {
 	var shadows []string
 	for _, s := range strokes {
-		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+s.c.colorCSS(t))
+		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+s.c.colorCoords(t).css())
 	}
 	return strings.Join(shadows, ",")
 }

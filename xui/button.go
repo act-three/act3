@@ -62,7 +62,7 @@ func nodeButton(action any, label node) node {
 		}[env.buttonRole]
 		var fg Modifier
 		if c != nil {
-			fg = Foreground(CSSColor("#fff"))
+			fg = Foreground(White)
 		}
 		v := base{label}.
 			Padding(EdgesLetterbox(8), EdgesPillarbox(12)).

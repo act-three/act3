@@ -270,12 +270,3 @@ func TestMix(t *testing.T) {
 		t.Errorf("mix(a, b, 0.5) = %+v", got)
 	}
 }
-
-func TestCSSColorCoordsPanics(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Error("colorCoords of a CSS color did not panic")
-		}
-	}()
-	cssColor("red").colorCoords(darkTheme)
-}

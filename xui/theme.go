@@ -55,8 +55,8 @@ type optionTheme struct {
 // the background color, the foreground color for text on it, and the matching color scheme.
 func (t theme) styles() sheet.StyleSet {
 	var ss sheet.StyleSet
-	ss.Set("background-color", t.base.colorCSS(t))
-	ss.Set("color", t.base.text().colorCSS(t))
+	ss.Set("background-color", t.base.css())
+	ss.Set("color", t.base.text().css())
 	ss.Set("color-scheme", t.base.colorScheme())
 	return ss
 }
@@ -174,8 +174,6 @@ type themeColor struct {
 	s    ColorScale
 }
 
-func (tc themeColor) colorCSS(t theme) string { return tc.colorCoords(t).colorCSS(t) }
-
 func (tc themeColor) colorCoords(t theme) oklch {
 	o := tc.from.colorCoords(t)
 	f := tc.s.factor(o, t.base, t.contrast)
@@ -197,38 +195,31 @@ func (m modeColor) in(t theme) color {
 	return m.dark
 }
 
-func (m modeColor) colorCSS(t theme) string   { return m.in(t).colorCSS(t) }
 func (m modeColor) colorCoords(t theme) oklch { return m.in(t).colorCoords(t) }
 
 // themeBackground is the theme's background color.
 type themeBackground struct{}
 
-func (themeBackground) colorCSS(t theme) string   { return t.base.colorCSS(t) }
 func (themeBackground) colorCoords(t theme) oklch { return t.base }
 
 // themeForeground is the theme's foreground color.
 type themeForeground struct{}
 
-func (themeForeground) colorCSS(t theme) string   { return t.base.text().colorCSS(t) }
 func (themeForeground) colorCoords(t theme) oklch { return t.base.text() }
 
 // themeAccent is the theme's accent color.
 type themeAccent struct{}
 
-func (themeAccent) colorCSS(t theme) string   { return t.accent.colorCSS(t) }
 func (themeAccent) colorCoords(t theme) oklch { return t.accent }
 
 // accentText is the foreground color for text on the theme's accent color.
 type accentText struct{}
 
-func (accentText) colorCSS(t theme) string   { return t.accent.text().colorCSS(t) }
 func (accentText) colorCoords(t theme) oklch { return t.accent.text() }
 
 // selectedColor is the background color tinted toward the accent.
 // A strongly chromatic background takes a stronger tint.
 type selectedColor struct{}
-
-func (selectedColor) colorCSS(t theme) string { return selectedColor{}.colorCoords(t).colorCSS(t) }
 
 func (selectedColor) colorCoords(t theme) oklch {
 	w := 0.05

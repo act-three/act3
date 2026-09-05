@@ -31,7 +31,7 @@ func TestRenderVisitsEachNodeOnce(t *testing.T) {
 			v,
 			wrap(nodeSpacer),
 			wrap(wrapFrame{h: newSize(40)}.modify(leaf("framed"))),
-			wrap(wrapLayer{layer: count(nodeColor(cssColor("#000")))}.modify(leaf("decorated"))),
+			wrap(wrapLayer{layer: count(nodeColor(oklch{a: 1}))}.modify(leaf("decorated"))),
 		}))
 	}
 	Render(v)

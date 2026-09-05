@@ -28,6 +28,12 @@ var (
 
 	// Pink is a pink color.
 	Pink Color = OKLCH(0.576, 0.209, 354)
+
+	// Black is a black color.
+	Black Color = OKLCH(0, 0, 0)
+
+	// White is a white color.
+	White Color = OKLCH(1, 0, 0)
 )
 
 var (

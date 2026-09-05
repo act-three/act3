@@ -67,12 +67,3 @@ func TestThemeBackgroundRebases(t *testing.T) {
 		t.Errorf("foreground outside a theme background = %q, want its text color", got)
 	}
 }
-
-func TestThemeBackgroundCSSColorPanics(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Error("ThemeBackground with a CSS color did not panic")
-		}
-	}()
-	render(t, ui.Text("x").ThemeBackground(ui.CSSColor("red")))
-}

@@ -89,7 +89,7 @@ func TestGeometryRootScrollUsesDocument(t *testing.T) {
 		{
 			name:      "vertical",
 			axis:      ui.Vertical,
-			content:   ui.CSSColor("#567").Frame(ui.Width(40), ui.Height(1000)),
+			content:   ui.OKLCH(0.5, 0, 0).Frame(ui.Width(40), ui.Height(1000)),
 			wantRootW: 600,
 			wantRootH: 1000,
 			wantX:     "hidden",
@@ -98,7 +98,7 @@ func TestGeometryRootScrollUsesDocument(t *testing.T) {
 		{
 			name:      "horizontal",
 			axis:      ui.Horizontal,
-			content:   ui.CSSColor("#567").Frame(ui.Width(1000), ui.Height(40)),
+			content:   ui.OKLCH(0.5, 0, 0).Frame(ui.Width(1000), ui.Height(40)),
 			wantRootW: 1000,
 			wantRootH: 400,
 			wantX:     "auto",
@@ -107,7 +107,7 @@ func TestGeometryRootScrollUsesDocument(t *testing.T) {
 		{
 			name:      "both",
 			axis:      ui.Horizontal | ui.Vertical,
-			content:   ui.CSSColor("#567").Frame(ui.Width(1000), ui.Height(1000)),
+			content:   ui.OKLCH(0.5, 0, 0).Frame(ui.Width(1000), ui.Height(1000)),
 			wantRootW: 1000,
 			wantRootH: 1000,
 			wantX:     "auto",
@@ -171,7 +171,7 @@ func TestGeometryRootScrollShortContentHugsItsScrollAxis(t *testing.T) {
 func TestGeometryRootScrollStickyUsesDocumentViewport(t *testing.T) {
 	v := ui.ScrollView(ui.Vertical, ui.VStack(
 		ui.Text("heading").Sticky().Class("heading"),
-		ui.CSSColor("#567").Frame(ui.Height(1000)),
+		ui.OKLCH(0.5, 0, 0).Frame(ui.Height(1000)),
 	).Gap(0).Alignment(ui.Leading))
 	stage(t, v, func(s *uitest.Session) {
 		s.Eval(`window.scrollTo(0, 300)`, nil)
@@ -184,7 +184,7 @@ func TestGeometryRootScrollStickyUsesDocumentViewport(t *testing.T) {
 // instead of letting its neighbors fuse, and with unbounded available
 // space the same minimum is its answer.
 func TestGeometrySpacerMinimumLength(t *testing.T) {
-	rigid := func(w int) ui.View { return ui.CSSColor("#567").Frame(ui.Width(w), ui.Height(40)) }
+	rigid := func(w int) ui.View { return ui.OKLCH(0.5, 0, 0).Frame(ui.Width(w), ui.Height(40)) }
 	stage(t, ui.HStack(rigid(300), ui.Spacer(), rigid(300)).Gap(0), func(s *uitest.Session) {
 		within(t, "squeezed spacer floors at the minimum", s.Rect("ui-spacer", 0).W, 8, 1)
 	})
@@ -230,7 +230,7 @@ func TestGeometryDividerSpansMinorAxisUnbounded(t *testing.T) {
 // TestGeometryFixedSizeColor pins the fill boundary: a FixedSize color
 // keeps its 10px ideal even in a container with slack to offer.
 func TestGeometryFixedSizeColor(t *testing.T) {
-	stage(t, ui.CSSColor("#567").FixedSize(), func(s *uitest.Session) {
+	stage(t, ui.OKLCH(0.5, 0, 0).FixedSize(), func(s *uitest.Session) {
 		c := s.Rect("ui-color", 0)
 		within(t, "color width", c.W, 10, 0.5)
 		within(t, "color height", c.H, 10, 0.5)
@@ -349,7 +349,7 @@ func TestGeometryOverlayHitTest(t *testing.T) {
 // later overlay paints above the earlier one where their contents overlap.
 func TestGeometryRootOverlayUsesViewport(t *testing.T) {
 	v := ui.ScrollView(ui.Vertical,
-		ui.CSSColor("#567").Frame(ui.Width(600), ui.Height(1000))).
+		ui.OKLCH(0.5, 0, 0).Frame(ui.Width(600), ui.Height(1000))).
 		Overlay(ui.Center, ui.Badge("first").Class("first")).
 		Overlay(ui.Center, ui.Badge("second").Class("second"))
 	stage(t, v, func(s *uitest.Session) {
@@ -445,7 +445,7 @@ func TestGeometryOverlayAtAnchors(t *testing.T) {
 // content size, the base subview and the layer both track the
 // container's box.
 func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
-	layered := ui.VStack(ui.Text("base"), ui.Secondary).Underlay(ui.Center, ui.CSSColor("#00f"))
+	layered := ui.VStack(ui.Text("base"), ui.Secondary).Underlay(ui.Center, ui.Blue)
 	v := ui.HStack(ui.Text("tall").Padding(ui.Edges(140)), layered)
 	stage(t, v, func(s *uitest.Session) {
 		box := s.Rect("ui-layer", 0)
@@ -538,7 +538,7 @@ func TestGeometryImageScalingModesFill(t *testing.T) {
 
 	row := ui.HStack(
 		ui.Image(natImage(400, 400)).ScaledToFill(),
-		ui.CSSColor("#345").Frame(ui.Width(500), ui.Height(40)),
+		ui.OKLCH(0.3, 0, 0).Frame(ui.Width(500), ui.Height(40)),
 	).Gap(0).Frame(ui.Width(600), ui.Height(100))
 	stage(t, row, func(s *uitest.Session) {
 		r := s.Rect("img", 0)
@@ -593,8 +593,8 @@ func TestGeometryScaledImageIdeal(t *testing.T) {
 // overflows — instead of being compressed by flex shrink.
 func TestGeometryRigidFrameHolds(t *testing.T) {
 	v := ui.HStack(
-		ui.CSSColor("#345").Frame(ui.Width(400), ui.Height(40)).Class("a"),
-		ui.CSSColor("#567").Frame(ui.Width(300), ui.Height(40)).Class("b"),
+		ui.OKLCH(0.3, 0, 0).Frame(ui.Width(400), ui.Height(40)).Class("a"),
+		ui.OKLCH(0.5, 0, 0).Frame(ui.Width(300), ui.Height(40)).Class("b"),
 	)
 	stage(t, v, func(s *uitest.Session) {
 		within(t, "first frame width", s.Rect(".a", 0).W, 400, 1)
@@ -608,7 +608,7 @@ func TestGeometryRigidFrameHolds(t *testing.T) {
 // available space.
 func TestGeometryStackEnclosesItems(t *testing.T) {
 	v := ui.HStack(
-		ui.CSSColor("#345").Frame(ui.Width(200), ui.Height(40)),
+		ui.OKLCH(0.3, 0, 0).Frame(ui.Width(200), ui.Height(40)),
 		ui.Text("hi"),
 	).Frame(ui.Width(100), ui.Height(100), ui.Leading)
 	stage(t, v, func(s *uitest.Session) {
@@ -630,7 +630,7 @@ func TestGeometryStackEnclosesItems(t *testing.T) {
 func TestGeometryTextFloorsAtMinContent(t *testing.T) {
 	v := ui.VStack(
 		ui.HStack(
-			ui.CSSColor("#345").Frame(ui.Width(550), ui.Height(20)),
+			ui.OKLCH(0.3, 0, 0).Frame(ui.Width(550), ui.Height(20)),
 			ui.Text("wrappable words").Class("probe"),
 		).Class("row"),
 		ui.Text("wrappable").FixedSize().Class("ref"),
@@ -671,8 +671,8 @@ func TestGeometryLineLimit(t *testing.T) {
 // available space and floors at its minimum; in a grid cell and on a flex
 // cross axis it shrinks to fit the cell's available space.
 func TestGeometrySoftFrameTracksSpace(t *testing.T) {
-	rigid := func(w int) ui.View { return ui.CSSColor("#567").Frame(ui.Width(w), ui.Height(40)) }
-	soft := ui.CSSColor("#345").
+	rigid := func(w int) ui.View { return ui.OKLCH(0.5, 0, 0).Frame(ui.Width(w), ui.Height(40)) }
+	soft := ui.OKLCH(0.3, 0, 0).
 		Frame(ui.Width(500), ui.Height(40)).FrameBounds(
 
 		ui.MinWidth(120)).
@@ -736,7 +736,7 @@ func TestGeometrySoftFrameIdeal(t *testing.T) {
 func TestGeometryGridColumns(t *testing.T) {
 	var cells []ui.View
 	for range 5 {
-		cells = append(cells, ui.CSSColor("#f00").Frame(ui.Height(20)))
+		cells = append(cells, ui.Red.Frame(ui.Height(20)))
 	}
 	stage(t, ui.VStack(ui.Grid(ui.Columns(3), cells...)), func(s *uitest.Session) {
 		grid := s.Rect("ui-grid", 0)
@@ -755,8 +755,8 @@ func TestGeometryGridColumns(t *testing.T) {
 // pressure: a subview wider than its cell overflows it rather than
 // widening its column, so the other columns keep their share.
 func TestGeometryGridColumnsStayEqual(t *testing.T) {
-	wide := ui.CSSColor("#f00").Frame(ui.Width(500), ui.Height(20))
-	fill := ui.CSSColor("#00f").Frame(ui.Height(20))
+	wide := ui.Red.Frame(ui.Width(500), ui.Height(20))
+	fill := ui.Blue.Frame(ui.Height(20))
 	stage(t, ui.VStack(ui.Grid(ui.Columns(3), wide, fill, fill)), func(s *uitest.Session) {
 		cell := (600 - 2*8) / 3.0
 		within(t, "wide subview width", s.Rect("ui-color", 0).W, 500, 1)
@@ -770,8 +770,8 @@ func TestGeometryGridColumnsStayEqual(t *testing.T) {
 // non-filling subviews is as wide as its widest subview times its
 // column count, plus gaps, and sits at the stack's alignment.
 func TestGeometryGridHugs(t *testing.T) {
-	narrow := ui.CSSColor("#f00").Frame(ui.Width(30), ui.Height(20))
-	wide := ui.CSSColor("#00f").Frame(ui.Width(50), ui.Height(20))
+	narrow := ui.Red.Frame(ui.Width(30), ui.Height(20))
+	wide := ui.Blue.Frame(ui.Width(50), ui.Height(20))
 	stage(t, ui.VStack(ui.Grid(ui.Columns(3), narrow, wide, narrow, narrow)), func(s *uitest.Session) {
 		grid := s.Rect("ui-grid", 0)
 		within(t, "grid width", grid.W, 3*50+2*8, 1)
@@ -785,7 +785,7 @@ func TestGeometryGridHugs(t *testing.T) {
 func TestGeometryGridCellMinWidth(t *testing.T) {
 	var cells []ui.View
 	for range 4 {
-		cells = append(cells, ui.CSSColor("#f00").Frame(ui.Height(20)))
+		cells = append(cells, ui.Red.Frame(ui.Height(20)))
 	}
 	// Three 150px columns and two gaps fit in 600px; four do not.
 	stage(t, ui.VStack(ui.Grid(ui.ColumnMinWidth(150), cells...)), func(s *uitest.Session) {
@@ -799,7 +799,7 @@ func TestGeometryGridCellMinWidth(t *testing.T) {
 // kind of parent: on the anchor axis the frame is sized as its subview
 // would be, and the other axis follows by the ratio.
 func TestGeometryFrameRatioAnchors(t *testing.T) {
-	color := func() ui.View { return ui.CSSColor("#f00") }
+	color := func() ui.View { return ui.Red }
 	for _, tt := range []struct {
 		name string
 		v    ui.View
@@ -833,7 +833,7 @@ func TestGeometryFrameRatioAnchors(t *testing.T) {
 	// in the rotated frame too.
 	// A 20px square anchors each axis in turn; the derived axis is
 	// larger (40) or smaller (10) than the square.
-	small := func() ui.View { return ui.CSSColor("#00f").Frame(ui.Width(20), ui.Height(20)) }
+	small := func() ui.View { return ui.Blue.Frame(ui.Width(20), ui.Height(20)) }
 	for _, tt := range []struct {
 		name string
 		v    ui.View
