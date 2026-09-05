@@ -204,8 +204,6 @@ type View interface {
 	// ThemeBackground makes bg the background color of the receiver's
 	// theme. Theme colors in the receiver are derived from bg.
 	// See ThemeColor.
-	//
-	// If c is a CSSColor, ThemeBackground panics.
 	ThemeBackground(bg Color) View
 
 	// WhileHovered applies m to the receiver while in the Hovered state.

@@ -141,20 +141,20 @@ func dividerColumn() View {
 
 func zstackDemo() View {
 	return ZStack(
-		CSSColor("#312e81").
+		OKLCH(0.359, 0.135, 279).
 			Frame(Width(120), Height(120)).
 			BorderShape(RoundedRectangle),
 		Text("ZStack with Long Text").
-			TextForeground(CSSColor("#fff")).
+			TextForeground(White).
 			Font(HeadlineFont),
 	).Overlay(
 		BottomTrailing,
 		Text("layered").
-			TextForeground(CSSColor("#c7d2fe")).
+			TextForeground(OKLCH(0.87, 0.062, 274)).
 			Font(Caption),
 	).
 		Padding(Edges(8)).
-		Background(CSSColor("#888"))
+		Background(OKLCH(0.627, 0, 0))
 }
 
 func count(n int) []int {
@@ -172,7 +172,7 @@ func scrollDemo() View {
 				Text("Season "+strconv.Itoa(s)).
 					Font(HeadlineFont).
 					Padding(Edges(8)).
-					Background(CSSColor("#e0e7ff")).
+					Background(OKLCH(0.93, 0.033, 273)).
 					Sticky(),
 				For(count(6), nil, func(e int) View {
 					return Text(fmt.Sprintf("Episode %d.%d", s, e)).
@@ -240,29 +240,32 @@ func textLayout() View {
 
 func stateDemo() View {
 	return Text("Hover, focus, or press me").
-		TextForeground(CSSColor("#fff")).
+		TextForeground(White).
 		Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
-		WhilePressed(Background(CSSColor("#6d28d9"))).
-		WhileHovered(Background(CSSColor("#4338ca"))).
-		Background(CSSColor("#312e81")).
-		WhileFocused(BorderStroke(2, CSSColor("#f59e0b"))).
+		WhilePressed(Background(OKLCH(0.491, 0.241, 293))).
+		WhileHovered(Background(OKLCH(0.457, 0.215, 277))).
+		Background(OKLCH(0.359, 0.135, 279)).
+		WhileFocused(BorderStroke(2, OKLCH(0.769, 0.165, 70))).
 		BorderShape(RoundedRectangle).
 		Attr(attr.TabIndex("0"))
 }
 
 func gridDemo() View {
 	var cells []View
-	for i, c := range []string{
-		"#f59e0b", "#0ea5e9", "#65a30d", "#e11d48", "#8b5cf6", "#14b8a6", "#f97316",
-		"#ec4899", "#3b82f6", "#84cc16", "#a855f7", "#06b6d4", "#ef4444",
+	for i, c := range []Color{
+		OKLCH(0.769, 0.165, 70), OKLCH(0.685, 0.148, 237), OKLCH(0.648, 0.175, 132),
+		OKLCH(0.586, 0.222, 18), OKLCH(0.606, 0.219, 293), OKLCH(0.704, 0.123, 183),
+		OKLCH(0.705, 0.187, 48), OKLCH(0.656, 0.212, 354), OKLCH(0.623, 0.188, 260),
+		OKLCH(0.768, 0.204, 131), OKLCH(0.627, 0.233, 304), OKLCH(0.715, 0.126, 215),
+		OKLCH(0.637, 0.208, 25),
 	} {
 		cells = append(
 			cells,
 			ZStack(
-				CSSColor(c).
+				c.
 					Frame(Height(48)),
 				Text(strconv.Itoa(i+1)).
-					TextForeground(CSSColor("#fff")),
+					TextForeground(White),
 			).
 				BorderClipped().
 				BorderShape(RoundedRectangle),

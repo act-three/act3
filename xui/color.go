@@ -56,24 +56,11 @@ func OKLCHA(L, C, h, α float64) OKLCHColor {
 	return viewOKLCH{newColor(c), c}
 }
 
-// CSSColor returns the color given by expr.
-// It can be any valid CSS color expression,
-// such as "#fff" or "var(--my-color)".
-func CSSColor(expr string) Color {
-	return newColor(cssColor(expr))
-}
-
 // A color is the internal representation of a color.
 // Unlike Color, it is not a View.
 // A color may depend on the theme it is used in,
 // so it resolves only when a box is lowered.
 type color interface {
-	// colorCSS returns the receiver, resolved in t,
-	// as a CSS color expression.
-	colorCSS(t theme) string
-
-	// colorCoords returns the receiver's OKLCH coordinates, resolved in t.
-	// It panics if the receiver's coordinates are unknown.
 	colorCoords(t theme) oklch
 }
 
@@ -106,7 +93,8 @@ func fromLab(l, a, b, alpha float64) oklch {
 	return oklch{l: l, c: math.Hypot(a, b), h: h, a: alpha}
 }
 
-func (c oklch) colorCSS(theme) string {
+// css returns c as a CSS color expression.
+func (c oklch) css() string {
 	if c.a < 1 {
 		return fmt.Sprintf("oklch(%.4g %.4g %.4g / %.4g)", c.l, c.c, c.h, c.a)
 	}
@@ -153,8 +141,6 @@ func (c oklch) lab() (l, a, b float64) {
 // from four other colors.
 type compositeColor struct{ l, c, h, a color }
 
-func (cc compositeColor) colorCSS(t theme) string { return cc.colorCoords(t).colorCSS(t) }
-
 func (cc compositeColor) colorCoords(t theme) oklch {
 	return oklch{
 		l: cc.l.colorCoords(t).l,
@@ -162,14 +148,6 @@ func (cc compositeColor) colorCoords(t theme) oklch {
 		h: cc.h.colorCoords(t).h,
 		a: cc.a.colorCoords(t).a,
 	}
-}
-
-type cssColor string
-
-func (c cssColor) colorCSS(theme) string { return string(c) }
-
-func (c cssColor) colorCoords(theme) oklch {
-	panic(fmt.Sprintf("ui: coordinates of CSS color %q are unknown", string(c)))
 }
 
 type colorView struct {

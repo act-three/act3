@@ -44,7 +44,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 			shape:      []term[Shape]{{value: Capsule}},
 			attrs:      attr.Class("x"),
 			tag:        "b",
-			fg:         []term[color]{{value: cssColor("red")}},
+			fg:         []term[color]{{value: oklch{a: 1}}},
 			fontWeight: []term[string]{{value: "700"}},
 			opacity:    []term[float64]{{value: 0.5}},
 		}
@@ -117,7 +117,7 @@ func TestCanScrollDocumentEnvironment(t *testing.T) {
 		{"root base style", environment{root: rootWithStyle}, true},
 		{"tag", environment{root: rootenv{atRoot: true}, nextenv: nextenv{tag: "sentinel"}}, false},
 		{"paint", environment{nextenv: nextenv{
-			bg: []term[color]{{value: cssColor("red")}},
+			bg: []term[color]{{value: oklch{a: 1}}},
 		}, root: rootenv{atRoot: true}}, false},
 	}
 	for _, tt := range cases {
@@ -150,7 +150,7 @@ func TestCanOverlayRootEnvironment(t *testing.T) {
 		}, true},
 		{"tag", environment{root: rootenv{atRoot: true}, nextenv: nextenv{tag: "sentinel"}}, false},
 		{"paint", environment{nextenv: nextenv{
-			bg: []term[color]{{value: cssColor("red")}},
+			bg: []term[color]{{value: oklch{a: 1}}},
 		}, root: rootenv{atRoot: true}}, false},
 	}
 	for _, tt := range cases {

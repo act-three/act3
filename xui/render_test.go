@@ -50,7 +50,7 @@ func accountCard(user User) ui.View {
 		).Gap(12).Alignment(ui.Center),
 	).
 		Padding(ui.Edges(16)).
-		Underlay(ui.Center, ui.CSSColor("#fff")).
+		Underlay(ui.Center, ui.White).
 		Overlay(ui.TopTrailing, ui.Badge("Pro"))
 }
 
@@ -87,6 +87,9 @@ func movieRow(movie Movie) ui.View {
 // Theme colors as rendered under the default theme.
 const (
 	accentCSS = "oklch(0.511 0.23 277)"
+	redCSS    = "oklch(0.576 0.209 29.5)"
+	blueCSS   = "oklch(0.576 0.209 263)"
+	whiteCSS  = "oklch(1 0 0)"
 	mutedCSS  = "oklch(0.345 0.0033 0)"
 )
 
@@ -371,8 +374,8 @@ func TestHTMLFill(t *testing.T) {
 // wrapper element appears outside it, carrying the paint, and the node
 // stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
-	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background(ui.CSSColor("red")))
-	if got := classRule(t, html, `<ui-padding class="(ui-\w+)"`); got != "align-items:center;align-self:stretch;background-color:red;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;padding-block-end:4px;padding-block-start:4px;padding-inline-end:4px;padding-inline-start:4px" {
+	html := render(t, ui.HTML(domi.Text("raw")).Padding(ui.Edges(4)).Background(ui.Red))
+	if got := classRule(t, html, `<ui-padding class="(ui-\w+)"`); got != "align-items:center;align-self:stretch;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;padding-block-end:4px;padding-block-start:4px;padding-inline-end:4px;padding-inline-start:4px" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
 	if got := classRule(t, html, `<ui-html class="(ui-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch" {
@@ -405,32 +408,32 @@ func TestColorAsView(t *testing.T) {
 	if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:"+mutedCSS+";justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
-	if mod := render(t, ui.CSSColor("#eee").Opacity(0.5)); !strings.Contains(mod, "opacity:0.5") {
+	if mod := render(t, ui.OKLCH(0.9, 0, 0).Opacity(0.5)); !strings.Contains(mod, "opacity:0.5") {
 		t.Errorf("modifier on a color view should reach its box:\n%s", mod)
 	}
 
 	// Background layers behind the color on the color's own element,
 	// visible where c is translucent — ordinary painting order, not a
 	// decoration layer, and the Modify spelling is the same lowering.
-	bg := render(t, ui.CSSColor("#0008").Background(ui.CSSColor("#fff")))
-	if got := classRule(t, bg, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:#fff;background-image:linear-gradient(#0008,#0008);justify-self:stretch" {
+	bg := render(t, ui.OKLCHA(0, 0, 0, 0.5).Background(ui.White))
+	if got := classRule(t, bg, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));justify-self:stretch" {
 		t.Errorf("Background should layer under the color, got %q:\n%s", got, bg)
 	}
 	if strings.Contains(bg, "ui-underlay") {
 		t.Errorf("Background on a color should merge, not add a layer:\n%s", bg)
 	}
-	if mod := render(t, ui.CSSColor("#0008").Modify(ui.Background(ui.CSSColor("#fff")))); mod != bg {
+	if mod := render(t, ui.OKLCHA(0, 0, 0, 0.5).Modify(ui.Background(ui.White))); mod != bg {
 		t.Errorf("Modify(Background) diverged from the Background method:\n%s", mod)
 	}
 	// Underlay layers content behind the color.
-	under := render(t, ui.CSSColor("#0008").Underlay(ui.Center, ui.Text("behind")))
+	under := render(t, ui.OKLCHA(0, 0, 0, 0.5).Underlay(ui.Center, ui.Text("behind")))
 	for _, w := range []string{`<ui-underlay `, "behind"} {
 		if !strings.Contains(under, w) {
 			t.Errorf("Underlay behind a color missing %q:\n%s", w, under)
 		}
 	}
 	// Modifiers with no possible effect on a color are no-ops.
-	if noop := render(t, ui.Secondary.Foreground(ui.CSSColor("#fff")).Font(ui.Title)); noop != html {
+	if noop := render(t, ui.Secondary.Foreground(ui.White).Font(ui.Title)); noop != html {
 		t.Errorf("no-effect modifiers on a color should be no-ops:\n%s", noop)
 	}
 }
@@ -1108,7 +1111,7 @@ func TestScrollViewPageLowering(t *testing.T) {
 		name string
 		view ui.View
 	}{
-		{"background", ui.ScrollView(ui.Vertical, ui.Text("content")).Background(ui.CSSColor("red"))},
+		{"background", ui.ScrollView(ui.Vertical, ui.Text("content")).Background(ui.Red)},
 		{"class", ui.ScrollView(ui.Vertical, ui.Text("content")).Class("sentinel")},
 		{"attribute", ui.ScrollView(ui.Vertical, ui.Text("content")).Attr(domi.Name("data-sentinel", "true"))},
 		{"fixed size", ui.ScrollView(ui.Vertical, ui.Text("content")).FixedSize()},
@@ -1124,7 +1127,7 @@ func TestScrollViewPageLowering(t *testing.T) {
 	}
 
 	background := render(t, modified[0].view)
-	if got := classRule(t, background, `<ui-scroll class="(ui-\w+)"`); !strings.Contains(got, "background-color:red") {
+	if got := classRule(t, background, `<ui-scroll class="(ui-\w+)"`); !strings.Contains(got, "background-color:"+redCSS) {
 		t.Errorf("background should remain on the element viewport, got %q", got)
 	}
 
@@ -1425,8 +1428,8 @@ func TestEmptyControlFlow(t *testing.T) {
 // TestModifierOrder checks that decoration order is preserved: padding-then-
 // underlay wraps the padded box, the reverse pads the decorated box.
 func TestModifierOrder(t *testing.T) {
-	paddedThenBg := render(t, ui.Text("x").Padding(ui.Edges(8)).Underlay(ui.Center, ui.CSSColor("#eee")))
-	bgThenPadded := render(t, ui.Text("x").Underlay(ui.Center, ui.CSSColor("#eee")).Padding(ui.Edges(8)))
+	paddedThenBg := render(t, ui.Text("x").Padding(ui.Edges(8)).Underlay(ui.Center, ui.OKLCH(0.9, 0, 0)))
+	bgThenPadded := render(t, ui.Text("x").Underlay(ui.Center, ui.OKLCH(0.9, 0, 0)).Padding(ui.Edges(8)))
 	if paddedThenBg == bgThenPadded {
 		t.Errorf("modifier order should change the lowering, but both rendered identically:\n%s", paddedThenBg)
 	}
@@ -1436,12 +1439,12 @@ func TestModifierOrder(t *testing.T) {
 // declares its differing properties under the matching pseudo-classes,
 // with hover variants gated to devices that can hover.
 func TestStateModifiers(t *testing.T) {
-	hovered := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.CSSColor("#00f"))))
-	if got := classRule(t, hovered, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover{color:#00f}}") {
+	hovered := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.Blue)))
+	if got := classRule(t, hovered, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover{color:"+blueCSS+"}}") {
 		t.Errorf("Hovered rule = %q, want a hover-gated color variant:\n%s", got, hovered)
 	}
-	focused := render(t, ui.Text("x").WhileFocused(ui.Foreground(ui.CSSColor("#00f"))))
-	if got := classRule(t, focused, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "&:focus-visible{color:#00f}") {
+	focused := render(t, ui.Text("x").WhileFocused(ui.Foreground(ui.Blue)))
+	if got := classRule(t, focused, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "&:focus-visible{color:"+blueCSS+"}") {
 		t.Errorf("Focused rule = %q, want a focus variant:\n%s", got, focused)
 	}
 	pressed := render(t, ui.Text("x").WhilePressed(ui.Font(ui.Title)))
@@ -1450,20 +1453,20 @@ func TestStateModifiers(t *testing.T) {
 	}
 	// A combination applies only while every given state is active,
 	// regardless of the order or repetition of the states.
-	both := render(t, ui.Text("x").Modify(ui.Background(ui.CSSColor("#eee")), ui.Pressed, ui.Hovered, ui.Pressed))
-	if got := classRule(t, both, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover:active{background-color:#eee}}") {
+	both := render(t, ui.Text("x").Modify(ui.Background(ui.OKLCH(0.9, 0, 0)), ui.Pressed, ui.Hovered, ui.Pressed))
+	if got := classRule(t, both, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover:active{background-color:oklch(0.9 0 0)}}") {
 		t.Errorf("combined rule = %q, want a hover+active variant:\n%s", got, both)
 	}
-	blue := ui.Foreground(ui.CSSColor("#00f"))
+	blue := ui.Foreground(ui.Blue)
 	for _, tc := range []struct {
 		v    ui.View
 		want string
 	}{
-		{ui.Text("x").WhileDisabled(blue), `&:is(:disabled, [aria-disabled="true"]){color:#00f}`},
-		{ui.Text("x").WhileChecked(blue), "&:checked{color:#00f}"},
-		{ui.Text("x").WhileInvalid(blue), "&:user-invalid{color:#00f}"},
-		{ui.Text("x").WhilePlaceholder(blue), "&:placeholder-shown{color:#00f}"},
-		{ui.Text("x").Modify(blue, ui.Disabled, ui.Checked), `&:is(:disabled, [aria-disabled="true"]):checked{color:#00f}`},
+		{ui.Text("x").WhileDisabled(blue), `&:is(:disabled, [aria-disabled="true"]){color:` + blueCSS + `}`},
+		{ui.Text("x").WhileChecked(blue), "&:checked{color:" + blueCSS + "}"},
+		{ui.Text("x").WhileInvalid(blue), "&:user-invalid{color:" + blueCSS + "}"},
+		{ui.Text("x").WhilePlaceholder(blue), "&:placeholder-shown{color:" + blueCSS + "}"},
+		{ui.Text("x").Modify(blue, ui.Disabled, ui.Checked), `&:is(:disabled, [aria-disabled="true"]):checked{color:` + blueCSS + `}`},
 	} {
 		got := render(t, tc.v)
 		if rule := classRule(t, got, `<ui-text class="(ui-\w+)"`); !strings.Contains(rule, tc.want) {
@@ -1475,9 +1478,9 @@ func TestStateModifiers(t *testing.T) {
 // TestStateModifierOverride pins per-state independence: a base
 // modifier after a state-scoped one styles the other states only.
 func TestStateModifierOverride(t *testing.T) {
-	html := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.CSSColor("#00f"))).Foreground(ui.CSSColor("#f00")))
+	html := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.Blue)).Foreground(ui.Red))
 	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
-	for _, w := range []string{"color:#f00", "@media (hover: hover){&:hover{color:#00f}}"} {
+	for _, w := range []string{"color:" + redCSS, "@media (hover: hover){&:hover{color:" + blueCSS + "}}"} {
 		if !strings.Contains(got, w) {
 			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
 		}
@@ -1489,14 +1492,14 @@ func TestStateModifierOverride(t *testing.T) {
 // state-scoped layer slotted at its chain position.
 func TestStateBackgroundStacking(t *testing.T) {
 	html := render(t, ui.Text("x").
-		Background(ui.CSSColor("#a")).WhileHovered(
+		Background(ui.OKLCH(0.1, 0, 0)).WhileHovered(
 
-		ui.Background(ui.CSSColor("#b"))).
-		Background(ui.CSSColor("#c")))
+		ui.Background(ui.OKLCH(0.2, 0, 0))).
+		Background(ui.OKLCH(0.3, 0, 0)))
 	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
 	for _, w := range []string{
-		"background-color:#c;background-image:linear-gradient(#a,#a)",
-		"@media (hover: hover){&:hover{background-image:linear-gradient(#a,#a),linear-gradient(#b,#b)}}",
+		"background-color:oklch(0.3 0 0);background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0))",
+		"@media (hover: hover){&:hover{background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0)),linear-gradient(oklch(0.2 0 0),oklch(0.2 0 0))}}",
 	} {
 		if !strings.Contains(got, w) {
 			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
@@ -1509,11 +1512,11 @@ func TestStateBackgroundStacking(t *testing.T) {
 // The exact carrier block also pins that the base state draws no
 // stroke of its own.
 func TestStateStroke(t *testing.T) {
-	html := render(t, ui.Text("x").WhileFocused(ui.BorderStroke(2, ui.CSSColor("#00f"))))
+	html := render(t, ui.Text("x").WhileFocused(ui.BorderStroke(2, ui.Blue)))
 	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
 	for _, w := range []string{
 		`&::after{border-radius:inherit;content:"";inset:0;pointer-events:none;position:absolute}`,
-		"&:focus-visible::after{box-shadow:inset 0 0 0 2px #00f}",
+		"&:focus-visible::after{box-shadow:inset 0 0 0 2px " + blueCSS + "}",
 	} {
 		if !strings.Contains(got, w) {
 			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
@@ -1526,21 +1529,21 @@ func TestStateStroke(t *testing.T) {
 // combined effect, outweighing the narrower variants while it holds.
 func TestStateUnionComposes(t *testing.T) {
 	html := render(t, ui.Text("x").
-		Background(ui.CSSColor("#a")).WhileHovered(
+		Background(ui.OKLCH(0.1, 0, 0)).WhileHovered(
 
-		ui.Background(ui.CSSColor("#b"))).WhilePressed(
+		ui.Background(ui.OKLCH(0.2, 0, 0))).WhilePressed(
 
-		ui.Background(ui.CSSColor("#d"))).
+		ui.Background(ui.OKLCH(0.4, 0, 0))).
 		WhileFocused(
 
-			ui.Background(ui.CSSColor("#e"))))
+			ui.Background(ui.OKLCH(0.5, 0, 0))))
 	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
 	for _, w := range []string{
-		"background-color:#a",
-		"&:active{background-color:#d;background-image:linear-gradient(#a,#a)}",
-		"&:hover{background-color:#b;background-image:linear-gradient(#a,#a)}",
-		"&:hover:active{background-color:#d;background-image:linear-gradient(#a,#a),linear-gradient(#b,#b)}",
-		"&:hover:focus-visible:active{background-color:#e;background-image:linear-gradient(#a,#a),linear-gradient(#b,#b),linear-gradient(#d,#d)}",
+		"background-color:oklch(0.1 0 0)",
+		"&:active{background-color:oklch(0.4 0 0);background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0))}",
+		"&:hover{background-color:oklch(0.2 0 0);background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0))}",
+		"&:hover:active{background-color:oklch(0.4 0 0);background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0)),linear-gradient(oklch(0.2 0 0),oklch(0.2 0 0))}",
+		"&:hover:focus-visible:active{background-color:oklch(0.5 0 0);background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0)),linear-gradient(oklch(0.2 0 0),oklch(0.2 0 0)),linear-gradient(oklch(0.4 0 0),oklch(0.4 0 0))}",
 	} {
 		if !strings.Contains(got, w) {
 			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
@@ -1551,8 +1554,8 @@ func TestStateUnionComposes(t *testing.T) {
 // TestStateNoChangeEmitsNothing pins the diffing: a state variant
 // equal to the base paint declares nothing.
 func TestStateNoChangeEmitsNothing(t *testing.T) {
-	plain := render(t, ui.Text("x").Foreground(ui.CSSColor("#f00")))
-	same := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.CSSColor("#f00"))).Foreground(ui.CSSColor("#f00")))
+	plain := render(t, ui.Text("x").Foreground(ui.Red))
+	same := render(t, ui.Text("x").WhileHovered(ui.Foreground(ui.Red)).Foreground(ui.Red))
 	if plain != same {
 		t.Errorf("no-op state variant changed the rendering:\nplain:\n%s\nwith state:\n%s", plain, same)
 	}
@@ -1564,13 +1567,13 @@ func TestStateNoChangeEmitsNothing(t *testing.T) {
 // variant would still win while both states are active.
 func TestStateUnionRestoresBase(t *testing.T) {
 	got := render(t, ui.Text("x").WhilePressed(
-		ui.Foreground(ui.CSSColor("#f00"))).
+		ui.Foreground(ui.Red)).
 		WhileHovered(
 
-			ui.Foreground(ui.CSSColor("#00f"))).
-		Foreground(ui.CSSColor("#f00")))
+			ui.Foreground(ui.Blue)).
+		Foreground(ui.Red))
 	rule := classRule(t, got, `<ui-text class="(ui-\w+)"`)
-	if !strings.Contains(rule, "&:hover:active{color:#f00}") {
+	if !strings.Contains(rule, "&:hover:active{color:"+redCSS+"}") {
 		t.Errorf("union variant should restore the base color, got %q", rule)
 	}
 	if strings.Contains(rule, "&:active{") {
@@ -1621,12 +1624,12 @@ func TestOverlayPageLowering(t *testing.T) {
 	if got := classRule(t, plain, `<ui-text class="(ui-\w+)">base`); !strings.Contains(got, "isolation:isolate") {
 		t.Errorf("root overlay base rule = %q, want stacking isolation", got)
 	}
-	baseModified := render(t, ui.Text("base").Background(ui.CSSColor("red")).
+	baseModified := render(t, ui.Text("base").Background(ui.Red).
 		Overlay(ui.Center, ui.Text("overlay")))
 	if strings.Contains(baseModified, "<ui-layer ") {
 		t.Errorf("a modifier owned by the base should preserve root Overlay lowering:\n%s", baseModified)
 	}
-	if got := classRule(t, baseModified, `<ui-text class="(ui-\w+)">base`); !strings.Contains(got, "background-color:red") {
+	if got := classRule(t, baseModified, `<ui-text class="(ui-\w+)">base`); !strings.Contains(got, "background-color:"+redCSS) {
 		t.Errorf("base background rule = %q, want the modifier on the base", got)
 	}
 
@@ -1652,7 +1655,7 @@ func TestOverlayPageLowering(t *testing.T) {
 		name string
 		view ui.View
 	}{
-		{"composite background", ui.Text("base").Overlay(ui.Center, ui.Text("overlay")).Background(ui.CSSColor("red"))},
+		{"composite background", ui.Text("base").Overlay(ui.Center, ui.Text("overlay")).Background(ui.Red)},
 		{"wrapper", ui.Text("base").Overlay(ui.Center, ui.Text("overlay")).Padding(ui.Edges(0))},
 		{"underlay", ui.Text("base").Underlay(ui.Center, ui.Text("underlay"))},
 	}
@@ -1666,7 +1669,7 @@ func TestOverlayPageLowering(t *testing.T) {
 	}
 	scrollFallback := render(t, ui.ScrollView(ui.Vertical, ui.Text("base")).
 		Overlay(ui.Center, ui.Text("overlay")).
-		Background(ui.CSSColor("red")))
+		Background(ui.Red))
 	if !strings.Contains(scrollFallback, "<ui-layer ") || !strings.Contains(scrollFallback, "<ui-scroll ") {
 		t.Errorf("a modified Overlay composite should also keep its ScrollView base in element mode:\n%s", scrollFallback)
 	}
@@ -1766,7 +1769,7 @@ func TestGrid(t *testing.T) {
 		{"CellMinWidth", ui.ColumnMinWidth(120), "grid-template-columns:repeat(auto-fill, minmax(120px, 1fr))"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			html := render(t, ui.VStack(ui.Grid(tt.layout, ui.CSSColor("#f00"), ui.Text("x"))))
+			html := render(t, ui.VStack(ui.Grid(tt.layout, ui.Red, ui.Text("x"))))
 			grid := classRule(t, html, `<ui-grid class="(ui-\w+)"`)
 			for _, w := range []string{"display:grid", tt.want, "row-gap:8px", "column-gap:8px", "align-items:center", "justify-items:center", "align-self:stretch"} {
 				if !strings.Contains(grid, w) {
@@ -1805,7 +1808,7 @@ func TestGridFill(t *testing.T) {
 // anchor axis keeps the subview's fill, and the derived axis issues
 // none, so no stretch can override the ratio.
 func TestFrameRatio(t *testing.T) {
-	wide := render(t, ui.VStack(ui.CSSColor("#f00").FrameRatio(2, 3, ui.Horizontal)))
+	wide := render(t, ui.VStack(ui.Red.FrameRatio(2, 3, ui.Horizontal)))
 	rule := classRule(t, wide, `<ui-aspect class="(ui-\w+)"`)
 	for _, w := range []string{"aspect-ratio:2 / 3", "align-self:stretch", "min-height:0"} {
 		if !strings.Contains(rule, w) {
@@ -1815,7 +1818,7 @@ func TestFrameRatio(t *testing.T) {
 	if strings.Contains(rule, "flex-grow") {
 		t.Errorf("derived height should not fill the column, got %q", rule)
 	}
-	tall := render(t, ui.HStack(ui.CSSColor("#f00").FrameRatio(2, 3, ui.Vertical)))
+	tall := render(t, ui.HStack(ui.Red.FrameRatio(2, 3, ui.Vertical)))
 	rule = classRule(t, tall, `<ui-aspect class="(ui-\w+)"`)
 	for _, w := range []string{"aspect-ratio:2 / 3", "align-self:stretch", "min-width:0", "flex-shrink:0", "writing-mode:vertical-lr"} {
 		if !strings.Contains(rule, w) {

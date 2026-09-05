@@ -24,7 +24,7 @@ View modifiers affect the appearance, sizing, and other properties
 of the views they modify.
 
 	Text("This is blue").
-		Foreground(CSSColor("blue"))
+		Foreground(Blue)
 
 In this example,
 the Foreground modifier changes the text color of the Text view.
@@ -43,7 +43,7 @@ For instance, consider the following view graph.
 
 	ScrollView(Vertical|Horizontal,
 		ZStack(
-			CSSColor("red"),
+			Red,
 		).
 			Frame(Width(100), Height(100)),
 	)
@@ -80,7 +80,7 @@ It is possible for a view to take a size
 that exceeds its available space.
 
 	HStack(
-		CSSColor("blue").
+		Blue.
 			Frame(Width(100), Height(100)).
 			Frame(Width(50), Height(50)),
 		Text("Hello"),
