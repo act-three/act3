@@ -94,12 +94,22 @@ func (c oklch) css() string {
 
 func (c oklch) colorCoords(theme) oklch { return c }
 
-// isLight reports whether c is a light color.
+// isLight reports whether c is a light color:
+// one on which black text has more contrast than white text,
+// by the WCAG contrast ratio.
 // Foreground content on a light color background
 // is drawn in dark colors, and vice versa.
+//
+// The threshold is the relative luminance at which the two ratios,
+// (Y + 0.05) / 0.05 and 1.05 / (Y + 0.05), are equal.
+// Colors beyond the sRGB gamut are judged as if they were not clipped.
 func (c oklch) isLight() bool {
-	const threshold = 0.57
-	return c.l > threshold
+	L, a, b := c.lab()
+	l := L + 0.3963377774*a + 0.2158037573*b
+	m := L - 0.1055613458*a - 0.0638541728*b
+	s := L - 0.0894841775*a - 1.2914855480*b
+	y := -0.040774541*l*l*l + 1.112492185*m*m*m - 0.071717644*s*s*s
+	return y > 0.179128785
 }
 
 // colorScheme returns a suitable CSS color-scheme value
