@@ -15,7 +15,7 @@ type theme struct {
 }
 
 var defaultTheme = theme{
-	base:     oklch{l: 1, a: 1},
+	base:     oklch{l: 0.982, c: 0.0013, h: 100, a: 1},
 	accent:   oklch{l: 0.511, c: 0.23, h: 277, a: 1},
 	contrast: 30,
 }

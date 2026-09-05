@@ -23,7 +23,7 @@ func TestThemeOption(t *testing.T) {
 		want     string
 	}{
 		{"light", OKLCH(0.95, 0.02, 80), 30, "background-color:oklch(0.95 0.02 80);color:oklch(0 0.01 80);color-scheme:light"},
-		{"theme color", ThemeColor(0.1, 0, BackgroundScale), 30, "background-color:oklch(0.9 0 0);color:oklch(0 0 0);color-scheme:light"},
+		{"theme color", ThemeColor(0.1, 0, BackgroundScale), 30, "background-color:oklch(0.882 0.0013 100);color:oklch(0 0.00065 100);color-scheme:light"},
 		{"dark", OKLCH(0.2, 0.03, 215), 30, "background-color:oklch(0.2 0.03 215);color:oklch(1 0.015 215);color-scheme:dark"},
 		{"mid light", OKLCH(0.65, 0, 0), 30, "background-color:oklch(0.65 0 0);color:oklch(0 0 0);color-scheme:light"},
 		{"mid dark", OKLCH(0.5, 0.3, 0), 30, "background-color:oklch(0.5 0.3 0);color:oklch(1 0.15 0);color-scheme:dark"},
