@@ -108,9 +108,9 @@ func fromLab(l, a, b, alpha float64) oklch {
 
 func (c oklch) colorCSS(theme) string {
 	if c.a < 1 {
-		return fmt.Sprintf("oklch(%g %g %g / %g)", c.l, c.c, c.h, c.a)
+		return fmt.Sprintf("oklch(%.4g %.4g %.4g / %.4g)", c.l, c.c, c.h, c.a)
 	}
-	return fmt.Sprintf("oklch(%g %g %g)", c.l, c.c, c.h)
+	return fmt.Sprintf("oklch(%.4g %.4g %.4g)", c.l, c.c, c.h)
 }
 
 func (c oklch) colorCoords(theme) oklch { return c }
