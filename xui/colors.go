@@ -1,7 +1,7 @@
 package ui
 
 // Accent is the theme's accent color.
-var Accent Color = newColor(themeAccent{})
+var Accent Color = accent
 
 // These colors are useful for foreground elements, such as text.
 var (
@@ -19,21 +19,71 @@ var (
 )
 
 // These are basic named colors.
+// The context-dependent colors are tuned separately
+// for light mode and dark mode.
 var (
-	// Red is a red color.
-	Red Color = OKLCH(0.576, 0.209, 29.5)
+	// Red is a context-dependent red color.
+	Red Color = red
 
-	// Blue is a blue color.
-	Blue Color = OKLCH(0.576, 0.209, 263)
+	// Orange is a context-dependent orange color.
+	Orange Color = orange
 
-	// Pink is a pink color.
-	Pink Color = OKLCH(0.576, 0.209, 354)
+	// Yellow is a context-dependent yellow color.
+	Yellow Color = yellow
+
+	// Green is a context-dependent green color.
+	Green Color = green
+
+	// Mint is a context-dependent mint color.
+	Mint Color = mint
+
+	// Teal is a context-dependent teal color.
+	Teal Color = teal
+
+	// Cyan is a context-dependent cyan color.
+	Cyan Color = cyan
+
+	// Blue is a context-dependent blue color.
+	Blue Color = blue
+
+	// Indigo is a context-dependent indigo color.
+	Indigo Color = indigo
+
+	// Purple is a context-dependent purple color.
+	Purple Color = purple
+
+	// Pink is a context-dependent pink color.
+	Pink Color = pink
+
+	// Brown is a context-dependent brown color.
+	Brown Color = brown
+
+	// Gray is a gray color.
+	Gray Color = gray
 
 	// Black is a black color.
-	Black Color = OKLCH(0, 0, 0)
+	Black Color = black
 
 	// White is a white color.
-	White Color = OKLCH(1, 0, 0)
+	White Color = white
+)
+
+var (
+	red    = ModeColor(OKLCH(0.654, 0.232, 28.7), OKLCH(0.663, 0.224, 28.3))
+	orange = ModeColor(OKLCH(0.765, 0.175, 62.6), OKLCH(0.782, 0.171, 67.2))
+	yellow = ModeColor(OKLCH(0.865, 0.177, 90.4), OKLCH(0.885, 0.181, 94.8))
+	green  = ModeColor(OKLCH(0.730, 0.194, 147.4), OKLCH(0.756, 0.208, 147.0))
+	mint   = ModeColor(OKLCH(0.748, 0.130, 189.0), OKLCH(0.851, 0.115, 192.4))
+	teal   = ModeColor(OKLCH(0.700, 0.111, 212.7), OKLCH(0.771, 0.118, 212.0))
+	cyan   = ModeColor(OKLCH(0.707, 0.133, 233.9), OKLCH(0.817, 0.119, 227.7))
+	blue   = ModeColor(OKLCH(0.603, 0.218, 257.4), OKLCH(0.624, 0.206, 255.5))
+	indigo = ModeColor(OKLCH(0.529, 0.191, 278.3), OKLCH(0.556, 0.203, 278.1))
+	purple = ModeColor(OKLCH(0.615, 0.213, 312.4), OKLCH(0.656, 0.227, 312.4))
+	pink   = ModeColor(OKLCH(0.650, 0.238, 17.9), OKLCH(0.658, 0.232, 16.0))
+	brown  = ModeColor(OKLCH(0.632, 0.064, 72.8), OKLCH(0.665, 0.064, 73.0))
+	gray   = OKLCH(0.648, 0.007, 286.2)
+	black  = OKLCH(0, 0, 0)
+	white  = OKLCH(1, 0, 0)
 )
 
 var (
@@ -184,4 +234,6 @@ var (
 		h: themeAccent{},
 		a: oklch{a: 1},
 	})
+
+	accent = newColor(themeAccent{})
 )

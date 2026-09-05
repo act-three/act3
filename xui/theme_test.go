@@ -135,8 +135,9 @@ func TestIsLight(t *testing.T) {
 		{"black", Black, false},
 		{"gray above", OKLCH(0.57, 0, 0), true},
 		{"gray below", OKLCH(0.56, 0, 0), false},
-		{"red", Red, false},
-		{"gray at red's lightness", OKLCH(0.576, 0, 0), true},
+		{"red", Red, true},
+		{"dark red", OKLCH(0.576, 0.209, 29.5), false},
+		{"gray at dark red's lightness", OKLCH(0.576, 0, 0), true},
 		{"yellow", OKLCH(0.9, 0.2, 100), true},
 	} {
 		if got := tt.c.color().colorCoords(darkTheme).isLight(); got != tt.light {

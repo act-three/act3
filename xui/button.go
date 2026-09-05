@@ -57,7 +57,7 @@ func nodeButton(action any, label node) node {
 		style := map[ButtonRole]struct{ face, hover, label Color }{
 			RoleDefault:     {controlSecondary, controlSecondaryHover, Primary},
 			RolePrimary:     {Accent, accentHover, accentTextColor},
-			RoleDestructive: {Red, hoverOf(Red.color()), textOn(Red.color())},
+			RoleDestructive: {Red, hoverOf(Red.color()), White},
 		}[env.buttonRole]
 		v := base{label}.
 			Padding(EdgesLetterbox(8), EdgesPillarbox(12)).

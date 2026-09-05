@@ -87,8 +87,8 @@ func movieRow(movie Movie) ui.View {
 // Theme colors as rendered under the default theme.
 const (
 	linkCSS  = "oklch(0.381 0.233 277)"
-	redCSS   = "oklch(0.576 0.209 29.5)"
-	blueCSS  = "oklch(0.576 0.209 263)"
+	redCSS   = "oklch(0.654 0.232 28.7)"
+	blueCSS  = "oklch(0.603 0.218 257.4)"
 	whiteCSS = "oklch(1 0 0)"
 	mutedCSS = "oklch(0.3388 0.00395 100)"
 )
