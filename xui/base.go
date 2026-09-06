@@ -74,6 +74,13 @@ func (v base) Class(c ...string) View {
 	return v.modify(modAttr(attr.Class(c...)))
 }
 
+func (v base) ControlSize(s ControlSize) View {
+	return v.modify(modEnv(func(env environment) environment {
+		env.controlSize = s
+		return env
+	}))
+}
+
 func (v base) Disabled(d bool) View {
 	return v.modify(modEnv(func(env environment) environment {
 		env.disabled = env.disabled || d

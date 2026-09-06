@@ -46,6 +46,10 @@ type View interface {
 	// padding inside the border.
 	BorderStroke(px float64, c Color) View
 
+	// ControlSize sets the size of controls in the receiver.
+	// The default size is Regular.
+	ControlSize(ControlSize) View
+
 	// Disabled makes the receiver non-interactive. Controls such as
 	// buttons, links, and text fields do not respond to input events.
 	//
@@ -298,16 +302,17 @@ const (
 
 // environment carries the top-down state of a lowering pass.
 type environment struct {
-	lc         layoutContext
-	container  containerKind
-	unbounded  AxisSet
-	disabled   bool
-	lineLimit  int // max lines per text, or 0 for no limit
-	linkPolicy LinkPolicy
-	theme      theme
-	sheet      *sheet.Sheet
-	root       rootenv
-	nextenv    // must be zeroed before rendering a subview
+	lc          layoutContext
+	container   containerKind
+	unbounded   AxisSet
+	disabled    bool
+	lineLimit   int // max lines per text, or 0 for no limit
+	linkPolicy  LinkPolicy
+	controlSize ControlSize
+	theme       theme
+	sheet       *sheet.Sheet
+	root        rootenv
+	nextenv     // must be zeroed before rendering a subview
 }
 
 // rootenv is context for root-specialized lowering. Its base styles are not
