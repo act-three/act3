@@ -205,6 +205,18 @@ type View interface {
 	// has no effect.
 	Sticky(s ...EdgeSpace) View
 
+	// TextTrim specifies where to trim text boxes in the receiver.
+	//
+	// It trims to the smallest box specified by the given edge set.
+	// For instance, specifying both TextEx and TextCap trims to the
+	// ex-height on the top edge.
+	//
+	// If either the top or bottom edges are not present in the edge
+	// set, the half-leading on those edges is retained.
+	//
+	// The default is no trim.
+	TextTrim(TextEdgeSet) View
+
 	// ThemeBackground makes bg the background color of the receiver's
 	// theme. Theme colors in the receiver are derived from bg.
 	// See ThemeColor.
@@ -307,6 +319,7 @@ type environment struct {
 	unbounded   AxisSet
 	disabled    bool
 	lineLimit   int // max lines per text, or 0 for no limit
+	textTrim    TextEdgeSet
 	linkPolicy  LinkPolicy
 	controlSize ControlSize
 	theme       theme

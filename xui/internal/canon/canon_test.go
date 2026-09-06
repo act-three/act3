@@ -15,6 +15,7 @@ func TestSet(t *testing.T) {
 		{"overflow", `cannot set "overflow"; use overflow-x and overflow-y`},
 		{"padding", `use padding-block-start, padding-block-end, padding-inline-start, and padding-inline-end`},
 		{"opacity", `use the Opacity modifier`},
+		{"text-box", `use text-box-trim and text-box-edge`},
 		{"margin", `"margin" is not a canonical property`},
 	} {
 		t.Run(tt.property, func(t *testing.T) {

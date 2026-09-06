@@ -1974,3 +1974,37 @@ func TestRenderStyleElement(t *testing.T) {
 		t.Errorf("style element holding only the root rule not first in ui-root:\n%s", html)
 	}
 }
+
+// TestTextTrim pins the lowering of TextTrim: each edge trims to the
+// smallest box named for it, an edge with no box named keeps its
+// half-leading, and the empty set trims nothing.
+func TestTextTrim(t *testing.T) {
+	for _, tt := range []struct {
+		edges ui.TextEdgeSet
+		want  string
+	}{
+		{0, ""},
+		{ui.TextTop, "text-box-edge:text text;text-box-trim:trim-start"},
+		{ui.TextCap, "text-box-edge:cap text;text-box-trim:trim-start"},
+		{ui.TextEx, "text-box-edge:ex text;text-box-trim:trim-start"},
+		{ui.TextLastBaseline, "text-box-edge:text alphabetic;text-box-trim:trim-end"},
+		{ui.TextBottom, "text-box-edge:text text;text-box-trim:trim-end"},
+		{ui.TextCap | ui.TextLastBaseline, "text-box-edge:cap alphabetic;text-box-trim:trim-both"},
+		{ui.TextTop | ui.TextCap | ui.TextEx, "text-box-edge:ex text;text-box-trim:trim-start"},
+		{ui.TextLastBaseline | ui.TextBottom, "text-box-edge:text alphabetic;text-box-trim:trim-end"},
+	} {
+		html := render(t, ui.Text("x").TextTrim(tt.edges))
+		rule := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+		got := strings.Join(regexp.MustCompile(`text-box-[a-z]+:[^;]*`).FindAllString(rule, -1), ";")
+		if got != tt.want {
+			t.Errorf("edges %b: trim = %q, want %q", tt.edges, got, tt.want)
+		}
+	}
+
+	subtree := render(t, ui.VStack(ui.Text("a"), ui.Text("b").TextTrim(ui.TextEx)).TextTrim(ui.TextCap))
+	for want, n := range map[string]int{"text-box-edge:cap text": 1, "text-box-edge:ex text": 1} {
+		if got := strings.Count(subtree, want); got != n {
+			t.Errorf("%s count = %d, want %d:\n%s", want, got, n, subtree)
+		}
+	}
+}
