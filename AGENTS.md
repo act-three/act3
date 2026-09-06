@@ -94,6 +94,8 @@ Go tool dependencies are declared in the `tool` block of `go.mod`.
 
 ## Conventions
 
+- After making a change, set or update its commit description with `jj desc`.
+  Do not start a new commit with `jj new` or `jj commit` unless asked.
 - Standard library style — no frameworks, concrete types, explicit error
   handling
 - Prefer table-driven tests where it makes sense
