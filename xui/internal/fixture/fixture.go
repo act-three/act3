@@ -337,7 +337,10 @@ func Page() View {
 // Document renders Page into a standalone document with the xui stylesheet
 // inlined, suitable for a browser or the golden test.
 func Document(css string) (string, error) {
-	title, page := Render(ScrollView(Vertical, Page()))
+	title, page := Render(
+		ScrollView(Vertical, Page()),
+		Theme(OKLCH(0.9561, 0.0074, 80.7), OKLCH(0.782, 0.1404, 70.8), 25),
+	)
 	var sb strings.Builder
 	sb.WriteString("<!doctype html><html lang=en><head><meta charset=utf-8>")
 	sb.WriteString("<meta name=viewport content=\"width=device-width, initial-scale=1\">")
