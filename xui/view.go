@@ -323,6 +323,7 @@ type environment struct {
 	linkPolicy  LinkPolicy
 	controlSize ControlSize
 	theme       theme
+	iconSource  func(string) domi.Node
 	sheet       *sheet.Sheet
 	root        rootenv
 	nextenv     // must be zeroed before rendering a subview

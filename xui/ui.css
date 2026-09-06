@@ -17,6 +17,16 @@
 		line-height: 1.4;
 	}
 
+	/* An inline svg's baseline is its bottom edge. Lowering it by half
+	   the gap between the icon and the cap height puts the icon's
+	   center between the baseline and the cap height. */
+	ui-icon > svg {
+		width: 100%;
+		height: 100%;
+		vertical-align: calc(0.5cap - var(--ui-icon-scale) / 2);
+		stroke-width: var(--ui-icon-stroke-width);
+	}
+
 	/* A root ScrollView delegates its scrolling to the document viewport. */
 	html:has(ui-root[scroll]) {
 		height: 100%;
@@ -48,7 +58,7 @@
 
 	@layer normalize {
 		ui-root,
-		ui-root :not(style, ui-html *),
+		ui-root :not(style, ui-html *, svg, svg *),
 		ui-root :not(ui-html *)::before,
 		ui-root :not(ui-html *)::after {
 			all: unset;
