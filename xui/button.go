@@ -54,13 +54,15 @@ func (v buttonView) Role(r ButtonRole) ButtonView {
 
 func nodeButton(action any, label node) node {
 	return func(env environment) box {
+		fontSize, lineHeight, padding := buttonMetrics(env.controlSize)
 		style := map[ButtonRole]struct{ face, hover, label Color }{
 			RoleDefault:     {controlSecondary, controlSecondaryHover, Primary},
 			RolePrimary:     {Accent, accentHover, accentTextColor},
 			RoleDestructive: {Red, hoverOf(Red.color()), White},
 		}[env.buttonRole]
 		v := base{label}.
-			Padding(Edges(8)).
+			Padding(Edges(padding)).
+			Modify(font(fontSize, "500", lineHeight)).
 			Foreground(style.label).
 			WhileHovered(Background(style.hover)).
 			Background(style.face).
@@ -92,5 +94,21 @@ func nodeButton(action any, label node) node {
 				)
 		}
 		return v.nodes()[0](env)
+	}
+}
+
+// These provisional recipes leave 1px per axis for the eventual 0.5px
+// reserved border: ordinary text then targets 24/28/32/44px heights.
+// Review the geometry again when that paint construction is available.
+func buttonMetrics(s ControlSize) (fontSize, lineHeight string, padding float64) {
+	switch s {
+	case Mini:
+		return "12px", "16px", 3.5
+	case Small:
+		return "12px", "16px", 5.5
+	case Large:
+		return "13px", "18px", 12.5
+	default:
+		return "13px", "18px", 6.5
 	}
 }

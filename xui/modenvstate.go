@@ -43,8 +43,12 @@ func Font(f FontSize) Modifier {
 	if f == "" {
 		return nil
 	}
+	size, weight, height := f.values()
+	return font(size, weight, height)
+}
+
+func font(size, weight, height string) Modifier {
 	return modEnvState(func(env environment, s State) environment {
-		size, weight, height := f.values()
 		env.fontSize = append(env.fontSize, term[string]{s, size})
 		env.fontWeight = append(env.fontWeight, term[string]{s, weight})
 		env.lineHeight = append(env.lineHeight, term[string]{s, height})
