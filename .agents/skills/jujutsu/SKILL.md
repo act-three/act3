@@ -58,7 +58,8 @@ jj new                              # finalize; leave a fresh empty @
 Change the message mid-flight with `jj desc -m "new msg"`.
 
 **Commit message style** — first line in imperative mood, sentence
-case, no trailing period, ~50 chars. Follow with a blank line and
+case, no initial cap, no trailing period, ~50 chars.
+Follow with a blank line and
 additional paragraphs as useful (motivation, caveats, what was tried,
 links to issues). Keep the subject terse; let the body carry detail.
 
@@ -72,7 +73,7 @@ Subject-only examples from the existing log:
 - `view: use paperclip to indicate attachment`
 - `web: drop redundant db.Close before degraded-mode db reset`
 
-When a change warrants it:
+When a change warrants it, include a descriptive body:
 
 ```
 web: drop redundant db.Close before degraded-mode db reset
@@ -84,7 +85,24 @@ handler would race with a concurrent GET / hitting TableStats.
 ```
 
 The first line should be kept very short: about 50 columns at most.
-Subsequent paragraphs should be hard-wrapped to about 70 columns.
+Subsequent paragraphs should be hard-wrapped to about 72 columns.
+
+The commit message body, when present, should describe the purpose
+and motivation for the change. Does it fix a bug? What was the bug?
+Does it add a new feature? How is the feature intended to be useful?
+
+The body should provide background context if needed. It should
+also describe the implementation strategy used by the change if
+that strategy is subtle or complex. It should not narrate or list
+every thing that was affected by the change, or otherwise restate
+what the diff already conveys.
+
+The body should not make claims about passing tests or list other
+results that are mechanically verified in CI. If the change is for
+performance, and relevant performance measurements are available,
+a high level summary (e.g. benchstat output) should be included.
+
+Use indicative voice, NOT imperative, for the body.
 
 ## Recovery
 
