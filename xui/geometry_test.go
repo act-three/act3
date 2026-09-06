@@ -40,6 +40,55 @@ func within(t *testing.T, what string, got, want, tol float64) {
 	}
 }
 
+func TestGeometryButtonLabel(t *testing.T) {
+	for _, action := range []struct {
+		name string
+		make func(ui.View) ui.ButtonView
+	}{
+		{"message", func(label ui.View) ui.ButtonView { return ui.Button(Msg{}, label) }},
+		{"url", func(label ui.View) ui.ButtonView { return ui.Button("/movies", label) }},
+	} {
+		for _, tt := range []struct {
+			name  string
+			label ui.View
+			w, h  float64
+		}{
+			{"square", ui.Red.Frame(ui.Width(24), ui.Height(24)), 40, 40},
+			{"wide", ui.Red.Frame(ui.Width(64), ui.Height(24)), 80, 40},
+			{"tall", ui.Red.Frame(ui.Width(24), ui.Height(64)), 40, 80},
+			{"horizontal fill", ui.Red.Frame(ui.Height(24)), 600, 40},
+			{"vertical fill", ui.Red.Frame(ui.Width(24)), 40, 400},
+			{"both fill", ui.Red, 600, 400},
+		} {
+			t.Run(action.name+"/"+tt.name, func(t *testing.T) {
+				v := action.make(tt.label.Class("label")).Class("button")
+				stage(t, v, func(s *uitest.Session) {
+					button := s.Rect(".button", 0)
+					label := s.Rect(".button > .label", 0)
+					within(t, "button width", button.W, tt.w, 0.5)
+					within(t, "button height", button.H, tt.h, 0.5)
+					within(t, "top inset", label.Y-button.Y, 8, 0.5)
+					within(t, "bottom inset", button.Bottom()-label.Bottom(), 8, 0.5)
+					within(t, "left inset", label.X-button.X, 8, 0.5)
+					within(t, "right inset", button.Right()-label.Right(), 8, 0.5)
+
+					var radii [4]float64
+					s.Eval(`(() => {
+						const s = getComputedStyle(document.querySelector(".button"));
+						return [s.borderTopLeftRadius, s.borderTopRightRadius,
+							s.borderBottomRightRadius, s.borderBottomLeftRadius].map(parseFloat);
+					})()`, &radii)
+					for i, r := range radii {
+						if r < max(button.W, button.H)/2 || r != radii[0] {
+							t.Errorf("corner %d radius = %g, want equal radii large enough for a capsule", i, r)
+						}
+					}
+				})
+			})
+		}
+	}
+}
+
 func TestGeometrySpacerAbsorbsSlack(t *testing.T) {
 	stage(t, ui.HStack(ui.Text("a"), ui.Spacer(), ui.Text("b")), func(s *uitest.Session) {
 		within(t, "row width", s.Rect("ui-hstack", 0).W, 600, 1)

@@ -60,11 +60,11 @@ func nodeButton(action any, label node) node {
 			RoleDestructive: {Red, hoverOf(Red.color()), White},
 		}[env.buttonRole]
 		v := base{label}.
-			Padding(EdgesLetterbox(8), EdgesPillarbox(12)).
+			Padding(Edges(8)).
 			Foreground(style.label).
 			WhileHovered(Background(style.hover)).
 			Background(style.face).
-			BorderShape(RoundedRectangle)
+			BorderShape(Capsule)
 		cursor := "pointer"
 		if env.disabled {
 			cursor = "default"
