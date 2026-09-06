@@ -111,6 +111,14 @@ func TestHandlerNonce(t *testing.T) {
 	}
 }
 
+// TestRenderNonce verifies that Render honors StyleNonce like Handler does.
+func TestRenderNonce(t *testing.T) {
+	_, page := Render(Image("/x.png"), StyleNonce(func(context.Context) string { return "abc123" }))
+	if got := renderNode(t, page); !strings.Contains(got, `<style nonce="abc123">`) {
+		t.Errorf("style element does not carry the nonce:\n%s", got)
+	}
+}
+
 // TestHandlerStylesheet verifies that the page of a default-document app
 // loads the static stylesheet from the Handler under the internal URL prefix,
 // and that an app with a custom document is left to link it itself.
