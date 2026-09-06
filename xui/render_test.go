@@ -100,10 +100,10 @@ func pageRoot(html, attrs string) bool {
 	return regexp.MustCompile(`^<ui-root class="ui-\w+"` + regexp.QuoteMeta(attrs) + `><style>`).MatchString(html)
 }
 
-func render(t *testing.T, v ui.View) string {
+func render(t *testing.T, v ui.View, o ...ui.Option) string {
 	t.Helper()
 	var sb strings.Builder
-	_, page := ui.Render(v)
+	_, page := ui.Render(v, o...)
 	if err := domi.RenderTo(&sb, page); err != nil {
 		t.Fatalf("render: %v", err)
 	}

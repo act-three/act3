@@ -91,16 +91,7 @@ func Handler[Msg any, A App[Msg]](
 	onURLChange func(*url.URL) Msg,
 	o ...Option,
 ) http.Handler {
-	var styleNonce func(context.Context) string
-	th := defaultTheme
-	for _, o := range o {
-		switch o := o.(type) {
-		case optionStyleNonce:
-			styleNonce = o.f
-		case optionTheme:
-			th = o.theme
-		}
-	}
+	th, styleNonce := configure(o)
 	// cssLink is filled in below, after the server exists to be asked
 	// about its configuration; the constructor only runs on requests.
 	var cssLink domi.Node
@@ -194,11 +185,34 @@ func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 }
 
 // Render returns HTML representing root.
-// It is intended for tests.
+//
+// Option values that are inapplicable are ignored.
+// For options that take a context, Render uses context.Background().
+//
+// Render is intended for tests.
 // Applications serve their views with [Handler].
-func Render(root View) (title string, page domi.Node) {
-	in := instance[struct{}, App[struct{}]]{theme: defaultTheme}
+func Render(root View, o ...Option) (title string, page domi.Node) {
+	th, styleNonce := configure(o)
+	in := instance[struct{}, App[struct{}]]{theme: th}
+	if styleNonce != nil {
+		in.nonce = styleNonce(context.Background())
+	}
 	return in.render(root)
+}
+
+// configure resolves the xui options in o.
+// Options it does not know are for domi.
+func configure(o []Option) (th theme, styleNonce func(context.Context) string) {
+	th = defaultTheme
+	for _, o := range o {
+		switch o := o.(type) {
+		case optionStyleNonce:
+			styleNonce = o.f
+		case optionTheme:
+			th = o.theme
+		}
+	}
+	return th, styleNonce
 }
 
 // An Option configures a [Handler].
