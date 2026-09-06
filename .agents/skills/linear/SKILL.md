@@ -84,7 +84,8 @@ Landed as `6153950a171e`, "model: record tombstones for changed slugs" (#123).
 
 Anything you write into Linear on the user's behalf
 (issue descriptions, comments) must start with a
-`*— from Claude*` line so it isn't mistaken for the user's own words.
+`*— from [Name]*` line so it isn't mistaken for the user's own words.
+Substitute your own agent name (eg "Claude" or "Codex") for `[Name]`.
 Example:
 
 ```
