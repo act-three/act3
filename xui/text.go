@@ -112,6 +112,7 @@ func buildText(env environment, r textRun) box {
 		env.style.Set("overflow-x", "clip")
 		env.style.Set("overflow-y", "clip")
 	}
+	env.textTrim.addTrimStylesTo(&env.style)
 	inner := env
 	inner.nextenv = nextenv{}
 	return build(env, plan{content: r.renderText(inner)})

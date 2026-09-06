@@ -108,6 +108,13 @@ func (v base) LineLimit(n int) View {
 	}))
 }
 
+func (v base) TextTrim(s TextEdgeSet) View {
+	return v.modify(modEnv(func(env environment) environment {
+		env.textTrim = s
+		return env
+	}))
+}
+
 func (v base) Font(f FontSize) View {
 	return v.Modify(Font(f))
 }

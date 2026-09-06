@@ -237,6 +237,19 @@ func textLayout() View {
 	)
 }
 
+func textTrimDemo() View {
+	t := Text("Hxflg").
+		Font(HeadlineFont).
+		Background(OKLCH(0.9, 0.05, 70))
+	return HStack(
+		t,
+		t.TextTrim(TextTop|TextBottom),
+		t.TextTrim(TextCap|TextLastBaseline),
+		t.TextTrim(TextEx|TextLastBaseline),
+	).
+		Alignment(FirstBaseline)
+}
+
 func stateDemo() View {
 	return Text("Hover, focus, or press me").
 		TextForeground(White).
@@ -348,6 +361,7 @@ func Page() View {
 		section("Links in text (navigate, send, then a disabled line)", linkText()),
 		section("LineLimit (2 lines, then 1)", lineLimitDemo()),
 		section("Text Layout", textLayout()),
+		section("TextTrim (none, top/bottom, cap/baseline, ex/baseline)", textTrimDemo()),
 		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
 		section("Grid (Columns(4), then CellMinWidth(120))", gridDemo()),
 		section("FrameRatio (2:3 posters anchored on width, in Columns(6))", posterWall()),
