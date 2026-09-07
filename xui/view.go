@@ -156,7 +156,7 @@ type View interface {
 	UnderlayAt(at, anchor Alignment, u View) View
 
 	// LineLimit limits the number of lines text can occupy
-	// in the receiver.
+	// in the receiver. If n is 0, there is no limit.
 	LineLimit(n int) View
 
 	// LinkPolicy sets the policy for links and buttons in the receiver.

@@ -898,10 +898,12 @@ func TestLineLimit(t *testing.T) {
 	}
 }
 
-func TestLineLimitClamps(t *testing.T) {
-	html := render(t, ui.Text("x").LineLimit(0))
-	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "-webkit-line-clamp:1") {
-		t.Errorf("rule = %q, want a limit below 1 raised to 1:\n%s", got, html)
+func TestLineLimitClearsInheritedLimit(t *testing.T) {
+	for _, n := range []int{0, -1} {
+		html := render(t, ui.VStack(ui.Text("x").LineLimit(n)).LineLimit(2))
+		if strings.Contains(html, "-webkit-line-clamp") {
+			t.Errorf("limit %d should clear inherited clamping:\n%s", n, html)
+		}
 	}
 }
 
