@@ -103,7 +103,7 @@ func (v base) LinkPolicy(p LinkPolicy) View {
 
 func (v base) LineLimit(n int) View {
 	return v.modify(modEnv(func(env environment) environment {
-		env.lineLimit = max(n, 1)
+		env.lineLimit = max(n, 0)
 		return env
 	}))
 }
