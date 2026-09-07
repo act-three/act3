@@ -340,6 +340,25 @@ func section(title string, body View) View {
 		Alignment(Leading)
 }
 
+func buttonStates() View {
+	var rows []View
+	for _, role := range []ButtonRole{RoleDefault, RolePrimary, RoleDestructive} {
+		button := func(label string) ButtonView {
+			return Button(Msg{Edit: true}, Text(label)).Role(role)
+		}
+		rows = append(rows, HStack(
+			button("Rest"),
+			button("Selected").Selected(true),
+			button("Menu open").MenuOpen(true),
+			button("Both").Selected(true).MenuOpen(true),
+			button("Disabled").Disabled(true),
+			button("Selected disabled").Selected(true).Disabled(true),
+			button("Menu disabled").MenuOpen(true).Disabled(true),
+		))
+	}
+	return VStack(rows...).Alignment(Leading)
+}
+
 func buttonSizes() View {
 	var rows []View
 	for _, size := range []struct {
@@ -377,6 +396,7 @@ func Page() View {
 		section("Account card (Card + HStack + Spacer + OverlayAt badge)", accountCard(user)),
 		section("Movie page (Frame fill + keyed rows + For-style list)", moviePage(movies)),
 		section("Button sizes (provisional geometry; reserved edge and paint pending)", buttonSizes()),
+		section("Button states (existing roles; style migration and paint pending)", buttonStates()),
 		section("Dividers in an HStack (minor-axis, vertical)", dividerRow().Class("demo-bordered")),
 		section("Dividers in a VStack (minor-axis, horizontal)", dividerColumn().Class("demo-bordered")),
 		section("ZStack (layered, all subviews size the stack)", zstackDemo()),

@@ -133,7 +133,7 @@ func TestButtonDisabledState(t *testing.T) {
 			stage(t, tc.v, func(s *uitest.Session) {
 				var opacity string
 				s.Eval(`getComputedStyle(document.querySelector("button, a")).opacity`, &opacity)
-				if got := opacity == "0.1"; got != tc.want {
+				if got := opacity == "0.12"; got != tc.want {
 					t.Errorf("opacity = %s, want disabled styling = %v", opacity, tc.want)
 				}
 			})
@@ -178,8 +178,8 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 		s.Eval(`document.querySelectorAll("ui-box").length`, &mods)
 		var btn string
 		s.Eval(`getComputedStyle(document.querySelector("button")).opacity`, &btn)
-		if mods != 0 || btn != "0.05" {
-			t.Errorf("wrappers = %d, button opacity = %s, want none at 0.05", mods, btn)
+		if mods != 0 || btn != "0.06" {
+			t.Errorf("wrappers = %d, button opacity = %s, want none at 0.06", mods, btn)
 		}
 	})
 

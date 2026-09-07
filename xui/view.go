@@ -362,11 +362,13 @@ type nextenv struct {
 	hasPaint bool // set by every paint modifier
 
 	// Component-specific fields.
-	buttonRole ButtonRole
-	alignment  Alignment
-	gap        *float64 // nil means defaultGap
-	imageAlt   string
-	framedAs   framingMode
+	buttonRole     ButtonRole
+	buttonSelected bool
+	buttonMenuOpen bool
+	alignment      Alignment
+	gap            *float64 // nil means defaultGap
+	imageAlt       string
+	framedAs       framingMode
 }
 
 // A stroke is one pending border line.
