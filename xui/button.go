@@ -61,6 +61,7 @@ func nodeButton(action any, label node) node {
 			RoleDestructive: {Red, hoverOf(Red.color()), White},
 		}[env.buttonRole]
 		v := base{label}.
+			LineLimit(1).
 			Padding(Edges(padding)).
 			Modify(font(fontSize, "500", lineHeight)).
 			Foreground(style.label).

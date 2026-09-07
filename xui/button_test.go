@@ -64,3 +64,53 @@ func TestButtonSizeTypography(t *testing.T) {
 		})
 	}
 }
+
+func TestButtonLineLimit(t *testing.T) {
+	const long = "Save these changes to the current collection"
+	label := func() ui.View { return ui.Text(long).Frame(ui.Width(100)) }
+	v := ui.VStack(
+		ui.Button(Msg{}, label()).LineLimit(0).Class("default"),
+		ui.Button("/movies", label().LineLimit(0)).LineLimit(1).Class("wrapped"),
+		ui.Button(Msg{}, label().LineLimit(2)).Class("clamped"),
+		ui.Text(long).Frame(ui.Width(100)).Class("sibling"),
+	)
+	stage(t, v, func(s *uitest.Session) {
+		var styles []string
+		s.Eval(`Array.from(document.querySelectorAll("ui-text"), e => getComputedStyle(e).webkitLineClamp)`, &styles)
+		if !reflect.DeepEqual(styles, []string{"1", "none", "2", "none"}) {
+			t.Errorf("line limits = %v", styles)
+		}
+		within(t, "default label stays one line", s.Rect(".default ui-text", 0).H, 18, 0.1)
+		if s.Rect(".wrapped ui-text", 0).H <= 36 {
+			t.Error("explicitly wrapping label should occupy more than two lines")
+		}
+		within(t, "wrapping composes with line limit", s.Rect(".clamped ui-text", 0).H, 36, 0.1)
+	})
+}
+
+func TestButtonLineLimitUnderPressure(t *testing.T) {
+	const long = "Save all changes to this collection"
+	v := ui.HStack(
+		ui.Button(Msg{}, ui.Text(long)),
+		ui.Button("/movies", ui.Text(long)),
+	).Gap(8).Frame(ui.Width(180))
+	stage(t, v, func(s *uitest.Session) {
+		row := s.Rect("ui-hstack", 0)
+		for _, selector := range []string{"button", "a"} {
+			button := s.Rect(selector, 0)
+			label := s.Rect(selector+" > ui-text", 0)
+			within(t, selector+" label height", label.H, 18, 0.1)
+			if button.X < row.X-0.1 || button.Right() > row.Right()+0.1 {
+				t.Errorf("%s overflows the row: button %+v, row %+v", selector, button, row)
+			}
+			var clipped bool
+			s.Eval(`(() => {
+				const e = document.querySelector("`+selector+` > ui-text");
+				return e.scrollHeight > e.clientHeight && getComputedStyle(e).webkitLineClamp === "1";
+			})()`, &clipped)
+			if !clipped {
+				t.Errorf("%s label should clamp overflowing text", selector)
+			}
+		}
+	})
+}
