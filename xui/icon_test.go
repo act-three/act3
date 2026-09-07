@@ -10,8 +10,7 @@ import (
 )
 
 // TestIconSource pins Icon's lookup: a source's svg is the icon's
-// content, and a nil result falls back to the placeholder — as does
-// having no source at all.
+// content, and a nil result falls back to the placeholder.
 func TestIconSource(t *testing.T) {
 	source := ui.IconSource(func(name string) domi.Node {
 		if name != "film" {
@@ -27,7 +26,8 @@ func TestIconSource(t *testing.T) {
 	}{
 		{"found", ui.Icon("film"), []ui.Option{source}, `<svg data-icon="film">`},
 		{"missing", ui.Icon("nope"), []ui.Option{source}, `stroke-linecap="round"`},
-		{"no source", ui.Icon("film"), nil, `stroke-linecap="round"`},
+		{"default", ui.Icon("film"), nil, `<rect`},
+		{"default missing", ui.Icon("nope"), nil, `d="M5 3a2 2 0 0 0-2 2"`},
 	} {
 		_, page := ui.Render(tt.view, tt.opts...)
 		var sb strings.Builder
