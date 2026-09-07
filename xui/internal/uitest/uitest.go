@@ -195,3 +195,11 @@ func jsString(s string) string {
 	}
 	return string(b)
 }
+
+// Run executes browser actions in this session.
+func (s *Session) Run(actions ...chromedp.Action) {
+	s.t.Helper()
+	if err := chromedp.Run(s.ctx, actions...); err != nil {
+		s.t.Fatal(err)
+	}
+}

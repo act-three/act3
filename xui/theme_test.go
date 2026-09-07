@@ -241,3 +241,42 @@ func TestMix(t *testing.T) {
 		t.Errorf("mix(a, b, 0.5) = %+v", got)
 	}
 }
+
+func TestDestructiveColors(t *testing.T) {
+	for name, th := range map[string]theme{"light": lightTheme, "dark": darkTheme} {
+		t.Run(name, func(t *testing.T) {
+			base := Red.color().colorCoords(th)
+			text := redText.color().colorCoords(th)
+			tint := redTint.color().colorCoords(th)
+			for _, c := range []Color{redHover, redText} {
+				if got := c.color().colorCoords(th); !near(got.h, base.h) {
+					t.Errorf("derived hue = %v, want Red hue %v", got.h, base.h)
+				}
+			}
+			if th.bgbase.isLight() && text.l >= base.l ||
+				!th.bgbase.isLight() && text.l <= base.l {
+				t.Error("red text did not move away from the background's lightness")
+			}
+			if tint.a != 1 || tint.l <= min(th.bgbase.l, base.l) || tint.l >= max(th.bgbase.l, base.l) {
+				t.Errorf("tint = %+v, want an opaque mix between the theme base and Red", tint)
+			}
+			local := th
+			local.bgbase.l += 0.02
+			if redTint.color().colorCoords(local) == tint {
+				t.Error("tint did not follow the local theme base")
+			}
+			local = th
+			local.accent = oklch{l: 0.5, c: 0.1, h: 120, a: 1}
+			if redTint.color().colorCoords(local) != tint {
+				t.Error("tint depends on the accent instead of Red")
+			}
+			high := th
+			high.contrast = 100
+			for _, c := range []Color{redHover, redText} {
+				if c.color().colorCoords(th) == c.color().colorCoords(high) {
+					t.Error("derived color did not respond to theme contrast")
+				}
+			}
+		})
+	}
+}

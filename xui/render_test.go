@@ -46,7 +46,7 @@ func accountCard(user User) ui.View {
 				ui.Text(user.Email).Foreground(ui.Secondary),
 			).Gap(4).Alignment(ui.Leading),
 			ui.Spacer(),
-			ui.Button(Msg{EditProfile: true}, ui.Text("Edit")).Role(ui.RolePrimary),
+			ui.Button(Msg{EditProfile: true}, ui.Text("Edit")).ButtonStyle(ui.Prominent),
 		).Gap(12).Alignment(ui.Center),
 	).
 		Padding(ui.Edges(16)).
@@ -59,7 +59,7 @@ func moviePage(movies []Movie) ui.View {
 		ui.HStack(
 			ui.Text("Movies").Font(ui.Title),
 			ui.Spacer(),
-			ui.Button(Msg{NewMovie: true}, ui.Text("New")).Role(ui.RolePrimary),
+			ui.Button(Msg{NewMovie: true}, ui.Text("New")).ButtonStyle(ui.Prominent),
 		).Alignment(ui.Center),
 		ui.For(movies, movieKey, movieRow),
 	).

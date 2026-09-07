@@ -6,23 +6,9 @@ import (
 	"ily.dev/domi/event"
 )
 
-// ButtonRole specifies the purpose of a button.
-// Button views use it to present the button appropriately,
-// such as through its visual appearance.
-type ButtonRole int
-
-const (
-	RoleDefault ButtonRole = iota
-	RolePrimary
-	RoleDestructive
-)
-
 // A ButtonView is a control that performs an action when clicked.
 type ButtonView interface {
 	View
-
-	// Role sets the semantic role of the receiver.
-	Role(ButtonRole) ButtonView
 
 	// Selected gives the receiver a selected appearance.
 	Selected(bool) ButtonView
@@ -67,47 +53,49 @@ func (v buttonView) MenuOpen(open bool) ButtonView {
 	return v
 }
 
-func (v buttonView) Role(r ButtonRole) ButtonView {
-	v.base = v.modify(modEnv(func(env environment) environment {
-		env.buttonRole = r
-		return env
-	}))
-	return v
-}
-
 func nodeButton(action any, label node) node {
 	return func(env environment) box {
 		fontSize, lineHeight, padding := buttonMetrics(env.controlSize)
-		style := map[ButtonRole]struct{ face, hover, label Color }{
-			RoleDefault:     {controlSecondary, controlSecondaryHover, Primary},
-			RolePrimary:     {Accent, accentHover, accentTextColor},
-			RoleDestructive: {Red, hoverOf(Red.color()), White},
-		}[env.buttonRole]
-		face, foreground := style.face, style.label
-		if env.buttonSelected || env.buttonMenuOpen && !env.disabled {
+		style, ok := buttonRecipe[env.buttonStyle]
+		if !ok {
+			style = buttonRecipe[Bordered]
+		}
+		face := style.face
+		foreground := style.label
+		hoverForeground := style.hoverLabel
+		if env.buttonSelected {
+			face = style.selected
+			foreground = style.selectedLabel
+		}
+		// Bordered keeps its selected label color during interaction.
+		if env.buttonSelected && env.buttonStyle == Bordered {
+			hoverForeground = style.selectedLabel
+		}
+		if env.buttonMenuOpen {
 			face = style.hover
+			foreground = hoverForeground
 		}
-		if env.buttonSelected && env.buttonRole == RoleDefault {
-			foreground = Headline
+		if env.disabled && style.disabledLabel != nil {
+			foreground = style.disabledLabel
 		}
+		_, isLink := action.(string)
 		opacity := 1.0
-		if env.disabled {
-			foreground = Secondary
-			if !env.buttonSelected {
-				opacity = 0.6
-			}
+		if env.disabled && (!isLink || !env.buttonSelected) {
+			opacity = 0.6
 		}
 		v := base{label}.
 			LineLimit(1).
 			Padding(Edges(padding)).
-			Modify(font(fontSize, "500", lineHeight)).
-			Foreground(foreground)
+			Modify(font(fontSize, "500", lineHeight))
 		if !env.disabled {
 			v = v.
 				WhileHovered(Background(style.hover)).
-				WhilePressed(Background(style.hover))
+				WhileHovered(Foreground(hoverForeground)).
+				WhilePressed(Background(style.hover)).
+				WhilePressed(Foreground(hoverForeground))
 		}
 		v = v.
+			Foreground(foreground).
 			Background(face).
 			Opacity(opacity).
 			BorderShape(Capsule)
@@ -150,4 +138,69 @@ func buttonMetrics(s ControlSize) (fontSize, lineHeight string, padding float64)
 	default:
 		return "13px", "18px", 6.5
 	}
+}
+
+// buttonStyle contains only paint supported by the shared modifiers.
+// Reserved edges, shadows, focus outlines, and transitions remain deferred.
+type buttonStyle struct {
+	face          Color
+	hover         Color
+	selected      Color
+	label         Color
+	hoverLabel    Color
+	selectedLabel Color
+	disabledLabel Color // nil preserves the foreground from other states
+}
+
+var buttonRecipe = map[ButtonStyle]buttonStyle{
+	Bordered: {
+		face:          controlSecondary,
+		hover:         controlSecondaryHover,
+		selected:      controlSecondaryHover,
+		label:         Primary,
+		hoverLabel:    Primary,
+		selectedLabel: Headline,
+		disabledLabel: Secondary,
+	},
+	Prominent: {
+		face:          Accent,
+		hover:         accentHover,
+		selected:      accentHover,
+		label:         accentTextColor,
+		hoverLabel:    accentTextColor,
+		selectedLabel: accentTextColor,
+	},
+	Subtle: {
+		face:          Transparent,
+		hover:         controlTertiaryHover,
+		selected:      controlTertiarySelected,
+		label:         Primary,
+		hoverLabel:    Headline,
+		selectedLabel: Headline,
+	},
+	Borderless: {
+		face:          Transparent,
+		hover:         Transparent,
+		selected:      Transparent,
+		label:         Primary,
+		hoverLabel:    Headline,
+		selectedLabel: Headline,
+	},
+	Destructive: {
+		face:          Red,
+		hover:         redHover,
+		selected:      redHover,
+		label:         White,
+		hoverLabel:    White,
+		selectedLabel: White,
+	},
+	DestructiveSubtle: {
+		face:          Transparent,
+		hover:         redTint,
+		selected:      Transparent,
+		label:         redText,
+		hoverLabel:    redText,
+		selectedLabel: redText,
+		disabledLabel: Primary,
+	},
 }

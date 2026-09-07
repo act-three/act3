@@ -74,7 +74,7 @@ func moviePage(movies []Movie) View {
 			Spacer(),
 			Button("/movies/trash", Text("Trash")),
 			Button(Msg{New: true}, Text("New")).
-				Role(RolePrimary),
+				ButtonStyle(Prominent),
 		),
 
 		VStack(For(
@@ -342,11 +342,12 @@ func section(title string, body View) View {
 
 func buttonStates() View {
 	var rows []View
-	for _, role := range []ButtonRole{RoleDefault, RolePrimary, RoleDestructive} {
+	for i, style := range []ButtonStyle{Bordered, Prominent, Subtle, Borderless, Destructive, DestructiveSubtle} {
 		button := func(label string) ButtonView {
-			return Button(Msg{Edit: true}, Text(label)).Role(role)
+			return Button(Msg{Edit: true}, Text(label))
 		}
 		rows = append(rows, HStack(
+			Text([]string{"Bordered", "Prominent", "Subtle", "Borderless", "Destructive", "DestructiveSubtle"}[i]).Frame(Width(140), Leading),
 			button("Rest"),
 			button("Selected").Selected(true),
 			button("Menu open").MenuOpen(true),
@@ -354,7 +355,7 @@ func buttonStates() View {
 			button("Disabled").Disabled(true),
 			button("Selected disabled").Selected(true).Disabled(true),
 			button("Menu disabled").MenuOpen(true).Disabled(true),
-		))
+		).ButtonStyle(style))
 	}
 	return VStack(rows...).Alignment(Leading)
 }
