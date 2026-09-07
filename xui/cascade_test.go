@@ -526,7 +526,7 @@ func TestAppCSSBeatsDynamicSheet(t *testing.T) {
 // on the width.
 func TestBorderStrokeZeroWidthKeepsStructure(t *testing.T) {
 	for _, px := range []float64{0, -1} {
-		html := render(t, ui.Image("/x.png").BorderStroke(px, ui.Red))
+		html := render(t, ui.Image("/x.png").BorderStroke(complex(px, 0), ui.Red))
 		if !strings.Contains(html, "<ui-box ") {
 			t.Errorf("BorderStroke(%g) should keep the wrapper:\n%s", px, html)
 		}

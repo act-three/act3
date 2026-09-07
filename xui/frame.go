@@ -13,7 +13,7 @@ import "cmp"
 // request. An auto axis propagates the inside view's fill request, if
 // any, and likewise its rigidity.
 type wrapFrame struct {
-	h, v  float64
+	h, v  complex128
 	axes  AxisSet
 	align Alignment
 }
@@ -36,10 +36,10 @@ func (w wrapFrame) render(env environment, n node) box {
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
 	if w.axes.hasAll(Horizontal) {
-		env.style.Set("width", cssPx(w.h))
+		env.style.Set("width", cssLength(w.h))
 	}
 	if w.axes.hasAll(Vertical) {
-		env.style.Set("height", cssPx(w.v))
+		env.style.Set("height", cssLength(w.v))
 	}
 	return build(env, p)
 }
@@ -59,7 +59,7 @@ func (o frameOption) applyFrame(w *wrapFrame) { o(w) }
 // Height sets the frame's height.
 //
 // If omitted, the frame adopts the height of the view inside.
-func Height(h float64) FrameOption {
+func Height(h complex128) FrameOption {
 	checkLength(h)
 	return frameOption(func(w *wrapFrame) {
 		w.v = h
@@ -70,7 +70,7 @@ func Height(h float64) FrameOption {
 // Width sets the frame's width.
 //
 // If omitted, the frame adopts the width of the view inside.
-func Width(w float64) FrameOption {
+func Width(w complex128) FrameOption {
 	checkLength(w)
 	return frameOption(func(f *wrapFrame) {
 		f.h = w

@@ -32,7 +32,7 @@ func (o frameBoundsOption) applyFrameBounds(w *wrapFrameBounds) { o(w) }
 // MinHeight also sets the ideal to h.
 //
 // If omitted, the frame adopts the minimum height of the view inside.
-func MinHeight(h float64) FrameBoundsOption {
+func MinHeight(h complex128) FrameBoundsOption {
 	checkLength(h)
 	return frameBoundsOption(func(f *wrapFrameBounds) { f.v.setMin(h) })
 }
@@ -43,7 +43,7 @@ func MinHeight(h float64) FrameBoundsOption {
 // MinWidth also sets the ideal to w.
 //
 // If omitted, the frame adopts the minimum width of the view inside.
-func MinWidth(w float64) FrameBoundsOption {
+func MinWidth(w complex128) FrameBoundsOption {
 	checkLength(w)
 	return frameBoundsOption(func(f *wrapFrameBounds) { f.h.setMin(w) })
 }
@@ -58,7 +58,7 @@ func MinWidth(w float64) FrameBoundsOption {
 // IdealHeight also sets the minimum to h.
 //
 // If omitted, the frame adopts the ideal height of the view inside.
-func IdealHeight(h float64) FrameBoundsOption {
+func IdealHeight(h complex128) FrameBoundsOption {
 	checkLength(h)
 	return frameBoundsOption(func(f *wrapFrameBounds) { f.v.setIdeal(h) })
 }
@@ -73,7 +73,7 @@ func IdealHeight(h float64) FrameBoundsOption {
 // IdealWidth also sets the minimum to w.
 //
 // If omitted, the frame adopts the ideal width of the view inside.
-func IdealWidth(w float64) FrameBoundsOption {
+func IdealWidth(w complex128) FrameBoundsOption {
 	checkLength(w)
 	return frameBoundsOption(func(f *wrapFrameBounds) { f.h.setIdeal(w) })
 }
@@ -84,22 +84,64 @@ func IdealWidth(w float64) FrameBoundsOption {
 // when its available space is unbounded.
 // invariant: min ≤ ideal (when both are concrete values).
 type axisBounds struct {
-	min, ideal       float64
+	min, ideal       boundLength
 	minSet, idealSet bool
 }
 
-func (x *axisBounds) setMin(s float64) {
+func (x *axisBounds) setMin(v complex128) {
+	s := boundLength{length: v}
 	x.min, x.minSet = s, true
-	if x.idealSet && x.ideal < s {
-		x.ideal = s
+	if x.idealSet {
+		x.ideal = x.ideal.max(s)
 	}
 }
 
-func (x *axisBounds) setIdeal(s float64) {
+func (x *axisBounds) setIdeal(v complex128) {
+	s := boundLength{length: v}
 	x.ideal, x.idealSet = s, true
-	if x.minSet && x.min > s {
-		x.min = s
+	if x.minSet {
+		x.min = x.min.min(s)
 	}
+}
+
+// Bounds whose order depends on the root font size must be compared
+// in CSS. Keep their min/max expressions alongside literal lengths.
+type boundLength struct {
+	length complex128
+	expr   string
+}
+
+func (a boundLength) css() string {
+	if a.expr != "" {
+		return a.expr
+	}
+	return cssLength(a.length)
+}
+
+// atMost reports whether a <= b at every positive root font size.
+func (a boundLength) atMost(b boundLength) bool {
+	return a.expr == "" && b.expr == "" &&
+		real(a.length) <= real(b.length) && imag(a.length) <= imag(b.length)
+}
+
+func (a boundLength) min(b boundLength) boundLength {
+	if a.atMost(b) {
+		return a
+	}
+	if b.atMost(a) {
+		return b
+	}
+	return boundLength{expr: "min(" + a.css() + ", " + b.css() + ")"}
+}
+
+func (a boundLength) max(b boundLength) boundLength {
+	if a.atMost(b) {
+		return b
+	}
+	if b.atMost(a) {
+		return a
+	}
+	return boundLength{expr: "max(" + a.css() + ", " + b.css() + ")"}
 }
 
 // wrapFrameBounds is a bounded frame:
@@ -168,10 +210,10 @@ func (w wrapFrameBounds) render(env environment, n node) box {
 // setStyles adds the frame's size and track declarations to ss.
 func (w wrapFrameBounds) setStyles(ss *canon.StyleSet, ideal AxisSet) {
 	if ideal.hasAll(Horizontal) {
-		ss.Set("width", cssPx(w.h.ideal))
+		ss.Set("width", w.h.ideal.css())
 	}
 	if ideal.hasAll(Vertical) {
-		ss.Set("height", cssPx(w.v.ideal))
+		ss.Set("height", w.v.ideal.css())
 	}
 	// A floored axis's track gives up its intrinsic contribution.
 	// Without intervention, the frame's min-content size is its subview's,
@@ -179,11 +221,11 @@ func (w wrapFrameBounds) setStyles(ss *canon.StyleSet, ideal AxisSet) {
 	// the track's intrinsic contribution makes min-* the floor.
 	cols, rows := "100%", "100%"
 	if w.h.minSet {
-		ss.Set("min-width", cssPx(w.h.min))
+		ss.Set("min-width", w.h.min.css())
 		cols = "minmax(0, 100%)"
 	}
 	if w.v.minSet {
-		ss.Set("min-height", cssPx(w.v.min))
+		ss.Set("min-height", w.v.min.css())
 		rows = "minmax(0, 100%)"
 	}
 	ss.Set("grid-template-columns", cols)

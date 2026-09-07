@@ -66,8 +66,8 @@ func (v base) BorderShape(s Shape) View {
 	return v.Modify(BorderShape(s))
 }
 
-func (v base) BorderStroke(px float64, c Color) View {
-	return v.Modify(BorderStroke(px, c))
+func (v base) BorderStroke(width complex128, c Color) View {
+	return v.Modify(BorderStroke(width, c))
 }
 
 func (v base) Class(c ...string) View {

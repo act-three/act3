@@ -94,6 +94,61 @@ Because the inner frame is larger than the outer frame,
 the blue square overlaps the word "Hello",
 which is an adjacent sibling of the outer frame.
 
+# Length Units
+
+Lengths can be specified in scaled or unscaled pixel units.
+Unscaled lengths map directly to the CSS px unit.
+Scaled lengths are scaled in proportion
+to the root font size (CSS rem unit) with a 16px basis:
+
+  - When the root font size is 16px, a scaled length of 1 is the CSS length 1px.
+  - When the root font size is 24px, a scaled length of 1 is the CSS length 1.5px.
+
+In most web browsers, 16px is the default root font size.
+
+Lengths support linear arithmetic:
+
+  - Any two lengths can be added together (or subtracted),
+    including a mix of scaled and unscaled lengths.
+  - Any length can be multiplied (or divided) by a real-valued scalar.
+
+Do not multiply or divide two length values,
+or take the reciprocal of a length.
+These operations are not closed over lengths.
+Although they compile,
+they do not generally produce useful results.
+
+Lengths are represented by complex128 values.
+The real coefficient encodes unscaled length,
+and the imaginary coefficient encodes scaled length.
+
+Unscaled lengths are denoted by real number literals,
+such as 2, 0.5, and 0x1p-2.
+To add padding that is always 8 CSS pixels wide,
+use a real-valued (unscaled) length:
+
+	view.Padding(Edges(8))
+
+This produces padding that is always 8px.
+
+Scaled lengths are denoted by [imaginary literals],
+such as 2i, 0.5i, and 0x1p-2i.
+To add padding that gets bigger as the root font size increases,
+use an imaginary (scaled) length:
+
+	view.Padding(Edges(8i))
+
+This produces 8px padding at a 16px root font size,
+and 12px padding at a 24px root font size.
+
+Scaled and unscaled lengths can be added,
+and it is valid to combine them:
+
+	view.Padding(Edges(3 + 8i))
+
+This produces 11px padding at a 16px root font size,
+and 15px padding at a 24px root font size.
+
 # Serving Client Assets
 
 A xui page requires two static assets:
@@ -130,5 +185,7 @@ A static stylesheet is documented in Serving Client Assets.
 in each rendered page.
 
 All CSS rules of both types are declared in the "xui" cascade layer.
+
+[imaginary literals]: https://go.dev/ref/spec#Imaginary_literals
 */
 package ui

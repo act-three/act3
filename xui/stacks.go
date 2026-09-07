@@ -19,7 +19,7 @@ type StackView interface {
 
 	// Gap sets the distance between adjacent subviews
 	// in the stack. The default gap is 8 px.
-	Gap(px float64) StackView
+	Gap(length complex128) StackView
 }
 
 // A VStack arranges its subviews in a vertical line.
@@ -39,8 +39,8 @@ func (v stackView) Alignment(a Alignment) StackView {
 	return v
 }
 
-func (v stackView) Gap(px float64) StackView {
-	v.base = v.modify(modGap(px))
+func (v stackView) Gap(length complex128) StackView {
+	v.base = v.modify(modGap(length))
 	return v
 }
 
@@ -70,7 +70,7 @@ func (v zstackView) Alignment(a Alignment) ZStackView {
 	return v
 }
 
-const defaultGap float64 = 8
+const defaultGap complex128 = 8
 
 func nodeStack(dir stackAxis, subviews []View) node {
 	return func(env environment) box {
@@ -100,7 +100,7 @@ func nodeStack(dir stackAxis, subviews []View) node {
 // its display and flow, its gap,
 // and its alignment — the minor-axis projection for a line,
 // both axes for a ZStack.
-func (dir stackAxis) addStackStylesTo(ss *canon.StyleSet, gap float64, align Alignment) {
+func (dir stackAxis) addStackStylesTo(ss *canon.StyleSet, gap complex128, align Alignment) {
 	switch dir {
 	case axisZ:
 		ss.Set("display", "grid")
@@ -117,8 +117,8 @@ func (dir stackAxis) addStackStylesTo(ss *canon.StyleSet, gap float64, align Ali
 		ss.Set("align-items", align.horizontal().keyword())
 	}
 	ss.Set("display", "inline-flex")
-	ss.Set("row-gap", cssPx(gap))
-	ss.Set("column-gap", cssPx(gap))
+	ss.Set("row-gap", cssLength(gap))
+	ss.Set("column-gap", cssLength(gap))
 }
 
 // A Spacer occupies empty space.
