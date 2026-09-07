@@ -250,6 +250,30 @@ func textTrimDemo() View {
 		Alignment(FirstBaseline)
 }
 
+func iconDemo() View {
+	return VStack(
+		For([]FontSize{Caption, Body, Title}, nil, func(f FontSize) View {
+			return HStack(
+				Icon("film"),
+				Text("A long paragraph that wraps onto a second line to show the icon aligned with the first."),
+			).
+				Alignment(FirstBaseline).
+				Font(f)
+		}),
+		HStack(
+			For([]int{20, 30, 40}, nil, func(n int) View {
+				return HStack(
+					Icon("film"),
+					Yellow.
+						Frame(Width(n), Height(n)),
+				)
+			}),
+		),
+	).
+		Alignment(Leading).
+		Frame(Width(360))
+}
+
 func stateDemo() View {
 	return Text("Hover, focus, or press me").
 		TextForeground(White).
@@ -362,6 +386,7 @@ func Page() View {
 		section("LineLimit (2 lines, then 1)", lineLimitDemo()),
 		section("Text Layout", textLayout()),
 		section("TextTrim (none, top/bottom, cap/baseline, ex/baseline)", textTrimDemo()),
+		section("Icon (FirstBaseline with wrapping text, at Caption/Body/Title)", iconDemo()),
 		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
 		section("Grid (Columns(4), then CellMinWidth(120))", gridDemo()),
 		section("FrameRatio (2:3 posters anchored on width, in Columns(6))", posterWall()),

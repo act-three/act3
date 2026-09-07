@@ -993,3 +993,54 @@ func TestGeometryGalleryFits(t *testing.T) {
 		}
 	})
 }
+
+// TestGeometryIconBaseline pins Icon's box and baseline: a rigid
+// square of --ui-icon-scale, centered on the cap band of the text it
+// shares a FirstBaseline row with, at any font size.
+func TestGeometryIconBaseline(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		font ui.FontSize
+	}{
+		{"caption", ui.Caption},
+		{"body", ui.Body},
+		{"title", ui.Title},
+	} {
+		// The font is set on the row, where the icon inherits it,
+		// and then on the icon itself, whose own line-height must
+		// not follow the font's.
+		row := func(icon, text ui.View) ui.View {
+			return ui.HStack(
+				icon,
+				text.TextTrim(ui.TextCap|ui.TextLastBaseline),
+				ui.Text("A long paragraph that wraps onto a second line in a narrow column."),
+			).
+				Alignment(ui.FirstBaseline).
+				Frame(ui.Width(240))
+		}
+		for _, v := range []struct {
+			on   string
+			view ui.View
+		}{
+			{"row", row(ui.Icon("film"), ui.Text("Hx")).Font(tc.font)},
+			{"icon", row(ui.Icon("film").Font(tc.font), ui.Text("Hx").Font(tc.font))},
+		} {
+			name := tc.name + "/" + v.on
+			stage(t, v.view, func(s *uitest.Session) {
+				icon, cap := s.Rect("ui-icon", 0), s.Rect("ui-text", 0)
+				var scaleCSS string
+				s.Eval(`getComputedStyle(document.querySelector("ui-icon")).getPropertyValue("--ui-icon-scale")`, &scaleCSS)
+				scale, err := strconv.ParseFloat(strings.TrimSuffix(strings.TrimSpace(scaleCSS), "cap"), 64)
+				if err != nil {
+					t.Fatalf("%s: --ui-icon-scale = %q, want a multiple of cap", name, scaleCSS)
+				}
+				within(t, name+": icon width", icon.W, scale*cap.H, 0.05)
+				within(t, name+": icon height", icon.H, scale*cap.H, 0.05)
+				within(t, name+": icon center", icon.Y+icon.H/2, cap.Y+cap.H/2, 0.02)
+				if p := s.Rect("ui-icon path", 0); p.W == 0 && p.H == 0 {
+					t.Errorf("%s: icon path has no geometry", name)
+				}
+			})
+		}
+	}
+}
