@@ -66,6 +66,9 @@ var (
 
 	// White is a white color.
 	White Color = white
+
+	// Transparent is a transparent color.
+	Transparent Color = transparent
 )
 
 var (
@@ -84,6 +87,8 @@ var (
 	gray   = OKLCH(0.648, 0.007, 286.2)
 	black  = OKLCH(0, 0, 0)
 	white  = OKLCH(1, 0, 0)
+
+	transparent = OKLCHA(0, 0, 0, 0)
 )
 
 var (
