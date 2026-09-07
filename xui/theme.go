@@ -245,3 +245,17 @@ func (selectedColor) colorCoords(t theme) oklch {
 	}
 	return mix(t.bgbase, t.accent, min(w*(1+t.bgbase.c/0.09), 1))
 }
+
+// redTintColor bakes the tint into the local theme's base rather than
+// compositing it over whatever surface happens to be behind a control.
+type redTintColor struct{}
+
+func (redTintColor) colorCoords(t theme) oklch {
+	w := 0.03
+	if t.bgbase.isLight() {
+		w = 0.20
+	}
+	c := mix(t.bgbase, Red.color().colorCoords(t), w)
+	c.a = 1
+	return c
+}

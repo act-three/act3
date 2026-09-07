@@ -202,14 +202,14 @@ var (
 	//	ThemeColor(-0.052, 0, ControlScale),
 	//	ThemeColor(0.103, 0.0017, ControlScale),
 	// )
-	// controlTertiaryHover Color = ModeColor(
-	//	ThemeColor(0.078, 0, ControlScale),
-	//	ThemeColor(0.190, 0.0017, ControlScale),
-	// )
-	// controlTertiarySelected Color = ModeColor(
-	//	ThemeColor(0.112, 0, ControlScale),
-	//	ThemeColor(0.250, 0.0050, ControlScale),
-	// )
+	controlTertiaryHover Color = ModeColor(
+		ThemeColor(0.078, 0, ControlScale),
+		ThemeColor(0.190, 0.0017, ControlScale),
+	)
+	controlTertiarySelected Color = ModeColor(
+		ThemeColor(0.112, 0, ControlScale),
+		ThemeColor(0.250, 0.0050, ControlScale),
+	)
 
 	// accentTextColor is the foreground color for text
 	// set on top of the accent color.
@@ -241,4 +241,14 @@ var (
 	})
 
 	accent = newColor(themeAccent{})
+)
+
+// Destructive colors resolve against the local theme.
+var (
+	redHover = hoverOf(Red.color())
+	redText  = ModeColor(
+		newColor(themeColor{Red.color(), 0.12, -0.02, ForegroundScale}),
+		newColor(themeColor{Red.color(), -0.08, -0.05, ForegroundScale}),
+	)
+	redTint = newColor(redTintColor{})
 )

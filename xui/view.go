@@ -46,6 +46,10 @@ type View interface {
 	// padding inside the border.
 	BorderStroke(px float64, c Color) View
 
+	// ButtonStyle sets the appearance of buttons in the receiver.
+	// The default style is Bordered.
+	ButtonStyle(ButtonStyle) View
+
 	// ControlSize sets the size of controls in the receiver.
 	// The default size is Regular.
 	ControlSize(ControlSize) View
@@ -322,6 +326,7 @@ type environment struct {
 	textTrim    TextEdgeSet
 	linkPolicy  LinkPolicy
 	controlSize ControlSize
+	buttonStyle ButtonStyle
 	theme       theme
 	iconSource  func(string) domi.Node
 	sheet       *sheet.Sheet
@@ -362,7 +367,6 @@ type nextenv struct {
 	hasPaint bool // set by every paint modifier
 
 	// Component-specific fields.
-	buttonRole     ButtonRole
 	buttonSelected bool
 	buttonMenuOpen bool
 	alignment      Alignment
