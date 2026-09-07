@@ -171,8 +171,10 @@ type View interface {
 	// from 0 (transparent) to 1 (opaque).
 	Opacity(x float64) View
 
-	// Padding adds the empty space defined by s around the receiver. If
-	// more than one value s is provided, they are added together.
+	// Padding adds the empty space defined by s around the receiver.
+	// If more than one value s is provided, they are added together.
+	// If no arguments are given, a system-defined amount of default
+	// padding is added to all sides.
 	Padding(s ...EdgeSpace) View
 
 	// Sticky repositions the receiver to remain visible when it
