@@ -211,7 +211,7 @@ func Render(root View, o ...Option) (title string, page domi.Node) {
 // Options it does not know are for domi.
 func configure(o []Option) (th theme, styleNonce func(context.Context) string, icons func(string) domi.Node) {
 	th = defaultTheme
-	icons = func(string) domi.Node { return nil }
+	icons = defaultIconSource
 	for _, o := range o {
 		switch o := o.(type) {
 		case optionStyleNonce:

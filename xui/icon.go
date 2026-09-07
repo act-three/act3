@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"archive/zip"
 	"cmp"
 	_ "embed"
 	"fmt"
+	"io/fs"
+	"strings"
 
 	"ily.dev/domi"
 )
@@ -31,7 +34,9 @@ func Icon(name string) View {
 //
 // If f returns nil, the Icon view displays a placeholder icon.
 //
-// The default icon source always returns nil.
+// The default source provides icons from the [Lucide] icon set.
+//
+// [Lucide]: https://lucide.dev/
 func IconSource(f func(name string) domi.Node) Option {
 	return optionIconSource{f: f}
 }
@@ -41,6 +46,29 @@ func IconSource(f func(name string) domi.Node) Option {
 type optionIconSource struct {
 	domi.Option
 	f func(string) domi.Node
+}
+
+//go:embed lucide/icons.zip
+var lucideZIP string
+
+var lucideIcons = func() *zip.Reader {
+	r, err := zip.NewReader(strings.NewReader(lucideZIP), int64(len(lucideZIP)))
+	if err != nil {
+		panic(err)
+	}
+	return r
+}()
+
+func defaultIconSource(name string) domi.Node {
+	b, err := fs.ReadFile(lucideIcons, name+".svg")
+	if err != nil {
+		return nil
+	}
+	n, err := domi.UnsafeParseRaw(string(b))
+	if err != nil {
+		return nil
+	}
+	return n
 }
 
 func nodeIcon(name string) node {
@@ -68,16 +96,10 @@ func nodeIcon(name string) node {
 	}
 }
 
-// placeholderSVG is the square-dashed icon from Lucide (ISC license),
-// unmodified.
-//
-//go:embed placeholder.svg
-var placeholderSVG string
-
 var placeholderIcon = func() domi.Node {
-	n, err := domi.UnsafeParseRaw(placeholderSVG)
-	if err != nil {
-		panic(err)
+	n := defaultIconSource("square-dashed")
+	if n == nil {
+		panic("missing or invalid bundled square-dashed icon")
 	}
 	return n
 }()
