@@ -124,7 +124,7 @@ func (dir stackAxis) addStackStylesTo(ss *canon.StyleSet, gap float64, align Ali
 // A Spacer occupies empty space.
 // It expands along the major axis of the nearest enclosing stack.
 // If there is no major axis, such as inside a [ZStack],
-// it takes no space.
+// it expands along both axes.
 func Spacer() View { return base{nodeSpacer} }
 
 func nodeSpacer(env environment) box {
@@ -139,7 +139,9 @@ func nodeSpacer(env environment) box {
 	}
 	env.style.Set("min-width", minWidth)
 	env.style.Set("min-height", minHeight)
-	return build(env, plan{fills: env.lc.majorAxis})
+	return build(env, plan{
+		fills: cmp.Or(env.lc.majorAxis, Horizontal|Vertical),
+	})
 }
 
 // A Divider is a thin line that can be used to separate other views.
