@@ -261,7 +261,7 @@ func iconDemo() View {
 				Font(f)
 		}),
 		HStack(
-			For([]int{20, 30, 40}, nil, func(n int) View {
+			For([]float64{20, 30, 40}, nil, func(n float64) View {
 				return HStack(
 					Icon("film"),
 					Yellow.

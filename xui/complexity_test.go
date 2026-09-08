@@ -30,7 +30,7 @@ func TestRenderVisitsEachNodeOnce(t *testing.T) {
 		v = wrap(nodeStack(axisV, []View{
 			v,
 			wrap(nodeSpacer),
-			wrap(wrapFrame{h: newSize(40)}.modify(leaf("framed"))),
+			wrap(wrapFrame{h: 40, axes: Horizontal}.modify(leaf("framed"))),
 			wrap(wrapLayer{layer: count(nodeColor(oklch{a: 1}))}.modify(leaf("decorated"))),
 		}))
 	}

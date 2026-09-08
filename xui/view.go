@@ -472,6 +472,7 @@ func build(env environment, p plan) box {
 
 // addIdealStylesTo adds CSS declarations for a box's ideal size.
 // An ideal size applies only on an axis with unbounded available space.
+// A zero ideal dimension emits no declaration.
 // A box with no fill request simply uses its ideal size.
 // A box with a fill request can expand beyond its ideal size.
 // It contributes the ideal as a minimum length
@@ -481,18 +482,18 @@ func addIdealStylesTo(ss *canon.StyleSet, i rect, unbounded, fills AxisSet) {
 	for _, a := range [...]struct {
 		axis AxisSet
 		name string
-		size size
+		size float64
 	}{
 		{Horizontal, "width", i.width},
 		{Vertical, "height", i.height},
 	} {
-		if !a.size.definite || !unbounded.hasAll(a.axis) {
+		if a.size == 0 || !unbounded.hasAll(a.axis) {
 			continue
 		}
 		if fills.hasAll(a.axis) {
-			ss.Set("min-"+a.name, a.size.css())
+			ss.Set("min-"+a.name, cssPx(a.size))
 		} else {
-			ss.Set(a.name, a.size.css())
+			ss.Set(a.name, cssPx(a.size))
 		}
 	}
 }
