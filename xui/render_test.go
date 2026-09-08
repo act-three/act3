@@ -445,8 +445,8 @@ func TestPaddingComposes(t *testing.T) {
 	html := render(t, ui.Text("hi").Padding(ui.EdgeTop(8)).Padding(ui.EdgesPillarbox(12)))
 	for _, w := range []string{
 		"padding-block-start:8px",
-		"padding-inline-start:0px",
-		"padding-block-start:0px",
+		"padding-inline-start:0",
+		"padding-block-start:0",
 		"padding-inline-start:12px",
 	} {
 		if !strings.Contains(html, w) {
@@ -1148,7 +1148,7 @@ func TestSticky(t *testing.T) {
 	rule := classRule(t, html, `<ui-sticky class="([^" ]+)`)
 	for _, w := range []string{
 		"position:sticky", "z-index:1",
-		"inset-block-start:0px", "inset-block-end:0px", "inset-inline-start:0px", "inset-inline-end:0px",
+		"inset-block-start:0", "inset-block-end:0", "inset-inline-start:0", "inset-inline-end:0",
 	} {
 		if !strings.Contains(rule, w) {
 			t.Errorf("sticky box missing %q, got %q", w, rule)
@@ -1227,12 +1227,12 @@ func TestFrameBounds(t *testing.T) {
 		{
 			"zero minima remain explicit",
 			ui.Text("x").FrameBounds(ui.MinWidth(0), ui.MinHeight(0)),
-			[]string{"min-width:0px", "min-height:0px", "grid-template-columns:minmax(0, 100%)", "grid-template-rows:minmax(0, 100%)"},
+			[]string{"min-width:0", "min-height:0", "grid-template-columns:minmax(0, 100%)", "grid-template-rows:minmax(0, 100%)"},
 		},
 		{
 			"zero ideals lower earlier minima",
 			ui.Text("x").FrameBounds(ui.MinWidth(100), ui.MinHeight(100), ui.IdealWidth(0), ui.IdealHeight(0)).FixedSize(),
-			[]string{"width:0px", "height:0px", "min-width:0px", "min-height:0px"},
+			[]string{"width:0", "height:0", "min-width:0", "min-height:0"},
 		},
 	} {
 		html := render(t, tt.v)
@@ -1328,7 +1328,7 @@ func TestFrameOptionOverride(t *testing.T) {
 		{
 			"zero dimensions remain explicit",
 			ui.Text("x").Frame(ui.Width(50), ui.Width(0), ui.Height(0)),
-			[]string{"width:0px", "height:0px"},
+			[]string{"width:0", "height:0"},
 			[]string{"width:50px"},
 		},
 	} {
@@ -1800,7 +1800,7 @@ func TestGrid(t *testing.T) {
 		})
 	}
 	custom := classRule(t, render(t, ui.Grid(ui.Columns(2), ui.Text("x")).Gap(0).Alignment(ui.TopLeading)), `<ui-grid class="(ui-\w+)"`)
-	for _, w := range []string{"row-gap:0px", "column-gap:0px", "align-items:start", "justify-items:start"} {
+	for _, w := range []string{"row-gap:0", "column-gap:0", "align-items:start", "justify-items:start"} {
 		if !strings.Contains(custom, w) {
 			t.Errorf("grid rule missing %q: %q", w, custom)
 		}

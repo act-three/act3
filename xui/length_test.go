@@ -6,6 +6,31 @@ import (
 	"testing"
 )
 
+func TestCSSPx(t *testing.T) {
+	for _, tt := range []struct {
+		value float64
+		want  string
+	}{
+		{0, "0"},
+		{math.Copysign(0, -1), "0"},
+		{8, "8px"},
+		{1000, "1000px"},
+		{3.5, "3.5px"},
+		{1000.25, "1000.25px"},
+		{0.30000000000000004, "0.3px"},
+		{12.345678, "12.346px"},
+		{-12.345678, "-12.346px"},
+		{0.0004, "0"},
+		{-0.0004, "0"},
+		{0.0006, "0.001px"},
+		{-0.0006, "-0.001px"},
+	} {
+		if got := cssPx(tt.value); got != tt.want {
+			t.Errorf("cssPx(%g) = %q, want %q", tt.value, got, tt.want)
+		}
+	}
+}
+
 func TestNonFiniteLengthPanics(t *testing.T) {
 	for _, tt := range []struct {
 		name string
