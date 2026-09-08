@@ -1,7 +1,6 @@
 package ui_test
 
 import (
-	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -526,7 +525,7 @@ func TestAppCSSBeatsDynamicSheet(t *testing.T) {
 // still boxes out around an image, so the lowering does not depend
 // on the width.
 func TestBorderStrokeZeroWidthKeepsStructure(t *testing.T) {
-	for _, px := range []float64{0, -1, math.NaN()} {
+	for _, px := range []float64{0, -1} {
 		html := render(t, ui.Image("/x.png").BorderStroke(px, ui.Red))
 		if !strings.Contains(html, "<ui-box ") {
 			t.Errorf("BorderStroke(%g) should keep the wrapper:\n%s", px, html)

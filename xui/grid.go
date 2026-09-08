@@ -64,8 +64,9 @@ func (gridColumns) fills() AxisSet { return 0 }
 // It creates as many columns as possible
 // while each column is at least px pixels wide.
 func ColumnMinWidth(px float64) GridLayout {
-	if !(px > 0) {
-		panic("ui: CellMinWidth requires a positive width")
+	checkLength(px)
+	if px <= 0 {
+		panic("ui: ColumnMinWidth requires a positive width")
 	}
 	return gridCellMinWidth(px)
 }
