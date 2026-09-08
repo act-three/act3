@@ -191,7 +191,7 @@ func (v base) OverlayAt(at, anchor Alignment, o View) View {
 
 func (v base) Padding(s ...EdgeSpace) View {
 	if len(s) == 0 {
-		s = []EdgeSpace{Edges(8)}
+		s = []EdgeSpace{Edges(16)}
 	}
 	return v.modify(wrapPadding{space: edgeSum(s...)}.modify)
 }
