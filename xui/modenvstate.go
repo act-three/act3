@@ -28,7 +28,8 @@ func Background(c Color) Modifier {
 // To add a border around the outside of a view,
 // add padding inside the border.
 func BorderStroke(px float64, c Color) Modifier {
-	if !(px > 0) { // this is written weird b/c of NaNs lmao
+	checkLength(px)
+	if px <= 0 {
 		px = 0
 	}
 	return modEnvState(func(env environment, s State) environment {

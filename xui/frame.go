@@ -60,6 +60,7 @@ func (o frameOption) applyFrame(w *wrapFrame) { o(w) }
 //
 // If omitted, the frame adopts the height of the view inside.
 func Height(h float64) FrameOption {
+	checkLength(h)
 	return frameOption(func(w *wrapFrame) {
 		w.v = h
 		w.axes |= Vertical
@@ -70,6 +71,7 @@ func Height(h float64) FrameOption {
 //
 // If omitted, the frame adopts the width of the view inside.
 func Width(w float64) FrameOption {
+	checkLength(w)
 	return frameOption(func(f *wrapFrame) {
 		f.h = w
 		f.axes |= Horizontal

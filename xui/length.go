@@ -1,3 +1,19 @@
 package ui
 
+import (
+	"fmt"
+	"math"
+)
+
 type rect struct{ width, height float64 }
+
+func checkLength(v float64) {
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		panic(fmt.Sprintf("ui: non-finite pixel length %g", v))
+	}
+}
+
+func cssPx(v float64) string {
+	checkLength(v)
+	return fmt.Sprintf("%gpx", v)
+}

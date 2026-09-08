@@ -33,6 +33,7 @@ func (o frameBoundsOption) applyFrameBounds(w *wrapFrameBounds) { o(w) }
 //
 // If omitted, the frame adopts the minimum height of the view inside.
 func MinHeight(h float64) FrameBoundsOption {
+	checkLength(h)
 	return frameBoundsOption(func(f *wrapFrameBounds) { f.v.setMin(h) })
 }
 
@@ -43,6 +44,7 @@ func MinHeight(h float64) FrameBoundsOption {
 //
 // If omitted, the frame adopts the minimum width of the view inside.
 func MinWidth(w float64) FrameBoundsOption {
+	checkLength(w)
 	return frameBoundsOption(func(f *wrapFrameBounds) { f.h.setMin(w) })
 }
 
@@ -57,6 +59,7 @@ func MinWidth(w float64) FrameBoundsOption {
 //
 // If omitted, the frame adopts the ideal height of the view inside.
 func IdealHeight(h float64) FrameBoundsOption {
+	checkLength(h)
 	return frameBoundsOption(func(f *wrapFrameBounds) { f.v.setIdeal(h) })
 }
 
@@ -71,6 +74,7 @@ func IdealHeight(h float64) FrameBoundsOption {
 //
 // If omitted, the frame adopts the ideal width of the view inside.
 func IdealWidth(w float64) FrameBoundsOption {
+	checkLength(w)
 	return frameBoundsOption(func(f *wrapFrameBounds) { f.h.setIdeal(w) })
 }
 
