@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"math"
+	"strings"
 )
 
 type rect struct{ width, height float64 }
@@ -15,5 +16,11 @@ func checkLength(v float64) {
 
 func cssPx(v float64) string {
 	checkLength(v)
-	return fmt.Sprintf("%gpx", v)
+	s := fmt.Sprintf("%.3f", v)
+	s = strings.TrimRight(s, "0")
+	s = strings.TrimSuffix(s, ".")
+	if s == "0" || s == "-0" {
+		return "0"
+	}
+	return s + "px"
 }

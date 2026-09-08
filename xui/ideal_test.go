@@ -29,7 +29,7 @@ func TestIdealSizeDeclarations(t *testing.T) {
 			env.unbounded = tt.unbounded
 			build(env, plan{ideal: tt.ideal, fills: tt.fills})
 			css := sh.CSS()
-			if strings.Contains(css, "width:0px") || strings.Contains(css, "height:0px") {
+			if strings.Contains(css, "width:0") || strings.Contains(css, "height:0") {
 				t.Errorf("zero ideal emitted a dimension: %s", css)
 			}
 			if tt.want == "" {
