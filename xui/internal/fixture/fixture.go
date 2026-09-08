@@ -340,48 +340,6 @@ func section(title string, body View) View {
 		Alignment(Leading)
 }
 
-func buttonStates() View {
-	var rows []View
-	for i, style := range []ButtonStyle{Bordered, Prominent, Subtle, Borderless, Destructive, DestructiveSubtle} {
-		button := func(label string) ButtonView {
-			return Button(Msg{Edit: true}, Text(label))
-		}
-		rows = append(rows, HStack(
-			Text([]string{"Bordered", "Prominent", "Subtle", "Borderless", "Destructive", "DestructiveSubtle"}[i]).Frame(Width(140), Leading),
-			button("Rest"),
-			button("Selected").Selected(true),
-			button("Menu open").MenuOpen(true),
-			button("Both").Selected(true).MenuOpen(true),
-			button("Disabled").Disabled(true),
-			button("Selected disabled").Selected(true).Disabled(true),
-			button("Menu disabled").MenuOpen(true).Disabled(true),
-		).ButtonStyle(style))
-	}
-	return VStack(rows...).Alignment(Leading)
-}
-
-func buttonSizes() View {
-	var rows []View
-	for _, size := range []struct {
-		name string
-		size ControlSize
-	}{
-		{"Mini", Mini},
-		{"Small", Small},
-		{"Regular", Regular},
-		{"Large", Large},
-	} {
-		rows = append(rows, HStack(
-			Text(size.name).Frame(Width(64), Leading),
-			Button(Msg{Edit: true}, Text("Edit")),
-			Button("/movies", Text("Movies")),
-			Button(Msg{Select: 1}, Accent.Frame(Width(16), Height(16))),
-		).
-			ControlSize(size.size))
-	}
-	return VStack(rows...).Alignment(Leading)
-}
-
 // Page is the demo page: one section per component or layout mechanism.
 func Page() View {
 	user := User{Name: "Ada Lovelace", Email: "ada@example.com", PhotoURL: placeholderImage(96, 96, "#818cf8")}
@@ -396,8 +354,7 @@ func Page() View {
 			Font(LargeTitle),
 		section("Account card (Card + HStack + Spacer + OverlayAt badge)", accountCard(user)),
 		section("Movie page (Frame fill + keyed rows + For-style list)", moviePage(movies)),
-		section("Button sizes (provisional geometry; reserved edge and paint pending)", buttonSizes()),
-		section("Button states (existing roles; style migration and paint pending)", buttonStates()),
+		buttonSection("Buttons", buttonGallery()),
 		section("Dividers in an HStack (minor-axis, vertical)", dividerRow().Class("demo-bordered")),
 		section("Dividers in a VStack (minor-axis, horizontal)", dividerColumn().Class("demo-bordered")),
 		section("ZStack (layered, all subviews size the stack)", zstackDemo()),
