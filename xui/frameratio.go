@@ -18,7 +18,7 @@ type FrameRatioOption interface{ applyFrameRatio(*wrapFrameRatio) }
 // width:height is fixed.
 //
 // On the anchor axis, it adopts its subview's sizing behavior,
-// like an Auto frame axis. (We also call this layout-preserving.)
+// like an unspecified frame axis. (We also call this layout-preserving.)
 // It adopts the subview's size and passes its fill request
 // and rigidity through.
 // The other axis is derived from the anchor by the ratio,

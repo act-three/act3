@@ -179,7 +179,7 @@ func nodeColor(c color) node {
 		env.bg = append(env.bg, term[color]{value: c})
 		return build(env, plan{
 			fills: Horizontal | Vertical,
-			ideal: rect{width: newSize(10), height: newSize(10)},
+			ideal: rect{width: 10, height: 10},
 		})
 	}
 }

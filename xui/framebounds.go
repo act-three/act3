@@ -31,11 +31,9 @@ func (o frameBoundsOption) applyFrameBounds(w *wrapFrameBounds) { o(w) }
 // If h is greater than the frame's ideal height,
 // MinHeight also sets the ideal to h.
 //
-// If h is Auto, the frame adopts the minimum height of the view inside.
-// The default minimum height is Auto.
-func MinHeight[Size int | float64 | Auto](h Size) FrameBoundsOption {
-	s := newSize(h)
-	return frameBoundsOption(func(w *wrapFrameBounds) { w.v.setMin(s) })
+// If omitted, the frame adopts the minimum height of the view inside.
+func MinHeight(h float64) FrameBoundsOption {
+	return frameBoundsOption(func(f *wrapFrameBounds) { f.v.setMin(h) })
 }
 
 // MinWidth sets the frame's minimum width.
@@ -43,11 +41,9 @@ func MinHeight[Size int | float64 | Auto](h Size) FrameBoundsOption {
 // If w is greater than the frame's ideal width,
 // MinWidth also sets the ideal to w.
 //
-// If w is Auto, the frame adopts the minimum width of the view inside.
-// The default minimum width is Auto.
-func MinWidth[Size int | float64 | Auto](w Size) FrameBoundsOption {
-	s := newSize(w)
-	return frameBoundsOption(func(w *wrapFrameBounds) { w.h.setMin(s) })
+// If omitted, the frame adopts the minimum width of the view inside.
+func MinWidth(w float64) FrameBoundsOption {
+	return frameBoundsOption(func(f *wrapFrameBounds) { f.h.setMin(w) })
 }
 
 // IdealHeight sets the frame's ideal height.
@@ -59,11 +55,9 @@ func MinWidth[Size int | float64 | Auto](w Size) FrameBoundsOption {
 // If h is less than the frame's minimum height,
 // IdealHeight also sets the minimum to h.
 //
-// If h is Auto, the frame adopts the ideal height of the view inside.
-// The default ideal height is Auto.
-func IdealHeight[Size int | float64 | Auto](h Size) FrameBoundsOption {
-	s := newSize(h)
-	return frameBoundsOption(func(w *wrapFrameBounds) { w.v.setIdeal(s) })
+// If omitted, the frame adopts the ideal height of the view inside.
+func IdealHeight(h float64) FrameBoundsOption {
+	return frameBoundsOption(func(f *wrapFrameBounds) { f.v.setIdeal(h) })
 }
 
 // IdealWidth sets the frame's ideal width.
@@ -75,11 +69,9 @@ func IdealHeight[Size int | float64 | Auto](h Size) FrameBoundsOption {
 // If w is less than the frame's minimum width,
 // IdealWidth also sets the minimum to w.
 //
-// If w is Auto, the frame adopts the ideal width of the view inside.
-// The default ideal width is Auto.
-func IdealWidth[Size int | float64 | Auto](w Size) FrameBoundsOption {
-	s := newSize(w)
-	return frameBoundsOption(func(w *wrapFrameBounds) { w.h.setIdeal(s) })
+// If omitted, the frame adopts the ideal width of the view inside.
+func IdealWidth(w float64) FrameBoundsOption {
+	return frameBoundsOption(func(f *wrapFrameBounds) { f.h.setIdeal(w) })
 }
 
 // axisBounds is one axis of a bounds frame.
@@ -87,18 +79,21 @@ func IdealWidth[Size int | float64 | Auto](w Size) FrameBoundsOption {
 // as well as the ideal size the axis takes
 // when its available space is unbounded.
 // invariant: min ≤ ideal (when both are concrete values).
-type axisBounds struct{ min, ideal size }
+type axisBounds struct {
+	min, ideal       float64
+	minSet, idealSet bool
+}
 
-func (x *axisBounds) setMin(s size) {
-	x.min = s
-	if s.definite && x.ideal.definite && x.ideal.px < s.px {
+func (x *axisBounds) setMin(s float64) {
+	x.min, x.minSet = s, true
+	if x.idealSet && x.ideal < s {
 		x.ideal = s
 	}
 }
 
-func (x *axisBounds) setIdeal(s size) {
-	x.ideal = s
-	if s.definite && x.min.definite && x.min.px > s.px {
+func (x *axisBounds) setIdeal(s float64) {
+	x.ideal, x.idealSet = s, true
+	if x.minSet && x.min > s {
 		x.min = s
 	}
 }
@@ -125,10 +120,10 @@ func (w wrapFrameBounds) modify(n node) node {
 
 // idealAxes is the set of axes on which the frame uses its ideal size in env.
 func (w wrapFrameBounds) idealAxes(env environment) (a AxisSet) {
-	if env.unbounded.hasAll(Horizontal) && w.h.ideal.definite {
+	if env.unbounded.hasAll(Horizontal) && w.h.idealSet {
 		a |= Horizontal
 	}
-	if env.unbounded.hasAll(Vertical) && w.v.ideal.definite {
+	if env.unbounded.hasAll(Vertical) && w.v.idealSet {
 		a |= Vertical
 	}
 	return a
@@ -138,10 +133,10 @@ func (w wrapFrameBounds) idealAxes(env environment) (a AxisSet) {
 // A bounded axis's sizing is governed by the frame,
 // so the subview's rigidity does not pass through it.
 func (w wrapFrameBounds) boundedAxes() (a AxisSet) {
-	if w.h.ideal.definite || w.h.min.definite {
+	if w.h.idealSet || w.h.minSet {
 		a |= Horizontal
 	}
-	if w.v.ideal.definite || w.v.min.definite {
+	if w.v.idealSet || w.v.minSet {
 		a |= Vertical
 	}
 	return a
@@ -169,22 +164,22 @@ func (w wrapFrameBounds) render(env environment, n node) box {
 // setStyles adds the frame's size and track declarations to ss.
 func (w wrapFrameBounds) setStyles(ss *canon.StyleSet, ideal AxisSet) {
 	if ideal.hasAll(Horizontal) {
-		ss.Set("width", w.h.ideal.css())
+		ss.Set("width", cssPx(w.h.ideal))
 	}
 	if ideal.hasAll(Vertical) {
-		ss.Set("height", w.v.ideal.css())
+		ss.Set("height", cssPx(w.v.ideal))
 	}
 	// A floored axis's track gives up its intrinsic contribution.
 	// Without intervention, the frame's min-content size is its subview's,
 	// and CSS min-* can only raise a floor, not lower it. Zeroing
 	// the track's intrinsic contribution makes min-* the floor.
 	cols, rows := "100%", "100%"
-	if w.h.min.definite {
-		ss.Set("min-width", w.h.min.css())
+	if w.h.minSet {
+		ss.Set("min-width", cssPx(w.h.min))
 		cols = "minmax(0, 100%)"
 	}
-	if w.v.min.definite {
-		ss.Set("min-height", w.v.min.css())
+	if w.v.minSet {
+		ss.Set("min-height", cssPx(w.v.min))
 		rows = "minmax(0, 100%)"
 	}
 	ss.Set("grid-template-columns", cols)

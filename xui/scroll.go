@@ -78,7 +78,7 @@ func (s nodeScroll) render(env environment) box {
 	p := renderSubviewNode(inner, contents)
 	p.fills = Horizontal | Vertical
 	p.rigid = 0 // Content rigidity does not escape its viewport.
-	p.ideal = rect{width: newSize(100), height: newSize(100)}
+	p.ideal = rect{width: 100, height: 100}
 	return build(env, p)
 }
 

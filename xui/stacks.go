@@ -157,10 +157,10 @@ func nodeDivider(env environment) box {
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
 		env.style.Set("width", "1px")
-		p.ideal.height = newSize(10)
+		p.ideal.height = 10
 	} else {
 		env.style.Set("height", "1px")
-		p.ideal.width = newSize(10)
+		p.ideal.width = 10
 	}
 	return build(env, p)
 }

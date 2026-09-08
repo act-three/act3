@@ -241,7 +241,7 @@ func TestGeometryRootScrollStickyUsesDocumentViewport(t *testing.T) {
 // instead of letting its neighbors fuse, and with unbounded available
 // space the same minimum is its answer.
 func TestGeometrySpacerMinimumLength(t *testing.T) {
-	rigid := func(w int) ui.View { return ui.OKLCH(0.5, 0, 0).Frame(ui.Width(w), ui.Height(40)) }
+	rigid := func(w float64) ui.View { return ui.OKLCH(0.5, 0, 0).Frame(ui.Width(w), ui.Height(40)) }
 	stage(t, ui.HStack(rigid(300), ui.Spacer(), rigid(300)).Gap(0), func(s *uitest.Session) {
 		within(t, "squeezed spacer floors at the minimum", s.Rect("ui-spacer", 0).W, 8, 1)
 	})
@@ -728,7 +728,7 @@ func TestGeometryLineLimit(t *testing.T) {
 // available space and floors at its minimum; in a grid cell and on a flex
 // cross axis it shrinks to fit the cell's available space.
 func TestGeometrySoftFrameTracksSpace(t *testing.T) {
-	rigid := func(w int) ui.View { return ui.OKLCH(0.5, 0, 0).Frame(ui.Width(w), ui.Height(40)) }
+	rigid := func(w float64) ui.View { return ui.OKLCH(0.5, 0, 0).Frame(ui.Width(w), ui.Height(40)) }
 	soft := ui.OKLCH(0.3, 0, 0).
 		Frame(ui.Width(500), ui.Height(40)).FrameBounds(
 

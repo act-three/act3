@@ -1180,7 +1180,7 @@ func TestStickyModifierOrder(t *testing.T) {
 }
 
 // TestFrameBounds checks the bounds frame's lowering: bounds and alignment on
-// its own box, fill requests relayed above a minimum, and Auto bounds
+// its own box, fill requests relayed above a minimum, and omitted bounds
 // emitting no sizing declarations.
 func TestFrameBounds(t *testing.T) {
 	bounded := render(t, ui.Text("x").FrameBounds(ui.MinWidth(96), ui.MinHeight(24), ui.Leading))
@@ -1200,10 +1200,10 @@ func TestFrameBounds(t *testing.T) {
 		t.Errorf("a min-bounded frame should relay its subview's fill:\n%s", relay)
 	}
 
-	auto := render(t, ui.Text("x").FrameBounds(ui.MinWidth(ui.Auto{}), ui.IdealWidth(ui.Auto{})))
-	for _, r := range []string{"min-width", "width", "minmax"} {
-		if strings.Contains(auto, r) {
-			t.Errorf("Auto bound should emit nothing, got %q:\n%s", r, auto)
+	unbounded := render(t, ui.Text("x").FrameBounds())
+	for _, r := range []string{"width", "height", "minmax"} {
+		if strings.Contains(unbounded, r) {
+			t.Errorf("omitted bounds should emit nothing, got %q:\n%s", r, unbounded)
 		}
 	}
 
@@ -1223,6 +1223,16 @@ func TestFrameBounds(t *testing.T) {
 			"later min raises an earlier ideal",
 			ui.Text("x").FrameBounds(ui.IdealWidth(100), ui.MinWidth(200)).FixedSize(),
 			[]string{"width:200px", "min-width:200px"},
+		},
+		{
+			"zero minima remain explicit",
+			ui.Text("x").FrameBounds(ui.MinWidth(0), ui.MinHeight(0)),
+			[]string{"min-width:0px", "min-height:0px", "grid-template-columns:minmax(0, 100%)", "grid-template-rows:minmax(0, 100%)"},
+		},
+		{
+			"zero ideals lower earlier minima",
+			ui.Text("x").FrameBounds(ui.MinWidth(100), ui.MinHeight(100), ui.IdealWidth(0), ui.IdealHeight(0)).FixedSize(),
+			[]string{"width:0px", "height:0px", "min-width:0px", "min-height:0px"},
 		},
 	} {
 		html := render(t, tt.v)
@@ -1289,8 +1299,7 @@ func TestSubviewRigidIntersection(t *testing.T) {
 }
 
 // TestFrameOptionOverride pins the frame's option resolution: options apply
-// in order, a later option for the same setting replaces an earlier one, and
-// Auto restores the default.
+// in order, and a later option for the same setting replaces an earlier one.
 func TestFrameOptionOverride(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -1311,10 +1320,16 @@ func TestFrameOptionOverride(t *testing.T) {
 			nil,
 		},
 		{
-			"Auto is the default and emits nothing",
-			ui.Text("x").Frame(ui.Width(50), ui.Width(ui.Auto{})),
+			"omitted dimensions emit nothing",
+			ui.Text("x").Frame(),
 			nil,
-			[]string{"width", "auto"},
+			[]string{"width", "height", "auto"},
+		},
+		{
+			"zero dimensions remain explicit",
+			ui.Text("x").Frame(ui.Width(50), ui.Width(0), ui.Height(0)),
+			[]string{"width:0px", "height:0px"},
+			[]string{"width:50px"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
