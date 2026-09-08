@@ -127,7 +127,7 @@ func nodeButton(action any, label node) node {
 // These provisional recipes leave 1px per axis for the eventual 0.5px
 // reserved border: ordinary text then targets 24/28/32/44px heights.
 // Review the geometry again when that paint construction is available.
-func buttonMetrics(s ControlSize) (fontSize, lineHeight string, padding float64) {
+func buttonMetrics(s ControlSize) (fontSize, lineHeight string, padding complex128) {
 	switch s {
 	case Mini:
 		return "12px", "16px", 3.5

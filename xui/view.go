@@ -44,7 +44,7 @@ type View interface {
 	// The stroke paints over the view's content. It takes no layout
 	// space. To add a border around the outside of a view, add
 	// padding inside the border.
-	BorderStroke(px float64, c Color) View
+	BorderStroke(width complex128, c Color) View
 
 	// ButtonStyle sets the appearance of buttons in the receiver.
 	// The default style is Bordered.
@@ -372,15 +372,15 @@ type nextenv struct {
 	buttonSelected bool
 	buttonMenuOpen bool
 	alignment      Alignment
-	gap            *float64 // nil means defaultGap
+	gap            *complex128 // nil means defaultGap
 	imageAlt       string
 	framedAs       framingMode
 }
 
 // A stroke is one pending border line.
 type stroke struct {
-	px float64
-	c  color
+	width complex128
+	c     color
 }
 
 // add prepends attributes to the environment,
@@ -482,7 +482,7 @@ func addIdealStylesTo(ss *canon.StyleSet, i rect, unbounded, fills AxisSet) {
 	for _, a := range [...]struct {
 		axis AxisSet
 		name string
-		size float64
+		size complex128
 	}{
 		{Horizontal, "width", i.width},
 		{Vertical, "height", i.height},
@@ -491,9 +491,9 @@ func addIdealStylesTo(ss *canon.StyleSet, i rect, unbounded, fills AxisSet) {
 			continue
 		}
 		if fills.hasAll(a.axis) {
-			ss.Set("min-"+a.name, cssPx(a.size))
+			ss.Set("min-"+a.name, cssLength(a.size))
 		} else {
-			ss.Set(a.name, cssPx(a.size))
+			ss.Set(a.name, cssLength(a.size))
 		}
 	}
 }

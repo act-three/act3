@@ -27,13 +27,10 @@ func Background(c Color) Modifier {
 // It takes no layout space.
 // To add a border around the outside of a view,
 // add padding inside the border.
-func BorderStroke(px float64, c Color) Modifier {
-	checkLength(px)
-	if px <= 0 {
-		px = 0
-	}
+func BorderStroke(width complex128, c Color) Modifier {
+	checkLength(width)
 	return modEnvState(func(env environment, s State) environment {
-		env.stroke = append(env.stroke, term[stroke]{s, stroke{px, c.color()}})
+		env.stroke = append(env.stroke, term[stroke]{s, stroke{width, c.color()}})
 		env.hasPaint = true
 		return env
 	})

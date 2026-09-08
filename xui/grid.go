@@ -23,7 +23,7 @@ type GridView interface {
 
 	// Gap sets the distance between adjacent rows
 	// and between adjacent columns. The default gap is 8 px.
-	Gap(px float64) GridView
+	Gap(length complex128) GridView
 }
 
 // Grid arranges the given views in the grid described by g.
@@ -62,19 +62,16 @@ func (gridColumns) fills() AxisSet { return 0 }
 // to the available horizontal space,
 // and divides that space into columns of equal width.
 // It creates as many columns as possible
-// while each column is at least px pixels wide.
-func ColumnMinWidth(px float64) GridLayout {
-	checkLength(px)
-	if px <= 0 {
-		panic("ui: ColumnMinWidth requires a positive width")
-	}
-	return gridCellMinWidth(px)
+// while each column is at least width wide.
+func ColumnMinWidth(width complex128) GridLayout {
+	checkLength(width)
+	return gridCellMinWidth(width)
 }
 
-type gridCellMinWidth float64
+type gridCellMinWidth complex128
 
-func (px gridCellMinWidth) columns() string {
-	return "repeat(auto-fill, minmax(" + cssPx(float64(px)) + ", 1fr))"
+func (width gridCellMinWidth) columns() string {
+	return "repeat(auto-fill, minmax(" + cssLength(complex128(width)) + ", 1fr))"
 }
 
 func (gridCellMinWidth) fills() AxisSet { return Horizontal }
@@ -86,8 +83,8 @@ func (v gridView) Alignment(a Alignment) GridView {
 	return v
 }
 
-func (v gridView) Gap(px float64) GridView {
-	v.base = v.modify(modGap(px))
+func (v gridView) Gap(length complex128) GridView {
+	v.base = v.modify(modGap(length))
 	return v
 }
 
@@ -101,7 +98,7 @@ func nodeGrid(layout GridLayout, subviews []View) node {
 		env.tag = cmp.Or(env.tag, "ui-grid")
 		env.style.Set("display", "grid")
 		env.style.Set("grid-template-columns", layout.columns())
-		gap := cssPx(*cmp.Or(env.gap, new(defaultGap)))
+		gap := cssLength(*cmp.Or(env.gap, new(defaultGap)))
 		env.style.Set("row-gap", gap)
 		env.style.Set("column-gap", gap)
 		env.alignment.setItemsOn(&env.style)

@@ -47,10 +47,10 @@ func modFixedSize(axes AxisSet) modifier {
 	})
 }
 
-func modGap(px float64) modifier {
-	checkLength(px)
+func modGap(length complex128) modifier {
+	checkLength(length)
 	return modEnv(func(env environment) environment {
-		env.gap = &px
+		env.gap = &length
 		return env
 	})
 }

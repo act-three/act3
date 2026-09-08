@@ -271,7 +271,7 @@ func (p paint) carrierDecls(t theme) []decl {
 func shadowList(t theme, strokes []stroke) string {
 	var shadows []string
 	for _, s := range strokes {
-		shadows = append(shadows, "inset 0 0 0 "+cssPx(s.px)+" "+s.c.colorCoords(t).css())
+		shadows = append(shadows, "inset 0 0 0 "+cssLength(s.width)+" "+s.c.colorCoords(t).css())
 	}
 	return strings.Join(shadows, ",")
 }

@@ -1924,7 +1924,6 @@ func TestGridLayoutPanics(t *testing.T) {
 		f    func()
 	}{
 		{"Columns(0)", func() { ui.Columns(0) }},
-		{"CellMinWidth(0)", func() { ui.ColumnMinWidth(0) }},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			defer func() {
