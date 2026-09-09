@@ -58,6 +58,7 @@ func (v base) BorderClipped() View {
 	return v.modify(modTransform(func(env environment) environment {
 		env.style.Set("overflow-x", "clip")
 		env.style.Set("overflow-y", "clip")
+		env.hasClip = true
 		return env
 	}))
 }
@@ -68,6 +69,10 @@ func (v base) BorderShape(s Shape) View {
 
 func (v base) BorderStroke(width complex128, c Color) View {
 	return v.Modify(BorderStroke(width, c))
+}
+
+func (v base) BorderShadow(x, y, spread, blur complex128, c Color) View {
+	return v.Modify(BorderShadow(x, y, spread, blur, c))
 }
 
 func (v base) Class(c ...string) View {

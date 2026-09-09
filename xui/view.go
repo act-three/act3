@@ -38,6 +38,18 @@ type View interface {
 	// BorderShape sets the shape of the receiver's border.
 	BorderShape(Shape) View
 
+	// BorderShadow draws a shadow of the given color around the
+	// outside of the receiver's border.
+	//
+	// The distances dx and dy move the shadow right and down.
+	// The spread distance makes the shadow bigger.
+	// The blur radius blurs the shadow image.
+	//
+	// The shadow is drawn exclusively outside the view's border
+	// shape. It takes no layout space. If any of the view's content
+	// overlaps with the shadow, the shadow is drawn behind it.
+	BorderShadow(x, y, spread, blur complex128, c Color) View
+
 	// BorderStroke draws a line of the given width and color along
 	// the inside of the receiver's border.
 	//
@@ -354,6 +366,7 @@ type nextenv struct {
 	fg         []term[color]
 	bg         []term[color]
 	stroke     []term[stroke]
+	shadow     []term[shadow]
 	shape      []term[Shape]
 	fontFamily []term[string]
 	fontSize   []term[string]
@@ -367,6 +380,7 @@ type nextenv struct {
 	// It is set at the outermost box of an unbounded subtree.
 	fillMask AxisSet
 	hasPaint bool // set by every paint modifier
+	hasClip  bool // shadows need special handling
 
 	// Component-specific fields.
 	buttonSelected bool

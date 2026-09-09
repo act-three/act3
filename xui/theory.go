@@ -78,6 +78,27 @@ package ui
 // judgement to apply correctly. The guiding principle is to avoid
 // surprising the app author with unexpected structural changes.
 //
+// Paint Regions
+//
+// A paint modifier conceptually owns a layout-preserving wrapper.
+// It knows its subview's bounding rectangle and its own environment,
+// including the border shape. It does not inspect the subview's paint.
+//
+//   - Background paints inside the border shape behind the subview.
+//   - BorderStroke paints inside the border shape in front.
+//   - BorderShadow paints outside the border shape behind.
+//
+// The shadow paints exclusively outside the border shape, which means
+// its interior is empty even when the subview is transparent.
+//
+// These regions let the lowering collect the three paint families
+// independently on one box, regardless of their interleaving. Within
+// each family, backgrounds and shadows paint inner modifiers in front.
+// Strokes paint outer modifiers in front. Transforms and layout
+// changes retain their ordinary boxing boundaries. In particular,
+// opacity and clipping outside a shadow affect it. The same modifiers
+// inside do not.
+//
 // Z-Index Rule
 //
 // The CSS property z-index must be applied only inside an explicit
