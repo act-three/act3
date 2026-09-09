@@ -38,6 +38,19 @@ type View interface {
 	// BorderShape sets the shape of the receiver's border.
 	BorderShape(Shape) View
 
+	// BorderOutline draws a line of the given width and color around
+	// the outside of the receiver's border. The gap specifies the
+	// distance between the border and the outline.
+	//
+	// The outline takes no layout space. If any of the view's content
+	// overlaps with the outline, the outline is drawn in front.
+	//
+	// A view can have at most one outline. If the receiver already
+	// has an outline, BorderOutline has no effect.
+	//
+	// The gap and width are clamped to the nonnegative range.
+	BorderOutline(gap, width complex128, c Color) View
+
 	// BorderShadow draws a shadow of the given color around the
 	// outside of the receiver's border.
 	//
@@ -367,6 +380,7 @@ type nextenv struct {
 	bg         []term[color]
 	stroke     []term[stroke]
 	shadow     []term[shadow]
+	outline    []term[outline]
 	shape      []term[Shape]
 	fontFamily []term[string]
 	fontSize   []term[string]

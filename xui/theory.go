@@ -87,17 +87,32 @@ package ui
 //   - Background paints inside the border shape behind the subview.
 //   - BorderStroke paints inside the border shape in front.
 //   - BorderShadow paints outside the border shape behind.
+//   - BorderOutline paints outside the border shape in front.
 //
 // The shadow paints exclusively outside the border shape, which means
 // its interior is empty even when the subview is transparent.
 //
-// These regions let the lowering collect the three paint families
+// These regions let the lowering collect the different paint families
 // independently on one box, regardless of their interleaving. Within
 // each family, backgrounds and shadows paint inner modifiers in front.
 // Strokes paint outer modifiers in front. Transforms and layout
 // changes retain their ordinary boxing boundaries. In particular,
 // opacity and clipping outside a shadow affect it. The same modifiers
 // inside do not.
+//
+// Outlines resolve by precedence instead of accumulating paint layers.
+// A box has at most one outline. When an outline is painted, its
+// conceptual wrapper adds a signal to enclosing outline modifiers that
+// the view has an outline, and the enclosing outlines are not painted.
+// Thus, the innermost outline wins. Gap, width, and color resolve
+// together for each state combination. A state-scoped outline exists
+// only while its state applies. Otherwise there is no outline and no
+// presence to suppress an outer outline. Transparent and zero-width
+// outlines are present and take precedence. Inner boxes have their own
+// outlines. Presence is not discovered by inspecting subtree paint.
+// Ordinary transform and layout boundaries still separate boxes. The
+// winning outline lowers to CSS outline on the foreground carrier
+// shared with strokes.
 //
 // Z-Index Rule
 //

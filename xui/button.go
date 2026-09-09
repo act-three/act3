@@ -100,7 +100,12 @@ func nodeButton(action any, label node) node {
 				WhilePressed(Background(style.hover)).
 				WhilePressed(Foreground(hoverForeground))
 		}
+		focus := Accent
+		if env.buttonStyle == Destructive {
+			focus = redHover
+		}
 		v = v.
+			WhileFocused(BorderOutline(2, 1, focus)).
 			Foreground(foreground).
 			Background(face)
 		if style.hasShadow && (!env.buttonSelected || env.buttonStyle == Prominent) {
@@ -161,7 +166,7 @@ func buttonShadow(v View, t theme) View {
 }
 
 // buttonStyle contains only paint supported by the shared modifiers.
-// Focus outlines and transitions remain deferred.
+// Return transitions remain deferred.
 type buttonStyle struct {
 	hasShadow     bool
 	face          Color
