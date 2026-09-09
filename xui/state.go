@@ -124,6 +124,7 @@ type paint struct {
 	bg         []color
 	stroke     []stroke
 	shadow     []shadow
+	outline    outline
 	shape      Shape
 	opacity    float64 // 1 is opaque
 }
@@ -132,11 +133,13 @@ type paint struct {
 // under state set s.
 func (b nextenv) paintUnder(s State) paint {
 	shadows := allUnder(b.shadow, s)
+	outline := lastUnder(b.outline, s)
 	if b.hasClip {
-		// A fused enclosing clip removes all of this box's exterior
-		// shadow. CSS overflow alone cannot clip an element's own shadow.
-		// Keep the terms and hasPaint so transforms still box out.
+		// A fused enclosing clip removes exterior paint. CSS overflow
+		// alone cannot clip an element's own shadow. Keep outline
+		// ownership and hasPaint even when the paint is invisible.
 		shadows = nil
+		outline.width = 0
 	}
 	opacity := 1.0
 	for _, t := range b.opacity {
@@ -154,6 +157,7 @@ func (b nextenv) paintUnder(s State) paint {
 		bg:         allUnder(b.bg, s),
 		stroke:     allUnder(b.stroke, s),
 		shadow:     shadows,
+		outline:    outline,
 		shape:      lastUnder(b.shape, s),
 		opacity:    opacity,
 	}
@@ -214,6 +218,9 @@ func (b nextenv) termStates() []State {
 	for _, t := range b.shadow {
 		ss = append(ss, t.state)
 	}
+	for _, t := range b.outline {
+		ss = append(ss, t.state)
+	}
 	for _, t := range b.shape {
 		ss = append(ss, t.state)
 	}
@@ -227,7 +234,7 @@ func (b nextenv) termStates() []State {
 type decl struct{ property, value string }
 
 // decls returns p's declarations for the element's own selector.
-// Stroke declarations ride the ::after carrier instead;
+// Stroke and outline declarations ride the ::after carrier instead;
 // see addPaintStylesTo.
 //
 // A complete paint also declares properties at their default values,
@@ -270,15 +277,31 @@ func (p paint) decls(t theme, complete bool) []decl {
 	if complete || p.opacity < 1 {
 		ds = append(ds, decl{"opacity", strconv.FormatFloat(p.opacity, 'g', 4, 64)})
 	}
+	if p.outline.color != nil {
+		// Replace the browser indicator only while an authored outline
+		// applies. The outline itself paints on the foreground carrier.
+		ds = append(ds, decl{"outline", "none"})
+	} else if complete {
+		ds = append(ds, decl{"outline", "revert"})
+	}
 	return ds
 }
 
-// carrierDecls returns p's declarations for the ::after stroke carrier.
-func (p paint) carrierDecls(t theme) []decl {
-	if len(p.stroke) == 0 {
-		return nil
+// carrierDecls returns p's declarations for the foreground carrier.
+func (p paint) carrierDecls(t theme, hasOutline bool) []decl {
+	var ds []decl
+	if len(p.stroke) > 0 {
+		ds = append(ds, decl{"box-shadow", strokeShadowList(t, p.stroke)})
 	}
-	return []decl{{"box-shadow", strokeShadowList(t, p.stroke)}}
+	if hasOutline {
+		line, gap := "none", "0px"
+		if o := p.outline; o.color != nil {
+			line = outlineLength(o.width) + " solid " + o.color.colorCoords(t).css()
+			gap = outlineLength(o.gap)
+		}
+		ds = append(ds, decl{"outline", line}, decl{"outline-offset", gap})
+	}
+	return ds
 }
 
 // strokeShadowList returns the strokes as a box-shadow list,
@@ -303,20 +326,21 @@ func strokeShadowList(t theme, strokes []stroke) string {
 // and only a redeclaration outweighs them.
 func addPaintStylesTo(ss *sheet.StyleSet, env environment) {
 	b, t := env.nextenv, env.theme
+	hasOutline := len(b.outline) > 0
 	base := b.paintUnder(0)
 	for _, d := range base.decls(t, false) {
 		ss.Set(d.property, d.value)
 	}
-	if len(b.stroke) > 0 {
-		// The strokes of every state share one ::after carrier
-		// covering the box; each state draws its own shadow list.
+	if len(b.stroke) > 0 || hasOutline {
+		// Every state shares one foreground carrier covering the box.
+		// Strokes use its shadow list; the winning outline uses CSS outline.
 		ss.Set("position", "relative")
 		ss.SetPseudo("::after", "content", `""`)
 		ss.SetPseudo("::after", "position", "absolute")
 		ss.SetPseudo("::after", "inset", "0")
 		ss.SetPseudo("::after", "border-radius", "inherit")
 		ss.SetPseudo("::after", "pointer-events", "none")
-		for _, d := range base.carrierDecls(t) {
+		for _, d := range base.carrierDecls(t, hasOutline) {
 			ss.SetPseudo("::after", d.property, d.value)
 		}
 	}
@@ -332,7 +356,7 @@ func addPaintStylesTo(ss *sheet.StyleSet, env environment) {
 			base, want []decl
 		}{
 			{"", base.decls(t, true), v.decls(t, true)},
-			{"::after", base.carrierDecls(t), v.carrierDecls(t)},
+			{"::after", base.carrierDecls(t, hasOutline), v.carrierDecls(t, hasOutline)},
 		} {
 			baseValue := make(map[string]string)
 			for _, d := range sel.base {

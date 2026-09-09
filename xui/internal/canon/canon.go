@@ -152,6 +152,11 @@ var rejected = map[string]string{
 	"font-weight":         "the font modifiers",
 	"line-height":         "the font modifiers",
 	"opacity":             "the Opacity modifier",
+	"outline":             "the BorderOutline modifier",
+	"outline-color":       "the BorderOutline modifier",
+	"outline-offset":      "the BorderOutline modifier",
+	"outline-style":       "the BorderOutline modifier",
+	"outline-width":       "the BorderOutline modifier",
 }
 
 func edgeLonghands(property string) string {

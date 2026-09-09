@@ -71,6 +71,10 @@ func (v base) BorderStroke(width complex128, c Color) View {
 	return v.Modify(BorderStroke(width, c))
 }
 
+func (v base) BorderOutline(gap, width complex128, c Color) View {
+	return v.Modify(BorderOutline(gap, width, c))
+}
+
 func (v base) BorderShadow(x, y, spread, blur complex128, c Color) View {
 	return v.Modify(BorderShadow(x, y, spread, blur, c))
 }

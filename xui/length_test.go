@@ -62,6 +62,8 @@ func TestNonFiniteLengthPanics(t *testing.T) {
 		{"BorderShadow.Y", func(x complex128) { BorderShadow(0, x, 0, 0, Red) }},
 		{"BorderShadow.Blur", func(x complex128) { BorderShadow(0, 0, 0, x, Red) }},
 		{"BorderShadow.Spread", func(x complex128) { BorderShadow(0, 0, x, 0, Red) }},
+		{"BorderOutline.Width", func(x complex128) { BorderOutline(0, x, Red) }},
+		{"BorderOutline.Gap", func(x complex128) { BorderOutline(x, 1, Red) }},
 		{"View.BorderStroke", func(x complex128) { Text("x").BorderStroke(x, Red) }},
 		{"HStack.Gap", func(x complex128) { HStack().Gap(x) }},
 		{"VStack.Gap", func(x complex128) { VStack().Gap(x) }},

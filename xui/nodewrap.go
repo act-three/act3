@@ -91,9 +91,9 @@ func (w wrapLayer) render(env environment, n node) box {
 	Center.setItemsOn(&env.style)
 	env.style.Set("position", "relative")
 	env.style.Set("isolation", "isolate")
-	// A pending stroke's ring must clear the layers' z ladder.
+	// Pending foreground paint must paint in front by z-index.
 	// Elsewhere, its tree position suffices.
-	if len(env.stroke) > 0 {
+	if len(env.stroke) > 0 || len(env.outline) > 0 {
 		env.style.SetPseudo("::after", "z-index", strconv.Itoa(zLayerStroke))
 	}
 	return build(env, p)
