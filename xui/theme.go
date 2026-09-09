@@ -243,7 +243,7 @@ func (selectedColor) colorCoords(t theme) oklch {
 	if t.bgbase.isLight() {
 		w = 0.18
 	}
-	return mix(t.bgbase, t.accent, min(w*(1+t.bgbase.c/0.09), 1))
+	return mixLinear(t.bgbase, t.accent, min(w*(1+t.bgbase.c/0.09), 1))
 }
 
 // redTintColor bakes the tint into the local theme's base rather than
@@ -255,7 +255,7 @@ func (redTintColor) colorCoords(t theme) oklch {
 	if t.bgbase.isLight() {
 		w = 0.20
 	}
-	c := mix(t.bgbase, Red.color().colorCoords(t), w)
+	c := mixLinear(t.bgbase, Red.color().colorCoords(t), w)
 	c.a = 1
 	return c
 }
