@@ -8,6 +8,7 @@ import (
 	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
 
+	"ily.dev/act3/xui/internal/canon"
 	"ily.dev/act3/xui/internal/sheet"
 )
 
@@ -105,7 +106,32 @@ func buildText(env environment, r textRun) box {
 	env.tag = cmp.Or(env.tag, "ui-text")
 	env.style.Set("display", "block")
 	env.style.Set("overflow-wrap", "break-word")
-	if env.lineLimit > 0 {
+	inner := env
+	inner.nextenv = nextenv{}
+	content := r.renderText(inner)
+	if env.lineLimit == 1 {
+		// A nowrap block's intrinsic minimum is the entire line, even
+		// with min-width:0. The track supplies a zero minimum without
+		// discarding the full line's ideal width, so enclosing stacks
+		// can size themselves from the text's actual range of sizes.
+		// The inner block handles ellipsis and trimming; a multicol
+		// block fails both in Safari.
+		env.style.Set("display", "grid")
+		env.style.Set("grid-template-columns", "minmax(0, max-content)")
+		if env.unbounded.hasAll(Horizontal) {
+			env.style.Set("width", "max-content")
+		}
+		var line canon.StyleSet
+		line.Set("display", "block")
+		line.Set("white-space", "nowrap")
+		line.Set("text-overflow", "ellipsis")
+		line.Set("overflow-x", "clip")
+		line.Set("overflow-y", "visible")
+		env.textTrim.addTrimStylesTo(&line)
+		content = html.Span(attr.Class(env.sheet.ClassFor(line.Decls())))(content)
+		return build(env, plan{content: content})
+	}
+	if env.lineLimit > 1 {
 		env.style.Set("display", "-webkit-box")
 		env.style.Set("-webkit-box-orient", "vertical")
 		env.style.Set("-webkit-line-clamp", strconv.Itoa(env.lineLimit))
@@ -113,9 +139,7 @@ func buildText(env environment, r textRun) box {
 		env.style.Set("overflow-y", "clip")
 	}
 	env.textTrim.addTrimStylesTo(&env.style)
-	inner := env
-	inner.nextenv = nextenv{}
-	return build(env, plan{content: r.renderText(inner)})
+	return build(env, plan{content: content})
 }
 
 // A textRun is a unary text node.

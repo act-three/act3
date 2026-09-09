@@ -853,7 +853,7 @@ func TestLineLimit(t *testing.T) {
 	}
 
 	subtree := render(t, ui.VStack(ui.Text("a"), ui.Text("b").LineLimit(1)).LineLimit(3))
-	for want, n := range map[string]int{"-webkit-line-clamp:3": 1, "-webkit-line-clamp:1": 1} {
+	for want, n := range map[string]int{"-webkit-line-clamp:3": 1, "white-space:nowrap": 1} {
 		if got := strings.Count(subtree, want); got != n {
 			t.Errorf("%s count = %d, want %d:\n%s", want, got, n, subtree)
 		}

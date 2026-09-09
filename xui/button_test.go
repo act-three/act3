@@ -1,9 +1,13 @@
 package ui_test
 
 import (
+	"bytes"
 	"fmt"
+	"image/png"
 	"reflect"
 	"testing"
+
+	"github.com/chromedp/chromedp"
 
 	ui "ily.dev/act3/xui"
 	"ily.dev/act3/xui/internal/uitest"
@@ -35,8 +39,8 @@ func TestButtonSizeLayout(t *testing.T) {
 				}
 				var tree []string
 				s.Eval(`Array.from(document.querySelector("button").querySelectorAll("*"), e => e.localName)`, &tree)
-				if !reflect.DeepEqual(tree, []string{"ui-text"}) {
-					t.Errorf("simple label tree = %v, want direct ui-text", tree)
+				if !reflect.DeepEqual(tree, []string{"ui-text", "span"}) {
+					t.Errorf("simple label tree = %v, want ui-text with a line span", tree)
 				}
 			})
 		})
@@ -54,8 +58,11 @@ func TestButtonLineLimit(t *testing.T) {
 	)
 	stage(t, v, func(s *uitest.Session) {
 		var styles []string
-		s.Eval(`Array.from(document.querySelectorAll("ui-text"), e => getComputedStyle(e).webkitLineClamp)`, &styles)
-		if !reflect.DeepEqual(styles, []string{"1", "none", "2", "none"}) {
+		s.Eval(`Array.from(document.querySelectorAll("ui-text"), e => {
+			const s = getComputedStyle(e.firstElementChild || e);
+			return s.whiteSpace + "/" + s.webkitLineClamp;
+		})`, &styles)
+		if !reflect.DeepEqual(styles, []string{"nowrap/none", "normal/none", "normal/2", "normal/none"}) {
 			t.Errorf("line limits = %v", styles)
 		}
 		within(t, "default label stays one line", s.Rect(".default ui-text", 0).H, 18, 0.1)
@@ -81,13 +88,33 @@ func TestButtonLineLimitUnderPressure(t *testing.T) {
 			if button.X < row.X-0.1 || button.Right() > row.Right()+0.1 {
 				t.Errorf("%s overflows the row: button %+v, row %+v", selector, button, row)
 			}
-			var clipped bool
+			var truncated bool
 			s.Eval(`(() => {
-				const e = document.querySelector("`+selector+` > ui-text");
-				return e.scrollHeight > e.clientHeight && getComputedStyle(e).webkitLineClamp === "1";
-			})()`, &clipped)
-			if !clipped {
-				t.Errorf("%s label should clamp overflowing text", selector)
+				const e = document.querySelector("`+selector+` > ui-text > span");
+				return e.scrollWidth > e.clientWidth && getComputedStyle(e).textOverflow === "ellipsis";
+			})()`, &truncated)
+			if !truncated {
+				t.Errorf("%s label should ellipsize overflowing text", selector)
+			}
+			// Computed text-overflow does not prove the browser painted
+			// an ellipsis. Switching to clip must change the pixels.
+			var ellipsis, clipped []byte
+			s.Run(chromedp.Screenshot(selector+" > ui-text", &ellipsis, chromedp.ByQuery))
+			s.Eval(`document.querySelector("`+selector+` > ui-text > span").style.textOverflow = "clip"`, nil)
+			s.Run(chromedp.Screenshot(selector+" > ui-text", &clipped, chromedp.ByQuery))
+			ellipsisImage, err := png.Decode(bytes.NewReader(ellipsis))
+			if err != nil {
+				t.Fatal(err)
+			}
+			clippedImage, err := png.Decode(bytes.NewReader(clipped))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if ellipsisImage.Bounds() != clippedImage.Bounds() {
+				t.Error("switching to clip changed the label geometry")
+			}
+			if reflect.DeepEqual(ellipsisImage, clippedImage) {
+				t.Errorf("%s ellipsis paints the same as clipping", selector)
 			}
 		}
 	})
