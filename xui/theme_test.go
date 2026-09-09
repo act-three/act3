@@ -189,16 +189,49 @@ func TestThemeColor(t *testing.T) {
 	}
 }
 
-func TestMix(t *testing.T) {
-	a := oklch{l: 0.2, c: 0.1, h: 90, a: 1}
-	b := oklch{l: 0.8, c: 0.1, h: 90, a: 0.5}
-	if got := mix(a, b, 0); got != a {
-		t.Errorf("mix(a, b, 0) = %+v, want a", got)
+func TestMixLinear(t *testing.T) {
+	black := oklch{a: 1}
+	white := oklch{l: 1, a: 0.5}
+	for _, w := range []float64{0, 0.5, 1} {
+		got := mixLinear(black, white, w)
+		// Neutral OKLab lightness is the cube root of luminance.
+		if math.Abs(got.l-math.Cbrt(w)) > 1e-7 || got.c > 1e-7 || !near(got.a, 1-0.5*w) {
+			t.Errorf("mixLinear(black, white, %v) = %+v", w, got)
+		}
 	}
-	if got := mix(a, b, 1); !near(got.l, b.l) || !near(got.c, b.c) || !near(got.h, b.h) || !near(got.a, b.a) {
-		t.Errorf("mix(a, b, 1) = %+v, want b", got)
-	}
-	if got := mix(a, b, 0.5); !near(got.l, 0.5) || !near(got.c, 0.1) || !near(got.h, 90) || !near(got.a, 0.75) {
-		t.Errorf("mix(a, b, 0.5) = %+v", got)
+}
+
+func TestDestructiveSubtleTint(t *testing.T) {
+	// Expected colors blend each background with the mode's named Red
+	// in linear sRGB, then convert back to OKLCH.
+	for _, tt := range []struct {
+		name string
+		bg   oklch
+		want oklch
+	}{
+		{
+			"#181A21",
+			oklch{l: 0.218844035870, c: 0.014052461479, h: 272.656165219, a: 1},
+			oklch{l: 0.266855331691, c: 0.043465234744, h: 6.848003667, a: 1},
+		},
+		{
+			"#F5F5F5",
+			oklch{l: 0.970150766205, c: 0.000000036161, h: 89.875563128, a: 1},
+			oklch{l: 0.923453347211, c: 0.026328455278, h: 18.760377893, a: 1},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			// The tint is independent of theme contrast.
+			for _, contrast := range []float64{25, 100} {
+				th := defaultTheme
+				th.bgbase, th.contrast = tt.bg, contrast
+				got := buttonRecipe[DestructiveSubtle].hover.color().colorCoords(th)
+				gl, ga, gb := got.lab()
+				wl, wa, wb := tt.want.lab()
+				if math.Abs(gl-wl) > 1e-7 || math.Abs(ga-wa) > 1e-7 || math.Abs(gb-wb) > 1e-7 || got.a != 1 {
+					t.Errorf("contrast %v: tint = %+v, want %+v", contrast, got, tt.want)
+				}
+			}
+		})
 	}
 }

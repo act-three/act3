@@ -67,12 +67,29 @@ func newOKLCH(l, c, h, a float64) oklch {
 	}
 }
 
-// mix returns the color a fraction w of the way from a to b.
-func mix(a, b oklch, w float64) oklch {
+// mixLinear interpolates in linear light, equivalent to mixing in XYZ.
+func mixLinear(a, b oklch, w float64) oklch {
+	// Linear LMS and XYZ differ only by a matrix, so interpolation can
+	// happen in LMS without the extra conversion to XYZ and back.
+	lms := func(c oklch) (float64, float64, float64) {
+		L, a, b := c.lab()
+		l := L + 0.3963377774*a + 0.2158037573*b
+		m := L - 0.1055613458*a - 0.0638541728*b
+		s := L - 0.0894841775*a - 1.2914855480*b
+		return l * l * l, m * m * m, s * s * s
+	}
+	la, ma, sa := lms(a)
+	lb, mb, sb := lms(b)
 	lerp := func(x, y float64) float64 { return x + (y-x)*w }
-	la, aa, ba := a.lab()
-	lb, ab, bb := b.lab()
-	return fromLab(lerp(la, lb), lerp(aa, ab), lerp(ba, bb), lerp(a.a, b.a))
+	l := math.Cbrt(lerp(la, lb))
+	m := math.Cbrt(lerp(ma, mb))
+	s := math.Cbrt(lerp(sa, sb))
+	return fromLab(
+		0.2104542553*l+0.7936177850*m-0.0040720468*s,
+		1.9779984951*l-2.4285922050*m+0.4505937099*s,
+		0.0259040371*l+0.7827717662*m-0.8086757660*s,
+		lerp(a.a, b.a),
+	)
 }
 
 // fromLab returns the color with the given OKLab coordinates and opacity.
