@@ -61,10 +61,12 @@ func nodeButton(action any, label node) node {
 			style = buttonRecipe[Bordered]
 		}
 		face := style.face
+		edge := style.edge
 		foreground := style.label
 		hoverForeground := style.hoverLabel
 		if env.buttonSelected {
 			face = style.selected
+			edge = style.hoverEdge
 			foreground = style.selectedLabel
 		}
 		// Bordered keeps its selected label color during interaction.
@@ -73,6 +75,7 @@ func nodeButton(action any, label node) node {
 		}
 		if env.buttonMenuOpen {
 			face = style.hover
+			edge = style.hoverEdge
 			foreground = hoverForeground
 		}
 		if env.disabled && style.disabledLabel != nil {
@@ -86,9 +89,12 @@ func nodeButton(action any, label node) node {
 		v := base{label}.
 			LineLimit(1).
 			Padding(Edges(padding)).
+			BorderStroke(0.5, edge).
 			Modify(font(fontSize, "500", lineHeight))
 		if !env.disabled {
 			v = v.
+				WhileHovered(BorderStroke(0.5, style.hoverEdge)).
+				WhilePressed(BorderStroke(0.5, style.hoverEdge)).
 				WhileHovered(Background(style.hover)).
 				WhileHovered(Foreground(hoverForeground)).
 				WhilePressed(Background(style.hover)).
@@ -124,28 +130,29 @@ func nodeButton(action any, label node) node {
 	}
 }
 
-// These provisional recipes leave 1px per axis for the eventual 0.5px
-// reserved border: ordinary text then targets 24/28/32/44px heights.
-// Review the geometry again when that paint construction is available.
+// The edge paints within the padding, so ordinary text reaches the
+// 24/28/32/44px target heights without a layout-affecting border.
 func buttonMetrics(s ControlSize) (fontSize, lineHeight string, padding complex128) {
 	switch s {
 	case Mini:
-		return "12px", "16px", 3.5
+		return "12px", "16px", 4
 	case Small:
-		return "12px", "16px", 5.5
+		return "12px", "16px", 6
 	case Large:
-		return "13px", "18px", 12.5
+		return "13px", "18px", 13
 	default:
-		return "13px", "18px", 6.5
+		return "13px", "18px", 7
 	}
 }
 
 // buttonStyle contains only paint supported by the shared modifiers.
-// Reserved edges, shadows, focus outlines, and transitions remain deferred.
+// Shadows, focus outlines, and transitions remain deferred.
 type buttonStyle struct {
 	face          Color
 	hover         Color
 	selected      Color
+	edge          Color
+	hoverEdge     Color
 	label         Color
 	hoverLabel    Color
 	selectedLabel Color
@@ -157,6 +164,8 @@ var buttonRecipe = map[ButtonStyle]buttonStyle{
 		face:          controlSecondary,
 		hover:         controlSecondaryHover,
 		selected:      controlSecondaryHover,
+		edge:          controlSecondaryEdge,
+		hoverEdge:     controlSecondaryEdgeHover,
 		label:         Primary,
 		hoverLabel:    Primary,
 		selectedLabel: Headline,
@@ -166,6 +175,8 @@ var buttonRecipe = map[ButtonStyle]buttonStyle{
 		face:          Accent,
 		hover:         accentHover,
 		selected:      accentHover,
+		edge:          Transparent,
+		hoverEdge:     Transparent,
 		label:         accentTextColor,
 		hoverLabel:    accentTextColor,
 		selectedLabel: accentTextColor,
@@ -174,6 +185,8 @@ var buttonRecipe = map[ButtonStyle]buttonStyle{
 		face:          Transparent,
 		hover:         controlTertiaryHover,
 		selected:      controlTertiarySelected,
+		edge:          Transparent,
+		hoverEdge:     Transparent,
 		label:         Primary,
 		hoverLabel:    Headline,
 		selectedLabel: Headline,
@@ -182,6 +195,8 @@ var buttonRecipe = map[ButtonStyle]buttonStyle{
 		face:          Transparent,
 		hover:         Transparent,
 		selected:      Transparent,
+		edge:          Transparent,
+		hoverEdge:     Transparent,
 		label:         Primary,
 		hoverLabel:    Headline,
 		selectedLabel: Headline,
@@ -190,6 +205,8 @@ var buttonRecipe = map[ButtonStyle]buttonStyle{
 		face:          Red,
 		hover:         redHover,
 		selected:      redHover,
+		edge:          Transparent,
+		hoverEdge:     Transparent,
 		label:         White,
 		hoverLabel:    White,
 		selectedLabel: White,
@@ -198,6 +215,8 @@ var buttonRecipe = map[ButtonStyle]buttonStyle{
 		face:          Transparent,
 		hover:         redTint,
 		selected:      Transparent,
+		edge:          Transparent,
+		hoverEdge:     Transparent,
 		label:         redText,
 		hoverLabel:    redText,
 		selectedLabel: redText,
