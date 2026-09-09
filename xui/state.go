@@ -123,6 +123,7 @@ type paint struct {
 	fg         color
 	bg         []color
 	stroke     []stroke
+	shadow     []shadow
 	shape      Shape
 	opacity    float64 // 1 is opaque
 }
@@ -130,6 +131,13 @@ type paint struct {
 // paintUnder folds b's paint terms into the effective paint
 // under state set s.
 func (b nextenv) paintUnder(s State) paint {
+	shadows := allUnder(b.shadow, s)
+	if b.hasClip {
+		// A fused enclosing clip removes all of this box's exterior
+		// shadow. CSS overflow alone cannot clip an element's own shadow.
+		// Keep the terms and hasPaint so transforms still box out.
+		shadows = nil
+	}
 	opacity := 1.0
 	for _, t := range b.opacity {
 		if t.appliesUnder(s) {
@@ -145,6 +153,7 @@ func (b nextenv) paintUnder(s State) paint {
 		fg:         lastUnder(b.fg, s),
 		bg:         allUnder(b.bg, s),
 		stroke:     allUnder(b.stroke, s),
+		shadow:     shadows,
 		shape:      lastUnder(b.shape, s),
 		opacity:    opacity,
 	}
@@ -202,6 +211,9 @@ func (b nextenv) termStates() []State {
 	for _, t := range b.stroke {
 		ss = append(ss, t.state)
 	}
+	for _, t := range b.shadow {
+		ss = append(ss, t.state)
+	}
 	for _, t := range b.shape {
 		ss = append(ss, t.state)
 	}
@@ -249,6 +261,9 @@ func (p paint) decls(t theme, complete bool) []decl {
 	if complete || p.shape != Rectangle {
 		ds = append(ds, decl{"border-radius", p.shape.radius()})
 	}
+	if complete || len(p.shadow) > 0 {
+		ds = append(ds, decl{"box-shadow", borderShadowList(t, p.shadow)})
+	}
 	if p.fg != nil {
 		ds = append(ds, decl{"color", p.fg.colorCoords(t).css()})
 	}
@@ -263,12 +278,12 @@ func (p paint) carrierDecls(t theme) []decl {
 	if len(p.stroke) == 0 {
 		return nil
 	}
-	return []decl{{"box-shadow", shadowList(t, p.stroke)}}
+	return []decl{{"box-shadow", strokeShadowList(t, p.stroke)}}
 }
 
-// shadowList returns the strokes as a box-shadow list,
+// strokeShadowList returns the strokes as a box-shadow list,
 // listed outermost first, so an outer stroke paints over an inner one.
-func shadowList(t theme, strokes []stroke) string {
+func strokeShadowList(t theme, strokes []stroke) string {
 	var shadows []string
 	for _, s := range strokes {
 		shadows = append(shadows, "inset 0 0 0 "+cssLength(s.width)+" "+s.c.colorCoords(t).css())

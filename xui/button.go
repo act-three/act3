@@ -102,8 +102,11 @@ func nodeButton(action any, label node) node {
 		}
 		v = v.
 			Foreground(foreground).
-			Background(face).
-			Opacity(opacity).
+			Background(face)
+		if style.hasShadow && (!env.buttonSelected || env.buttonStyle == Prominent) {
+			v = buttonShadow(v, env.theme)
+		}
+		v = v.Opacity(opacity).
 			BorderShape(Capsule)
 		env.style.Set("cursor", "default")
 		switch action := action.(type) {
@@ -145,9 +148,22 @@ func buttonMetrics(s ControlSize) (fontSize, lineHeight string, padding complex1
 	}
 }
 
+// buttonShadow resolves the button recipe against the local theme.
+func buttonShadow(v View, t theme) View {
+	k := max(t.contrast-30, 0)
+	if t.bgbase.isLight() {
+		factor := 1 + k/50
+		return v.
+			BorderShadow(0, 3, -2, 6, OKLCHA(0, 0, 0, 0.02*factor)).
+			BorderShadow(0, 1, 0, 1, OKLCHA(0, 0, 0, 0.04*factor))
+	}
+	return v.BorderShadow(0, 0.5, 1, 1, OKLCHA(0, 0, 0, 0.3*(1+k/10)))
+}
+
 // buttonStyle contains only paint supported by the shared modifiers.
-// Shadows, focus outlines, and transitions remain deferred.
+// Focus outlines and transitions remain deferred.
 type buttonStyle struct {
+	hasShadow     bool
 	face          Color
 	hover         Color
 	selected      Color
@@ -161,6 +177,7 @@ type buttonStyle struct {
 
 var buttonRecipe = map[ButtonStyle]buttonStyle{
 	Bordered: {
+		hasShadow:     true,
 		face:          controlSecondary,
 		hover:         controlSecondaryHover,
 		selected:      controlSecondaryHover,
@@ -172,6 +189,7 @@ var buttonRecipe = map[ButtonStyle]buttonStyle{
 		disabledLabel: Secondary,
 	},
 	Prominent: {
+		hasShadow:     true,
 		face:          Accent,
 		hover:         accentHover,
 		selected:      accentHover,

@@ -143,7 +143,7 @@ var rejected = map[string]string{
 	"background-color":    "the Background modifier",
 	"background-image":    "the Background modifier",
 	"border-radius":       "the BorderShape modifier",
-	"box-shadow":          "the BorderStroke modifier",
+	"box-shadow":          "the BorderStroke or BorderShadow modifier",
 	"color":               "the Foreground modifier",
 	"font":                "the font modifiers",
 	"font-family":         "the font modifiers",
