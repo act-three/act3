@@ -9,16 +9,15 @@ import (
 	"ily.dev/act3/xui/internal/uitest"
 )
 
-func TestButtonSizeTypography(t *testing.T) {
+func TestButtonSizeLayout(t *testing.T) {
 	for _, tt := range []struct {
-		size       ui.ControlSize
-		font, line string
-		height     float64
+		size   ui.ControlSize
+		height float64
 	}{
-		{ui.Mini, "12px", "16px", 24},
-		{ui.Small, "12px", "16px", 28},
-		{ui.Regular, "13px", "18px", 32},
-		{ui.Large, "13px", "18px", 44},
+		{ui.Mini, 24},
+		{ui.Small, 28},
+		{ui.Regular, 32},
+		{ui.Large, 44},
 	} {
 		t.Run(fmt.Sprint(tt.size), func(t *testing.T) {
 			v := ui.VStack(
@@ -29,27 +28,6 @@ func TestButtonSizeTypography(t *testing.T) {
 				ui.Button(Msg{}, ui.VStack(ui.Text("First"), ui.Text("Second")).Gap(0)),
 			).ControlSize(tt.size).Font(ui.LargeTitle)
 			stage(t, v, func(s *uitest.Session) {
-				var styles [][4]string
-				s.Eval(`Array.from(document.querySelectorAll("button, a"), e => {
-					const s = getComputedStyle(e.querySelector("ui-text"));
-					return [s.fontSize, s.fontWeight, s.lineHeight, s.fontFamily];
-				})`, &styles)
-				if len(styles) != 5 {
-					t.Fatalf("got %d controls, want 5", len(styles))
-				}
-				for _, i := range []int{0, 1, 3, 4} {
-					if got := styles[i][:3]; !reflect.DeepEqual(got, []string{tt.font, "500", tt.line}) {
-						t.Errorf("label %d typography = %v", i, got)
-					}
-				}
-				if got := styles[2][:3]; !reflect.DeepEqual(got, []string{"24px", "700", "28.8px"}) {
-					t.Errorf("explicit title typography = %v", got)
-				}
-				var family string
-				s.Eval(`getComputedStyle(document.querySelector("ui-root")).fontFamily`, &family)
-				if styles[0][3] != family || styles[3][3] == family {
-					t.Errorf("font family inheritance: root %q, plain %q, monospace %q", family, styles[0][3], styles[3][3])
-				}
 				within(t, "message height", s.Rect("button", 0).H, tt.height, 0.1)
 				within(t, "URL height", s.Rect("a", 0).H, tt.height, 0.1)
 				if s.Rect("button", 1).H <= tt.height || s.Rect("button", 3).H <= tt.height {

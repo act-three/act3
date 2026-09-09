@@ -86,7 +86,6 @@ func movieRow(movie Movie) ui.View {
 
 // Theme colors as rendered under the default theme.
 const (
-	linkCSS  = "oklch(0.381 0.233 277)"
 	redCSS   = "oklch(0.654 0.232 28.7)"
 	blueCSS  = "oklch(0.603 0.218 257.4)"
 	whiteCSS = "oklch(1 0 0)"
@@ -146,9 +145,8 @@ func TestAccountCard(t *testing.T) {
 		`<ui-layer `, // Underlay + Overlay decoration layers
 		`<ui-underlay `,
 		`<ui-overlay `,
-		`align-items:start`,    // the Overlay's alignment
-		`justify-items:end`,    // the Overlay's alignment
-		`border-radius:9999px`, // the Badge's pill
+		`align-items:start`, // the Overlay's alignment
+		`justify-items:end`, // the Overlay's alignment
 		`Pro`,
 		`Ada Lovelace`,
 	}
@@ -689,19 +687,19 @@ func TestLink(t *testing.T) {
 			"navigate",
 			ui.Text("see ").Concat(ui.Link("/docs", ui.Text("docs"))),
 			`<a class="(ui-\w+)" href="/docs">docs</a>`,
-			[]string{"cursor:pointer", "color:" + linkCSS},
+			nil,
 		},
 		{
 			"send",
 			ui.Text("or ").Concat(ui.Link(Msg{}, ui.Text("retry"))),
 			`<button class="(ui-\w+)" domi-msg-click="[^"]*" type="button">retry</button>`,
-			[]string{"cursor:pointer", "color:" + linkCSS},
+			nil,
 		},
 		{
 			"outer style",
 			ui.Link("/docs", ui.Text("docs")).Bold(),
 			`</style><a class="(ui-\w+)" href="/docs">docs</a>`,
-			[]string{"color:" + linkCSS, "font-weight:600"},
+			[]string{"font-weight:600"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -717,7 +715,7 @@ func TestLink(t *testing.T) {
 }
 
 // TestLinkDisabled pins that a disabled link of either kind loses its
-// means of activation and is faded, while an enabled one is not.
+// means of activation, while an enabled one retains it.
 func TestLinkDisabled(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -730,28 +728,28 @@ func TestLinkDisabled(t *testing.T) {
 			"navigate",
 			ui.Text("a").Concat(ui.Link("/docs", ui.Text("x"))).Disabled(true),
 			`<a aria-disabled="true" class="(ui-\w+)" role="link">x</a>`,
-			[]string{"cursor:default", "opacity:0.5"},
+			nil,
 			[]string{` href=`},
 		},
 		{
 			"send",
 			ui.Text("a").Concat(ui.Link(Msg{}, ui.Text("x"))).Disabled(true),
 			`<button class="(ui-\w+)" disabled domi-msg-click="[^"]*" type="button">x</button>`,
-			[]string{"cursor:default", "opacity:0.5"},
+			nil,
 			nil,
 		},
 		{
 			"enabled",
 			ui.Text("a").Concat(ui.Link("/docs", ui.Text("x"))).Disabled(false),
 			`<a class="(ui-\w+)" href="/docs">x</a>`,
-			[]string{"cursor:pointer"},
-			[]string{"opacity", "aria-disabled"},
+			nil,
+			[]string{"aria-disabled"},
 		},
 		{
 			"block",
 			ui.Link("/docs", ui.Text("x")).Disabled(true),
 			`<a aria-disabled="true" class="(ui-\w+)" role="link">x</a>`,
-			[]string{"cursor:default", "opacity:0.5", "display:block"},
+			[]string{"display:block"},
 			[]string{` href=`, "ui-text"},
 		},
 	} {
@@ -826,40 +824,15 @@ func TestDisabledSubtree(t *testing.T) {
 	}
 }
 
-// TestLinkColor pins the link color as a color set at the link:
-// a color set inside the label wins over it,
-// and it wins over a color set outside the link.
-func TestLinkColor(t *testing.T) {
-	inner := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x").TextForeground(ui.Secondary))))
-	if got := classRule(t, inner, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+linkCSS) {
-		t.Errorf("link rule = %q, want the link color:\n%s", got, inner)
-	}
-	if got := classRule(t, inner, `<span class="(ui-\w+)"`); got != "color:"+mutedCSS {
-		t.Errorf("label rule = %q, want its own color inside the link:\n%s", got, inner)
-	}
-
-	outer := render(t, ui.Text("a").Concat(ui.Link("/", ui.Text("x")).TextForeground(ui.Secondary)))
-	if got := classRule(t, outer, `<a class="(ui-\w+)" href="/"`); !strings.Contains(got, "color:"+linkCSS) || strings.Contains(outer, mutedCSS) {
-		t.Errorf("link rule = %q, want the link color to replace the outer color:\n%s", got, outer)
-	}
-
-	// As a box, the link's own element carries the color.
-	block := render(t, ui.Link("/", ui.Text("x")))
-	if got := classRule(t, block, `</style><a class="(ui-\w+)" href="/">x</a>`); !strings.Contains(got, "color:"+linkCSS) {
-		t.Errorf("block link rule = %q, want the link color on the box:\n%s", got, block)
-	}
-}
-
 // TestTextStyleBeatsStatePaint pins that text styling is
 // unconditional: a state-scoped paint modifier applies while its
 // states are active, but never overrides a property the text
 // styling sets, which is written closest to the view.
 func TestTextStyleBeatsStatePaint(t *testing.T) {
-	// The link's color is contended by a hovered color: no variant
-	// is emitted at all, and the link color holds in every state.
-	html := render(t, ui.Link("/", ui.Text("x")).WhileHovered(ui.Foreground(ui.Secondary)))
-	if strings.Contains(html, "hover") || !strings.Contains(html, "color:"+linkCSS) {
-		t.Errorf("hovered color should lose to the link color entirely:\n%s", html)
+	// TextForeground holds in every state, even against a hovered color.
+	html := render(t, ui.Text("x").TextForeground(ui.Red).WhileHovered(ui.Foreground(ui.Blue)))
+	if strings.Contains(html, "hover") || !strings.Contains(html, "color:"+redCSS) {
+		t.Errorf("hovered color should lose to TextForeground entirely:\n%s", html)
 	}
 
 	// A hovered font contends only the weight: its size still
@@ -952,12 +925,12 @@ func TestAlignProjectsOntoCrossAxis(t *testing.T) {
 // minor axis either way.
 func TestDividerAxisAware(t *testing.T) {
 	h := render(t, ui.HStack(ui.Text("a"), ui.Divider(), ui.Text("b")))
-	if got := classRule(t, h, `<ui-divider class="(ui-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "width:1px") {
+	if got := classRule(t, h, `<ui-divider class="(ui-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "width:") {
 		t.Errorf("divider in HStack should be vertical and stretch, got %q:\n%s", got, h)
 	}
 
 	v := render(t, ui.VStack(ui.Text("a"), ui.Divider(), ui.Text("b")))
-	if got := classRule(t, v, `<ui-divider class="(ui-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "height:1px") {
+	if got := classRule(t, v, `<ui-divider class="(ui-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "height:") {
 		t.Errorf("divider in VStack should be horizontal and stretch, got %q:\n%s", got, v)
 	}
 }

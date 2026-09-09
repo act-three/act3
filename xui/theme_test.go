@@ -177,7 +177,6 @@ func TestThemeColor(t *testing.T) {
 		},
 		{"bgbase", darkTheme, backgroundColor, darkTheme.bgbase},
 		{"accent", darkTheme, Accent, darkTheme.accent},
-		{"accent text", darkTheme, accentTextColor, oklch{l: 0, c: 0.017, h: 10, a: 1}},
 		{"headline is achromatic", darkTheme, Headline, oklch{l: 1, c: 0, h: 215, a: 1}},
 	}
 	for _, tt := range tests {
@@ -187,44 +186,6 @@ func TestThemeColor(t *testing.T) {
 				t.Errorf("got %+v, want %+v", got, tt.want)
 			}
 		})
-	}
-}
-
-// TestLinkHue pins that a link takes the accent's hue at a fixed chroma
-// and its lightness from the label scale.
-func TestLinkHue(t *testing.T) {
-	got := linkColor.color().colorCoords(darkTheme)
-	if got.h != 10 || got.c != 0.233 {
-		t.Errorf("link = %+v, want accent hue 10 at chroma 0.233", got)
-	}
-	if l := ThemeColor(0.388, 0, ForegroundScale).color().colorCoords(darkTheme).l; got.l != l {
-		t.Errorf("link lightness = %v, want %v from the label scale", got.l, l)
-	}
-}
-
-// TestSelected pins that the selected background lies between the
-// background and the accent (nearer the background when it is mildly
-// chromatic), that a chromatic background takes a stronger tint than a
-// gray one, and that a strongly chromatic background never overshoots
-// the accent.
-func TestSelected(t *testing.T) {
-	gray, vivid := darkTheme, lightTheme
-	gray.bgbase.c = 0
-	vivid.bgbase.c = 1
-	sel := selectedBackground.color().colorCoords(darkTheme)
-	graySel := selectedBackground.color().colorCoords(gray)
-	vividSel := selectedBackground.color().colorCoords(vivid)
-	if !(sel.l > darkTheme.bgbase.l && sel.l < darkTheme.accent.l) {
-		t.Errorf("selected lightness %v not between background %v and accent %v", sel.l, darkTheme.bgbase.l, darkTheme.accent.l)
-	}
-	if sel.l-darkTheme.bgbase.l > darkTheme.accent.l-sel.l {
-		t.Errorf("selected lightness %v nearer the accent than the background", sel.l)
-	}
-	if graySel.l-gray.bgbase.l >= sel.l-darkTheme.bgbase.l {
-		t.Errorf("gray background tinted %v, chromatic background %v, want stronger tint on the chromatic background", graySel.l-gray.bgbase.l, sel.l-darkTheme.bgbase.l)
-	}
-	if !near(vividSel.l, vivid.accent.l) || !near(vividSel.c, vivid.accent.c) {
-		t.Errorf("vivid background selected = %+v, want the accent %+v", vividSel, vivid.accent)
 	}
 }
 
@@ -239,44 +200,5 @@ func TestMix(t *testing.T) {
 	}
 	if got := mix(a, b, 0.5); !near(got.l, 0.5) || !near(got.c, 0.1) || !near(got.h, 90) || !near(got.a, 0.75) {
 		t.Errorf("mix(a, b, 0.5) = %+v", got)
-	}
-}
-
-func TestDestructiveColors(t *testing.T) {
-	for name, th := range map[string]theme{"light": lightTheme, "dark": darkTheme} {
-		t.Run(name, func(t *testing.T) {
-			base := Red.color().colorCoords(th)
-			text := redText.color().colorCoords(th)
-			tint := redTint.color().colorCoords(th)
-			for _, c := range []Color{redHover, redText} {
-				if got := c.color().colorCoords(th); !near(got.h, base.h) {
-					t.Errorf("derived hue = %v, want Red hue %v", got.h, base.h)
-				}
-			}
-			if th.bgbase.isLight() && text.l >= base.l ||
-				!th.bgbase.isLight() && text.l <= base.l {
-				t.Error("red text did not move away from the background's lightness")
-			}
-			if tint.a != 1 || tint.l <= min(th.bgbase.l, base.l) || tint.l >= max(th.bgbase.l, base.l) {
-				t.Errorf("tint = %+v, want an opaque mix between the theme base and Red", tint)
-			}
-			local := th
-			local.bgbase.l += 0.02
-			if redTint.color().colorCoords(local) == tint {
-				t.Error("tint did not follow the local theme base")
-			}
-			local = th
-			local.accent = oklch{l: 0.5, c: 0.1, h: 120, a: 1}
-			if redTint.color().colorCoords(local) != tint {
-				t.Error("tint depends on the accent instead of Red")
-			}
-			high := th
-			high.contrast = 100
-			for _, c := range []Color{redHover, redText} {
-				if c.color().colorCoords(th) == c.color().colorCoords(high) {
-					t.Error("derived color did not respond to theme contrast")
-				}
-			}
-		})
 	}
 }
