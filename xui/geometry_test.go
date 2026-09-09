@@ -52,7 +52,7 @@ func TestGeometryButtonLabel(t *testing.T) {
 			size    ui.ControlSize
 			padding float64
 		}{
-			{ui.Mini, 3.5}, {ui.Small, 5.5}, {ui.Regular, 6.5}, {ui.Large, 12.5},
+			{ui.Mini, 4}, {ui.Small, 6}, {ui.Regular, 7}, {ui.Large, 13},
 		} {
 			edge := 2 * size.padding
 			for _, tt := range []struct {

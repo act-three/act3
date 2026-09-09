@@ -27,12 +27,13 @@ func TestButtonStates(t *testing.T) {
 				buttons = append(buttons, shared, shared.Selected(false).Selected(true), shared.MenuOpen(false).MenuOpen(true), shared.Selected(true).Disabled(true).Opacity(0.5))
 				stage(t, ui.VStack(buttons...).ButtonStyle(style), func(s *uitest.Session) {
 					var got []struct {
-						Background, Foreground, Opacity, Cursor, Tree string
-						Disabled                                      bool
+						Background, Foreground, Opacity, Cursor, Tree, Edge string
+						Disabled                                            bool
 					}
 					s.Eval(`Array.from(document.querySelectorAll('button, a'), e => {
       const c = getComputedStyle(e), label = getComputedStyle(e.querySelector('ui-text'));
       return {Background:c.backgroundColor, Foreground:label.color, Opacity:c.opacity, Cursor:c.cursor,
+       Edge:getComputedStyle(e, '::after').boxShadow.match(/oklch\([^)]*\)/)?.[0],
        Tree:Array.from(e.querySelectorAll('*'), n => n.localName).join(','),
        Disabled:e.disabled === true || e.getAttribute('aria-disabled') === 'true'};
      })`, &got)
@@ -46,6 +47,20 @@ func TestButtonStates(t *testing.T) {
 						}
 						if got[i].Opacity != wantOpacity || got[i].Cursor != "default" || got[i].Tree != "ui-text" || got[i].Disabled != (i&4 != 0) {
 							t.Errorf("state %d = %+v", i, got[i])
+						}
+						if style == ui.Bordered {
+							want := got[0].Edge
+							if i&3 != 0 {
+								want = got[1].Edge
+								if want == got[0].Edge {
+									t.Error("selected edge equals rest")
+								}
+							}
+							if got[i].Edge != want || strings.Contains(got[i].Edge, "/") {
+								t.Errorf("state %d edge = %s, want opaque %s", i, got[i].Edge, want)
+							}
+						} else if got[i].Edge != "oklch(0 0 0 / 0)" {
+							t.Errorf("style %d state %d has visible edge %s", style, i, got[i].Edge)
 						}
 					}
 					for _, pair := range [][2]int{{1, 5}, {2, 6}, {3, 7}} {
@@ -207,7 +222,7 @@ func TestButtonCombinedFeedback(t *testing.T) {
 					button().Selected(true).Disabled(true),
 					button().MenuOpen(true).Disabled(true),
 				).ButtonStyle(style), func(s *uitest.Session) {
-					type paint struct{ Background, Foreground, Opacity string }
+					type paint struct{ Background, Foreground, Opacity, Edge string }
 					read := func() []paint {
 						var got []paint
 						s.Eval(`Array.from(document.querySelectorAll('button, a'), e => {
@@ -224,6 +239,7 @@ func TestButtonCombinedFeedback(t *testing.T) {
 								Background: Array.from(ctx.getImageData(0, 0, 1, 1).data).join(','),
 								Foreground: getComputedStyle(e.querySelector('ui-text')).color,
 								Opacity: style.opacity,
+								Edge: getComputedStyle(e, '::after').boxShadow.match(/oklch\([^)]*\)/)?.[0],
 							};
 						})`, &got)
 						return got

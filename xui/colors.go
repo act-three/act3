@@ -194,6 +194,16 @@ var (
 		ThemeColor(0.052, -0.0033, ControlScale),
 		ThemeColor(0.207, 0.0058, ControlScale),
 	)
+	// Opaque edges approximate the reference's alpha rings over the local
+	// theme base, allowing the stroke to paint over the full button face.
+	controlSecondaryEdge Color = ModeColor(
+		ThemeColor(0.026, -0.0033, BorderScale),
+		ThemeColor(0.052, 0.0017, BorderScale),
+	)
+	controlSecondaryEdgeHover Color = ModeColor(
+		ThemeColor(0.043, -0.0033, BorderScale),
+		ThemeColor(0.086, 0.0017, BorderScale),
+	)
 	// controlSecondarySelected Color = ModeColor(
 	//	ThemeColor(0.078, -0.0033, ControlScale),
 	//	ThemeColor(0.293, 0.0058, ControlScale),

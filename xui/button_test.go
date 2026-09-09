@@ -15,10 +15,10 @@ func TestButtonSizeTypography(t *testing.T) {
 		font, line string
 		height     float64
 	}{
-		{ui.Mini, "12px", "16px", 23},
-		{ui.Small, "12px", "16px", 27},
-		{ui.Regular, "13px", "18px", 31},
-		{ui.Large, "13px", "18px", 43},
+		{ui.Mini, "12px", "16px", 24},
+		{ui.Small, "12px", "16px", 28},
+		{ui.Regular, "13px", "18px", 32},
+		{ui.Large, "13px", "18px", 44},
 	} {
 		t.Run(fmt.Sprint(tt.size), func(t *testing.T) {
 			v := ui.VStack(

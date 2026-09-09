@@ -39,8 +39,8 @@ func buttonSection(title string, body View) View {
 
 func buttonGallery() View {
 	return VStack(
-		Text("Inspection fixture; geometry is provisional. Reserved edges, clipped fills, "+
-			"alpha rings, shadows, focus outlines, and return transitions remain pending.").Font(Caption),
+		Text("Inspection fixture; Bordered uses an opaque theme-derived edge. "+
+			"Shadows, focus outlines, and return transitions remain pending.").Font(Caption),
 		buttonSection("Styles and sizes — text and square labels", buttonSizes()),
 		buttonSection("States — hover, hold, or Tab to inspect browser interaction", buttonStates()),
 		buttonSection("Label content and layout", buttonLabels()),
