@@ -114,3 +114,18 @@ package ui
 //
 // If cross-subtree layering is needed, it should use some sort of
 // portal mecanism.
+//
+// Test Coverage
+//
+// Tests should cover interaction functionality, layout, and the
+// behavior of individual views and modifiers. Tests for components
+// should cover their functionality but should not pin appearance.
+// Only TestGolden should include component appearance.
+//
+// The goal is for component styling to evolve without updating
+// assertions about chosen colors, borders, typography, or
+// disabled opacity.
+//
+// Tests should retain layout, action semantics, environment
+// propagation, and modifier behavior for modifiers used by the
+// app author.

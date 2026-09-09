@@ -25,9 +25,9 @@ func TestIconSource(t *testing.T) {
 		want string
 	}{
 		{"found", ui.Icon("film"), []ui.Option{source}, `<svg data-icon="film">`},
-		{"missing", ui.Icon("nope"), []ui.Option{source}, `stroke-linecap="round"`},
-		{"default", ui.Icon("film"), nil, `<rect`},
-		{"default missing", ui.Icon("nope"), nil, `d="M5 3a2 2 0 0 0-2 2"`},
+		{"missing", ui.Icon("nope"), []ui.Option{source}, `<svg`},
+		{"default", ui.Icon("film"), nil, `<svg`},
+		{"default missing", ui.Icon("nope"), nil, `<svg`},
 	} {
 		_, page := ui.Render(tt.view, tt.opts...)
 		var sb strings.Builder

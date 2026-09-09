@@ -58,16 +58,12 @@ func TestInheritedModifierCollapses(t *testing.T) {
 	}
 }
 
-// Button supplies internal typography; explicit label paint still wins.
-func TestButtonInternalTypography(t *testing.T) {
-	v := ui.Button(struct{}{}, ui.Text("x").Foreground(ui.Red)).Font(ui.Title)
+// Explicit label paint is preserved inside a button.
+func TestButtonLabelForeground(t *testing.T) {
+	v := ui.Button(struct{}{}, ui.Text("x").Foreground(ui.Red))
 	stage(t, v, func(s *uitest.Session) {
-		var size, color string
-		s.Eval(`getComputedStyle(document.querySelector("button")).fontSize`, &size)
+		var color string
 		s.Eval(`getComputedStyle(document.querySelector("button ui-text")).color`, &color)
-		if size != "13px" {
-			t.Errorf("button font-size = %s, want its internal 13px", size)
-		}
 		if color != redCSS {
 			t.Errorf("label color = %s, want the label's %s", color, redCSS)
 		}
@@ -118,22 +114,22 @@ func TestOpacityMultiplies(t *testing.T) {
 // TestButtonDisabledState pins that a disabled button enters the
 // Disabled state whatever its action, and that an enabled one does not.
 func TestButtonDisabledState(t *testing.T) {
-	fade := ui.Opacity(0.2)
+	paint := ui.Background(ui.Red)
 	for name, tc := range map[string]struct {
 		v    ui.View
 		want bool
 	}{
-		"send":              {ui.Button(struct{}{}, ui.Text("x")).WhileDisabled(fade), false},
-		"send disabled":     {ui.Button(struct{}{}, ui.Text("x")).Disabled(true).WhileDisabled(fade), true},
-		"navigate":          {ui.Button("/x", ui.Text("x")).WhileDisabled(fade), false},
-		"navigate disabled": {ui.Button("/x", ui.Text("x")).Disabled(true).WhileDisabled(fade), true},
+		"send":              {ui.Button(struct{}{}, ui.Text("x")).WhileDisabled(paint), false},
+		"send disabled":     {ui.Button(struct{}{}, ui.Text("x")).Disabled(true).WhileDisabled(paint), true},
+		"navigate":          {ui.Button("/x", ui.Text("x")).WhileDisabled(paint), false},
+		"navigate disabled": {ui.Button("/x", ui.Text("x")).Disabled(true).WhileDisabled(paint), true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			stage(t, tc.v, func(s *uitest.Session) {
-				var opacity string
-				s.Eval(`getComputedStyle(document.querySelector("button, a")).opacity`, &opacity)
-				if got := opacity == "0.12"; got != tc.want {
-					t.Errorf("opacity = %s, want disabled styling = %v", opacity, tc.want)
+				var color string
+				s.Eval(`getComputedStyle(document.querySelector("button, a")).backgroundColor`, &color)
+				if got := color == redCSS; got != tc.want {
+					t.Errorf("background = %s, want disabled styling = %v", color, tc.want)
 				}
 			})
 		})
@@ -171,14 +167,15 @@ func TestLinkDisabledState(t *testing.T) {
 // pending product, so a modifier opacity and the component fade
 // multiply onto the one button element.
 func TestOpacityComposesWithDisabled(t *testing.T) {
-	v := ui.Button(struct{}{}, ui.Text("x")).Disabled(true).Opacity(0.1)
-	stage(t, v, func(s *uitest.Session) {
+	button := ui.Button(struct{}{}, ui.Text("x")).Disabled(true)
+	stage(t, ui.HStack(button, button.Opacity(0.1)), func(s *uitest.Session) {
 		var mods int
 		s.Eval(`document.querySelectorAll("ui-box").length`, &mods)
-		var btn string
-		s.Eval(`getComputedStyle(document.querySelector("button")).opacity`, &btn)
-		if mods != 0 || btn != "0.06" {
-			t.Errorf("wrappers = %d, button opacity = %s, want none at 0.06", mods, btn)
+		var opacities []float64
+		s.Eval(`Array.from(document.querySelectorAll("button"), e => Number(getComputedStyle(e).opacity))`, &opacities)
+		within(t, "authored opacity composes with the component's", opacities[1], opacities[0]*0.1, 0.0001)
+		if mods != 0 {
+			t.Errorf("wrappers = %d, want none", mods)
 		}
 	})
 
