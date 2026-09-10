@@ -69,6 +69,10 @@ func (n nodeImage) render(env environment) box {
 	}
 
 	env.tag = "img"
+	// The reset removes the browser's default image clipping. Chrome
+	// needs it explicitly for object-fit cropping and border radii.
+	env.style.Set("overflow-x", "clip")
+	env.style.Set("overflow-y", "clip")
 	env.add(attr.Src(n.src))
 	if env.imageAlt != "" { // alt="" would mark the image as decorative.
 		env.add(attr.Alt(env.imageAlt))
