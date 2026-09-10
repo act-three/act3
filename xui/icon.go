@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"ily.dev/domi"
+	"ily.dev/domi/attr"
 )
 
 // Icon displays the named icon.
@@ -80,14 +81,19 @@ func nodeIcon(name string) node {
 		}
 		env.tag = cmp.Or(env.tag, "ui-icon")
 		// The svg is inline content, so the box has a line box, and
-		// the line's baseline is the box's baseline. With no leading
-		// the line is exactly as tall as the svg, whose vertical-align
-		// (in ui.css) then puts the baseline where the caller expects.
+		// the line's baseline is the box's baseline. The svg's margins
+		// and vertical-align (in ui.css) keep it centered on the cap
+		// band with or without trimming.
 		env.style.Set("display", "block")
 		env.style.Set("--ui-icon-scale", fmt.Sprintf("%.4gcap", scale))
 		env.style.Set("--ui-icon-stroke-width", fmt.Sprintf("%.4g", stroke))
-		env.style.Set("width", "var(--ui-icon-scale)")
-		env.style.Set("height", "var(--ui-icon-scale)")
+		size := "var(--ui-icon-scale)"
+		if env.textTrim == TextCap|TextLastBaseline {
+			size = "1cap"
+			env.attrs = domi.Group(env.attrs, attr.Class("ui-icon-trim"))
+		}
+		env.style.Set("width", size)
+		env.style.Set("height", size)
 		env.lineHeight = append(env.lineHeight, term[string]{value: "0"})
 		return build(env, plan{
 			rigid:   Horizontal | Vertical,

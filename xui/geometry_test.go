@@ -1102,9 +1102,9 @@ func TestGeometryGalleryFits(t *testing.T) {
 	})
 }
 
-// TestGeometryIconBaseline pins Icon's box and baseline: a rigid
-// square of --ui-icon-scale, centered on the cap band of the text it
-// shares a FirstBaseline row with, at any font size.
+// TestGeometryIconBaseline pins Icon's box and baseline: trimming
+// changes its footprint, but the scaled SVG stays centered over it
+// and the cap band of text in a FirstBaseline row at any font size.
 func TestGeometryIconBaseline(t *testing.T) {
 	for _, tc := range []struct {
 		name string
@@ -1127,24 +1127,44 @@ func TestGeometryIconBaseline(t *testing.T) {
 				Frame(ui.Width(240))
 		}
 		for _, v := range []struct {
-			on   string
-			view ui.View
+			on      string
+			view    ui.View
+			trimmed bool
 		}{
-			{"row", row(ui.Icon("film"), ui.Text("Hx")).Font(tc.font)},
-			{"icon", row(ui.Icon("film").Font(tc.font), ui.Text("Hx").Font(tc.font))},
+			{"row", row(ui.Icon("film"), ui.Text("Hx")).Font(tc.font), false},
+			{"icon", row(ui.Icon("film").Font(tc.font), ui.Text("Hx").Font(tc.font)), false},
+			{"trim row", row(ui.Icon("film"), ui.Text("Hx")).Font(tc.font).
+				TextTrim(ui.TextCap | ui.TextLastBaseline), true},
+			{"trim icon", row(ui.Icon("film").Font(tc.font).TextTrim(ui.TextCap|ui.TextLastBaseline),
+				ui.Text("Hx").Font(tc.font)), true},
+			{"reset trim", row(ui.Icon("film").TextTrim(0), ui.Text("Hx")).Font(tc.font).
+				TextTrim(ui.TextCap | ui.TextLastBaseline), false},
+			{"cap only", row(ui.Icon("film"), ui.Text("Hx")).Font(tc.font).TextTrim(ui.TextCap), false},
+			{"baseline only", row(ui.Icon("film"), ui.Text("Hx")).Font(tc.font).TextTrim(ui.TextLastBaseline), false},
+			{"ex baseline", row(ui.Icon("film"), ui.Text("Hx")).Font(tc.font).
+				TextTrim(ui.TextEx | ui.TextLastBaseline), false},
 		} {
 			name := tc.name + "/" + v.on
 			stage(t, v.view, func(s *uitest.Session) {
 				icon, cap := s.Rect("ui-icon", 0), s.Rect("ui-text", 0)
+				svg := s.Rect("ui-icon > svg", 0)
 				var scaleCSS string
 				s.Eval(`getComputedStyle(document.querySelector("ui-icon")).getPropertyValue("--ui-icon-scale")`, &scaleCSS)
 				scale, err := strconv.ParseFloat(strings.TrimSuffix(strings.TrimSpace(scaleCSS), "cap"), 64)
 				if err != nil {
 					t.Fatalf("%s: --ui-icon-scale = %q, want a multiple of cap", name, scaleCSS)
 				}
-				within(t, name+": icon width", icon.W, scale*cap.H, 0.05)
-				within(t, name+": icon height", icon.H, scale*cap.H, 0.05)
+				size := scale * cap.H
+				if v.trimmed {
+					size = cap.H
+				}
+				within(t, name+": icon width", icon.W, size, 0.05)
+				within(t, name+": icon height", icon.H, size, 0.05)
 				within(t, name+": icon center", icon.Y+icon.H/2, cap.Y+cap.H/2, 0.02)
+				within(t, name+": svg width", svg.W, scale*cap.H, 0.05)
+				within(t, name+": svg height", svg.H, scale*cap.H, 0.05)
+				within(t, name+": svg horizontal center", svg.X+svg.W/2, icon.X+icon.W/2, 0.02)
+				within(t, name+": svg vertical center", svg.Y+svg.H/2, icon.Y+icon.H/2, 0.02)
 				if p := s.Rect("ui-icon path", 0); p.W == 0 && p.H == 0 {
 					t.Errorf("%s: icon path has no geometry", name)
 				}
