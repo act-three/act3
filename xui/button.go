@@ -83,8 +83,10 @@ func nodeButton(action any, label node) node {
 		}
 		_, isLink := action.(string)
 		opacity := 1.0
+		pressedOpacity := 0.4
 		if env.disabled && (!isLink || !env.buttonSelected) {
 			opacity = 0.6
+			pressedOpacity = 1.0
 		}
 		v := base{label}.
 			LineLimit(1).
@@ -113,6 +115,7 @@ func nodeButton(action any, label node) node {
 			v = buttonShadow(v, env.theme)
 		}
 		v = v.Opacity(opacity).
+			WhilePressed(Opacity(pressedOpacity)).
 			BorderShape(Capsule)
 		env.style.Set("cursor", "default")
 		switch action := action.(type) {
