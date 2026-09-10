@@ -48,7 +48,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 			attrs:      attr.Class("x"),
 			tag:        "b",
 			fg:         []term[color]{{value: oklch{a: 1}}},
-			fontWeight: []term[string]{{value: "700"}},
+			fontWeight: "700",
 			opacity:    []term[float64]{{value: 0.5}},
 		}
 		env.root.atRoot = true

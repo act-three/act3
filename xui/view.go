@@ -382,11 +382,11 @@ type nextenv struct {
 	shadow     []term[shadow]
 	outline    []term[outline]
 	shape      []term[Shape]
-	fontFamily []term[string]
-	fontSize   []term[string]
-	fontStyle  []term[string]
-	fontWeight []term[string]
-	lineHeight []term[string]
+	fontFamily string
+	fontSize   string
+	fontStyle  string
+	fontWeight string
+	lineHeight string
 	opacity    []term[float64]
 
 	// fillMask is the set of axes to be stripped
@@ -487,6 +487,9 @@ func build(env environment, p plan) box {
 	rigid.addRigidStylesTo(&ss, env)
 	styles := env.root.style.Decls()
 	styles.Merge(ss.Decls())
+	for _, d := range fontDecls(env) {
+		styles.Set(d.property, d.value)
+	}
 	addPaintStylesTo(&styles, env)
 	// Keep the generated class after the named classes in rendered output.
 	a = domi.Group(a, attr.Class(env.sheet.ClassFor(styles)))

@@ -55,19 +55,19 @@ func newTextView(r textRun) textView { return textView{base{r.render}, r} }
 
 func (v textView) Bold() TextView {
 	return v.styledWith(func(env *environment) {
-		env.fontWeight = append(env.fontWeight, term[string]{value: "600"})
+		env.fontWeight = "600"
 	})
 }
 
 func (v textView) Italic() TextView {
 	return v.styledWith(func(env *environment) {
-		env.fontStyle = append(env.fontStyle, term[string]{value: "italic"})
+		env.fontStyle = "italic"
 	})
 }
 
 func (v textView) Monospace() TextView {
 	return v.styledWith(func(env *environment) {
-		env.fontFamily = append(env.fontFamily, term[string]{value: "var(--ui-font-mono)"})
+		env.fontFamily = "var(--ui-font-mono)"
 	})
 }
 
@@ -77,9 +77,9 @@ func (v textView) TextFont(f FontSize) TextView {
 		return v
 	}
 	return v.styledWith(func(env *environment) {
-		env.fontSize = append(env.fontSize, term[string]{value: size})
-		env.fontWeight = append(env.fontWeight, term[string]{value: weight})
-		env.lineHeight = append(env.lineHeight, term[string]{value: height})
+		env.fontSize = size
+		env.fontWeight = weight
+		env.lineHeight = height
 	})
 }
 
@@ -154,6 +154,7 @@ type textRun interface {
 // consuming it so that no subrun applies it again.
 func (env environment) styled(content func(environment) domi.Node) domi.Node {
 	ds := env.paintUnder(0).decls(env.theme, false)
+	ds = append(ds, fontDecls(env)...)
 	env.nextenv = nextenv{}
 	if len(ds) == 0 {
 		return content(env)

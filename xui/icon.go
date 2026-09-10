@@ -94,7 +94,7 @@ func nodeIcon(name string) node {
 		}
 		env.style.Set("width", size)
 		env.style.Set("height", size)
-		env.lineHeight = append(env.lineHeight, term[string]{value: "0"})
+		env.lineHeight = "0"
 		return build(env, plan{
 			rigid:   Horizontal | Vertical,
 			content: svg,
