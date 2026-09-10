@@ -88,6 +88,7 @@ func nodeButton(action any, label node) node {
 		}
 		v := base{label}.
 			LineLimit(1).
+			TextTrim(TextCap|TextLastBaseline).
 			Padding(Edges(padding)).
 			BorderStroke(0.5, edge).
 			Modify(font(fontSize, "500", lineHeight))
@@ -138,18 +139,18 @@ func nodeButton(action any, label node) node {
 	}
 }
 
-// The edge paints within the padding, so ordinary text reaches the
-// 24/28/32/44px target heights without a layout-affecting border.
+// The edge paints within the padding. A single-line button's height
+// is the font's cap height plus twice the padding.
 func buttonMetrics(s ControlSize) (fontSize, lineHeight string, padding complex128) {
 	switch s {
 	case Mini:
-		return "12px", "16px", 4
+		return "12px", "16px", 8
 	case Small:
-		return "12px", "16px", 6
+		return "12px", "16px", 10
 	case Large:
-		return "13px", "18px", 13
+		return "13px", "18px", 17
 	default:
-		return "13px", "18px", 7
+		return "13px", "18px", 11
 	}
 }
 
