@@ -132,7 +132,7 @@ func (v base) TextTrim(s TextEdgeSet) View {
 }
 
 func (v base) Font(f FontSize) View {
-	return v.Modify(Font(f))
+	return v.modify(modFont(f.values()))
 }
 
 func (v base) Foreground(c Color) View {

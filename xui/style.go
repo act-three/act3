@@ -28,3 +28,19 @@ func (f FontSize) values() (size, weight, height string) {
 	}
 	return "", "", ""
 }
+
+func fontDecls(env environment) []decl {
+	var ds []decl
+	for _, d := range []decl{
+		{"font-family", env.fontFamily},
+		{"font-size", env.fontSize},
+		{"font-style", env.fontStyle},
+		{"font-weight", env.fontWeight},
+		{"line-height", env.lineHeight},
+	} {
+		if d.value != "" {
+			ds = append(ds, d)
+		}
+	}
+	return ds
+}

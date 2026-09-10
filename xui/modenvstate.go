@@ -36,24 +36,6 @@ func BorderStroke(width complex128, c Color) Modifier {
 	})
 }
 
-// Font sets the font size for text in a view.
-func Font(f FontSize) Modifier {
-	if f == "" {
-		return nil
-	}
-	size, weight, height := f.values()
-	return font(size, weight, height)
-}
-
-func font(size, weight, height string) Modifier {
-	return modEnvState(func(env environment, s State) environment {
-		env.fontSize = append(env.fontSize, term[string]{s, size})
-		env.fontWeight = append(env.fontWeight, term[string]{s, weight})
-		env.lineHeight = append(env.lineHeight, term[string]{s, height})
-		return env
-	})
-}
-
 // Foreground uses c to draw foreground elements in a view,
 // such as text.
 func Foreground(c Color) Modifier {

@@ -834,13 +834,6 @@ func TestTextStyleBeatsStatePaint(t *testing.T) {
 	if strings.Contains(html, "hover") || !strings.Contains(html, "color:"+redCSS) {
 		t.Errorf("hovered color should lose to TextForeground entirely:\n%s", html)
 	}
-
-	// A hovered font contends only the weight: its size still
-	// applies on hover, while Bold keeps the weight in every state.
-	html = render(t, ui.Text("x").Bold().WhileHovered(ui.Font(ui.Caption)))
-	if !strings.Contains(html, "font-size:0.75rem") || !strings.Contains(html, "font-weight:600") || strings.Contains(html, "font-weight:400") {
-		t.Errorf("hovered font should apply its size but not its weight:\n%s", html)
-	}
 }
 
 // TestLineLimit pins the lowering and reach of LineLimit: it clamps
@@ -1436,10 +1429,6 @@ func TestStateModifiers(t *testing.T) {
 	focused := render(t, ui.Text("x").WhileFocused(ui.Foreground(ui.Blue)))
 	if got := classRule(t, focused, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "&:focus-visible{color:"+blueCSS+"}") {
 		t.Errorf("Focused rule = %q, want a focus variant:\n%s", got, focused)
-	}
-	pressed := render(t, ui.Text("x").WhilePressed(ui.Font(ui.Title)))
-	if got := classRule(t, pressed, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "&:active{font-size:1.5rem;font-weight:700;line-height:1.2}") {
-		t.Errorf("Pressed rule = %q, want an active font variant:\n%s", got, pressed)
 	}
 	// A combination applies only while every given state is active,
 	// regardless of the order or repetition of the states.

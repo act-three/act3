@@ -91,9 +91,9 @@ func nodeButton(action any, label node) node {
 		v := base{label}.
 			LineLimit(1).
 			TextTrim(TextCap|TextLastBaseline).
+			modify(modFont(fontSize, "500", lineHeight)).
 			Padding(Edges(padding)).
-			BorderStroke(0.5, edge).
-			Modify(font(fontSize, "500", lineHeight))
+			BorderStroke(0.5, edge)
 		if !env.disabled {
 			v = v.
 				WhileHovered(BorderStroke(0.5, style.hoverEdge)).
