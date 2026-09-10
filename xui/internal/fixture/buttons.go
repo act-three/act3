@@ -41,7 +41,7 @@ func buttonGallery() View {
 	return VStack(
 		Text("Inspection fixture; Bordered uses an opaque theme-derived edge. "+
 			"Return transitions remain pending.").Font(Caption),
-		buttonSection("Styles and sizes — text and square labels", buttonSizes()),
+		buttonSection("Styles and sizes — text and icon labels", buttonSizes()),
 		buttonSection("States — hover, hold, or Tab to inspect browser interaction", buttonStates()),
 		buttonSection("Label content and layout", buttonLabels()),
 		buttonSection("Nested themes, styles, and sizes", buttonContexts()),
@@ -58,8 +58,8 @@ func buttonSizes() View {
 		for _, size := range buttonControlSizes {
 			sizes = append(sizes, buttonSection(size.name, HStack(
 				sampleButton(Text("Save")),
-				sampleButton(Primary.Frame(Width(16), Height(16))).
-					Attr(domi.Name("aria-label", "Square label")).Class("button-square"),
+				sampleButton(Icon("film")).
+					Attr(domi.Name("aria-label", "Save")).Class("button-icon"),
 			).Gap(8).ControlSize(size.size)))
 		}
 		rows = append(rows, buttonSection(style.name,
