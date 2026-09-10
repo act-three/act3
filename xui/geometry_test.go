@@ -710,6 +710,127 @@ func TestGeometryLineLimit(t *testing.T) {
 	})
 }
 
+// A one-line limit must not restore the leading removed by TextTrim,
+// whether the text fits or needs truncation.
+func TestGeometryLineLimitTextTrim(t *testing.T) {
+	v := ui.VStack(
+		ui.Text("Save").Class("reference"),
+		ui.Text("Save").TextTrim(0).Class("untrimmed"),
+		ui.Text("Save").LineLimit(1).Class("short"),
+		ui.Text("Save all changes to this collection and update every episode in the library").
+			LineLimit(1).Class("long"),
+	).TextTrim(ui.TextCap | ui.TextLastBaseline).Frame(ui.Width(120))
+	stage(t, v, func(s *uitest.Session) {
+		reference := s.Rect(".reference", 0)
+		if reference.H <= 0 || reference.H >= s.Rect(".untrimmed", 0).H {
+			t.Fatal("reference text must have a positive height with leading trimmed")
+		}
+		for _, selector := range []string{".short", ".long"} {
+			within(t, selector+" trimmed height", s.Rect(selector, 0).H, reference.H, 0.1)
+		}
+		within(t, "short text hugs its content", s.Rect(".short", 0).W, reference.W, 0.1)
+		within(t, "long text fits the frame", s.Rect(".long", 0).W, 120, 0.1)
+	})
+}
+
+// A nowrap line must yield to the width offered through intermediate
+// containers, including the space left by a rigid sibling and a gap.
+func TestGeometryLineLimitWidth(t *testing.T) {
+	const long = "Save all changes to this collection and update every episode in the library"
+	for _, tt := range []struct {
+		name  string
+		wrap  func(ui.View) ui.View
+		inset float64
+	}{
+		{"text", func(v ui.View) ui.View { return v }, 0},
+		{"column", func(v ui.View) ui.View { return ui.VStack(v) }, 0},
+		{"row", func(v ui.View) ui.View { return ui.HStack(v) }, 0},
+		{"layers", func(v ui.View) ui.View { return ui.ZStack(v) }, 0},
+		{"padding", func(v ui.View) ui.View { return v.Padding(ui.Edges(6)) }, 12},
+		{"nested", func(v ui.View) ui.View { return ui.VStack(ui.HStack(ui.ZStack(v.Padding(ui.Edges(6))))) }, 12},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			v := ui.HStack(
+				ui.Red.Frame(ui.Width(80), ui.Height(20)).Class("rigid"),
+				tt.wrap(ui.Text(long).LineLimit(1).Class("text")).Class("child"),
+			).Gap(8).Class("row").Frame(ui.Width(260))
+			stage(t, v, func(s *uitest.Session) {
+				within(t, "row width", s.Rect(".row", 0).W, 260, 0.1)
+				within(t, "rigid width", s.Rect(".rigid", 0).W, 80, 0.1)
+				within(t, "child width", s.Rect(".child", 0).W, 172, 0.1)
+				within(t, "text width", s.Rect(".text", 0).W, 172-tt.inset, 0.1)
+				within(t, "gap", s.Rect(".child", 0).X-s.Rect(".rigid", 0).Right(), 8, 0.1)
+			})
+		})
+	}
+
+	stage(t, ui.VStack(
+		ui.Text(long).LineLimit(2).Class("two"),
+		ui.Text(long).LineLimit(1).Class("one"),
+	).Frame(ui.Width(260)), func(s *uitest.Session) {
+		within(t, "column width", s.Rect("ui-vstack", 0).W, 260, 0.1)
+		within(t, "two-line width", s.Rect(".two", 0).W, 260, 0.1)
+		within(t, "one-line width", s.Rect(".one", 0).W, 260, 0.1)
+		within(t, "two-line height", s.Rect(".two", 0).H, 2*s.Rect(".one", 0).H, 0.1)
+	})
+
+	stage(t, ui.Grid(ui.Columns(2),
+		ui.VStack(ui.Text(long).LineLimit(1)),
+		ui.Text(long).LineLimit(1),
+	).Frame(ui.Width(260)), func(s *uitest.Session) {
+		for i := range 2 {
+			within(t, "text fits its grid cell", s.Rect("ui-text", i).W, 126, 0.1)
+		}
+	})
+}
+
+// Text can shrink to zero, but a stack must still enclose its rigid
+// children, gaps, and explicit minima when they exceed the offer.
+func TestGeometryLineLimitMinimum(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		wrap  func(ui.View) ui.View
+		width float64
+	}{
+		{"zero", func(v ui.View) ui.View { return ui.VStack(v) }, 0},
+		{"explicit", func(v ui.View) ui.View { return ui.VStack(v.FrameBounds(ui.MinWidth(150))) }, 150},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			v := ui.HStack(
+				ui.Red.Frame(ui.Width(80), ui.Height(20)).Class("rigid"),
+				tt.wrap(ui.Text("Save all changes to this collection").LineLimit(1).Class("text")).Class("child"),
+			).Gap(8).Class("row").Frame(ui.Width(50))
+			stage(t, v, func(s *uitest.Session) {
+				within(t, "rigid child holds its width", s.Rect(".rigid", 0).W, 80, 0.1)
+				within(t, "child reaches its minimum", s.Rect(".child", 0).W, tt.width, 0.1)
+				within(t, "stack encloses its children", s.Rect(".row", 0).W, 88+tt.width, 0.1)
+				within(t, "last child meets the stack edge", s.Rect(".child", 0).Right(), s.Rect(".row", 0).Right(), 0.1)
+			})
+		})
+	}
+}
+
+func TestGeometryLineLimitIdeal(t *testing.T) {
+	const long = "Save all changes to this collection and update every episode in the library"
+	v := ui.VStack(
+		ui.Text(long).FixedSize().Class("reference"),
+		ui.Text(long).LineLimit(1).FixedSize().Class("direct"),
+		ui.VStack(ui.Text(long).LineLimit(1).Class("nested")).FixedSize(),
+		ui.VStack(ui.Text(long).LineLimit(1).Class("bounded")).Frame(ui.Width(120)).FixedSize(),
+	).Frame(ui.Width(120))
+	stage(t, v, func(s *uitest.Session) {
+		reference := s.Rect(".reference", 0)
+		if reference.W <= 120 {
+			t.Fatal("reference text must exceed the offered width")
+		}
+		for _, selector := range []string{".direct", ".nested"} {
+			within(t, selector+" ideal width", s.Rect(selector, 0).W, reference.W, 0.1)
+			within(t, selector+" ideal height", s.Rect(selector, 0).H, reference.H, 0.1)
+		}
+		within(t, "definite frame restores bounded space", s.Rect(".bounded", 0).W, 120, 0.1)
+	})
+}
+
 // TestGeometrySoftFrameTracksSpace pins the soft frame's contract in the
 // three regimes it can land in: on a flex major axis it yields to the
 // available space and floors at its minimum; in a grid cell and on a flex

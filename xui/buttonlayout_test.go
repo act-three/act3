@@ -38,7 +38,7 @@ func TestButtonInteractionLayout(t *testing.T) {
 					s.Run(chromedp.EmulateViewport(600, 400, chromedp.EmulateScale(scale)))
 					s.Run(css.ForcePseudoState(nodes[0].NodeID, nil))
 					rest := read()
-					if rest[0] != rest[1] || rest[0].Tree != "ui-text" {
+					if rest[0] != rest[1] || rest[0].Tree != "ui-text,span" {
 						t.Errorf("selection changed layout: %+v", rest)
 					}
 					for _, states := range [][]string{{"hover"}, {"active"}, {"hover", "active"}, nil} {
