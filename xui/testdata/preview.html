@@ -18,14 +18,20 @@
 		line-height: 1.4;
 	}
 
-	/* An inline svg's baseline is its bottom edge. Lowering it by half
-	   the gap between the icon and the cap height puts the icon's
-	   center between the baseline and the cap height. */
+	/* Lower the inline svg so its center lies halfway up the cap band. */
 	ui-icon > svg {
-		width: 100%;
-		height: 100%;
+		width: var(--ui-icon-scale);
+		height: var(--ui-icon-scale);
 		vertical-align: calc(0.5cap - var(--ui-icon-scale) / 2);
 		stroke-width: var(--ui-icon-stroke-width);
+	}
+
+	/* Symmetric margins keep the trimmed svg's margin box at 1cap.
+	   Its bottom margin edge supplies the baseline, centering the svg
+	   over both the wrapper and the text's cap band. */
+	ui-icon.ui-icon-trim > svg {
+		margin: calc((1cap - var(--ui-icon-scale)) / 2);
+		vertical-align: baseline;
 	}
 
 	/* A root ScrollView delegates its scrolling to the document viewport. */
