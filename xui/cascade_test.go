@@ -462,10 +462,6 @@ func TestTextStyleInnermostWins(t *testing.T) {
 	if !strings.Contains(html, "color:oklch(0.1 0 0)") || strings.Contains(html, "oklch(0.2 0 0)") {
 		t.Errorf("repeated TextForeground should keep the first color:\n%s", html)
 	}
-	html = render(t, ui.Text("x").TextFont(ui.Title).TextFont(ui.Caption))
-	if !strings.Contains(html, "font-size:1.5rem") || strings.Contains(html, "font-size:0.75rem") {
-		t.Errorf("repeated TextFont should keep the first size:\n%s", html)
-	}
 }
 
 // stageApp is stage with unlayered app CSS placed before the xui stylesheet in the

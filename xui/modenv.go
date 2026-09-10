@@ -20,18 +20,6 @@ func modAlignment(a Alignment) modifier {
 	})
 }
 
-func modFont(size, weight, height string) modifier {
-	if size == "" {
-		return nil
-	}
-	return modEnv(func(env environment) environment {
-		env.fontSize = size
-		env.fontWeight = weight
-		env.lineHeight = height
-		return env
-	})
-}
-
 func modAttr(attr domi.Attr) modifier {
 	return modEnv(func(env environment) environment {
 		env.add(attr)

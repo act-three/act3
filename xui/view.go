@@ -97,8 +97,8 @@ type View interface {
 	// available space. This can cause it to be larger than its container.
 	FixedSize() View
 
-	// Font sets the font size for text in the receiver.
-	Font(FontSize) View
+	// Font configures typography for text in the receiver.
+	Font(...FontOption) View
 
 	// Foreground uses c to draw foreground elements in the receiver,
 	// such as text.
@@ -383,11 +383,14 @@ type nextenv struct {
 	outline    []term[outline]
 	shape      []term[Shape]
 	fontFamily string
-	fontSize   string
 	fontStyle  string
 	fontWeight string
-	lineHeight string
 	opacity    []term[float64]
+
+	fontSize     fontSize
+	lineHeight   *complex128
+	fontVariants fontVariants
+	fontFeatures openTypeFeatures
 
 	// fillMask is the set of axes to be stripped
 	// from the box's fill request.
@@ -487,9 +490,7 @@ func build(env environment, p plan) box {
 	rigid.addRigidStylesTo(&ss, env)
 	styles := env.root.style.Decls()
 	styles.Merge(ss.Decls())
-	for _, d := range fontDecls(env) {
-		styles.Set(d.property, d.value)
-	}
+	addFontStylesTo(&styles, env)
 	addPaintStylesTo(&styles, env)
 	// Keep the generated class after the named classes in rendered output.
 	a = domi.Group(a, attr.Class(env.sheet.ClassFor(styles)))

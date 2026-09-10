@@ -51,7 +51,7 @@ func accountCard(user User) View {
 				Frame(Width(48), Height(48)),
 			VStack(
 				Text(user.Name).
-					Font(HeadlineFont),
+					Font(SemiBold, SizeEm(18i, 1.4)),
 				Text(user.Email).
 					Foreground(Secondary),
 			).
@@ -70,7 +70,7 @@ func moviePage(movies []Movie) View {
 	return VStack(
 		HStack(
 			Text("Movies").
-				Font(Title),
+				Font(Bold, SizeEm(24i, 1.2)),
 			Spacer(),
 			Button("/movies/trash", Text("Trash")),
 			Button(Msg{New: true}, Text("New")).
@@ -95,10 +95,10 @@ func movieRow(movie Movie) View {
 			Frame(Width(56), Height(84)),
 		VStack(
 			Text(movie.Title).
-				Font(HeadlineFont),
+				Font(SemiBold, SizeEm(18i, 1.4)),
 			Text(movie.Summary).
 				Foreground(Secondary).
-				Font(Caption),
+				Font(Normal, SizeEm(12i, 1.3)),
 		).
 			Gap(4).
 			Alignment(Leading),
@@ -125,7 +125,7 @@ func dividerRow() View {
 func dividerColumn() View {
 	return VStack(
 		Text("Profile").
-			Font(HeadlineFont),
+			Font(SemiBold, SizeEm(18i, 1.4)),
 		Divider(),
 		Text("Account").
 			Foreground(Secondary),
@@ -145,12 +145,12 @@ func zstackDemo() View {
 			BorderShape(RoundedRectangle),
 		Text("ZStack with Long Text").
 			TextForeground(White).
-			Font(HeadlineFont),
+			Font(SemiBold, SizeEm(18i, 1.4)),
 	).Overlay(
 		BottomTrailing,
 		Text("layered").
 			TextForeground(OKLCH(0.87, 0.062, 274)).
-			Font(Caption),
+			Font(Normal, SizeEm(12i, 1.3)),
 	).
 		Padding(Edges(8)).
 		Background(OKLCH(0.627, 0, 0))
@@ -169,7 +169,7 @@ func scrollDemo() View {
 		VStack(For(count(3), nil, func(s int) View {
 			return VStack(
 				Text("Season "+strconv.Itoa(s)).
-					Font(HeadlineFont).
+					Font(SemiBold, SizeEm(18i, 1.4)).
 					Padding(Edges(8)).
 					Background(OKLCH(0.93, 0.033, 273)).
 					Sticky(),
@@ -190,9 +190,9 @@ func scrollDemo() View {
 
 func richText() View {
 	return Text("Status: ").
-		Bold().
-		Concat(Text("Draft ").Italic()).
-		Concat(Text("v2").Monospace()).
+		TextFont(Bold).
+		Concat(Text("Draft ").TextFont(Italic)).
+		Concat(Text("v2").TextFont(Family("var(--ui-font-mono)"))).
 		TextForeground(Secondary)
 }
 
@@ -237,9 +237,26 @@ func textLayout() View {
 	)
 }
 
+func fontSizeDemo() View {
+	sample := Text("Handgloves 0123456789")
+	return VStack(
+		section("Cap height: 16 scaled pixels; line height: 32 scaled pixels",
+			sample.
+				Font(SizeCap(16i, 2)).
+				Background(Blue),
+		),
+		section("Em square: 16 scaled pixels; line height: 32 scaled pixels",
+			sample.
+				Font(SizeEm(16i, 2)).
+				Background(Blue),
+		),
+	).
+		Alignment(Leading)
+}
+
 func textTrimDemo() View {
 	t := Text("Hxflg").
-		Font(HeadlineFont).
+		Font(SemiBold, SizeEm(18i, 1.4)).
 		Background(OKLCH(0.9, 0.05, 70))
 	return HStack(
 		t,
@@ -252,13 +269,17 @@ func textTrimDemo() View {
 
 func iconDemo() View {
 	return VStack(
-		For([]FontSize{Caption, Body, Title}, nil, func(f FontSize) View {
+		For([][]FontOption{
+			{Normal, SizeEm(12i, 1.3)},
+			{Normal, SizeEm(16i, 1.4)},
+			{Bold, SizeEm(24i, 1.2)},
+		}, nil, func(opts []FontOption) View {
 			return HStack(
 				Icon("film"),
 				Text("A long paragraph that wraps onto a second line to show the icon aligned with the first."),
 			).
 				Alignment(FirstBaseline).
-				Font(f)
+				Font(opts...)
 		}),
 		HStack(
 			For([]complex128{20, 30, 40}, nil, func(n complex128) View {
@@ -334,7 +355,7 @@ func section(title string, body View) View {
 	return VStack(
 		Text(title).
 			TextForeground(Secondary).
-			TextFont(Caption),
+			TextFont(Normal, SizeEm(12i, 1.3)),
 		body,
 	).
 		Alignment(Leading)
@@ -351,7 +372,7 @@ func Page() View {
 	return VStack(
 		Text("ui component library").
 			Title("ui component library").
-			Font(LargeTitle),
+			Font(Bold, SizeEm(32i, 1.15)),
 		section("Account card (Card + HStack + Spacer + OverlayAt badge)", accountCard(user)),
 		section("Movie page (Frame fill + keyed rows + For-style list)", moviePage(movies)),
 		buttonSection("Buttons", buttonGallery()),
@@ -363,8 +384,9 @@ func Page() View {
 		section("Links in text (navigate, send, then a disabled line)", linkText()),
 		section("LineLimit (2 lines, then 1)", lineLimitDemo()),
 		section("Text Layout", textLayout()),
+		section("Font size (cap height and em square)", fontSizeDemo()),
 		section("TextTrim (none, top/bottom, cap/baseline, ex/baseline)", textTrimDemo()),
-		section("Icon (FirstBaseline with wrapping text, at Caption/Body/Title)", iconDemo()),
+		section("Icon (FirstBaseline with wrapping text, at 12/16/24 scaled pixels)", iconDemo()),
 		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
 		section("Grid (Columns(4), then CellMinWidth(120))", gridDemo()),
 		section("FrameRatio (2:3 posters anchored on width, in Columns(6))", posterWall()),

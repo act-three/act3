@@ -8,7 +8,7 @@ then serves the View graph with a [Handler].
 		return VStack(
 			Text("Movies").
 				Title("Movies").
-				Font(Title),
+				Font(SizeCap(20i, 1.2), Bold),
 			Image(bannerURL).
 				ScaledToFill().
 				Frame(Width(800), Height(200)),
