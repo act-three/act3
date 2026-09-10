@@ -7,6 +7,8 @@ import (
 
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+
+	"ily.dev/act3/xui/internal/sheet"
 )
 
 // TestBoxIsInnermostWriter pins the write-order rule for contended
@@ -14,7 +16,8 @@ import (
 // environment fields as the modifiers wrapping it, writing last,
 // so its value wins and build applies unconditionally.
 func TestBoxIsInnermostWriter(t *testing.T) {
-	var env environment
+	var sh sheet.Sheet
+	env := environment{sheet: &sh}
 	env.tag = "picture" // an outer Tag modifier
 	b := nodeImage{src: "x.png"}.render(env)
 	var sb strings.Builder

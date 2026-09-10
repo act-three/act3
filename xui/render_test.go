@@ -1948,19 +1948,17 @@ func TestRenderTitle(t *testing.T) {
 }
 
 // TestRenderStyleElement verifies that the style element is always present,
-// as the first child of ui-root,
-// holding only the root's own rule when no view contributes one.
+// as the first child of ui-root, even for an empty view.
 func TestRenderStyleElement(t *testing.T) {
-	// A native image is the one view with no declarations of its own.
 	var sb strings.Builder
-	_, page := ui.Render(ui.Image("/x.png"))
+	_, page := ui.Render(ui.Empty())
 	if err := domi.RenderTo(&sb, page); err != nil {
 		t.Fatalf("render: %v", err)
 	}
 	html := sb.String()
-	m := regexp.MustCompile(`^<ui-root class="(ui-\w+)"><style>@layer xui\{\.(ui-\w+)\{[^{}]*\}\}</style>`).FindStringSubmatch(html)
-	if m == nil || m[1] != m[2] {
-		t.Errorf("style element holding only the root rule not first in ui-root:\n%s", html)
+	m := regexp.MustCompile(`^<ui-root class="(ui-\w+)"><style>([^<]*)</style>`).FindStringSubmatch(html)
+	if m == nil || !strings.Contains(m[2], "."+m[1]+"{") {
+		t.Errorf("style element containing the root rule not first in ui-root:\n%s", html)
 	}
 }
 
