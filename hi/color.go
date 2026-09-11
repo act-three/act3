@@ -1,0 +1,202 @@
+package hi
+
+import (
+	"cmp"
+	"fmt"
+	"math"
+)
+
+// A Color represents a color.
+//
+// Some view modifiers take a Color as an argument.
+// For instance, [View.Foreground] sets the color of foreground elements like text.
+//
+// A Color is also a View.
+// When used as a View, a Color expands to fill the available space.
+type Color interface {
+	View
+
+	// color always returns a non-nil color.
+	color() color
+}
+
+// OKLCH returns the color with the given coordinates
+// in the OKLCH color space.
+//
+//   - Lightness (L) ranges from 0 (black) to 1 (white).
+//   - Chroma (C) is 0 for gray. Larger values are more colorful.
+//     Displayable colors have chroma of at most about 0.4.
+//   - Hue (h) is an angle in degrees.
+//
+// Lightness and chroma are clamped to their valid ranges.
+func OKLCH(L, C, h float64) Color {
+	return OKLCHA(L, C, h, 1)
+}
+
+// OKLCHA returns the color with the given coordinates
+// in the OKLCH color space with opacity channel α.
+//
+//   - Lightness (L) ranges from 0 (black) to 1 (white).
+//   - Chroma (C) is 0 for gray. Larger values are more colorful.
+//     Displayable colors have chroma of at most about 0.4.
+//   - Hue (h) is an angle in degrees.
+//   - Opacity (α) ranges from 0 (transparent) to 1 (opaque).
+//
+// Lightness, chroma, and opacity are clamped to their valid ranges.
+func OKLCHA(L, C, h, α float64) Color {
+	return newColor(newOKLCH(L, C, h, α))
+}
+
+// A color is the internal representation of a color.
+// Unlike Color, it is not a View.
+// A color may depend on the theme it is used in,
+// so it resolves only when a box is lowered.
+type color interface {
+	colorCoords(t theme) oklch
+}
+
+type oklch struct{ l, c, h, a float64 }
+
+func newOKLCH(l, c, h, a float64) oklch {
+	const maxChroma = 0.5 // Beyond the reach of any display.
+	return oklch{
+		l: min(max(l, 0), 1),
+		c: min(max(c, 0), maxChroma),
+		h: h,
+		a: min(max(a, 0), 1),
+	}
+}
+
+// mixLinear interpolates in linear light, equivalent to mixing in XYZ.
+func mixLinear(a, b oklch, w float64) oklch {
+	// Linear LMS and XYZ differ only by a matrix, so interpolation can
+	// happen in LMS without the extra conversion to XYZ and back.
+	lms := func(c oklch) (float64, float64, float64) {
+		L, a, b := c.lab()
+		l := L + 0.3963377774*a + 0.2158037573*b
+		m := L - 0.1055613458*a - 0.0638541728*b
+		s := L - 0.0894841775*a - 1.2914855480*b
+		return l * l * l, m * m * m, s * s * s
+	}
+	la, ma, sa := lms(a)
+	lb, mb, sb := lms(b)
+	lerp := func(x, y float64) float64 { return x + (y-x)*w }
+	l := math.Cbrt(lerp(la, lb))
+	m := math.Cbrt(lerp(ma, mb))
+	s := math.Cbrt(lerp(sa, sb))
+	return fromLab(
+		0.2104542553*l+0.7936177850*m-0.0040720468*s,
+		1.9779984951*l-2.4285922050*m+0.4505937099*s,
+		0.0259040371*l+0.7827717662*m-0.8086757660*s,
+		lerp(a.a, b.a),
+	)
+}
+
+// fromLab returns the color with the given OKLab coordinates and opacity.
+func fromLab(l, a, b, alpha float64) oklch {
+	h := math.Atan2(b, a) * 180 / math.Pi
+	if h < 0 {
+		h += 360
+	}
+	return oklch{l: l, c: math.Hypot(a, b), h: h, a: alpha}
+}
+
+// css returns c as a CSS color expression.
+func (c oklch) css() string {
+	if c.a < 1 {
+		return fmt.Sprintf("oklch(%.4g %.4g %.4g / %.4g)", c.l, c.c, c.h, c.a)
+	}
+	return fmt.Sprintf("oklch(%.4g %.4g %.4g)", c.l, c.c, c.h)
+}
+
+func (c oklch) colorCoords(theme) oklch { return c }
+
+// isLight reports whether c is a light color:
+// one on which black text has more contrast than white text,
+// by the WCAG contrast ratio.
+// Foreground content on a light color background
+// is drawn in dark colors, and vice versa.
+//
+// The threshold is the relative luminance at which the two ratios,
+// (Y + 0.05) / 0.05 and 1.05 / (Y + 0.05), are equal.
+// Colors beyond the sRGB gamut are judged as if they were not clipped.
+func (c oklch) isLight() bool {
+	L, a, b := c.lab()
+	l := L + 0.3963377774*a + 0.2158037573*b
+	m := L - 0.1055613458*a - 0.0638541728*b
+	s := L - 0.0894841775*a - 1.2914855480*b
+	y := -0.040774541*l*l*l + 1.112492185*m*m*m - 0.071717644*s*s*s
+	return y > 0.179128785
+}
+
+// colorScheme returns a suitable CSS color-scheme value
+// for a background color of c.
+func (c oklch) colorScheme() string {
+	if c.isLight() {
+		return "light"
+	}
+	return "dark"
+}
+
+// text returns a suitable foreground color for a background color of c.
+// Black when c is light or white when c is dark,
+// tinted with c's hue at half its chroma.
+func (c oklch) text() oklch {
+	t := oklch{l: 1, c: c.c / 2, h: c.h, a: 1}
+	if c.isLight() {
+		t.l = 0
+	}
+	return t
+}
+
+// lab returns c's coordinates in the OKLab color space.
+func (c oklch) lab() (l, a, b float64) {
+	h := c.h * math.Pi / 180
+	return c.l, c.c * math.Cos(h), c.c * math.Sin(h)
+}
+
+// A compositeColor takes its lightness, chroma, hue, and opacity
+// from four other colors.
+type compositeColor struct{ l, c, h, a color }
+
+func (cc compositeColor) colorCoords(t theme) oklch {
+	return oklch{
+		l: cc.l.colorCoords(t).l,
+		c: cc.c.colorCoords(t).c,
+		h: cc.h.colorCoords(t).h,
+		a: cc.a.colorCoords(t).a,
+	}
+}
+
+type colorView struct {
+	base
+	c color
+}
+
+func newColor(c color) colorView {
+	return colorView{base{nodeColor(c)}, c}
+}
+
+func (c colorView) color() color { return c.c }
+
+// Font has no effect because color contains no text.
+// This overrides the embedded method Font
+// to avoid emitting useless style declarations.
+func (c colorView) Font(...FontOption) View { return c }
+
+// Foreground has no effect because color contains no foreground elements.
+// This overrides the embedded method Foreground
+// to avoid emitting useless style declarations.
+func (c colorView) Foreground(Color) View { return c }
+
+// nodeColor paints a solid color.
+func nodeColor(c color) node {
+	return func(env environment) box {
+		env.tag = cmp.Or(env.tag, "ui-color")
+		env.bg = append(env.bg, term[color]{value: c})
+		return build(env, plan{
+			fills: Horizontal | Vertical,
+			ideal: rect{width: 10, height: 10},
+		})
+	}
+}
