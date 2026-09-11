@@ -86,9 +86,9 @@ var axes = [...]struct {
 	container containerKind
 	lc        layoutContext
 }{
-	axisZ: {"ui-zstack", containerGrid, layoutContext{}},
-	axisH: {"ui-hstack", containerFlex, layoutContext{majorAxis: Horizontal}},
-	axisV: {"ui-vstack", containerFlex, layoutContext{majorAxis: Vertical}},
+	axisZ: {"hi-zstack", containerGrid, layoutContext{}},
+	axisH: {"hi-hstack", containerFlex, layoutContext{majorAxis: Horizontal}},
+	axisV: {"hi-vstack", containerFlex, layoutContext{majorAxis: Vertical}},
 }
 
 type layoutContext struct {

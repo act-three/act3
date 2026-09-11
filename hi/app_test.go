@@ -141,12 +141,12 @@ func TestHandlerStylesheet(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		h := Handler(newApp, onURL, onChange, domi.InternalURLPrefix("/-/x"))
 		body := get(t, h, "/").Body.String()
-		m := regexp.MustCompile(`<ui-root class="ui-\w+"><link href="([^"]+)" rel="stylesheet">`).FindStringSubmatch(body)
+		m := regexp.MustCompile(`<hi-root class="hi-\w+"><link href="([^"]+)" rel="stylesheet">`).FindStringSubmatch(body)
 		if m == nil {
-			t.Fatalf("no stylesheet link in ui-root:\n%s", body)
+			t.Fatalf("no stylesheet link in hi-root:\n%s", body)
 		}
 		cssPath := m[1]
-		if !strings.HasPrefix(cssPath, "/-/x/ui.") || !strings.HasSuffix(cssPath, ".css") {
+		if !strings.HasPrefix(cssPath, "/-/x/hi.") || !strings.HasSuffix(cssPath, ".css") {
 			t.Errorf("stylesheet path = %q", cssPath)
 		}
 		if rec := get(t, h, cssPath); rec.Body.String() != string(staticCSS) {
@@ -177,7 +177,7 @@ func TestStylesheet(t *testing.T) {
 		t.Error("empty digest")
 	}
 	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest("GET", "/xui."+digest+".css", nil))
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/hi."+digest+".css", nil))
 	if rec.Code != 200 || rec.Body.String() != string(staticCSS) {
 		t.Errorf("status = %d, body:\n%s", rec.Code, rec.Body)
 	}

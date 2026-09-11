@@ -92,11 +92,11 @@ const (
 	mutedCSS = "oklch(0.3388 0.00395 100)"
 )
 
-// pageRoot reports whether html is a page whose ui-root element
+// pageRoot reports whether html is a page whose hi-root element
 // carries the given attributes after its generated class,
 // with the style element as its first child.
 func pageRoot(html, attrs string) bool {
-	return regexp.MustCompile(`^<ui-root class="ui-\w+"` + regexp.QuoteMeta(attrs) + `><style>`).MatchString(html)
+	return regexp.MustCompile(`^<hi-root class="hi-\w+"` + regexp.QuoteMeta(attrs) + `><style>`).MatchString(html)
 }
 
 func render(t *testing.T, v hi.View, o ...hi.Option) string {
@@ -134,17 +134,17 @@ func TestAccountCard(t *testing.T) {
 	}))
 
 	wants := []string{
-		`<ui-root `,         // root
-		`<ui-card `,         // Card: an HStack named by its tag
+		`<hi-root `,         // root
+		`<hi-card `,         // Card: an HStack named by its tag
 		`flex-grow:1`,       // the Spacer's fill stretches the row across the card
 		`border-radius:50%`, // BorderShape applied to the image frame
-		`<ui-frame`,         // Size(48) introduces a frame wrapper
+		`<hi-frame`,         // Size(48) introduces a frame wrapper
 		`width:48px`,        // ...with the resolved size
-		`<ui-spacer `,
+		`<hi-spacer `,
 		`<button `,
-		`<ui-layer `, // Underlay + Overlay decoration layers
-		`<ui-underlay `,
-		`<ui-overlay `,
+		`<hi-layer `, // Underlay + Overlay decoration layers
+		`<hi-underlay `,
+		`<hi-overlay `,
 		`align-items:start`, // the Overlay's alignment
 		`justify-items:end`, // the Overlay's alignment
 		`Pro`,
@@ -182,8 +182,8 @@ func TestMoviePageFillPropagation(t *testing.T) {
 
 	// The For helper splices rows directly into the VStack, so there are two
 	// movie-row spacers plus the header spacer: three in total.
-	if got := strings.Count(html, "<ui-spacer "); got != 3 {
-		t.Errorf("ui-spacer count = %d, want 3\n\n%s", got, html)
+	if got := strings.Count(html, "<hi-spacer "); got != 3 {
+		t.Errorf("hi-spacer count = %d, want 3\n\n%s", got, html)
 	}
 }
 
@@ -202,9 +202,9 @@ func TestTagNamesElement(t *testing.T) {
 		hi.Text("b"),
 	))
 	for _, tt := range []struct{ pattern, want string }{
-		{`<nav class="(ui-\w+)"`, "flex-grow:1"},                // the tagged frame carries the fill
-		{`<ui-hstack class="(ui-\w+)"`, "justify-self:stretch"}, // ...and the root stack keeps it
-		{`<ui-spacer class="(ui-\w+)"`, "flex-grow:1"},          // the inner row distributes slack
+		{`<nav class="(hi-\w+)"`, "flex-grow:1"},                // the tagged frame carries the fill
+		{`<hi-hstack class="(hi-\w+)"`, "justify-self:stretch"}, // ...and the root stack keeps it
+		{`<hi-spacer class="(hi-\w+)"`, "flex-grow:1"},          // the inner row distributes slack
 	} {
 		if got := classRule(t, html, tt.pattern); !strings.Contains(got, tt.want) {
 			t.Errorf("tagged-frame fill chain: %s rule = %q, want %q:\n%s", tt.pattern, got, tt.want, html)
@@ -277,7 +277,7 @@ func TestButtonLabelArity(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, hi.Button(Msg{}, tt.label))
-			if got := strings.Contains(html, "<ui-hstack "); got != tt.stack {
+			if got := strings.Contains(html, "<hi-hstack "); got != tt.stack {
 				t.Errorf("HStack present = %v, want %v:\n%s", got, tt.stack, html)
 			}
 		})
@@ -310,7 +310,7 @@ func TestTagInnermostWins(t *testing.T) {
 // host rather than on the node.
 func TestHTMLHost(t *testing.T) {
 	html := render(t, hi.HTML(domi.Text("raw")))
-	if want := regexp.MustCompile(`<ui-html class="ui-\w+">raw</ui-html>`); !want.MatchString(html) {
+	if want := regexp.MustCompile(`<hi-html class="hi-\w+">raw</hi-html>`); !want.MatchString(html) {
 		t.Errorf("missing %q:\n%s", want, html)
 	}
 
@@ -348,7 +348,7 @@ func TestHTMLFill(t *testing.T) {
 		{
 			"FixedSize clears the fill axes",
 			hi.HTML(domi.Text("raw")).FixedSize(),
-			[]string{`<ui-html class="ui-fixed-size `},
+			[]string{`<hi-html class="hi-fixed-size `},
 			[]string{"align-self:stretch", "justify-self:stretch"},
 		},
 	} {
@@ -373,10 +373,10 @@ func TestHTMLFill(t *testing.T) {
 // stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
 	html := render(t, hi.HTML(domi.Text("raw")).Padding(hi.Edges(4)).Background(hi.Red))
-	if got := classRule(t, html, `<ui-padding class="(ui-\w+)"`); got != "align-items:center;align-self:stretch;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;padding-block-end:4px;padding-block-start:4px;padding-inline-end:4px;padding-inline-start:4px" {
+	if got := classRule(t, html, `<hi-padding class="(hi-\w+)"`); got != "align-items:center;align-self:stretch;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;padding-block-end:4px;padding-block-start:4px;padding-inline-end:4px;padding-inline-start:4px" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
-	if got := classRule(t, html, `<ui-html class="(ui-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch" {
+	if got := classRule(t, html, `<hi-html class="(hi-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch" {
 		t.Errorf("host should stay untouched inside, got %q:\n%s", got, html)
 	}
 }
@@ -403,7 +403,7 @@ func TestImmutableModifiers(t *testing.T) {
 // modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
 	html := render(t, hi.Secondary)
-	if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:"+mutedCSS+";justify-self:stretch" {
+	if got := classRule(t, html, `<hi-color class="(hi-\w+)"`); got != "align-self:stretch;background-color:"+mutedCSS+";justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
 	if mod := render(t, hi.OKLCH(0.9, 0, 0).Opacity(0.5)); !strings.Contains(mod, "opacity:0.5") {
@@ -414,10 +414,10 @@ func TestColorAsView(t *testing.T) {
 	// visible where c is translucent — ordinary painting order, not a
 	// decoration layer, and the Modify spelling is the same lowering.
 	bg := render(t, hi.OKLCHA(0, 0, 0, 0.5).Background(hi.White))
-	if got := classRule(t, bg, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));justify-self:stretch" {
+	if got := classRule(t, bg, `<hi-color class="(hi-\w+)"`); got != "align-self:stretch;background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));justify-self:stretch" {
 		t.Errorf("Background should layer under the color, got %q:\n%s", got, bg)
 	}
-	if strings.Contains(bg, "ui-underlay") {
+	if strings.Contains(bg, "hi-underlay") {
 		t.Errorf("Background on a color should merge, not add a layer:\n%s", bg)
 	}
 	if mod := render(t, hi.OKLCHA(0, 0, 0, 0.5).Modify(hi.Background(hi.White))); mod != bg {
@@ -425,7 +425,7 @@ func TestColorAsView(t *testing.T) {
 	}
 	// Underlay layers content behind the color.
 	under := render(t, hi.OKLCHA(0, 0, 0, 0.5).Underlay(hi.Center, hi.Text("behind")))
-	for _, w := range []string{`<ui-underlay `, "behind"} {
+	for _, w := range []string{`<hi-underlay `, "behind"} {
 		if !strings.Contains(under, w) {
 			t.Errorf("Underlay behind a color missing %q:\n%s", w, under)
 		}
@@ -602,8 +602,8 @@ func TestPaddingAddsValues(t *testing.T) {
 			t.Errorf("summed padding missing %q:\n%s", w, html)
 		}
 	}
-	if got := strings.Count(html, "<ui-padding "); got != 1 {
-		t.Errorf("ui-padding wrapper count = %d, want 1:\n%s", got, html)
+	if got := strings.Count(html, "<hi-padding "); got != 1 {
+		t.Errorf("hi-padding wrapper count = %d, want 1:\n%s", got, html)
 	}
 }
 
@@ -663,7 +663,7 @@ func TestFontOptions(t *testing.T) {
 			} {
 				t.Run(name, func(t *testing.T) {
 					html := render(t, v)
-					if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != tt.want {
+					if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != tt.want {
 						t.Errorf("font rule = %q, want %q", got, tt.want)
 					}
 				})
@@ -681,10 +681,10 @@ func TestFontOptions(t *testing.T) {
 // a run styled before Concat keeps its own styling.
 func TestTextWholeTextRule(t *testing.T) {
 	html := render(t, hi.Text("a").Concat(hi.Text("b").TextFont(hi.Italic)).TextFont(hi.Bold))
-	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "font-weight:700") {
+	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "font-weight:700") {
 		t.Errorf("whole-text TextFont should land on the text element, got %q:\n%s", got, html)
 	}
-	if got := classRule(t, html, `>a<span class="(ui-\w+)"`); got != "font-style:italic" {
+	if got := classRule(t, html, `>a<span class="(hi-\w+)"`); got != "font-style:italic" {
 		t.Errorf("pre-Concat TextFont should stay on its own run, got %q:\n%s", got, html)
 	}
 }
@@ -704,19 +704,19 @@ func TestLink(t *testing.T) {
 		{
 			"navigate",
 			hi.Text("see ").Concat(hi.Link("/docs", hi.Text("docs"))),
-			`<a class="(ui-\w+)" href="/docs">docs</a>`,
+			`<a class="(hi-\w+)" href="/docs">docs</a>`,
 			nil,
 		},
 		{
 			"send",
 			hi.Text("or ").Concat(hi.Link(Msg{}, hi.Text("retry"))),
-			`<button class="(ui-\w+)" domi-msg-click="[^"]*" type="button">retry</button>`,
+			`<button class="(hi-\w+)" domi-msg-click="[^"]*" type="button">retry</button>`,
 			nil,
 		},
 		{
 			"outer style",
 			hi.Link("/docs", hi.Text("docs")).TextFont(hi.Bold),
-			`</style><a class="(ui-\w+)" href="/docs">docs</a>`,
+			`</style><a class="(hi-\w+)" href="/docs">docs</a>`,
 			[]string{"font-weight:700"},
 		},
 	} {
@@ -745,30 +745,30 @@ func TestLinkDisabled(t *testing.T) {
 		{
 			"navigate",
 			hi.Text("a").Concat(hi.Link("/docs", hi.Text("x"))).Disabled(true),
-			`<a aria-disabled="true" class="(ui-\w+)" role="link">x</a>`,
+			`<a aria-disabled="true" class="(hi-\w+)" role="link">x</a>`,
 			nil,
 			[]string{` href=`},
 		},
 		{
 			"send",
 			hi.Text("a").Concat(hi.Link(Msg{}, hi.Text("x"))).Disabled(true),
-			`<button class="(ui-\w+)" disabled domi-msg-click="[^"]*" type="button">x</button>`,
+			`<button class="(hi-\w+)" disabled domi-msg-click="[^"]*" type="button">x</button>`,
 			nil,
 			nil,
 		},
 		{
 			"enabled",
 			hi.Text("a").Concat(hi.Link("/docs", hi.Text("x"))).Disabled(false),
-			`<a class="(ui-\w+)" href="/docs">x</a>`,
+			`<a class="(hi-\w+)" href="/docs">x</a>`,
 			nil,
 			[]string{"aria-disabled"},
 		},
 		{
 			"block",
 			hi.Link("/docs", hi.Text("x")).Disabled(true),
-			`<a aria-disabled="true" class="(ui-\w+)" role="link">x</a>`,
+			`<a aria-disabled="true" class="(hi-\w+)" role="link">x</a>`,
 			[]string{"display:block"},
-			[]string{` href=`, "ui-text"},
+			[]string{` href=`, "hi-text"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -859,7 +859,7 @@ func TestTextStyleBeatsStatePaint(t *testing.T) {
 // and the limit nearest a text wins.
 func TestLineLimit(t *testing.T) {
 	direct := render(t, hi.Text("x").LineLimit(2))
-	if got := classRule(t, direct, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "-webkit-line-clamp:2") {
+	if got := classRule(t, direct, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "-webkit-line-clamp:2") {
 		t.Errorf("rule = %q, want -webkit-line-clamp:2:\n%s", got, direct)
 	}
 
@@ -936,12 +936,12 @@ func TestAlignProjectsOntoCrossAxis(t *testing.T) {
 // minor axis either way.
 func TestDividerAxisAware(t *testing.T) {
 	h := render(t, hi.HStack(hi.Text("a"), hi.Divider(), hi.Text("b")))
-	if got := classRule(t, h, `<ui-divider class="(ui-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "width:") {
+	if got := classRule(t, h, `<hi-divider class="(hi-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "width:") {
 		t.Errorf("divider in HStack should be vertical and stretch, got %q:\n%s", got, h)
 	}
 
 	v := render(t, hi.VStack(hi.Text("a"), hi.Divider(), hi.Text("b")))
-	if got := classRule(t, v, `<ui-divider class="(ui-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "height:") {
+	if got := classRule(t, v, `<hi-divider class="(hi-\w+)"`); !strings.Contains(got, "align-self:stretch") || !strings.Contains(got, "height:") {
 		t.Errorf("divider in VStack should be horizontal and stretch, got %q:\n%s", got, v)
 	}
 }
@@ -955,7 +955,7 @@ func TestForKeysItems(t *testing.T) {
 		func(m Movie) hi.View { return hi.Text(m.Title) },
 	))
 	html := render(t, v)
-	for _, w := range []string{"ui-vstack", `domi-key="7"`, `domi-key="42"`, "Seven", "Forty-Two"} {
+	for _, w := range []string{"hi-vstack", `domi-key="7"`, `domi-key="42"`, "Seven", "Forty-Two"} {
 		if !strings.Contains(html, w) {
 			t.Errorf("keyed For missing %q\n\n%s", w, html)
 		}
@@ -986,7 +986,7 @@ func TestImageNative(t *testing.T) {
 	if strings.Contains(html, "object-fit") {
 		t.Errorf("native image should have no framing mode:\n%s", html)
 	}
-	if want := `<img alt="pic" class="ui-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
+	if want := `<img alt="pic" class="hi-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
 		t.Errorf("native image missing %q:\n%s", want, html)
 	}
 }
@@ -995,7 +995,7 @@ func TestImageNative(t *testing.T) {
 // keeps the image's own alt text and framing mode.
 func TestImageStroked(t *testing.T) {
 	html := render(t, hi.Image("/x.png").Alt("pic").ScaledToFill().BorderStroke(1, hi.Accent))
-	if want := `<img alt="pic" class="ui-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
+	if want := `<img alt="pic" class="hi-\w+" src="/x.png">`; !regexp.MustCompile(want).MatchString(html) {
 		t.Errorf("stroked image missing %q:\n%s", want, html)
 	}
 	if !strings.Contains(html, "object-fit:cover") {
@@ -1030,23 +1030,23 @@ func TestScrollView(t *testing.T) {
 func TestScrollViewContentArity(t *testing.T) {
 	group := render(t, hi.ScrollView(hi.Vertical,
 		hi.Group(hi.Text("a"), hi.Text("b"))).Padding(hi.Edges(0)))
-	if !strings.Contains(group, "<ui-scroll ") || !strings.Contains(group, "<ui-vstack ") {
+	if !strings.Contains(group, "<hi-scroll ") || !strings.Contains(group, "<hi-vstack ") {
 		t.Errorf("a ScrollView Group should be wrapped in a VStack:\n%s", group)
 	}
 
 	single := render(t, hi.ScrollView(hi.Vertical, hi.Text("a")).Padding(hi.Edges(0)))
-	if strings.Contains(single, "<ui-vstack ") {
+	if strings.Contains(single, "<hi-vstack ") {
 		t.Errorf("a single ScrollView node should not be wrapped:\n%s", single)
 	}
 
 	empty := render(t, hi.ScrollView(hi.Vertical, hi.Empty()).Padding(hi.Edges(0)))
-	if !strings.Contains(empty, "<ui-vstack ") {
+	if !strings.Contains(empty, "<hi-vstack ") {
 		t.Errorf("an empty ScrollView should be wrapped in a VStack:\n%s", empty)
 	}
 }
 
 // TestScrollViewPageLowering pins the narrow root specialization: a bare root
-// ScrollView delegates scrolling to the document and splices out ui-scroll,
+// ScrollView delegates scrolling to the document and splices out hi-scroll,
 // while an enclosing wrapper or rendering modifier keeps the ordinary element
 // viewport. Ancillary metadata remains transparent to the specialization.
 func TestScrollViewPageLowering(t *testing.T) {
@@ -1063,18 +1063,18 @@ func TestScrollViewPageLowering(t *testing.T) {
 		if !pageRoot(html, " "+tt.want) {
 			t.Errorf("ScrollView(%v) root missing %q:\n%s", tt.axis, tt.want, html)
 		}
-		if strings.Contains(html, "<ui-scroll ") {
+		if strings.Contains(html, "<hi-scroll ") {
 			t.Errorf("root ScrollView(%v) retained its element viewport:\n%s", tt.axis, html)
 		}
 	}
 
 	none := render(t, hi.ScrollView(hi.AxisSet(0), hi.Text("content")))
-	if !pageRoot(none, "") || strings.Contains(none, "<ui-scroll ") {
+	if !pageRoot(none, "") || strings.Contains(none, "<hi-scroll ") {
 		t.Errorf("a root ScrollView with no axes should lower as an ordinary page root:\n%s", none)
 	}
 
 	wrapped := render(t, hi.ScrollView(hi.Vertical, hi.Text("content")).Padding(hi.Edges(0)))
-	if !pageRoot(wrapped, "") || !strings.Contains(wrapped, "<ui-scroll ") {
+	if !pageRoot(wrapped, "") || !strings.Contains(wrapped, "<hi-scroll ") {
 		t.Errorf("padding should prevent page lowering:\n%s", wrapped)
 	}
 
@@ -1091,14 +1091,14 @@ func TestScrollViewPageLowering(t *testing.T) {
 	for _, tt := range modified {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.view)
-			if !pageRoot(html, "") || !strings.Contains(html, "<ui-scroll ") {
+			if !pageRoot(html, "") || !strings.Contains(html, "<hi-scroll ") {
 				t.Errorf("rendering modifier should prevent page lowering:\n%s", html)
 			}
 		})
 	}
 
 	background := render(t, modified[0].view)
-	if got := classRule(t, background, `<ui-scroll class="(ui-\w+)"`); !strings.Contains(got, "background-color:"+redCSS) {
+	if got := classRule(t, background, `<hi-scroll class="(hi-\w+)"`); !strings.Contains(got, "background-color:"+redCSS) {
 		t.Errorf("background should remain on the element viewport, got %q", got)
 	}
 
@@ -1107,14 +1107,14 @@ func TestScrollViewPageLowering(t *testing.T) {
 		t.Errorf("root ScrollView title = %q, want title", title)
 	}
 	titledHTML := render(t, titled)
-	if !pageRoot(titledHTML, ` scroll="y"`) || strings.Contains(titledHTML, "<ui-scroll ") {
+	if !pageRoot(titledHTML, ` scroll="y"`) || strings.Contains(titledHTML, "<hi-scroll ") {
 		t.Errorf("Title should preserve page lowering:\n%s", titledHTML)
 	}
 }
 
 func TestSticky(t *testing.T) {
 	html := render(t, hi.Text("h").Sticky())
-	rule := classRule(t, html, `<ui-sticky class="([^" ]+)`)
+	rule := classRule(t, html, `<hi-sticky class="([^" ]+)`)
 	for _, w := range []string{
 		"position:sticky", "z-index:1",
 		"inset-block-start:0", "inset-block-end:0", "inset-inline-start:0", "inset-inline-end:0",
@@ -1139,12 +1139,12 @@ func TestStickyInsetsAdd(t *testing.T) {
 // one applied outside encloses the sticky box and confines it.
 func TestStickyModifierOrder(t *testing.T) {
 	inside := render(t, hi.Text("h").Padding(hi.Edges(8)).Sticky())
-	if s, p := strings.Index(inside, "<ui-sticky"), strings.Index(inside, "<ui-padding"); s < 0 || p < 0 || s > p {
-		t.Errorf("padding inside Sticky: want ui-sticky enclosing ui-padding:\n%s", inside)
+	if s, p := strings.Index(inside, "<hi-sticky"), strings.Index(inside, "<hi-padding"); s < 0 || p < 0 || s > p {
+		t.Errorf("padding inside Sticky: want hi-sticky enclosing hi-padding:\n%s", inside)
 	}
 	outside := render(t, hi.Text("h").Sticky().Padding(hi.Edges(8)))
-	if s, p := strings.Index(outside, "<ui-sticky"), strings.Index(outside, "<ui-padding"); s < 0 || p < 0 || p > s {
-		t.Errorf("padding outside Sticky: want ui-padding enclosing ui-sticky:\n%s", outside)
+	if s, p := strings.Index(outside, "<hi-sticky"), strings.Index(outside, "<hi-padding"); s < 0 || p < 0 || p > s {
+		t.Errorf("padding outside Sticky: want hi-padding enclosing hi-sticky:\n%s", outside)
 	}
 }
 
@@ -1259,7 +1259,7 @@ func TestSubviewRigidIntersection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			inner := hi.HStack(tt.subviews...).Class("inner")
 			html := render(t, hi.HStack(inner))
-			rule := classRule(t, html, `<ui-hstack class="inner (ui-\w+)"`)
+			rule := classRule(t, html, `<hi-hstack class="inner (hi-\w+)"`)
 			if got := strings.Contains(rule, "flex-shrink:0"); got != tt.rigid {
 				t.Errorf("inner rigidity = %v, want %v; rule %q:\n%s", got, tt.rigid, rule, html)
 			}
@@ -1346,35 +1346,35 @@ func TestRepeatedGapAlignment(t *testing.T) {
 		{
 			name:    "gap",
 			view:    hi.VStack(hi.Text("a")).Gap(4).Gap(12),
-			tag:     "ui-vstack",
+			tag:     "hi-vstack",
 			want:    "gap:4px",
 			rejects: "gap:12px",
 		},
 		{
 			name:    "alignment",
 			view:    hi.VStack(hi.Text("a")).Alignment(hi.Leading).Alignment(hi.Trailing),
-			tag:     "ui-vstack",
+			tag:     "hi-vstack",
 			want:    "align-items:start",
 			rejects: "align-items:end",
 		},
 		{
 			name:    "zstack alignment",
 			view:    hi.ZStack(hi.Text("a")).Alignment(hi.TopLeading).Alignment(hi.BottomTrailing),
-			tag:     "ui-zstack",
+			tag:     "hi-zstack",
 			want:    "justify-items:start",
 			rejects: "justify-items:end",
 		},
 		{
 			name:    "grid gap",
 			view:    hi.Grid(hi.Columns(2), hi.Text("a")).Gap(4).Gap(12),
-			tag:     "ui-grid",
+			tag:     "hi-grid",
 			want:    "gap:4px",
 			rejects: "gap:12px",
 		},
 		{
 			name:    "grid alignment",
 			view:    hi.Grid(hi.Columns(2), hi.Text("a")).Alignment(hi.TopLeading).Alignment(hi.BottomTrailing),
-			tag:     "ui-grid",
+			tag:     "hi-grid",
 			want:    "justify-items:start",
 			rejects: "justify-items:end",
 		},
@@ -1382,7 +1382,7 @@ func TestRepeatedGapAlignment(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.view)
-			rule := classRule(t, html, `<`+tt.tag+` class="(ui-\w+)"`)
+			rule := classRule(t, html, `<`+tt.tag+` class="(hi-\w+)"`)
 			if !strings.Contains(rule, tt.want) {
 				t.Errorf("rule = %q, want %q", rule, tt.want)
 			}
@@ -1426,17 +1426,17 @@ func TestModifierOrder(t *testing.T) {
 // with hover variants gated to devices that can hover.
 func TestStateModifiers(t *testing.T) {
 	hovered := render(t, hi.Text("x").WhileHovered(hi.Foreground(hi.Blue)))
-	if got := classRule(t, hovered, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover{color:"+blueCSS+"}}") {
+	if got := classRule(t, hovered, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover{color:"+blueCSS+"}}") {
 		t.Errorf("Hovered rule = %q, want a hover-gated color variant:\n%s", got, hovered)
 	}
 	focused := render(t, hi.Text("x").WhileFocused(hi.Foreground(hi.Blue)))
-	if got := classRule(t, focused, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "&:focus-visible{color:"+blueCSS+"}") {
+	if got := classRule(t, focused, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "&:focus-visible{color:"+blueCSS+"}") {
 		t.Errorf("Focused rule = %q, want a focus variant:\n%s", got, focused)
 	}
 	// A combination applies only while every given state is active,
 	// regardless of the order or repetition of the states.
 	both := render(t, hi.Text("x").Modify(hi.Background(hi.OKLCH(0.9, 0, 0)), hi.Pressed, hi.Hovered, hi.Pressed))
-	if got := classRule(t, both, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover:active{background-color:oklch(0.9 0 0)}}") {
+	if got := classRule(t, both, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "@media (hover: hover){&:hover:active{background-color:oklch(0.9 0 0)}}") {
 		t.Errorf("combined rule = %q, want a hover+active variant:\n%s", got, both)
 	}
 	blue := hi.Foreground(hi.Blue)
@@ -1451,7 +1451,7 @@ func TestStateModifiers(t *testing.T) {
 		{hi.Text("x").Modify(blue, hi.Disabled, hi.Checked), `&:is(:disabled, [aria-disabled="true"]):checked{color:` + blueCSS + `}`},
 	} {
 		got := render(t, tc.v)
-		if rule := classRule(t, got, `<ui-text class="(ui-\w+)"`); !strings.Contains(rule, tc.want) {
+		if rule := classRule(t, got, `<hi-text class="(hi-\w+)"`); !strings.Contains(rule, tc.want) {
 			t.Errorf("rule = %q, want %q", rule, tc.want)
 		}
 	}
@@ -1461,7 +1461,7 @@ func TestStateModifiers(t *testing.T) {
 // modifier after a state-scoped one styles the other states only.
 func TestStateModifierOverride(t *testing.T) {
 	html := render(t, hi.Text("x").WhileHovered(hi.Foreground(hi.Blue)).Foreground(hi.Red))
-	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	for _, w := range []string{"color:" + redCSS, "@media (hover: hover){&:hover{color:" + blueCSS + "}}"} {
 		if !strings.Contains(got, w) {
 			t.Errorf("rule = %q, missing %q:\n%s", got, w, html)
@@ -1478,7 +1478,7 @@ func TestStateBackgroundStacking(t *testing.T) {
 
 		hi.Background(hi.OKLCH(0.2, 0, 0))).
 		Background(hi.OKLCH(0.3, 0, 0)))
-	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	for _, w := range []string{
 		"background-color:oklch(0.3 0 0);background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0))",
 		"@media (hover: hover){&:hover{background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0)),linear-gradient(oklch(0.2 0 0),oklch(0.2 0 0))}}",
@@ -1495,7 +1495,7 @@ func TestStateBackgroundStacking(t *testing.T) {
 // stroke of its own.
 func TestStateStroke(t *testing.T) {
 	html := render(t, hi.Text("x").WhileFocused(hi.BorderStroke(2, hi.Blue)))
-	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	for _, w := range []string{
 		`&::after{border-radius:inherit;content:"";inset:0;pointer-events:none;position:absolute}`,
 		"&:focus-visible::after{box-shadow:inset 0 0 0 2px " + blueCSS + "}",
@@ -1519,7 +1519,7 @@ func TestStateUnionComposes(t *testing.T) {
 		WhileFocused(
 
 			hi.Background(hi.OKLCH(0.5, 0, 0))))
-	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	for _, w := range []string{
 		"background-color:oklch(0.1 0 0)",
 		"&:active{background-color:oklch(0.4 0 0);background-image:linear-gradient(oklch(0.1 0 0),oklch(0.1 0 0))}",
@@ -1554,7 +1554,7 @@ func TestStateUnionRestoresBase(t *testing.T) {
 
 			hi.Foreground(hi.Blue)).
 		Foreground(hi.Red))
-	rule := classRule(t, got, `<ui-text class="(ui-\w+)"`)
+	rule := classRule(t, got, `<hi-text class="(hi-\w+)"`)
 	if !strings.Contains(rule, "&:hover:active{color:"+redCSS+"}") {
 		t.Errorf("union variant should restore the base color, got %q", rule)
 	}
@@ -1569,15 +1569,15 @@ func TestStateUnionRestoresBase(t *testing.T) {
 // box, so its anchor point lands on at.
 func TestOverlayAt(t *testing.T) {
 	over := render(t, hi.Text("x").OverlayAt(hi.TopTrailing, hi.Center, hi.Text("o").Class("probe")))
-	if got := classRule(t, over, `<ui-overlay class="(ui-\w+)"`); !strings.Contains(got, "align-items:start") || !strings.Contains(got, "justify-items:end") {
+	if got := classRule(t, over, `<hi-overlay class="(hi-\w+)"`); !strings.Contains(got, "align-items:start") || !strings.Contains(got, "justify-items:end") {
 		t.Errorf("overlay placement should follow at, got %q:\n%s", got, over)
 	}
-	if got := classRule(t, over, `<ui-text class="probe (ui-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
+	if got := classRule(t, over, `<hi-text class="probe (hi-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
 		t.Errorf("overlay view should shift its anchor onto at, got %q:\n%s", got, over)
 	}
 	// elm-ui's below: the underlay hangs off the base's bottom edge.
 	under := render(t, hi.Text("x").UnderlayAt(hi.Bottom, hi.Top, hi.Text("u").Class("probe")))
-	if got := classRule(t, under, `<ui-text class="probe (ui-\w+)"`); !strings.Contains(got, "translate:0% 100%") {
+	if got := classRule(t, under, `<hi-text class="probe (hi-\w+)"`); !strings.Contains(got, "translate:0% 100%") {
 		t.Errorf("underlay view should shift its anchor onto at, got %q:\n%s", got, under)
 	}
 	// Coincident points shift nothing, matching Overlay's lowering.
@@ -1594,40 +1594,40 @@ func TestOverlayAt(t *testing.T) {
 // composite, a wrapper, or an Underlay retains the ordinary layer box.
 func TestOverlayPageLowering(t *testing.T) {
 	plain := render(t, hi.Text("base").Overlay(hi.Center, hi.Text("overlay")))
-	if strings.Contains(plain, "<ui-layer ") {
+	if strings.Contains(plain, "<hi-layer ") {
 		t.Errorf("root Overlay retained its composite wrapper:\n%s", plain)
 	}
-	if strings.Count(plain, "<ui-overlay ") != 1 {
+	if strings.Count(plain, "<hi-overlay ") != 1 {
 		t.Errorf("root Overlay should emit one overlay sibling:\n%s", plain)
 	}
-	if got := classRule(t, plain, `<ui-overlay class="(ui-\w+)"`); !strings.Contains(got, "position:fixed") || !strings.Contains(got, "pointer-events:none") || !strings.Contains(got, "z-index:2") {
+	if got := classRule(t, plain, `<hi-overlay class="(hi-\w+)"`); !strings.Contains(got, "position:fixed") || !strings.Contains(got, "pointer-events:none") || !strings.Contains(got, "z-index:2") {
 		t.Errorf("root overlay rule = %q, want a fixed hit-transparent front layer", got)
 	}
-	if got := classRule(t, plain, `<ui-text class="(ui-\w+)">base`); !strings.Contains(got, "isolation:isolate") {
+	if got := classRule(t, plain, `<hi-text class="(hi-\w+)">base`); !strings.Contains(got, "isolation:isolate") {
 		t.Errorf("root overlay base rule = %q, want stacking isolation", got)
 	}
 	baseModified := render(t, hi.Text("base").Background(hi.Red).
 		Overlay(hi.Center, hi.Text("overlay")))
-	if strings.Contains(baseModified, "<ui-layer ") {
+	if strings.Contains(baseModified, "<hi-layer ") {
 		t.Errorf("a modifier owned by the base should preserve root Overlay lowering:\n%s", baseModified)
 	}
-	if got := classRule(t, baseModified, `<ui-text class="(ui-\w+)">base`); !strings.Contains(got, "background-color:"+redCSS) {
+	if got := classRule(t, baseModified, `<hi-text class="(hi-\w+)">base`); !strings.Contains(got, "background-color:"+redCSS) {
 		t.Errorf("base background rule = %q, want the modifier on the base", got)
 	}
 
 	scrolling := render(t, hi.ScrollView(hi.Vertical,
 		hi.Text("content")).Overlay(hi.Top, hi.Text("toolbar")))
-	if !pageRoot(scrolling, ` scroll="y"`) || strings.Contains(scrolling, "<ui-scroll ") || strings.Contains(scrolling, "<ui-layer ") {
+	if !pageRoot(scrolling, ` scroll="y"`) || strings.Contains(scrolling, "<hi-scroll ") || strings.Contains(scrolling, "<hi-layer ") {
 		t.Errorf("Overlay should preserve its ScrollView base's document lowering:\n%s", scrolling)
 	}
-	if got := classRule(t, scrolling, `<ui-text class="(ui-\w+)">content`); !strings.Contains(got, "isolation:isolate") {
+	if got := classRule(t, scrolling, `<hi-text class="(hi-\w+)">content`); !strings.Contains(got, "isolation:isolate") {
 		t.Errorf("document ScrollView base rule = %q, want the root-carried isolation", got)
 	}
 
 	chained := render(t, hi.Text("base").
 		Overlay(hi.Center, hi.Text("first")).
 		Overlay(hi.Center, hi.Text("second")))
-	if strings.Count(chained, "<ui-overlay ") != 2 || strings.Contains(chained, "<ui-layer ") {
+	if strings.Count(chained, "<hi-overlay ") != 2 || strings.Contains(chained, "<hi-layer ") {
 		t.Errorf("chained root Overlays should emit two fixed siblings:\n%s", chained)
 	}
 	if first, second := strings.Index(chained, ">first<"), strings.Index(chained, ">second<"); first < 0 || second < first {
@@ -1644,7 +1644,7 @@ func TestOverlayPageLowering(t *testing.T) {
 	for _, tt := range fallbacks {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.view)
-			if !strings.Contains(html, "<ui-layer ") {
+			if !strings.Contains(html, "<hi-layer ") {
 				t.Errorf("%s should retain the ordinary layer composite:\n%s", tt.name, html)
 			}
 		})
@@ -1652,7 +1652,7 @@ func TestOverlayPageLowering(t *testing.T) {
 	scrollFallback := render(t, hi.ScrollView(hi.Vertical, hi.Text("base")).
 		Overlay(hi.Center, hi.Text("overlay")).
 		Background(hi.Red))
-	if !strings.Contains(scrollFallback, "<ui-layer ") || !strings.Contains(scrollFallback, "<ui-scroll ") {
+	if !strings.Contains(scrollFallback, "<hi-layer ") || !strings.Contains(scrollFallback, "<hi-scroll ") {
 		t.Errorf("a modified Overlay composite should also keep its ScrollView base in element mode:\n%s", scrollFallback)
 	}
 }
@@ -1680,7 +1680,7 @@ func TestLayerArity(t *testing.T) {
 			} {
 				t.Run(arity.name, func(t *testing.T) {
 					html := render(t, tt.layer(arity.view))
-					if got := strings.Contains(html, "<ui-zstack "); got != arity.stack {
+					if got := strings.Contains(html, "<hi-zstack "); got != arity.stack {
 						t.Errorf("ZStack present = %v, want %v:\n%s", got, arity.stack, html)
 					}
 				})
@@ -1697,11 +1697,11 @@ func TestOverlayAtMovesGroupAsOne(t *testing.T) {
 		hi.Center,
 		hi.Group(hi.Text("a"), hi.Text("b")),
 	))
-	if got := classRule(t, html, `<ui-zstack class="(ui-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
+	if got := classRule(t, html, `<hi-zstack class="(hi-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
 		t.Errorf("overlay ZStack should shift its anchor onto at, got %q:\n%s", got, html)
 	}
 	for _, text := range []string{"a", "b"} {
-		pattern := `<ui-text class="(ui-\w+)">` + text
+		pattern := `<hi-text class="(hi-\w+)">` + text
 		if got := classRule(t, html, pattern); strings.Contains(got, "translate:") {
 			t.Errorf("overlay member %q should not shift independently, got %q:\n%s", text, got, html)
 		}
@@ -1724,15 +1724,15 @@ func TestOverlayAtBaselinePanics(t *testing.T) {
 // a single node, so non-unary views are arranged in a VStack.
 func TestRenderRootArity(t *testing.T) {
 	group := render(t, hi.Group(hi.Text("a"), hi.Text("b")))
-	if !strings.Contains(group, "ui-vstack") {
+	if !strings.Contains(group, "hi-vstack") {
 		t.Errorf("a root Group should be wrapped in a VStack:\n%s", group)
 	}
 	single := render(t, hi.Text("a"))
-	if strings.Contains(single, "ui-vstack") {
+	if strings.Contains(single, "hi-vstack") {
 		t.Errorf("a single root view should not be wrapped:\n%s", single)
 	}
 	empty := render(t, hi.Empty())
-	if !strings.Contains(empty, "ui-vstack") {
+	if !strings.Contains(empty, "hi-vstack") {
 		t.Errorf("an empty root view should be wrapped in a VStack:\n%s", empty)
 	}
 }
@@ -1752,19 +1752,19 @@ func TestGrid(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, hi.VStack(hi.Grid(tt.layout, hi.Red, hi.Text("x"))))
-			grid := classRule(t, html, `<ui-grid class="(ui-\w+)"`)
+			grid := classRule(t, html, `<hi-grid class="(hi-\w+)"`)
 			for _, w := range []string{"display:grid", tt.want, "row-gap:8px", "column-gap:8px", "align-items:center", "justify-items:center", "align-self:stretch"} {
 				if !strings.Contains(grid, w) {
 					t.Errorf("grid rule missing %q: %q", w, grid)
 				}
 			}
-			cell := classRule(t, html, `<ui-color class="(ui-\w+)"`)
+			cell := classRule(t, html, `<hi-color class="(hi-\w+)"`)
 			if !strings.Contains(cell, "justify-self:stretch") {
 				t.Errorf("filling subview should stretch across its cell, got %q", cell)
 			}
 		})
 	}
-	custom := classRule(t, render(t, hi.Grid(hi.Columns(2), hi.Text("x")).Gap(0).Alignment(hi.TopLeading)), `<ui-grid class="(ui-\w+)"`)
+	custom := classRule(t, render(t, hi.Grid(hi.Columns(2), hi.Text("x")).Gap(0).Alignment(hi.TopLeading)), `<hi-grid class="(hi-\w+)"`)
 	for _, w := range []string{"row-gap:0", "column-gap:0", "align-items:start", "justify-items:start"} {
 		if !strings.Contains(custom, w) {
 			t.Errorf("grid rule missing %q: %q", w, custom)
@@ -1776,11 +1776,11 @@ func TestGrid(t *testing.T) {
 // subviews hugs them like a stack, while a CellMinWidth grid fills
 // its available width regardless, since its column count depends on it.
 func TestGridFill(t *testing.T) {
-	hug := classRule(t, render(t, hi.VStack(hi.Grid(hi.Columns(2), hi.Text("x")))), `<ui-grid class="(ui-\w+)"`)
+	hug := classRule(t, render(t, hi.VStack(hi.Grid(hi.Columns(2), hi.Text("x")))), `<hi-grid class="(hi-\w+)"`)
 	if strings.Contains(hug, "align-self:stretch") {
 		t.Errorf("Columns grid of non-filling subviews should hug them, got %q", hug)
 	}
-	fill := classRule(t, render(t, hi.VStack(hi.Grid(hi.ColumnMinWidth(100), hi.Text("x")))), `<ui-grid class="(ui-\w+)"`)
+	fill := classRule(t, render(t, hi.VStack(hi.Grid(hi.ColumnMinWidth(100), hi.Text("x")))), `<hi-grid class="(hi-\w+)"`)
 	if !strings.Contains(fill, "align-self:stretch") {
 		t.Errorf("CellMinWidth grid should fill its width, got %q", fill)
 	}
@@ -1791,7 +1791,7 @@ func TestGridFill(t *testing.T) {
 // none, so no stretch can override the ratio.
 func TestFrameRatio(t *testing.T) {
 	wide := render(t, hi.VStack(hi.Red.FrameRatio(2, 3, hi.Horizontal)))
-	rule := classRule(t, wide, `<ui-aspect class="(ui-\w+)"`)
+	rule := classRule(t, wide, `<hi-aspect class="(hi-\w+)"`)
 	for _, w := range []string{"aspect-ratio:2 / 3", "align-self:stretch", "min-height:0"} {
 		if !strings.Contains(rule, w) {
 			t.Errorf("width-anchored rule missing %q: %q", w, rule)
@@ -1801,7 +1801,7 @@ func TestFrameRatio(t *testing.T) {
 		t.Errorf("derived height should not fill the column, got %q", rule)
 	}
 	tall := render(t, hi.HStack(hi.Red.FrameRatio(2, 3, hi.Vertical)))
-	rule = classRule(t, tall, `<ui-aspect class="(ui-\w+)"`)
+	rule = classRule(t, tall, `<hi-aspect class="(hi-\w+)"`)
 	for _, w := range []string{"aspect-ratio:2 / 3", "align-self:stretch", "min-width:0", "flex-shrink:0", "writing-mode:vertical-lr"} {
 		if !strings.Contains(rule, w) {
 			t.Errorf("height-anchored rule missing %q: %q", w, rule)
@@ -1812,14 +1812,14 @@ func TestFrameRatio(t *testing.T) {
 	}
 	// The rotated frame's subview is rotated back, and its fills
 	// are lowered in the frame's rotated axes.
-	sub := classRule(t, tall, `<ui-color class="(ui-\w+)"`)
+	sub := classRule(t, tall, `<hi-color class="(hi-\w+)"`)
 	for _, w := range []string{"writing-mode:horizontal-tb", "justify-self:stretch", "align-self:stretch"} {
 		if !strings.Contains(sub, w) {
 			t.Errorf("rotated frame's subview rule missing %q: %q", w, sub)
 		}
 	}
 	half := render(t, hi.HStack(hi.Text("x").FrameRatio(2, 3, hi.Vertical)))
-	if sub := classRule(t, half, `<ui-text class="(ui-\w+)"`); strings.Contains(sub, "stretch") {
+	if sub := classRule(t, half, `<hi-text class="(hi-\w+)"`); strings.Contains(sub, "stretch") {
 		t.Errorf("non-filling subview should not stretch in the rotated frame, got %q", sub)
 	}
 }
@@ -1829,11 +1829,11 @@ func TestFrameRatio(t *testing.T) {
 // axes for the rotated vertical anchor, which also keeps Leading on
 // the leading edge in a right-to-left document.
 func TestFrameRatioAlignment(t *testing.T) {
-	wide := classRule(t, render(t, hi.Text("x").FrameRatio(2, 3, hi.Horizontal, hi.BottomLeading)), `<ui-aspect class="(ui-\w+)"`)
+	wide := classRule(t, render(t, hi.Text("x").FrameRatio(2, 3, hi.Horizontal, hi.BottomLeading)), `<hi-aspect class="(hi-\w+)"`)
 	if !strings.Contains(wide, "align-items:end") || !strings.Contains(wide, "justify-items:start") {
 		t.Errorf("width-anchored rule should place bottom leading, got %q", wide)
 	}
-	tall := classRule(t, render(t, hi.Text("x").FrameRatio(2, 3, hi.Vertical, hi.BottomLeading)), `<ui-aspect class="(ui-\w+)"`)
+	tall := classRule(t, render(t, hi.Text("x").FrameRatio(2, 3, hi.Vertical, hi.BottomLeading)), `<hi-aspect class="(hi-\w+)"`)
 	for _, w := range []string{"align-items:start", "justify-items:end", "&:dir(rtl){writing-mode:vertical-rl}"} {
 		if !strings.Contains(tall, w) {
 			t.Errorf("height-anchored rule missing %q: %q", w, tall)
@@ -1940,7 +1940,7 @@ func TestRenderTitle(t *testing.T) {
 }
 
 // TestRenderStyleElement verifies that the style element is always present,
-// as the first child of ui-root, even for an empty view.
+// as the first child of hi-root, even for an empty view.
 func TestRenderStyleElement(t *testing.T) {
 	var sb strings.Builder
 	_, page := hi.Render(hi.Empty())
@@ -1948,9 +1948,9 @@ func TestRenderStyleElement(t *testing.T) {
 		t.Fatalf("render: %v", err)
 	}
 	html := sb.String()
-	m := regexp.MustCompile(`^<ui-root class="(ui-\w+)"><style>([^<]*)</style>`).FindStringSubmatch(html)
+	m := regexp.MustCompile(`^<hi-root class="(hi-\w+)"><style>([^<]*)</style>`).FindStringSubmatch(html)
 	if m == nil || !strings.Contains(m[2], "."+m[1]+"{") {
-		t.Errorf("style element containing the root rule not first in ui-root:\n%s", html)
+		t.Errorf("style element containing the root rule not first in hi-root:\n%s", html)
 	}
 }
 
@@ -1973,7 +1973,7 @@ func TestTextTrim(t *testing.T) {
 		{hi.TextLastBaseline | hi.TextBottom, "text-box-edge:text alphabetic;text-box-trim:trim-end"},
 	} {
 		html := render(t, hi.Text("x").TextTrim(tt.edges))
-		rule := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+		rule := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 		got := strings.Join(regexp.MustCompile(`text-box-[a-z]+:[^;]*`).FindAllString(rule, -1), ";")
 		if got != tt.want {
 			t.Errorf("edges %b: trim = %q, want %q", tt.edges, got, tt.want)

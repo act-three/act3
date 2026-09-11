@@ -11,7 +11,7 @@ import (
 
 // staticCSS is the static stylesheet.
 //
-//go:embed ui.css
+//go:embed hi.css
 var staticCSS []byte
 
 var cssDigest = func() string {
@@ -31,7 +31,7 @@ var cssDigest = func() string {
 // a stylesheet from the wrong version of this package.
 //
 //	digest, handler := hi.Stylesheet()
-//	path := "/ui." + digest + ".css"
+//	path := "/hi." + digest + ".css"
 //	mux := &http.ServeMux{}
 //	mux.Handle(path, handler)
 //
@@ -46,5 +46,5 @@ func Stylesheet() (digest string, h http.Handler) {
 func serveCSS(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/css; charset=utf-8")
 	w.Header().Set("Cache-Control", "max-age=31536000, immutable")
-	http.ServeContent(w, req, "ui.css", time.Time{}, bytes.NewReader(staticCSS))
+	http.ServeContent(w, req, "hi.css", time.Time{}, bytes.NewReader(staticCSS))
 }

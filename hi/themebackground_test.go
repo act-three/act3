@@ -28,7 +28,7 @@ func TestThemeOption(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, hi.Image("/x.png"), hi.Theme(tt.bg, hi.OKLCH(0.5, 0.2, 280), tt.contrast))
-			if got := classRule(t, html, `<ui-root class="(ui-\w+)"`); got != tt.want {
+			if got := classRule(t, html, `<hi-root class="(hi-\w+)"`); got != tt.want {
 				t.Errorf("root rule = %q, want %q", got, tt.want)
 			}
 		})
@@ -53,7 +53,7 @@ func TestThemeBackground(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, hi.Text("x").ThemeBackground(tt.c))
-			if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != tt.want {
+			if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != tt.want {
 				t.Errorf("theme background rule = %q, want %q", got, tt.want)
 			}
 		})
@@ -68,12 +68,12 @@ func TestThemeBackgroundRebases(t *testing.T) {
 	// contrast 30, so the delta applies as-is.
 	shifted := hi.ThemeColor(0.1, 0, hi.BackgroundScale)
 	html := render(t, hi.Text("x").Foreground(shifted).ThemeBackground(hi.OKLCH(0.2, 0, 0)))
-	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "color:oklch(0.3 0 0)") {
+	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "color:oklch(0.3 0 0)") {
 		t.Errorf("foreground inside a theme background = %q, want derived from it", got)
 	}
 
 	nested := render(t, hi.VStack(hi.Text("x").ThemeBackground(shifted)).ThemeBackground(hi.OKLCH(0.2, 0, 0)))
-	if got := classRule(t, nested, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "background-color:oklch(0.3 0 0)") || strings.Contains(got, "color-scheme") {
+	if got := classRule(t, nested, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "background-color:oklch(0.3 0 0)") || strings.Contains(got, "color-scheme") {
 		t.Errorf("nested theme background = %q, want derived from the enclosing one without a scheme change", got)
 	}
 
@@ -81,17 +81,17 @@ func TestThemeBackgroundRebases(t *testing.T) {
 	// and resolves in the enclosing theme. On the page, the factor is
 	// -1, so the delta moves toward black.
 	outer := render(t, hi.Text("x").ThemeBackground(hi.OKLCH(0.2, 0, 0)).BorderStroke(1, shifted))
-	if got := classRule(t, outer, `<ui-box class="(ui-\w+)"`); !strings.Contains(got, "box-shadow:inset 0 0 0 1px oklch(0.882 0.0013 100)") {
+	if got := classRule(t, outer, `<hi-box class="(hi-\w+)"`); !strings.Contains(got, "box-shadow:inset 0 0 0 1px oklch(0.882 0.0013 100)") {
 		t.Errorf("stroke outside a theme background = %q, want derived from the page", got)
 	}
-	if got := classRule(t, outer, `<ui-text class="(ui-\w+)"`); strings.Contains(got, "box-shadow") {
+	if got := classRule(t, outer, `<hi-text class="(hi-\w+)"`); strings.Contains(got, "box-shadow") {
 		t.Errorf("theme background box = %q, want no stroke of its own", got)
 	}
 
 	// The theme background's own text color is set inside a foreground
 	// set outside it, so the theme background's wins.
 	fg := render(t, hi.Text("x").ThemeBackground(hi.OKLCH(0.2, 0, 0)).Foreground(shifted))
-	if got := classRule(t, fg, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "color:oklch(0.9312 0.0033 0)") {
+	if got := classRule(t, fg, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "color:oklch(0.9312 0.0033 0)") {
 		t.Errorf("foreground outside a theme background = %q, want its text color", got)
 	}
 }

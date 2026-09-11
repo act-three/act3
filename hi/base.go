@@ -107,7 +107,7 @@ func (v base) Disabled(d bool) View {
 func (v base) FixedSize() View {
 	return v.
 		modify(modFixedSize(Horizontal | Vertical)).
-		Class("ui-fixed-size")
+		Class("hi-fixed-size")
 }
 
 func (v base) LinkPolicy(p LinkPolicy) View {

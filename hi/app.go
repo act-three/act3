@@ -113,7 +113,7 @@ func Handler[Msg any, A App[Msg]](
 		onURLChange,
 		o...,
 	)
-	cssPath := path.Join(sv.InternalURLPrefix(), "ui."+cssDigest+".css")
+	cssPath := path.Join(sv.InternalURLPrefix(), "hi."+cssDigest+".css")
 	if !sv.HasCustomDocument() {
 		cssLink = html.Link(attr.Rel("stylesheet"), attr.Href(cssPath))
 	}
@@ -176,7 +176,7 @@ func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 	if in.nonce != "" {
 		a = attr.Nonce(in.nonce)
 	}
-	style := domi.Tag("style", a)(domi.Text("@layer xui{" + in.sheet.CSS() + "}"))
+	style := domi.Tag("style", a)(domi.Text("@layer hi{" + in.sheet.CSS() + "}"))
 	if b.pageScroll != 0 {
 		var axes []string
 		if b.pageScroll.hasAll(Horizontal) {
@@ -188,7 +188,7 @@ func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 		rootAttr = domi.Group(rootAttr, domi.Name("scroll", strings.Join(axes, " ")))
 	}
 	// Order matters, static stylesheet, then generated style, then content.
-	return b.title, domi.Tag("ui-root", rootAttr)(in.cssLink, style, b.node)
+	return b.title, domi.Tag("hi-root", rootAttr)(in.cssLink, style, b.node)
 }
 
 // Render returns HTML representing root.
@@ -207,7 +207,7 @@ func Render(root View, o ...Option) (title string, page domi.Node) {
 	return in.render(root)
 }
 
-// configure resolves the xui options in o.
+// configure resolves the options in o.
 // Options it does not know are for domi.
 func configure(o []Option) (th theme, styleNonce func(context.Context) string, icons func(string) domi.Node) {
 	th = defaultTheme

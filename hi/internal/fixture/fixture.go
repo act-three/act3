@@ -1,4 +1,4 @@
-// Package fixture builds the demo page for the xui test suite.
+// Package fixture builds the demo page for the hi test suite.
 // The page exercises every component and layout mechanism once,
 // so it doubles as the golden-test corpus
 // and as the scene for browser geometry tests.
@@ -190,7 +190,7 @@ func richText() View {
 	return Text("Status: ").
 		TextFont(Bold).
 		Concat(Text("Draft ").TextFont(Italic)).
-		Concat(Text("v2").TextFont(Family("var(--ui-font-mono)"))).
+		Concat(Text("v2").TextFont(Family("var(--hi-font-mono)"))).
 		TextForeground(Secondary)
 }
 
@@ -364,8 +364,8 @@ func Page() View {
 		{ID: 3, Title: "Stalker", Summary: "A guide leads two men into the Zone.", PosterURL: placeholderImage(120, 180, "#65a30d")},
 	}
 	return VStack(
-		Text("ui component library").
-			Title("ui component library").
+		Text("hi component library").
+			Title("hi component library").
 			Font(Bold, SizeEm(32i, 1.15)),
 		section("Account card (Card + HStack + Spacer + OverlayAt badge)", accountCard(user)),
 		section("Movie page (Frame fill + keyed rows + For-style list)", moviePage(movies)),
@@ -390,7 +390,7 @@ func Page() View {
 		Padding(Edges(32))
 }
 
-// Document renders Page into a standalone document with the xui stylesheet
+// Document renders Page into a standalone document with the hi stylesheet
 // inlined, suitable for a browser or the golden test.
 func Document(css string) (string, error) {
 	title, page := Render(

@@ -34,7 +34,7 @@ func TestIconSource(t *testing.T) {
 		if err := domi.RenderTo(&sb, page); err != nil {
 			t.Fatalf("%s: render: %v", tt.name, err)
 		}
-		if !strings.Contains(sb.String(), "<ui-icon") || !strings.Contains(sb.String(), tt.want) {
+		if !strings.Contains(sb.String(), "<hi-icon") || !strings.Contains(sb.String(), tt.want) {
 			t.Errorf("%s: page lacks %q:\n%s", tt.name, tt.want, sb.String())
 		}
 	}

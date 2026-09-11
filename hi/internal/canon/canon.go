@@ -55,8 +55,8 @@ func check(property string) {
 
 // canonical is the set of admitted properties.
 var canonical = map[string]bool{
-	"--ui-icon-scale":        true,
-	"--ui-icon-stroke-width": true,
+	"--hi-icon-scale":        true,
+	"--hi-icon-stroke-width": true,
 	"-webkit-box-orient":     true,
 	"-webkit-line-clamp":     true,
 	"align-items":            true,

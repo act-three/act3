@@ -1,0 +1,75 @@
+@layer hi {
+	/* The root is the browser viewport (not the scrolling body). */
+	hi-root {
+		position: fixed;
+		inset: 0;
+		display: grid;
+		grid-template: 100% / 100%;
+		place-items: center;
+
+		--hi-font-body: system-ui, -apple-system, sans-serif;
+		--hi-font-mono: ui-monospace, "SF Mono", monospace;
+
+		--hi-radius: 0.5rem;
+		--hi-radius-sm: 0.25rem;
+
+		font-family: var(--hi-font-body);
+		line-height: 1.4;
+	}
+
+	/* Lower the inline svg so its center lies halfway up the cap band. */
+	hi-icon > svg {
+		width: var(--hi-icon-scale);
+		height: var(--hi-icon-scale);
+		vertical-align: calc(0.5cap - var(--hi-icon-scale) / 2);
+		stroke-width: var(--hi-icon-stroke-width);
+	}
+
+	/* Symmetric margins keep the trimmed svg's margin box at 1cap.
+	   Its bottom margin edge supplies the baseline, centering the svg
+	   over both the wrapper and the text's cap band. */
+	hi-icon.hi-icon-trim > svg {
+		margin: calc((1cap - var(--hi-icon-scale)) / 2);
+		vertical-align: baseline;
+	}
+
+	/* A root ScrollView delegates its scrolling to the document viewport. */
+	html:has(hi-root[scroll]) {
+		height: 100%;
+		overflow: hidden;
+	}
+
+	html:has(hi-root[scroll~="x"]) { overflow-x: auto; }
+
+	html:has(hi-root[scroll~="y"]) { overflow-y: auto; }
+
+	body:has(hi-root[scroll]) {
+		height: 100%;
+		margin: 0;
+		display: grid;
+	}
+
+	hi-root[scroll] {
+		position: static;
+		grid-template: none;
+		place-items: start;
+		min-width: 0;
+		min-height: 0;
+		isolation: isolate;
+	}
+
+	hi-root[scroll~="x"] { justify-self: start; }
+
+	hi-root[scroll~="y"] { align-self: start; }
+
+	@layer normalize {
+		hi-root,
+		hi-root :not(style, hi-html *, svg, svg *),
+		hi-root :not(hi-html *)::before,
+		hi-root :not(hi-html *)::after {
+			all: unset;
+			box-sizing: border-box;
+			outline: revert;
+		}
+	}
+}

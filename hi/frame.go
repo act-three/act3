@@ -30,7 +30,7 @@ func (w wrapFrame) render(env environment, n node) box {
 	p := wrapSubview(inner, n)
 	p.fills &^= w.axes
 	p.rigid |= w.axes
-	env.tag = cmp.Or(env.tag, "ui-frame")
+	env.tag = cmp.Or(env.tag, "hi-frame")
 	w.align.setItemsOn(&env.style)
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")

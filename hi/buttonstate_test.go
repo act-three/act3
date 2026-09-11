@@ -31,7 +31,7 @@ func TestButtonStateStructure(t *testing.T) {
 						t.Fatalf("controls = %d", len(got))
 					}
 					for i := range 8 {
-						if got[i].Tree != "ui-text,span" || got[i].Disabled != (i&4 != 0) {
+						if got[i].Tree != "hi-text,span" || got[i].Disabled != (i&4 != 0) {
 							t.Errorf("state %d = %+v", i, got[i])
 						}
 					}

@@ -192,7 +192,7 @@ func (c colorView) Foreground(Color) View { return c }
 // nodeColor paints a solid color.
 func nodeColor(c color) node {
 	return func(env environment) box {
-		env.tag = cmp.Or(env.tag, "ui-color")
+		env.tag = cmp.Or(env.tag, "hi-color")
 		env.bg = append(env.bg, term[color]{value: c})
 		return build(env, plan{
 			fills: Horizontal | Vertical,

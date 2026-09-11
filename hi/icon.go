@@ -79,18 +79,18 @@ func nodeIcon(name string) node {
 		if svg == nil {
 			svg = placeholderIcon
 		}
-		env.tag = cmp.Or(env.tag, "ui-icon")
+		env.tag = cmp.Or(env.tag, "hi-icon")
 		// The svg is inline content, so the box has a line box, and
 		// the line's baseline is the box's baseline. The svg's margins
-		// and vertical-align (in ui.css) keep it centered on the cap
+		// and vertical-align (in hi.css) keep it centered on the cap
 		// band with or without trimming.
 		env.style.Set("display", "block")
-		env.style.Set("--ui-icon-scale", fmt.Sprintf("%.4gcap", scale))
-		env.style.Set("--ui-icon-stroke-width", fmt.Sprintf("%.4g", stroke))
-		size := "var(--ui-icon-scale)"
+		env.style.Set("--hi-icon-scale", fmt.Sprintf("%.4gcap", scale))
+		env.style.Set("--hi-icon-stroke-width", fmt.Sprintf("%.4g", stroke))
+		size := "var(--hi-icon-scale)"
 		if env.textTrim == TextCap|TextLastBaseline {
 			size = "1cap"
-			env.attrs = domi.Group(env.attrs, attr.Class("ui-icon-trim"))
+			env.attrs = domi.Group(env.attrs, attr.Class("hi-icon-trim"))
 		}
 		env.style.Set("width", size)
 		env.style.Set("height", size)
