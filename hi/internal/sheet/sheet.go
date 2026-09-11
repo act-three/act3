@@ -261,5 +261,5 @@ func className(body string) string {
 	if len(name) > 8 {
 		name = name[:8]
 	}
-	return "ui-" + name
+	return "hi-" + name
 }

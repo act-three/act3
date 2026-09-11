@@ -1,5 +1,5 @@
 // Package uitest drives a headless Chrome-compatible browser to measure
-// rendered xui layouts.
+// rendered hi layouts.
 // Markup assertions cannot catch CSS regressions;
 // the unit under test here is computed geometry.
 package uitest

@@ -57,7 +57,7 @@ func (w wrapFrameRatio) render(env environment, n node) box {
 	p := wrapSubviewIn(inner, kind, n)
 	p.fills &^= derived
 	p.rigid |= derived
-	env.tag = cmp.Or(env.tag, "ui-aspect")
+	env.tag = cmp.Or(env.tag, "hi-aspect")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")

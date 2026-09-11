@@ -16,7 +16,7 @@ func (s Shape) radius() string {
 	case Ellipse:
 		return "50%"
 	case RoundedRectangle:
-		return "var(--ui-radius)"
+		return "var(--hi-radius)"
 	case Capsule:
 		return "9999px"
 	default:

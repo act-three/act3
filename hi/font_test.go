@@ -149,13 +149,13 @@ func TestFontFeaturesAcrossModifiers(t *testing.T) {
 		selector    string
 		separateBox bool
 	}{
-		{"one call", hi.Text("x").Font(slices.Concat(outer, inner)...), "ui-text", false},
-		{"view calls", hi.Text("x").Font(inner...).Font(outer...), "ui-text", false},
-		{"text calls", hi.Text("x").TextFont(inner...).TextFont(outer...), "ui-text", false},
-		{"mixed calls", hi.Text("x").TextFont(inner...).Font(outer...), "ui-text", false},
-		{"container", hi.VStack(hi.Text("x").Font(inner...)).Font(outer...), "ui-text", true},
-		{"frame", hi.Text("x").Font(inner...).Frame(hi.Width(100)).Font(outer...), "ui-text", true},
-		{"rich text", hi.Text("prefix ").Concat(hi.Text("x").TextFont(inner...)).TextFont(outer...), "ui-text span", true},
+		{"one call", hi.Text("x").Font(slices.Concat(outer, inner)...), "hi-text", false},
+		{"view calls", hi.Text("x").Font(inner...).Font(outer...), "hi-text", false},
+		{"text calls", hi.Text("x").TextFont(inner...).TextFont(outer...), "hi-text", false},
+		{"mixed calls", hi.Text("x").TextFont(inner...).Font(outer...), "hi-text", false},
+		{"container", hi.VStack(hi.Text("x").Font(inner...)).Font(outer...), "hi-text", true},
+		{"frame", hi.Text("x").Font(inner...).Frame(hi.Width(100)).Font(outer...), "hi-text", true},
+		{"rich text", hi.Text("prefix ").Concat(hi.Text("x").TextFont(inner...)).TextFont(outer...), "hi-text span", true},
 		{"inline link", hi.Text("prefix ").Concat(hi.Link("/", hi.Text("x").TextFont(inner...))).TextFont(outer...), "a span", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -215,7 +215,7 @@ func TestOpenTypeFeatureValidation(t *testing.T) {
 	}
 	stage(t, hi.Text("x").Font(hi.OpenTypeFeature("a\"\\b", 3)), func(s *uitest.Session) {
 		var got string
-		s.Eval(`getComputedStyle(document.querySelector("ui-text")).fontFeatureSettings`, &got)
+		s.Eval(`getComputedStyle(document.querySelector("hi-text")).fontFeatureSettings`, &got)
 		if got != `"a\"\\b" 3` {
 			t.Errorf("escaped feature = %q, want a valid quoted CSS tag", got)
 		}

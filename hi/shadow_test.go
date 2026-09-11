@@ -186,7 +186,7 @@ func TestBorderShadowClipAndOpacity(t *testing.T) {
 func TestBorderShadowStableTransparent(t *testing.T) {
 	for _, c := range []hi.Color{hi.Transparent, hi.Black} {
 		html := render(t, hi.Text("x").Opacity(.5).BorderShadow(0, 0, 5, 0, c))
-		if strings.Count(html, "<ui-box ") != 1 {
+		if strings.Count(html, "<hi-box ") != 1 {
 			t.Errorf("%v changed the opacity boundary: %s", c, html)
 		}
 	}

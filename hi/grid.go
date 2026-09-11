@@ -95,7 +95,7 @@ func nodeGrid(layout GridLayout, subviews []View) node {
 		inner.container = containerGrid
 		p := renderSubviewList(inner, subviews...)
 		p.fills |= layout.fills()
-		env.tag = cmp.Or(env.tag, "ui-grid")
+		env.tag = cmp.Or(env.tag, "hi-grid")
 		env.style.Set("display", "grid")
 		env.style.Set("grid-template-columns", layout.columns())
 		gap := cssLength(*cmp.Or(env.gap, new(defaultGap)))

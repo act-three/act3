@@ -28,7 +28,7 @@ func TestOKLCH(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.color)
-			if got := classRule(t, html, `<ui-color class="(ui-\w+)"`); got != "align-self:stretch;background-color:"+tt.want+";justify-self:stretch" {
+			if got := classRule(t, html, `<hi-color class="(hi-\w+)"`); got != "align-self:stretch;background-color:"+tt.want+";justify-self:stretch" {
 				t.Errorf("got %q, want background-color:%s:\n%s", got, tt.want, html)
 			}
 		})

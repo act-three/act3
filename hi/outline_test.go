@@ -163,7 +163,7 @@ func TestBorderOutlineScopeAndStructure(t *testing.T) {
 				if structure == nil {
 					structure = got
 				}
-				if !slices.Equal(got, structure) || strings.Count(html, "<ui-box ") != 1 {
+				if !slices.Equal(got, structure) || strings.Count(html, "<hi-box ") != 1 {
 					t.Errorf("outline values changed the opacity boundary: %s", html)
 				}
 			}

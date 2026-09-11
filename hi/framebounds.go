@@ -200,7 +200,7 @@ func (w wrapFrameBounds) render(env environment, n node) box {
 	// rigidity with it. A bounded axis tracks space above its
 	// bounds instead, regardless of the subview's rigidity.
 	p.rigid &^= w.boundedAxes()
-	env.tag = cmp.Or(env.tag, "ui-frame")
+	env.tag = cmp.Or(env.tag, "hi-frame")
 	w.align.setItemsOn(&env.style)
 	env.style.Set("display", "grid")
 	w.setStyles(&env.style, ideal)

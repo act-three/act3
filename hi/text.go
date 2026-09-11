@@ -74,7 +74,7 @@ func (v textView) styledWith(f func(*environment)) textView {
 
 // buildText lowers r as a text block.
 func buildText(env environment, r textRun) box {
-	env.tag = cmp.Or(env.tag, "ui-text")
+	env.tag = cmp.Or(env.tag, "hi-text")
 	env.style.Set("display", "block")
 	env.style.Set("overflow-wrap", "break-word")
 	inner := env

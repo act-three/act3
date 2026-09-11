@@ -151,7 +151,7 @@ and 15px padding at a 24px root font size.
 
 # Serving Client Assets
 
-A xui page requires two static assets:
+A hi page requires two static assets:
 a CSS stylesheet and a JavaScript module.
 The default behavior of [Handler] includes both.
 
@@ -167,10 +167,10 @@ Apps that serve their own CSS and JavaScript
 might wish to bundle the assets into those files.
 Obtain the filesystem paths of the asset sources by running:
 
-	go list -f '{{.Dir}}/ui.css' ily.dev/act3/hi
+	go list -f '{{.Dir}}/hi.css' ily.dev/act3/hi
 	go list -f '{{.Dir}}/client.js' ily.dev/domi
 
-Include ui.css in the app's CSS bundle.
+Include hi.css in the app's CSS bundle.
 Include client.js in the app's JavaScript bundle,
 then import the module and call run:
 
@@ -184,7 +184,7 @@ A static stylesheet is documented in Serving Client Assets.
 [Handler] also emits a dynamically-generated stylesheet
 in each rendered page.
 
-All CSS rules of both types are declared in the "xui" cascade layer.
+All CSS rules of both types are declared in the "hi" cascade layer.
 
 [imaginary literals]: https://go.dev/ref/spec#Imaginary_literals
 */

@@ -33,7 +33,7 @@ func wrapSubviewIn(env environment, kind containerKind, n node) plan {
 // consuming the environment's pending box values.
 func wrapMod(env environment, n node) box {
 	p := wrapSubview(env, n)
-	env.tag = cmp.Or(env.tag, "ui-box")
+	env.tag = cmp.Or(env.tag, "hi-box")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
@@ -81,7 +81,7 @@ func (w wrapLayer) render(env environment, n node) box {
 	layer, layerTitle := w.renderLayerElement(env, "absolute")
 	p.content = domi.Fragment(p.content, layer)
 	p.title = cmp.Or(p.title, layerTitle)
-	env.tag = cmp.Or(env.tag, "ui-layer")
+	env.tag = cmp.Or(env.tag, "hi-layer")
 	// The container hosts the base subview in its own single-cell
 	// grid; the isolated z ladder sandwiches the in-flow subview
 	// between the layers.
@@ -110,7 +110,7 @@ func (w wrapLayer) renderLayerElement(env environment, position string) (domi.No
 	w.at.setItemsOn(&lss)
 	lss.Set("position", position)
 	EdgeSpace{}.setOn(&lss, "inset")
-	tag := "ui-underlay"
+	tag := "hi-underlay"
 	view := w.layer
 	if w.anchor != w.at {
 		// Placement puts the layer view's at-point onto the base's.
@@ -121,7 +121,7 @@ func (w wrapLayer) renderLayerElement(env environment, position string) (domi.No
 		view = modStyle("translate", strconv.Itoa(x)+"% "+strconv.Itoa(y)+"%")(view)
 	}
 	if w.over {
-		tag = "ui-overlay"
+		tag = "hi-overlay"
 		lss.Set("z-index", strconv.Itoa(zOverlay))
 		// The overlay box blankets the base; input falls through it
 		// to the base, and only the layered subviews take hits.
@@ -172,7 +172,7 @@ func (w wrapPadding) modify(n node) node {
 
 func (w wrapPadding) render(env environment, n node) box {
 	p := wrapSubview(env, n)
-	env.tag = cmp.Or(env.tag, "ui-padding")
+	env.tag = cmp.Or(env.tag, "hi-padding")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
@@ -193,7 +193,7 @@ func (w wrapSticky) modify(n node) node {
 
 func (w wrapSticky) render(env environment, n node) box {
 	p := wrapSubview(env, n)
-	env.tag = cmp.Or(env.tag, "ui-sticky")
+	env.tag = cmp.Or(env.tag, "hi-sticky")
 	env.style.Set("display", "grid")
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")

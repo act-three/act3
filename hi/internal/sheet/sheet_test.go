@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var classShape = regexp.MustCompile(`^ui-[0-9a-v]{1,8}$`)
+var classShape = regexp.MustCompile(`^hi-[0-9a-v]{1,8}$`)
 
 func TestClassInterning(t *testing.T) {
 	var sh Sheet

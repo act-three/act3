@@ -28,7 +28,7 @@ func TestForegroundInnermostWins(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			stage(t, tt.v, func(s *uitest.Session) {
 				var color string
-				s.Eval(`getComputedStyle(document.querySelector("ui-text")).color`, &color)
+				s.Eval(`getComputedStyle(document.querySelector("hi-text")).color`, &color)
 				if color != redCSS {
 					t.Errorf("text color = %s, want %s", color, redCSS)
 				}
@@ -43,13 +43,13 @@ func TestForegroundInnermostWins(t *testing.T) {
 // under the modifier — and descendants styled by CSS inheritance.
 func TestInheritedModifierCollapses(t *testing.T) {
 	html := render(t, hi.VStack(hi.Text("a"), hi.Text("b")).Foreground(hi.Red))
-	if strings.Contains(html, "ui-box") {
+	if strings.Contains(html, "hi-box") {
 		t.Fatalf("Foreground should not produce a wrapper:\n%s", html)
 	}
-	if got := classRule(t, html, `<ui-vstack class="(ui-\w+)"`); got != "align-items:center;color:"+redCSS+";column-gap:8px;display:inline-flex;flex-direction:column;row-gap:8px" {
+	if got := classRule(t, html, `<hi-vstack class="(hi-\w+)"`); got != "align-items:center;color:"+redCSS+";column-gap:8px;display:inline-flex;flex-direction:column;row-gap:8px" {
 		t.Errorf("stack box rule = %q, want the consumed color in the stack's own set", got)
 	}
-	m := regexp.MustCompile(`\.(ui-\w+)\{align-items:center;color:` + regexp.QuoteMeta(redCSS) + `;column-gap:8px;display:inline-flex;flex-direction:column;row-gap:8px\}`).FindStringSubmatch(html)
+	m := regexp.MustCompile(`\.(hi-\w+)\{align-items:center;color:` + regexp.QuoteMeta(redCSS) + `;column-gap:8px;display:inline-flex;flex-direction:column;row-gap:8px\}`).FindStringSubmatch(html)
 	if m == nil {
 		t.Fatalf("no color rule in the sheet:\n%s", html)
 	}
@@ -63,7 +63,7 @@ func TestButtonLabelForeground(t *testing.T) {
 	v := hi.Button(struct{}{}, hi.Text("x").Foreground(hi.Red))
 	stage(t, v, func(s *uitest.Session) {
 		var color string
-		s.Eval(`getComputedStyle(document.querySelector("button ui-text")).color`, &color)
+		s.Eval(`getComputedStyle(document.querySelector("button hi-text")).color`, &color)
 		if color != redCSS {
 			t.Errorf("label color = %s, want the label's %s", color, redCSS)
 		}
@@ -83,7 +83,7 @@ func TestDisabledStateMatchesARIA(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			stage(t, v, func(s *uitest.Session) {
 				var color string
-				s.Eval(`getComputedStyle(document.querySelector("ui-text, button")).color`, &color)
+				s.Eval(`getComputedStyle(document.querySelector("hi-text, button")).color`, &color)
 				if want := name != "none"; (color == redCSS) != want {
 					t.Errorf("color = %s, want disabled styling = %v", color, want)
 				}
@@ -98,15 +98,15 @@ func TestDisabledStateMatchesARIA(t *testing.T) {
 func TestOpacityMultiplies(t *testing.T) {
 	stage(t, hi.Text("hi").Opacity(0.5).Opacity(0.5), func(s *uitest.Session) {
 		var mods int
-		s.Eval(`document.querySelectorAll("ui-box").length`, &mods)
+		s.Eval(`document.querySelectorAll("hi-box").length`, &mods)
 		var op string
-		s.Eval(`getComputedStyle(document.querySelector("ui-text")).opacity`, &op)
+		s.Eval(`getComputedStyle(document.querySelector("hi-text")).opacity`, &op)
 		if mods != 0 || op != "0.25" {
 			t.Errorf("wrappers = %d, text opacity = %s, want none at 0.25", mods, op)
 		}
 	})
 
-	if html := render(t, hi.Text("x").Opacity(1)); strings.Contains(html, "opacity") || strings.Contains(html, "ui-box") {
+	if html := render(t, hi.Text("x").Opacity(1)); strings.Contains(html, "opacity") || strings.Contains(html, "hi-box") {
 		t.Errorf("Opacity(1) should render nothing extra:\n%s", html)
 	}
 }
@@ -170,7 +170,7 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 	button := hi.Button(struct{}{}, hi.Text("x")).Disabled(true)
 	stage(t, hi.HStack(button, button.Opacity(0.1)), func(s *uitest.Session) {
 		var mods int
-		s.Eval(`document.querySelectorAll("ui-box").length`, &mods)
+		s.Eval(`document.querySelectorAll("hi-box").length`, &mods)
 		var opacities []float64
 		s.Eval(`Array.from(document.querySelectorAll("button"), e => Number(getComputedStyle(e).opacity))`, &opacities)
 		within(t, "authored opacity composes with the component's", opacities[1], opacities[0]*0.1, 0.0001)
@@ -201,8 +201,8 @@ func TestElementReset(t *testing.T) {
 		t.Run(tag, func(t *testing.T) {
 			v := hi.HStack(hi.Text("x"), hi.Text("x").Tag(tag).Attr(attr.Href("/")))
 			stage(t, v, func(s *uitest.Session) {
-				if plain, tagged := styleOf(s, "ui-text"), styleOf(s, tag); plain != tagged {
-					t.Errorf("%s = %s\nui-text = %s", tag, tagged, plain)
+				if plain, tagged := styleOf(s, "hi-text"), styleOf(s, tag); plain != tagged {
+					t.Errorf("%s = %s\nhi-text = %s", tag, tagged, plain)
 				}
 			})
 		})
@@ -224,7 +224,7 @@ func TestElementReset(t *testing.T) {
 // the inner colors as image layers listed innermost first.
 func TestBackgroundStacks(t *testing.T) {
 	html := render(t, hi.Text("x").Background(hi.OKLCHA(0, 0, 0, 0.5)).Background(hi.White))
-	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	if got != "background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));display:block;overflow-wrap:break-word" {
 		t.Errorf("paint stack = %q, want the outer color under the inner layer:\n%s", got, html)
 	}
@@ -236,17 +236,17 @@ func TestBackgroundShapeOrder(t *testing.T) {
 	// Background then shape: shape and paint share the element —
 	// a red capsule.
 	shaped := render(t, hi.Text("x").Background(hi.Red).BorderShape(hi.Capsule))
-	if got := classRule(t, shaped, `<ui-text class="(ui-\w+)"`); got != "background-color:"+redCSS+";border-radius:9999px;display:block;overflow-wrap:break-word" {
+	if got := classRule(t, shaped, `<hi-text class="(hi-\w+)"`); got != "background-color:"+redCSS+";border-radius:9999px;display:block;overflow-wrap:break-word" {
 		t.Errorf("shape after paint should shape the paint, got %q:\n%s", got, shaped)
 	}
 
 	// Shape then background: the shape stays on the text element and
 	// the paint boxes out around it, unshaped — a red rectangle.
 	square := render(t, hi.Text("x").BorderShape(hi.Capsule).Background(hi.Red))
-	if got := classRule(t, square, `<ui-box class="(ui-\w+)"`); got != "align-items:center;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center" {
+	if got := classRule(t, square, `<hi-box class="(hi-\w+)"`); got != "align-items:center;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center" {
 		t.Errorf("paint after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
-	if got := classRule(t, square, `<ui-text class="(ui-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
+	if got := classRule(t, square, `<hi-text class="(hi-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
 		t.Errorf("the shape should stay on the inner element, got %q:\n%s", got, square)
 	}
 }
@@ -256,10 +256,10 @@ func TestBackgroundShapeOrder(t *testing.T) {
 // one is inert — no wrapper, no declaration.
 func TestBorderShapeRepetition(t *testing.T) {
 	html := render(t, hi.Text("x").BorderShape(hi.RoundedRectangle).BorderShape(hi.Capsule))
-	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != "border-radius:var(--ui-radius);display:block;overflow-wrap:break-word" {
+	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "border-radius:var(--hi-radius);display:block;overflow-wrap:break-word" {
 		t.Errorf("innermost shape should land on the text element, got %q:\n%s", got, html)
 	}
-	if strings.Contains(html, "9999px") || strings.Contains(html, "ui-box") {
+	if strings.Contains(html, "9999px") || strings.Contains(html, "hi-box") {
 		t.Errorf("outer shape should be inert:\n%s", html)
 	}
 }
@@ -274,10 +274,10 @@ func carrier(shadows string) string {
 // no wrapper element.
 func TestBorderStrokePaints(t *testing.T) {
 	html := render(t, hi.Text("x").BorderStroke(2, hi.Red))
-	if strings.Contains(html, "ui-box") {
+	if strings.Contains(html, "hi-box") {
 		t.Fatalf("BorderStroke should not produce a wrapper:\n%s", html)
 	}
-	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != "display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke rule = %q:\n%s", got, html)
 	}
 }
@@ -287,7 +287,7 @@ func TestBorderStrokePaints(t *testing.T) {
 // over the inner one.
 func TestBorderStrokeStacks(t *testing.T) {
 	html := render(t, hi.Text("x").BorderStroke(2, hi.Red).BorderStroke(4, hi.Blue))
-	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	if got != "display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 4px "+blueCSS+",inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke stack = %q, want the outer stroke over the inner:\n%s", got, html)
 	}
@@ -298,15 +298,15 @@ func TestBorderStrokeStacks(t *testing.T) {
 // applied after a shape rings the shaped box, unshaped.
 func TestBorderStrokeShapeOrder(t *testing.T) {
 	shaped := render(t, hi.Text("x").BorderStroke(2, hi.Red).BorderShape(hi.Capsule))
-	if got := classRule(t, shaped, `<ui-text class="(ui-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, shaped, `<hi-text class="(hi-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("shape after stroke should shape the stroke, got %q:\n%s", got, shaped)
 	}
 
 	square := render(t, hi.Text("x").BorderShape(hi.Capsule).BorderStroke(2, hi.Red))
-	if got := classRule(t, square, `<ui-box class="(ui-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, square, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
-	if got := classRule(t, square, `<ui-text class="(ui-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
+	if got := classRule(t, square, `<hi-text class="(hi-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
 		t.Errorf("the shape should stay on the inner element, got %q:\n%s", got, square)
 	}
 }
@@ -332,7 +332,7 @@ func TestBorderStrokeDoesNotInterceptClicks(t *testing.T) {
 // img cannot host the carrier, so the strokes box out around it.
 func TestBorderStrokeOnImage(t *testing.T) {
 	html := render(t, hi.Image("/x.png").BorderStroke(2, hi.Red))
-	if got := classRule(t, html, `<ui-box class="(ui-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("image strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
 	if !strings.Contains(html, `<img `) {
@@ -345,10 +345,10 @@ func TestBorderStrokeOnImage(t *testing.T) {
 // box out around it.
 func TestBorderStrokeOnScroll(t *testing.T) {
 	html := render(t, hi.ScrollView(hi.Vertical, hi.Text("x")).BorderStroke(2, hi.Red))
-	if got := classRule(t, html, `<ui-box class="[^"]*(ui-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-box class="[^"]*(hi-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("scroll strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
-	if !strings.Contains(html, `<ui-scroll `) {
+	if !strings.Contains(html, `<hi-scroll `) {
 		t.Errorf("the viewport should render inside:\n%s", html)
 	}
 }
@@ -380,7 +380,7 @@ func TestZStackPaintsInOrder(t *testing.T) {
 // the layers.
 func TestLayerIsolatesSubview(t *testing.T) {
 	html := render(t, hi.Text("x").Overlay(hi.Center, hi.Text("o")))
-	got := classRule(t, html, `<ui-text class="(ui-\w+)"`)
+	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	if got != "display:block;isolation:isolate;overflow-wrap:break-word" {
 		t.Errorf("layered subview rule = %q, want isolation", got)
 	}
@@ -392,7 +392,7 @@ func TestLayerIsolatesSubview(t *testing.T) {
 // layers' indexes.
 func TestBorderStrokeOverLayers(t *testing.T) {
 	html := render(t, hi.Text("x").Overlay(hi.Center, hi.Text("o")).BorderStroke(2, hi.Red))
-	got := classRule(t, html, `<ui-layer class="(ui-\w+)"`)
+	got := classRule(t, html, `<hi-layer class="(hi-\w+)"`)
 	want := "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;" +
 		"isolation:isolate;justify-items:center;position:relative;" +
 		strings.Replace(carrier("inset 0 0 0 2px "+redCSS), "position:absolute}", "position:absolute;z-index:3}", 1)
@@ -428,7 +428,7 @@ func TestBorderStrokeTakesNoSpace(t *testing.T) {
 // paints its own box, so the shape it consumes is realized there.
 func TestBorderShapeShapesColor(t *testing.T) {
 	html := render(t, hi.Red.BorderShape(hi.Ellipse))
-	if got := classRule(t, html, `<ui-color class="[^"]*(ui-\w+)"`); got != "align-self:stretch;background-color:"+redCSS+";border-radius:50%;justify-self:stretch" {
+	if got := classRule(t, html, `<hi-color class="[^"]*(hi-\w+)"`); got != "align-self:stretch;background-color:"+redCSS+";border-radius:50%;justify-self:stretch" {
 		t.Errorf("shape should land on the color's element, got %q:\n%s", got, html)
 	}
 }
@@ -443,8 +443,8 @@ func TestWrapperKeepsRigidity(t *testing.T) {
 		v       hi.View
 		pattern string
 	}{
-		{"transform box", hi.HStack(hi.Text("x").FixedSize().Opacity(0.5).Background(hi.Red)), `<ui-box class="(ui-\w+)"`},
-		{"frame auto axis", hi.HStack(hi.Text("x").FixedSize().Frame(hi.Height(40))), `<ui-frame class="(ui-\w+)"`},
+		{"transform box", hi.HStack(hi.Text("x").FixedSize().Opacity(0.5).Background(hi.Red)), `<hi-box class="(hi-\w+)"`},
+		{"frame auto axis", hi.HStack(hi.Text("x").FixedSize().Frame(hi.Height(40))), `<hi-frame class="(hi-\w+)"`},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.v)
@@ -464,8 +464,8 @@ func TestTextStyleInnermostWins(t *testing.T) {
 	}
 }
 
-// stageApp is stage with unlayered app CSS placed before the xui stylesheet in the
-// document, so an app rule can win only through the xui cascade layer,
+// stageApp is stage with unlayered app CSS placed before the hi stylesheet in the
+// document, so an app rule can win only through the hi cascade layer,
 // never through source order.
 func stageApp(t *testing.T, appCSS string, v hi.View, fn func(*uitest.Session)) {
 	t.Helper()
@@ -482,8 +482,8 @@ func stageApp(t *testing.T, appCSS string, v hi.View, fn func(*uitest.Session)) 
 	uitest.Run(t, 600, 400, sb.String(), fn)
 }
 
-// TestAppCSSBeatsStaticSheet pins the app-vs-xui contract for ui.css:
-// every rule it emits sits in the xui layer, so an unlayered app class
+// TestAppCSSBeatsStaticSheet pins the app-vs-hi contract for hi.css:
+// every rule it emits sits in the hi layer, so an unlayered app class
 // overrides it at equal specificity regardless of source order. The
 // fixture is the one HTML's documentation invites: an app class
 // restyling the host adapter's interior layout.
@@ -491,8 +491,8 @@ func TestAppCSSBeatsStaticSheet(t *testing.T) {
 	v := hi.HTML(domi.Text("hi")).Class("app-host")
 	stageApp(t, ".app-host{place-items:stretch}", v, func(s *uitest.Session) {
 		var align, justify string
-		s.Eval(`getComputedStyle(document.querySelector("ui-html")).alignItems`, &align)
-		s.Eval(`getComputedStyle(document.querySelector("ui-html")).justifyItems`, &justify)
+		s.Eval(`getComputedStyle(document.querySelector("hi-html")).alignItems`, &align)
+		s.Eval(`getComputedStyle(document.querySelector("hi-html")).justifyItems`, &justify)
 		if align != "stretch" || justify != "stretch" {
 			t.Errorf("place-items = %s %s, want the app's stretch stretch", align, justify)
 		}
@@ -520,7 +520,7 @@ func TestAppCSSBeatsDynamicSheet(t *testing.T) {
 func TestBorderStrokeZeroWidthKeepsStructure(t *testing.T) {
 	for _, px := range []float64{0, -1} {
 		html := render(t, hi.Image("/x.png").BorderStroke(complex(px, 0), hi.Red))
-		if !strings.Contains(html, "<ui-box ") {
+		if !strings.Contains(html, "<hi-box ") {
 			t.Errorf("BorderStroke(%g) should keep the wrapper:\n%s", px, html)
 		}
 	}
@@ -536,10 +536,10 @@ func TestBorderClippedTransforms(t *testing.T) {
 		"shape then clip": hi.Text("x").BorderStroke(2, hi.Red).BorderShape(hi.Capsule).BorderClipped(),
 	} {
 		html := render(t, v)
-		if strings.Contains(html, "ui-box") {
+		if strings.Contains(html, "hi-box") {
 			t.Errorf("%s: should not produce a wrapper:\n%s", name, html)
 		}
-		if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != want {
+		if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != want {
 			t.Errorf("%s: rule = %q:\n%s", name, got, html)
 		}
 	}
@@ -550,10 +550,10 @@ func TestBorderClippedTransforms(t *testing.T) {
 // wrapper, and rings that wrapper, which is not clipped.
 func TestBorderClippedStrokeOrder(t *testing.T) {
 	html := render(t, hi.Text("x").BorderClipped().BorderStroke(2, hi.Red))
-	if got := classRule(t, html, `<ui-box class="(ui-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke outside clip should land on a wrapper, got %q:\n%s", got, html)
 	}
-	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != "display:block;overflow-wrap:break-word;overflow-x:clip;overflow-y:clip" {
+	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "display:block;overflow-wrap:break-word;overflow-x:clip;overflow-y:clip" {
 		t.Errorf("the clip should stay on the inner element, got %q:\n%s", got, html)
 	}
 }
@@ -574,15 +574,15 @@ func TestBorderClippedOnScroll(t *testing.T) {
 // inside confines only the base.
 func TestBorderClippedOverLayers(t *testing.T) {
 	outside := render(t, hi.Text("x").Overlay(hi.Center, hi.Text("o")).BorderClipped())
-	if got := classRule(t, outside, `<ui-layer class="(ui-\w+)"`); !strings.Contains(got, "overflow-x:clip;overflow-y:clip") {
+	if got := classRule(t, outside, `<hi-layer class="(hi-\w+)"`); !strings.Contains(got, "overflow-x:clip;overflow-y:clip") {
 		t.Errorf("clip outside overlay should clip the composite, got %q:\n%s", got, outside)
 	}
 
 	inside := render(t, hi.Text("x").BorderClipped().Overlay(hi.Center, hi.Text("o")).Padding(hi.Edges(0)))
-	if got := classRule(t, inside, `<ui-layer class="(ui-\w+)"`); strings.Contains(got, "clip") {
+	if got := classRule(t, inside, `<hi-layer class="(hi-\w+)"`); strings.Contains(got, "clip") {
 		t.Errorf("clip inside overlay should leave the composite unclipped, got %q:\n%s", got, inside)
 	}
-	if got := classRule(t, inside, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "overflow-x:clip;overflow-y:clip") {
+	if got := classRule(t, inside, `<hi-text class="(hi-\w+)"`); !strings.Contains(got, "overflow-x:clip;overflow-y:clip") {
 		t.Errorf("clip inside overlay should clip the base, got %q:\n%s", got, inside)
 	}
 }

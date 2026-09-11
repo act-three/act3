@@ -34,7 +34,7 @@ func HTML(node domi.Node) View { return base{nodeHTML(node)} }
 
 func nodeHTML(content domi.Node) node {
 	return func(env environment) box {
-		env.tag = cmp.Or(env.tag, "ui-html")
+		env.tag = cmp.Or(env.tag, "hi-html")
 		env.style.Set("display", "grid")
 		env.style.Set("grid-template-columns", "100%")
 		env.style.Set("grid-template-rows", "100%")

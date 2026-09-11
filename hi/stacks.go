@@ -128,7 +128,7 @@ func (dir stackAxis) addStackStylesTo(ss *canon.StyleSet, gap complex128, align 
 func Spacer() View { return base{nodeSpacer} }
 
 func nodeSpacer(env environment) box {
-	env.tag = cmp.Or(env.tag, "ui-spacer")
+	env.tag = cmp.Or(env.tag, "hi-spacer")
 	env.style.Set("flex-basis", "0")
 	minWidth, minHeight := "0", "0"
 	if env.lc.majorAxis.hasAll(Horizontal) {
@@ -151,7 +151,7 @@ func nodeSpacer(env environment) box {
 func Divider() View { return base{nodeDivider} }
 
 func nodeDivider(env environment) box {
-	env.tag = cmp.Or(env.tag, "ui-divider")
+	env.tag = cmp.Or(env.tag, "hi-divider")
 	env.bg = append(env.bg, term[color]{value: borderColor.color()})
 	p := plan{fills: env.lc.minorAxes(), rigid: env.lc.majorAxis}
 	if env.lc.majorAxis.hasAll(Horizontal) {

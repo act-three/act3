@@ -15,15 +15,15 @@ package hi
 //
 // And suppose it ordinarily lowers to the following HTML:
 //
-//     <ui-border-stroke ...>
-//         <ui-scroll ...>
+//     <hi-border-stroke ...>
+//         <hi-scroll ...>
 //             ...
-//         </ui-scroll>
-//     </ui-border-stroke>
+//         </hi-scroll>
+//     </hi-border-stroke>
 //
 // It must always lower to that structure, regardless of the
 // values of px and c. In particular, it might be tempting to
-// omit the ui-border-stroke element if px is 0 or if c is
+// omit the hi-border-stroke element if px is 0 or if c is
 // transparent, since in that case, there is no visible stroke.
 // This type of optimization is prohibited.
 //
@@ -50,19 +50,19 @@ package hi
 // Suppose this lowers to the following HTML when show is true:
 //
 //     <button ...>
-//         <ui-hstack ...>
-//             <ui-text ...>x</ui-text>
-//             <ui-text ...>y</ui-text>
-//         </ui-hstack>
+//         <hi-hstack ...>
+//             <hi-text ...>x</hi-text>
+//             <hi-text ...>y</hi-text>
+//         </hi-hstack>
 //     </button>
 //
 // Changing the number of views in the button label may change
 // the level of the HTML tree where the label is emitted. When
-// show is false, the lowering may omit the ui-hstack element
+// show is false, the lowering may omit the hi-hstack element
 // and include the subview directly:
 //
 //     <button ...>
-//         <ui-text ...>x</ui-text>
+//         <hi-text ...>x</hi-text>
 //     </button>
 //
 // Consequently, a transition between one and multiple label

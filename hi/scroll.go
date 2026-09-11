@@ -64,7 +64,7 @@ func (s nodeScroll) render(env environment) box {
 	}[s.along], overflow{"clip", "clip"})
 	// The scroll viewport is a single-cell grid establishing no axes.
 	// It is equivalent to the root view context in a scrolling web page.
-	env.tag = cmp.Or(env.tag, "ui-scroll")
+	env.tag = cmp.Or(env.tag, "hi-scroll")
 	env.style.Set("display", "grid")
 	env.style.Set("min-width", "0")
 	env.style.Set("min-height", "0")
