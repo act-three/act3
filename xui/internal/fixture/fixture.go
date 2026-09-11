@@ -63,7 +63,7 @@ func accountCard(user User) View {
 			Gap(12).
 			Padding(Edges(16)),
 	).
-		OverlayAt(TopTrailing, Center, Badge("Pro"))
+		OverlayAt(TopTrailing, Center, Badge("1"))
 }
 
 func moviePage(movies []Movie) View {
