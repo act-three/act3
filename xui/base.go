@@ -131,8 +131,8 @@ func (v base) TextTrim(s TextEdgeSet) View {
 	}))
 }
 
-func (v base) Font(f FontSize) View {
-	return v.modify(modFont(f.values()))
+func (v base) Font(opts ...FontOption) View {
+	return v.modify(modEnv(font(opts)))
 }
 
 func (v base) Foreground(c Color) View {

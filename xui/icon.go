@@ -94,7 +94,7 @@ func nodeIcon(name string) node {
 		}
 		env.style.Set("width", size)
 		env.style.Set("height", size)
-		env.lineHeight = "0"
+		env.lineHeight = new(complex128)
 		return build(env, plan{
 			rigid:   Horizontal | Vertical,
 			content: svg,

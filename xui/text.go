@@ -19,19 +19,10 @@ type TextView interface {
 	// Concat concatenates the receiver with t.
 	Concat(t TextView) TextView
 
-	// Bold uses a bold font to draw the text in the receiver.
-	Bold() TextView
-
-	// Italic uses an italic font to draw the text in the receiver.
-	Italic() TextView
-
-	// Monospace uses a monospace font to draw the text in the receiver.
-	Monospace() TextView
-
-	// TextFont sets the font size for the text in the receiver.
+	// TextFont configures typography for text in the receiver.
 	//
 	// It is equivalent to Font, but it returns a TextView.
-	TextFont(FontSize) TextView
+	TextFont(...FontOption) TextView
 
 	// TextForeground uses c to draw the text in the receiver.
 	//
@@ -53,33 +44,13 @@ type textView struct {
 
 func newTextView(r textRun) textView { return textView{base{r.render}, r} }
 
-func (v textView) Bold() TextView {
-	return v.styledWith(func(env *environment) {
-		env.fontWeight = "600"
-	})
-}
-
-func (v textView) Italic() TextView {
-	return v.styledWith(func(env *environment) {
-		env.fontStyle = "italic"
-	})
-}
-
-func (v textView) Monospace() TextView {
-	return v.styledWith(func(env *environment) {
-		env.fontFamily = "var(--ui-font-mono)"
-	})
-}
-
-func (v textView) TextFont(f FontSize) TextView {
-	size, weight, height := f.values()
-	if size == "" {
+func (v textView) TextFont(opts ...FontOption) TextView {
+	if len(opts) == 0 {
 		return v
 	}
+	f := font(opts)
 	return v.styledWith(func(env *environment) {
-		env.fontSize = size
-		env.fontWeight = weight
-		env.lineHeight = height
+		*env = f(*env)
 	})
 }
 
@@ -154,14 +125,14 @@ type textRun interface {
 // consuming it so that no subrun applies it again.
 func (env environment) styled(content func(environment) domi.Node) domi.Node {
 	ds := env.paintUnder(0).decls(env.theme, false)
-	ds = append(ds, fontDecls(env)...)
-	env.nextenv = nextenv{}
-	if len(ds) == 0 {
-		return content(env)
-	}
 	var ss sheet.StyleSet
 	for _, d := range ds {
 		ss.Set(d.property, d.value)
+	}
+	addFontStylesTo(&ss, env)
+	env.nextenv = nextenv{}
+	if ss.IsEmpty() {
+		return content(env)
 	}
 	return html.Span(attr.Class(env.sheet.ClassFor(ss)))(content(env))
 }

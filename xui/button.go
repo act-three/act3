@@ -55,7 +55,7 @@ func (v buttonView) MenuOpen(open bool) ButtonView {
 
 func nodeButton(action any, label node) node {
 	return func(env environment) box {
-		fontSize, lineHeight, padding := buttonMetrics(env.controlSize)
+		emHeight, lineHeight, padding := buttonMetrics(env.controlSize)
 		style, ok := buttonRecipe[env.buttonStyle]
 		if !ok {
 			style = buttonRecipe[Bordered]
@@ -91,7 +91,7 @@ func nodeButton(action any, label node) node {
 		v := base{label}.
 			LineLimit(1).
 			TextTrim(TextCap|TextLastBaseline).
-			modify(modFont(fontSize, "500", lineHeight)).
+			Font(Medium, SizeEmAbs(emHeight, lineHeight)).
 			Padding(Edges(padding)).
 			BorderStroke(0.5, edge)
 		if !env.disabled {
@@ -144,16 +144,16 @@ func nodeButton(action any, label node) node {
 
 // The edge paints within the padding. A single-line button's height
 // is the font's cap height plus twice the padding.
-func buttonMetrics(s ControlSize) (fontSize, lineHeight string, padding complex128) {
+func buttonMetrics(s ControlSize) (emHeight, lineHeight, padding complex128) {
 	switch s {
 	case Mini:
-		return "12px", "16px", 8
+		return 12, 16, 8
 	case Small:
-		return "12px", "16px", 10
+		return 12, 16, 10
 	case Large:
-		return "13px", "18px", 17
+		return 13, 18, 17
 	default:
-		return "13px", "18px", 11
+		return 13, 18, 11
 	}
 }
 

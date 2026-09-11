@@ -32,7 +32,9 @@ func sampleButton(label View) ButtonView { return Button(Msg{Edit: true}, label)
 
 func buttonSection(title string, body View) View {
 	return VStack(
-		Text(title).TextForeground(Secondary).TextFont(Caption),
+		Text(title).
+			TextForeground(Secondary).
+			TextFont(Normal, SizeEm(12i, 1.3)),
 		body,
 	)
 }
@@ -40,7 +42,8 @@ func buttonSection(title string, body View) View {
 func buttonGallery() View {
 	return VStack(
 		Text("Inspection fixture; Bordered uses an opaque theme-derived edge. "+
-			"Return transitions remain pending.").Font(Caption),
+			"Return transitions remain pending.").
+			Font(Normal, SizeEm(12i, 1.3)),
 		buttonSection("Styles and sizes — text and icon labels", buttonSizes()),
 		buttonSection("States — hover, hold, or Tab to inspect browser interaction", buttonStates()),
 		buttonSection("Label content and layout", buttonLabels()),
@@ -103,7 +106,10 @@ func buttonLabels() View {
 		buttonSection("Arranged lines", sampleButton(
 			VStack(Text("Save changes"), Text("Current collection")).Gap(2))),
 		buttonSection("Explicit label font and color", sampleButton(
-			Text("Save").Font(Title).Foreground(Red))),
+			Text("Save").
+				Font(SizeEm(24i, 1.2), Bold).
+				Foreground(Red),
+		)),
 		buttonSection("Two-line limit", sampleButton(
 			Text(long).LineLimit(2).Frame(Width(120)))),
 		buttonSection("Unlimited wrapping", sampleButton(

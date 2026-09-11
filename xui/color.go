@@ -182,7 +182,7 @@ func (c colorView) color() color { return c.c }
 // Font has no effect because color contains no text.
 // This overrides the embedded method Font
 // to avoid emitting useless style declarations.
-func (c colorView) Font(FontSize) View { return c }
+func (c colorView) Font(...FontOption) View { return c }
 
 // Foreground has no effect because color contains no foreground elements.
 // This overrides the embedded method Foreground

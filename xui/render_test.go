@@ -42,7 +42,7 @@ func accountCard(user User) ui.View {
 				Frame(ui.Width(48), ui.Height(48)).
 				BorderShape(ui.Ellipse),
 			ui.VStack(
-				ui.Text(user.Name).Font(ui.HeadlineFont),
+				ui.Text(user.Name),
 				ui.Text(user.Email).Foreground(ui.Secondary),
 			).Gap(4).Alignment(ui.Leading),
 			ui.Spacer(),
@@ -57,7 +57,7 @@ func accountCard(user User) ui.View {
 func moviePage(movies []Movie) ui.View {
 	return ui.VStack(
 		ui.HStack(
-			ui.Text("Movies").Font(ui.Title),
+			ui.Text("Movies"),
 			ui.Spacer(),
 			ui.Button(Msg{NewMovie: true}, ui.Text("New")).ButtonStyle(ui.Prominent),
 		).Alignment(ui.Center),
@@ -76,7 +76,7 @@ func movieRow(movie Movie) ui.View {
 			ScaledToFill().
 			Frame(ui.Width(64), ui.Height(96)),
 		ui.VStack(
-			ui.Text(movie.Title).Font(ui.HeadlineFont),
+			ui.Text(movie.Title),
 			ui.Text(movie.Summary).Foreground(ui.Secondary),
 		).Gap(4),
 		ui.Spacer(),
@@ -384,7 +384,7 @@ func TestHTMLWrappers(t *testing.T) {
 // TestImmutableModifiers verifies the load-bearing value-semantics invariant:
 // applying a modifier to a shared view must not affect the original.
 func TestImmutableModifiers(t *testing.T) {
-	header := ui.Text("Title").Font(ui.Title)
+	header := ui.Text("Title")
 
 	padded := header.Padding(ui.Edges(16))
 	plain := header.Padding(ui.Edges(0))
@@ -431,7 +431,7 @@ func TestColorAsView(t *testing.T) {
 		}
 	}
 	// Modifiers with no possible effect on a color are no-ops.
-	if noop := render(t, ui.Secondary.Foreground(ui.White).Font(ui.Title)); noop != html {
+	if noop := render(t, ui.Secondary.Foreground(ui.White)); noop != html {
 		t.Errorf("no-effect modifiers on a color should be no-ops:\n%s", noop)
 	}
 }
@@ -612,12 +612,12 @@ func TestPaddingAddsValues(t *testing.T) {
 // where intended.
 func TestTextRunsPreserveType(t *testing.T) {
 	v := ui.Text("Status: ").
-		Bold().
-		Concat(ui.Text("Draft").Italic()).
+		TextFont(ui.Bold).
+		Concat(ui.Text("Draft").TextFont(ui.Italic)).
 		TextForeground(ui.Secondary)
 
 	html := render(t, v)
-	for _, w := range []string{"font-weight:600", "font-style:italic", "Status: ", "Draft"} {
+	for _, w := range []string{"font-weight:700", "font-style:italic", "Status: ", "Draft"} {
 		if !strings.Contains(html, w) {
 			t.Errorf("rich text missing %q\n\n%s", w, html)
 		}
@@ -629,32 +629,50 @@ func TestTextRunsPreserveType(t *testing.T) {
 	}
 }
 
-// TestFontSpecifiesWholeType pins that a font is a complete type
-// setting: inside a Title subtree, each slot's size, weight, and
-// line height are its own, while a box with no font set inherits
-// and emits nothing.
-func TestFontSpecifiesWholeType(t *testing.T) {
-	for _, tt := range []struct {
-		f     ui.FontSize
-		wants []string
-	}{
-		{ui.Body, []string{"font-size:1rem", "font-weight:400", "line-height:1.4"}},
-		{ui.Caption, []string{"font-size:0.75rem", "font-weight:400", "line-height:1.3"}},
-		{ui.HeadlineFont, []string{"font-size:1.125rem", "font-weight:600", "line-height:1.4"}},
-		{ui.LargeTitle, []string{"font-size:2rem", "font-weight:700", "line-height:1.15"}},
+func TestFontOptionsCopied(t *testing.T) {
+	for name, makeView := range map[string]func(...ui.FontOption) ui.View{
+		"view": func(opts ...ui.FontOption) ui.View { return ui.Text("x").Font(opts...) },
+		"text": func(opts ...ui.FontOption) ui.View { return ui.Text("x").TextFont(opts...) },
 	} {
-		html := render(t, ui.VStack(ui.Text("x").Font(tt.f)).Font(ui.Title))
-		for _, w := range tt.wants {
-			if !strings.Contains(html, w) {
-				t.Errorf("Font(%q) should emit %q:\n%s", tt.f, w, html)
+		t.Run(name, func(t *testing.T) {
+			opts := []ui.FontOption{ui.Italic, ui.OpenTypeFeature("ss01", 1)}
+			v := makeView(opts...)
+			want := render(t, v)
+			opts[0] = ui.Roman
+			opts[1] = ui.OpenTypeFeature("ss01", 0)
+			if got := render(t, v); got != want {
+				t.Error("changing the options slice changed an existing view")
 			}
-		}
+		})
 	}
-	if html := render(t, ui.Text("x")); strings.Contains(html, "font-size") {
-		t.Errorf("an unset font should emit nothing:\n%s", html)
+}
+
+func TestFontOptions(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		opts []ui.FontOption
+		want string
+	}{
+		{"reset italic", []ui.FontOption{ui.Italic, ui.Roman, ui.Family("serif")},
+			"display:block;font-family:serif;font-style:normal;overflow-wrap:break-word"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			for name, v := range map[string]ui.View{
+				"view": ui.Text("x").Font(tt.opts...),
+				"text": ui.Text("x").TextFont(tt.opts...),
+			} {
+				t.Run(name, func(t *testing.T) {
+					html := render(t, v)
+					if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); got != tt.want {
+						t.Errorf("font rule = %q, want %q", got, tt.want)
+					}
+				})
+			}
+		})
 	}
-	if html := render(t, ui.Text("x").TextFont("").Bold()); !strings.Contains(html, "font-weight:600") {
-		t.Errorf("an undefined TextFont should be a no-op:\n%s", html)
+
+	if got, want := render(t, ui.Text("x").Font()), render(t, ui.Text("x")); got != want {
+		t.Errorf("empty Font changed rendering:\n%s", got)
 	}
 }
 
@@ -662,12 +680,12 @@ func TestFontSpecifiesWholeType(t *testing.T) {
 // after Concat styles all runs, landing on the text's own element, while
 // a run styled before Concat keeps its own styling.
 func TestTextWholeTextRule(t *testing.T) {
-	html := render(t, ui.Text("a").Concat(ui.Text("b").Italic()).Bold())
-	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "font-weight:600") {
-		t.Errorf("whole-text Bold should land on the text element, got %q:\n%s", got, html)
+	html := render(t, ui.Text("a").Concat(ui.Text("b").TextFont(ui.Italic)).TextFont(ui.Bold))
+	if got := classRule(t, html, `<ui-text class="(ui-\w+)"`); !strings.Contains(got, "font-weight:700") {
+		t.Errorf("whole-text TextFont should land on the text element, got %q:\n%s", got, html)
 	}
 	if got := classRule(t, html, `>a<span class="(ui-\w+)"`); got != "font-style:italic" {
-		t.Errorf("pre-Concat Italic should stay on its own run, got %q:\n%s", got, html)
+		t.Errorf("pre-Concat TextFont should stay on its own run, got %q:\n%s", got, html)
 	}
 }
 
@@ -697,9 +715,9 @@ func TestLink(t *testing.T) {
 		},
 		{
 			"outer style",
-			ui.Link("/docs", ui.Text("docs")).Bold(),
+			ui.Link("/docs", ui.Text("docs")).TextFont(ui.Bold),
 			`</style><a class="(ui-\w+)" href="/docs">docs</a>`,
-			[]string{"font-weight:600"},
+			[]string{"font-weight:700"},
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
