@@ -165,7 +165,7 @@ func count(n int) []int {
 }
 
 func scrollDemo() View {
-	return ScrollView(Vertical,
+	return Card(ScrollView(Vertical,
 		VStack(For(count(3), nil, func(s int) View {
 			return VStack(
 				Text("Season "+strconv.Itoa(s)).
@@ -182,10 +182,8 @@ func scrollDemo() View {
 				Alignment(Leading)
 		})).
 			Alignment(Leading),
-	).
-		Frame(Height(160), Width(220)).
-		BorderShape(RoundedRectangle).
-		Class("demo-bordered")
+	)).
+		Frame(Height(160), Width(220))
 }
 
 func richText() View {
@@ -228,12 +226,8 @@ func lineLimitDemo() View {
 func textLayout() View {
 	var t = Text("To be, or not to be, that is the question.")
 	return VStack(
-		Group(
-			t,
-			t.FixedSize(),
-		).
-			Frame(Width(100), Height(100)).
-			Class("demo-bordered"),
+		Card(t.Frame(Width(100), Height(100))),
+		Card(t.FixedSize().Frame(Width(100), Height(100))),
 	)
 }
 
@@ -376,8 +370,8 @@ func Page() View {
 		section("Account card (Card + HStack + Spacer + OverlayAt badge)", accountCard(user)),
 		section("Movie page (Frame fill + keyed rows + For-style list)", moviePage(movies)),
 		buttonSection("Buttons", buttonGallery()),
-		section("Dividers in an HStack (minor-axis, vertical)", dividerRow().Class("demo-bordered")),
-		section("Dividers in a VStack (minor-axis, horizontal)", dividerColumn().Class("demo-bordered")),
+		section("Dividers in an HStack (minor-axis, vertical)", Card(dividerRow())),
+		section("Dividers in a VStack (minor-axis, horizontal)", Card(dividerColumn())),
 		section("ZStack (layered, all subviews size the stack)", zstackDemo()),
 		section("ScrollView (contained in a Frame, Sticky season headings)", scrollDemo()),
 		section("Rich text (per-run bold/italic/mono, whole-text color)", richText()),
@@ -410,8 +404,6 @@ func Document(css string) (string, error) {
 	sb.WriteString(html.EscapeString(title))
 	sb.WriteString("</title><style>\n")
 	sb.WriteString(css)
-	sb.WriteString("\nbody{margin:0;background:#f5f6f8}")
-	sb.WriteString("\n.demo-bordered{border:1px solid #e4e7ec;border-radius:var(--ui-radius);background:#fff}")
 	sb.WriteString("\n</style></head><body>")
 	if err := domi.RenderTo(&sb, page); err != nil {
 		return "", err

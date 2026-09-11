@@ -47,8 +47,7 @@ func buttonGallery() View {
 		buttonSection("Nested themes, styles, and sizes", buttonContexts()),
 	).
 		Gap(24).
-		Alignment(Leading).
-		Class("button-gallery")
+		Alignment(Leading)
 }
 
 func buttonSizes() View {
@@ -59,13 +58,13 @@ func buttonSizes() View {
 			sizes = append(sizes, buttonSection(size.name, HStack(
 				sampleButton(Text("Save")),
 				sampleButton(Icon("film")).
-					Attr(domi.Name("aria-label", "Save")).Class("button-icon"),
+					Attr(domi.Name("aria-label", "Save")),
 			).Gap(8).ControlSize(size.size)))
 		}
 		rows = append(rows, buttonSection(style.name,
 			Grid(Columns(4), sizes...).ButtonStyle(style.style)))
 	}
-	return VStack(rows...).Gap(16).Class("button-sizes")
+	return VStack(rows...).Gap(16)
 }
 
 func buttonStates() View {
@@ -92,7 +91,7 @@ func buttonStates() View {
 		rows = append(rows, buttonSection(style.name,
 			Grid(Columns(4), states...).ButtonStyle(style.style)))
 	}
-	return VStack(rows...).Gap(16).Class("button-states")
+	return VStack(rows...).Gap(16)
 }
 
 func buttonLabels() View {
@@ -124,7 +123,7 @@ func buttonLabels() View {
 		buttonSection("Rectangular label", sampleButton(
 			Primary.Frame(Width(48), Height(16)),
 		).Attr(domi.Name("aria-label", "Rectangular label"))),
-	).Class("button-labels")
+	)
 }
 
 func buttonContextStyles() View {
@@ -162,5 +161,5 @@ func buttonContexts() View {
 		).Gap(16).Padding(Edges(16)).
 			ButtonStyle(Subtle).ControlSize(Small).ThemeBackground(theme.base))
 	}
-	return VStack(panels...).Gap(16).Class("button-contexts")
+	return VStack(panels...).Gap(16)
 }
