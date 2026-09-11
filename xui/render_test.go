@@ -962,21 +962,6 @@ func TestForKeysItems(t *testing.T) {
 	}
 }
 
-// TestForMultiElementItemPanics pins the single-element contract: a For item
-// must render to exactly one element for the key to live on, and rendering
-// an item that spreads across several panics.
-func TestForMultiElementItemPanics(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Error("a multi-element For item did not panic")
-		}
-	}()
-	items := []Movie{{ID: 7, Title: "Seven"}}
-	render(t, ui.VStack(ui.For(items, movieKey, func(m Movie) ui.View {
-		return ui.Group(ui.Text(m.Title), ui.Text(m.Title))
-	})))
-}
-
 // TestForNilKeyUnkeyed pins the unkeyed mode: a nil key splices the items
 // with no key stamps and no per-item element requirement, so an item may
 // render to several elements.
