@@ -5,8 +5,8 @@ import "testing"
 func TestButtonStateScope(t *testing.T) {
 	var label, sibling environment
 	Render(VStack(
-		Button(struct{}{}, base{envProbe(&label)}).Selected(true).MenuOpen(true),
-		base{envProbe(&sibling)},
+		Button(struct{}{}, view(envProbe(&label))).Selected(true).MenuOpen(true),
+		view(envProbe(&sibling)),
 	))
 	for name, env := range map[string]environment{"label": label, "sibling": sibling} {
 		if env.buttonSelected || env.buttonMenuOpen {

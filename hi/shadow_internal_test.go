@@ -7,10 +7,10 @@ import (
 
 func TestBorderShadowLayers(t *testing.T) {
 	var got environment
-	v := base{func(env environment) box { got = env; return box{} }}.
+	v := view(func(env environment) box { got = env; return box{} }).
 		BorderShadow(1+2i, -3, -2, 4, Red).
 		BorderShadow(0, 1, 0, 0, Blue)
-	v.nodes()[0](environment{})
+	v.resolve()[0](environment{})
 	if !got.hasPaint {
 		t.Fatal("shadow did not establish a paint boundary")
 	}

@@ -25,7 +25,7 @@ type ImageView interface {
 
 // Image displays the image at url.
 func Image(url string) ImageView {
-	return imageView{base{nodeImage{src: url}.render}}
+	return imageView{view(nodeImage{src: url}.render)}
 }
 
 type imageView struct{ base }

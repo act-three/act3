@@ -317,20 +317,25 @@ type View interface {
 	// accepting any internal modifier.
 	modify(m modifier) base
 
-	nodes() []node
+	// resolve resolves the view during rendering.
+	// Its returned slice is read-only.
+	resolve() []node
 }
 
 // A node is a unary view.
 // Its whole job is to lower itself to a single box.
 type node func(environment) box
 
-// unary returns v's only node.
-// If v is not unary, combine first gives it a single aggregate node.
+// unary renders v's node if v is unary.
+// Otherwise, it uses combine to combine the nodes.
 func unary[V View](combine func(...View) V, v View) node {
-	if len(v.nodes()) != 1 {
-		v = combine(v)
+	return func(env environment) box {
+		ns := v.resolve()
+		if len(ns) != 1 {
+			ns = combine(view(ns...)).resolve()
+		}
+		return ns[0](env)
 	}
-	return v.nodes()[0]
 }
 
 type containerKind int
@@ -467,7 +472,7 @@ func renderSubviewNode(env environment, n node) plan {
 func renderSubviewList(env environment, vs ...View) plan {
 	p := plan{rigid: Horizontal | Vertical}
 	for _, v := range vs {
-		for _, n := range v.nodes() {
+		for _, n := range v.resolve() {
 			q := renderSubviewNode(env, n)
 			p.fills |= q.fills
 			p.rigid &= q.rigid

@@ -19,13 +19,13 @@ func TestRenderVisitsEachNodeOnce(t *testing.T) {
 			return n(env)
 		}
 	}
-	wrap := func(n node) View { return base{count(n)} }
+	wrap := func(n node) View { return view(count(n)) }
 	leaf := func(s string) node { return count(textLeaf(s).render) }
 
 	// A deep chain interleaving the shapes whose lowering most tempts a
 	// per-level re-walk: stacks resolving subview fills, definite frames
 	// terminating them, and decoration layers.
-	var v View = base{leaf("leaf")}
+	var v View = view(leaf("leaf"))
 	for range 100 {
 		v = wrap(nodeStack(axisV, []View{
 			v,

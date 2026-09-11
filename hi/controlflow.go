@@ -1,13 +1,34 @@
 package hi
 
 import (
+	"slices"
+
 	"ily.dev/domi"
 )
 
 // Empty is an empty view.
 // It occupies no space.
 // Modifiers applied to it have no effect.
-func Empty() View { return base(nil) }
+func Empty() View { return view() }
+
+// Lazy defers the construction of a view.
+//
+// When the lazy view is rendered,
+// it calls f and renders the result.
+//
+// If the lazy view is not rendered,
+// it does not call f.
+// For example, If(false, Lazy(f)) never calls f.
+//
+// Note that values and resources captured by f
+// must remain valid until it is called,
+// and it is called during rendering,
+// after [App.View] has returned.
+func Lazy(f func() View) View {
+	return base(func() []node {
+		return f().resolve()
+	})
+}
 
 // A Group is a sequence of views.
 // It contributes the views to its enclosing view
@@ -22,11 +43,14 @@ func Empty() View { return base(nil) }
 //	    b.Background(Red).Padding(),
 //	)
 func Group(v ...View) View {
-	var b base
-	for _, c := range v {
-		b = append(b, c.nodes()...)
-	}
-	return b
+	v = slices.Clone(v)
+	return base(func() []node {
+		var ns []node
+		for _, c := range v {
+			ns = append(ns, c.resolve()...)
+		}
+		return ns
+	})
 }
 
 // If returns v if cond is true and [Empty] otherwise.
@@ -74,16 +98,27 @@ func WhenElse(cond bool, a, b func() View) View {
 // If f returns a Group,
 // the key is assigned to its first member.
 func For[T any, S ~[]T](items S, key func(T) string, f func(T) View) View {
-	var b base
+	var vs []View
 	for _, it := range items {
-		ns := f(it).nodes()
-		if key != nil && len(ns) > 0 {
-			b = append(b, modKey(key(it))(ns[0]))
-			ns = ns[1:]
+		v := f(it)
+		if key != nil {
+			v = withKey(key(it), v)
 		}
-		b = append(b, ns...)
+		vs = append(vs, v)
 	}
-	return b
+	return Group(vs...)
+}
+
+// withKey assigns key to the first node in v.
+func withKey(key string, v View) base {
+	return func() []node {
+		ns := v.resolve()
+		if len(ns) > 0 {
+			ns = slices.Clone(ns)
+			ns[0] = modKey(key)(ns[0])
+		}
+		return ns
+	}
 }
 
 func modKey(key string) modifier {

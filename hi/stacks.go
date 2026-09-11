@@ -24,12 +24,12 @@ type StackView interface {
 
 // A VStack arranges its subviews in a vertical line.
 func VStack(v ...View) StackView {
-	return stackView{base{nodeStack(axisV, v)}}
+	return stackView{view(nodeStack(axisV, v))}
 }
 
 // An HStack arranges its subviews in a horizontal line.
 func HStack(v ...View) StackView {
-	return stackView{base{nodeStack(axisH, v)}}
+	return stackView{view(nodeStack(axisH, v))}
 }
 
 type stackView struct{ base }
@@ -60,7 +60,7 @@ type ZStackView interface {
 
 // ZStack overlays the given views.
 func ZStack(v ...View) ZStackView {
-	return zstackView{base{nodeStack(axisZ, v)}}
+	return zstackView{view(nodeStack(axisZ, v))}
 }
 
 type zstackView struct{ base }
@@ -125,7 +125,7 @@ func (dir stackAxis) addStackStylesTo(ss *canon.StyleSet, gap complex128, align 
 // It expands along the major axis of the nearest enclosing stack.
 // If there is no major axis, such as inside a [ZStack],
 // it expands along both axes.
-func Spacer() View { return base{nodeSpacer} }
+func Spacer() View { return view(nodeSpacer) }
 
 func nodeSpacer(env environment) box {
 	env.tag = cmp.Or(env.tag, "hi-spacer")
@@ -148,7 +148,7 @@ func nodeSpacer(env environment) box {
 // It expands along the minor axis of the nearest enclosing stack.
 // If there is no major axis, such as inside a [ZStack],
 // it expands horizontally.
-func Divider() View { return base{nodeDivider} }
+func Divider() View { return view(nodeDivider) }
 
 func nodeDivider(env environment) box {
 	env.tag = cmp.Or(env.tag, "hi-divider")

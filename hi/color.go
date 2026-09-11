@@ -174,7 +174,7 @@ type colorView struct {
 }
 
 func newColor(c color) colorView {
-	return colorView{base{nodeColor(c)}, c}
+	return colorView{view(nodeColor(c)), c}
 }
 
 func (c colorView) color() color { return c.c }

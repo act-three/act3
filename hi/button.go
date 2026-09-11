@@ -32,7 +32,7 @@ func Button[Action any](a Action, label View) ButtonView {
 	if _, ok := action.(string); !ok {
 		action = event.Click(a)
 	}
-	return buttonView{base{nodeButton(action, unary(HStack, label))}}
+	return buttonView{view(nodeButton(action, unary(HStack, label)))}
 }
 
 type buttonView struct{ base }
@@ -88,7 +88,7 @@ func nodeButton(action any, label node) node {
 			opacity = 0.6
 			pressedOpacity = 1.0
 		}
-		v := base{label}.
+		v := view(label).
 			LineLimit(1).
 			TextTrim(TextCap|TextLastBaseline).
 			Font(Medium, SizeEmAbs(emHeight, lineHeight)).
@@ -138,7 +138,7 @@ func nodeButton(action any, label node) node {
 					action,
 				)
 		}
-		return v.nodes()[0](env)
+		return v.resolve()[0](env)
 	}
 }
 

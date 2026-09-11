@@ -25,7 +25,7 @@ import (
 //	).
 //		Alignment(FirstBaseline)
 func Icon(name string) View {
-	return base{nodeIcon(name)}
+	return view(nodeIcon(name))
 }
 
 // IconSource sets the source of icons displayed by [Icon].

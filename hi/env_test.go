@@ -68,7 +68,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 		}
 	}
 	subview(t, func(env environment, n node) { wrapSubview(env, n) })
-	subview(t, func(env environment, n node) { renderSubviewList(env, base{n}) })
+	subview(t, func(env environment, n node) { renderSubviewList(env, view(n)) })
 }
 
 // TestEnvironmentModifiersPreserveAtRoot pins ownership of root-specialized
