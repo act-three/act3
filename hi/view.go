@@ -1,0 +1,531 @@
+package hi
+
+import (
+	"cmp"
+
+	"ily.dev/domi"
+	"ily.dev/domi/attr"
+
+	"ily.dev/act3/hi/internal/canon"
+	"ily.dev/act3/hi/internal/sheet"
+)
+
+// A View is a user interface element,
+// with modifiers to change its appearance and behavior.
+//
+// Views are immutable.
+// A modifier always returns a new view
+// that is a modified version of the underlying view.
+//
+// You can create custom views by writing functions that return View values.
+//
+//	func MyView() View {
+//	    return Text("hello, world!")
+//	}
+//
+// Compose the View by combining one or more of the built-in views
+// provided in this package,
+// like the Text view above,
+// plus other custom view functions you define.
+type View interface {
+	// Background fills the background of the receiver.
+	Background(Color) View
+
+	// BorderClipped hides content in the receiver drawn outside
+	// its border. It does not affect layout.
+	BorderClipped() View
+
+	// BorderShape sets the shape of the receiver's border.
+	BorderShape(Shape) View
+
+	// BorderOutline draws a line of the given width and color around
+	// the outside of the receiver's border. The gap specifies the
+	// distance between the border and the outline.
+	//
+	// The outline takes no layout space. If any of the view's content
+	// overlaps with the outline, the outline is drawn in front.
+	//
+	// A view can have at most one outline. If the receiver already
+	// has an outline, BorderOutline has no effect.
+	//
+	// The gap and width are clamped to the nonnegative range.
+	BorderOutline(gap, width complex128, c Color) View
+
+	// BorderShadow draws a shadow of the given color around the
+	// outside of the receiver's border.
+	//
+	// The distances dx and dy move the shadow right and down.
+	// The spread distance makes the shadow bigger.
+	// The blur radius blurs the shadow image.
+	//
+	// The shadow is drawn exclusively outside the view's border
+	// shape. It takes no layout space. If any of the view's content
+	// overlaps with the shadow, the shadow is drawn behind it.
+	BorderShadow(x, y, spread, blur complex128, c Color) View
+
+	// BorderStroke draws a line of the given width and color along
+	// the inside of the receiver's border.
+	//
+	// The stroke paints over the view's content. It takes no layout
+	// space. To add a border around the outside of a view, add
+	// padding inside the border.
+	BorderStroke(width complex128, c Color) View
+
+	// ButtonStyle sets the appearance of buttons in the receiver.
+	// The default style is Bordered.
+	ButtonStyle(ButtonStyle) View
+
+	// ControlSize sets the size of controls in the receiver.
+	// The default size is Regular.
+	ControlSize(ControlSize) View
+
+	// Disabled makes the receiver non-interactive. Controls such as
+	// buttons, links, and text fields do not respond to input events.
+	//
+	// If any enclosing view sets Disabled(true), the view is disabled,
+	// even when an inner view sets Disabled(false). In this example,
+	// the button is disabled:
+	//
+	//     HStack(
+	//         Button("/", Text("Home")).
+	//             Disabled(false),
+	//     ).
+	//         Disabled(true)
+	Disabled(d bool) View
+
+	// FixedSize fixes the receiver at its ideal size. It ignores its
+	// available space. This can cause it to be larger than its container.
+	FixedSize() View
+
+	// Font configures typography for text in the receiver.
+	Font(...FontOption) View
+
+	// Foreground uses c to draw foreground elements in the receiver,
+	// such as text.
+	Foreground(c Color) View
+
+	// Frame positions the receiver inside an invisible frame with the
+	// given dimensions and alignment.
+	//
+	// Note that type Alignment satisfies FrameOption.
+	Frame(...FrameOption) View
+
+	// FrameBounds positions the receiver inside an invisible frame with
+	// the given bounds and alignment.
+	//
+	// Note that type Alignment satisfies FrameBoundsOption.
+	FrameBounds(...FrameBoundsOption) View
+
+	// FrameRatio positions the receiver inside an invisible frame
+	// with a width:height aspect ratio of w:h.
+	//
+	// The anchor must be Horizontal or Vertical.
+	// On the anchor axis, the frame adopts the size of the receiver.
+	// On the other axis, its size is derived by the ratio.
+	//
+	// To display a 16:9 thumbnail, as wide as its available space:
+	//
+	//	Image(url).
+	//		ScaledToFill().
+	//		FrameRatio(16, 9, Horizontal)
+	//
+	// Note that type Alignment satisfies FrameRatioOption.
+	FrameRatio(w, h int, anchor AxisSet, o ...FrameRatioOption) View
+
+	// Overlay displays o as a layer in front of the receiver. Opaque
+	// regions of o obscure the receiver where they overlap.
+	//
+	// The given Alignment sets the position of o relative to the receiver.
+	//
+	// Overlay(a, o) is equivalent to OverlayAt(a, a, o).
+	//
+	// When Overlay is the root view of the page, the receiver is also
+	// at the page root. In particular, if the receiver is a ScrollView,
+	// it uses document scrolling. See ScrollView.
+	Overlay(a Alignment, o View) View
+
+	// OverlayAt displays o as a layer in front of the receiver.
+	// It places the anchor point on o at the point on the
+	// receiver specified by at.
+	//
+	// To place a badge centered at the top trailing corner of a view:
+	//
+	//     view.OverlayAt(TopTrailing, Center, badge)
+	//
+	// To place a menu below a view on the leading edge:
+	//
+	//     view.OverlayAt(BottomLeading, TopLeading, menu)
+	//
+	// To place a popover centered below a view:
+	//
+	//     view.OverlayAt(Bottom, Top, popover)
+	//
+	// When at and anchor are different, neither point can include
+	// FirstBaseline. If either one does, the view panics.
+	//
+	// When OverlayAt is the root view of the page, the receiver is also
+	// at the page root. In particular, if the receiver is a ScrollView,
+	// it uses document scrolling. See ScrollView.
+	OverlayAt(at, anchor Alignment, o View) View
+
+	// Underlay displays u as a layer behind the receiver. Opaque
+	// regions of the receiver obscure u where they overlap.
+	//
+	// The given Alignment sets the position of u relative to the receiver.
+	//
+	// Underlay(a, u) is equivalent to UnderlayAt(a, a, u).
+	Underlay(a Alignment, u View) View
+
+	// UnderlayAt displays u as a layer behind the receiver.
+	// It places the anchor point on u at the point on the
+	// receiver specified by at.
+	//
+	// When at and anchor are different, neither point can include
+	// FirstBaseline. If either one does, the view panics.
+	UnderlayAt(at, anchor Alignment, u View) View
+
+	// LineLimit limits the number of lines text can occupy
+	// in the receiver. If n is 0, there is no limit.
+	LineLimit(n int) View
+
+	// LinkPolicy sets the policy for links and buttons in the receiver.
+	// The default policy is HandleSameOrigin.
+	LinkPolicy(LinkPolicy) View
+
+	// Opacity sets the receiver's opacity to x,
+	// from 0 (transparent) to 1 (opaque).
+	Opacity(x float64) View
+
+	// Padding adds the empty space defined by s around the receiver.
+	// If more than one value s is provided, they are added together.
+	// If no arguments are given, a system-defined amount of default
+	// padding is added to all sides.
+	Padding(s ...EdgeSpace) View
+
+	// Sticky repositions the receiver to remain visible when it
+	// would otherwise be scrolled offscreen.
+	//
+	// Sticky works by applying an offset to the receiver's initial
+	// position (where it would be placed without Sticky) to obtain
+	// its actual position. The sum of the given EdgeSpace values
+	// defines a rectangle inset within the viewport of the nearest
+	// enclosing ScrollView. If part or all of the receiver's initial
+	// position is outside the bounds of this rectangle, the offset
+	// is adjusted to attempt to keep it in bounds.
+	//
+	// The actual position is always within the receiver's nearest
+	// enclosing view (or its cell, in a grid). Therefore, if the
+	// enclosing view is scrolled outside the viewport, the sticky
+	// view scrolls out too.
+	//
+	// This example keeps the sticky text in view while its enclosing
+	// VStack is in view.
+	//
+	//	ScrollView(Vertical, VStack(
+	//		For(sections, nil, func(s Section) View {
+	//			return VStack(
+	//				Text(s.Title).
+	//					Sticky(),
+	//				For(s.Items, nil, item),
+	//			)
+	//		}),
+	//	))
+	//
+	// Note that as a consequence of these rules, if an enclosing
+	// modifier or view is the same size as the sticky view, Sticky
+	// has no effect.
+	Sticky(s ...EdgeSpace) View
+
+	// TextTrim specifies where to trim text boxes in the receiver.
+	//
+	// It trims to the smallest box specified by the given edge set.
+	// For instance, specifying both TextEx and TextCap trims to the
+	// ex-height on the top edge.
+	//
+	// If either the top or bottom edges are not present in the edge
+	// set, the half-leading on those edges is retained.
+	//
+	// The default is no trim.
+	TextTrim(TextEdgeSet) View
+
+	// ThemeBackground makes bg the background color of the receiver's
+	// theme. Theme colors in the receiver are derived from bg.
+	// See ThemeColor.
+	ThemeBackground(bg Color) View
+
+	// WhileHovered applies m to the receiver while in the Hovered state.
+	//
+	// It is equivalent to Modify(m, Hovered).
+	WhileHovered(m Modifier) View
+
+	// WhileFocused applies m to the receiver while in the Focused state.
+	//
+	// It is equivalent to Modify(m, Focused).
+	WhileFocused(m Modifier) View
+
+	// WhilePressed applies m to the receiver while in the Pressed state.
+	//
+	// It is equivalent to Modify(m, Pressed).
+	WhilePressed(m Modifier) View
+
+	// WhileDisabled applies m to the receiver while in the Disabled state.
+	//
+	// It is equivalent to Modify(m, Disabled).
+	WhileDisabled(m Modifier) View
+
+	// WhileChecked applies m to the receiver while in the Checked state.
+	//
+	// It is equivalent to Modify(m, Checked).
+	WhileChecked(m Modifier) View
+
+	// WhileInvalid applies m to the receiver while in the Invalid state.
+	//
+	// It is equivalent to Modify(m, Invalid).
+	WhileInvalid(m Modifier) View
+
+	// WhilePlaceholder applies m to the receiver while in the
+	// Placeholder state.
+	//
+	// It is equivalent to Modify(m, Placeholder).
+	WhilePlaceholder(m Modifier) View
+
+	// Modify applies a modifier to the receiver. It applies only while
+	// all given states are active. If no states are given, it applies
+	// unconditionally.
+	Modify(Modifier, ...State) View
+
+	// Attr adds the given HTML attributes to the outermost HTML element
+	// generated by the receiver.
+	Attr(...domi.Attr) View
+
+	// Class adds the given CSS classes to the outermost HTML element
+	// generated by the receiver.
+	Class(...string) View
+
+	// Tag sets the HTML tag name of the outermost HTML element
+	// generated by the receiver.
+	Tag(string) View
+
+	// Title adds a page title to the returned view. If the receiver
+	// already has a title, Title has no effect.
+	//
+	// The page title is returned by Render.
+	Title(string) View
+
+	// modify applies m to the receiver.
+	// It is the unexported equivalent of Modify,
+	// accepting any internal modifier.
+	modify(m modifier) base
+
+	nodes() []node
+}
+
+// A node is a unary view.
+// Its whole job is to lower itself to a single box.
+type node func(environment) box
+
+// unary returns v's only node.
+// If v is not unary, combine first gives it a single aggregate node.
+func unary[V View](combine func(...View) V, v View) node {
+	if len(v.nodes()) != 1 {
+		v = combine(v)
+	}
+	return v.nodes()[0]
+}
+
+type containerKind int
+
+const (
+	containerGrid containerKind = iota
+	containerFlex
+	// containerGridRotated is a grid whose writing mode is
+	// rotated a quarter turn, so its inline axis is vertical.
+	containerGridRotated
+)
+
+// environment carries the top-down state of a lowering pass.
+type environment struct {
+	lc          layoutContext
+	container   containerKind
+	unbounded   AxisSet
+	disabled    bool
+	lineLimit   int // max lines per text, or 0 for no limit
+	textTrim    TextEdgeSet
+	linkPolicy  LinkPolicy
+	controlSize ControlSize
+	buttonStyle ButtonStyle
+	theme       theme
+	iconSource  func(string) domi.Node
+	sheet       *sheet.Sheet
+	root        rootenv
+	nextenv     // must be zeroed before rendering a subview
+}
+
+// rootenv is context for root-specialized lowering. Its base styles are not
+// attached to an authored view: they pass through specializations that remove
+// or hoist a box and land on whichever concrete box becomes the page base.
+type rootenv struct {
+	atRoot bool
+	style  canon.StyleSet
+}
+
+// nextenv contains environment values
+// that must be cleared before rendering a subview.
+// They are "one-shot" values.
+type nextenv struct {
+	tag        string
+	attrs      domi.Attr
+	style      canon.StyleSet
+	fg         []term[color]
+	bg         []term[color]
+	stroke     []term[stroke]
+	shadow     []term[shadow]
+	outline    []term[outline]
+	shape      []term[Shape]
+	fontFamily string
+	fontStyle  string
+	fontWeight string
+	opacity    []term[float64]
+
+	fontSize     fontSize
+	lineHeight   *complex128
+	fontVariants fontVariants
+	fontFeatures openTypeFeatures
+
+	// fillMask is the set of axes to be stripped
+	// from the box's fill request.
+	// It is set at the outermost box of an unbounded subtree.
+	fillMask AxisSet
+	hasPaint bool // set by every paint modifier
+	hasClip  bool // shadows need special handling
+
+	// Component-specific fields.
+	buttonSelected bool
+	buttonMenuOpen bool
+	alignment      Alignment
+	gap            *complex128 // nil means defaultGap
+	imageAlt       string
+	framedAs       framingMode
+}
+
+// A stroke is one pending border line.
+type stroke struct {
+	width complex128
+	c     color
+}
+
+// add prepends attributes to the environment,
+// keeping an inner writer's attributes before an outer's,
+// so they land on the box in application order.
+func (env *environment) add(a ...domi.Attr) {
+	env.attrs = domi.Group(domi.Group(a...), env.attrs)
+}
+
+// A plan is an HTML element under construction.
+type plan struct {
+	content domi.Node
+	fills   AxisSet // A fill request is the physical axes a box wants to fill.
+	rigid   AxisSet
+	ideal   rect // ideal is a box's size when available space is unbounded.
+	title   string
+}
+
+// A box is a rendered node.
+// It contains the HTML node,
+// plus ancillary data needed by its consumer.
+type box struct {
+	node       domi.Node
+	fills      AxisSet
+	rigid      AxisSet
+	title      string
+	pageScroll AxisSet
+}
+
+// renderSubviewNode renders n
+// and returns a plan containing n's box.
+// The plan forwards the box's fill and rigid requests
+// and its ancillary data.
+// It strips env's pending box values and root context before n renders,
+// so they cannot land on or specialize the subview's box.
+func renderSubviewNode(env environment, n node) plan {
+	env.nextenv = nextenv{}
+	env.root = rootenv{}
+	b := n(env)
+	return plan{
+		content: b.node,
+		fills:   b.fills,
+		rigid:   b.rigid,
+		title:   b.title,
+	}
+}
+
+// renderSubviewList combines a list of subviews.
+// It renders the given views and combines them into a plan
+// with fill and rigid requests and ancillary data merged.
+// It strips env's box values before any subview renders,
+// so they cannot land on a subview's box.
+func renderSubviewList(env environment, vs ...View) plan {
+	p := plan{rigid: Horizontal | Vertical}
+	for _, v := range vs {
+		for _, n := range v.nodes() {
+			q := renderSubviewNode(env, n)
+			p.fills |= q.fills
+			p.rigid &= q.rigid
+			p.title = cmp.Or(p.title, q.title)
+			p.content = domi.Fragment(p.content, q.content)
+		}
+	}
+	return p
+}
+
+// build returns the box described by env and p.
+func build(env environment, p plan) box {
+	a := env.attrs
+	fills := p.fills &^ env.fillMask
+	// A box is always rigid on an unbounded axis.
+	rigid := p.rigid | env.unbounded
+	ss := env.style
+	addIdealStylesTo(&ss, p.ideal, env.unbounded, fills)
+	fills.addFillStylesTo(&ss, env)
+	rigid.addRigidStylesTo(&ss, env)
+	styles := env.root.style.Decls()
+	styles.Merge(ss.Decls())
+	addFontStylesTo(&styles, env)
+	addPaintStylesTo(&styles, env)
+	// Keep the generated class after the named classes in rendered output.
+	a = domi.Group(a, attr.Class(env.sheet.ClassFor(styles)))
+	return box{
+		node:  domi.Tag(cmp.Or(env.tag, "div"), a)(p.content),
+		fills: fills,
+		rigid: rigid,
+		title: p.title,
+	}
+}
+
+// addIdealStylesTo adds CSS declarations for a box's ideal size.
+// An ideal size applies only on an axis with unbounded available space.
+// A zero ideal dimension emits no declaration.
+// A box with no fill request simply uses its ideal size.
+// A box with a fill request can expand beyond its ideal size.
+// It contributes the ideal as a minimum length
+// to the enclosing container's resolved extent,
+// then expands to that extent.
+func addIdealStylesTo(ss *canon.StyleSet, i rect, unbounded, fills AxisSet) {
+	for _, a := range [...]struct {
+		axis AxisSet
+		name string
+		size complex128
+	}{
+		{Horizontal, "width", i.width},
+		{Vertical, "height", i.height},
+	} {
+		if a.size == 0 || !unbounded.hasAll(a.axis) {
+			continue
+		}
+		if fills.hasAll(a.axis) {
+			ss.Set("min-"+a.name, cssLength(a.size))
+		} else {
+			ss.Set(a.name, cssLength(a.size))
+		}
+	}
+}
