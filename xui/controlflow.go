@@ -61,16 +61,17 @@ func WhenElse(cond bool, a, b func() View) View {
 // For also calls key for each item,
 // and uses the returned string
 // as the item's key.
-// Keyed views are diffed by identity rather than position:
-// inserting, removing, or reordering items in the middle of a list
-// moves the surviving subviews intact to their new positions
+// Reordering keyed items
+// moves their HTML elements intact to their new positions
 // instead of replacing their contents.
+// This lets the browser retain focus, scroll position,
+// and other view state that exists only on the browser.
 //
-// The value of a key must be nonempty,
-// stable (any given item should be assigned the same key every time),
+// A key must be nonempty,
+// stable (any given item should be given the same key every time),
 // and unique within the enclosing view.
 //
-// If the value returned by f is a Group,
+// If f returns a Group,
 // the key is assigned to its first member.
 func For[T any, S ~[]T](items S, key func(T) string, f func(T) View) View {
 	var b base
