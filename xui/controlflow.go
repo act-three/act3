@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-
 	"ily.dev/domi"
 )
 
@@ -72,22 +70,17 @@ func WhenElse(cond bool, a, b func() View) View {
 // stable (any given item should be assigned the same key every time),
 // and unique within the enclosing view.
 //
-// When key is not nil,
-// the value returned by f must be a single view;
-// if f returns [Empty] or a [Group] with more than one view,
-// For panics.
+// If the value returned by f is a Group,
+// the key is assigned to its first member.
 func For[T any, S ~[]T](items S, key func(T) string, f func(T) View) View {
 	var b base
 	for _, it := range items {
 		ns := f(it).nodes()
-		if key == nil {
-			b = append(b, ns...)
-			continue
+		if key != nil && len(ns) > 0 {
+			b = append(b, modKey(key(it))(ns[0]))
+			ns = ns[1:]
 		}
-		if len(ns) != 1 {
-			panic(fmt.Sprintf("ui: For item with key %q has %d views, want exactly 1", key(it), len(ns)))
-		}
-		b = append(b, modKey(key(it))(ns[0]))
+		b = append(b, ns...)
 	}
 	return b
 }
