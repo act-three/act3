@@ -41,9 +41,6 @@ func buttonSection(title string, body View) View {
 
 func buttonGallery() View {
 	return VStack(
-		Text("Inspection fixture; Bordered uses an opaque theme-derived edge. "+
-			"Return transitions remain pending.").
-			Font(Normal, SizeEm(12i, 1.3)),
 		buttonSection("Styles and sizes — text and icon labels", buttonSizes()),
 		buttonSection("States — hover, hold, or Tab to inspect browser interaction", buttonStates()),
 		buttonSection("Label content and layout", buttonLabels()),
