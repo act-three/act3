@@ -33,10 +33,12 @@ type App[Msg any] interface {
 	// For these cases, Update should return a Cmd.
 	Update(context.Context, Msg) domi.Cmd[Msg]
 
-	// View returns the view to be displayed in the browser.
-	// It is centered in the viewport, and the available space
-	// is the size of the viewport.
-	View(context.Context) View
+	// View returns the page to be displayed in the browser.
+	//
+	// It should construct a View, then call its PageRenderer
+	// to produce a page. The View is centered in the viewport,
+	// and the available space is the size of the viewport.
+	View(context.Context, PageRenderer) Page
 
 	// Subscriptions returns the set of active subscriptions.
 	Subscriptions(context.Context) domi.Sub[Msg]
@@ -49,19 +51,45 @@ type App[Msg any] interface {
 	// onURLRequest call from the browser. Same-origin links
 	// omit the URL origin.
 	//
-	// If Preview returns a nonempty dest value, it must equal
+	// If Preview returns a result, its dest value must equal
 	// the value the app would use for the PushURL command it
-	// issues in response to the URL request. The value for v
+	// issues in response to the URL request. Its view
 	// should be the same as that returned by View after a
 	// navigation to dest.
 	//
-	// An empty dest denotes that there is no preview available.
+	// A zero Preview denotes that there is no preview.
 	// It is always safe to decline to provide a preview.
 	// This method is an optimization only. Preview is called
 	// to pre-render pages the user is likely to visit (e.g. on
 	// link hover), so navigation appears instant when the link
 	// is clicked.
-	Preview(context.Context, *url.URL) (dest string, v View)
+	Preview(context.Context, *url.URL, PreviewRenderer) Preview
+}
+
+// A PageRenderer renders a View to produce a Page.
+// See [App.View].
+type PageRenderer func(View) Page
+
+// A Page is produced by a [PageRenderer].
+// See [App.View].
+type Page struct {
+	title string
+	page  domi.Node
+}
+
+// A PreviewRenderer renders a View to produce a Preview.
+// See [App.Preview].
+//
+// If dest is empty, a PreviewRenderer panics.
+type PreviewRenderer func(dest string, v View) Preview
+
+// A Preview is produced by a [PreviewRenderer].
+// See [App.Preview].
+//
+// The zero value denotes that no preview is available.
+type Preview struct {
+	dest string
+	view Page
 }
 
 // Handler returns an HTTP handler that serves an [App].
@@ -146,16 +174,18 @@ func (in *instance[Msg, A]) Subscriptions(ctx context.Context) domi.Sub[Msg] {
 }
 
 func (in *instance[Msg, A]) View(ctx context.Context) (title string, n domi.Node) {
-	return in.render(in.app.View(ctx))
+	r := in.app.View(ctx, in.render)
+	return r.title, r.page
 }
 
 func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, title string, n domi.Node) {
-	dest, v := in.app.Preview(ctx, u)
-	if dest == "" {
-		return "", "", nil
-	}
-	title, n = in.render(v)
-	return dest, title, n
+	r := in.app.Preview(ctx, u, func(d string, v View) Preview {
+		if d == "" {
+			panic("hi: preview destination must be nonempty")
+		}
+		return Preview{d, in.render(v)}
+	})
+	return r.dest, r.view.title, r.view.page
 }
 
 // render renders root as a page whose generated CSS rules are kept
@@ -163,7 +193,7 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 // The page carries all rules in the sheet,
 // including those from earlier renders by the same instance.
 // A non-nil cssLink is included in the page to load the static stylesheet.
-func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
+func (in *instance[Msg, A]) render(root View) Page {
 	env := environment{
 		theme:      in.theme,
 		iconSource: in.icons,
@@ -187,8 +217,11 @@ func (in *instance[Msg, A]) render(root View) (title string, page domi.Node) {
 		}
 		rootAttr = domi.Group(rootAttr, domi.Name("scroll", strings.Join(axes, " ")))
 	}
-	// Order matters, static stylesheet, then generated style, then content.
-	return b.title, domi.Tag("hi-root", rootAttr)(in.cssLink, style, b.node)
+	return Page{
+		title: b.title,
+		// Order matters, static stylesheet, then generated style, then content.
+		page: domi.Tag("hi-root", rootAttr)(in.cssLink, style, b.node),
+	}
 }
 
 // Render returns HTML representing root.
@@ -204,7 +237,8 @@ func Render(root View, o ...Option) (title string, page domi.Node) {
 	if styleNonce != nil {
 		in.nonce = styleNonce(context.Background())
 	}
-	return in.render(root)
+	r := in.render(root)
+	return r.title, r.page
 }
 
 // configure resolves the options in o.

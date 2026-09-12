@@ -355,8 +355,8 @@ func section(title string, body View) View {
 		Alignment(Leading)
 }
 
-// Page is the demo page: one section per component or layout mechanism.
-func Page() View {
+// page has one section per component or layout mechanism.
+func page() View {
 	user := User{Name: "Ada Lovelace", Email: "ada@example.com", PhotoURL: placeholderImage(96, 96, "#818cf8")}
 	movies := []Movie{
 		{ID: 1, Title: "Metropolis", Summary: "A city divided between thinkers and workers.", PosterURL: placeholderImage(120, 180, "#f59e0b")},
@@ -390,11 +390,11 @@ func Page() View {
 		Padding(Edges(32))
 }
 
-// Document renders Page into a standalone document with the hi stylesheet
+// Document renders the page into a standalone document with the hi stylesheet
 // inlined, suitable for a browser or the golden test.
 func Document(css string) (string, error) {
 	title, page := Render(
-		ScrollView(Vertical, Page()),
+		ScrollView(Vertical, page()),
 		Theme(OKLCH(0.9561, 0.0074, 80.7), OKLCH(0.782, 0.1404, 70.8), 25),
 	)
 	var sb strings.Builder
