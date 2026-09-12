@@ -42,7 +42,7 @@ type textView struct {
 	run textRun
 }
 
-func newTextView(r textRun) textView { return textView{base{r.render}, r} }
+func newTextView(r textRun) textView { return textView{view(r.render), r} }
 
 func (v textView) TextFont(opts ...FontOption) TextView {
 	if len(opts) == 0 {

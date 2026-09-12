@@ -1,5 +1,26 @@
 package hi
 
+// Rendering
+//
+// Rendering is the whole process of turning a view into HTML. It
+// includes resolution, which turns a view into a list of nodes,
+// and lowering, which turns each node into a box containing HTML
+// and layout metadata. Resolution evaluates Lazy callbacks and
+// combines Group members. Modifiers distribute over the resolved
+// nodes before lowering, so lazy views preserve Group's behavior
+// without introducing a container of their own.
+//
+// Resolution does not depend on lowering, so the two could run
+// as separate passes over the whole tree. The current implementation
+// interleaves them because a container's child views are held inside
+// its node's lowering function. Resolving a container produces its
+// node. Lowering that node resolves its child views and lowers their
+// nodes in the appropriate environment. In cases where a single node
+// is required, resolution determines whether to use a sole node
+// directly or combine multiple resolved nodes in a container. That
+// choice happens before lowering the children, since the container
+// determines their layout environment.
+//
 // Stability Rule
 //
 // Any given view structure should result in a fixed lowering

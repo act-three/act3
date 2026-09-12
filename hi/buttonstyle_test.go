@@ -4,13 +4,13 @@ import "testing"
 
 func TestButtonStyleEnvironment(t *testing.T) {
 	var got [5]environment
-	shared := base{envProbe(&got[0])}
+	shared := view(envProbe(&got[0]))
 	Render(VStack(
 		shared.ButtonStyle(Subtle),
-		base{envProbe(&got[1])}.Padding(Edges(4)),
-		VStack(base{envProbe(&got[2])}.ButtonStyle(Prominent)).ButtonStyle(Destructive),
-		base{envProbe(&got[3])}.ButtonStyle(Subtle).ButtonStyle(Prominent),
-		base{envProbe(&got[4])}.Frame(Width(40)).ButtonStyle(Destructive),
+		view(envProbe(&got[1])).Padding(Edges(4)),
+		VStack(view(envProbe(&got[2])).ButtonStyle(Prominent)).ButtonStyle(Destructive),
+		view(envProbe(&got[3])).ButtonStyle(Subtle).ButtonStyle(Prominent),
+		view(envProbe(&got[4])).Frame(Width(40)).ButtonStyle(Destructive),
 	))
 	for i, want := range []ButtonStyle{Subtle, Bordered, Prominent, Subtle, Destructive} {
 		if got[i].buttonStyle != want {

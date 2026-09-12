@@ -9,12 +9,17 @@ import (
 )
 
 // base is the shared concrete View implementation.
-// A view is a list of nodes rendered in sequence.
-// Most views hold a single node, but Group and For hold one per member.
-// An applied modifier modifies each node individually.
-type base []node
+// A view resolves to a list of nodes during rendering.
+// Modifiers distribute over the resolved nodes before they render.
+type base func() []node
 
-func (v base) nodes() []node { return v }
+// resolve resolves v into a list of nodes.
+// The returned slice is read-only and may be shared across resolutions.
+func (v base) resolve() []node { return v() }
+
+func view(ns ...node) base {
+	return func() []node { return ns }
+}
 
 func (v base) Modify(m Modifier, states ...State) View {
 	if m == nil {
@@ -31,11 +36,14 @@ func (v base) modify(m modifier) base {
 	if m == nil {
 		return v
 	}
-	out := make(base, len(v))
-	for i, n := range v {
-		out[i] = m(n)
+	return func() []node {
+		ns := v.resolve()
+		out := make([]node, len(ns))
+		for i, n := range ns {
+			out[i] = m(n)
+		}
+		return out
 	}
-	return out
 }
 
 func (v base) WhileHovered(m Modifier) View     { return v.Modify(m, Hovered) }

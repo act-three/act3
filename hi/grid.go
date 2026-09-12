@@ -28,7 +28,7 @@ type GridView interface {
 
 // Grid arranges the given views in the grid described by g.
 func Grid(g GridLayout, v ...View) GridView {
-	return gridView{base{nodeGrid(g, v)}}
+	return gridView{view(nodeGrid(g, v))}
 }
 
 // A GridLayout describes the columns of a [Grid].

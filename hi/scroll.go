@@ -25,10 +25,10 @@ import (
 // navigate to page fragment anchors
 // and save scroll position during page reload and navigation.
 func ScrollView(axis AxisSet, v View) View {
-	return base{nodeScroll{
+	return view(nodeScroll{
 		along:    axis,
 		contents: unary(VStack, v),
-	}.render}
+	}.render)
 }
 
 type nodeScroll struct {

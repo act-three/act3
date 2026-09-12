@@ -30,7 +30,7 @@ import (
 //		Attr(attr.Style("display:flex")).
 //		Attr(attr.Style("gap:8px")).
 //		FixedSize()
-func HTML(node domi.Node) View { return base{nodeHTML(node)} }
+func HTML(node domi.Node) View { return view(nodeHTML(node)) }
 
 func nodeHTML(content domi.Node) node {
 	return func(env environment) box {
