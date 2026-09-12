@@ -46,7 +46,7 @@ func renderNode(t *testing.T, n domi.Node) string {
 // TestInstanceAccumulatesRules verifies that rules remain in the stylesheet after their views disappear.
 // It also verifies that those rules are reused when the views return.
 func TestInstanceAccumulatesRules(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	app := &stubApp{view: Text("a").Padding(Edges(16))}
 	in := &instance[struct{}, *stubApp]{app: app}
 	view := func() string {
@@ -72,7 +72,7 @@ func TestInstanceAccumulatesRules(t *testing.T) {
 // TestInstancePreview verifies that a preview is rendered only when the App
 // offers one, and that its rules join the instance's stylesheet.
 func TestInstancePreview(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	app := &stubApp{view: Text("a")}
 	in := &instance[struct{}, *stubApp]{app: app}
 	u := &url.URL{Path: "/x"}
@@ -100,7 +100,7 @@ func TestInstancePreview(t *testing.T) {
 func TestInstanceRenderScope(t *testing.T) {
 	for _, preview := range []bool{false, true} {
 		t.Run(map[bool]string{false: "View", true: "Preview"}[preview], func(t *testing.T) {
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			u := &url.URL{Path: "/request"}
 			active, resolved, lowered := false, false, false
@@ -172,7 +172,7 @@ func TestInstancePreviewEmptyDestination(t *testing.T) {
 			t.Fatalf("panic = %v; want empty destination panic", p)
 		}
 	}()
-	in.Preview(context.Background(), &url.URL{Path: "/request"})
+	in.Preview(t.Context(), &url.URL{Path: "/request"})
 }
 
 // TestHandlerNonce verifies that the nonce reaches the style element of a served page.
