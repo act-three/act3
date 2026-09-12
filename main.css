@@ -1,11 +1,12 @@
 @import "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&display=swap";
 @import "./ui/preflight.css" layer(preflight);
+@import "./hi/hi.css";
 @import "./ui/theme-layer.css" layer(theme);
 @import "./ui/ui.css" layer(components);
 @import "./view/view.css" layer(components);
 
 @layer base {
-	body {
+	body, hi-root {
 		/* TODO: review which of these belong in ui/theme-layer.css */
 		background-color: var(--bg);
 		color: var(--text);
@@ -22,5 +23,8 @@
 		color-scheme: only dark;
 	}
 
-	body:has(.v-app), body:has(#full-player) { overflow: hidden; }
+	html:has(.v-app), html:has(#full-player), body:has(.v-app), body:has(#full-player) { overflow: hidden; }
+
+	/* Existing domi fragments own their interior layout during migration. */
+	.v-domi-root { display: block; }
 }

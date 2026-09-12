@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"database/sql"
 	"net/url"
 	"testing"
 
@@ -119,7 +120,7 @@ func TestTombstonedSlugCanonicalized(t *testing.T) {
 	if c == nil {
 		t.Fatal("newApp at tombstoned /dune returned nil cmd, want ReplaceURL cmd")
 	}
-	if title, _ := a.View(ctx); title != "Dune Part One — Act Three" {
+	if title, _ := renderApp(t, a); title != "Dune Part One — Act Three" {
 		t.Fatalf("View at tombstoned /dune has title %q, want the movie's", title)
 	}
 
@@ -127,7 +128,7 @@ func TestTombstonedSlugCanonicalized(t *testing.T) {
 	if c := a.Update(ctx, &msg.URLChange{URL: &url.URL{Path: "/dune"}}); c == nil {
 		t.Fatal("Update(URLChange to tombstoned /dune) returned nil cmd, want ReplaceURL cmd")
 	}
-	if title, _ := a.View(ctx); title != "Dune Part One — Act Three" {
+	if title, _ := renderApp(t, a); title != "Dune Part One — Act Three" {
 		t.Fatalf("View after navigating to tombstoned /dune has title %q, want the movie's", title)
 	}
 
@@ -146,6 +147,12 @@ func newTestApp(t *testing.T, m *model.Model, path string) *app {
 
 func newTestModel(t *testing.T) *model.Model {
 	t.Helper()
+	m, _ := newTestModelDB(t)
+	return m
+}
+
+func newTestModelDB(t *testing.T) (*model.Model, *sql.DB) {
+	t.Helper()
 	dbr, dbw, err := database.Open(":memory:")
 	if err != nil {
 		t.Fatal(err)
@@ -162,5 +169,5 @@ func newTestModel(t *testing.T) *model.Model {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return m
+	return m, dbr
 }
