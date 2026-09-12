@@ -124,10 +124,11 @@ func Handler[Msg any, A App[Msg]](
 	// about its configuration; the constructor only runs on requests.
 	var cssLink domi.Node
 	sv := domi.NewServer(
-		func(ctx context.Context, u *url.URL) (*instance[Msg, A], domi.Cmd[Msg]) {
+		func(ctx context.Context, u *url.URL) (*instance[Msg, A], domi.Cmd[msg[Msg]]) {
 			app, cmd := f(ctx, u)
 			in := &instance[Msg, A]{
 				app:     app,
+				path:    urlPath(u),
 				cssLink: cssLink,
 				theme:   th,
 				icons:   icons,
@@ -135,10 +136,15 @@ func Handler[Msg any, A App[Msg]](
 			if styleNonce != nil {
 				in.nonce = styleNonce(ctx)
 			}
-			return in, cmd
+			return in, domi.MapCmd(wrapMsg[Msg], cmd)
 		},
-		onURLRequest,
-		onURLChange,
+		func(u *url.URL) msg[Msg] { return wrapMsg(onURLRequest(u)) },
+		func(u *url.URL) msg[Msg] {
+			return msg[Msg]{
+				appmsg: onURLChange(u),
+				path:   urlPath(u),
+			}
+		},
 		o...,
 	)
 	cssPath := path.Join(sv.InternalURLPrefix(), "hi."+cssDigest+".css")
@@ -151,6 +157,19 @@ func Handler[Msg any, A App[Msg]](
 	return mux
 }
 
+// msg is the domi msg type for instance.
+// Field appmsg is currently required.
+// Hi doesn't have any msg cases that it handles entirely itself.
+// They all wrap app messages.
+type msg[Msg any] struct {
+	appmsg Msg
+	path   []string // non-nil (even if empty) for URLChange, else nil
+}
+
+func wrapMsg[Msg any](m Msg) msg[Msg] {
+	return msg[Msg]{appmsg: m}
+}
+
 // An instance adapts App to domi.App.
 // It keeps the generated CSS rules for the lifetime of the page load
 // so the style element only ever grows, keeping the rendered tree stable.
@@ -158,6 +177,7 @@ func Handler[Msg any, A App[Msg]](
 // Rendering a preview adds rules but doesn't modify App state.
 type instance[Msg any, A App[Msg]] struct {
 	app     A
+	path    []string
 	nonce   string
 	cssLink domi.Node // loads the static stylesheet; nil with a custom document
 	theme   theme
@@ -165,17 +185,20 @@ type instance[Msg any, A App[Msg]] struct {
 	sheet   sheet.Sheet
 }
 
-func (in *instance[Msg, A]) Update(ctx context.Context, m Msg) domi.Cmd[Msg] {
-	return in.app.Update(ctx, m)
+func (in *instance[Msg, A]) Update(ctx context.Context, m msg[Msg]) domi.Cmd[msg[Msg]] {
+	if m.path != nil {
+		in.path = m.path
+	}
+	return domi.MapCmd(wrapMsg[Msg], in.app.Update(ctx, m.appmsg))
 }
 
-func (in *instance[Msg, A]) Subscriptions(ctx context.Context) domi.Sub[Msg] {
-	return in.app.Subscriptions(ctx)
+func (in *instance[Msg, A]) Subscriptions(ctx context.Context) domi.Sub[msg[Msg]] {
+	return domi.MapSub(wrapMsg[Msg], in.app.Subscriptions(ctx))
 }
 
 func (in *instance[Msg, A]) View(ctx context.Context) (title string, n domi.Node) {
 	r := in.app.View(ctx, in.render)
-	return r.title, r.page
+	return r.title, domi.MapNode(wrapMsg[Msg], r.page)
 }
 
 func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, title string, n domi.Node) {
@@ -185,7 +208,7 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 		}
 		return Preview{d, in.render(v)}
 	})
-	return r.dest, r.view.title, r.view.page
+	return r.dest, r.view.title, domi.MapNode(wrapMsg[Msg], r.view.page)
 }
 
 // render renders root as a page whose generated CSS rules are kept
@@ -279,4 +302,19 @@ func StyleNonce(f func(context.Context) string) Option {
 type optionStyleNonce struct {
 	domi.Option
 	f func(context.Context) string
+}
+
+// urlPath splits before unescaping so an escaped slash stays in its segment.
+// It returns a non-nil slice even for the root path.
+func urlPath(u *url.URL) []string {
+	p := strings.TrimPrefix(u.EscapedPath(), "/")
+	if p == "" {
+		return []string{}
+	}
+	parts := strings.Split(p, "/")
+	for i, part := range parts {
+		// EscapedPath always returns a valid encoding.
+		parts[i], _ = url.PathUnescape(part)
+	}
+	return parts
 }

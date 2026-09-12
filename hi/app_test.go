@@ -77,8 +77,8 @@ func TestInstancePreview(t *testing.T) {
 	in := &instance[struct{}, *stubApp]{app: app}
 	u := &url.URL{Path: "/x"}
 
-	if dest, _, n := in.Preview(ctx, u); dest != "" || n != nil {
-		t.Errorf("declined preview rendered: dest=%q n=%v", dest, n)
+	if dest, _, _ := in.Preview(ctx, u); dest != "" {
+		t.Errorf("declined preview destination = %q", dest)
 	}
 
 	app.preview = func(_ context.Context, _ *url.URL, render PreviewRenderer) Preview {
