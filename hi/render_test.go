@@ -61,7 +61,7 @@ func moviePage(movies []Movie) hi.View {
 			hi.Spacer(),
 			hi.Button(Msg{NewMovie: true}, hi.Text("New")).ButtonStyle(hi.Prominent),
 		).Alignment(hi.Center),
-		hi.For(movies, movieKey, movieRow),
+		hi.ForEach(movies, movieKey, movieRow),
 	).
 		Gap(16).
 		Padding(hi.Edges(32))
@@ -170,7 +170,7 @@ func TestMoviePageFillPropagation(t *testing.T) {
 		// The outer VStack inherits that horizontal fill; at the root, a
 		// grid, it lowers to a cell stretch.
 		`justify-self:stretch`,
-		// Both movie rows rendered via For, each with its own Spacer.
+		// Both movie rows rendered via ForEach, each with its own Spacer.
 		`Metropolis`,
 		`Solaris`,
 	}
@@ -180,8 +180,8 @@ func TestMoviePageFillPropagation(t *testing.T) {
 		}
 	}
 
-	// The For helper splices rows directly into the VStack, so there are two
-	// movie-row spacers plus the header spacer: three in total.
+	// The ForEach helper splices rows directly into the VStack, so there
+	// are two movie-row spacers plus the header spacer: three in total.
 	if got := strings.Count(html, "<hi-spacer "); got != 3 {
 		t.Errorf("hi-spacer count = %d, want 3\n\n%s", got, html)
 	}
@@ -892,15 +892,15 @@ func TestLineLimitClearsInheritedLimit(t *testing.T) {
 }
 
 // Guard against an accidental change to the keyed-row idiom shown in the doc.
-func TestForKeyLikeIdiom(t *testing.T) {
+func TestForEachKeyLikeIdiom(t *testing.T) {
 	items := []Movie{{ID: 7}, {ID: 42}}
-	v := hi.VStack(hi.For(items, movieKey, func(m Movie) hi.View {
+	v := hi.VStack(hi.ForEach(items, movieKey, func(m Movie) hi.View {
 		return hi.Text("#" + strconv.FormatUint(m.ID, 10))
 	}))
 	html := render(t, v)
 	for _, w := range []string{"#7", "#42"} {
 		if !strings.Contains(html, w) {
-			t.Errorf("For output missing %q\n\n%s", w, html)
+			t.Errorf("ForEach output missing %q\n\n%s", w, html)
 		}
 	}
 }
@@ -946,35 +946,35 @@ func TestDividerAxisAware(t *testing.T) {
 	}
 }
 
-// TestForKeysItems checks that each For item carries its key directly on its
-// own element, with no wrapper in between.
-func TestForKeysItems(t *testing.T) {
+// TestForEachKeysItems checks that each ForEach item carries its key
+// directly on its own element, with no wrapper in between.
+func TestForEachKeysItems(t *testing.T) {
 	items := []Movie{{ID: 7, Title: "Seven"}, {ID: 42, Title: "Forty-Two"}}
-	v := hi.VStack(hi.For(items,
+	v := hi.VStack(hi.ForEach(items,
 		func(m Movie) string { return strconv.FormatUint(m.ID, 10) },
 		func(m Movie) hi.View { return hi.Text(m.Title) },
 	))
 	html := render(t, v)
 	for _, w := range []string{"hi-vstack", `domi-key="7"`, `domi-key="42"`, "Seven", "Forty-Two"} {
 		if !strings.Contains(html, w) {
-			t.Errorf("keyed For missing %q\n\n%s", w, html)
+			t.Errorf("keyed ForEach missing %q\n\n%s", w, html)
 		}
 	}
 }
 
-// TestForNilKeyUnkeyed pins the unkeyed mode: a nil key splices the items
+// TestForEachNilKeyUnkeyed pins the unkeyed mode: a nil key splices the items
 // with no key stamps and no per-item element requirement, so an item may
 // render to several elements.
-func TestForNilKeyUnkeyed(t *testing.T) {
+func TestForEachNilKeyUnkeyed(t *testing.T) {
 	items := []Movie{{ID: 7, Title: "Seven"}}
-	html := render(t, hi.VStack(hi.For(items, nil, func(m Movie) hi.View {
+	html := render(t, hi.VStack(hi.ForEach(items, nil, func(m Movie) hi.View {
 		return hi.Group(hi.Text(m.Title), hi.Text(m.Title))
 	})))
 	if strings.Contains(html, "key=") {
-		t.Errorf("nil-key For should render unkeyed:\n%s", html)
+		t.Errorf("nil-key ForEach should render unkeyed:\n%s", html)
 	}
 	if got := strings.Count(html, "Seven"); got != 2 {
-		t.Errorf("nil-key For item should keep both elements, found %d:\n%s", got, html)
+		t.Errorf("nil-key ForEach item should keep both elements, found %d:\n%s", got, html)
 	}
 }
 
@@ -1921,8 +1921,8 @@ func TestRenderTitle(t *testing.T) {
 		{"group outer yields to first member", hi.Group(hi.Text("a").Title("x"), hi.Text("b")).Title("d"), "x"},
 		{"group outer lands on first member", hi.Group(hi.Text("a"), hi.Text("b").Title("x")).Title("d"), "d"},
 		{"group outer fills empty", hi.Group(hi.Text("a"), hi.Text("b")).Title("d"), "d"},
-		{"for", hi.For([]string{"a", "b"}, nil, func(s string) hi.View { return hi.Text(s).Title(s) }).Title("d"), "a"},
-		{"keyed for", hi.For([]string{"a", "b"}, func(s string) string { return s }, func(s string) hi.View { return hi.Text(s).Title(s) }).Title("d"), "a"},
+		{"for each", hi.ForEach([]string{"a", "b"}, nil, func(s string) hi.View { return hi.Text(s).Title(s) }).Title("d"), "a"},
+		{"keyed for each", hi.ForEach([]string{"a", "b"}, func(s string) string { return s }, func(s string) hi.View { return hi.Text(s).Title(s) }).Title("d"), "a"},
 		{"through padding", hi.Text("a").Title("x").Padding(hi.Edges(8)), "x"},
 		{"through frame", hi.Text("a").Title("x").Frame(hi.Width(40)), "x"},
 		{"through paint", hi.Text("a").Title("x").Background(hi.Accent).Opacity(0.5), "x"},

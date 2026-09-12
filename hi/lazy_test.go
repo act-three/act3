@@ -85,13 +85,13 @@ func TestLazyUnselected(t *testing.T) {
 	}
 }
 
-func TestLazyForKeys(t *testing.T) {
+func TestLazyForEachKeys(t *testing.T) {
 	shared := hi.Text("shared")
 	plain := render(t, shared)
 	current := hi.View(shared)
 	items := []string{"a", "b"}
 	buildCalls, keyCalls, lazyCalls := 0, 0, 0
-	v := hi.For(items, func(s string) string {
+	v := hi.ForEach(items, func(s string) string {
 		keyCalls++
 		return s
 	}, func(string) hi.View {
@@ -111,7 +111,7 @@ func TestLazyForKeys(t *testing.T) {
 	} {
 		current = content
 		got := render(t, v)
-		want := render(t, hi.For(items, func(s string) string { return s }, func(string) hi.View {
+		want := render(t, hi.ForEach(items, func(s string) string { return s }, func(string) hi.View {
 			return current
 		}))
 		if got != want {

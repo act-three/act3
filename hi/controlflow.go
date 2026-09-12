@@ -89,11 +89,11 @@ func First(v ...View) View {
 	})
 }
 
-// For calls f once for each item in items,
+// ForEach calls f once for each item in items,
 // and returns the resulting views as a [Group].
 //
 // If key is not nil,
-// For also calls key for each item,
+// ForEach also calls key for each item,
 // and uses the returned string
 // as the item's key.
 // Reordering keyed items
@@ -108,7 +108,7 @@ func First(v ...View) View {
 //
 // If f returns a Group,
 // the key is assigned to its first member.
-func For[T any, S ~[]T](items S, key func(T) string, f func(T) View) View {
+func ForEach[T any, S ~[]T](items S, key func(T) string, f func(T) View) View {
 	var vs []View
 	for _, it := range items {
 		v := f(it)
