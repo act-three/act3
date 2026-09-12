@@ -31,7 +31,7 @@ func Lazy(f func() View) View {
 }
 
 // A Group is a sequence of views.
-// It contributes the views to its enclosing view
+// It contributes the views to its container
 // as if they had been written there directly.
 //
 // A modifier applied to a Group is applied to each member individually.
@@ -76,6 +76,22 @@ func WhenElse(cond bool, a, b func() View) View {
 		return a()
 	}
 	return b()
+}
+
+// First displays the first of the given views that is not empty.
+// The remaining views are discarded and not rendered.
+// If all of the given views are empty,
+// the returned view is also empty.
+func First(v ...View) View {
+	v = slices.Clone(v)
+	return base(func() []node {
+		for _, c := range v {
+			if ns := c.resolve(); len(ns) > 0 {
+				return ns
+			}
+		}
+		return nil
+	})
 }
 
 // For calls f once for each item in items,
