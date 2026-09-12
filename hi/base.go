@@ -11,14 +11,14 @@ import (
 // base is the shared concrete View implementation.
 // A view resolves to a list of nodes during rendering.
 // Modifiers distribute over the resolved nodes before they render.
-type base func() []node
+type base func(resenv) []node
 
 // resolve resolves v into a list of nodes.
 // The returned slice is read-only and may be shared across resolutions.
-func (v base) resolve() []node { return v() }
+func (v base) resolve(renv resenv) []node { return v(renv) }
 
 func view(ns ...node) base {
-	return func() []node { return ns }
+	return func(resenv) []node { return ns }
 }
 
 func (v base) Modify(m Modifier, states ...State) View {
@@ -36,8 +36,8 @@ func (v base) modify(m modifier) base {
 	if m == nil {
 		return v
 	}
-	return func() []node {
-		ns := v.resolve()
+	return func(renv resenv) []node {
+		ns := v.resolve(renv)
 		out := make([]node, len(ns))
 		for i, n := range ns {
 			out[i] = m(n)

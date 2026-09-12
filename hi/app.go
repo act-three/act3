@@ -2,6 +2,7 @@ package hi
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -44,6 +45,7 @@ type App[Msg any] interface {
 	Subscriptions(context.Context) domi.Sub[Msg]
 
 	// Preview returns the result of a potential navigation.
+	// See PreviewRenderer.
 	//
 	// Preview must not modify the App state.
 	//
@@ -51,16 +53,10 @@ type App[Msg any] interface {
 	// onURLRequest call from the browser. Same-origin links
 	// omit the URL origin.
 	//
-	// If Preview returns a result, its dest value must equal
-	// the value the app would use for the PushURL command it
-	// issues in response to the URL request. Its view
-	// should be the same as that returned by View after a
-	// navigation to dest.
-	//
-	// A zero Preview denotes that there is no preview.
-	// It is always safe to decline to provide a preview.
-	// This method is an optimization only. Preview is called
-	// to pre-render pages the user is likely to visit (e.g. on
+	// Returning a zero Preview denotes that there is no preview.
+	// It is always safe to decline to provide a preview. This
+	// method is an optimization only. Preview is called to
+	// pre-render pages the user is likely to visit (e.g. on
 	// link hover), so navigation appears instant when the link
 	// is clicked.
 	Preview(context.Context, *url.URL, PreviewRenderer) Preview
@@ -80,7 +76,16 @@ type Page struct {
 // A PreviewRenderer renders a View to produce a Preview.
 // See [App.Preview].
 //
-// If dest is empty, a PreviewRenderer panics.
+// The value of dest must equal the value the app would use
+// for the PushURL command it issues when navigating
+// to the previewed page.
+// The dest must be a host-relative URL,
+// like "/settings/profile" or "/".
+//
+// The view should be the same as that returned by [App.View]
+// after a navigation to dest.
+//
+// If dest invalid, the PreviewRenderer panics.
 type PreviewRenderer func(dest string, v View) Preview
 
 // A Preview is produced by a [PreviewRenderer].
@@ -197,16 +202,22 @@ func (in *instance[Msg, A]) Subscriptions(ctx context.Context) domi.Sub[msg[Msg]
 }
 
 func (in *instance[Msg, A]) View(ctx context.Context) (title string, n domi.Node) {
-	r := in.app.View(ctx, in.render)
+	r := in.app.View(ctx, func(root View) Page {
+		return in.render(root, in.path)
+	})
 	return r.title, domi.MapNode(wrapMsg[Msg], r.page)
 }
 
 func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, title string, n domi.Node) {
 	r := in.app.Preview(ctx, u, func(d string, v View) Preview {
-		if d == "" {
-			panic("hi: preview destination must be nonempty")
+		dest, err := url.Parse(d)
+		if err != nil || d == "" {
+			panic(fmt.Errorf("hi: invalid preview destination %q", d))
 		}
-		return Preview{d, in.render(v)}
+		if dest.Scheme != "" || dest.Host != "" || !strings.HasPrefix(d, "/") {
+			panic(fmt.Errorf("hi: preview destination must be host-relative: %q", d))
+		}
+		return Preview{d, in.render(v, urlPath(dest))}
 	})
 	return r.dest, r.view.title, domi.MapNode(wrapMsg[Msg], r.view.page)
 }
@@ -216,8 +227,9 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 // The page carries all rules in the sheet,
 // including those from earlier renders by the same instance.
 // A non-nil cssLink is included in the page to load the static stylesheet.
-func (in *instance[Msg, A]) render(root View) Page {
+func (in *instance[Msg, A]) render(root View, path []string) Page {
 	env := environment{
+		renv:       resenv{path: path},
 		theme:      in.theme,
 		iconSource: in.icons,
 		sheet:      &in.sheet,
@@ -260,7 +272,7 @@ func Render(root View, o ...Option) (title string, page domi.Node) {
 	if styleNonce != nil {
 		in.nonce = styleNonce(context.Background())
 	}
-	r := in.render(root)
+	r := in.render(root, nil)
 	return r.title, r.page
 }
 

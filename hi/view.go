@@ -319,7 +319,7 @@ type View interface {
 
 	// resolve resolves the view during rendering.
 	// Its returned slice is read-only.
-	resolve() []node
+	resolve(resenv) []node
 }
 
 // A node is a unary view.
@@ -330,9 +330,9 @@ type node func(environment) box
 // Otherwise, it uses combine to combine the nodes.
 func unary[V View](combine func(...View) V, v View) node {
 	return func(env environment) box {
-		ns := v.resolve()
+		ns := v.resolve(env.renv)
 		if len(ns) != 1 {
-			ns = combine(view(ns...)).resolve()
+			ns = combine(view(ns...)).resolve(env.renv)
 		}
 		return ns[0](env)
 	}
@@ -348,8 +348,16 @@ const (
 	containerGridRotated
 )
 
-// environment carries the top-down state of a lowering pass.
+// resenv is the resolution environment.
+type resenv struct {
+	path []string
+}
+
+// environment is the rendering environment.
+// Because resolution and lowering are interleaved,
+// environment contains values for both.
 type environment struct {
+	renv        resenv
 	lc          layoutContext
 	container   containerKind
 	unbounded   AxisSet
@@ -472,7 +480,7 @@ func renderSubviewNode(env environment, n node) plan {
 func renderSubviewList(env environment, vs ...View) plan {
 	p := plan{rigid: Horizontal | Vertical}
 	for _, v := range vs {
-		for _, n := range v.resolve() {
+		for _, n := range v.resolve(env.renv) {
 			q := renderSubviewNode(env, n)
 			p.fills |= q.fills
 			p.rigid &= q.rigid
