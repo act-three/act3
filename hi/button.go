@@ -138,7 +138,7 @@ func nodeButton(action any, label node) node {
 					action,
 				)
 		}
-		return v.resolve()[0](env)
+		return v.resolve(env.renv)[0](env)
 	}
 }
 

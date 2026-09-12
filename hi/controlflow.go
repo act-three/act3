@@ -20,8 +20,8 @@ func Empty() View { return view() }
 // it does not call f.
 // For example, If(false, Lazy(f)) never calls f.
 func Lazy(f func() View) View {
-	return base(func() []node {
-		return f().resolve()
+	return base(func(renv resenv) []node {
+		return f().resolve(renv)
 	})
 }
 
@@ -39,10 +39,10 @@ func Lazy(f func() View) View {
 //	)
 func Group(v ...View) View {
 	v = slices.Clone(v)
-	return base(func() []node {
+	return base(func(renv resenv) []node {
 		var ns []node
 		for _, c := range v {
-			ns = append(ns, c.resolve()...)
+			ns = append(ns, c.resolve(renv)...)
 		}
 		return ns
 	})
@@ -79,9 +79,9 @@ func WhenElse(cond bool, a, b func() View) View {
 // the returned view is also empty.
 func First(v ...View) View {
 	v = slices.Clone(v)
-	return base(func() []node {
+	return base(func(renv resenv) []node {
 		for _, c := range v {
-			if ns := c.resolve(); len(ns) > 0 {
+			if ns := c.resolve(renv); len(ns) > 0 {
 				return ns
 			}
 		}
@@ -122,8 +122,8 @@ func For[T any, S ~[]T](items S, key func(T) string, f func(T) View) View {
 
 // withKey assigns key to the first node in v.
 func withKey(key string, v View) base {
-	return func() []node {
-		ns := v.resolve()
+	return func(renv resenv) []node {
+		ns := v.resolve(renv)
 		if len(ns) > 0 {
 			ns = slices.Clone(ns)
 			ns[0] = modKey(key)(ns[0])

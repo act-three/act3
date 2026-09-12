@@ -159,20 +159,24 @@ func TestInstanceRenderScope(t *testing.T) {
 	}
 }
 
-func TestInstancePreviewEmptyDestination(t *testing.T) {
-	app := &stubApp{preview: func(_ context.Context, _ *url.URL, render PreviewRenderer) Preview {
-		return render("", Lazy(func() View {
-			t.Fatal("rendered preview with empty destination")
-			return Empty()
-		}))
-	}}
-	in := &instance[struct{}, *stubApp]{app: app}
-	defer func() {
-		if p := recover(); p != "hi: preview destination must be nonempty" {
-			t.Fatalf("panic = %v; want empty destination panic", p)
-		}
-	}()
-	in.Preview(t.Context(), &url.URL{Path: "/request"})
+func TestInstancePreviewInvalidDestination(t *testing.T) {
+	for _, dest := range []string{"", "/bad%zz", "https://example.com/next", "//example.com/next"} {
+		t.Run(dest, func(t *testing.T) {
+			app := &stubApp{preview: func(_ context.Context, _ *url.URL, render PreviewRenderer) Preview {
+				return render(dest, Lazy(func() View {
+					t.Fatal("rendered preview with invalid destination")
+					return Empty()
+				}))
+			}}
+			in := &instance[struct{}, *stubApp]{app: app}
+			defer func() {
+				if recover() == nil {
+					t.Fatal("invalid destination did not panic")
+				}
+			}()
+			in.Preview(t.Context(), &url.URL{Path: "/request"})
+		})
+	}
 }
 
 // TestHandlerNonce verifies that the nonce reaches the style element of a served page.
