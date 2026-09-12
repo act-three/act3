@@ -85,7 +85,7 @@ func TestInstancePathEnvironment(t *testing.T) {
 		app.view = VStack(
 			Group(probe, Lazy(func() View { return First(Empty(), probe) })),
 			Button("/", probe),
-			For([]int{1}, func(int) string { return "item" }, func(int) View { return probe }),
+			ForEach([]int{1}, func(int) string { return "item" }, func(int) View { return probe }),
 		)
 		in.View(t.Context())
 		if resolved != 4 || lowered != 4 {

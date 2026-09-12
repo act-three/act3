@@ -12,7 +12,7 @@ then serves the View graph with a [Handler].
 			Image(bannerURL).
 				ScaledToFill().
 				Frame(Width(800), Height(200)),
-			For(movies, movie.id, func(m *movie) View {
+			ForEach(movies, movie.id, func(m *movie) View {
 				return HStack(
 					Text(m.title),
 				)

@@ -222,11 +222,11 @@ type View interface {
 	// VStack is in view.
 	//
 	//	ScrollView(Vertical, VStack(
-	//		For(sections, nil, func(s Section) View {
+	//		ForEach(sections, nil, func(s Section) View {
 	//			return VStack(
 	//				Text(s.Title).
 	//					Sticky(),
-	//				For(s.Items, nil, item),
+	//				ForEach(s.Items, nil, item),
 	//			)
 	//		}),
 	//	))

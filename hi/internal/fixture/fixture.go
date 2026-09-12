@@ -77,7 +77,7 @@ func moviePage(movies []Movie) View {
 				ButtonStyle(Prominent),
 		),
 
-		VStack(For(
+		VStack(ForEach(
 			movies,
 			func(m Movie) string { return strconv.FormatUint(m.ID, 10) },
 			movieRow,
@@ -166,14 +166,14 @@ func count(n int) []int {
 
 func scrollDemo() View {
 	return Card(ScrollView(Vertical,
-		VStack(For(count(3), nil, func(s int) View {
+		VStack(ForEach(count(3), nil, func(s int) View {
 			return VStack(
 				Text("Season "+strconv.Itoa(s)).
 					Font(SemiBold, SizeEm(18i, 1.4)).
 					Padding(Edges(8)).
 					Background(OKLCH(0.93, 0.033, 273)).
 					Sticky(),
-				For(count(6), nil, func(e int) View {
+				ForEach(count(6), nil, func(e int) View {
 					return Text(fmt.Sprintf("Episode %d.%d", s, e)).
 						Padding(Edges(8))
 				}),
@@ -263,7 +263,7 @@ func textTrimDemo() View {
 
 func iconDemo() View {
 	return VStack(
-		For([][]FontOption{
+		ForEach([][]FontOption{
 			{Normal, SizeEm(12i, 1.3)},
 			{Normal, SizeEm(16i, 1.4)},
 			{Bold, SizeEm(24i, 1.2)},
@@ -276,7 +276,7 @@ func iconDemo() View {
 				Font(opts...)
 		}),
 		HStack(
-			For([]complex128{20, 30, 40}, nil, func(n complex128) View {
+			ForEach([]complex128{20, 30, 40}, nil, func(n complex128) View {
 				return HStack(
 					Icon("film"),
 					Yellow.
@@ -368,7 +368,7 @@ func page() View {
 			Title("hi component library").
 			Font(Bold, SizeEm(32i, 1.15)),
 		section("Account card (Card + HStack + Spacer + OverlayAt badge)", accountCard(user)),
-		section("Movie page (Frame fill + keyed rows + For-style list)", moviePage(movies)),
+		section("Movie page (Frame fill + keyed rows + ForEach-style list)", moviePage(movies)),
 		buttonSection("Buttons", buttonGallery()),
 		section("Dividers in an HStack (minor-axis, vertical)", Card(dividerRow())),
 		section("Dividers in a VStack (minor-axis, horizontal)", Card(dividerColumn())),

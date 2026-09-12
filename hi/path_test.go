@@ -175,7 +175,7 @@ func TestPathScope(t *testing.T) {
 			return v.Background(Red).Padding().Opacity(0.5).Background(Blue).Frame(Width(100))
 		}},
 		{"keyed", func(v View) View {
-			return VStack(For([]int{1}, func(int) string { return "item" }, func(int) View { return v }))
+			return VStack(ForEach([]int{1}, func(int) string { return "item" }, func(int) View { return v }))
 		}},
 	}
 	for _, tc := range contexts {
