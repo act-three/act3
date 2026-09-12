@@ -4,8 +4,8 @@ Package hi is a UI toolkit for [ily.dev/domi] applications.
 Application code composes views,
 then serves the View graph with a [Handler].
 
-	func (app *App) View(ctx context.Context) View {
-		return VStack(
+	func (app *App) View(ctx context.Context, render PageRenderer) Page {
+		return render(VStack(
 			Text("Movies").
 				Title("Movies").
 				Font(SizeCap(20i, 1.2), Bold),
@@ -17,7 +17,7 @@ then serves the View graph with a [Handler].
 					Text(m.title),
 				)
 			}),
-		)
+		))
 	}
 
 View modifiers affect the appearance, sizing, and other properties

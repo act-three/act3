@@ -19,11 +19,6 @@ func Empty() View { return view() }
 // If the lazy view is not rendered,
 // it does not call f.
 // For example, If(false, Lazy(f)) never calls f.
-//
-// Note that values and resources captured by f
-// must remain valid until it is called,
-// and it is called during rendering,
-// after [App.View] has returned.
 func Lazy(f func() View) View {
 	return base(func() []node {
 		return f().resolve()

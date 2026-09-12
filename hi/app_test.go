@@ -15,17 +15,23 @@ import (
 // stubApp is an App whose views are supplied by the test.
 type stubApp struct {
 	view    View
-	preview func(*url.URL) (string, View)
+	onView  func(context.Context, PageRenderer) Page
+	preview func(context.Context, *url.URL, PreviewRenderer) Preview
 }
 
 func (a *stubApp) Update(context.Context, struct{}) domi.Cmd[struct{}] { return nil }
-func (a *stubApp) View(context.Context) View                           { return a.view }
 func (a *stubApp) Subscriptions(context.Context) domi.Sub[struct{}]    { return nil }
-func (a *stubApp) Preview(_ context.Context, u *url.URL) (string, View) {
-	if a.preview == nil {
-		return "", nil
+func (a *stubApp) View(ctx context.Context, render PageRenderer) Page {
+	if a.onView != nil {
+		return a.onView(ctx, render)
 	}
-	return a.preview(u)
+	return render(a.view)
+}
+func (a *stubApp) Preview(ctx context.Context, u *url.URL, render PreviewRenderer) Preview {
+	if a.preview != nil {
+		return a.preview(ctx, u, render)
+	}
+	return Preview{}
 }
 
 func renderNode(t *testing.T, n domi.Node) string {
@@ -75,8 +81,8 @@ func TestInstancePreview(t *testing.T) {
 		t.Errorf("declined preview rendered: dest=%q n=%v", dest, n)
 	}
 
-	app.preview = func(*url.URL) (string, View) {
-		return "/x", Text("b").Title("x").Padding(Edges(16))
+	app.preview = func(_ context.Context, _ *url.URL, render PreviewRenderer) Preview {
+		return render("/x", Text("b").Title("x").Padding(Edges(16)))
 	}
 	dest, title, n := in.Preview(ctx, u)
 	if dest != "/x" || title != "x" {
@@ -89,6 +95,84 @@ func TestInstancePreview(t *testing.T) {
 	if got := renderNode(t, n); !strings.Contains(got, "padding-block-start:16px") {
 		t.Errorf("preview's rule absent from the next view:\n%s", got)
 	}
+}
+
+func TestInstanceRenderScope(t *testing.T) {
+	for _, preview := range []bool{false, true} {
+		t.Run(map[bool]string{false: "View", true: "Preview"}[preview], func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			u := &url.URL{Path: "/request"}
+			active, resolved, lowered := false, false, false
+			produce := func(gotCtx context.Context, render PageRenderer) Page {
+				if gotCtx != ctx {
+					t.Fatal("context was not forwarded")
+				}
+				active = true
+				defer func() { active = false }()
+				r := render(Lazy(func() View {
+					if !active {
+						t.Fatal("resolved outside resource scope")
+					}
+					resolved = true
+					return view(func(env environment) box {
+						if !active {
+							t.Fatal("lowered outside resource scope")
+						}
+						lowered = true
+						return unary(VStack, Text("scoped").Title("scope"))(env)
+					})
+				}))
+				if !resolved || !lowered {
+					t.Fatal("render returned before resolution and lowering completed")
+				}
+				return r
+			}
+			app := &stubApp{onView: produce}
+			app.preview = func(ctx context.Context, gotURL *url.URL, render PreviewRenderer) Preview {
+				if gotURL != u {
+					t.Fatal("URL was not forwarded")
+				}
+				var r Preview
+				produce(ctx, func(v View) Page {
+					r = render("/destination", v)
+					return r.view
+				})
+				return r
+			}
+			in := &instance[struct{}, *stubApp]{app: app}
+			var title string
+			var n domi.Node
+			if preview {
+				var dest string
+				dest, title, n = in.Preview(ctx, u)
+				if dest != "/destination" {
+					t.Fatalf("destination = %q", dest)
+				}
+			} else {
+				title, n = in.View(ctx)
+			}
+			if active || title != "scope" || !strings.Contains(renderNode(t, n), "scoped") {
+				t.Fatal("completed page unavailable after resource scope closed")
+			}
+		})
+	}
+}
+
+func TestInstancePreviewEmptyDestination(t *testing.T) {
+	app := &stubApp{preview: func(_ context.Context, _ *url.URL, render PreviewRenderer) Preview {
+		return render("", Lazy(func() View {
+			t.Fatal("rendered preview with empty destination")
+			return Empty()
+		}))
+	}}
+	in := &instance[struct{}, *stubApp]{app: app}
+	defer func() {
+		if p := recover(); p != "hi: preview destination must be nonempty" {
+			t.Fatalf("panic = %v; want empty destination panic", p)
+		}
+	}()
+	in.Preview(context.Background(), &url.URL{Path: "/request"})
 }
 
 // TestHandlerNonce verifies that the nonce reaches the style element of a served page.
