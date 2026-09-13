@@ -3,9 +3,6 @@
 	background-color: var(--bg);
 	--sidebar-width: 200px;
 	--sidebar-width-mobile: 20rem;
-	min-height: 100svh;
-	height: 100svh;
-	width: 100%;
 }
 
 .v-app-main {

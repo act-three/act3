@@ -23,7 +23,7 @@
 		color-scheme: only dark;
 	}
 
-	html:has(.v-app), html:has(#full-player), body:has(.v-app), body:has(#full-player) { overflow: hidden; }
+	html:has(#full-player), body:has(#full-player) { overflow: hidden; }
 
 	/* Existing domi fragments own their interior layout during migration. */
 	.v-domi-root { display: block; }

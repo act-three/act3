@@ -2270,9 +2270,6 @@
     background-color: var(--bg);
     --sidebar-width: 200px;
     --sidebar-width-mobile: 20rem;
-    min-height: 100svh;
-    height: 100svh;
-    width: 100%;
   }
   .v-app-main {
     background-color: var(--bg-subtle);
@@ -3283,9 +3280,7 @@
     text-size-adjust: none;
     color-scheme: only dark;
   }
-  html:has(.v-app),
   html:has(#full-player),
-  body:has(.v-app),
   body:has(#full-player) {
     overflow: hidden;
   }

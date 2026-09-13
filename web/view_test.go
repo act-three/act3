@@ -17,9 +17,12 @@ func TestHiRoot(t *testing.T) {
 	Handle(mux, &Config{Model: newTestModel(t)})
 	for _, tt := range []struct {
 		path, title, content string
+		scroll               bool
 	}{
-		{"/", "Act Three", `data-controller="home"`},
-		{"/app/profile", "Profile — Act Three", "Change Name"},
+		{"/", "Act Three", `data-controller="home"`, true},
+		{"/collections", "Collections — Act Three", "Collections", true},
+		{"/missing", "Not Found — Act Three", "Not Found", true},
+		{"/app/profile", "Profile — Act Three", "Change Name", false},
 	} {
 		t.Run(tt.path, func(t *testing.T) {
 			r := httptest.NewRecorder()
@@ -29,11 +32,23 @@ func TestHiRoot(t *testing.T) {
 			}
 			for _, want := range []string{
 				"<title>" + tt.title + "</title>",
-				"<hi-root", `scroll="y"`, "<hi-html", "v-domi-root",
+				"<hi-root", "<hi-html", "v-domi-root",
 				"@layer hi{", tt.content, `id="player"`, `id="note-port"`,
 			} {
 				if !strings.Contains(r.Body.String(), want) {
 					t.Errorf("response missing %q", want)
+				}
+			}
+			body := r.Body.String()
+			if got := strings.Contains(body, `scroll="y"`); got != tt.scroll {
+				t.Errorf("document scrolling = %v, want %v", got, tt.scroll)
+			}
+			if strings.Contains(body, "<hi-scroll") {
+				t.Error("page scrolling must use the document viewport")
+			}
+			for _, id := range []string{"player", "note-port"} {
+				if count := strings.Count(body, `id="`+id+`"`); count != 1 {
+					t.Errorf("%s containers = %d, want 1", id, count)
 				}
 			}
 		})
