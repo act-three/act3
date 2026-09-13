@@ -46,10 +46,10 @@ func TestInheritedModifierCollapses(t *testing.T) {
 	if strings.Contains(html, "hi-box") {
 		t.Fatalf("Foreground should not produce a wrapper:\n%s", html)
 	}
-	if got := classRule(t, html, `<hi-vstack class="(hi-\w+)"`); got != "align-items:center;color:"+redCSS+";column-gap:8px;display:inline-flex;flex-direction:column;row-gap:8px" {
+	if got := classRule(t, html, `<hi-vstack class="(hi-\w+)"`); got != "align-items:center;color:"+redCSS+";column-gap:8px;display:inline-flex;flex-direction:column;isolation:isolate;row-gap:8px" {
 		t.Errorf("stack box rule = %q, want the consumed color in the stack's own set", got)
 	}
-	m := regexp.MustCompile(`\.(hi-\w+)\{align-items:center;color:` + regexp.QuoteMeta(redCSS) + `;column-gap:8px;display:inline-flex;flex-direction:column;row-gap:8px\}`).FindStringSubmatch(html)
+	m := regexp.MustCompile(`\.(hi-\w+)\{align-items:center;color:` + regexp.QuoteMeta(redCSS) + `;column-gap:8px;display:inline-flex;flex-direction:column;isolation:isolate;row-gap:8px\}`).FindStringSubmatch(html)
 	if m == nil {
 		t.Fatalf("no color rule in the sheet:\n%s", html)
 	}
@@ -225,7 +225,7 @@ func TestElementReset(t *testing.T) {
 func TestBackgroundStacks(t *testing.T) {
 	html := render(t, hi.Text("x").Background(hi.OKLCHA(0, 0, 0, 0.5)).Background(hi.White))
 	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
-	if got != "background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));display:block;overflow-wrap:break-word" {
+	if got != "background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));display:block;isolation:isolate;overflow-wrap:break-word" {
 		t.Errorf("paint stack = %q, want the outer color under the inner layer:\n%s", got, html)
 	}
 }
@@ -236,14 +236,14 @@ func TestBackgroundShapeOrder(t *testing.T) {
 	// Background then shape: shape and paint share the element —
 	// a red capsule.
 	shaped := render(t, hi.Text("x").Background(hi.Red).BorderShape(hi.Capsule))
-	if got := classRule(t, shaped, `<hi-text class="(hi-\w+)"`); got != "background-color:"+redCSS+";border-radius:9999px;display:block;overflow-wrap:break-word" {
+	if got := classRule(t, shaped, `<hi-text class="(hi-\w+)"`); got != "background-color:"+redCSS+";border-radius:9999px;display:block;isolation:isolate;overflow-wrap:break-word" {
 		t.Errorf("shape after paint should shape the paint, got %q:\n%s", got, shaped)
 	}
 
 	// Shape then background: the shape stays on the text element and
 	// the paint boxes out around it, unshaped — a red rectangle.
 	square := render(t, hi.Text("x").BorderShape(hi.Capsule).Background(hi.Red))
-	if got := classRule(t, square, `<hi-box class="(hi-\w+)"`); got != "align-items:center;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center" {
+	if got := classRule(t, square, `<hi-box class="(hi-\w+)"`); got != "align-items:center;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center" {
 		t.Errorf("paint after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
 	if got := classRule(t, square, `<hi-text class="(hi-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
@@ -256,7 +256,7 @@ func TestBackgroundShapeOrder(t *testing.T) {
 // one is inert — no wrapper, no declaration.
 func TestBorderShapeRepetition(t *testing.T) {
 	html := render(t, hi.Text("x").BorderShape(hi.RoundedRectangle).BorderShape(hi.Capsule))
-	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "border-radius:var(--hi-radius);display:block;overflow-wrap:break-word" {
+	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "border-radius:var(--hi-radius);display:block;isolation:isolate;overflow-wrap:break-word" {
 		t.Errorf("innermost shape should land on the text element, got %q:\n%s", got, html)
 	}
 	if strings.Contains(html, "9999px") || strings.Contains(html, "hi-box") {
@@ -277,7 +277,7 @@ func TestBorderStrokePaints(t *testing.T) {
 	if strings.Contains(html, "hi-box") {
 		t.Fatalf("BorderStroke should not produce a wrapper:\n%s", html)
 	}
-	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "display:block;isolation:isolate;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke rule = %q:\n%s", got, html)
 	}
 }
@@ -288,7 +288,7 @@ func TestBorderStrokePaints(t *testing.T) {
 func TestBorderStrokeStacks(t *testing.T) {
 	html := render(t, hi.Text("x").BorderStroke(2, hi.Red).BorderStroke(4, hi.Blue))
 	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
-	if got != "display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 4px "+blueCSS+",inset 0 0 0 2px "+redCSS) {
+	if got != "display:block;isolation:isolate;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 4px "+blueCSS+",inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke stack = %q, want the outer stroke over the inner:\n%s", got, html)
 	}
 }
@@ -298,12 +298,12 @@ func TestBorderStrokeStacks(t *testing.T) {
 // applied after a shape rings the shaped box, unshaped.
 func TestBorderStrokeShapeOrder(t *testing.T) {
 	shaped := render(t, hi.Text("x").BorderStroke(2, hi.Red).BorderShape(hi.Capsule))
-	if got := classRule(t, shaped, `<hi-text class="(hi-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, shaped, `<hi-text class="(hi-\w+)"`); got != "border-radius:9999px;display:block;isolation:isolate;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("shape after stroke should shape the stroke, got %q:\n%s", got, shaped)
 	}
 
 	square := render(t, hi.Text("x").BorderShape(hi.Capsule).BorderStroke(2, hi.Red))
-	if got := classRule(t, square, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, square, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke after shape should land on a wrapper, got %q:\n%s", got, square)
 	}
 	if got := classRule(t, square, `<hi-text class="(hi-\w+)"`); got != "border-radius:9999px;display:block;overflow-wrap:break-word" {
@@ -332,7 +332,7 @@ func TestBorderStrokeDoesNotInterceptClicks(t *testing.T) {
 // img cannot host the carrier, so the strokes box out around it.
 func TestBorderStrokeOnImage(t *testing.T) {
 	html := render(t, hi.Image("/x.png").BorderStroke(2, hi.Red))
-	if got := classRule(t, html, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("image strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
 	if !strings.Contains(html, `<img `) {
@@ -345,7 +345,7 @@ func TestBorderStrokeOnImage(t *testing.T) {
 // box out around it.
 func TestBorderStrokeOnScroll(t *testing.T) {
 	html := render(t, hi.ScrollView(hi.Vertical, hi.Text("x")).BorderStroke(2, hi.Red))
-	if got := classRule(t, html, `<hi-box class="[^"]*(hi-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-box class="[^"]*(hi-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;justify-self:stretch;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("scroll strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
 	if !strings.Contains(html, `<hi-scroll `) {
@@ -428,7 +428,7 @@ func TestBorderStrokeTakesNoSpace(t *testing.T) {
 // paints its own box, so the shape it consumes is realized there.
 func TestBorderShapeShapesColor(t *testing.T) {
 	html := render(t, hi.Red.BorderShape(hi.Ellipse))
-	if got := classRule(t, html, `<hi-color class="[^"]*(hi-\w+)"`); got != "align-self:stretch;background-color:"+redCSS+";border-radius:50%;justify-self:stretch" {
+	if got := classRule(t, html, `<hi-color class="[^"]*(hi-\w+)"`); got != "align-self:stretch;background-color:"+redCSS+";border-radius:50%;isolation:isolate;justify-self:stretch" {
 		t.Errorf("shape should land on the color's element, got %q:\n%s", got, html)
 	}
 }
@@ -530,7 +530,7 @@ func TestBorderStrokeZeroWidthKeepsStructure(t *testing.T) {
 // outside a stroke, it lands on the view's own element with the stroke
 // and the shape, in either order, with no wrapper.
 func TestBorderClippedTransforms(t *testing.T) {
-	want := "border-radius:9999px;display:block;overflow-wrap:break-word;overflow-x:clip;overflow-y:clip;position:relative;" + carrier("inset 0 0 0 2px "+redCSS)
+	want := "border-radius:9999px;display:block;isolation:isolate;overflow-wrap:break-word;overflow-x:clip;overflow-y:clip;position:relative;" + carrier("inset 0 0 0 2px "+redCSS)
 	for name, v := range map[string]hi.View{
 		"clip then shape": hi.Text("x").BorderStroke(2, hi.Red).BorderClipped().BorderShape(hi.Capsule),
 		"shape then clip": hi.Text("x").BorderStroke(2, hi.Red).BorderShape(hi.Capsule).BorderClipped(),
@@ -550,7 +550,7 @@ func TestBorderClippedTransforms(t *testing.T) {
 // wrapper, and rings that wrapper, which is not clipped.
 func TestBorderClippedStrokeOrder(t *testing.T) {
 	html := render(t, hi.Text("x").BorderClipped().BorderStroke(2, hi.Red))
-	if got := classRule(t, html, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke outside clip should land on a wrapper, got %q:\n%s", got, html)
 	}
 	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "display:block;overflow-wrap:break-word;overflow-x:clip;overflow-y:clip" {

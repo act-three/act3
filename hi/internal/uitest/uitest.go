@@ -121,6 +121,13 @@ func Run(t *testing.T, w, h int, html string, fn func(*Session)) {
 		t.Fatalf("write page: %v", err)
 	}
 
+	u := url.URL{Scheme: "file", Path: path}
+	RunURL(t, w, h, u.String(), fn)
+}
+
+// RunURL opens a live page in a browser tab with a w×h viewport.
+func RunURL(t *testing.T, w, h int, pageURL string, fn func(*Session)) {
+	t.Helper()
 	browser.once.Do(startBrowser)
 	if browser.err != nil {
 		if strings.Contains(browser.err.Error(), "executable file not found") {
@@ -134,10 +141,9 @@ func Run(t *testing.T, w, h int, html string, fn func(*Session)) {
 	ctx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
 	defer cancelTimeout()
 
-	u := url.URL{Scheme: "file", Path: path}
 	err := chromedp.Run(ctx,
 		chromedp.EmulateViewport(int64(w), int64(h)),
-		chromedp.Navigate(u.String()),
+		chromedp.Navigate(pageURL),
 	)
 	if err != nil {
 		t.Fatalf("load page: %v", err)
