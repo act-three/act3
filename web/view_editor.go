@@ -1,19 +1,20 @@
 package web
 
 import (
+	"strings"
+
 	"ily.dev/act3/buildinfo"
 	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/view"
 )
 
-func viewEditor(tx *model.TxR, path string, body node) hi.View {
+func viewEditor(tx *model.TxR, path hi.RequestPath, odesc map[string]string) hi.View {
 	stats := tx.TaskStats()
 	return view.Editor(
-		hi.HTML(body).
-			Class("v-app-page"),
+		viewEditorPage(tx, path, odesc).Class("v-app-page"),
 		view.AppConfig{
-			Path:           path,
+			Path:           "/" + strings.Join(path, "/"),
 			TaskCount:      stats.Queued + stats.Running,
 			TaskCountError: stats.CountError,
 			Uploads:        tx.Uploads(),
@@ -21,55 +22,55 @@ func viewEditor(tx *model.TxR, path string, body node) hi.View {
 	)
 }
 
-func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (title string, n node) {
-	m := &matcher{path: path}
-	switch {
-	case m.match(""):
-		return "", notFound
-	case m.match("about"):
-		return viewEditorAbout()
-	case m.match("profile"):
-		return view.AppProfile()
-	case m.match("security"):
-		return view.AppSecurity()
-	case m.match("collections"):
-		return viewEditorCollection(tx, "", false)
-	case path[0] == "collections":
-		return viewEditorCollection(tx, odesc["col"], odesc == nil)
-	case m.match("downloads"):
-		return viewEditorDownloads(tx, "")
-	case m.match("downloads/{id}"):
-		return viewEditorDownloads(tx, m.get("id"))
+func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) hi.View {
+	return hi.First(
+		hi.Path("/app/about", viewHTML(viewEditorAbout)),
+		hi.Path("/app/profile", viewHTML(view.AppProfile)),
+		hi.Path("/app/security", viewHTML(view.AppSecurity)),
+		hi.PathPrefix("/app/collections", viewHTML(func() (string, node) {
+			return viewEditorCollection(tx, odesc["col"], len(path) > 2 && odesc == nil)
+		})),
+		hi.PathPrefix("/app/downloads", viewEditorItem(tx, path, viewEditorDownloads)),
+		hi.PathPrefix("/app/movies", viewHTML(func() (string, node) {
+			return viewEditorMovie(tx, odesc["med"], len(path) > 2 && odesc == nil)
+		})),
+		hi.PathPrefix("/app/series", viewHTML(func() (string, node) {
+			switch odesc["kind"] {
+			case model.KindSeriesEdition:
+				return viewEditorSeries(tx, odesc["sed"], false)
+			case model.KindEpisode:
+				return viewEditorEpisode(tx, odesc["sed"], odesc["ep"])
+			}
+			return viewEditorSeries(tx, "", len(path) > 2)
+		})),
+		hi.Path("/app/storage", viewHTML(func() (string, node) {
+			return viewEditorStorage(tx)
+		})),
+		hi.Path("/app/tasks", viewHTML(func() (string, node) {
+			return viewEditorTasks(tx)
+		})),
+		hi.Path("/app/tmdb", viewHTML(func() (string, node) {
+			return view.AppTMDB(tx.SettingGetByGroup("tmdb"))
+		})),
+		hi.Path("/app/transmission", viewHTML(func() (string, node) {
+			return view.AppTransmission(tx.SettingGetByGroup("transmission"))
+		})),
+		hi.PathPrefix("/app/trash", viewEditorItem(tx, path, viewEditorTrash)),
+		hi.HTML(notFound),
+	)
+}
 
-	case m.match("movies"):
-		return viewEditorMovie(tx, "", false)
-	case path[0] == "movies":
-		return viewEditorMovie(tx, odesc["med"], odesc == nil)
-	case m.match("series"):
-		return viewEditorSeries(tx, "", false)
-	case path[0] == "series":
-		switch odesc["kind"] {
-		case model.KindSeriesEdition:
-			return viewEditorSeries(tx, odesc["sed"], false)
-		case model.KindEpisode:
-			return viewEditorEpisode(tx, odesc["sed"], odesc["ep"])
+// Downloads and trash accept a list path or one item ID, never a subtree.
+func viewEditorItem(tx *model.TxR, path []string, f func(*model.TxR, string) (string, node)) hi.View {
+	return viewHTML(func() (string, node) {
+		switch len(path) {
+		case 2:
+			return f(tx, "")
+		case 3:
+			return f(tx, path[2])
 		}
-		return viewEditorSeries(tx, "", true)
-
-	case m.match("storage"):
-		return viewEditorStorage(tx)
-	case m.match("tasks"):
-		return viewEditorTasks(tx)
-	case m.match("tmdb"):
-		return view.AppTMDB(tx.SettingGetByGroup("tmdb"))
-	case m.match("transmission"):
-		return view.AppTransmission(tx.SettingGetByGroup("transmission"))
-	case m.match("trash"):
-		return viewEditorTrash(tx, "")
-	case m.match("trash/{id}"):
-		return viewEditorTrash(tx, m.get("id"))
-	}
-	return "", notFound
+		return "", notFound
+	})
 }
 
 func viewEditorAbout() (title string, n node) {
