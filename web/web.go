@@ -14,6 +14,7 @@ import (
 
 	"ily.dev/domi"
 
+	"ily.dev/act3/hi"
 	"ily.dev/act3/http/timing"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
@@ -40,7 +41,7 @@ type Config struct {
 }
 
 func Handle(mux *http.ServeMux, c *Config) {
-	mux.Handle("/", domi.NewServer(
+	mux.Handle("/", hi.Handler(
 		func(ctx context.Context, u *url.URL) (*app, cmd) {
 			return newApp(ctx, c, u)
 		},

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/model/kind"
 	"ily.dev/act3/ui"
@@ -16,36 +17,56 @@ type node = domi.Node
 
 var notFound = domi.Text("Not Found")
 
-func (a *app) Preview(ctx context.Context, u *url.URL) (dest, title string, n node) {
+func (a *app) Preview(ctx context.Context, u *url.URL, render hi.PreviewRenderer) (p hi.Preview) {
 	a = new(*a)
 	u = u.Clone()
 	u.Path = redirect(u.Path)
 	a.notes = nil
 	a.setPath(ctx, u)
-	title, n = a.View(ctx)
-	return u.String(), title, n
+	a.render(ctx, func(v hi.View) {
+		p = render(u.String(), v)
+	})
+	return p
 }
 
-func (a *app) View(ctx context.Context) (title string, n node) {
+func (a *app) View(ctx context.Context, render hi.PageRenderer) (p hi.Page) {
+	a.render(ctx, func(v hi.View) {
+		p = render(v)
+	})
+	return p
+}
+
+// Rendering resolves lazy views, which may still need the transaction.
+func (a *app) render(ctx context.Context, render func(hi.View)) {
+	var title string
+	var n node
 	var dlg node
 	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
 		odesc, _ := resolve(tx, splitPath(a.path))
 		title, n = viewRoot(tx, a.path, odesc)
 		dlg = viewDialog(tx, a.dialog)
+		render(a.view(title, n, dlg))
 		return nil
 	})
 	if err != nil {
-		n = viewError(err)
+		render(a.view(title, viewError(err), dlg))
 	}
+}
+
+func (a *app) view(title string, n, dlg node) hi.View {
 	n = domi.Fragment(n,
 		dlg,
 		ui.NotePort(a.notes),
 		view.PlayerContainer(a.viewPlayer(a.player)),
 	)
 	if title == "" {
-		return "Act Three", n
+		title = "Act Three"
+	} else {
+		title += " — Act Three"
 	}
-	return title + " — Act Three", n
+	return hi.ScrollView(hi.Vertical,
+		hi.HTML(n).Class("v-domi-root"),
+	).Title(title)
 }
 
 func viewRoot(tx *model.TxR, path string, odesc map[string]string) (title string, n node) {
