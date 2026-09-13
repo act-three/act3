@@ -17,7 +17,7 @@ type app struct {
 	model *model.Model
 
 	// mutable state
-	path    string // request path; object pages re-resolve it each frame
+	path    string // current URL path, used to derive canonical URL commands
 	dialog  dialog
 	player  *player
 	notes   []ui.Note

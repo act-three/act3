@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"path"
+	"strings"
 
 	"ily.dev/domi"
 
@@ -57,4 +58,14 @@ func replaceSlugSuffix(p, oldsuf []string, newsuf string) string {
 		return ""
 	}
 	return path.Join("/", path.Join(p[:n]...), newsuf)
+}
+
+// splitPath splits path into a list of segments.
+// if path is "/" or "", splitPath returns an empty slice.
+func splitPath(p string) []string {
+	a := strings.Split(strings.Trim(path.Join("/", p), "/"), "/")
+	if len(a) == 1 && a[0] == "" {
+		a = nil
+	}
+	return a
 }

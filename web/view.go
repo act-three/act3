@@ -40,8 +40,7 @@ func (a *app) View(ctx context.Context, render hi.PageRenderer) (p hi.Page) {
 func (a *app) render(ctx context.Context, render func(hi.View)) {
 	var dlg node
 	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
-		odesc, _ := resolve(tx, splitPath(a.path))
-		v := viewRoot(tx, a.path, odesc)
+		v := viewRoot(tx)
 		dlg = viewDialog(tx, a.dialog)
 		render(a.view(v, dlg))
 		return nil
@@ -72,26 +71,35 @@ func (a *app) view(v hi.View, dlg node) hi.View {
 	)
 }
 
-func viewRoot(tx *model.TxR, path string, odesc map[string]string) hi.View {
-	var title string
-	m := &matcher{path: splitPath(path)}
-	var n node
-	switch {
-	case m.match(""):
-		title, n = viewHome(tx)
-	case m.match("collections"):
-		title, n = viewCollections(tx)
-	case m.path[0] == "app":
-		title, body := viewEditorPage(tx, m.path[1:], odesc)
-		return viewEditor(tx, path, body).
-			Title(title)
-	default:
-		title, n = viewTheater(tx, odesc)
-	}
-	return hi.ScrollView(hi.Vertical,
-		hi.HTML(n).Class("v-domi-root"),
-	).
-		Title(title)
+func viewRoot(tx *model.TxR) hi.View {
+	return hi.PathReader(func(path hi.RequestPath) hi.View {
+		odesc, _ := resolve(tx, path)
+		return hi.First(
+			hi.PathPrefix("/app", hi.Lazy(func() hi.View {
+				return viewEditor(tx, path, odesc)
+			})),
+			hi.ScrollView(hi.Vertical, hi.First(
+				hi.Path("/", viewHTML(func() (string, node) {
+					return viewHome(tx)
+				})),
+				hi.Path("/collections", viewHTML(func() (string, node) {
+					return viewCollections(tx)
+				})),
+				viewHTML(func() (string, node) {
+					return viewTheater(tx, odesc)
+				}),
+			).Class("v-domi-root")),
+		)
+	})
+}
+
+// viewHTML adapts legacy pages, keeping their queries lazy and their
+// titles attached to the selected view during the migration to hi.
+func viewHTML(f func() (string, node)) hi.View {
+	return hi.Lazy(func() hi.View {
+		title, n := f()
+		return hi.HTML(n).Title(title)
+	})
 }
 
 // viewPlayer renders the open player, or an empty slot when none is open.
