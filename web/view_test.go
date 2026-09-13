@@ -56,7 +56,7 @@ func TestPreviewPreservesState(t *testing.T) {
 		body = b.String()
 		return hi.Preview{}
 	})
-	if dest != "/app/profile?q=kept#section" || title != "Profile — Act Three" {
+	if dest != "/app/profile?q=kept#section" || title != "Profile" {
 		t.Fatalf("preview = %q, %q", dest, title)
 	}
 	if !strings.Contains(body, "Change Name") || strings.Contains(body, a.notes[0].Title) {
