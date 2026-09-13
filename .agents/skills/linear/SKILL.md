@@ -32,7 +32,7 @@ Before doing work based on an issue:
 
 ## Keep Linear in sync while you work
 
-If the current task came from a Linear issue, keep the issue reflecting reality
+If the current task came from a Linear issue, update the issue status
 as you go. This holds even when the work is non-code
 (investigation, design discussion, ops tasks):
 
@@ -45,6 +45,13 @@ as you go. This holds even when the work is non-code
   chose a different approach than the issue proposed, found a related problem.
 - **Splitting work**: create sub-issues with `save_issue` using `parentId`.
   See A3-77 → A3-81..A3-93 for the pattern.
+
+If the user requests the issue description to be updated,
+particularly to reflect design changes as a result of design review
+discussions, then it is okay to update the issue's description body.
+
+DO NOT edit the issue description to post status updates regarding
+implementation progress. Status updates belong in comments.
 
 Don't update Linear for work that didn't originate from a Linear issue.
 Not every commit needs a ticket.
