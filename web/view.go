@@ -59,11 +59,6 @@ func (a *app) view(title string, n, dlg node) hi.View {
 		ui.NotePort(a.notes),
 		view.PlayerContainer(a.viewPlayer(a.player)),
 	)
-	if title == "" {
-		title = "Act Three"
-	} else {
-		title += " — Act Three"
-	}
 	return hi.ScrollView(hi.Vertical,
 		hi.HTML(n).Class("v-domi-root"),
 	).Title(title)

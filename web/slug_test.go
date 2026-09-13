@@ -120,7 +120,7 @@ func TestTombstonedSlugCanonicalized(t *testing.T) {
 	if c == nil {
 		t.Fatal("newApp at tombstoned /dune returned nil cmd, want ReplaceURL cmd")
 	}
-	if title, _ := renderApp(t, a); title != "Dune Part One — Act Three" {
+	if title, _ := renderApp(t, a); title != "Dune Part One" {
 		t.Fatalf("View at tombstoned /dune has title %q, want the movie's", title)
 	}
 
@@ -128,7 +128,7 @@ func TestTombstonedSlugCanonicalized(t *testing.T) {
 	if c := a.Update(ctx, &msg.URLChange{URL: &url.URL{Path: "/dune"}}); c == nil {
 		t.Fatal("Update(URLChange to tombstoned /dune) returned nil cmd, want ReplaceURL cmd")
 	}
-	if title, _ := renderApp(t, a); title != "Dune Part One — Act Three" {
+	if title, _ := renderApp(t, a); title != "Dune Part One" {
 		t.Fatalf("View after navigating to tombstoned /dune has title %q, want the movie's", title)
 	}
 
