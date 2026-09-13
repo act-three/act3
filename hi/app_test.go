@@ -116,7 +116,7 @@ func TestInstanceAccumulatesRules(t *testing.T) {
 func TestInstancePreview(t *testing.T) {
 	ctx := t.Context()
 	app := &stubApp{view: Text("a")}
-	in := &instance[struct{}, *stubApp]{app: app, title: "App"}
+	in := &instance[struct{}, *stubApp]{app: app, config: config{title: "App"}}
 	u := &url.URL{Path: "/x"}
 
 	if dest, title, _ := in.Preview(ctx, u); dest != "" || title != "" {

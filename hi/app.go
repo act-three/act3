@@ -124,7 +124,7 @@ func Handler[Msg any, A App[Msg]](
 	onURLChange func(*url.URL) Msg,
 	o ...Option,
 ) http.Handler {
-	th, styleNonce, icons, appTitle := configure(o)
+	config := configure(o)
 	// cssLink is filled in below, after the server exists to be asked
 	// about its configuration; the constructor only runs on requests.
 	var cssLink domi.Node
@@ -132,15 +132,13 @@ func Handler[Msg any, A App[Msg]](
 		func(ctx context.Context, u *url.URL) (*instance[Msg, A], domi.Cmd[msg[Msg]]) {
 			app, cmd := f(ctx, u)
 			in := &instance[Msg, A]{
+				config:  config,
 				app:     app,
 				path:    urlPath(u),
 				cssLink: cssLink,
-				theme:   th,
-				icons:   icons,
-				title:   appTitle,
 			}
-			if styleNonce != nil {
-				in.nonce = styleNonce(ctx)
+			if config.styleNonce != nil {
+				in.nonce = config.styleNonce(ctx)
 			}
 			return in, domi.MapCmd(wrapMsg[Msg], cmd)
 		},
@@ -182,13 +180,11 @@ func wrapMsg[Msg any](m Msg) msg[Msg] {
 // Preview shares the sheet.
 // Rendering a preview adds rules but doesn't modify App state.
 type instance[Msg any, A App[Msg]] struct {
+	config
 	app     A
 	path    []string
 	nonce   string
 	cssLink domi.Node // loads the static stylesheet; nil with a custom document
-	theme   theme
-	icons   func(string) domi.Node
-	title   string
 	sheet   sheet.Sheet
 }
 
@@ -275,38 +271,41 @@ func (in *instance[Msg, A]) render(root View, path []string) Page {
 // Render is intended for tests.
 // Applications serve their views with [Handler].
 func Render(root View, o ...Option) (title string, page domi.Node) {
-	th, styleNonce, icons, appTitle := configure(o)
-	in := instance[struct{}, App[struct{}]]{theme: th, icons: icons, title: appTitle}
-	if styleNonce != nil {
-		in.nonce = styleNonce(context.Background())
+	in := instance[struct{}, App[struct{}]]{config: configure(o)}
+	if in.styleNonce != nil {
+		in.nonce = in.styleNonce(context.Background())
 	}
 	r := in.render(root, nil)
 	return r.title, r.page
 }
 
+type config struct {
+	theme      theme
+	styleNonce func(context.Context) string
+	icons      func(string) domi.Node
+	title      string
+}
+
 // configure resolves the options in o.
 // Options it does not know are for domi.
-func configure(o []Option) (
-	th theme,
-	styleNonce func(context.Context) string,
-	icons func(string) domi.Node,
-	appTitle string,
-) {
-	th = defaultTheme
-	icons = defaultIconSource
+func configure(o []Option) config {
+	c := config{
+		theme: defaultTheme,
+		icons: defaultIconSource,
+	}
 	for _, o := range o {
 		switch o := o.(type) {
 		case optionStyleNonce:
-			styleNonce = o.f
+			c.styleNonce = o.f
 		case optionTheme:
-			th = o.theme
+			c.theme = o.theme
 		case optionIconSource:
-			icons = o.f
+			c.icons = o.f
 		case optionAppTitle:
-			appTitle = o.title
+			c.title = o.title
 		}
 	}
-	return th, styleNonce, icons, appTitle
+	return c
 }
 
 // An Option configures a [Handler].
