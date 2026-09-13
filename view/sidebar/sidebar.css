@@ -1,5 +1,4 @@
 .v-sidebar { color: var(--text-3); }
-@media (min-width: 768px) { .v-sidebar { display: block; } }
 
 .v-sidebar-gap {
 	width: var(--sidebar-width);
@@ -15,12 +14,11 @@
 	z-index: 10;
 	height: 100svh;
 	transition-duration: 200ms;
-	display: none;
+	display: flex;
 	flex-direction: column;
 	inset-inline-start: 0;
 	padding: 0.5rem;
 }
-@media (min-width: 768px) { .v-sidebar-container { display: flex; } }
 
 .v-sidebar-content {
 	display: flex;

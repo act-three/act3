@@ -1,10 +1,9 @@
 package view
 
 import (
-	"ily.dev/domi"
 	"ily.dev/domi/attr"
-	"ily.dev/domi/html"
 
+	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	. "ily.dev/act3/ui"
 	"ily.dev/act3/view/sidebar"
@@ -17,27 +16,25 @@ type AppConfig struct {
 	Uploads        []model.Upload
 }
 
-func Editor(body domi.Node, cfg AppConfig) domi.Node {
-	return domi.Fragment(
-		html.Div(
-			Attr("data-slot")("sidebar-wrapper"),
-			Class("v-app"),
-			Style("--sidebar-width: 200px; --sidebar-width-mobile: 20rem;"),
-		)(
-			sidebar.Sidebar(sidebar.Config{
+func Editor(body hi.View, cfg AppConfig) hi.View {
+	return hi.Group(
+		hi.HStack(
+			hi.HTML(sidebar.Sidebar(sidebar.Config{
 				Path:           cfg.Path,
 				TaskCount:      cfg.TaskCount,
 				TaskCountError: cfg.TaskCountError,
 				Uploads:        cfg.Uploads,
-			}),
-			html.Div(
-				attr.Role("main"),
-				Attr("data-slot")("sidebar-inset"),
-				Class("v-app-main"),
-			)(
-				body,
-			),
-		),
-		Port(),
+			})).
+				FixedSize(),
+			hi.ZStack(body).
+				Attr(attr.Role("main"), Attr("data-slot")("sidebar-inset")).
+				Class("v-app-main").
+				BorderClipped().
+				Padding(hi.EdgesLetterbox(8i), hi.EdgeTrailing(8i)),
+		).
+			Gap(0).
+			Class("v-app").
+			Attr(Attr("data-slot")("sidebar-wrapper")),
+		hi.HTML(Port()).FixedSize(),
 	)
 }

@@ -41,39 +41,57 @@ func (a *app) render(ctx context.Context, render func(hi.View)) {
 	var dlg node
 	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
 		odesc, _ := resolve(tx, splitPath(a.path))
-		title, n := viewRoot(tx, a.path, odesc)
+		v := viewRoot(tx, a.path, odesc)
 		dlg = viewDialog(tx, a.dialog)
-		render(a.view(n, dlg).Title(title))
+		render(a.view(v, dlg))
 		return nil
 	})
 	if err != nil {
-		render(a.view(viewError(err), dlg).Title("Error"))
+		render(a.view(
+			hi.HTML(viewError(err)).
+				Class("v-domi-root").
+				Title("Error"),
+			dlg,
+		))
 	}
 }
 
-func (a *app) view(n, dlg node) hi.View {
-	n = domi.Fragment(n,
+func (a *app) view(v hi.View, dlg node) hi.View {
+	n := domi.Fragment(
 		dlg,
 		ui.NotePort(a.notes),
 		view.PlayerContainer(a.viewPlayer(a.player)),
 	)
 	return hi.ScrollView(hi.Vertical,
-		hi.HTML(n).Class("v-domi-root"),
+		hi.VStack(
+			v,
+			hi.HTML(n).
+				Class("v-domi-root").
+				FixedSize(),
+		).
+			Gap(0),
 	)
 }
 
-func viewRoot(tx *model.TxR, path string, odesc map[string]string) (title string, n node) {
+func viewRoot(tx *model.TxR, path string, odesc map[string]string) hi.View {
+	var title string
 	m := &matcher{path: splitPath(path)}
+	var n node
 	switch {
 	case m.match(""):
-		return viewHome(tx)
+		title, n = viewHome(tx)
 	case m.match("collections"):
-		return viewCollections(tx)
+		title, n = viewCollections(tx)
 	case m.path[0] == "app":
 		title, body := viewEditorPage(tx, m.path[1:], odesc)
-		return title, viewEditor(tx, path, body)
+		return viewEditor(tx, path, body).
+			Title(title)
+	default:
+		title, n = viewTheater(tx, odesc)
 	}
-	return viewTheater(tx, odesc)
+	return hi.HTML(n).
+		Class("v-domi-root").
+		Title(title)
 }
 
 // viewPlayer renders the open player, or an empty slot when none is open.
