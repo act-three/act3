@@ -124,7 +124,7 @@ func Handler[Msg any, A App[Msg]](
 	onURLChange func(*url.URL) Msg,
 	o ...Option,
 ) http.Handler {
-	th, styleNonce, icons := configure(o)
+	th, styleNonce, icons, appTitle := configure(o)
 	// cssLink is filled in below, after the server exists to be asked
 	// about its configuration; the constructor only runs on requests.
 	var cssLink domi.Node
@@ -137,6 +137,7 @@ func Handler[Msg any, A App[Msg]](
 				cssLink: cssLink,
 				theme:   th,
 				icons:   icons,
+				title:   appTitle,
 			}
 			if styleNonce != nil {
 				in.nonce = styleNonce(ctx)
@@ -187,6 +188,7 @@ type instance[Msg any, A App[Msg]] struct {
 	cssLink domi.Node // loads the static stylesheet; nil with a custom document
 	theme   theme
 	icons   func(string) domi.Node
+	title   string
 	sheet   sheet.Sheet
 }
 
@@ -252,8 +254,14 @@ func (in *instance[Msg, A]) render(root View, path []string) Page {
 		}
 		rootAttr = domi.Group(rootAttr, domi.Name("scroll", strings.Join(axes, " ")))
 	}
+	title := b.title
+	if title == "" {
+		title = in.title
+	} else if in.title != "" {
+		title += " — " + in.title
+	}
 	return Page{
-		title: b.title,
+		title: title,
 		// Order matters, static stylesheet, then generated style, then content.
 		page: domi.Tag("hi-root", rootAttr)(in.cssLink, style, b.node),
 	}
@@ -267,8 +275,8 @@ func (in *instance[Msg, A]) render(root View, path []string) Page {
 // Render is intended for tests.
 // Applications serve their views with [Handler].
 func Render(root View, o ...Option) (title string, page domi.Node) {
-	th, styleNonce, icons := configure(o)
-	in := instance[struct{}, App[struct{}]]{theme: th, icons: icons}
+	th, styleNonce, icons, appTitle := configure(o)
+	in := instance[struct{}, App[struct{}]]{theme: th, icons: icons, title: appTitle}
 	if styleNonce != nil {
 		in.nonce = styleNonce(context.Background())
 	}
@@ -278,7 +286,12 @@ func Render(root View, o ...Option) (title string, page domi.Node) {
 
 // configure resolves the options in o.
 // Options it does not know are for domi.
-func configure(o []Option) (th theme, styleNonce func(context.Context) string, icons func(string) domi.Node) {
+func configure(o []Option) (
+	th theme,
+	styleNonce func(context.Context) string,
+	icons func(string) domi.Node,
+	appTitle string,
+) {
 	th = defaultTheme
 	icons = defaultIconSource
 	for _, o := range o {
@@ -289,15 +302,31 @@ func configure(o []Option) (th theme, styleNonce func(context.Context) string, i
 			th = o.theme
 		case optionIconSource:
 			icons = o.f
+		case optionAppTitle:
+			appTitle = o.title
 		}
 	}
-	return th, styleNonce, icons
+	return th, styleNonce, icons, appTitle
 }
 
 // An Option configures a [Handler].
 //
 // See [domi.Option] for more option constructors.
 type Option = domi.Option
+
+// AppTitle sets the app title.
+//
+// The app title is combined
+// with the title of the root view in each page
+// to use as the page title.
+func AppTitle(title string) Option {
+	return optionAppTitle{title: title}
+}
+
+type optionAppTitle struct {
+	domi.Option
+	title string
+}
 
 // StyleNonce adds a nonce to the style element generated for each page.
 // The nonce must match the one in the page's Content-Security-Policy.
