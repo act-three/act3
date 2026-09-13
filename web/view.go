@@ -38,22 +38,20 @@ func (a *app) View(ctx context.Context, render hi.PageRenderer) (p hi.Page) {
 
 // Rendering resolves lazy views, which may still need the transaction.
 func (a *app) render(ctx context.Context, render func(hi.View)) {
-	var title string
-	var n node
 	var dlg node
 	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
 		odesc, _ := resolve(tx, splitPath(a.path))
-		title, n = viewRoot(tx, a.path, odesc)
+		title, n := viewRoot(tx, a.path, odesc)
 		dlg = viewDialog(tx, a.dialog)
-		render(a.view(title, n, dlg))
+		render(a.view(n, dlg).Title(title))
 		return nil
 	})
 	if err != nil {
-		render(a.view(title, viewError(err), dlg))
+		render(a.view(viewError(err), dlg).Title("Error"))
 	}
 }
 
-func (a *app) view(title string, n, dlg node) hi.View {
+func (a *app) view(n, dlg node) hi.View {
 	n = domi.Fragment(n,
 		dlg,
 		ui.NotePort(a.notes),
@@ -61,7 +59,7 @@ func (a *app) view(title string, n, dlg node) hi.View {
 	)
 	return hi.ScrollView(hi.Vertical,
 		hi.HTML(n).Class("v-domi-root"),
-	).Title(title)
+	)
 }
 
 func viewRoot(tx *model.TxR, path string, odesc map[string]string) (title string, n node) {
