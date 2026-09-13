@@ -48,8 +48,9 @@ func (a *app) render(ctx context.Context, render func(hi.View)) {
 	})
 	if err != nil {
 		render(a.view(
-			hi.HTML(viewError(err)).
-				Class("v-domi-root").
+			hi.ScrollView(hi.Vertical,
+				hi.HTML(viewError(err)).Class("v-domi-root"),
+			).
 				Title("Error"),
 			dlg,
 		))
@@ -62,14 +63,12 @@ func (a *app) view(v hi.View, dlg node) hi.View {
 		ui.NotePort(a.notes),
 		view.PlayerContainer(a.viewPlayer(a.player)),
 	)
-	return hi.ScrollView(hi.Vertical,
-		hi.VStack(
-			v,
-			hi.HTML(n).
-				Class("v-domi-root").
-				FixedSize(),
-		).
-			Gap(0),
+	// A root overlay preserves the theater's document scrolling and
+	// keeps these fixed-position containers out of the page's layout.
+	return v.Overlay(hi.Center,
+		hi.HTML(n).
+			Class("v-domi-root").
+			FixedSize(),
 	)
 }
 
@@ -89,8 +88,9 @@ func viewRoot(tx *model.TxR, path string, odesc map[string]string) hi.View {
 	default:
 		title, n = viewTheater(tx, odesc)
 	}
-	return hi.HTML(n).
-		Class("v-domi-root").
+	return hi.ScrollView(hi.Vertical,
+		hi.HTML(n).Class("v-domi-root"),
+	).
 		Title(title)
 }
 
