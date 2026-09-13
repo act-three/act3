@@ -2,18 +2,23 @@ package web
 
 import (
 	"ily.dev/act3/buildinfo"
+	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/view"
 )
 
-func viewEditor(tx *model.TxR, path string, body node) node {
+func viewEditor(tx *model.TxR, path string, body node) hi.View {
 	stats := tx.TaskStats()
-	return view.Editor(body, view.AppConfig{
-		Path:           path,
-		TaskCount:      stats.Queued + stats.Running,
-		TaskCountError: stats.CountError,
-		Uploads:        tx.Uploads(),
-	})
+	return view.Editor(
+		hi.HTML(body).
+			Class("v-app-page"),
+		view.AppConfig{
+			Path:           path,
+			TaskCount:      stats.Queued + stats.Running,
+			TaskCountError: stats.CountError,
+			Uploads:        tx.Uploads(),
+		},
+	)
 }
 
 func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) (title string, n node) {

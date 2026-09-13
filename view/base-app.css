@@ -1,7 +1,8 @@
 .v-app {
 	isolation: isolate;
 	background-color: var(--bg);
-	display: flex;
+	--sidebar-width: 200px;
+	--sidebar-width-mobile: 20rem;
 	min-height: 100svh;
 	height: 100svh;
 	width: 100%;
@@ -10,14 +11,10 @@
 .v-app-main {
 	background-color: var(--bg-subtle);
 	position: relative;
-	flex: 1;
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
-	grid-template-rows: minmax(0, 1fr);
-	margin: 0.5rem;
-	margin-inline-start: 0;
 	border-radius: 0.75rem;
 	border: 0.5px solid oklch(from var(--border) 0.21 c h);
 	box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-	overflow: hidden;
 }
+
+/* Legacy pages own scrolling and must fill the pane's bounded grid. */
+.v-app-page { place-items: stretch; }
