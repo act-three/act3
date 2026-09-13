@@ -18,7 +18,7 @@ func renderPathTest(t *testing.T, path string, v View) Page {
 	if err != nil {
 		t.Fatal(err)
 	}
-	in := instance[struct{}, App[struct{}]]{theme: defaultTheme, icons: defaultIconSource, path: urlPath(u)}
+	in := instance[struct{}, App[struct{}]]{config: configure(nil), path: urlPath(u)}
 	return in.render(v, in.path)
 }
 
