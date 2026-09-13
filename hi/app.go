@@ -135,10 +135,8 @@ func Handler[Msg any, A App[Msg]](
 				config:  config,
 				app:     app,
 				path:    urlPath(u),
+				nonce:   config.styleNonce(ctx),
 				cssLink: cssLink,
-			}
-			if config.styleNonce != nil {
-				in.nonce = config.styleNonce(ctx)
 			}
 			return in, domi.MapCmd(wrapMsg[Msg], cmd)
 		},
@@ -272,9 +270,7 @@ func (in *instance[Msg, A]) render(root View, path []string) Page {
 // Applications serve their views with [Handler].
 func Render(root View, o ...Option) (title string, page domi.Node) {
 	in := instance[struct{}, App[struct{}]]{config: configure(o)}
-	if in.styleNonce != nil {
-		in.nonce = in.styleNonce(context.Background())
-	}
+	in.nonce = in.config.styleNonce(context.Background())
 	r := in.render(root, nil)
 	return r.title, r.page
 }
@@ -290,8 +286,9 @@ type config struct {
 // Options it does not know are for domi.
 func configure(o []Option) config {
 	c := config{
-		theme: defaultTheme,
-		icons: defaultIconSource,
+		theme:      defaultTheme,
+		styleNonce: defaultStyleNonce,
+		icons:      defaultIconSource,
 	}
 	for _, o := range o {
 		switch o := o.(type) {
@@ -343,6 +340,8 @@ type optionStyleNonce struct {
 	domi.Option
 	f func(context.Context) string
 }
+
+func defaultStyleNonce(context.Context) string { return "" }
 
 // urlPath splits before unescaping so an escaped slash stays in its segment.
 // It returns a non-nil slice even for the root path.
