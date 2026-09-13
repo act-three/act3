@@ -43,6 +43,48 @@ func renderNode(t *testing.T, n domi.Node) string {
 	return sb.String()
 }
 
+func TestAppTitle(t *testing.T) {
+	tests := []struct {
+		name string
+		view View
+		opts []Option
+		want string
+	}{
+		{"no titles", Text("content"), nil, ""},
+		{"view only", Text("content").Title("Movies"), nil, "Movies"},
+		{"app only", Text("content"), []Option{AppTitle("Act Three")}, "Act Three"},
+		{"both", Text("content").Title("Movies"), []Option{AppTitle("Act Three")}, "Movies — Act Three"},
+		{"empty app", Text("content").Title("Movies"), []Option{AppTitle("")}, "Movies"},
+		{"empty view", Text("content").Title(""), []Option{AppTitle("Act Three")}, "Act Three"},
+		{"nested view", VStack(Text("content").Title("Movies")), []Option{AppTitle("Act Three")}, "Movies — Act Three"},
+		{"last option wins", Text("content"), []Option{AppTitle("Old"), AppTitle("New")}, "New"},
+		{"clear app", Text("content").Title("Movies"), []Option{AppTitle("Old"), AppTitle("")}, "Movies"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := Render(tt.view, tt.opts...); got != tt.want {
+				t.Errorf("Render title = %q, want %q", got, tt.want)
+			}
+			h := Handler(
+				func(context.Context, *url.URL) (*stubApp, domi.Cmd[struct{}]) {
+					return &stubApp{view: tt.view}, nil
+				},
+				func(*url.URL) struct{} { return struct{}{} },
+				func(*url.URL) struct{} { return struct{}{} },
+				tt.opts...,
+			)
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, body:\n%s", rec.Code, rec.Body)
+			}
+			if want := "<title>" + tt.want + "</title>"; !strings.Contains(rec.Body.String(), want) {
+				t.Errorf("Handler response missing %s:\n%s", want, rec.Body)
+			}
+		})
+	}
+}
+
 // TestInstanceAccumulatesRules verifies that rules remain in the stylesheet after their views disappear.
 // It also verifies that those rules are reused when the views return.
 func TestInstanceAccumulatesRules(t *testing.T) {
@@ -74,19 +116,19 @@ func TestInstanceAccumulatesRules(t *testing.T) {
 func TestInstancePreview(t *testing.T) {
 	ctx := t.Context()
 	app := &stubApp{view: Text("a")}
-	in := &instance[struct{}, *stubApp]{app: app}
+	in := &instance[struct{}, *stubApp]{app: app, title: "App"}
 	u := &url.URL{Path: "/x"}
 
-	if dest, _, _ := in.Preview(ctx, u); dest != "" {
-		t.Errorf("declined preview destination = %q", dest)
+	if dest, title, _ := in.Preview(ctx, u); dest != "" || title != "" {
+		t.Errorf("declined preview = %q, %q; want empty destination and title", dest, title)
 	}
 
 	app.preview = func(_ context.Context, _ *url.URL, render PreviewRenderer) Preview {
 		return render("/x", Text("b").Title("x").Padding(Edges(16)))
 	}
 	dest, title, n := in.Preview(ctx, u)
-	if dest != "/x" || title != "x" {
-		t.Errorf("preview = %q, %q; want /x, x", dest, title)
+	if dest != "/x" || title != "x — App" {
+		t.Errorf("preview = %q, %q; want /x, x — App", dest, title)
 	}
 	if got := renderNode(t, n); !strings.Contains(got, "padding-block-start:16px") {
 		t.Errorf("preview missing its rule:\n%s", got)
@@ -94,6 +136,12 @@ func TestInstancePreview(t *testing.T) {
 	_, n = in.View(ctx)
 	if got := renderNode(t, n); !strings.Contains(got, "padding-block-start:16px") {
 		t.Errorf("preview's rule absent from the next view:\n%s", got)
+	}
+	app.preview = func(_ context.Context, _ *url.URL, render PreviewRenderer) Preview {
+		return render("/x", Text("b"))
+	}
+	if _, title, _ := in.Preview(ctx, u); title != "App" {
+		t.Errorf("untitled preview title = %q, want App", title)
 	}
 }
 
