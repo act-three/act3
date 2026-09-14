@@ -37,7 +37,7 @@ func TestInstanceURLChange(t *testing.T) {
 		}
 		return nil
 	}
-	in.Update(ctx, msg[int]{appmsg: 7, path: []string{"next"}})
+	in.Update(ctx, msgURLChange[int]{msg: 7, path: []string{"next"}})
 	in.Update(ctx, wrapMsg(7))
 	if !slices.Equal(in.path, want) {
 		t.Errorf("ordinary message changed instance path to %q", in.path)
@@ -50,7 +50,7 @@ func TestInstanceURLChange(t *testing.T) {
 		t.Errorf("preview changed instance path to %q", in.path)
 	}
 	want = nil
-	in.Update(ctx, msg[int]{appmsg: 7, path: []string{}})
+	in.Update(ctx, msgURLChange[int]{msg: 7, path: nil})
 	if calls != 3 {
 		t.Errorf("app Update called %d times, want 3", calls)
 	}
@@ -79,7 +79,7 @@ func TestInstancePathEnvironment(t *testing.T) {
 	app := &navigationApp{update: func(context.Context, int) domi.Cmd[int] { return nil }}
 	in := &instance[int, *navigationApp]{app: app, path: []string{"initial"}}
 	for _, want := range [][]string{{"next", "a/b", ""}, {}} {
-		in.Update(t.Context(), msg[int]{path: want})
+		in.Update(t.Context(), msgURLChange[int]{path: want})
 		resolved, lowered := 0, 0
 		probe := pathProbe(t, want, &resolved, &lowered)
 		app.view = VStack(
