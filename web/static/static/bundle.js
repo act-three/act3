@@ -508,52 +508,52 @@
       }).catch((err) => console.error("domi: urlChange POST failed", err));
     });
     const sse = new EventSource(eventsURL);
-    sse.addEventListener("effect", (ev) => {
+    sse.addEventListener("update", (ev) => {
       checkPreviewTTL();
       let f;
       try {
         f = JSON.parse(ev.data);
       } catch (e) {
-        console.error("domi: bad effect JSON", ev.data, e);
+        console.error("domi: bad update JSON", ev.data, e);
         return;
       }
       if (f.Base && f.Base !== base) return;
-      for (const eff of f.Effects) {
-        switch (eff.Type) {
+      for (const step of f.Steps) {
+        switch (step.Type) {
           case "ApplyPatch":
-            for (const p of eff.Patches) applyPatch(root, p);
-            ver = eff.Ver;
+            for (const p of step.Patches) applyPatch(root, p);
+            ver = step.Ver;
             break;
           case "SetTitle":
-            document.title = eff.Title ?? "";
+            document.title = step.Title ?? "";
             break;
           case "AddPathSets":
-            addPathSets(eff.PathSets);
+            addPathSets(step.PathSets);
             break;
           case "PushURL":
             cacheSnapshot(ver, root, document.title);
             history.replaceState({ domiSnapshot: ver }, "", location.href);
-            history.pushState(null, "", eff.URL);
+            history.pushState(null, "", step.URL);
             break;
           case "ReplaceURL":
-            history.replaceState(history.state, "", eff.URL);
+            history.replaceState(history.state, "", step.URL);
             break;
           case "LoadURL":
-            window.location.assign(eff.URL);
+            window.location.assign(step.URL);
             return;
           case "SetPreview":
-            if (!pv || pv.url !== eff.URL) break;
+            if (!pv || pv.url !== step.URL) break;
             pv.isReady = true;
-            pv.patches = eff.Patches;
-            pv.title = eff.Title;
-            pv.dest = eff.Dest;
+            pv.patches = step.Patches;
+            pv.title = step.Title;
+            pv.dest = step.Dest;
             pv.base = ver;
-            pv.ver = eff.Ver;
+            pv.ver = step.Ver;
             pv.at ||= Date.now();
             if (pv.isClicked) navigateToPreview();
             break;
           case "DeletePreview":
-            if (pv && (!eff.URL || pv.url === eff.URL)) {
+            if (pv && (!step.URL || pv.url === step.URL)) {
               const { url, isClicked } = pv;
               pv = null;
               if (isClicked) {
@@ -566,7 +566,7 @@
             }
             break;
           default:
-            console.warn("domi: unknown effect", eff);
+            console.warn("domi: unknown step", step);
         }
       }
     });
