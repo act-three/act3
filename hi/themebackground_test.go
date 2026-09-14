@@ -45,10 +45,10 @@ func TestThemeBackground(t *testing.T) {
 		c    hi.Color
 		want string
 	}{
-		{"dark on light", hi.OKLCH(0.2, 0.03, 215), "background-color:oklch(0.2 0.03 215);color:oklch(0.9312 0.0183 215);color-scheme:dark;display:block;overflow-wrap:break-word"},
-		{"light on light", hi.OKLCH(0.9, 0, 0), "background-color:oklch(0.9 0 0);color:oklch(0.1548 0.0033 0);display:block;overflow-wrap:break-word"},
-		{"opacity ignored", hi.OKLCHA(0.2, 0, 0, 0.5), "background-color:oklch(0.2 0 0);color:oklch(0.9312 0.0033 0);color-scheme:dark;display:block;overflow-wrap:break-word"},
-		{"theme color", hi.ThemeColor(0.1, 0, hi.BackgroundScale), "background-color:oklch(0.882 0.0013 100);color:oklch(0.1517 0.00395 100);display:block;overflow-wrap:break-word"},
+		{"dark on light", hi.OKLCH(0.2, 0.03, 215), "background-color:oklch(0.2 0.03 215);color:oklch(0.9312 0.0183 215);color-scheme:dark;display:block;isolation:isolate;overflow-wrap:break-word"},
+		{"light on light", hi.OKLCH(0.9, 0, 0), "background-color:oklch(0.9 0 0);color:oklch(0.1548 0.0033 0);display:block;isolation:isolate;overflow-wrap:break-word"},
+		{"opacity ignored", hi.OKLCHA(0.2, 0, 0, 0.5), "background-color:oklch(0.2 0 0);color:oklch(0.9312 0.0033 0);color-scheme:dark;display:block;isolation:isolate;overflow-wrap:break-word"},
+		{"theme color", hi.ThemeColor(0.1, 0, hi.BackgroundScale), "background-color:oklch(0.882 0.0013 100);color:oklch(0.1517 0.00395 100);display:block;isolation:isolate;overflow-wrap:break-word"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

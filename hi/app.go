@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"slices"
 	"strings"
 
 	"ily.dev/domi"
@@ -145,7 +146,9 @@ func Handler[Msg any, A App[Msg]](
 		func(u *url.URL) msg {
 			return msgURLChange[Msg]{msg: onURLChange(u), path: urlPath(u)}
 		},
-		o...,
+		append(slices.Clip(o),
+			domi.EffectHandler(notifyHandler),
+		)...,
 	)
 	cssPath := path.Join(sv.InternalURLPrefix(), "hi."+cssDigest+".css")
 	jsPath := path.Join(sv.InternalURLPrefix(), "hi."+clientJSDigest+".js")
@@ -167,6 +170,7 @@ type msg interface{ isMsg() }
 
 func (msgApp[Msg]) isMsg()       {}
 func (msgURLChange[Msg]) isMsg() {}
+func (msgNotify) isMsg()         {}
 
 type msgApp[Msg any] struct{ msg Msg }
 
@@ -174,6 +178,8 @@ type msgURLChange[Msg any] struct {
 	msg  Msg
 	path []string
 }
+
+type msgNotify struct{ text string }
 
 func wrapMsg[Msg any](m Msg) msg {
 	return msgApp[Msg]{msg: m}
@@ -194,8 +200,10 @@ type instance[Msg any, A App[Msg]] struct {
 	script  domi.Node
 
 	// Runtime state.
-	path  []string
-	sheet sheet.Sheet
+	sheet   sheet.Sheet
+	path    []string
+	notes   []note
+	noteSeq uint64
 }
 
 func (in *instance[Msg, A]) Update(ctx context.Context, m msg) domi.Cmd[msg] {
@@ -205,6 +213,13 @@ func (in *instance[Msg, A]) Update(ctx context.Context, m msg) domi.Cmd[msg] {
 	case msgURLChange[Msg]:
 		in.path = m.path
 		return domi.MapCmd(wrapMsg[Msg], in.app.Update(ctx, m.msg))
+	case msgNotify:
+		in.noteSeq++
+		in.notes = append(in.notes, note{
+			id:   fmt.Sprintf("%d", in.noteSeq),
+			text: m.text,
+		})
+		return nil
 	default:
 		panic(fmt.Errorf("hi: unexpected message %T", m))
 	}
@@ -216,8 +231,9 @@ func (in *instance[Msg, A]) Subscriptions(ctx context.Context) domi.Sub[msg] {
 
 func (in *instance[Msg, A]) View(ctx context.Context) (title string, n domi.Node) {
 	r := in.app.View(ctx, func(root View) Page {
-		return in.render(root, in.path)
+		return in.render(root, in.path, in.notes)
 	})
+	in.notes = nil
 	return r.title, domi.MapNode(wrapMsg[Msg], r.page)
 }
 
@@ -230,7 +246,7 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 		if dest.Scheme != "" || dest.Host != "" || !strings.HasPrefix(d, "/") {
 			panic(fmt.Errorf("hi: preview destination must be host-relative: %q", d))
 		}
-		return Preview{d, in.render(v, urlPath(dest))}
+		return Preview{d, in.render(v, urlPath(dest), nil)}
 	})
 	return r.dest, r.view.title, domi.MapNode(wrapMsg[Msg], r.view.page)
 }
@@ -240,7 +256,9 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 // The page carries all rules in the sheet,
 // including those from earlier renders by the same instance.
 // A non-nil cssLink is included in the page to load the static stylesheet.
-func (in *instance[Msg, A]) render(root View, path []string) Page {
+func (in *instance[Msg, A]) render(root View, path []string, notes []note) Page {
+	root = view(unary(VStack, root)).
+		Overlay(Bottom, notePort(notes))
 	env := environment{
 		renv:       resenv{path: path},
 		theme:      in.theme,
@@ -293,7 +311,7 @@ func (in *instance[Msg, A]) render(root View, path []string) Page {
 func Render(root View, o ...Option) (title string, page domi.Node) {
 	in := instance[struct{}, App[struct{}]]{config: configure(o)}
 	in.nonce = in.config.styleNonce(context.Background())
-	r := in.render(root, nil)
+	r := in.render(root, nil, nil)
 	return r.title, r.page
 }
 

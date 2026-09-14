@@ -19,7 +19,7 @@ func renderPathTest(t *testing.T, path string, v View) Page {
 		t.Fatal(err)
 	}
 	in := instance[struct{}, App[struct{}]]{config: configure(nil), path: urlPath(u)}
-	return in.render(v, in.path)
+	return in.render(v, in.path, nil)
 }
 
 func TestPathMatching(t *testing.T) {

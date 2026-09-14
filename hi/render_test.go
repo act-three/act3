@@ -373,7 +373,7 @@ func TestHTMLFill(t *testing.T) {
 // stays untouched inside.
 func TestHTMLWrappers(t *testing.T) {
 	html := render(t, hi.HTML(domi.Text("raw")).Padding(hi.Edges(4)).Background(hi.Red))
-	if got := classRule(t, html, `<hi-padding class="(hi-\w+)"`); got != "align-items:center;align-self:stretch;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch;padding-block-end:4px;padding-block-start:4px;padding-inline-end:4px;padding-inline-start:4px" {
+	if got := classRule(t, html, `<hi-padding class="(hi-\w+)"`); got != "align-items:center;align-self:stretch;background-color:"+redCSS+";display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;justify-self:stretch;padding-block-end:4px;padding-block-start:4px;padding-inline-end:4px;padding-inline-start:4px" {
 		t.Errorf("padding wrapper should carry the paint, got %q:\n%s", got, html)
 	}
 	if got := classRule(t, html, `<hi-html class="(hi-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;justify-items:center;justify-self:stretch" {
@@ -403,7 +403,7 @@ func TestImmutableModifiers(t *testing.T) {
 // modifiers reach the fill's box.
 func TestColorAsView(t *testing.T) {
 	html := render(t, hi.Secondary)
-	if got := classRule(t, html, `<hi-color class="(hi-\w+)"`); got != "align-self:stretch;background-color:"+mutedCSS+";justify-self:stretch" {
+	if got := classRule(t, html, `<hi-color class="(hi-\w+)"`); got != "align-self:stretch;background-color:"+mutedCSS+";isolation:isolate;justify-self:stretch" {
 		t.Errorf("color view should paint its own box and fill both axes, got %q:\n%s", got, html)
 	}
 	if mod := render(t, hi.OKLCH(0.9, 0, 0).Opacity(0.5)); !strings.Contains(mod, "opacity:0.5") {
@@ -414,7 +414,7 @@ func TestColorAsView(t *testing.T) {
 	// visible where c is translucent — ordinary painting order, not a
 	// decoration layer, and the Modify spelling is the same lowering.
 	bg := render(t, hi.OKLCHA(0, 0, 0, 0.5).Background(hi.White))
-	if got := classRule(t, bg, `<hi-color class="(hi-\w+)"`); got != "align-self:stretch;background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));justify-self:stretch" {
+	if got := classRule(t, bg, `<hi-color class="(hi-\w+)"`); got != "align-self:stretch;background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));isolation:isolate;justify-self:stretch" {
 		t.Errorf("Background should layer under the color, got %q:\n%s", got, bg)
 	}
 	if strings.Contains(bg, "hi-underlay") {
@@ -654,7 +654,7 @@ func TestFontOptions(t *testing.T) {
 		want string
 	}{
 		{"reset italic", []hi.FontOption{hi.Italic, hi.Roman, hi.Family("serif")},
-			"display:block;font-family:serif;font-style:normal;overflow-wrap:break-word"},
+			"display:block;font-family:serif;font-style:normal;isolation:isolate;overflow-wrap:break-word"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			for name, v := range map[string]hi.View{
@@ -1603,8 +1603,8 @@ func TestOverlayPageLowering(t *testing.T) {
 	if strings.Contains(plain, "<hi-layer ") {
 		t.Errorf("root Overlay retained its composite wrapper:\n%s", plain)
 	}
-	if strings.Count(plain, "<hi-overlay ") != 1 {
-		t.Errorf("root Overlay should emit one overlay sibling:\n%s", plain)
+	if strings.Count(plain, "<hi-overlay ") != 2 {
+		t.Errorf("root Overlay should emit one sibling before the notification overlay:\n%s", plain)
 	}
 	if got := classRule(t, plain, `<hi-overlay class="(hi-\w+)"`); !strings.Contains(got, "position:fixed") || !strings.Contains(got, "pointer-events:none") || !strings.Contains(got, "z-index:2") {
 		t.Errorf("root overlay rule = %q, want a fixed hit-transparent front layer", got)
@@ -1633,8 +1633,8 @@ func TestOverlayPageLowering(t *testing.T) {
 	chained := render(t, hi.Text("base").
 		Overlay(hi.Center, hi.Text("first")).
 		Overlay(hi.Center, hi.Text("second")))
-	if strings.Count(chained, "<hi-overlay ") != 2 || strings.Contains(chained, "<hi-layer ") {
-		t.Errorf("chained root Overlays should emit two fixed siblings:\n%s", chained)
+	if strings.Count(chained, "<hi-overlay ") != 3 || strings.Contains(chained, "<hi-layer ") {
+		t.Errorf("chained root Overlays should emit two fixed siblings before the notification overlay:\n%s", chained)
 	}
 	if first, second := strings.Index(chained, ">first<"), strings.Index(chained, ">second<"); first < 0 || second < first {
 		t.Errorf("chained root Overlays should retain application order:\n%s", chained)
