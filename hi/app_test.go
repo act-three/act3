@@ -277,9 +277,9 @@ func TestHandlerStylesheet(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		h := Handler(newApp, onURL, onChange, domi.InternalURLPrefix("/-/x"))
 		body := get(t, h, "/").Body.String()
-		m := regexp.MustCompile(`<hi-root class="hi-\w+"><link href="([^"]+)" rel="stylesheet">`).FindStringSubmatch(body)
+		m := regexp.MustCompile(`<link href="([^"]+)" rel="stylesheet"><style>[^<]*</style><hi-root class="hi-\w+">`).FindStringSubmatch(body)
 		if m == nil {
-			t.Fatalf("no stylesheet link in hi-root:\n%s", body)
+			t.Fatalf("no stylesheet link and generated style before hi-root:\n%s", body)
 		}
 		cssPath := m[1]
 		if !strings.HasPrefix(cssPath, "/-/x/hi.") || !strings.HasSuffix(cssPath, ".css") {

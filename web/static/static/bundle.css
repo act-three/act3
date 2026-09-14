@@ -193,7 +193,7 @@
   }
   @layer normalize {
     hi-root,
-    hi-root :not(style, hi-html *, svg, svg *),
+    hi-root :not(hi-html *, svg, svg *),
     hi-root :not(hi-html *)::before,
     hi-root :not(hi-html *)::after {
       all: unset;
