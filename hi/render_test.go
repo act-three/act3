@@ -94,9 +94,9 @@ const (
 
 // pageRoot reports whether html is a page whose hi-root element
 // carries the given attributes after its generated class,
-// with the style element as its first child.
+// preceded by the generated style element.
 func pageRoot(html, attrs string) bool {
-	return regexp.MustCompile(`^<hi-root class="hi-\w+"` + regexp.QuoteMeta(attrs) + `><style>`).MatchString(html)
+	return regexp.MustCompile(`^<style>[^<]*</style><hi-root class="hi-\w+"` + regexp.QuoteMeta(attrs) + `>`).MatchString(html)
 }
 
 func render(t *testing.T, v hi.View, o ...hi.Option) string {
@@ -716,7 +716,7 @@ func TestLink(t *testing.T) {
 		{
 			"outer style",
 			hi.Link("/docs", hi.Text("docs")).TextFont(hi.Bold),
-			`</style><a class="(hi-\w+)" href="/docs">docs</a>`,
+			`<hi-root class="hi-\w+"><a class="(hi-\w+)" href="/docs">docs</a>`,
 			[]string{"font-weight:700"},
 		},
 	} {
@@ -1940,7 +1940,7 @@ func TestRenderTitle(t *testing.T) {
 }
 
 // TestRenderStyleElement verifies that the style element is always present,
-// as the first child of hi-root, even for an empty view.
+// immediately before hi-root, even for an empty view.
 func TestRenderStyleElement(t *testing.T) {
 	var sb strings.Builder
 	_, page := hi.Render(hi.Empty())
@@ -1948,9 +1948,9 @@ func TestRenderStyleElement(t *testing.T) {
 		t.Fatalf("render: %v", err)
 	}
 	html := sb.String()
-	m := regexp.MustCompile(`^<hi-root class="(hi-\w+)"><style>([^<]*)</style>`).FindStringSubmatch(html)
-	if m == nil || !strings.Contains(m[2], "."+m[1]+"{") {
-		t.Errorf("style element containing the root rule not first in hi-root:\n%s", html)
+	m := regexp.MustCompile(`^<style>([^<]*)</style><hi-root class="(hi-\w+)">`).FindStringSubmatch(html)
+	if m == nil || !strings.Contains(m[1], "."+m[2]+"{") {
+		t.Errorf("style element containing the root rule not before hi-root:\n%s", html)
 	}
 }
 

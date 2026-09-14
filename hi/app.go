@@ -257,7 +257,11 @@ func (in *instance[Msg, A]) render(root View, path []string) Page {
 	return Page{
 		title: title,
 		// Order matters, static stylesheet, then generated style, then content.
-		page: domi.Tag("hi-root", rootAttr)(in.cssLink, style, b.node),
+		page: domi.Fragment(
+			in.cssLink,
+			style,
+			domi.Tag("hi-root", rootAttr)(b.node),
+		),
 	}
 }
 
