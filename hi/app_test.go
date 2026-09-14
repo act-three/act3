@@ -306,6 +306,26 @@ func TestHandlerStylesheet(t *testing.T) {
 	})
 }
 
+func TestHandlerClientModule(t *testing.T) {
+	h := Handler(
+		func(context.Context, *url.URL) (*stubApp, domi.Cmd[struct{}]) {
+			return &stubApp{view: Text("a")}, nil
+		},
+		func(*url.URL) struct{} { return struct{}{} },
+		func(*url.URL) struct{} { return struct{}{} },
+		domi.InternalURLPrefix("/-/x"),
+	)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body:\n%s", rec.Code, rec.Body)
+	}
+	body := rec.Body.String()
+	if !regexp.MustCompile(`<script src="/-/x/hi\.[^"]+\.js" type="module"></script>`).MatchString(body) {
+		t.Errorf("no Hi module script:\n%s", body)
+	}
+}
+
 // TestStylesheet verifies that Stylesheet serves CSS.
 func TestStylesheet(t *testing.T) {
 	digest, h := Stylesheet()

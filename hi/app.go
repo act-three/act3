@@ -127,7 +127,7 @@ func Handler[Msg any, A App[Msg]](
 	config := configure(o)
 	// cssLink is filled in below, after the server exists to be asked
 	// about its configuration; the constructor only runs on requests.
-	var cssLink domi.Node
+	var cssLink, script domi.Node
 	sv := domi.NewServer(
 		func(ctx context.Context, u *url.URL) (*instance[Msg, A], domi.Cmd[msg[Msg]]) {
 			app, cmd := f(ctx, u)
@@ -137,6 +137,7 @@ func Handler[Msg any, A App[Msg]](
 				path:    urlPath(u),
 				nonce:   config.styleNonce(ctx),
 				cssLink: cssLink,
+				script:  script,
 			}
 			return in, domi.MapCmd(wrapMsg[Msg], cmd)
 		},
@@ -150,11 +151,14 @@ func Handler[Msg any, A App[Msg]](
 		o...,
 	)
 	cssPath := path.Join(sv.InternalURLPrefix(), "hi."+cssDigest+".css")
+	jsPath := path.Join(sv.InternalURLPrefix(), "hi."+clientJSDigest+".js")
 	if !sv.HasCustomDocument() {
 		cssLink = html.Link(attr.Rel("stylesheet"), attr.Href(cssPath))
+		script = html.Script(attr.Type("module"), attr.Src(jsPath))()
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET "+cssPath, serveCSS)
+	mux.HandleFunc("GET "+jsPath, clientJSHandler)
 	mux.Handle("/", sv)
 	return mux
 }
@@ -179,11 +183,16 @@ func wrapMsg[Msg any](m Msg) msg[Msg] {
 // Rendering a preview adds rules but doesn't modify App state.
 type instance[Msg any, A App[Msg]] struct {
 	config
-	app     A
-	path    []string
-	nonce   string
-	cssLink domi.Node // loads the static stylesheet; nil with a custom document
-	sheet   sheet.Sheet
+	app   A
+	nonce string
+
+	// These load static assets. They're nil with a custom document.
+	cssLink domi.Node
+	script  domi.Node
+
+	// Runtime state.
+	path  []string
+	sheet sheet.Sheet
 }
 
 func (in *instance[Msg, A]) Update(ctx context.Context, m msg[Msg]) domi.Cmd[msg[Msg]] {
@@ -258,6 +267,7 @@ func (in *instance[Msg, A]) render(root View, path []string) Page {
 		title: title,
 		// Order matters, static stylesheet, then generated style, then content.
 		page: domi.Fragment(
+			in.script,
 			in.cssLink,
 			style,
 			domi.Tag("hi-root", rootAttr)(b.node),

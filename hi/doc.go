@@ -151,16 +151,18 @@ and 15px padding at a 24px root font size.
 
 # Serving Client Assets
 
-A hi page requires two static assets:
-a CSS stylesheet and a JavaScript module.
-The default behavior of [Handler] includes both.
+A Hi page requires three static assets:
+the Hi CSS stylesheet,
+the Hi JavaScript module,
+and the Domi JavaScript module.
+The default behavior of [Handler] includes all three.
 
 Apps that provide their own document shell (see [domi.Document])
 must serve these assets themselves.
 There are two ways to do it.
 
   - Serve each asset directly,
-    using [Stylesheet] and [domi.ClientModule].
+    using [Stylesheet], [ClientModule], and [domi.ClientModule].
   - Bundle the assets with additional CSS and JavaScript.
 
 Apps that serve their own CSS and JavaScript
@@ -168,13 +170,17 @@ might wish to bundle the assets into those files.
 Obtain the filesystem paths of the asset sources by running:
 
 	go list -f '{{.Dir}}/hi.css' ily.dev/act3/hi
+	go list -f '{{.Dir}}/hi.js' ily.dev/act3/hi
 	go list -f '{{.Dir}}/client.js' ily.dev/domi
 
 Include hi.css in the app's CSS bundle.
-Include client.js in the app's JavaScript bundle,
-then import the module and call run:
 
-	import * as Domi from "path/to/bundle.js";
+Include both JavaScript modules in the app's JavaScript bundle
+and call their run functions:
+
+	import * as Hi from "/path/to/ily.dev/act3/hi/hi.js";
+	import * as Domi from "/path/to/ily.dev/domi/client.js";
+	Hi.run();
 	Domi.run();
 
 # CSS Layer
