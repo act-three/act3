@@ -276,7 +276,7 @@ func TestPathURLChange(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		in.Update(t.Context(), msg[int]{path: urlPath(u)})
+		in.Update(t.Context(), msgURLChange[int]{path: urlPath(u)})
 		title, _ := in.View(t.Context())
 		want := "next"
 		if path == "/" {

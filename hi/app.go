@@ -129,7 +129,7 @@ func Handler[Msg any, A App[Msg]](
 	// about its configuration; the constructor only runs on requests.
 	var cssLink, script domi.Node
 	sv := domi.NewServer(
-		func(ctx context.Context, u *url.URL) (*instance[Msg, A], domi.Cmd[msg[Msg]]) {
+		func(ctx context.Context, u *url.URL) (*instance[Msg, A], domi.Cmd[msg]) {
 			app, cmd := f(ctx, u)
 			in := &instance[Msg, A]{
 				config:  config,
@@ -141,12 +141,9 @@ func Handler[Msg any, A App[Msg]](
 			}
 			return in, domi.MapCmd(wrapMsg[Msg], cmd)
 		},
-		func(u *url.URL) msg[Msg] { return wrapMsg(onURLRequest(u)) },
-		func(u *url.URL) msg[Msg] {
-			return msg[Msg]{
-				appmsg: onURLChange(u),
-				path:   urlPath(u),
-			}
+		func(u *url.URL) msg { return wrapMsg(onURLRequest(u)) },
+		func(u *url.URL) msg {
+			return msgURLChange[Msg]{msg: onURLChange(u), path: urlPath(u)}
 		},
 		o...,
 	)
@@ -164,16 +161,22 @@ func Handler[Msg any, A App[Msg]](
 }
 
 // msg is the domi msg type for instance.
-// Field appmsg is currently required.
-// Hi doesn't have any msg cases that it handles entirely itself.
-// They all wrap app messages.
-type msg[Msg any] struct {
-	appmsg Msg
-	path   []string // non-nil (even if empty) for URLChange, else nil
+//
+//sumtype:decl
+type msg interface{ isMsg() }
+
+func (msgApp[Msg]) isMsg()       {}
+func (msgURLChange[Msg]) isMsg() {}
+
+type msgApp[Msg any] struct{ msg Msg }
+
+type msgURLChange[Msg any] struct {
+	msg  Msg
+	path []string
 }
 
-func wrapMsg[Msg any](m Msg) msg[Msg] {
-	return msg[Msg]{appmsg: m}
+func wrapMsg[Msg any](m Msg) msg {
+	return msgApp[Msg]{msg: m}
 }
 
 // An instance adapts App to domi.App.
@@ -195,14 +198,19 @@ type instance[Msg any, A App[Msg]] struct {
 	sheet sheet.Sheet
 }
 
-func (in *instance[Msg, A]) Update(ctx context.Context, m msg[Msg]) domi.Cmd[msg[Msg]] {
-	if m.path != nil {
+func (in *instance[Msg, A]) Update(ctx context.Context, m msg) domi.Cmd[msg] {
+	switch m := m.(type) {
+	case msgApp[Msg]:
+		return domi.MapCmd(wrapMsg[Msg], in.app.Update(ctx, m.msg))
+	case msgURLChange[Msg]:
 		in.path = m.path
+		return domi.MapCmd(wrapMsg[Msg], in.app.Update(ctx, m.msg))
+	default:
+		panic(fmt.Errorf("hi: unexpected message %T", m))
 	}
-	return domi.MapCmd(wrapMsg[Msg], in.app.Update(ctx, m.appmsg))
 }
 
-func (in *instance[Msg, A]) Subscriptions(ctx context.Context) domi.Sub[msg[Msg]] {
+func (in *instance[Msg, A]) Subscriptions(ctx context.Context) domi.Sub[msg] {
 	return domi.MapSub(wrapMsg[Msg], in.app.Subscriptions(ctx))
 }
 
