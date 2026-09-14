@@ -257,8 +257,7 @@ func (in *instance[Msg, A]) Preview(ctx context.Context, u *url.URL) (dest, titl
 // including those from earlier renders by the same instance.
 // A non-nil cssLink is included in the page to load the static stylesheet.
 func (in *instance[Msg, A]) render(root View, path []string, notes []note) Page {
-	root = view(unary(VStack, root)).
-		Overlay(Bottom, notePort(notes))
+	root = notePortOverlay(view(unary(VStack, root)), notes)
 	env := environment{
 		renv:       resenv{path: path},
 		theme:      in.theme,
