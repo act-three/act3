@@ -106,7 +106,8 @@ func TestOpacityMultiplies(t *testing.T) {
 		}
 	})
 
-	if html := render(t, hi.Text("x").Opacity(1)); strings.Contains(html, "opacity") || strings.Contains(html, "hi-box") {
+	html := render(t, hi.Text("x").Opacity(1))
+	if strings.Contains(classRule(t, html, `<hi-text class="(hi-\w+)"`), "opacity") || strings.Contains(html, "hi-box") {
 		t.Errorf("Opacity(1) should render nothing extra:\n%s", html)
 	}
 }

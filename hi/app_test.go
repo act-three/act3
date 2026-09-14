@@ -96,12 +96,17 @@ func TestInstanceAccumulatesRules(t *testing.T) {
 		return renderNode(t, n)
 	}
 	first := view()
-	if !strings.Contains(first, "padding-block-start:16px") {
+	match := regexp.MustCompile(`<hi-padding class="(hi-\w+)"`).FindStringSubmatch(first)
+	if match == nil {
+		t.Fatalf("first render missing its padding wrapper:\n%s", first)
+	}
+	rule := regexp.MustCompile(regexp.QuoteMeta("."+match[1]) + `\{[^{}]*\}`).FindString(first)
+	if !strings.Contains(rule, "padding-block-start:16px") {
 		t.Fatalf("first render missing its rule:\n%s", first)
 	}
 	app.view = Text("a")
 	gone := view()
-	if !strings.Contains(gone, "padding-block-start:16px") {
+	if !strings.Contains(gone, rule) {
 		t.Errorf("rule dropped when its view went away:\n%s", gone)
 	}
 	app.view = Text("a").Padding(Edges(16))
@@ -111,7 +116,7 @@ func TestInstanceAccumulatesRules(t *testing.T) {
 	if backBody != firstBody {
 		t.Errorf("revisit changed the rendered view:\n%s\nvs:\n%s", backBody, firstBody)
 	}
-	if strings.Count(back, "padding-block-start:16px") != 1 {
+	if strings.Count(back, rule) != 1 {
 		t.Errorf("revisit duplicated its style rule:\n%s", back)
 	}
 }
