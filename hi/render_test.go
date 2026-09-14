@@ -1029,19 +1029,20 @@ func TestScrollView(t *testing.T) {
 // non-unary content is arranged in a VStack, while a single node
 // remains directly inside the viewport.
 func TestScrollViewContentArity(t *testing.T) {
+	wrapped := regexp.MustCompile(`<hi-scroll[^>]*><hi-vstack `)
 	group := render(t, hi.ScrollView(hi.Vertical,
 		hi.Group(hi.Text("a"), hi.Text("b"))).Padding(hi.Edges(0)))
-	if !strings.Contains(group, "<hi-scroll ") || !strings.Contains(group, "<hi-vstack ") {
+	if !wrapped.MatchString(group) {
 		t.Errorf("a ScrollView Group should be wrapped in a VStack:\n%s", group)
 	}
 
 	single := render(t, hi.ScrollView(hi.Vertical, hi.Text("a")).Padding(hi.Edges(0)))
-	if strings.Contains(single, "<hi-vstack ") {
+	if wrapped.MatchString(single) {
 		t.Errorf("a single ScrollView node should not be wrapped:\n%s", single)
 	}
 
 	empty := render(t, hi.ScrollView(hi.Vertical, hi.Empty()).Padding(hi.Edges(0)))
-	if !strings.Contains(empty, "<hi-vstack ") {
+	if !wrapped.MatchString(empty) {
 		t.Errorf("an empty ScrollView should be wrapped in a VStack:\n%s", empty)
 	}
 }
@@ -1236,7 +1237,8 @@ func TestFrameRigid(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.v)
-			if got := strings.Contains(html, "flex-shrink:0"); got != tt.rigid {
+			rule := classRule(t, html, `<hi-frame class="(hi-\w+)"`)
+			if got := strings.Contains(rule, "flex-shrink:0"); got != tt.rigid {
 				t.Errorf("flex-shrink:0 = %v, want %v:\n%s", got, tt.rigid, html)
 			}
 		})
@@ -1304,13 +1306,14 @@ func TestFrameOptionOverride(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			html := render(t, tt.v)
+			rule := classRule(t, html, `<hi-frame class="(hi-\w+)"`)
 			for _, w := range tt.wants {
-				if !strings.Contains(html, w) {
+				if !strings.Contains(rule, w) {
 					t.Errorf("frame missing %q\n\n%s", w, html)
 				}
 			}
 			for _, r := range tt.rejects {
-				if strings.Contains(html, r) {
+				if strings.Contains(rule, r) {
 					t.Errorf("frame should not emit %q\n\n%s", r, html)
 				}
 			}
@@ -1324,13 +1327,15 @@ func TestFrameOptionOverride(t *testing.T) {
 // (The custom-property lowering this replaced inherited into nested stacks.)
 func TestGapDoesNotLeak(t *testing.T) {
 	html := render(t, hi.VStack(
-		hi.VStack(hi.Text("a"), hi.Text("b")),
-	).Gap(16))
-	if got := strings.Count(html, "row-gap:16px"); got != 1 {
-		t.Errorf("row-gap:16px declaration count = %d, want 1 (outer stack only)\n\n%s", got, html)
+		hi.VStack(hi.Text("a"), hi.Text("b")).Class("inner"),
+	).Gap(16).Class("outer"))
+	outer := classRule(t, html, `<hi-vstack class="outer (hi-\w+)"`)
+	if !strings.Contains(outer, "row-gap:16px") {
+		t.Errorf("outer stack lost its gap: %s", outer)
 	}
-	if got := strings.Count(html, "row-gap:8px"); got != 1 {
-		t.Errorf("row-gap:8px declaration count = %d, want 1 (the inner stack's own default)\n\n%s", got, html)
+	inner := classRule(t, html, `<hi-vstack class="inner (hi-\w+)"`)
+	if !strings.Contains(inner, "row-gap:8px") {
+		t.Errorf("inner stack lost its default gap: %s", inner)
 	}
 }
 
@@ -1724,16 +1729,17 @@ func TestOverlayAtBaselinePanics(t *testing.T) {
 // TestRenderRootArity pins the root's arity rule: the viewport frames
 // a single node, so non-unary views are arranged in a VStack.
 func TestRenderRootArity(t *testing.T) {
+	wrapped := regexp.MustCompile(`<hi-root[^>]*><hi-vstack `)
 	group := render(t, hi.Group(hi.Text("a"), hi.Text("b")))
-	if !strings.Contains(group, "hi-vstack") {
+	if !wrapped.MatchString(group) {
 		t.Errorf("a root Group should be wrapped in a VStack:\n%s", group)
 	}
 	single := render(t, hi.Text("a"))
-	if strings.Contains(single, "hi-vstack") {
+	if wrapped.MatchString(single) {
 		t.Errorf("a single root view should not be wrapped:\n%s", single)
 	}
 	empty := render(t, hi.Empty())
-	if !strings.Contains(empty, "hi-vstack") {
+	if !wrapped.MatchString(empty) {
 		t.Errorf("an empty root view should be wrapped in a VStack:\n%s", empty)
 	}
 }

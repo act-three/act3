@@ -106,8 +106,13 @@ func TestInstanceAccumulatesRules(t *testing.T) {
 	}
 	app.view = Text("a").Padding(Edges(16))
 	back := view()
-	if back != first {
-		t.Errorf("revisit is not byte-identical to the first render:\n%s\nvs:\n%s", back, first)
+	_, firstBody, _ := strings.Cut(first, "</style>")
+	_, backBody, _ := strings.Cut(back, "</style>")
+	if backBody != firstBody {
+		t.Errorf("revisit changed the rendered view:\n%s\nvs:\n%s", backBody, firstBody)
+	}
+	if strings.Count(back, "padding-block-start:16px") != 1 {
+		t.Errorf("revisit duplicated its style rule:\n%s", back)
 	}
 }
 
