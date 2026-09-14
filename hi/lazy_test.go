@@ -123,8 +123,8 @@ func TestLazyForEachKeys(t *testing.T) {
 					t.Errorf("key %q occurs %d times, want 1", key, n)
 				}
 			}
-		} else if strings.Contains(got, "domi-key") {
-			t.Error("empty items contributed keys")
+		} else if got != render(t, hi.Empty()) {
+			t.Error("empty items contributed markup")
 		}
 		if got := render(t, shared); got != plain {
 			t.Error("key assignment modified the shared view")
