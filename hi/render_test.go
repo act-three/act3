@@ -970,7 +970,8 @@ func TestForEachNilKeyUnkeyed(t *testing.T) {
 	html := render(t, hi.VStack(hi.ForEach(items, nil, func(m Movie) hi.View {
 		return hi.Group(hi.Text(m.Title), hi.Text(m.Title))
 	})))
-	if strings.Contains(html, "key=") {
+	want := render(t, hi.VStack(hi.Group(hi.Text("Seven"), hi.Text("Seven"))))
+	if html != want {
 		t.Errorf("nil-key ForEach should render unkeyed:\n%s", html)
 	}
 	if got := strings.Count(html, "Seven"); got != 2 {
@@ -1403,7 +1404,7 @@ func TestEmptyControlFlow(t *testing.T) {
 		hi.If(false, hi.Text("hidden-if")),
 		hi.When(false, func() hi.View { return hi.Text("hidden-when") }),
 	))
-	if strings.Contains(html, "hidden") {
+	if html != render(t, hi.VStack(hi.Text("shown"))) {
 		t.Errorf("false control-flow branches should render nothing:\n%s", html)
 	}
 	if !strings.Contains(html, "shown") {
