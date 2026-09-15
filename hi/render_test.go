@@ -109,6 +109,34 @@ func render(t *testing.T, v hi.View, o ...hi.Option) string {
 	return sb.String()
 }
 
+// renderSubject retains the requested view and its generated rules, excluding
+// the shared notification overlay that Render appends to every page.
+func renderSubject(t *testing.T, v hi.View) string {
+	t.Helper()
+	document := render(t, v)
+	_, body, ok := strings.Cut(document, "</style>")
+	start := strings.LastIndex(body, "<hi-overlay ")
+	end := strings.LastIndex(body, "</hi-overlay>")
+	if !ok || start < 0 || end < start || !strings.Contains(body[start:end], "<hi-note-port ") {
+		t.Fatalf("missing notification overlay:\n%s", document)
+	}
+	body = body[:start] + body[end+len("</hi-overlay>"):]
+	var styles strings.Builder
+	styles.WriteString("<style>@layer hi{")
+	seen := make(map[string]bool)
+	for _, match := range regexp.MustCompile(`class="[^"]*(hi-\w+)"`).FindAllStringSubmatch(body, -1) {
+		class := match[1]
+		if seen[class] {
+			continue
+		}
+		seen[class] = true
+		rule := classRule(t, document, `class="[^"]*(`+regexp.QuoteMeta(class)+`)"`)
+		styles.WriteString("." + class + "{" + rule + "}\n")
+	}
+	styles.WriteString("}</style>")
+	return styles.String() + body
+}
+
 // classRule finds an element matching pattern.
 // It returns the declarations for the generated class captured by the pattern.
 func classRule(t *testing.T, html, pattern string) string {
@@ -158,7 +186,7 @@ func TestAccountCard(t *testing.T) {
 }
 
 func TestMoviePageFillPropagation(t *testing.T) {
-	html := render(t, moviePage([]Movie{
+	html := renderSubject(t, moviePage([]Movie{
 		{ID: 1, Title: "Metropolis", Summary: "A city divided.", PosterURL: "/m.jpg"},
 		{ID: 2, Title: "Solaris", Summary: "An ocean that thinks.", PosterURL: "/s.jpg"},
 	}))
@@ -276,7 +304,7 @@ func TestButtonLabelArity(t *testing.T) {
 		{"multiple", hi.Group(hi.Text("a"), hi.Text("b")), true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			html := render(t, hi.Button(Msg{}, tt.label))
+			html := renderSubject(t, hi.Button(Msg{}, tt.label))
 			if got := strings.Contains(html, "<hi-hstack "); got != tt.stack {
 				t.Errorf("HStack present = %v, want %v:\n%s", got, tt.stack, html)
 			}
@@ -353,7 +381,7 @@ func TestHTMLFill(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			html := render(t, tt.v)
+			html := renderSubject(t, tt.v)
 			for _, w := range tt.wants {
 				if !strings.Contains(html, w) {
 					t.Errorf("missing %q\n\n%s", w, html)
@@ -390,10 +418,10 @@ func TestImmutableModifiers(t *testing.T) {
 	plain := header.Padding(hi.Edges(0))
 
 	ph := render(t, padded)
-	if !strings.Contains(ph, "padding-block-start:16px") {
+	if !strings.Contains(classRule(t, ph, `<hi-padding class="(hi-\w+)"`), "padding-block-start:16px") {
 		t.Errorf("padded view lost its padding:\n%s", ph)
 	}
-	if pl := render(t, plain); strings.Contains(pl, "16px") {
+	if pl := render(t, plain); strings.Contains(classRule(t, pl, `<hi-padding class="(hi-\w+)"`), "16px") {
 		t.Errorf("sibling view leaked padding from the other branch:\n%s", pl)
 	}
 }
@@ -573,7 +601,7 @@ func TestIdealSize(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			html := render(t, tt.v)
+			html := renderSubject(t, tt.v)
 			for _, w := range tt.wants {
 				if !strings.Contains(html, w) {
 					t.Errorf("missing %q\n\n%s", w, html)
@@ -591,7 +619,7 @@ func TestIdealSize(t *testing.T) {
 // TestPaddingAddsValues checks that one Padding call with several EdgeSpace
 // arguments sums them per edge into a single wrapper.
 func TestPaddingAddsValues(t *testing.T) {
-	html := render(t, hi.Text("hi").Padding(hi.EdgeTop(8), hi.Edges(4)))
+	html := renderSubject(t, hi.Text("hi").Padding(hi.EdgeTop(8), hi.Edges(4)))
 	for _, w := range []string{
 		"padding-block-start:12px",
 		"padding-block-end:4px",
@@ -1173,7 +1201,7 @@ func TestFrameBounds(t *testing.T) {
 
 	unbounded := render(t, hi.Text("x").FrameBounds())
 	for _, r := range []string{"width", "height", "minmax"} {
-		if strings.Contains(unbounded, r) {
+		if strings.Contains(classRule(t, unbounded, `<hi-frame class="(hi-\w+)"`), r) {
 			t.Errorf("omitted bounds should emit nothing, got %q:\n%s", r, unbounded)
 		}
 	}
@@ -1685,7 +1713,7 @@ func TestLayerArity(t *testing.T) {
 				{"multiple", hi.Group(hi.Text("a"), hi.Text("b")), true},
 			} {
 				t.Run(arity.name, func(t *testing.T) {
-					html := render(t, tt.layer(arity.view))
+					html := renderSubject(t, tt.layer(arity.view))
 					if got := strings.Contains(html, "<hi-zstack "); got != arity.stack {
 						t.Errorf("ZStack present = %v, want %v:\n%s", got, arity.stack, html)
 					}
