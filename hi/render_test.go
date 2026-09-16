@@ -110,17 +110,23 @@ func render(t *testing.T, v hi.View, o ...hi.Option) string {
 }
 
 // renderSubject retains the requested view and its generated rules, excluding
-// the shared notification overlay that Render appends to every page.
+// the shared notification overlays that Render appends to every page.
 func renderSubject(t *testing.T, v hi.View) string {
 	t.Helper()
 	document := render(t, v)
 	_, body, ok := strings.Cut(document, "</style>")
-	start := strings.LastIndex(body, "<hi-overlay ")
-	end := strings.LastIndex(body, "</hi-overlay>")
-	if !ok || start < 0 || end < start || !strings.Contains(body[start:end], "<hi-note-port ") {
-		t.Fatalf("missing notification overlay:\n%s", document)
+	if !ok {
+		t.Fatalf("missing stylesheet:\n%s", document)
 	}
-	body = body[:start] + body[end+len("</hi-overlay>"):]
+	for {
+		start := strings.LastIndex(body, "<hi-overlay ")
+		end := strings.LastIndex(body, "</hi-overlay>")
+		if start < 0 || end < start ||
+			(!strings.Contains(body[start:end], "<hi-note-display ") && !strings.Contains(body[start:end], "<hi-note-outbox ")) {
+			break
+		}
+		body = body[:start] + body[end+len("</hi-overlay>"):]
+	}
 	var styles strings.Builder
 	styles.WriteString("<style>@layer hi{")
 	seen := make(map[string]bool)
@@ -1627,12 +1633,12 @@ func TestOverlayAt(t *testing.T) {
 // overlays become ordered fixed siblings. A modifier belonging to the layer
 // composite, a wrapper, or an Underlay retains the ordinary layer box.
 func TestOverlayPageLowering(t *testing.T) {
-	plain := render(t, hi.Text("base").Overlay(hi.Center, hi.Text("overlay")))
+	plain := renderSubject(t, hi.Text("base").Overlay(hi.Center, hi.Text("overlay")))
 	if strings.Contains(plain, "<hi-layer ") {
 		t.Errorf("root Overlay retained its composite wrapper:\n%s", plain)
 	}
-	if strings.Count(plain, "<hi-overlay ") != 2 {
-		t.Errorf("root Overlay should emit one sibling before the notification overlay:\n%s", plain)
+	if strings.Count(plain, "<hi-overlay ") != 1 {
+		t.Errorf("root Overlay should emit one sibling:\n%s", plain)
 	}
 	if got := classRule(t, plain, `<hi-overlay class="(hi-\w+)"`); !strings.Contains(got, "position:fixed") || !strings.Contains(got, "pointer-events:none") || !strings.Contains(got, "z-index:2") {
 		t.Errorf("root overlay rule = %q, want a fixed hit-transparent front layer", got)
@@ -1658,11 +1664,11 @@ func TestOverlayPageLowering(t *testing.T) {
 		t.Errorf("document ScrollView base rule = %q, want the root-carried isolation", got)
 	}
 
-	chained := render(t, hi.Text("base").
+	chained := renderSubject(t, hi.Text("base").
 		Overlay(hi.Center, hi.Text("first")).
 		Overlay(hi.Center, hi.Text("second")))
-	if strings.Count(chained, "<hi-overlay ") != 3 || strings.Contains(chained, "<hi-layer ") {
-		t.Errorf("chained root Overlays should emit two fixed siblings before the notification overlay:\n%s", chained)
+	if strings.Count(chained, "<hi-overlay ") != 2 || strings.Contains(chained, "<hi-layer ") {
+		t.Errorf("chained root Overlays should emit two fixed siblings:\n%s", chained)
 	}
 	if first, second := strings.Index(chained, ">first<"), strings.Index(chained, ">second<"); first < 0 || second < first {
 		t.Errorf("chained root Overlays should retain application order:\n%s", chained)

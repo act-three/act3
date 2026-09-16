@@ -26,25 +26,53 @@ type note struct {
 func (n note) key() string { return n.id }
 
 func (n note) view() View {
-	return Text(n.text)
+	return HStack(
+		Text(n.text),
+		Text("×").
+			Tag("button").
+			Attr(
+				attr.Type("button"),
+				domi.Name("aria-label", "Dismiss"),
+			).
+			modify(modStyle("cursor", "pointer")),
+	).
+		modify(modStyle("max-height", cssLength(96i))).
+		Frame(Width(360), Top). // Top needed for animating height.
+		Tag("hi-note").
+		Background(backgroundColor).
+		BorderStroke(1, Primary).
+		BorderClipped().
+		Opacity(0). // starting opacity for entrance transition
+		modify(modEnv(func(env environment) environment {
+			env.style.Set("touch-action", "none")
+			env.style.Set("user-select", "none")
+			env.style.Set("-webkit-user-select", "none")
+			return env
+		}))
 }
 
-func notePort(notes []note) View {
-	port := view(func(env environment) box {
-		env.tag = "hi-note-port"
-		env.style.Set("display", "block")
-		b := build(env, plan{})
-		b.node = domi.WithKeyOpaque("port", b.node)
-		return b
-	}).
-		Attr(attr.Role("status"), domi.Name("aria-live", "polite"))
-
-	entries := ForEach(notes, note.key, note.view)
-	outbox := view(func(env environment) box {
-		env.tag = "hi-note-outbox"
-		env.style.Set("display", "none")
-		return build(env, renderSubviewList(env, entries))
-	})
-
-	return VStack(port, outbox)
+func notePortOverlay(root View, notes []note) View {
+	// JS clones each note from the outbox ZStack, which is hidden,
+	// to the display ZStack, where JS owns the note lifecycle.
+	return root.
+		Overlay(Center, ZStack(ForEach(notes, note.key, note.view)).
+			Tag("hi-note-outbox").
+			modify(modStyle("content-visibility", "hidden"))).
+		Overlay(Bottom, ZStack().
+			Alignment(Bottom).
+			Tag("hi-note-display").
+			Attr(
+				attr.Role("region"),
+				domi.Name("aria-label", "Notifications"),
+				domi.Name("aria-live", "polite"),
+				domi.Name("aria-relevant", "additions text"),
+				domi.Name("aria-atomic", "false"),
+			).
+			modify(modStyle("pointer-events", "auto")).
+			modify(modBox(func(b box) box {
+				b.node = domi.WithKeyOpaque("display", b.node)
+				return b
+			})).
+			Padding(EdgeBottom(16)).
+			modify(modStyle("pointer-events", "none")))
 }
