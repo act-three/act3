@@ -1,8 +1,10 @@
 package hi
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image/png"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,6 +20,7 @@ import (
 	"ily.dev/act3/hi/internal/uitest"
 	"ily.dev/domi"
 	"ily.dev/domi/attr"
+	"ily.dev/domi/event"
 )
 
 func TestNotesViewConsumesOutbox(t *testing.T) {
@@ -31,7 +34,7 @@ func TestNotesViewConsumesOutbox(t *testing.T) {
 	}
 	in := &instance[int, *navigationApp]{app: a, config: configure(nil)}
 	for _, text := range []string{"first <note>", "second", "second"} {
-		in.Update(t.Context(), msgNotify{text: text})
+		in.Update(t.Context(), msgNotify{note: Note{Message: text}})
 	}
 	in.Update(t.Context(), wrapMsg(7))
 	if len(in.notes) != 3 || appUpdates != 1 {
@@ -58,7 +61,7 @@ func TestNotesViewConsumesOutbox(t *testing.T) {
 	if strings.Contains(outbox.FindString(renderNode(t, page)), "domi-key") {
 		t.Fatal("a second View replayed notes")
 	}
-	in.Update(t.Context(), msgNotify{text: "later"})
+	in.Update(t.Context(), msgNotify{note: Note{Message: "later"}})
 	if in.notes[0].id != "4" {
 		t.Fatal("delivery IDs were reused")
 	}
@@ -77,7 +80,7 @@ type noteBrowserApp struct {
 func (a *noteBrowserApp) Update(_ context.Context, m int) domi.Cmd[int] {
 	a.count++
 	if m == 1 {
-		return domi.Batch[int](Notify[int]("Saved"), Notify[int]("Saved"))
+		return domi.Batch[int](Notify[int](Note{Message: "Saved"}), Notify[int](Note{Message: "Saved"}))
 	}
 	return nil
 }
@@ -94,7 +97,7 @@ func (a *noteBrowserApp) View(_ context.Context, render PageRenderer) Page {
 
 func TestNotesBrowser(t *testing.T) {
 	h := Handler(func(context.Context, *url.URL) (*noteBrowserApp, domi.Cmd[int]) {
-		return &noteBrowserApp{}, Notify[int]("Initial")
+		return &noteBrowserApp{}, Notify[int](Note{Message: "Initial"})
 	}, func(*url.URL) int { return 0 }, func(*url.URL) int { return 0 },
 		StyleNonce(func(context.Context) string { return "notes-test" }))
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +144,7 @@ func TestNotesBrowser(t *testing.T) {
 }
 
 func TestNotesSnapshotRestoration(t *testing.T) {
-	page := notesPage(t, []note{{id: "1", text: "server"}}) + `<script type="module">` + string(rawClientJS) + `
+	page := notesPage(t, []note{{id: "1", Note: Note{Message: "server"}}}, Note{}) + `<script type="module">` + string(rawClientJS) + `
 		globalThis.Hi = {run};</script>`
 	uitest.Run(t, 800, 600, page, func(s *uitest.Session) {
 		s.Run(notePoll(`globalThis.Hi !== undefined`))
@@ -151,7 +154,7 @@ func TestNotesSnapshotRestoration(t *testing.T) {
 		if initialized {
 			t.Fatal("importing the module initialized notifications before run")
 		}
-		s.Eval(`Hi.run(); Hi.run();`, nil)
+		s.Eval(`Hi.run({clone: e => e.cloneNode(true)}); Hi.run({clone: e => e.cloneNode(true)});`, nil)
 		s.Run(notePoll(noteText + ` === 'server'`))
 		s.Eval(`globalThis.snapshot = document.querySelector('#notes').cloneNode(true);
 			const entry = document.querySelector('#note-template').content.firstElementChild.cloneNode(true);
@@ -171,9 +174,9 @@ func TestNotesSnapshotRestoration(t *testing.T) {
 
 const noteText = `[...document.querySelectorAll('hi-note-display hi-note')].map(n => n.querySelector('hi-text').textContent).join('')`
 
-func notesPage(t *testing.T, notes []note) string {
+func notesPage(t *testing.T, notes []note, n Note) string {
 	t.Helper()
-	template := ZStack(note{}.view()).Alignment(Bottom).Tag("template").
+	template := ZStack(note{Note: n}.view()).Alignment(Bottom).Tag("template").
 		Attr(attr.ID("note-template"), attr.Style("display:none"))
 	in := instance[struct{}, App[struct{}]]{config: configure(nil)}
 	page := in.render(VStack(Text("Page control").Tag("button").Attr(attr.ID("page")), template), nil, notes)
@@ -189,7 +192,12 @@ func notePoll(expression string) chromedp.PollAction {
 // controlled, so timer overlap and snapshots can be checked without sleeps.
 func runNotes(t *testing.T, w, h int, fn func(*uitest.Session)) {
 	t.Helper()
-	page := notesPage(t, nil) + `<script type="module">
+	runNoteView(t, w, h, Note{}, fn)
+}
+
+func runNoteView(t *testing.T, w, h int, n Note, fn func(*uitest.Session)) {
+	t.Helper()
+	page := notesPage(t, nil, n) + `<script type="module">
 		let now = 0, timerID = 0;
 		const timers = new Map();
 		const performance = {now: () => now};
@@ -230,7 +238,7 @@ func runNotes(t *testing.T, w, h int, fn func(*uitest.Session)) {
 				document.dispatchEvent(new Event('visibilitychange'));
 			},
 		};
-		run();
+		run({clone: e => e.cloneNode(true)});
 		</script>`
 	uitest.Run(t, w, h, page, func(s *uitest.Session) {
 		s.Run(cdppage.BringToFront(), notePoll(`globalThis.fixture !== undefined`))
@@ -320,7 +328,8 @@ func TestNotesLatestThree(t *testing.T) {
 }
 
 func TestNotesRetainedVisibility(t *testing.T) {
-	runNotes(t, 800, 600, func(s *uitest.Session) {
+	action := HStack(Button(42, Text("Undo")), Link("#other", Text("Other")))
+	runNoteView(t, 800, 600, Note{Action: action}, func(s *uitest.Session) {
 		s.Run(noteReduceMotion())
 		s.Run(noteAdd(1, `'0'`))
 		s.Eval(`globalThis.initialRemaining = fixture.remaining[0];
@@ -329,12 +338,20 @@ func TestNotesRetainedVisibility(t *testing.T) {
 			originalFocus.focus();
 			fixture.add(...Array.from({length: 4}, (_, i) => String(i + 1)));`, nil)
 		s.Run(notePoll(`fixture.retained.length === 5 && fixture.visible.join() === '2,3,4'`))
-		noteCheck(t, s, `document.activeElement === document.querySelector('hi-note-display hi-note[data-visible=true] button') &&
-			originalFocus.tabIndex === -1 &&
+		noteCheck(t, s, `document.activeElement === document.querySelector('hi-note-display hi-note[data-visible=true]') &&
+			originalFocus.tabIndex === 0 && !originalFocus.hasAttribute('tabindex') &&
 			[...document.querySelectorAll('hi-note-display hi-note[data-visible=false]')].every(n =>
 				getComputedStyle(n).opacity === '0' && getComputedStyle(n).pointerEvents === 'none' &&
 				getComputedStyle(n.querySelector('button')).pointerEvents === 'none' &&
-				n.querySelector('button').tabIndex === -1 && !n.inert && !n.hasAttribute('aria-hidden'))`)
+				n.querySelector('button').tabIndex === 0 && n.inert)`)
+		s.Eval(`originalFocus.focus();`, nil)
+		noteCheck(t, s, `document.activeElement !== originalFocus`)
+		s.Run(chromedp.KeyEvent("\t"))
+		noteCheck(t, s, `document.activeElement.matches('hi-note[data-visible=true] button')`)
+		s.Run(chromedp.KeyEvent("\t"))
+		noteCheck(t, s, `document.activeElement.matches('hi-note[data-visible=true] a[href="#other"]') &&
+			[...document.querySelectorAll('hi-note-display hi-note-action :is(button,a)')].every(e =>
+				e.tabIndex === 0 && !e.hasAttribute('tabindex'))`)
 		noteCheck(t, s, `(() => {
 			const display = document.querySelector('hi-note-display');
 			const visible = [...display.querySelectorAll('[data-visible=true]')];
@@ -367,6 +384,97 @@ func TestNotesFocusBetweenButtons(t *testing.T) {
 			document.querySelector('hi-note-display hi-note:last-child button').focus();`, nil)
 		noteCheck(t, s, `focusoutExpanded === 'true' && fixture.retained.length === 2 &&
 			fixture.remaining.every(remaining => remaining === 4000)`)
+	})
+}
+
+func TestNotesCollapsedPaint(t *testing.T) {
+	runNotes(t, 800, 600, func(s *uitest.Session) {
+		s.Run(noteReduceMotion(), noteAdd(3, `'a taller rear note '.repeat(20), 'middle', 'front'`))
+		noteCheck(t, s, `document.querySelector('hi-note-display').dataset.expanded === 'false' &&
+			!document.querySelector('hi-note-display hi-box') &&
+			[...document.querySelectorAll('hi-note[data-covered=true]')].every(n =>
+				getComputedStyle(n.firstElementChild).opacity === '0')`)
+		var data []byte
+		s.Run(chromedp.CaptureScreenshot(&data))
+		img, err := png.Decode(bytes.NewReader(data))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := range 3 {
+			r := s.Rect("hi-note-display hi-note", i)
+			x, y := int(r.X+r.W/2), int(r.Y)
+			br, bg, bb, _ := img.At(x, y-4).RGBA()
+			visible := false
+			// Each exposed top border must contrast with the page behind it.
+			// Sample a small band to allow for scaled, antialiased borders.
+			for py := y - 1; py <= y+2; py++ {
+				for px := x - 4; px <= x+4; px++ {
+					r, g, b, _ := img.At(px, py).RGBA()
+					visible = visible || max(r, br)-min(r, br) > 5000 ||
+						max(g, bg)-min(g, bg) > 5000 || max(b, bb)-min(b, bb) > 5000
+				}
+			}
+			if !visible {
+				t.Errorf("note %d has no visible top border in the collapsed stack", i)
+			}
+		}
+	})
+}
+
+func TestNotesMessageFocus(t *testing.T) {
+	runNotes(t, 800, 600, func(s *uitest.Session) {
+		s.Run(noteReduceMotion(), noteAdd(1, `'click me'`))
+		s.Eval(`document.querySelector('#notes').tabIndex = -1;
+			document.querySelector('#page').focus();`, nil)
+		r := s.Rect("hi-note-display hi-note hi-text", 0)
+		x, y := r.X+r.W/2, r.Y+r.H/2
+		s.Run(input.DispatchMouseEvent(input.MouseMoved, x, y),
+			input.DispatchMouseEvent(input.MousePressed, x, y).WithButton(input.Left).WithClickCount(1))
+		noteCheck(t, s, `fixture.dragging`)
+		s.Run(input.DispatchMouseEvent(input.MouseReleased, x, y).WithButton(input.Left).WithClickCount(1),
+			input.DispatchMouseEvent(input.MouseMoved, 2, 2))
+		noteCheck(t, s, `document.activeElement === document.querySelector('hi-note-display hi-note') &&
+			document.activeElement.tabIndex === 0 && !document.activeElement.matches(':focus-visible') &&
+			getComputedStyle(document.activeElement).outlineStyle === 'none' &&
+			getComputedStyle(document.activeElement, '::after').outlineStyle === 'none' &&
+			document.querySelector('hi-note-display').dataset.expanded === 'false'`)
+		s.Eval(`fixture.advance(1000);`, nil)
+		s.Run(chromedp.KeyEvent("a"))
+		noteCheck(t, s, `document.activeElement.matches('hi-note:focus-visible') &&
+			document.querySelector('hi-note-display').dataset.expanded === 'true'`)
+		s.Eval(`fixture.advance(10000);`, nil)
+		noteCheck(t, s, `fixture.retained.length === 1 && fixture.remaining[0] === 3000`)
+		s.Run(chromedp.KeyEvent("\x1b"))
+		noteCheck(t, s, `document.activeElement.id === 'page'`)
+		s.Run(chromedp.KeyEvent("\t"))
+		noteCheck(t, s, `document.activeElement.matches('hi-note:focus-visible') &&
+			getComputedStyle(document.activeElement, '::after').outlineStyle === 'solid' &&
+			getComputedStyle(document.activeElement, '::after').outlineWidth === '1px'`)
+		s.Run(chromedp.KeyEvent("\r"))
+		noteCheck(t, s, `fixture.retained.length === 1`)
+		s.Run(chromedp.KeyEvent("\t"))
+		noteCheck(t, s, `document.activeElement.matches('hi-note button:focus-visible') &&
+			getComputedStyle(document.activeElement, '::after').boxShadow.endsWith('0px 0px 0px 1px inset') &&
+			document.querySelector('hi-note-display').dataset.expanded === 'true'`)
+		s.Eval(`fixture.advance(10000);`, nil)
+		noteCheck(t, s, `fixture.retained.length === 1 && fixture.remaining[0] === 3000`)
+		s.Run(chromedp.KeyEvent("\x1b"),
+			notePoll(`document.querySelector('hi-note-display').dataset.expanded === 'false'`))
+		s.Eval(`fixture.advance(4000);`, nil)
+		noteCheck(t, s, `fixture.retained.length === 0`)
+	})
+}
+
+func TestNotesMouseFocusExpires(t *testing.T) {
+	runNotes(t, 800, 600, func(s *uitest.Session) {
+		s.Run(noteReduceMotion(), noteAdd(1, `'click me'`))
+		s.Eval(`document.querySelector('#page').focus();`, nil)
+		s.Run(chromedp.Click("hi-note-display hi-note hi-text", chromedp.ByQuery),
+			input.DispatchMouseEvent(input.MouseMoved, 2, 2))
+		noteCheck(t, s, `document.activeElement.matches('hi-note:not(:focus-visible)') &&
+			document.querySelector('hi-note-display').dataset.expanded === 'false'`)
+		s.Eval(`fixture.advance(4000);`, nil)
+		noteCheck(t, s, `fixture.retained.length === 0 && document.activeElement.id === 'page'`)
 	})
 }
 
@@ -448,7 +556,8 @@ func TestNotesLayoutAndFocus(t *testing.T) {
 				cards[0].bottom < cards[1].top && cards[1].bottom < cards[2].top;
 		})()`)
 		s.Eval(`document.querySelector('hi-note-display hi-note button').click();
-			document.activeElement.click(); document.activeElement.click();`, nil)
+			document.activeElement.querySelector('button').click();
+			document.activeElement.querySelector('button').click();`, nil)
 		noteCheck(t, s, `document.activeElement.id === 'page' && fixture.retained.length === 0`)
 	})
 }
@@ -472,6 +581,7 @@ func TestNotesCloseFocus(t *testing.T) {
 						s.Eval(`document.querySelector('hi-note-display hi-note hi-text').dispatchEvent(new PointerEvent('pointerup', {pointerType: 'touch', bubbles: true}));
 							document.activeElement.dispatchEvent(new MouseEvent('click', {detail: 1, bubbles: true}));`, nil)
 					} else {
+						s.Eval(`document.querySelector('hi-note-display hi-note button').disabled = true;`, nil)
 						s.Run(chromedp.KeyEvent("\r"))
 					}
 				}
@@ -480,7 +590,7 @@ func TestNotesCloseFocus(t *testing.T) {
 				noteCheck(t, s, `document.querySelector('hi-note-display').dataset.expanded === 'true' &&
 					fixture.retained.join() === 'older' && fixture.remaining.join() === '3000'`)
 				if mode == "keyboard" {
-					noteCheck(t, s, `document.activeElement === document.querySelector('hi-note-display hi-note button')`)
+					noteCheck(t, s, `document.activeElement === document.querySelector('hi-note-display hi-note')`)
 					s.Run(chromedp.KeyEvent("\x1b"))
 				} else {
 					noteCheck(t, s, `document.activeElement.id === 'page'`)
@@ -672,7 +782,7 @@ func TestNotesHoverContinuityAndResize(t *testing.T) {
 		s.Run(input.DispatchMouseEvent(input.MouseMoved, 2, 2))
 		s.Eval(`document.querySelector('#page').focus();`, nil)
 		s.Run(chromedp.KeyEvent("\t"), chromedp.EmulateViewport(600, 220), chromedp.Sleep(500*time.Millisecond))
-		noteCheck(t, s, `document.activeElement.matches('hi-note-display hi-note button') &&
+		noteCheck(t, s, `document.activeElement.matches('hi-note-display hi-note') &&
 			document.querySelector('hi-note-display').dataset.expanded === 'true' &&
 			[...document.querySelectorAll('hi-note-display hi-note[data-state=active]')].every(n => {
 				const r = n.getBoundingClientRect(); return r.width === 360 && r.x >= 16 && r.right <= 584 && r.top >= 16;
@@ -860,6 +970,215 @@ func TestNotesExitRemoval(t *testing.T) {
 				s.Eval(`fixture.advance(1);`, nil)
 				noteCheck(t, s, `!exiting.isConnected && fixture.retained.length === 2`)
 			})
+		})
+	}
+}
+
+func TestNoteSchema(t *testing.T) {
+	for _, tc := range []struct {
+		name         string
+		n            Note
+		want, absent []string
+	}{
+		{
+			name:   "message",
+			n:      Note{Message: "Saved <item>"},
+			want:   []string{"Saved &lt;item&gt;", `aria-label="Dismiss"`, `data-duration="0"`},
+			absent: []string{"<hi-icon", "<svg"},
+		},
+		{
+			name: "description and icon",
+			n:    Note{Message: "Saved", Description: "Library <updated>", Icon: "check"},
+			want: []string{"Library &lt;updated&gt;", "<hi-icon", "<svg"},
+		},
+		{
+			name:   "button",
+			n:      Note{Message: "Deleted", Action: Button(42, Text("Undo")), Duration: 10 * time.Second},
+			want:   []string{"Undo", `data-duration="10000"`},
+			absent: []string{`aria-label="Dismiss"`, "×"},
+		},
+		{
+			name:   "link",
+			n:      Note{Message: "Saved", Action: Link("/next", Text("Open")), Duration: 1500 * time.Microsecond},
+			want:   []string{`href="/next"`, `data-duration="1.5"`},
+			absent: []string{`aria-label="Dismiss"`},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, page := Render(note{Note: tc.n}.view())
+			html := renderNode(t, page)
+			for _, want := range tc.want {
+				if !strings.Contains(html, want) {
+					t.Errorf("missing %q in %s", want, html)
+				}
+			}
+			for _, absent := range tc.absent {
+				if strings.Contains(html, absent) {
+					t.Errorf("unexpected %q in %s", absent, html)
+				}
+			}
+		})
+	}
+}
+
+func TestNotesDuration(t *testing.T) {
+	for _, tc := range []struct {
+		duration time.Duration
+		millis   float64
+	}{
+		{0, 4000},
+		{-time.Second, 4000},
+		{1500 * time.Microsecond, 1.5},
+		{10 * time.Second, 10000},
+		{30 * 24 * time.Hour, 2592000000},
+	} {
+		t.Run(tc.duration.String(), func(t *testing.T) {
+			runNoteView(t, 800, 600, Note{Duration: tc.duration}, func(s *uitest.Session) {
+				s.Run(noteAdd(1, `'timed'`))
+				s.Eval(fmt.Sprintf(`fixture.advance(%g);`, tc.millis-0.5), nil)
+				noteCheck(t, s, `fixture.retained.length === 1`)
+				s.Eval(`fixture.advance(0.5);`, nil)
+				noteCheck(t, s, `fixture.retained.length === 0`)
+			})
+		})
+	}
+}
+
+func TestNotesActionActivation(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		action  View
+		dismiss bool
+	}{
+		{"default dismiss", nil, true},
+		{"message button", Button(42, Text("Undo")), true},
+		{"message link", Link(42, Text("Undo")), true},
+		{"URL button", Button("#next", Text("Open")), true},
+		{"URL link", Link("#next", Text("Open")), true},
+		{"custom hyperlink", Text("Open").Tag("a").Attr(attr.Href("#next")), true},
+		{"custom click handler", Text("Undo").Attr(event.Click(42)), true},
+		{"click handler ancestor", HStack(Text("Undo").Class("target")).Attr(event.Click(42)), true},
+		{"plain button", Text("Button").Tag("button"), false},
+		{"anchor without href", Text("Anchor").Tag("a"), false},
+		{"plain text", Text("Text"), false},
+		{"input handler", Text("").Tag("textarea").Attr(event.Input(func(string) int { return 42 })), false},
+		{"change handler", Text("").Tag("textarea").Attr(event.Change(func(string) int { return 42 })), false},
+		{"submit handler", HStack(Text("Submit").Tag("button").Class("target")).Tag("form").Attr(event.Submit(42)), false},
+		{"disabled button", Button(42, Text("Undo")).Disabled(true), false},
+		{"disabled link", Link("#next", Text("Open")).Disabled(true), false},
+		{"aria disabled handler", Text("Undo").Attr(event.Click(42), domi.Name("aria-disabled", "true")), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			runNoteView(t, 800, 600, Note{Action: tc.action}, func(s *uitest.Session) {
+				s.Run(noteAdd(1, `'message'`))
+				s.Eval(`const display = document.querySelector('hi-note-display');
+					display.setAttribute('domi-msg-click', 'outside-action');
+					display.addEventListener('click', e => e.preventDefault());
+					const action = display.querySelector('hi-note-action');
+					const target = action.querySelector('.target') || action.firstElementChild;
+					target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));`, nil)
+				noteCheck(t, s, fmt.Sprintf(`(fixture.retained.length === 0) === %t`, tc.dismiss))
+			})
+		})
+	}
+}
+
+func TestNotesRetainedActions(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		action     View
+		navigation bool
+	}{
+		{"message button", Button(42, Text("Undo")), false},
+		{"message link", Link(42, Text("Undo")), false},
+		{"URL link", Link("/action", Text("Open")), true},
+		{"URL button", Button("/action", Text("Open")), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := Handler(func(context.Context, *url.URL) (*navigationApp, domi.Cmd[int]) {
+				a := &navigationApp{}
+				count := 0
+				a.update = func(_ context.Context, m int) domi.Cmd[int] {
+					switch m {
+					case 42:
+						count++
+					case 1:
+						return domi.PushURL[int]("/away")
+					case 2:
+						return domi.PushURL[int]("/action")
+					}
+					return nil
+				}
+				a.onView = func(_ context.Context, render PageRenderer) Page {
+					return render(VStack(Button(0, Text("Update")).Class("update"),
+						Link("/away", Text("Away")).Class("away"), Text(fmt.Sprint(count)).Class("count")))
+				}
+				return a, Notify[int](Note{Message: "Rich note", Description: "Supporting text", Icon: "check", Action: tc.action, Duration: 10 * time.Second})
+			}, func(u *url.URL) int {
+				if u.Path == "/action" {
+					return 2
+				}
+				return 1
+			}, func(*url.URL) int { return 0 })
+			server := httptest.NewServer(h)
+			defer server.Close()
+			uitest.RunURL(t, 800, 600, "about:blank", func(s *uitest.Session) {
+				s.Run(chromedp.ActionFunc(func(ctx context.Context) error {
+					_, err := cdppage.AddScriptToEvaluateOnNewDocument(`Object.defineProperty(document, 'hidden', {value: true});`).Do(ctx)
+					return err
+				}), chromedp.Navigate(server.URL), cdppage.BringToFront(), chromedp.WaitReady("hi-note-display", chromedp.ByQuery), notePoll(noteText+` === 'Rich note'`))
+				s.Run(chromedp.Click(".update", chromedp.ByQuery), notePoll(`document.querySelector('hi-note-outbox').children.length === 0`),
+					chromedp.Click(".away", chromedp.ByQuery), notePoll(`location.pathname === '/away'`), chromedp.NavigateBack(), notePoll(`location.pathname === '/'`))
+				noteCheck(t, s, noteText+` === 'Rich note'`)
+				s.Eval(`document.querySelector('.update').focus();
+					document.querySelector('hi-note-display hi-note-action :is(button,a)').focus();`, nil)
+				s.Run(chromedp.KeyEvent("\r"), notePoll(`document.querySelectorAll('hi-note-display hi-note[data-state=active]').length === 0`))
+				if tc.navigation {
+					s.Run(notePoll(`location.pathname === '/action'`), chromedp.NavigateBack(), notePoll(`location.pathname === '/'`))
+				} else {
+					s.Run(notePoll(`document.querySelector('.count').textContent === '1'`))
+					noteCheck(t, s, `document.activeElement.classList.contains('update')`)
+				}
+				noteCheck(t, s, `document.querySelectorAll('hi-note-display hi-note[data-state=active]').length === 0`)
+			})
+		})
+	}
+}
+
+func TestNotesRemovedBeforeAdmission(t *testing.T) {
+	runNotes(t, 800, 600, func(s *uitest.Session) {
+		s.Eval(`fixture.add('removed');
+			globalThis.entry = document.querySelector('hi-note-outbox').lastElementChild;
+			entry.remove();`, nil)
+		noteCheck(t, s, `fixture.retained.length === 0`)
+		// No delivery was recorded for the removed entry.
+		s.Eval(`document.querySelector('hi-note-outbox').append(entry);`, nil)
+		s.Run(notePoll(`fixture.retained.join() === 'removed'`))
+	})
+}
+
+func TestNotesActionPointerIsolation(t *testing.T) {
+	for _, action := range []View{Button(42, Text("Undo")), Link("#action", Text("Open"))} {
+		runNoteView(t, 800, 600, Note{Action: action}, func(s *uitest.Session) {
+			s.Run(noteReduceMotion(), noteAdd(1, `'swipe me'`))
+			s.Eval(`globalThis.activations = 0;
+				globalThis.action = document.querySelector('hi-note-display hi-note-action :is(button,a)');
+				action.addEventListener('click', () => activations++);
+				document.querySelector('hi-note-display hi-text').click();
+				action.dispatchEvent(new PointerEvent('pointerdown', {button: 0, isPrimary: true, bubbles: true}));`, nil)
+			noteCheck(t, s, `fixture.retained.length === 1 && activations === 0 && !fixture.dragging`)
+			r := s.Rect("hi-note-display hi-note", 0)
+			x, y := r.X+20, r.Y+10
+			s.Run(input.DispatchMouseEvent(input.MouseMoved, x, y),
+				input.DispatchMouseEvent(input.MousePressed, x, y).WithButton(input.Left).WithClickCount(1),
+				input.DispatchMouseEvent(input.MouseMoved, x, y-20).WithButton(input.Left).WithButtons(1),
+				input.DispatchMouseEvent(input.MouseReleased, x, y-20).WithButton(input.Left).WithClickCount(1))
+			s.Eval(`action.dispatchEvent(new MouseEvent('click', {bubbles:true, cancelable:true, detail:1}));`, nil)
+			noteCheck(t, s, `fixture.retained.length === 1 && activations === 0 && !fixture.dragging`)
+			s.Run(input.DispatchMouseEvent(input.MousePressed, x, y).WithButton(input.Left).WithClickCount(1),
+				input.DispatchMouseEvent(input.MouseMoved, x, y+60).WithButton(input.Left).WithButtons(1),
+				input.DispatchMouseEvent(input.MouseReleased, x, y+60).WithButton(input.Left).WithClickCount(1))
+			noteCheck(t, s, `fixture.retained.length === 0 && activations === 0 && !fixture.dragging`)
 		})
 	}
 }

@@ -50,12 +50,15 @@ type message struct {
 type app struct {
 	sent    int
 	pending int
+	undone  int
 }
 
 func (a *app) Update(ctx context.Context, m message) domi.Cmd[message] {
 	switch m.Kind {
 	case "request":
 		return domi.PushURL[message](m.Path)
+	case "undo":
+		a.undone++
 	case "queue":
 		a.pending += m.Remaining
 		m.Kind = "send"
@@ -72,7 +75,24 @@ func (a *app) Update(ctx context.Context, m message) domi.Cmd[message] {
 		} else if m.Variant == "mixed" && m.Remaining == 2 {
 			text = fmt.Sprintf("Note %d · Three new episodes have been added to your library and are ready to watch.", a.sent)
 		}
-		cmd := Notify[message](text)
+		n := Note{Message: text}
+		switch m.Variant {
+		case "description":
+			n.Description = "New episodes have been added to your library."
+		case "icon":
+			n.Icon = "check"
+			n.Description = "This note has an explicit icon."
+		case "undo":
+			n.Message = "Item deleted"
+			n.Action = Button(message{Kind: "undo"}, Text("Undo"))
+			n.Duration = 10 * time.Second
+		case "link":
+			n.Description = "Follow the link to another page."
+			n.Action = Link("/away", Text("Open"))
+		case "short":
+			n.Duration = time.Second
+		}
+		cmd := Notify[message](n)
 		if m.Remaining > 1 {
 			m.Remaining--
 			return domi.Batch[message](cmd, after(ctx, 150*time.Millisecond, m))
@@ -114,16 +134,22 @@ func (a *app) page() View {
 		Text("Send a few notes, then hover or focus the stack at the bottom of the screen. The latest three appear; dismiss one to reveal an older note that is still active."),
 		VStack(
 			Button(message{Kind: "queue", Remaining: 1}, Text("Add a note")),
+			Button(message{Kind: "queue", Remaining: 1, Variant: "description"}, Text("With description")),
+			Button(message{Kind: "queue", Remaining: 1, Variant: "icon"}, Text("With icon and description")),
+			Button(message{Kind: "queue", Remaining: 1, Variant: "undo"}, Text("Undo action · 10 seconds")),
+			Button(message{Kind: "queue", Remaining: 1, Variant: "link"}, Text("Link action · 4 seconds")),
+			Button(message{Kind: "queue", Remaining: 1, Variant: "short"}, Text("One-second note")),
 			Button(message{Kind: "queue", Remaining: 6}, Text("Burst of six")),
 			Button(message{Kind: "queue", Remaining: 3, Variant: "mixed"}, Text("Three different heights")),
 			Button(message{Kind: "queue", Remaining: 1, Variant: "long"}, Text("Add a long note")),
 			Button(message{Kind: "queue", Remaining: 6, Delay: 3 * time.Second}, Text("Burst in 3 seconds")),
 		).Alignment(Leading).Gap(10),
-		Text(fmt.Sprintf("%d notes sent · %d awaiting delivery", a.sent, a.pending)).
+		Text(fmt.Sprintf("%d notes sent · %d awaiting delivery · %d undone", a.sent, a.pending, a.undone)).
 			Foreground(Secondary),
 		VStack(
 			Text("Try these interactions").Font(Bold).Tag("h2"),
-			Text("Hover or Tab into the stack to expand it and pause its four-second timers. Move through the gaps; the stack should stay open."),
+			Text("Hover or Tab into the stack to expand it and pause its timers. Notes last four seconds unless a duration is specified. Move through the gaps; the stack should stay open."),
+			Text("An action replaces the dismiss button. Activate it to perform the action and dismiss the note; the message itself does not activate it. Try an action after navigating away and back."),
 			Text("Press Escape to return focus to the page. The stack stays open while hovered or expanded by touch."),
 			Text("On touch screens, tap the stack to expand and tap outside to collapse. Swipe a note downward, or use its dismiss button."),
 			Text("Add a long note to try the height cap. Content beyond the cap is clipped."),

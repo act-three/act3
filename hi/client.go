@@ -19,7 +19,7 @@ import (
 //go:embed hi.js
 var rawClientJS []byte
 
-var clientJS = fmt.Sprintf("import %q;\n%s\nrun();\n",
+var clientJS = fmt.Sprintf("import * as Domi from %q;\n%s\nrun(Domi);\n",
 	"./"+domiClientModueName,
 	rawClientJS,
 )
