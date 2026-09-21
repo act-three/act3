@@ -151,10 +151,10 @@ func Handler[Msg any, A App[Msg]](
 		)...,
 	)
 	cssPath := path.Join(sv.InternalURLPrefix(), "hi."+cssDigest+".css")
-	jsPath := path.Join(sv.InternalURLPrefix(), "hi."+clientJSDigest+".js")
+	jsPath := clientJSPath(sv.InternalURLPrefix())
 	if !sv.HasCustomDocument() {
 		cssLink = html.Link(attr.Rel("stylesheet"), attr.Href(cssPath))
-		script = html.Script(attr.Type("module"), attr.Src(jsPath))()
+		script = ClientModule(sv.InternalURLPrefix())
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET "+cssPath, serveCSS)

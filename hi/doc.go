@@ -158,11 +158,11 @@ and the Domi JavaScript module.
 The default behavior of [Handler] includes all three.
 
 Apps that provide their own document shell (see [domi.Document])
-must serve these assets themselves.
+must load these assets themselves.
 There are two ways to do it.
 
-  - Serve each asset directly,
-    using [Stylesheet], [ClientModule], and [domi.ClientModule].
+  - Load the assets directly,
+    using [Stylesheet] and [ClientModule].
   - Bundle the assets with additional CSS and JavaScript.
 
 Apps that serve their own CSS and JavaScript
