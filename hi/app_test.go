@@ -2,6 +2,7 @@ package hi
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -317,22 +318,54 @@ func TestHandlerStylesheet(t *testing.T) {
 }
 
 func TestHandlerClientModule(t *testing.T) {
-	h := Handler(
-		func(context.Context, *url.URL) (*stubApp, domi.Cmd[struct{}]) {
-			return &stubApp{view: Text("a")}, nil
-		},
-		func(*url.URL) struct{} { return struct{}{} },
-		func(*url.URL) struct{} { return struct{}{} },
-		domi.InternalURLPrefix("/-/x"),
-	)
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, body:\n%s", rec.Code, rec.Body)
-	}
-	body := rec.Body.String()
-	if !regexp.MustCompile(`<script src="/-/x/hi\.[^"]+\.js" type="module"></script>`).MatchString(body) {
-		t.Errorf("no Hi module script:\n%s", body)
+	for _, prefix := range []string{"", "/", "/-/x", "/-/x/"} {
+		for _, custom := range []bool{false, true} {
+			t.Run(fmt.Sprintf("prefix=%q/custom=%t", prefix, custom), func(t *testing.T) {
+				opts := []Option{domi.InternalURLPrefix(prefix)}
+				if custom {
+					opts = append(opts, domi.Document(func(title string, body domi.Node) domi.Node {
+						return domi.Tag("html")(
+							domi.Tag("head")(ClientModule(prefix)), body,
+						)
+					}))
+				}
+				h := Handler(
+					func(context.Context, *url.URL) (*stubApp, domi.Cmd[struct{}]) {
+						return &stubApp{view: Text("a")}, nil
+					},
+					func(*url.URL) struct{} { return struct{}{} },
+					func(*url.URL) struct{} { return struct{}{} },
+					opts...,
+				)
+				rec := httptest.NewRecorder()
+				h.ServeHTTP(rec, httptest.NewRequest("GET", "/", nil))
+				if rec.Code != http.StatusOK {
+					t.Fatalf("status = %d, body:\n%s", rec.Code, rec.Body)
+				}
+				body := rec.Body.String()
+				hiScript := regexp.MustCompile(`<script src="([^"]*/hi\.[^"]+\.js)" type="module"></script>`).FindStringSubmatch(body)
+				domiScript := regexp.MustCompile(`<script src="([^"]*/domi\.[^"]+\.js)" type="module"></script>`).FindStringSubmatch(body)
+				if hiScript == nil || domiScript == nil {
+					t.Fatalf("missing Hi or Domi script:\n%s", body)
+				}
+				if want := renderNode(t, domi.ClientModule(prefix)); domiScript[0] != want {
+					t.Fatalf("Domi script = %s, want %s", domiScript[0], want)
+				}
+				for _, src := range []string{hiScript[1], domiScript[1]} {
+					rec := httptest.NewRecorder()
+					h.ServeHTTP(rec, httptest.NewRequest("GET", src, nil))
+					if rec.Code != http.StatusOK {
+						t.Fatalf("GET %s: status = %d", src, rec.Code)
+					}
+					if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/javascript") {
+						t.Errorf("GET %s: Content-Type = %q", src, ct)
+					}
+					if cc := rec.Header().Get("Cache-Control"); !strings.Contains(cc, "immutable") {
+						t.Errorf("GET %s: Cache-Control = %q", src, cc)
+					}
+				}
+			})
+		}
 	}
 }
 
