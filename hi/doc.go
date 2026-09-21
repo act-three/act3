@@ -171,7 +171,7 @@ Obtain the filesystem paths of the asset sources by running:
 
 	go list -f '{{.Dir}}/hi.css' ily.dev/act3/hi
 	go list -f '{{.Dir}}/hi.js' ily.dev/act3/hi
-	go list -f '{{.Dir}}/client.js' ily.dev/domi
+	go list -f '{{.Dir}}/domi.js' ily.dev/domi
 
 Include hi.css in the app's CSS bundle.
 
@@ -179,7 +179,7 @@ Include both JavaScript modules in the app's JavaScript bundle
 and call their run functions:
 
 	import * as Hi from "/path/to/ily.dev/act3/hi/hi.js";
-	import * as Domi from "/path/to/ily.dev/domi/client.js";
+	import * as Domi from "/path/to/ily.dev/domi/domi.js";
 	Hi.run();
 	Domi.run();
 
