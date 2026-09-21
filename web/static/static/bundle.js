@@ -304,8 +304,20 @@
     return out;
   }
   var EVENTS = ["click", "submit", "input", "change", "keydown", "keyup"];
-  function postEnvelope(eventURL, h, e, ver, mutations) {
+  var eventVer;
+  function updateDOM(next, f) {
+    eventVer = null;
+    const v = f();
+    eventVer = next;
+    return v;
+  }
+  function scopedVer(el) {
+    const scope = el.closest("[domi-event-tree-ver]");
+    return scope ? scope.getAttribute("domi-event-tree-ver") : null;
+  }
+  function postEnvelope(eventURL, h, e, ver, handlerVer, mutations) {
     const body = { Type: "Dispatch", Handler: h, Event: e, Ver: ver };
+    if (handlerVer != null) body.HandlerVer = handlerVer;
     if (mutations && mutations.length) body.Mutations = mutations;
     fetch(eventURL, {
       method: "POST",
@@ -357,11 +369,12 @@
     const SNAPSHOT_MAX = 30;
     let base = "11111111111111111111111111";
     let ver = "11111111111111111111111111";
+    eventVer = ver;
     function cacheSnapshot(snapVer, source, title) {
       if (!snapVer) return;
       const frag = document.createDocumentFragment();
       for (const child of source.childNodes) frag.appendChild(child.cloneNode(true));
-      snapshots.set(snapVer, { frag, title });
+      snapshots.set(snapVer, { frag, title, eventVer });
       while (snapshots.size > SNAPSHOT_MAX) {
         snapshots.delete(snapshots.keys().next().value);
       }
@@ -369,13 +382,15 @@
     function restoreSnapshot(snapVer) {
       const cached = snapshots.get(snapVer);
       if (!cached) return;
-      while (root.firstChild) root.removeChild(root.firstChild);
-      delete root.__domiChildren;
-      const fresh = cached.frag.cloneNode(true);
-      while (fresh.firstChild) root.appendChild(fresh.firstChild);
-      document.title = cached.title ?? "";
-      base = snapVer;
-      ver = snapVer;
+      updateDOM(cached.eventVer, () => {
+        while (root.firstChild) root.removeChild(root.firstChild);
+        delete root.__domiChildren;
+        const fresh = cached.frag.cloneNode(true);
+        while (fresh.firstChild) root.appendChild(fresh.firstChild);
+        document.title = cached.title ?? "";
+        base = snapVer;
+        ver = snapVer;
+      });
     }
     let pv = null;
     function checkPreviewTTL() {
@@ -388,10 +403,12 @@
       cacheSnapshot(p.base, root, document.title);
       history.replaceState({ domiSnapshot: p.base }, "", location.href);
       history.pushState(null, "", p.dest);
-      for (const patch of p.patches ?? []) applyPatch(root, patch);
-      document.title = p.title ?? "";
-      base = p.base;
-      ver = p.ver;
+      updateDOM(p.ver, () => {
+        for (const patch of p.patches ?? []) applyPatch(root, patch);
+        document.title = p.title ?? "";
+        base = p.base;
+        ver = p.ver;
+      });
       fetch(eventURL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -424,16 +441,19 @@
                 if (p) paths.push(...p);
               }
               const fields = getFields(e, el, paths);
-              const committed = commits ? commitOps(root, e.target) : [];
-              const muts = e.detail && e.detail.domi && e.detail.domi.mutations;
-              const proposed = Array.isArray(muts) && muts.length ? applyClientMutations(root, muts) ?? [] : [];
-              const ops = committed.concat(proposed);
+              const handlerVer = scopedVer(el);
+              const ops = updateDOM(eventVer, () => {
+                const committed = commits ? commitOps(root, e.target) : [];
+                const muts = e.detail && e.detail.domi && e.detail.domi.mutations;
+                const proposed = Array.isArray(muts) && muts.length ? applyClientMutations(root, muts) ?? [] : [];
+                return committed.concat(proposed);
+              });
               if (ops.length) {
                 const acted = ver;
                 base = ver = acted + "-mutated";
-                postEnvelope(eventURL, keys.join(","), fields, acted, ops);
+                postEnvelope(eventURL, keys.join(","), fields, acted, handlerVer, ops);
               } else {
-                postEnvelope(eventURL, keys.join(","), fields, ver);
+                postEnvelope(eventURL, keys.join(","), fields, ver, handlerVer);
               }
               return;
             }
@@ -441,7 +461,7 @@
           el = el.parentNode;
         }
         if (commits && e.target.nodeType === 1 && !hasEditHandler(root, e.target)) {
-          revertControl(root, e.target);
+          updateDOM(eventVer, () => revertControl(root, e.target));
         }
       });
     }
@@ -521,8 +541,10 @@
       for (const step of f.Steps) {
         switch (step.Type) {
           case "ApplyPatch":
-            for (const p of step.Patches) applyPatch(root, p);
-            ver = step.Ver;
+            updateDOM(step.Ver, () => {
+              for (const p of step.Patches) applyPatch(root, p);
+              ver = step.Ver;
+            });
             break;
           case "SetTitle":
             document.title = step.Title ?? "";
