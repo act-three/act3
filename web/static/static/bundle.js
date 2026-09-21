@@ -1,5 +1,5 @@
 (() => {
-  // domi/client.js
+  // domi/domi.js
   function fragmentFromHTML(html) {
     const tmpl = document.createElement("template");
     tmpl.innerHTML = html;

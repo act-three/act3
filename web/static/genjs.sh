@@ -4,7 +4,7 @@ set -eo pipefail
 # Run from project root by go generate.
 # See main.go.
 
-domi=$(go list -m -f '{{.Dir}}' ily.dev/domi)/client.js
+domi=$(go list -f '{{.Dir}}' ily.dev/domi)/domi.js
 out=web/static/static/bundle.js
 
 go tool esbuild --alias:domi="$domi" \
@@ -14,6 +14,6 @@ go tool esbuild --alias:domi="$domi" \
 # working directory. domi resolves through the module cache, whose
 # location varies by machine, so rewrite that one path to a stable
 # label to keep the bundle reproducible.
-sed -E 's#// [^ ]*ily\.dev/domi@[^/]*/client\.js#// domi/client.js#' \
+sed -E 's#// [^ ]*ily\.dev/domi@[^/]*/domi\.js#// domi/domi.js#' \
 	"$out" >"$out.tmp"
 mv "$out.tmp" "$out"
