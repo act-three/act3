@@ -29,11 +29,18 @@ type ButtonView interface {
 // the ButtonView panics.
 func Button[Action any](a Action, label View) ButtonView {
 	var action any = a
-	if _, ok := action.(string); !ok {
+	switch action.(type) {
+	case string:
+	case noAction:
+		action = domi.Group()
+	default:
 		action = event.Click(a)
 	}
 	return buttonView{view(nodeButton(action, unary(HStack, label)))}
 }
+
+// noAction leaves activation to internal client-side behavior.
+type noAction struct{}
 
 type buttonView struct{ base }
 
