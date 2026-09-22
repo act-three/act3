@@ -56,7 +56,11 @@ func (p LinkPolicy) attr() domi.Attr {
 // the link panics.
 func Link[Action any](a Action, label TextView) TextView {
 	var action any = a
-	if _, ok := action.(string); !ok {
+	switch action.(type) {
+	case string:
+	case noAction:
+		action = domi.Group()
+	default:
 		action = event.Click(a)
 	}
 	return newTextView(textLink{
@@ -67,7 +71,7 @@ func Link[Action any](a Action, label TextView) TextView {
 
 // textLink performs an action when clicked.
 type textLink struct {
-	action any // URL string or onclick domi.Attr
+	action any // URL string or domi.Attr
 	run    textRun
 }
 
