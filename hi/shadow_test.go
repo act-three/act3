@@ -69,9 +69,18 @@ func TestBorderShadowStates(t *testing.T) {
 func TestBorderShadowWrapperEquivalence(t *testing.T) {
 	red := hi.BorderShadow(1, 2, 5, 3, hi.OKLCHA(.6, .2, 20, .6))
 	blue := hi.BorderShadow(-2, 1, 7, 4, hi.OKLCHA(.5, .2, 260, .7))
-	for _, shape := range []hi.Shape{hi.Rectangle, hi.RoundedRectangle, hi.Capsule, hi.Ellipse} {
+	for _, tt := range []struct {
+		name  string
+		shape hi.Shape
+	}{
+		{"rectangle", hi.Rectangle},
+		{"rounded", hi.RoundedRectangle(8i)},
+		{"capsule", hi.Capsule},
+		{"ellipse", hi.Ellipse},
+	} {
+		shape := tt.shape
 		for _, filled := range []bool{false, true} {
-			t.Run(fmt.Sprintf("%d/filled=%v", shape, filled), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s/filled=%v", tt.name, filled), func(t *testing.T) {
 				base := hi.Transparent.Frame(hi.Width(80), hi.Height(40))
 				fill, edge := hi.Transparent, hi.Transparent
 				if filled {

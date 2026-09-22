@@ -256,8 +256,8 @@ func TestBackgroundShapeOrder(t *testing.T) {
 // to the first box, so the innermost of two shapes wins and the outer
 // one is inert — no wrapper, no declaration.
 func TestBorderShapeRepetition(t *testing.T) {
-	html := render(t, hi.Text("x").BorderShape(hi.RoundedRectangle).BorderShape(hi.Capsule))
-	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "border-radius:var(--hi-radius);display:block;isolation:isolate;overflow-wrap:break-word" {
+	html := render(t, hi.Text("x").BorderShape(hi.RoundedRectangle(8i)).BorderShape(hi.Capsule))
+	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "border-radius:0.5rem;display:block;isolation:isolate;overflow-wrap:break-word" {
 		t.Errorf("innermost shape should land on the text element, got %q:\n%s", got, html)
 	}
 	if strings.Contains(html, "9999px") || strings.Contains(html, "hi-box") {

@@ -91,7 +91,7 @@ func movieRow(movie Movie) View {
 		Image(movie.PosterURL).
 			Alt(movie.Title).
 			ScaledToFill().
-			BorderShape(RoundedRectangle).
+			BorderShape(RoundedRectangle(8i)).
 			Frame(Width(56), Height(84)),
 		VStack(
 			Text(movie.Title).
@@ -142,7 +142,7 @@ func zstackDemo() View {
 	return ZStack(
 		OKLCH(0.359, 0.135, 279).
 			Frame(Width(120), Height(120)).
-			BorderShape(RoundedRectangle),
+			BorderShape(RoundedRectangle(8i)),
 		Text("ZStack with Long Text").
 			TextForeground(White).
 			Font(SemiBold, SizeEm(18i, 1.4)),
@@ -297,7 +297,7 @@ func stateDemo() View {
 		WhileHovered(Background(OKLCH(0.457, 0.215, 277))).
 		Background(OKLCH(0.359, 0.135, 279)).
 		WhileFocused(BorderStroke(2, OKLCH(0.769, 0.165, 70))).
-		BorderShape(RoundedRectangle).
+		BorderShape(RoundedRectangle(8i)).
 		Attr(attr.TabIndex("0"))
 }
 
@@ -319,7 +319,7 @@ func gridDemo() View {
 					TextForeground(White),
 			).
 				BorderClipped().
-				BorderShape(RoundedRectangle),
+				BorderShape(RoundedRectangle(8i)),
 		)
 	}
 	return VStack(
@@ -339,7 +339,7 @@ func posterWall() View {
 				ScaledToFill().
 				FrameRatio(2, 3, Horizontal).
 				BorderClipped().
-				BorderShape(RoundedRectangle),
+				BorderShape(RoundedRectangle(8i)),
 		)
 	}
 	return Grid(Columns(6), posters...)

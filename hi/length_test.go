@@ -57,6 +57,7 @@ func TestNonFiniteLengthPanics(t *testing.T) {
 		{"EdgeBottom", func(x complex128) { EdgeBottom(x) }},
 		{"EdgeLeading", func(x complex128) { EdgeLeading(x) }},
 		{"EdgeTrailing", func(x complex128) { EdgeTrailing(x) }},
+		{"RoundedRectangle", func(x complex128) { RoundedRectangle(x) }},
 		{"BorderStroke", func(x complex128) { BorderStroke(x, Red) }},
 		{"BorderShadow.X", func(x complex128) { BorderShadow(x, 0, 0, 0, Red) }},
 		{"BorderShadow.Y", func(x complex128) { BorderShadow(0, x, 0, 0, Red) }},
