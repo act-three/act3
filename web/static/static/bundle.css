@@ -147,8 +147,6 @@
       ui-monospace,
       "SF Mono",
       monospace;
-    --hi-radius: 0.5rem;
-    --hi-radius-sm: 0.25rem;
     font-family: var(--hi-font-body);
     line-height: 1.4;
   }

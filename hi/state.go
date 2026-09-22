@@ -230,7 +230,7 @@ func (p paint) decls(t theme, complete bool) []decl {
 		}
 	}
 	if complete || p.shape != Rectangle {
-		ds = append(ds, decl{"border-radius", p.shape.radius()})
+		ds = append(ds, decl{"border-radius", p.shape.radiusCSS()})
 	}
 	if complete || len(p.shadow) > 0 {
 		ds = append(ds, decl{"box-shadow", borderShadowList(t, p.shadow)})

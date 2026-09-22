@@ -6,5 +6,5 @@ func Card(subview View) View {
 		modify(modTagDefault("hi-card")).
 		BorderStroke(1, borderColor).
 		ThemeBackground(shadeColor).
-		BorderShape(RoundedRectangle)
+		BorderShape(RoundedRectangle(8i))
 }
