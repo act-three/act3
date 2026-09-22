@@ -1,4 +1,4 @@
-// Importing this module has no side effects. Call run to initialize Hi.
+// Importing this module has no side effects. Call run(Domi) to initialize Hi.
 
 // Records, rather than snapshot DOM, own the display lifecycle. Delivery
 // history is separate: retiring a note must never make it eligible again.
@@ -6,7 +6,9 @@ const notes = [];
 const delivered = new Set();
 const lifetime = 4000;
 const gap = 14;
+const interactive = "button, a, input, select, textarea, [contenteditable], [tabindex], [domi-msg-click]";
 let display;
+let clone;
 let hovered = false, focused = false, touchExpanded = false, gesture;
 let previousFocus, pointer;
 let suppressClick = false;
@@ -16,7 +18,7 @@ function engaged() {
 }
 
 function sync() {
-	focused = !!(notes.length && display?.isConnected && display.contains(document.activeElement));
+	focused = !!(notes.length && display?.isConnected && display.querySelector(":focus-visible"));
 	if (!notes.length) hovered = touchExpanded = false;
 	const paused = engaged() || document.hidden || !display?.isConnected;
 	const now = performance.now();
@@ -28,9 +30,11 @@ function sync() {
 		} else if (!paused && note.timer === undefined) {
 			note.deadline = now + note.remaining;
 			note.timer = setTimeout(() => {
-				retire(note);
+				note.remaining = Math.max(0, note.deadline - performance.now());
+				note.timer = undefined;
+				if (!note.remaining) retire(note);
 				sync();
-			}, note.remaining);
+			}, Math.min(note.remaining, 2147483647));
 		}
 	}
 	layout();
@@ -38,14 +42,25 @@ function sync() {
 
 function receive(entry) {
 	const id = entry.getAttribute?.("domi-key");
-	if (!id || delivered.has(id)) return;
+	if (!id || delivered.has(id) || !entry.isConnected || !entry.parentElement.matches("hi-note-outbox")) return;
+	const node = clone(entry);
 	delivered.add(id);
-	const node = entry.cloneNode(true);
-	const button = node.querySelector("button");
+	const duration = Number(node.dataset.duration);
 	node.dataset.state = "active";
-	const note = { node, button, height: 0, mounted: false, remaining: lifetime, timer: undefined };
-	button.addEventListener("click", event => {
-		// Only keyboard activation carries focus to the next close button.
+	node.tabIndex = 0;
+	const note = {
+		node,
+		height: 0,
+		mounted: false,
+		remaining: duration > 0 ? duration : lifetime,
+		timer: undefined,
+	};
+	const action = node.querySelector("hi-note-action");
+	action.addEventListener("click", event => {
+		const control = event.target.closest("a[href], [domi-msg-click], [data-dismiss]");
+		if (!control || !action.contains(control) || control.closest(":disabled, [aria-disabled=true]")) return;
+		// Keep the exiting node attached so Domi's delegated listener can
+		// dispatch the original click, including URL navigation.
 		retire(note, { focusNext: event.detail === 0 });
 		sync();
 	});
@@ -73,9 +88,19 @@ function retire(note, { swipe = false, focusNext = true } = {}) {
 	// Transition events can be canceled, or absent under reduced motion.
 	setTimeout(() => note.node.remove(), 200);
 	if (hadFocus) {
-		if (focusNext && notes.length) notes[Math.min(index, notes.length - 1)].button.focus({ preventScroll: true });
-		else restoreFocus();
+		if (focusNext && notes.length) {
+			// Reveal retained notes before moving focus.
+			layout();
+			focusNote(notes[Math.min(index, notes.length - 1)]);
+		} else restoreFocus();
 	}
+}
+
+function focusNote(note) {
+	const previous = previousFocus;
+	note.node.focus({ preventScroll: true });
+	// Inert can blur the old note, causing focusin to replace the page target.
+	previousFocus = previous;
 }
 
 function restoreFocus() {
@@ -102,14 +127,15 @@ function layout() {
 	display.dataset.expanded = String(expanded);
 	display.style.pointerEvents = notes.length ? "auto" : "none";
 	const front = notes.at(-1)?.height || 0;
+	const activeElement = document.activeElement;
 	let moveFocus = false;
 	for (let i = 0; i < notes.length; i++) {
 		const note = notes[i];
 		const height = expanded ? note.height : front;
 		const visible = i >= notes.length - visibleCount;
-		moveFocus ||= !visible && note.node.contains(document.activeElement);
+		moveFocus ||= !visible && note.node.contains(activeElement);
 		note.node.dataset.visible = String(visible);
-		note.button.tabIndex = visible ? 0 : -1;
+		note.node.inert = !visible;
 		note.node.style.height = `${height}px`;
 		note.node.dataset.covered = String(!expanded && i < notes.length - 1);
 	}
@@ -129,13 +155,14 @@ function layout() {
 		if (depth < visibleCount) visibleHeight = expanded ? offset - gap : front + depth * gap;
 	}
 	display.style.height = `${visibleHeight}px`;
-	if (moveFocus) notes[notes.length - visibleCount].button.focus({ preventScroll: true });
+	if (moveFocus) focusNote(notes[notes.length - visibleCount]);
 }
 
 function startDrag(event, note) {
+	const control = event.target.closest(interactive);
 	if (
 		event.button !== 0 || !event.isPrimary || gesture
-		|| event.target.closest("button, a, input, select, textarea, [contenteditable]")
+		|| (control !== note.node && note.node.contains(control))
 	) return;
 	// Reveal a covered note before allowing a swipe to capture its transform.
 	if (note.node.dataset.covered === "true") {
@@ -211,6 +238,8 @@ function initDisplay(element) {
 	});
 	element.addEventListener("focusout", () => queueMicrotask(sync));
 	element.addEventListener("keydown", event => {
+		// Keyboard input can reveal focus without moving it.
+		queueMicrotask(sync);
 		if (event.key !== "Escape" || !element.contains(document.activeElement)) return;
 		event.preventDefault();
 		restoreFocus();
@@ -228,10 +257,8 @@ function initDisplay(element) {
 			endDrag(event);
 			return;
 		}
-		if (
-			event.pointerType === "touch"
-			&& !event.target.closest("button, a, input, select, textarea")
-		) {
+		const note = event.target.closest("hi-note");
+		if (event.pointerType === "touch" && note && event.target.closest(interactive) === note) {
 			touchExpanded = true;
 			sync();
 		}
@@ -245,18 +272,25 @@ function bind(element) {
 	display = element;
 	hovered = touchExpanded = false;
 	// Old snapshots can contain notes which have since been dismissed.
-	display.replaceChildren(...notes.map(note => note.node));
+	// A reconnected display may already be correct; reinsertion would
+	// discard focus acquired before this deferred binding pass.
+	const nodes = notes.map(note => note.node);
+	if (display.children.length !== nodes.length || nodes.some((node, i) => display.children[i] !== node)) {
+		display.replaceChildren(...nodes);
+	}
 	if (pointer) hovered = display.contains(document.elementFromPoint(pointer.x, pointer.y));
 	sync();
 }
 
-export function run() {
+export function run(domi) {
 	if (customElements.get("hi-note-display")) return;
+	clone = domi.clone;
 	document.addEventListener("visibilitychange", sync);
 	document.addEventListener("pointermove", event => {
 		if (event.pointerType === "mouse") pointer = { x: event.clientX, y: event.clientY };
 	});
 	document.addEventListener("pointerdown", event => {
+		queueMicrotask(sync);
 		suppressClick = false;
 		if (display && !display.contains(event.target)) {
 			touchExpanded = false;
@@ -271,13 +305,18 @@ export function run() {
 				initDisplay(this);
 			}
 			connectedCallback() {
-				bind(this);
+				// Domi's handler version is available after the patch batch.
+				queueMicrotask(() => {
+					if (this.isConnected) bind(this);
+				});
 			}
 			disconnectedCallback() {
-				if (display !== this) return;
-				cancelDrag();
-				hovered = touchExpanded = false;
-				sync();
+				queueMicrotask(() => {
+					if (display !== this || this.isConnected) return;
+					cancelDrag();
+					hovered = touchExpanded = false;
+					sync();
+				});
 			}
 		},
 	);
@@ -290,8 +329,11 @@ export function run() {
 			});
 			connectedCallback() {
 				this.#observer.observe(this, { childList: true });
-				for (const entry of this.children) receive(entry);
-				sync();
+				queueMicrotask(() => {
+					if (!this.isConnected) return;
+					for (const entry of this.children) receive(entry);
+					sync();
+				});
 			}
 			disconnectedCallback() {
 				this.#observer.disconnect();

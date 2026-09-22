@@ -180,8 +180,8 @@ and call their run functions:
 
 	import * as Hi from "/path/to/ily.dev/act3/hi/hi.js";
 	import * as Domi from "/path/to/ily.dev/domi/domi.js";
-	Hi.run();
 	Domi.run();
+	Hi.run(Domi);
 
 # CSS Layer
 
