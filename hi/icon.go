@@ -30,10 +30,16 @@ func Icon(name string) View {
 
 // IconSource sets the source of icons displayed by [Icon].
 //
-// Given a name, f should return an SVG element
+// Given a name, f should return a square SVG element
 // designed to accommodate the CSS stroke-width property.
-//
 // If f returns nil, the Icon view displays a placeholder icon.
+//
+// Some Hi components use built-in icon names,
+// such as the "close" button on a note.
+// To ensure these icons are displayed,
+// f should accept the following names:
+//
+//	x
 //
 // The default source provides icons from the [Lucide] icon set.
 //
