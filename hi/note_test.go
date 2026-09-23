@@ -350,7 +350,7 @@ func TestNotesRetainedVisibility(t *testing.T) {
 		noteCheck(t, s, `document.activeElement.matches('hi-note[data-visible=true] button')`)
 		s.Run(chromedp.KeyEvent("\t"))
 		noteCheck(t, s, `document.activeElement.matches('hi-note[data-visible=true] a[href="#other"]') &&
-			[...document.querySelectorAll('hi-note-display hi-note-action :is(button,a)')].every(e =>
+			[...document.querySelectorAll('hi-note-display hi-note :is(button,a)')].every(e =>
 				e.tabIndex === 0 && !e.hasAttribute('tabindex'))`)
 		noteCheck(t, s, `(() => {
 			const display = document.querySelector('hi-note-display');
@@ -1069,13 +1069,17 @@ func TestNotesActionActivation(t *testing.T) {
 		{"aria disabled handler", Text("Undo").Attr(event.Click(42), domi.Name("aria-disabled", "true")), false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			runNoteView(t, 800, 600, Note{Action: tc.action}, func(s *uitest.Session) {
+			action := tc.action
+			if action != nil {
+				action = action.Class("test-action")
+			}
+			runNoteView(t, 800, 600, Note{Action: action}, func(s *uitest.Session) {
 				s.Run(noteAdd(1, `'message'`))
 				s.Eval(`const display = document.querySelector('hi-note-display');
-					display.setAttribute('domi-msg-click', 'outside-action');
+					display.setAttribute('domi-msg-click', 'outside-note');
 					display.addEventListener('click', e => e.preventDefault());
-					const action = display.querySelector('hi-note-action');
-					const target = action.querySelector('.target') || action.firstElementChild;
+					const action = display.querySelector('.test-action, [data-dismiss]');
+					const target = action.querySelector('.target') || action;
 					target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));`, nil)
 				noteCheck(t, s, fmt.Sprintf(`(fixture.retained.length === 0) === %t`, tc.dismiss))
 			})
@@ -1131,7 +1135,7 @@ func TestNotesRetainedActions(t *testing.T) {
 					chromedp.Click(".away", chromedp.ByQuery), notePoll(`location.pathname === '/away'`), chromedp.NavigateBack(), notePoll(`location.pathname === '/'`))
 				noteCheck(t, s, noteText+` === 'Rich note'`)
 				s.Eval(`document.querySelector('.update').focus();
-					document.querySelector('hi-note-display hi-note-action :is(button,a)').focus();`, nil)
+					document.querySelector('hi-note-display hi-note :is(button,a)').focus();`, nil)
 				s.Run(chromedp.KeyEvent("\r"), notePoll(`document.querySelectorAll('hi-note-display hi-note[data-state=active]').length === 0`))
 				if tc.navigation {
 					s.Run(notePoll(`location.pathname === '/action'`), chromedp.NavigateBack(), notePoll(`location.pathname === '/'`))
@@ -1162,7 +1166,7 @@ func TestNotesActionPointerIsolation(t *testing.T) {
 		runNoteView(t, 800, 600, Note{Action: action}, func(s *uitest.Session) {
 			s.Run(noteReduceMotion(), noteAdd(1, `'swipe me'`))
 			s.Eval(`globalThis.activations = 0;
-				globalThis.action = document.querySelector('hi-note-display hi-note-action :is(button,a)');
+				globalThis.action = document.querySelector('hi-note-display hi-note :is(button,a)');
 				action.addEventListener('click', () => activations++);
 				document.querySelector('hi-note-display hi-text').click();
 				action.dispatchEvent(new PointerEvent('pointerdown', {button: 0, isPrimary: true, bubbles: true}));`, nil)
