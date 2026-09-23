@@ -1,4 +1,5 @@
 import * as Domi from "domi";
+import * as Hi from "./hi/hi.js";
 import { Application } from "./web/stimulus.js";
 import DialogController from "./ui/dialog.js";
 import PopoverController from "./ui/popover.js";
@@ -32,3 +33,4 @@ Stimulus.register("series", Series);
 Stimulus.register("home", HomeController);
 
 Domi.run();
+Hi.run(Domi);
