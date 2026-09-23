@@ -10,7 +10,6 @@ import (
 	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
-	"ily.dev/act3/ui"
 )
 
 type app struct {
@@ -18,11 +17,9 @@ type app struct {
 	model *model.Model
 
 	// mutable state
-	path    string // current URL path, used to derive canonical URL commands
-	dialog  dialog
-	player  *player
-	notes   []ui.Note
-	noteSeq int
+	path   string // current URL path, used to derive canonical URL commands
+	dialog dialog
+	player *player
 }
 
 // player is the resolved content the open video player renders. Update

@@ -13,17 +13,11 @@ import (
 	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
-	"ily.dev/act3/ui"
 )
 
 type cmd = domi.Cmd[msg.Msg]
 
 func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
-	// Notes delivered in the previous frame have been cloned into the
-	// client-owned port by now; drop them so each note's outbox entry
-	// lives for a single frame. See view.Notes.
-	a.notes = nil
-
 	switch m := m.(type) {
 	case *msg.URLChange:
 		a.setPath(ctx, m.URL)
@@ -422,16 +416,6 @@ func notifyError(err error) cmd {
 		Icon:        "line/x-circle",
 		Message:     "Error",
 		Description: err.Error(),
-	})
-}
-
-// notify queues a note for delivery to the client on the next render.
-func (a *app) notify(variant ui.NoteVariant, title string) {
-	a.noteSeq++
-	a.notes = append(a.notes, ui.Note{
-		ID:      strconv.Itoa(a.noteSeq),
-		Variant: variant,
-		Title:   title,
 	})
 }
 
