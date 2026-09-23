@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net"
@@ -19,6 +20,13 @@ import (
 )
 
 func main() {
+	dark := flag.Bool("dark", false, "use a dark theme")
+	contrast := flag.Float64("contrast", 30, "theme contrast (15–100)")
+	flag.Parse()
+	bg := OKLCH(0.955, 0.0083, 91.48)
+	if *dark {
+		bg = OKLCH(0.2, 0.005, 280)
+	}
 	handler := Handler(
 		func(context.Context, *url.URL) (*app, domi.Cmd[message]) {
 			return &app{}, nil
@@ -26,6 +34,7 @@ func main() {
 		func(u *url.URL) message { return message{Kind: "request", Path: u.Path} },
 		func(*url.URL) message { return message{} },
 		AppTitle("Hi notes demo"),
+		Theme(bg, OKLCH(0.6, 0.2, 280), *contrast),
 	)
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -80,17 +89,29 @@ func (a *app) Update(ctx context.Context, m message) domi.Cmd[message] {
 		case "description":
 			n.Description = "New episodes have been added to your library."
 		case "icon":
-			n.Icon = "check"
+			n.Icon = "circle-check"
+		case "rich":
+			n.Icon = "circle-check"
 			n.Description = "This note has an explicit icon."
 		case "undo":
 			n.Message = "Item deleted"
+			n.Icon = "trash-2"
+			n.Description = "You can restore it to your library."
 			n.Action = Button(message{Kind: "undo"}, Text("Undo"))
 			n.Duration = 10 * time.Second
 		case "link":
+			n.Icon = "circle-check"
 			n.Description = "Follow the link to another page."
 			n.Action = Link("/away", Text("Open"))
 		case "short":
 			n.Duration = time.Second
+		case "long":
+			n.Icon = "info"
+			n.Description = strings.Repeat("Additional details about your library update. ", 12)
+			n.Action = Link("/away", Text("Open"))
+		}
+		if m.Variant == "mixed" && m.Remaining == 1 {
+			n.Description = "New episodes have been added and are ready to watch."
 		}
 		cmd := Notify[message](n)
 		if m.Remaining > 1 {
@@ -129,13 +150,14 @@ func (a *app) page() View {
 	content := VStack(
 		VStack(
 			Text("Hi notes").Font(SizeEmAbs(30, 38), Bold).Tag("h1"),
-			Text("An interaction playground").Foreground(Secondary),
+			Text("Appearance and interaction playground").Foreground(Secondary),
 		).Alignment(Leading).Gap(8),
 		Text("Send a few notes, then hover or focus the stack at the bottom of the screen. The latest three appear; dismiss one to reveal an older note that is still active."),
 		VStack(
 			Button(message{Kind: "queue", Remaining: 1}, Text("Add a note")),
 			Button(message{Kind: "queue", Remaining: 1, Variant: "description"}, Text("With description")),
-			Button(message{Kind: "queue", Remaining: 1, Variant: "icon"}, Text("With icon and description")),
+			Button(message{Kind: "queue", Remaining: 1, Variant: "icon"}, Text("With icon")),
+			Button(message{Kind: "queue", Remaining: 1, Variant: "rich"}, Text("With icon and description")),
 			Button(message{Kind: "queue", Remaining: 1, Variant: "undo"}, Text("Undo action · 10 seconds")),
 			Button(message{Kind: "queue", Remaining: 1, Variant: "link"}, Text("Link action · 4 seconds")),
 			Button(message{Kind: "queue", Remaining: 1, Variant: "short"}, Text("One-second note")),
@@ -149,10 +171,10 @@ func (a *app) page() View {
 		VStack(
 			Text("Try these interactions").Font(Bold).Tag("h2"),
 			Text("Hover or Tab into the stack to expand it and pause its timers. Notes last four seconds unless a duration is specified. Move through the gaps; the stack should stay open."),
-			Text("An action replaces the dismiss button. Activate it to perform the action and dismiss the note; the message itself does not activate it. Try an action after navigating away and back."),
+			Text("Activate an action to perform it and dismiss the note, or use the dismiss button to close the note without acting. The message itself does not activate the action. Try an action after navigating away and back."),
 			Text("Press Escape to return focus to the page. The stack stays open while hovered or expanded by touch."),
 			Text("On touch screens, tap the stack to expand and tap outside to collapse. Swipe a note downward, or use its dismiss button."),
-			Text("Add a long note to try the height cap. Content beyond the cap is clipped."),
+			Text("Add a long note to check the two-line message and three-line description limits. Its action row pushes the content past the height cap, where it is clipped."),
 			Text("Add notes, choose “Burst in 3 seconds,” then engage with the stack before the burst arrives. New arrivals appear immediately."),
 			Text("Switch tabs to pause timers, or enable reduced motion in your system settings to try the quieter transitions."),
 		).Alignment(Leading).Gap(12),
