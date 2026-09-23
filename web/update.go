@@ -10,6 +10,7 @@ import (
 
 	"ily.dev/domi"
 
+	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
 	"ily.dev/act3/ui"
@@ -38,8 +39,7 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 	case *msg.ModelEvent:
 		return a.replaceURL(ctx)
 	case *msg.Error:
-		a.notify(ui.NoteError, m.Err.Error())
-		return nil
+		return notifyError(m.Err)
 
 	case *msg.DialogClose:
 		a.dialog = nil
@@ -79,7 +79,7 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		// is dropped.
 		if d, ok := a.dialog.(*seriesAddDialog); ok && d.query == m.Query {
 			d.searching = false
-			a.notify(ui.NoteError, m.Err.Error())
+			return notifyError(m.Err)
 		}
 		return nil
 	case *msg.SeriesAdd:
@@ -137,7 +137,7 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		// is dropped.
 		if d, ok := a.dialog.(*movieAddDialog); ok && d.query == m.Query {
 			d.searching = false
-			a.notify(ui.NoteError, m.Err.Error())
+			return notifyError(m.Err)
 		}
 		return nil
 	case *msg.MovieAdd:
@@ -170,7 +170,7 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 
 	case *msg.TaskRun:
 		if err := a.model.RunTaskNow(ctx, m.ID); err != nil {
-			a.notify(ui.NoteError, err.Error())
+			return notifyError(err)
 		}
 		return nil
 	case *msg.TaskKill:
@@ -450,6 +450,14 @@ func (a *app) doNav(ctx context.Context, f func(tx *model.TxRW) (string, error))
 		return nil
 	}
 	return domi.PushURL[msg.Msg](dest)
+}
+
+func notifyError(err error) cmd {
+	return hi.Notify[msg.Msg](hi.Note{
+		Icon:        "line/x-circle",
+		Message:     "Error",
+		Description: err.Error(),
+	})
 }
 
 // notify queues a note for delivery to the client on the next render.
