@@ -18,6 +18,7 @@ import (
 // modifiers: the Foreground closest to the content styles it, with or
 // without structure in between.
 func TestForegroundInnermostWins(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name string
 		v    hi.View
@@ -42,6 +43,7 @@ func TestForegroundInnermostWins(t *testing.T) {
 // declaration landing exactly once — on the first element boundary
 // under the modifier — and descendants styled by CSS inheritance.
 func TestInheritedModifierCollapses(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.VStack(hi.Text("a"), hi.Text("b")).Foreground(hi.Red))
 	if strings.Contains(html, "hi-box") {
 		t.Fatalf("Foreground should not produce a wrapper:\n%s", html)
@@ -60,6 +62,7 @@ func TestInheritedModifierCollapses(t *testing.T) {
 
 // Explicit label paint is preserved inside a button.
 func TestButtonLabelForeground(t *testing.T) {
+	t.Parallel()
 	v := hi.Button(struct{}{}, hi.Text("x").Foreground(hi.Red))
 	stage(t, v, func(s *uitest.Session) {
 		var color string
@@ -74,6 +77,7 @@ func TestButtonLabelForeground(t *testing.T) {
 // control disabled either natively or by aria-disabled, so views
 // lowered to elements without a disabled attribute take part.
 func TestDisabledStateMatchesARIA(t *testing.T) {
+	t.Parallel()
 	red := hi.Foreground(hi.Red)
 	for name, v := range map[string]hi.View{
 		"native": hi.Text("x").Tag("button").Attr(attr.Disabled(true)).WhileDisabled(red),
@@ -96,6 +100,7 @@ func TestDisabledStateMatchesARIA(t *testing.T) {
 // multiply into one product, consumed as a single declaration by the
 // first box below — no wrapper elements, and a product of 1 is free.
 func TestOpacityMultiplies(t *testing.T) {
+	t.Parallel()
 	stage(t, hi.Text("hi").Opacity(0.5).Opacity(0.5), func(s *uitest.Session) {
 		var mods int
 		s.Eval(`document.querySelectorAll("hi-box").length`, &mods)
@@ -115,6 +120,7 @@ func TestOpacityMultiplies(t *testing.T) {
 // TestButtonDisabledState pins that a disabled button enters the
 // Disabled state whatever its action, and that an enabled one does not.
 func TestButtonDisabledState(t *testing.T) {
+	t.Parallel()
 	paint := hi.Background(hi.Red)
 	for name, tc := range map[string]struct {
 		v    hi.View
@@ -141,6 +147,7 @@ func TestButtonDisabledState(t *testing.T) {
 // element that performs its action, so a disabled one enters the
 // Disabled state whatever its action, and an enabled one does not.
 func TestLinkDisabledState(t *testing.T) {
+	t.Parallel()
 	red := hi.Background(hi.Red)
 	for name, tc := range map[string]struct {
 		v    hi.View
@@ -152,6 +159,7 @@ func TestLinkDisabledState(t *testing.T) {
 		"navigate disabled": {hi.Link("/x", hi.Text("x")).Disabled(true).WhileDisabled(red), true},
 	} {
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			stage(t, tc.v, func(s *uitest.Session) {
 				var color string
 				s.Eval(`getComputedStyle(document.querySelector("button, a")).backgroundColor`, &color)
@@ -168,6 +176,7 @@ func TestLinkDisabledState(t *testing.T) {
 // pending product, so a modifier opacity and the component fade
 // multiply onto the one button element.
 func TestOpacityComposesWithDisabled(t *testing.T) {
+	t.Parallel()
 	button := hi.Button(struct{}{}, hi.Text("x")).Disabled(true)
 	stage(t, hi.HStack(button, button.Opacity(0.1)), func(s *uitest.Session) {
 		var mods int
@@ -192,6 +201,7 @@ func TestOpacityComposesWithDisabled(t *testing.T) {
 // sets. HTML view content is the exception and keeps the browser's
 // styling.
 func TestElementReset(t *testing.T) {
+	t.Parallel()
 	const props = `["borderTopWidth","paddingTop","marginTop","textAlign","appearance","textDecorationLine","color","fontSize","fontWeight","display","cursor"]`
 	styleOf := func(s *uitest.Session, sel string) string {
 		var out string
@@ -200,6 +210,7 @@ func TestElementReset(t *testing.T) {
 	}
 	for _, tag := range []string{"button", "a", "h1", "ul", "pre", "code", "fieldset"} {
 		t.Run(tag, func(t *testing.T) {
+			t.Parallel()
 			v := hi.HStack(hi.Text("x"), hi.Text("x").Tag(tag).Attr(attr.Href("/")))
 			stage(t, v, func(s *uitest.Session) {
 				if plain, tagged := styleOf(s, "hi-text"), styleOf(s, tag); plain != tagged {
@@ -209,6 +220,7 @@ func TestElementReset(t *testing.T) {
 		})
 	}
 	t.Run("html", func(t *testing.T) {
+		t.Parallel()
 		stage(t, hi.HTML(html.Button()(domi.Text("x"))), func(s *uitest.Session) {
 			var w string
 			s.Eval(`getComputedStyle(document.querySelector("button")).borderTopWidth`, &w)
@@ -224,6 +236,7 @@ func TestElementReset(t *testing.T) {
 // inner is translucent — the outermost color as background-color,
 // the inner colors as image layers listed innermost first.
 func TestBackgroundStacks(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Text("x").Background(hi.OKLCHA(0, 0, 0, 0.5)).Background(hi.White))
 	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	if got != "background-color:"+whiteCSS+";background-image:linear-gradient(oklch(0 0 0 / 0.5),oklch(0 0 0 / 0.5));display:block;isolation:isolate;overflow-wrap:break-word" {
@@ -234,6 +247,7 @@ func TestBackgroundStacks(t *testing.T) {
 // TestBackgroundShapeOrder pins the shape's write order: a shape applied after
 // paint shapes it; paint applied after a shape lands outside it.
 func TestBackgroundShapeOrder(t *testing.T) {
+	t.Parallel()
 	// Background then shape: shape and paint share the element —
 	// a red capsule.
 	shaped := render(t, hi.Text("x").Background(hi.Red).BorderShape(hi.Capsule))
@@ -256,6 +270,7 @@ func TestBackgroundShapeOrder(t *testing.T) {
 // to the first box, so the innermost of two shapes wins and the outer
 // one is inert — no wrapper, no declaration.
 func TestBorderShapeRepetition(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Text("x").BorderShape(hi.RoundedRectangle(8i)).BorderShape(hi.Capsule))
 	if got := classRule(t, html, `<hi-text class="(hi-\w+)"`); got != "border-radius:0.5rem;display:block;isolation:isolate;overflow-wrap:break-word" {
 		t.Errorf("innermost shape should land on the text element, got %q:\n%s", got, html)
@@ -274,6 +289,7 @@ func carrier(shadows string) string {
 // an ::after block in the element's own rule paints over the element —
 // no wrapper element.
 func TestBorderStrokePaints(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Text("x").BorderStroke(2, hi.Red))
 	if strings.Contains(html, "hi-box") {
 		t.Fatalf("BorderStroke should not produce a wrapper:\n%s", html)
@@ -287,6 +303,7 @@ func TestBorderStrokePaints(t *testing.T) {
 // element as a shadow list, the outer stroke listed first, painting
 // over the inner one.
 func TestBorderStrokeStacks(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Text("x").BorderStroke(2, hi.Red).BorderStroke(4, hi.Blue))
 	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	if got != "display:block;isolation:isolate;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 4px "+blueCSS+",inset 0 0 0 2px "+redCSS) {
@@ -298,6 +315,7 @@ func TestBorderStrokeStacks(t *testing.T) {
 // stroke: a shape applied after a stroke shapes its ring; a stroke
 // applied after a shape rings the shaped box, unshaped.
 func TestBorderStrokeShapeOrder(t *testing.T) {
+	t.Parallel()
 	shaped := render(t, hi.Text("x").BorderStroke(2, hi.Red).BorderShape(hi.Capsule))
 	if got := classRule(t, shaped, `<hi-text class="(hi-\w+)"`); got != "border-radius:9999px;display:block;isolation:isolate;overflow-wrap:break-word;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("shape after stroke should shape the stroke, got %q:\n%s", got, shaped)
@@ -316,6 +334,7 @@ func TestBorderStrokeShapeOrder(t *testing.T) {
 // hit-test transparency: a stroked container's ring covers its
 // content without stealing its pointer events.
 func TestBorderStrokeDoesNotInterceptClicks(t *testing.T) {
+	t.Parallel()
 	v := hi.HStack(hi.Button(struct{}{}, hi.Text("click"))).BorderStroke(4, hi.Red)
 	stage(t, v, func(s *uitest.Session) {
 		var inButton bool
@@ -332,6 +351,7 @@ func TestBorderStrokeDoesNotInterceptClicks(t *testing.T) {
 // TestBorderStrokeOnImage pins the replaced-element accommodation: an
 // img cannot host the carrier, so the strokes box out around it.
 func TestBorderStrokeOnImage(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Image("/x.png").BorderStroke(2, hi.Red))
 	if got := classRule(t, html, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("image strokes should land on a wrapper, got %q:\n%s", got, html)
@@ -345,6 +365,7 @@ func TestBorderStrokeOnImage(t *testing.T) {
 // on the viewport would scroll away with the content, so the strokes
 // box out around it.
 func TestBorderStrokeOnScroll(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.ScrollView(hi.Vertical, hi.Text("x")).BorderStroke(2, hi.Red))
 	if got := classRule(t, html, `<hi-box class="[^"]*(hi-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;justify-self:stretch;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("scroll strokes should land on a wrapper, got %q:\n%s", got, html)
@@ -359,6 +380,7 @@ func TestBorderStrokeOnScroll(t *testing.T) {
 // earlier one forms a stacking context, as a translucent one does,
 // and the later one does not.
 func TestZStackPaintsInOrder(t *testing.T) {
+	t.Parallel()
 	v := hi.ZStack(
 		hi.Blue.Frame(hi.Width(120), hi.Height(60)).Opacity(0.5),
 		hi.Text("over").Class("over"),
@@ -380,6 +402,7 @@ func TestZStackPaintsInOrder(t *testing.T) {
 // it — app CSS included — can climb the composite's z ladder past
 // the layers.
 func TestLayerIsolatesSubview(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Text("x").Overlay(hi.Center, hi.Text("o")))
 	got := classRule(t, html, `<hi-text class="(hi-\w+)"`)
 	if got != "display:block;isolation:isolate;overflow-wrap:break-word" {
@@ -392,6 +415,7 @@ func TestLayerIsolatesSubview(t *testing.T) {
 // the overlay, where its tree position alone would lose to the
 // layers' indexes.
 func TestBorderStrokeOverLayers(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Text("x").Overlay(hi.Center, hi.Text("o")).BorderStroke(2, hi.Red))
 	got := classRule(t, html, `<hi-layer class="(hi-\w+)"`)
 	want := "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;" +
@@ -406,6 +430,7 @@ func TestBorderStrokeOverLayers(t *testing.T) {
 // the browser: the carrier draws the ring, and the stroked box is the
 // same size as an unstroked one.
 func TestBorderStrokeTakesNoSpace(t *testing.T) {
+	t.Parallel()
 	v := hi.VStack(
 		hi.Text("hello").Class("plain"),
 		hi.Text("hello").Class("stroked").BorderStroke(4, hi.Red),
@@ -428,6 +453,7 @@ func TestBorderStrokeTakesNoSpace(t *testing.T) {
 // TestBorderShapeShapesColor pins render-time consumption: a Color
 // paints its own box, so the shape it consumes is realized there.
 func TestBorderShapeShapesColor(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Red.BorderShape(hi.Ellipse))
 	if got := classRule(t, html, `<hi-color class="[^"]*(hi-\w+)"`); got != "align-self:stretch;background-color:"+redCSS+";border-radius:50%;isolation:isolate;justify-self:stretch" {
 		t.Errorf("shape should land on the color's element, got %q:\n%s", got, html)
@@ -439,6 +465,7 @@ func TestBorderShapeShapesColor(t *testing.T) {
 // compression on the subview's behalf. A frame does the same on an
 // auto axis, which takes the subview's sizing.
 func TestWrapperKeepsRigidity(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name    string
 		v       hi.View
@@ -459,6 +486,7 @@ func TestWrapperKeepsRigidity(t *testing.T) {
 // TestTextStyleInnermostWins pins the whole-text modifiers to the same
 // rule as their generic counterparts: the first (innermost) value wins.
 func TestTextStyleInnermostWins(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Text("x").TextForeground(hi.OKLCH(0.1, 0, 0)).TextForeground(hi.OKLCH(0.2, 0, 0)))
 	if !strings.Contains(html, "color:oklch(0.1 0 0)") || strings.Contains(html, "oklch(0.2 0 0)") {
 		t.Errorf("repeated TextForeground should keep the first color:\n%s", html)
@@ -489,6 +517,7 @@ func stageApp(t *testing.T, appCSS string, v hi.View, fn func(*uitest.Session)) 
 // fixture is the one HTML's documentation invites: an app class
 // restyling the host adapter's interior layout.
 func TestAppCSSBeatsStaticSheet(t *testing.T) {
+	t.Parallel()
 	v := hi.HTML(domi.Text("hi")).Class("app-host")
 	stageApp(t, ".app-host{place-items:stretch}", v, func(s *uitest.Session) {
 		var align, justify string
@@ -504,6 +533,7 @@ func TestAppCSSBeatsStaticSheet(t *testing.T) {
 // render-time hashed sheet, whose style element follows the app's in
 // the document and would otherwise win by source order.
 func TestAppCSSBeatsDynamicSheet(t *testing.T) {
+	t.Parallel()
 	v := hi.Text("hi").Padding(hi.Edges(16)).Class("app-pad")
 	stageApp(t, ".app-pad{padding:0}", v, func(s *uitest.Session) {
 		var pad string
@@ -519,6 +549,7 @@ func TestAppCSSBeatsDynamicSheet(t *testing.T) {
 // still boxes out around an image, so the lowering does not depend
 // on the width.
 func TestBorderStrokeZeroWidthKeepsStructure(t *testing.T) {
+	t.Parallel()
 	for _, px := range []float64{0, -1} {
 		html := render(t, hi.Image("/x.png").BorderStroke(complex(px, 0), hi.Red))
 		if !strings.Contains(html, "<hi-box ") {
@@ -531,6 +562,7 @@ func TestBorderStrokeZeroWidthKeepsStructure(t *testing.T) {
 // outside a stroke, it lands on the view's own element with the stroke
 // and the shape, in either order, with no wrapper.
 func TestBorderClippedTransforms(t *testing.T) {
+	t.Parallel()
 	want := "border-radius:9999px;display:block;isolation:isolate;overflow-wrap:break-word;overflow-x:clip;overflow-y:clip;position:relative;" + carrier("inset 0 0 0 2px "+redCSS)
 	for name, v := range map[string]hi.View{
 		"clip then shape": hi.Text("x").BorderStroke(2, hi.Red).BorderClipped().BorderShape(hi.Capsule),
@@ -550,6 +582,7 @@ func TestBorderClippedTransforms(t *testing.T) {
 // the stroke, as for the shape: a stroke outside a clip lands on a
 // wrapper, and rings that wrapper, which is not clipped.
 func TestBorderClippedStrokeOrder(t *testing.T) {
+	t.Parallel()
 	html := render(t, hi.Text("x").BorderClipped().BorderStroke(2, hi.Red))
 	if got := classRule(t, html, `<hi-box class="(hi-\w+)"`); got != "align-items:center;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("stroke outside clip should land on a wrapper, got %q:\n%s", got, html)
@@ -563,6 +596,7 @@ func TestBorderClippedStrokeOrder(t *testing.T) {
 // the viewport already confines its content, so its own overflow
 // wins, and nothing boxes out.
 func TestBorderClippedOnScroll(t *testing.T) {
+	t.Parallel()
 	plain := render(t, hi.ScrollView(hi.Vertical, hi.Text("x")).Padding(hi.Edges(0)))
 	clipped := render(t, hi.ScrollView(hi.Vertical, hi.Text("x")).BorderClipped().Padding(hi.Edges(0)))
 	if clipped != plain {
@@ -574,6 +608,7 @@ func TestBorderClippedOnScroll(t *testing.T) {
 // composite: a clip outside the layers confines them too, and one
 // inside confines only the base.
 func TestBorderClippedOverLayers(t *testing.T) {
+	t.Parallel()
 	outside := render(t, hi.Text("x").Overlay(hi.Center, hi.Text("o")).BorderClipped())
 	if got := classRule(t, outside, `<hi-layer class="(hi-\w+)"`); !strings.Contains(got, "overflow-x:clip;overflow-y:clip") {
 		t.Errorf("clip outside overlay should clip the composite, got %q:\n%s", got, outside)

@@ -16,8 +16,10 @@ import (
 )
 
 func TestClientModuleBrowser(t *testing.T) {
+	t.Parallel()
 	for _, order := range []string{"Hi only", "Domi before Hi", "Domi after Hi"} {
 		t.Run(order, func(t *testing.T) {
+			t.Parallel()
 			const prefix = "/-/client-test"
 			h := Handler(
 				func(context.Context, *url.URL) (*stubApp, domi.Cmd[struct{}]) {

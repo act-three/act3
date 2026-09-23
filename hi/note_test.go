@@ -11,9 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/emulation"
 	"github.com/chromedp/cdproto/input"
 	cdppage "github.com/chromedp/cdproto/page"
+	"github.com/chromedp/cdproto/runtime"
 	"github.com/chromedp/chromedp"
 	"ily.dev/act3/hi/internal/uitest"
 	"ily.dev/domi"
@@ -22,6 +24,7 @@ import (
 )
 
 func TestNotesViewConsumesOutbox(t *testing.T) {
+	t.Parallel()
 	outbox := regexp.MustCompile(`(?s)<hi-note-outbox\b[^>]*>.*?</hi-note-outbox>`)
 	a := &navigationApp{}
 	a.view = Text("page")
@@ -94,6 +97,7 @@ func (a *noteBrowserApp) View(_ context.Context, render PageRenderer) Page {
 }
 
 func TestNotesBrowser(t *testing.T) {
+	t.Parallel()
 	h := Handler(func(context.Context, *url.URL) (*noteBrowserApp, domi.Cmd[int]) {
 		return &noteBrowserApp{}, Notify[int](Note{Message: "Initial"})
 	}, func(*url.URL) int { return 0 }, func(*url.URL) int { return 0 },
@@ -109,7 +113,7 @@ func TestNotesBrowser(t *testing.T) {
 			s.Run(noteReduceMotion(), chromedp.ActionFunc(func(ctx context.Context) error {
 				_, err := cdppage.AddScriptToEvaluateOnNewDocument(`Object.defineProperty(document, 'hidden', {value: true});`).Do(ctx)
 				return err
-			}), chromedp.Navigate(server.URL), cdppage.BringToFront(),
+			}), chromedp.Navigate(server.URL),
 				chromedp.WaitReady("hi-note-display", chromedp.ByQuery))
 			fn(s)
 		})
@@ -142,6 +146,7 @@ func TestNotesBrowser(t *testing.T) {
 }
 
 func TestNotesSnapshotRestoration(t *testing.T) {
+	t.Parallel()
 	page := notesPage(t, []note{{id: "1", Note: Note{Message: "server"}}}, Note{}) + `<script type="module">` + string(rawClientJS) + `
 		globalThis.Hi = {run};</script>`
 	uitest.Run(t, 800, 600, page, func(s *uitest.Session) {
@@ -240,7 +245,7 @@ func runNoteView(t *testing.T, w, h int, n Note, fn func(*uitest.Session)) {
 		run({clone: e => e.cloneNode(true)});
 		</script>`
 	uitest.Run(t, w, h, page, func(s *uitest.Session) {
-		s.Run(noteReduceMotion(), cdppage.BringToFront(), notePoll(`globalThis.fixture !== undefined`))
+		s.Run(noteReduceMotion(), notePoll(`globalThis.fixture !== undefined`))
 		fn(s)
 	})
 }
@@ -265,11 +270,29 @@ func noteReduceMotion() chromedp.Action {
 	return emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-reduced-motion", Value: "reduce"}})
 }
 
+// Finish setup animations and deliver their events before recording the
+// transitions under test.
+func noteFinishAnimations() chromedp.Action {
+	return chromedp.Tasks{
+		chromedp.Evaluate(`document.getAnimations().forEach(a => a.finish())`, nil),
+		noteWaitAnimations(),
+	}
+}
+
+func noteWaitAnimations() chromedp.Action {
+	return chromedp.Tasks{
+		notePoll(`document.getAnimations().length === 0`),
+		chromedp.Evaluate(`new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))`, nil,
+			func(p *runtime.EvaluateParams) *runtime.EvaluateParams { return p.WithAwaitPromise(true) }),
+	}
+}
+
 func noteAnimate() chromedp.Action {
 	return emulation.SetEmulatedMedia().WithFeatures([]*emulation.MediaFeature{{Name: "prefers-reduced-motion", Value: "no-preference"}})
 }
 
 func TestNotesArrivalsDuringEngagement(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name, engage, release string
 	}{
@@ -300,6 +323,7 @@ func TestNotesArrivalsDuringEngagement(t *testing.T) {
 }
 
 func TestNotesLatestThree(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Eval(`fixture.add('1', '2', '3', '4', '5');`, nil)
 		s.Run(notePoll(`fixture.visible.join() === '3,4,5'`))
@@ -331,6 +355,7 @@ func TestNotesLatestThree(t *testing.T) {
 }
 
 func TestNotesRetainedVisibility(t *testing.T) {
+	t.Parallel()
 	action := HStack(Button(42, Text("Undo")), Link("#other", Text("Other")))
 	runNoteView(t, 800, 600, Note{Action: action}, func(s *uitest.Session) {
 		s.Run(noteAdd(1, `'0'`))
@@ -376,6 +401,7 @@ func TestNotesRetainedVisibility(t *testing.T) {
 }
 
 func TestNotesFocusBetweenButtons(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAdd(2, `'one', 'two'`))
 		s.Eval(`document.querySelector('hi-note-display hi-note button').focus();
@@ -390,6 +416,7 @@ func TestNotesFocusBetweenButtons(t *testing.T) {
 }
 
 func TestNotesCollapsedContent(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAdd(3, `'a taller rear note '.repeat(20), 'middle', 'front'`))
 		noteCheck(t, s, `document.querySelector('hi-note-display').dataset.expanded === 'false' &&
@@ -400,6 +427,7 @@ func TestNotesCollapsedContent(t *testing.T) {
 }
 
 func TestNotesMessageFocus(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAdd(1, `'click me'`))
 		s.Eval(`document.querySelector('#notes').tabIndex = -1;
@@ -439,6 +467,7 @@ func TestNotesMessageFocus(t *testing.T) {
 }
 
 func TestNotesMouseFocusExpires(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAdd(1, `'click me'`))
 		s.Eval(`document.querySelector('#page').focus();`, nil)
@@ -452,6 +481,7 @@ func TestNotesMouseFocusExpires(t *testing.T) {
 }
 
 func TestNotesPauseReasons(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAdd(1, `'one'`))
 		s.Eval(`fixture.advance(1000);
@@ -477,6 +507,7 @@ func TestNotesPauseReasons(t *testing.T) {
 }
 
 func TestNotesSnapshotLifecycle(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAdd(5, `'1', '2', '3', '4', '5'`))
 		s.Eval(`globalThis.snapshot = document.querySelector('#notes').cloneNode(true);
@@ -496,6 +527,7 @@ func TestNotesSnapshotLifecycle(t *testing.T) {
 }
 
 func TestNotesSnapshotHover(t *testing.T) {
+	t.Parallel()
 	for _, leave := range []bool{false, true} {
 		t.Run(fmt.Sprintf("left_window=%t", leave), func(t *testing.T) {
 			runNotes(t, 800, 600, func(s *uitest.Session) {
@@ -517,6 +549,7 @@ func TestNotesSnapshotHover(t *testing.T) {
 }
 
 func TestNotesLayoutAndFocus(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 400, 360, func(s *uitest.Session) {
 		s.Eval(`fixture.add('short', 'A longer message with enough words to wrap over several lines.', 'very long '.repeat(100));`, nil)
 		s.Run(notePoll(`fixture.retained.length === 3 && document.querySelector('hi-note-display').offsetHeight > 0`))
@@ -535,6 +568,7 @@ func TestNotesLayoutAndFocus(t *testing.T) {
 }
 
 func TestNotesCloseFocus(t *testing.T) {
+	t.Parallel()
 	for _, mode := range []string{"mouse", "touch", "keyboard"} {
 		t.Run(mode, func(t *testing.T) {
 			runNotes(t, 800, 600, func(s *uitest.Session) {
@@ -582,6 +616,7 @@ func TestNotesCloseFocus(t *testing.T) {
 }
 
 func TestNotesEscapeFocus(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name, target, fallback string
 	}{
@@ -616,41 +651,51 @@ func TestNotesEscapeFocus(t *testing.T) {
 }
 
 func TestNotesPointerDismissal(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
-		name    string
-		drag    float64
-		pause   time.Duration
-		cancel  string
-		dismiss bool
+		name     string
+		drag     float64
+		duration time.Duration
+		cancel   string
+		dismiss  bool
 	}{
-		{"distance", 90, 150 * time.Millisecond, "", true},
-		{"downward flick", 24, 0, "", true},
-		{"upward flick", -90, 0, "", false},
+		{"distance", 90, time.Second, "", true},
+		{"downward flick", 24, 100 * time.Millisecond, "", true},
+		{"upward flick", -90, 100 * time.Millisecond, "", false},
 		{"short slow drag", 24, 300 * time.Millisecond, "", false},
-		{"cancel", 90, 0, "cancel", false},
-		{"lost capture", 90, 0, "lost", false},
-		{"snapshot", 90, 0, "snapshot", false},
+		{"cancel", 90, 100 * time.Millisecond, "cancel", false},
+		{"lost capture", 90, 100 * time.Millisecond, "lost", false},
+		{"snapshot", 90, 100 * time.Millisecond, "snapshot", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			runNotes(t, 800, 600, func(s *uitest.Session) {
 				s.Run(noteAdd(1, `'drag me'`))
 				r := s.Rect("hi-note-display hi-note", 0)
 				x, y := r.X+20, r.Y+20
+				// Gesture speed depends on event timestamps, not runner load.
+				start := time.Now()
+				at := func(event *input.DispatchMouseEventParams, elapsed time.Duration) chromedp.Action {
+					return chromedp.ActionFunc(func(ctx context.Context) error {
+						// cdproto's TimeSinceEpoch marshaler truncates fractions.
+						return cdp.Execute(ctx, input.CommandDispatchMouseEvent, struct {
+							*input.DispatchMouseEventParams
+							Timestamp float64 `json:"timestamp"`
+						}{event, float64(start.Add(elapsed).UnixMicro()) / 1e6}, nil)
+					})
+				}
 				s.Run(input.DispatchMouseEvent(input.MouseMoved, x, y),
-					input.DispatchMouseEvent(input.MousePressed, x, y).WithButton(input.Left).WithClickCount(1))
+					at(input.DispatchMouseEvent(input.MousePressed, x, y).WithButton(input.Left).WithClickCount(1), 0))
 				noteCheck(t, s, `fixture.dragging`)
 				s.Eval(`fixture.add('arrived');`, nil)
 				s.Run(notePoll(`fixture.retained.join() === 'drag me,arrived'`))
 				noteCheck(t, s, `fixture.dragging`)
-				s.Run(input.DispatchMouseEvent(input.MouseMoved, x, y+tc.drag).WithButton(input.Left).WithButtons(1))
+				s.Run(at(input.DispatchMouseEvent(input.MouseMoved, x, y+tc.drag).WithButton(input.Left).WithButtons(1), 10*time.Millisecond))
 				if tc.name == "distance" {
 					noteCheck(t, s, `document.querySelector('hi-note-display hi-note').style.getPropertyValue('--swipe') === '90px'`)
-					s.Run(input.DispatchMouseEvent(input.MouseMoved, x, y+100).WithButton(input.Left).WithButtons(1))
+					s.Run(at(input.DispatchMouseEvent(input.MouseMoved, x, y+100).WithButton(input.Left).WithButtons(1), 20*time.Millisecond))
 					noteCheck(t, s, `document.querySelector('hi-note-display hi-note').style.getPropertyValue('--swipe') === '100px'`)
-					s.Run(input.DispatchMouseEvent(input.MouseMoved, x, y+tc.drag).WithButton(input.Left).WithButtons(1))
-				}
-				if tc.pause > 0 {
-					s.Run(chromedp.Sleep(tc.pause))
+					s.Run(at(input.DispatchMouseEvent(input.MouseMoved, x, y+tc.drag).WithButton(input.Left).WithButtons(1), 30*time.Millisecond))
 				}
 				switch tc.cancel {
 				case "cancel":
@@ -660,7 +705,7 @@ func TestNotesPointerDismissal(t *testing.T) {
 				case "snapshot":
 					s.Eval(`document.querySelector('#notes').replaceWith(document.querySelector('#notes').cloneNode(true));`, nil)
 				}
-				s.Run(input.DispatchMouseEvent(input.MouseReleased, x, y+tc.drag).WithButton(input.Left).WithClickCount(1),
+				s.Run(at(input.DispatchMouseEvent(input.MouseReleased, x, y+tc.drag).WithButton(input.Left).WithClickCount(1), tc.duration),
 					input.DispatchMouseEvent(input.MouseMoved, 2, 2))
 				noteCheck(t, s, `!fixture.dragging`)
 				if tc.dismiss {
@@ -674,6 +719,7 @@ func TestNotesPointerDismissal(t *testing.T) {
 }
 
 func TestNotesCoveredPress(t *testing.T) {
+	t.Parallel()
 	for _, pointerType := range []string{"touch", "pen"} {
 		t.Run(pointerType, func(t *testing.T) {
 			runNotes(t, 800, 600, func(s *uitest.Session) {
@@ -710,6 +756,7 @@ func TestNotesCoveredPress(t *testing.T) {
 }
 
 func TestNotesTouchExpansion(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 400, 500, func(s *uitest.Session) {
 		s.Run(emulation.SetTouchEmulationEnabled(true))
 		s.Run(noteAdd(3, `'one', 'two', 'three'`))
@@ -740,6 +787,7 @@ func TestNotesTouchExpansion(t *testing.T) {
 }
 
 func TestNotesHoverContinuityAndResize(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAdd(2, `'first', 'second'`))
 		r := s.Rect("hi-note-display hi-note", 1)
@@ -761,6 +809,7 @@ func TestNotesHoverContinuityAndResize(t *testing.T) {
 }
 
 func TestNotesFixedHeightCap(t *testing.T) {
+	t.Parallel()
 	n := Note{
 		Description: strings.Repeat("Details about the update. ", 20),
 		Action:      Button(noAction{}, Text("Undo")),
@@ -777,6 +826,7 @@ func TestNotesFixedHeightCap(t *testing.T) {
 }
 
 func TestNotesTouchDismissal(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 400, 360, func(s *uitest.Session) {
 		s.Run(emulation.SetTouchEmulationEnabled(true))
 		s.Run(noteAdd(1, `'long text '.repeat(200)`))
@@ -795,25 +845,30 @@ func TestNotesTouchDismissal(t *testing.T) {
 }
 
 func TestNotesCollapseKeepsStableGeometry(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAnimate())
-		s.Run(noteAdd(3, `'short', 'medium text '.repeat(8), 'tall text '.repeat(25)`), chromedp.Sleep(500*time.Millisecond))
+		s.Run(noteAdd(3, `'short', 'medium text '.repeat(8), 'tall text '.repeat(25)`), noteFinishAnimations())
 		front := s.Rect("hi-note-display hi-note", 2)
 		s.Run(input.DispatchMouseEvent(input.MouseMoved, front.X+30, front.Y+20),
-			chromedp.Sleep(500*time.Millisecond))
+			noteFinishAnimations())
 		display := s.Rect("hi-note-display", 0)
 		s.Eval(`globalThis.collapseFrames = [];
-			const start = window.performance.now();
+			globalThis.collapseDone = false;
+			let settled = 0;
 			function sample() {
 				collapseFrames.push({
 					expanded: document.querySelector('hi-note-display').dataset.expanded,
 					tops: [...document.querySelectorAll('hi-note-display hi-note')].map(n => n.getBoundingClientRect().top),
 				});
-				if (window.performance.now() - start < 800) requestAnimationFrame(sample);
+				const collapsed = document.querySelector('hi-note-display').dataset.expanded === 'false';
+				settled = collapsed && document.getAnimations().length === 0 ? settled + 1 : 0;
+				if (settled >= 4 && collapseFrames.filter(f => f.expanded === 'false').length > 10) collapseDone = true;
+				else requestAnimationFrame(sample);
 			}
 			requestAnimationFrame(sample);`, nil)
 		s.Run(input.DispatchMouseEvent(input.MouseMoved, front.X+30, display.Y-2),
-			chromedp.Sleep(900*time.Millisecond))
+			notePoll(`collapseDone`))
 		noteCheck(t, s, `(() => {
 			const first = collapseFrames.findIndex(f => f.expanded === 'false');
 			const frames = collapseFrames.slice(first);
@@ -822,15 +877,16 @@ func TestNotesCollapseKeepsStableGeometry(t *testing.T) {
 		})()`)
 		// Keyboard focus holds expansion independently of the pointer.
 		s.Eval(`document.querySelector('hi-note-display hi-note button').focus();`, nil)
-		s.Run(input.DispatchMouseEvent(input.MouseMoved, 2, 2), chromedp.Sleep(500*time.Millisecond))
+		s.Run(input.DispatchMouseEvent(input.MouseMoved, 2, 2))
 		noteCheck(t, s, `document.querySelector('hi-note-display').dataset.expanded === 'true'`)
 	})
 }
 
 func TestNotesEngagementKeepsTransitions(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAnimate())
-		s.Run(noteAdd(2, `'short', 'tall text '.repeat(25)`), chromedp.Sleep(500*time.Millisecond))
+		s.Run(noteAdd(2, `'short', 'tall text '.repeat(25)`), noteFinishAnimations())
 		s.Eval(`globalThis.motionRuns = [];
 			globalThis.motionCancels = [];
 			const back = document.querySelector('hi-note-display hi-note');
@@ -841,15 +897,16 @@ func TestNotesEngagementKeepsTransitions(t *testing.T) {
 				if (e.target === back) motionCancels.push(e.propertyName);
 			});
 			back.querySelector('button').focus();`, nil)
-		s.Run(chromedp.Sleep(100 * time.Millisecond))
+		s.Run(notePoll(`motionRuns.includes('height') && motionRuns.includes('transform') &&
+			back.getAnimations().some(a => a.playState === 'running' && a.currentTime > 0)`))
 		// Unrelated ancestor changes must not disturb an in-flight transition.
 		s.Eval(`document.body.style.setProperty('--unrelated', '1');`, nil)
 		front := s.Rect("hi-note-display hi-note", 1)
 		s.Run(input.DispatchMouseEvent(input.MouseMoved, front.X+30, front.Y+20),
-			chromedp.Sleep(500*time.Millisecond))
+			noteWaitAnimations())
 		s.Eval(`document.querySelector('#page').focus();`, nil)
 		s.Run(notePoll(`document.querySelector('hi-note-display').dataset.expanded === 'true'`),
-			input.DispatchMouseEvent(input.MouseMoved, 2, 2), chromedp.Sleep(500*time.Millisecond))
+			input.DispatchMouseEvent(input.MouseMoved, 2, 2), noteWaitAnimations())
 		noteCheck(t, s, `motionCancels.length === 0 &&
 			motionRuns.filter(p => p === 'height').length === 2 &&
 			motionRuns.filter(p => p === 'transform').length === 2`)
@@ -857,6 +914,7 @@ func TestNotesEngagementKeepsTransitions(t *testing.T) {
 }
 
 func TestNotesDetachedAdmission(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Run(noteAdd(1, `'short'`))
 		s.Eval(`globalThis.back = document.querySelector('hi-note-display hi-note');
@@ -877,6 +935,7 @@ func TestNotesDetachedAdmission(t *testing.T) {
 }
 
 func TestNotesExitRemoval(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		kind    string
 		reduced bool
@@ -888,6 +947,7 @@ func TestNotesExitRemoval(t *testing.T) {
 	} {
 		kind, reduced := tc.kind, tc.reduced
 		t.Run(fmt.Sprintf("%s/reduced=%t", kind, reduced), func(t *testing.T) {
+			t.Parallel()
 			runNotes(t, 800, 600, func(s *uitest.Session) {
 				s.Run(noteAdd(3, `'rear', 'tall text '.repeat(25), 'front'`))
 				selector := "hi-note-display hi-note:last-child"
@@ -952,6 +1012,7 @@ func TestNotesExitRemoval(t *testing.T) {
 }
 
 func TestNoteSchema(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name string
 		n    Note
@@ -991,6 +1052,7 @@ func TestNoteSchema(t *testing.T) {
 }
 
 func TestNotesDuration(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		duration time.Duration
 		millis   float64
@@ -1014,7 +1076,8 @@ func TestNotesDuration(t *testing.T) {
 }
 
 func TestNotesActionActivation(t *testing.T) {
-	for _, tc := range []struct {
+	t.Parallel()
+	cases := []struct {
 		name    string
 		action  View
 		dismiss bool
@@ -1036,27 +1099,41 @@ func TestNotesActionActivation(t *testing.T) {
 		{"disabled button", Button(42, Text("Undo")).Disabled(true), false},
 		{"disabled link", Link("#next", Text("Open")).Disabled(true), false},
 		{"aria disabled handler", Text("Undo").Attr(event.Click(42), domi.Name("aria-disabled", "true")), false},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			action := tc.action
-			if action != nil {
-				action = action.Class("test-action")
-			}
-			runNoteView(t, 800, 600, Note{Action: action}, func(s *uitest.Session) {
+	}
+	var actions []View
+	for i, tc := range cases {
+		if tc.action != nil {
+			actions = append(actions, tc.action.Class(fmt.Sprintf("test-action-%d", i)))
+		}
+	}
+	runNoteView(t, 800, 600, Note{Action: VStack(actions...)}, func(s *uitest.Session) {
+		s.Eval(`const display = document.querySelector('hi-note-display');
+			display.setAttribute('domi-msg-click', 'outside-note');
+			display.addEventListener('click', e => e.preventDefault());`, nil)
+		for i, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
 				s.Run(noteAdd(1, `'message'`))
-				s.Eval(`const display = document.querySelector('hi-note-display');
-					display.setAttribute('domi-msg-click', 'outside-note');
-					display.addEventListener('click', e => e.preventDefault());
-					const action = display.querySelector('.test-action, [data-dismiss]');
+				defer func() {
+					s.Eval(`fixture.advance(5000);`, nil)
+					noteCheck(t, s, `fixture.retained.length === 0 && display.children.length === 0`)
+				}()
+				selector := fmt.Sprintf(".test-action-%d", i)
+				if tc.action == nil {
+					selector = "[data-dismiss]"
+				}
+				s.Eval(fmt.Sprintf(`(() => {
+					const action = display.querySelector(%q);
 					const target = action.querySelector('.target') || action;
-					target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));`, nil)
+					target.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+				})()`, selector), nil)
 				noteCheck(t, s, fmt.Sprintf(`(fixture.retained.length === 0) === %t`, tc.dismiss))
 			})
-		})
-	}
+		}
+	})
 }
 
 func TestNotesRetainedActions(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name       string
 		action     View
@@ -1068,6 +1145,7 @@ func TestNotesRetainedActions(t *testing.T) {
 		{"URL button", Button("/action", Text("Open")), true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			h := Handler(func(context.Context, *url.URL) (*navigationApp, domi.Cmd[int]) {
 				a := &navigationApp{}
 				count := 0
@@ -1099,7 +1177,7 @@ func TestNotesRetainedActions(t *testing.T) {
 				s.Run(noteReduceMotion(), chromedp.ActionFunc(func(ctx context.Context) error {
 					_, err := cdppage.AddScriptToEvaluateOnNewDocument(`Object.defineProperty(document, 'hidden', {value: true});`).Do(ctx)
 					return err
-				}), chromedp.Navigate(server.URL), cdppage.BringToFront(), chromedp.WaitReady("hi-note-display", chromedp.ByQuery), notePoll(noteText+` === 'Rich note'`))
+				}), chromedp.Navigate(server.URL), chromedp.WaitReady("hi-note-display", chromedp.ByQuery), notePoll(noteText+` === 'Rich note'`))
 				s.Run(chromedp.Click(".update", chromedp.ByQuery), notePoll(`document.querySelector('hi-note-outbox').children.length === 0`),
 					chromedp.Click(".away", chromedp.ByQuery), notePoll(`location.pathname === '/away'`), chromedp.NavigateBack(), notePoll(`location.pathname === '/'`))
 				noteCheck(t, s, noteText+` === 'Rich note'`)
@@ -1119,6 +1197,7 @@ func TestNotesRetainedActions(t *testing.T) {
 }
 
 func TestNotesRemovedBeforeAdmission(t *testing.T) {
+	t.Parallel()
 	runNotes(t, 800, 600, func(s *uitest.Session) {
 		s.Eval(`fixture.add('removed');
 			globalThis.entry = document.querySelector('hi-note-outbox').lastElementChild;
@@ -1131,6 +1210,7 @@ func TestNotesRemovedBeforeAdmission(t *testing.T) {
 }
 
 func TestNotesActionPointerIsolation(t *testing.T) {
+	t.Parallel()
 	for _, action := range []View{Button(42, Text("Undo")), Link("#action", Text("Open"))} {
 		runNoteView(t, 800, 600, Note{Action: action}, func(s *uitest.Session) {
 			s.Run(noteAdd(1, `'swipe me'`))

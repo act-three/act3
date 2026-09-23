@@ -10,6 +10,7 @@ import (
 )
 
 func TestLengthCSS(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		length complex128
 		want   string
@@ -34,6 +35,7 @@ func TestLengthCSS(t *testing.T) {
 // Change the root font after rendering to catch premature resolution,
 // and override the local font to distinguish rem from em.
 func TestLengthRootFont(t *testing.T) {
+	t.Parallel()
 	v := hi.VStack(
 		hi.Text("fixed").Padding(hi.Edges(8)).Class("fixed"),
 		hi.Text("scaled").Padding(hi.Edges(8i)).Class("scaled"),
@@ -103,6 +105,7 @@ func TestLengthRootFont(t *testing.T) {
 }
 
 func TestLengthFrameBounds(t *testing.T) {
+	t.Parallel()
 	v := hi.VStack(
 		hi.Text("ideal last").FrameBounds(
 			hi.MinWidth(80), hi.IdealWidth(64i),
@@ -166,6 +169,7 @@ func TestLengthFrameBounds(t *testing.T) {
 }
 
 func TestLengthColumnMinWidth(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		width complex128
 		want  string
