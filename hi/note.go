@@ -40,22 +40,32 @@ func (n note) key() string { return n.id }
 
 func (n note) view() View {
 	return HStack(
-		If(n.Icon != "", Icon(n.Icon)),
+		n.icon(),
 		VStack(
-			Text(n.Message),
-			If(n.Description != "", Text(n.Description)),
+			n.message(),
+			n.description(),
+			n.action(),
 		).
-			Alignment(Leading),
-		n.action(),
+			Alignment(Leading).
+			Gap(6i).
+			ControlSize(Small),
+		Spacer(),
+		n.dismiss(),
 	).
-		modify(modStyle("max-height", cssLength(96i))).
+		Alignment(FirstBaseline).
+		Gap(8i).
+		Padding(Edges(12i)).
+		Font(SizeEmAbs(13i, 16i)).
+		modify(modStyle("max-height", cssLength(112i))).
 		BorderClipped().
 		Frame(Width(360), Top). // Top needed for animating height.
 		Tag("hi-note").
 		Attr(domi.Name("data-duration", fmt.Sprint(n.Duration.Milliseconds()))).
-		Background(backgroundColor).
-		BorderStroke(1, Primary).
-		WhileFocused(BorderOutline(2, 1, Accent)).
+		BorderStroke(0.5, borderColor).
+		WhileFocused(BorderOutline(0, 1, Accent)).
+		modify(shadowMedium).
+		ThemeBackground(menuColor).
+		BorderShape(RoundedRectangle(12i)).
 		Opacity(0). // starting opacity for entrance transition
 		modify(modEnv(func(env environment) environment {
 			env.style.Set("touch-action", "none")
@@ -65,19 +75,38 @@ func (n note) view() View {
 		}))
 }
 
+func (n note) message() View {
+	return Text(n.Message).
+		Foreground(Headline).
+		Font(Medium).
+		LineLimit(2)
+}
+
+func (n note) description() View {
+	return If(n.Description != "", Text(n.Description)).
+		Foreground(Secondary).
+		Font(Weight(450)).
+		LineLimit(3)
+}
+
+func (n note) icon() View {
+	return If(n.Icon != "", Icon(n.Icon)).
+		Foreground(Secondary)
+}
+
 func (n note) action() View {
-	if n.Action != nil {
-		return n.Action
-	}
-	return Text("×").
-		Tag("button").
-		WhileFocused(BorderStroke(1, Accent)).
+	return If(n.Action != nil, n.Action).
+		Padding(EdgeTop(4i))
+}
+
+func (n note) dismiss() View {
+	return Button(noAction{}, Icon("x")).
+		ButtonStyle(Subtle).
 		Attr(
-			attr.Type("button"),
 			domi.Name("aria-label", "Dismiss"),
 			domi.Name("data-dismiss", ""),
 		).
-		modify(modStyle("cursor", "pointer"))
+		ControlSize(Mini)
 }
 
 func notePortOverlay(root View, notes []note) View {
@@ -102,6 +131,6 @@ func notePortOverlay(root View, notes []note) View {
 				b.node = domi.WithKeyOpaque("display", b.node)
 				return b
 			})).
-			Padding(EdgeBottom(16)).
+			Padding(EdgeBottom(16i)).
 			modify(modStyle("pointer-events", "none")))
 }

@@ -52,3 +52,23 @@ func borderShadowList(t theme, shadows []shadow) string {
 	}
 	return strings.Join(layers, ",")
 }
+
+func shadowMedium(n node) node {
+	return func(env environment) box {
+		var v View = view(n)
+		k := max(env.theme.contrast-30, 0)
+		if env.theme.bgbase.isLight() {
+			factor := 1 + k/50
+			v = v.
+				BorderShadow(0, 6, 0, 18, OKLCHA(0, 0, 0, 0.02*factor)).
+				BorderShadow(0, 3, 0, 9, OKLCHA(0, 0, 0, 0.04*factor)).
+				BorderShadow(0, 1, 0, 1, OKLCHA(0, 0, 0, 0.04*factor))
+		} else {
+			c := OKLCHA(0, 0, 0, 0.125*(1+k/10))
+			v = v.BorderShadow(0, 3, 0, 8, c).
+				BorderShadow(0, 2, 0, 5, c).
+				BorderShadow(0, 1, 0, 1, c)
+		}
+		return unary(VStack, v)(env) // v is unary, VStack is unused.
+	}
+}

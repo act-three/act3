@@ -135,10 +135,10 @@ var (
 
 	// menuColor is the background of a menu.
 	// It is lighter than the background in both modes.
-	// menuColor Color = ModeColor(
-	//	ThemeColor(-0.069, 0, BackgroundScale),
-	//	ThemeColor(0.069, 0.0017, BackgroundScale),
-	// )
+	menuColor Color = ModeColor(
+		ThemeColor(-0.069, 0, BackgroundScale),
+		ThemeColor(0.069, 0.0017, BackgroundScale),
+	)
 
 	// selectedBackground is the background of a selected item.
 	// It is the background tinted toward the accent.
