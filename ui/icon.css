@@ -1,15 +1,20 @@
 .u-icon {
-	width: 1em;
-	height: 1em;
+	/* Hi owns the sizing and baseline alignment inside hi-icon. */
+	&:not(hi-icon > svg) {
+		width: 1em;
+		height: 1em;
+		stroke-width: 1.5;
+	}
 	fill: none;
 	stroke: currentColor;
-	stroke-width: 1.5;
 	stroke-linecap: round;
 	stroke-linejoin: round;
 }
 
 .u-icon-solid {
-	width: 1em;
-	height: 1em;
+	&:not(hi-icon > svg) {
+		width: 1em;
+		height: 1em;
+	}
 	fill: currentColor;
 }

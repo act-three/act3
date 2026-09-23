@@ -20,6 +20,7 @@ import (
 	"ily.dev/act3/msg"
 	"ily.dev/act3/service/tmdb"
 	"ily.dev/act3/service/tvmaze"
+	"ily.dev/act3/ui"
 	"ily.dev/act3/ui/icon"
 	"ily.dev/act3/view"
 	"ily.dev/act3/web/jassub"
@@ -48,6 +49,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 		msg.OnURLRequest,
 		msg.OnURLChange,
 		hi.AppTitle("Act Three"),
+		hi.IconSource(ui.HiIcon),
 		domi.Document(view.Document),
 		domi.InternalURLPrefix("/-/domi"),
 	))

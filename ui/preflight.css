@@ -59,7 +59,7 @@ progress { vertical-align: baseline; }
 summary { display: list-item; }
 ol, ul, menu { list-style: none; }
 
-img, svg, video, canvas, audio, iframe, embed, object {
+img, svg:not(hi-icon > svg), video, canvas, audio, iframe, embed, object {
 	display: block;
 	vertical-align: middle;
 }
