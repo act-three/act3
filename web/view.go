@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 
 	"ily.dev/act3/hi"
@@ -44,13 +45,14 @@ func (a *app) render(ctx context.Context, render func(hi.View)) {
 		return nil
 	})
 	if err != nil {
-		render(a.view(
-			hi.ScrollView(hi.Vertical,
-				hi.HTML(viewError(err)).Class("v-domi-root"),
+		slog.ErrorContext(ctx, "error", "error", err)
+		render(
+			hi.HStack(
+				hi.Icon("line/x-circle"),
+				hi.Text("Internal Error"),
 			).
-				Title("Error"),
-			dlg,
-		))
+				Title("Internal Error"),
+		)
 	}
 }
 
