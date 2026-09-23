@@ -1,5 +1,5 @@
 import { Controller } from "../web/stimulus.js";
-import { notify } from "../ui/note-port.js";
+import { notify } from "../hi/hi.js";
 
 // upload drives the image and video upload forms: the visible
 // button opens the hidden file picker, and a chosen file is sent
@@ -41,9 +41,9 @@ export default class extends Controller {
 		fetch(form.action, { method: "POST", body })
 			.then(
 				(res) => {
-					if (!res.ok) notify("Upload failed");
+					if (!res.ok) notify("upload-failed");
 				},
-				() => notify("Could not reach the server"),
+				() => notify("server-unreachable"),
 			)
 			.finally(() => {
 				if (--inflight === 0) {
