@@ -22,26 +22,31 @@ func (a *app) Preview(ctx context.Context, u *url.URL, render hi.PreviewRenderer
 	u = u.Clone()
 	u.Path = redirect(u.Path)
 	a.setPath(ctx, u)
-	a.render(ctx, func(v hi.View) {
+	a.view(ctx, func(v hi.View) {
 		p = render(u.String(), v)
 	})
 	return p
 }
 
 func (a *app) View(ctx context.Context, render hi.PageRenderer) (p hi.Page) {
-	a.render(ctx, func(v hi.View) {
+	a.view(ctx, func(v hi.View) {
 		p = render(v)
 	})
 	return p
 }
 
-// Rendering resolves lazy views, which may still need the transaction.
-func (a *app) render(ctx context.Context, render func(hi.View)) {
-	var dlg node
+func (a *app) view(ctx context.Context, render func(hi.View)) {
 	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
-		v := viewRoot(tx)
-		dlg = viewDialog(tx, a.dialog)
-		render(a.view(v, dlg))
+		render(viewRoot(tx).
+			Overlay(hi.Center,
+				hi.HTML(domi.Fragment(
+					viewDialog(tx, a.dialog),
+					view.PlayerContainer(a.viewPlayer(a.player)),
+				)).
+					Class("v-domi-root").
+					FixedSize(),
+			),
+		)
 		return nil
 	})
 	if err != nil {
@@ -54,20 +59,6 @@ func (a *app) render(ctx context.Context, render func(hi.View)) {
 				Title("Internal Error"),
 		)
 	}
-}
-
-func (a *app) view(v hi.View, dlg node) hi.View {
-	n := domi.Fragment(
-		dlg,
-		view.PlayerContainer(a.viewPlayer(a.player)),
-	)
-	// A root overlay preserves the theater's document scrolling and
-	// keeps these fixed-position containers out of the page's layout.
-	return v.Overlay(hi.Center,
-		hi.HTML(n).
-			Class("v-domi-root").
-			FixedSize(),
-	)
 }
 
 func viewRoot(tx *model.TxR) hi.View {
