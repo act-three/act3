@@ -2,6 +2,7 @@ package hi_test
 
 import (
 	"fmt"
+	"image"
 	"regexp"
 	"slices"
 	"strings"
@@ -16,6 +17,7 @@ import (
 )
 
 func TestBorderOutlineStates(t *testing.T) {
+	t.Parallel()
 	v := hi.Transparent.Frame(hi.Width(80), hi.Height(40)).
 		WhileFocused(hi.BorderOutline(4, 3, hi.Red)).
 		WhilePressed(hi.BorderOutline(6, 5, hi.Blue)).
@@ -75,6 +77,7 @@ func TestBorderOutlineStates(t *testing.T) {
 }
 
 func TestBorderOutlineInvisiblePrecedence(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name         string
 		inner        hi.Modifier
@@ -111,6 +114,7 @@ func TestBorderOutlineInvisiblePrecedence(t *testing.T) {
 }
 
 func TestBorderOutlineBrowserFocus(t *testing.T) {
+	t.Parallel()
 	// Without a matching state, no authored outline exists to replace the
 	// browser's focus indicator. Pointer activation adds paint without
 	// moving focus.
@@ -150,6 +154,7 @@ func TestBorderOutlineBrowserFocus(t *testing.T) {
 }
 
 func TestBorderOutlineScopeAndStructure(t *testing.T) {
+	t.Parallel()
 	base := hi.Text("x").Opacity(.5)
 	tags := regexp.MustCompile(`</?[a-z][a-z0-9-]*`)
 	var structure []string
@@ -180,6 +185,7 @@ func TestBorderOutlineScopeAndStructure(t *testing.T) {
 }
 
 func TestBorderOutlineLengths(t *testing.T) {
+	t.Parallel()
 	v := hi.Text("x").BorderOutline(-4+8i, 12-8i, hi.Red).Class("subject")
 	stage(t, v, func(s *uitest.Session) {
 		for _, root := range []float64{8, 16, 32} {
@@ -198,9 +204,10 @@ func TestBorderOutlineLengths(t *testing.T) {
 }
 
 func TestBorderOutlinePaint(t *testing.T) {
+	t.Parallel()
 	base := hi.Transparent.Frame(hi.Width(80), hi.Height(40))
 	outline := hi.BorderOutline(2, 3, hi.Black)
-	for _, tt := range []struct {
+	cases := []struct {
 		name    string
 		view    hi.View
 		outside uint32
@@ -211,59 +218,61 @@ func TestBorderOutlinePaint(t *testing.T) {
 		{"opacity outside", base.Modify(outline).Opacity(.5), 127 * 257},
 		{"opacity inside", base.Opacity(.5).Modify(outline), 0},
 		{"ancestor clip", base.Modify(outline).Padding(hi.Edges(1)).BorderClipped(), 65535},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			stage(t, hi.HStack(tt.view.Class("subject")).Padding(hi.Edges(20)).Background(hi.White), func(s *uitest.Session) {
-				for _, scale := range []int{1, 2} {
-					s.Run(chromedp.EmulateViewport(600, 400, chromedp.EmulateScale(float64(scale))))
-					r := s.Rect(".subject", 0)
-					img := shadowScreenshot(t, s)
-					for _, sample := range []struct {
-						x    float64
-						want uint32
-					}{
-						{r.X + r.W/2, 65535}, {r.X - 1, 65535}, {r.X - 4, tt.outside},
-					} {
-						got, _, _, _ := img.At(int(sample.x*float64(scale)), int((r.Y+r.H/2)*float64(scale))).RGBA()
-						if absDiff(got, sample.want) > 257 {
-							t.Errorf("%dx: pixel at x=%g = %d, want %d", scale, sample.x, got, sample.want)
-						}
+	}
+	var views []hi.View
+	for _, tt := range cases {
+		views = append(views, hi.HStack(tt.view.Class("subject")))
+	}
+	paint(t, views, []int{1, 2}, func(s *uitest.Session, img image.Image, scale int) {
+		for i, tt := range cases {
+			t.Run(fmt.Sprintf("%s/%dx", tt.name, scale), func(t *testing.T) {
+				r := s.Rect(fmt.Sprintf(".paint-case-%d .subject", i), 0)
+				for _, sample := range []struct {
+					x    float64
+					want uint32
+				}{
+					{r.X + r.W/2, 65535}, {r.X - 1, 65535}, {r.X - 4, tt.outside},
+				} {
+					got := paintRed(t, img, int(sample.x*float64(scale)), int((r.Y+r.H/2)*float64(scale)))
+					if absDiff(got, sample.want) > 257 {
+						t.Errorf("%dx: pixel at x=%g = %d, want %d", scale, sample.x, got, sample.want)
 					}
 				}
 			})
-		})
-	}
+		}
+	})
 }
 
 func TestBorderOutlineOverflowAndLayers(t *testing.T) {
+	t.Parallel()
 	large := hi.Black.Frame(hi.Width(100), hi.Height(60))
-	for _, tt := range []struct {
+	cases := []struct {
 		name string
 		view hi.View
 	}{
 		{"overflow", large.Frame(hi.Width(80), hi.Height(40))},
 		{"overlay", hi.Transparent.Frame(hi.Width(80), hi.Height(40)).Overlay(hi.Center, large)},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			stage(t, tt.view.BorderOutline(2, 3, hi.White).Class("subject").
-				Padding(hi.Edges(20)).Background(hi.White), func(s *uitest.Session) {
-				for _, scale := range []int{1, 2} {
-					s.Run(chromedp.EmulateViewport(600, 400, chromedp.EmulateScale(float64(scale))))
-					r := s.Rect(".subject", 0)
-					img := shadowScreenshot(t, s)
-					for _, sample := range []struct {
-						x    float64
-						want uint32
-					}{
-						{r.X - 1, 0}, {r.X - 4, 65535}, {r.X - 8, 0},
-					} {
-						got, _, _, _ := img.At(int(sample.x*float64(scale)), int((r.Y+r.H/2)*float64(scale))).RGBA()
-						if got != sample.want {
-							t.Errorf("%dx: pixel at x=%g = %d, want %d", scale, sample.x, got, sample.want)
-						}
+	}
+	var views []hi.View
+	for _, tt := range cases {
+		views = append(views, tt.view.BorderOutline(2, 3, hi.White).Class("subject"))
+	}
+	paint(t, views, []int{1, 2}, func(s *uitest.Session, img image.Image, scale int) {
+		for i, tt := range cases {
+			t.Run(fmt.Sprintf("%s/%dx", tt.name, scale), func(t *testing.T) {
+				r := s.Rect(fmt.Sprintf(".paint-case-%d .subject", i), 0)
+				for _, sample := range []struct {
+					x    float64
+					want uint32
+				}{
+					{r.X - 1, 0}, {r.X - 4, 65535}, {r.X - 8, 0},
+				} {
+					got := paintRed(t, img, int(sample.x*float64(scale)), int((r.Y+r.H/2)*float64(scale)))
+					if got != sample.want {
+						t.Errorf("%dx: pixel at x=%g = %d, want %d", scale, sample.x, got, sample.want)
 					}
 				}
 			})
-		})
-	}
+		}
+	})
 }

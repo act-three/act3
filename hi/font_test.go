@@ -11,6 +11,12 @@ import (
 )
 
 func TestFontCapSize(t *testing.T) {
+	t.Parallel()
+	var views []hi.View
+	var cases []struct {
+		name string
+		size complex128
+	}
 	for _, family := range []string{"serif", "sans-serif", "monospace"} {
 		for _, tc := range []struct {
 			name string
@@ -18,25 +24,32 @@ func TestFontCapSize(t *testing.T) {
 		}{
 			{"pixels", 20}, {"scaled", 20i}, {"mixed", 10 + 8i},
 		} {
-			t.Run(family+"/"+tc.name, func(t *testing.T) {
-				v := hi.VStack(
-					hi.Text("H").TextTrim(hi.TextCap|hi.TextLastBaseline).Class("cap"),
-					hi.Text("H").Class("line"),
-				).Font(hi.SizeCap(tc.size, 2), hi.Family(family))
-				stage(t, v, func(s *uitest.Session) {
-					for _, root := range []float64{16, 24} {
-						s.Eval(fmt.Sprintf(`document.documentElement.style.fontSize = "%gpx"`, root), nil)
-						want := real(tc.size) + imag(tc.size)*root/16
-						within(t, "cap height", s.Rect(".cap", 0).H, want, 0.1)
-						within(t, "line height", s.Rect(".line", 0).H, want*2, 0.1)
-					}
-				})
-			})
+			v := hi.VStack(
+				hi.Text("H").TextTrim(hi.TextCap|hi.TextLastBaseline).Class("cap"),
+				hi.Text("H").Class("line"),
+			).Font(hi.SizeCap(tc.size, 2), hi.Family(family))
+			views = append(views, v.Frame(hi.Height(200)).Class(fmt.Sprintf("case-%d", len(cases))))
+			tc.name = family + "/" + tc.name
+			cases = append(cases, tc)
 		}
 	}
+	stage(t, hi.VStack(views...), func(s *uitest.Session) {
+		for _, root := range []float64{16, 24} {
+			s.Eval(fmt.Sprintf(`document.documentElement.style.fontSize = "%gpx"`, root), nil)
+			for i, tc := range cases {
+				t.Run(fmt.Sprintf("%s/root=%g", tc.name, root), func(t *testing.T) {
+					prefix := fmt.Sprintf(".case-%d ", i)
+					want := real(tc.size) + imag(tc.size)*root/16
+					within(t, "cap height", s.Rect(prefix+".cap", 0).H, want, 0.1)
+					within(t, "line height", s.Rect(prefix+".line", 0).H, want*2, 0.1)
+				})
+			}
+		}
+	})
 }
 
 func TestFontSizeBasisOverrides(t *testing.T) {
+	t.Parallel()
 	v := hi.VStack(
 		hi.Text("H").Font(hi.SizeEm(20, 1.5)).Class("em"),
 		hi.Text("H").TextFont(hi.SizeEm(20, 1.5)).Class("text-em"),
@@ -73,6 +86,12 @@ func TestFontSizeBasisOverrides(t *testing.T) {
 }
 
 func TestFontAbsoluteLineHeight(t *testing.T) {
+	t.Parallel()
+	var views []hi.View
+	var cases []struct {
+		name   string
+		height complex128
+	}
 	for name, option := range map[string]func(complex128, complex128) hi.FontOption{
 		"em": hi.SizeEmAbs, "cap": hi.SizeCapAbs,
 	} {
@@ -82,27 +101,33 @@ func TestFontAbsoluteLineHeight(t *testing.T) {
 		}{
 			{"pixels", 36}, {"scaled", 36i}, {"mixed", 20 + 8i}, {"zero", 0},
 		} {
-			t.Run(name+"/"+tc.name, func(t *testing.T) {
-				v := hi.VStack(
-					hi.Text("H").Font(option(24i, tc.height)).Class("large"),
-					hi.Text("H").TextFont(option(12i, tc.height)).Class("small"),
-					hi.Text("H").Class("inherited"),
-				).Font(option(16i, tc.height))
-				stage(t, v, func(s *uitest.Session) {
-					for _, root := range []float64{16, 24} {
-						s.Eval(fmt.Sprintf(`document.documentElement.style.fontSize = "%gpx"`, root), nil)
-						want := real(tc.height) + imag(tc.height)*root/16
-						for _, selector := range []string{".large", ".small", ".inherited"} {
-							within(t, selector+" line height", s.Rect(selector, 0).H, want, 0.1)
-						}
-					}
-				})
-			})
+			v := hi.VStack(
+				hi.Text("H").Font(option(24i, tc.height)).Class("large"),
+				hi.Text("H").TextFont(option(12i, tc.height)).Class("small"),
+				hi.Text("H").Class("inherited"),
+			).Font(option(16i, tc.height))
+			views = append(views, v.Frame(hi.Height(200)).Class(fmt.Sprintf("case-%d", len(cases))))
+			tc.name = name + "/" + tc.name
+			cases = append(cases, tc)
 		}
 	}
+	stage(t, hi.VStack(views...), func(s *uitest.Session) {
+		for _, root := range []float64{16, 24} {
+			s.Eval(fmt.Sprintf(`document.documentElement.style.fontSize = "%gpx"`, root), nil)
+			for i, tc := range cases {
+				t.Run(fmt.Sprintf("%s/root=%g", tc.name, root), func(t *testing.T) {
+					want := real(tc.height) + imag(tc.height)*root/16
+					for _, selector := range []string{".large", ".small", ".inherited"} {
+						within(t, selector+" line height", s.Rect(fmt.Sprintf(".case-%d %s", i, selector), 0).H, want, 0.1)
+					}
+				})
+			}
+		}
+	})
 }
 
 func TestFontFeaturesCompose(t *testing.T) {
+	t.Parallel()
 	opts := []hi.FontOption{
 		hi.OldstyleNums, hi.ProportionalNums, hi.TabularNums, hi.SlashedZero,
 		hi.NoCommonLigatures, hi.CommonLigatures, hi.DiscretionaryLigatures,
@@ -138,12 +163,13 @@ func TestFontFeaturesCompose(t *testing.T) {
 }
 
 func TestFontFeaturesAcrossModifiers(t *testing.T) {
+	t.Parallel()
 	inner := []hi.FontOption{hi.TabularNums, hi.CommonLigatures, hi.OpenTypeFeature("ss01", 0)}
 	outer := []hi.FontOption{
 		hi.SlashedZero, hi.ProportionalNums, hi.DiscretionaryLigatures, hi.NoCommonLigatures,
 		hi.OpenTypeFeature("ss01", 1), hi.OpenTypeFeature("ss02", 2),
 	}
-	for _, tc := range []struct {
+	cases := []struct {
 		name        string
 		view        hi.View
 		selector    string
@@ -157,12 +183,18 @@ func TestFontFeaturesAcrossModifiers(t *testing.T) {
 		{"frame", hi.Text("x").Font(inner...).Frame(hi.Width(100)).Font(outer...), "hi-text", true},
 		{"rich text", hi.Text("prefix ").Concat(hi.Text("x").TextFont(inner...)).TextFont(outer...), "hi-text span", true},
 		{"inline link", hi.Text("prefix ").Concat(hi.Link("/", hi.Text("x").TextFont(inner...))).TextFont(outer...), "a span", true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			stage(t, tc.view, func(s *uitest.Session) {
+	}
+	var views []hi.View
+	for i, tc := range cases {
+		views = append(views, tc.view.Padding(hi.Edges(0)).Class(fmt.Sprintf("case-%d", i)))
+	}
+	stage(t, hi.VStack(views...), func(s *uitest.Session) {
+		for i, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				selector := fmt.Sprintf(".case-%d %s", i, tc.selector)
 				var got []string
 				s.Eval(`(() => {
-					const s = getComputedStyle(document.querySelector("`+tc.selector+`"));
+					const s = getComputedStyle(document.querySelector("`+selector+`"));
 					return [s.fontVariantNumeric, s.fontVariantLigatures, s.fontFeatureSettings];
 				})()`, &got)
 				want := []string{"tabular-nums slashed-zero", "common-ligatures discretionary-ligatures", `"ss01" 0, "ss02" 2`}
@@ -173,11 +205,12 @@ func TestFontFeaturesAcrossModifiers(t *testing.T) {
 					t.Errorf("font settings = %q, want %q", got, want)
 				}
 			})
-		})
-	}
+		}
+	})
 }
 
 func TestFontLigaturesReset(t *testing.T) {
+	t.Parallel()
 	stage(t, hi.VStack(
 		hi.Text("ffi").Font(hi.CommonLigatures, hi.DiscretionaryLigatures, hi.NoLigatures).Class("off"),
 		hi.Text("ffi").Font(hi.NoLigatures, hi.CommonLigatures).Class("common"),
@@ -198,6 +231,7 @@ func TestFontLigaturesReset(t *testing.T) {
 }
 
 func TestOpenTypeFeatureValidation(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		tag   string
 		value int

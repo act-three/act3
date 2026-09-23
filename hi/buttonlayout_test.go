@@ -13,6 +13,7 @@ import (
 )
 
 func TestButtonInteractionLayout(t *testing.T) {
+	t.Parallel()
 	for _, action := range []any{Msg{}, "/movies"} {
 		t.Run(fmt.Sprintf("%T", action), func(t *testing.T) {
 			stage(t, hi.HStack(

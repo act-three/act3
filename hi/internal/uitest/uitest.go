@@ -8,35 +8,47 @@ import (
 	"context"
 	"encoding/json/v2"
 	"fmt"
-	"net/url"
 	"os"
-	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/chromedp/cdproto/cdp"
+	"github.com/chromedp/cdproto/emulation"
+	"github.com/chromedp/cdproto/input"
+	"github.com/chromedp/cdproto/page"
+	"github.com/chromedp/cdproto/target"
 	"github.com/chromedp/chromedp"
 )
 
-// The test binary shares one browser process across all Run calls:
-// each call opens a tab in it rather than paying — and risking —
-// a browser cold start per test.
+// Fixtures share a browser and reuse tabs, but navigate to a fresh document
+// for every Run. Live pages get dedicated tabs because their tests can
+// install hooks that persist across navigations.
 var browser struct {
 	once sync.Once
 	ctx  context.Context
 	err  error
 	stop context.CancelFunc
+	mu   sync.Mutex
+	idle []tab
+}
+
+type tab struct {
+	ctx   context.Context
+	stop  context.CancelFunc
+	w, h  int
+	dirty bool
 }
 
 func startBrowser() {
-	// The browser renders only the harness's own local fixture files, so
+	// The browser renders only the harness's own local fixtures, so
 	// the Chrome sandbox buys nothing here — and it cannot start at all
 	// on runners that restrict unprivileged user namespaces (GitHub's
 	// Ubuntu 24.04 images).
-	// The browser's own output is captured, with verbose logging turned
-	// on, so a failed or hung start reports what the browser was doing —
-	// with timestamps — not just that it timed out.
+	// Capture browser diagnostics so a failed or hung start reports
+	// more than a timeout.
 	// The startup budget is paid once per test binary and is a cap, not
 	// a wait, so it can afford to ride out the CPU variance of a noisy
 	// CI VM, where a healthy start plausibly reaches the 20-second
@@ -47,7 +59,6 @@ func startBrowser() {
 			chromedp.NoSandbox,
 			chromedp.WSURLReadTimeout(60*time.Second),
 			chromedp.Flag("enable-logging", "stderr"),
-			chromedp.Flag("v", "1"),
 			chromedp.CombinedOutput(&output),
 		)...)
 	ctx, cancel := chromedp.NewContext(allocCtx)
@@ -116,17 +127,26 @@ func Main(m *testing.M) int {
 // It skips the test when no Chrome-compatible browser is available.
 func Run(t *testing.T, w, h int, html string, fn func(*Session)) {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "page.html")
-	if err := os.WriteFile(path, []byte(html), 0o644); err != nil {
-		t.Fatalf("write page: %v", err)
-	}
-
-	u := url.URL{Scheme: "file", Path: path}
-	RunURL(t, w, h, u.String(), fn)
+	runURL(t, w, h, "about:blank", true, func(s *Session) {
+		s.Run(chromedp.ActionFunc(func(ctx context.Context) error {
+			frame, err := page.GetFrameTree().Do(ctx)
+			if err != nil {
+				return err
+			}
+			return page.SetDocumentContent(frame.Frame.ID, html).Do(ctx)
+		}), chromedp.Poll(`document.readyState === 'complete'`, nil, chromedp.WithPollingInterval(time.Millisecond)))
+		s.dirty = false
+		fn(s)
+	})
 }
 
 // RunURL opens a live page in a browser tab with a w×h viewport.
 func RunURL(t *testing.T, w, h int, pageURL string, fn func(*Session)) {
+	t.Helper()
+	runURL(t, w, h, pageURL, false, fn)
+}
+
+func runURL(t *testing.T, w, h int, pageURL string, reuse bool, fn func(*Session)) {
 	t.Helper()
 	browser.once.Do(startBrowser)
 	if browser.err != nil {
@@ -136,25 +156,78 @@ func RunURL(t *testing.T, w, h int, pageURL string, fn func(*Session)) {
 		t.Fatalf("start browser: %v", browser.err)
 	}
 
-	ctx, cancel := chromedp.NewContext(browser.ctx)
-	defer cancel()
-	ctx, cancelTimeout := context.WithTimeout(ctx, 30*time.Second)
-	defer cancelTimeout()
+	var page tab
+	if reuse {
+		browser.mu.Lock()
+		if n := len(browser.idle); n > 0 {
+			page = browser.idle[n-1]
+			browser.idle = browser.idle[:n-1]
+		}
+		browser.mu.Unlock()
+	}
+	if page.ctx == nil {
+		var opts []chromedp.ContextOption
+		// Linux Chrome throttles background tabs' animation frames even with
+		// focus emulation. Separate windows keep every fixture rendering;
+		// macOS does not need them and creates tabs substantially faster.
+		if runtime.GOOS != "darwin" {
+			createCtx, cancelCreate := context.WithTimeout(browser.ctx, 30*time.Second)
+			id, err := target.CreateTarget("about:blank").WithNewWindow(true).
+				Do(cdp.WithExecutor(createCtx, chromedp.FromContext(browser.ctx).Browser))
+			cancelCreate()
+			if err != nil {
+				t.Fatalf("create window: %v", err)
+			}
+			opts = append(opts, chromedp.WithTargetID(id))
+		}
+		page.ctx, page.stop = chromedp.NewContext(browser.ctx, opts...)
+		page.dirty = true
+		startup := time.AfterFunc(30*time.Second, page.stop)
+		// The protocol reader must outlive each individual test's timeout.
+		// Focus emulation keeps parallel pages active without stealing focus.
+		err := chromedp.Run(page.ctx, emulation.SetFocusEmulationEnabled(true))
+		startup.Stop()
+		if err != nil {
+			page.stop()
+			t.Fatalf("create tab: %v", err)
+		}
+	}
+	ctx, cancelTimeout := context.WithTimeout(page.ctx, 30*time.Second)
+	defer func() {
+		if reuse && ctx.Err() == nil && !t.Failed() {
+			browser.mu.Lock()
+			browser.idle = append(browser.idle, page)
+			browser.mu.Unlock()
+		} else {
+			page.stop()
+		}
+		cancelTimeout()
+	}()
 
-	err := chromedp.Run(ctx,
-		chromedp.EmulateViewport(int64(w), int64(h)),
-		chromedp.Navigate(pageURL),
-	)
+	var reset chromedp.Tasks
+	// Eval only affects the document, which navigation replaces. Run can
+	// also change persistent emulation and input state.
+	if page.dirty {
+		reset = append(reset, emulation.SetEmulatedMedia(), input.DispatchMouseEvent(input.MouseMoved, -1, -1))
+	}
+	if page.dirty || page.w != w || page.h != h {
+		reset = append(reset, chromedp.EmulateViewport(int64(w), int64(h)))
+	}
+	page.w, page.h = w, h
+	err := chromedp.Run(ctx, append(reset, chromedp.Navigate(pageURL))...)
 	if err != nil {
 		t.Fatalf("load page: %v", err)
 	}
-	fn(&Session{t: t, ctx: ctx})
+	s := &Session{t: t, ctx: ctx}
+	defer func() { page.dirty = s.dirty }()
+	fn(s)
 }
 
 // Session is a loaded page ready to be measured.
 type Session struct {
-	t   *testing.T
-	ctx context.Context
+	t     *testing.T
+	ctx   context.Context
+	dirty bool
 }
 
 // Rect is an element's border box in page coordinates.
@@ -203,8 +276,10 @@ func jsString(s string) string {
 }
 
 // Run executes browser actions in this session.
+// Actions that install persistent browser hooks belong in a RunURL session.
 func (s *Session) Run(actions ...chromedp.Action) {
 	s.t.Helper()
+	s.dirty = true
 	if err := chromedp.Run(s.ctx, actions...); err != nil {
 		s.t.Fatal(err)
 	}

@@ -41,6 +41,7 @@ func within(t *testing.T, what string, got, want, tol float64) {
 }
 
 func TestGeometrySpacerAbsorbsSlack(t *testing.T) {
+	t.Parallel()
 	stage(t, hi.HStack(hi.Text("a"), hi.Spacer(), hi.Text("b")), func(s *uitest.Session) {
 		within(t, "row width", s.Rect("hi-hstack", 0).W, 600, 1)
 		if w := s.Rect("hi-spacer", 0).W; w < 400 {
@@ -61,6 +62,7 @@ func TestGeometrySpacerAbsorbsSlack(t *testing.T) {
 // covers the viewport exactly, and the viewport acts as a definite
 // frame — the root view's fills on both axes terminate at it.
 func TestGeometryRootIsViewport(t *testing.T) {
+	t.Parallel()
 	stage(t, hi.Secondary, func(s *uitest.Session) {
 		root := s.Rect("hi-root", 0)
 		within(t, "root x", root.X, 0, 0.5)
@@ -77,6 +79,7 @@ func TestGeometryRootIsViewport(t *testing.T) {
 // hi-root hugs its content on each scrolling axis, stretches across each
 // non-scrolling axis, and delegates overflow to the document viewport.
 func TestGeometryRootScrollUsesDocument(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		axis      hi.AxisSet
@@ -154,6 +157,7 @@ func TestGeometryRootScrollUsesDocument(t *testing.T) {
 }
 
 func TestGeometryRootScrollShortContentHugsItsScrollAxis(t *testing.T) {
+	t.Parallel()
 	stage(t, hi.ScrollView(hi.Vertical, hi.Text("short")), func(s *uitest.Session) {
 		root := s.Rect("hi-root", 0)
 		within(t, "root width", root.W, 600, 1)
@@ -169,6 +173,7 @@ func TestGeometryRootScrollShortContentHugsItsScrollAxis(t *testing.T) {
 }
 
 func TestGeometryRootScrollStickyUsesDocumentViewport(t *testing.T) {
+	t.Parallel()
 	v := hi.ScrollView(hi.Vertical, hi.VStack(
 		hi.Text("heading").Sticky().Class("heading"),
 		hi.OKLCH(0.5, 0, 0).Frame(hi.Height(1000)),
@@ -184,6 +189,7 @@ func TestGeometryRootScrollStickyUsesDocumentViewport(t *testing.T) {
 // instead of letting its neighbors fuse, and with unbounded available
 // space the same minimum is its answer.
 func TestGeometrySpacerMinimumLength(t *testing.T) {
+	t.Parallel()
 	rigid := func(w float64) hi.View { return hi.OKLCH(0.5, 0, 0).Frame(hi.Width(complex(w, 0)), hi.Height(40)) }
 	stage(t, hi.HStack(rigid(300), hi.Spacer(), rigid(300)).Gap(0), func(s *uitest.Session) {
 		within(t, "squeezed spacer floors at the minimum", s.Rect("hi-spacer", 0).W, 8, 1)
@@ -194,6 +200,7 @@ func TestGeometrySpacerMinimumLength(t *testing.T) {
 }
 
 func TestGeometryDividerSpansMinorAxis(t *testing.T) {
+	t.Parallel()
 	v := hi.HStack(hi.Text("a"), hi.Divider(), hi.Text("tall").Padding(hi.Edges(32)))
 	stage(t, v, func(s *uitest.Session) {
 		row, div := s.Rect("hi-hstack", 0), s.Rect("hi-divider", 0)
@@ -206,6 +213,7 @@ func TestGeometryDividerSpansMinorAxis(t *testing.T) {
 // tallest sibling, and each divider expands to that extent — through
 // a padding wrapper too — instead of taking its 10px ideal.
 func TestGeometryDividerSpansMinorAxisUnbounded(t *testing.T) {
+	t.Parallel()
 	row := hi.HStack(
 		hi.Text("a"),
 		hi.Divider(),
@@ -229,6 +237,7 @@ func TestGeometryDividerSpansMinorAxisUnbounded(t *testing.T) {
 // TestGeometryFixedSizeColor pins the fill boundary: a FixedSize color
 // keeps its 10px ideal even in a container with slack to offer.
 func TestGeometryFixedSizeColor(t *testing.T) {
+	t.Parallel()
 	stage(t, hi.OKLCH(0.5, 0, 0).FixedSize(), func(s *uitest.Session) {
 		c := s.Rect("hi-color", 0)
 		within(t, "color width", c.W, 10, 0.5)
@@ -237,6 +246,7 @@ func TestGeometryFixedSizeColor(t *testing.T) {
 }
 
 func TestGeometryFrameSubviewKeepsIntrinsicSize(t *testing.T) {
+	t.Parallel()
 	stage(t, hi.Text("hi").Frame(hi.Width(120), hi.Height(120)), func(s *uitest.Session) {
 		frame, text := s.Rect("hi-frame", 0), s.Rect("hi-text", 0)
 		within(t, "frame width", frame.W, 120, 1)
@@ -253,6 +263,7 @@ func TestGeometryFrameSubviewKeepsIntrinsicSize(t *testing.T) {
 // frame on the axis it resolves to, so the frame holds its width instead of
 // growing into the row's slack.
 func TestGeometryDefiniteFrameDoesNotGrow(t *testing.T) {
+	t.Parallel()
 	v := hi.HStack(hi.Spacer().Frame(hi.Width(100)), hi.Text("b"))
 	stage(t, v, func(s *uitest.Session) {
 		within(t, "framed spacer width", s.Rect("hi-frame", 0).W, 100, 1)
@@ -267,6 +278,7 @@ func TestGeometryDefiniteFrameDoesNotGrow(t *testing.T) {
 // dead through Group and a tagged frame, while a sibling's live want merged with it
 // stays live.
 func TestGeometryDefiniteFillThroughContainers(t *testing.T) {
+	t.Parallel()
 	framed := func() hi.View { return hi.Spacer().Frame(hi.Width(100)) }
 	cases := []struct {
 		name     string
@@ -296,6 +308,7 @@ func TestGeometryDefiniteFillThroughContainers(t *testing.T) {
 // so item alignment governs overflow and a centered subview overflows
 // symmetrically instead of hanging off the trailing side.
 func TestGeometryFrameCentersOversizedSubview(t *testing.T) {
+	t.Parallel()
 	v := hi.Text(strings.Repeat("overflow ", 8)).
 		FixedSize().
 		Frame(hi.Width(100), hi.Height(100))
@@ -313,6 +326,7 @@ func TestGeometryFrameCentersOversizedSubview(t *testing.T) {
 // receives clicks, while clicks in the empty parts of the layer pass
 // through to the base.
 func TestGeometryOverlayHitTest(t *testing.T) {
+	t.Parallel()
 	v := hi.Text("base").
 		Frame(hi.Width(300), hi.Height(100)).
 		Overlay(hi.TopTrailing, hi.Badge("hit").Class("probe"))
@@ -347,6 +361,7 @@ func TestGeometryOverlayHitTest(t *testing.T) {
 // document scrolling. Both overlay grids stay on the browser viewport and the
 // later overlay paints above the earlier one where their contents overlap.
 func TestGeometryRootOverlayUsesViewport(t *testing.T) {
+	t.Parallel()
 	v := hi.ScrollView(hi.Vertical,
 		hi.OKLCH(0.5, 0, 0).Frame(hi.Width(600), hi.Height(1000))).
 		Overlay(hi.Center, hi.Badge("first").Class("first")).
@@ -375,6 +390,7 @@ func TestGeometryRootOverlayUsesViewport(t *testing.T) {
 }
 
 func TestGeometryFillTerminatesAtDefiniteAncestor(t *testing.T) {
+	t.Parallel()
 	v := hi.VStack(hi.HStack(hi.Text("a"), hi.Spacer())).Frame(hi.Width(300))
 	stage(t, v, func(s *uitest.Session) {
 		within(t, "row width", s.Rect("hi-hstack", 0).W, 300, 1)
@@ -382,6 +398,7 @@ func TestGeometryFillTerminatesAtDefiniteAncestor(t *testing.T) {
 }
 
 func TestGeometryTagFrameCarriesFill(t *testing.T) {
+	t.Parallel()
 	v := hi.HStack(
 		hi.HStack(hi.Text("a"), hi.Spacer()).Frame().Tag("nav"),
 		hi.Text("b"),
@@ -398,6 +415,7 @@ func TestGeometryTagFrameCarriesFill(t *testing.T) {
 }
 
 func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
+	t.Parallel()
 	var rows []hi.View
 	for i := range 20 {
 		rows = append(rows, hi.Text("Episode "+strconv.Itoa(i)))
@@ -417,6 +435,7 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 // fixed overlay uses the viewport's at point; inside a wrapper, the ordinary
 // overlay uses the base composite's at point.
 func TestGeometryOverlayAtAnchors(t *testing.T) {
+	t.Parallel()
 	v := hi.Text("base").
 		Frame(hi.Width(300), hi.Height(100)).
 		OverlayAt(hi.TopTrailing, hi.Center, hi.Badge("3").Class("probe"))
@@ -444,6 +463,7 @@ func TestGeometryOverlayAtAnchors(t *testing.T) {
 // content size, the base subview and the layer both track the
 // container's box.
 func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
+	t.Parallel()
 	layered := hi.VStack(hi.Text("base"), hi.Secondary).Underlay(hi.Center, hi.Blue)
 	v := hi.HStack(hi.Text("tall").Padding(hi.Edges(140)), layered)
 	stage(t, v, func(s *uitest.Session) {
@@ -463,6 +483,7 @@ func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
 // ideal when a sibling resolves taller; in bounded space the ideal is
 // inert, even below 100px.
 func TestGeometryScrollContributesItsIdeal(t *testing.T) {
+	t.Parallel()
 	var rows []hi.View
 	for i := range 20 {
 		rows = append(rows, hi.Text("Episode "+strconv.Itoa(i)))
@@ -508,6 +529,7 @@ func TestGeometryScrollContributesItsIdeal(t *testing.T) {
 // frame: the frame is exactly its declared size even when its content
 // wants more — the declared size caps the frame's automatic minimum.
 func TestGeometryDefiniteFrameIsStrict(t *testing.T) {
+	t.Parallel()
 	long := strings.Repeat("overflow ", 40)
 	stage(t, hi.Text(long).Frame(hi.Width(200), hi.Height(100)), func(s *uitest.Session) {
 		frame := s.Rect("hi-frame", 0)
@@ -526,6 +548,7 @@ func natImage(w, h int) string {
 // fills: the img — its own box — meets the imposed size in a grid cell
 // and under flex pressure alike.
 func TestGeometryImageScalingModesFill(t *testing.T) {
+	t.Parallel()
 	v := hi.Image(natImage(400, 400)).
 		ScaledToFill().
 		Frame(hi.Width(120), hi.Height(80))
@@ -552,6 +575,7 @@ func TestGeometryImageScalingModesFill(t *testing.T) {
 // the floored text, and frame alignment places the text at the frame's
 // trailing edge.
 func TestGeometryNativeImageHolds(t *testing.T) {
+	t.Parallel()
 	v := hi.HStack(
 		hi.Image(natImage(200, 200)),
 		hi.Text("hi"),
@@ -572,6 +596,7 @@ func TestGeometryNativeImageHolds(t *testing.T) {
 // height scales through the picture's ratio, giving the viewport
 // real overflow to scroll against.
 func TestGeometryScaledImageIdeal(t *testing.T) {
+	t.Parallel()
 	stage(t, hi.Image(natImage(200, 150)).ScaledToFill().FixedSize(), func(s *uitest.Session) {
 		img := s.Rect("img", 0)
 		within(t, "img natural width", img.W, 200, 1)
@@ -591,6 +616,7 @@ func TestGeometryScaledImageIdeal(t *testing.T) {
 // along a row's major axis keep their sizes under pressure — the row
 // overflows — instead of being compressed by flex shrink.
 func TestGeometryRigidFrameHolds(t *testing.T) {
+	t.Parallel()
 	v := hi.HStack(
 		hi.OKLCH(0.3, 0, 0).Frame(hi.Width(400), hi.Height(40)).Class("a"),
 		hi.OKLCH(0.5, 0, 0).Frame(hi.Width(300), hi.Height(40)).Class("b"),
@@ -606,6 +632,7 @@ func TestGeometryRigidFrameHolds(t *testing.T) {
 // overflowing its own container — instead of pinching them off at the
 // available space.
 func TestGeometryStackEnclosesItems(t *testing.T) {
+	t.Parallel()
 	v := hi.HStack(
 		hi.OKLCH(0.3, 0, 0).Frame(hi.Width(200), hi.Height(40)),
 		hi.Text("hi"),
@@ -627,6 +654,7 @@ func TestGeometryStackEnclosesItems(t *testing.T) {
 // below its content, text wraps down to its longest token and no
 // further.
 func TestGeometryTextFloorsAtMinContent(t *testing.T) {
+	t.Parallel()
 	v := hi.VStack(
 		hi.HStack(
 			hi.OKLCH(0.3, 0, 0).Frame(hi.Width(550), hi.Height(20)),
@@ -648,6 +676,7 @@ func TestGeometryTextFloorsAtMinContent(t *testing.T) {
 // tall as its line count allows, and text within the limit keeps its
 // natural height.
 func TestGeometryLineLimit(t *testing.T) {
+	t.Parallel()
 	long := "to be or not to be that is the question whether tis nobler in the mind"
 	v := hi.VStack(
 		hi.Text(long).LineLimit(2).Class("clamped"),
@@ -668,6 +697,7 @@ func TestGeometryLineLimit(t *testing.T) {
 // A one-line limit must not restore the leading removed by TextTrim,
 // whether the text fits or needs truncation.
 func TestGeometryLineLimitTextTrim(t *testing.T) {
+	t.Parallel()
 	v := hi.VStack(
 		hi.Text("Save").Class("reference"),
 		hi.Text("Save").TextTrim(0).Class("untrimmed"),
@@ -691,6 +721,7 @@ func TestGeometryLineLimitTextTrim(t *testing.T) {
 // A nowrap line must yield to the width offered through intermediate
 // containers, including the space left by a rigid sibling and a gap.
 func TestGeometryLineLimitWidth(t *testing.T) {
+	t.Parallel()
 	const long = "Save all changes to this collection and update every episode in the library"
 	for _, tt := range []struct {
 		name  string
@@ -705,6 +736,7 @@ func TestGeometryLineLimitWidth(t *testing.T) {
 		{"nested", func(v hi.View) hi.View { return hi.VStack(hi.HStack(hi.ZStack(v.Padding(hi.Edges(6))))) }, 12},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			v := hi.HStack(
 				hi.Red.Frame(hi.Width(80), hi.Height(20)).Class("rigid"),
 				tt.wrap(hi.Text(long).LineLimit(1).Class("text")).Class("child"),
@@ -742,6 +774,7 @@ func TestGeometryLineLimitWidth(t *testing.T) {
 // Text can shrink to zero, but a stack must still enclose its rigid
 // children, gaps, and explicit minima when they exceed the offer.
 func TestGeometryLineLimitMinimum(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name  string
 		wrap  func(hi.View) hi.View
@@ -766,6 +799,7 @@ func TestGeometryLineLimitMinimum(t *testing.T) {
 }
 
 func TestGeometryLineLimitIdeal(t *testing.T) {
+	t.Parallel()
 	const long = "Save all changes to this collection and update every episode in the library"
 	v := hi.VStack(
 		hi.Text(long).FixedSize().Class("reference"),
@@ -791,6 +825,7 @@ func TestGeometryLineLimitIdeal(t *testing.T) {
 // available space and floors at its minimum; in a grid cell and on a flex
 // cross axis it shrinks to fit the cell's available space.
 func TestGeometrySoftFrameTracksSpace(t *testing.T) {
+	t.Parallel()
 	rigid := func(w float64) hi.View { return hi.OKLCH(0.5, 0, 0).Frame(hi.Width(complex(w, 0)), hi.Height(40)) }
 	soft := hi.OKLCH(0.3, 0, 0).
 		Frame(hi.Width(500), hi.Height(40)).FrameBounds(
@@ -830,6 +865,7 @@ func TestGeometrySoftFrameTracksSpace(t *testing.T) {
 // with bounded available space the same ideal is inert and the
 // frame tracks space as usual.
 func TestGeometrySoftFrameIdeal(t *testing.T) {
+	t.Parallel()
 	v := hi.VStack(hi.Secondary).
 		FrameBounds(hi.IdealWidth(500), hi.IdealHeight(80)).
 		Class("soft")
@@ -854,6 +890,7 @@ func TestGeometrySoftFrameIdeal(t *testing.T) {
 // available width, less the gaps, equally; subviews wrap into rows in
 // order; and a filling subview takes its whole cell.
 func TestGeometryGridColumns(t *testing.T) {
+	t.Parallel()
 	var cells []hi.View
 	for range 5 {
 		cells = append(cells, hi.Red.Frame(hi.Height(20)))
@@ -875,6 +912,7 @@ func TestGeometryGridColumns(t *testing.T) {
 // pressure: a subview wider than its cell overflows it rather than
 // widening its column, so the other columns keep their share.
 func TestGeometryGridColumnsStayEqual(t *testing.T) {
+	t.Parallel()
 	wide := hi.Red.Frame(hi.Width(500), hi.Height(20))
 	fill := hi.Blue.Frame(hi.Height(20))
 	stage(t, hi.VStack(hi.Grid(hi.Columns(3), wide, fill, fill)), func(s *uitest.Session) {
@@ -890,6 +928,7 @@ func TestGeometryGridColumnsStayEqual(t *testing.T) {
 // non-filling subviews is as wide as its widest subview times its
 // column count, plus gaps, and sits at the stack's alignment.
 func TestGeometryGridHugs(t *testing.T) {
+	t.Parallel()
 	narrow := hi.Red.Frame(hi.Width(30), hi.Height(20))
 	wide := hi.Blue.Frame(hi.Width(50), hi.Height(20))
 	stage(t, hi.VStack(hi.Grid(hi.Columns(3), narrow, wide, narrow, narrow)), func(s *uitest.Session) {
@@ -903,6 +942,7 @@ func TestGeometryGridHugs(t *testing.T) {
 // TestGeometryGridCellMinWidth pins the adaptive layout: as many
 // columns as fit at the minimum width, each widened to share the rest.
 func TestGeometryGridCellMinWidth(t *testing.T) {
+	t.Parallel()
 	var cells []hi.View
 	for range 4 {
 		cells = append(cells, hi.Red.Frame(hi.Height(20)))
@@ -919,6 +959,7 @@ func TestGeometryGridCellMinWidth(t *testing.T) {
 // kind of parent: on the anchor axis the frame is sized as its subview
 // would be, and the other axis follows by the ratio.
 func TestGeometryFrameRatioAnchors(t *testing.T) {
+	t.Parallel()
 	color := func() hi.View { return hi.Red }
 	for _, tt := range []struct {
 		name string
@@ -939,6 +980,7 @@ func TestGeometryFrameRatioAnchors(t *testing.T) {
 		{"ideal width", hi.ScrollView(hi.Horizontal, color().FrameBounds(hi.IdealWidth(120)).FrameRatio(3, 1, hi.Horizontal)), 120, 40},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			stage(t, tt.v, func(s *uitest.Session) {
 				r := s.Rect("hi-aspect", 0)
 				within(t, "width", r.W, tt.w, 1)
@@ -963,6 +1005,7 @@ func TestGeometryFrameRatioAnchors(t *testing.T) {
 		{"vertical anchor", hi.VStack(small().FrameRatio(1, 2, hi.Vertical, hi.TopLeading)), 10, 20},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			stage(t, tt.v, func(s *uitest.Session) {
 				frame, sub := s.Rect("hi-aspect", 0), s.Rect("hi-color", 0)
 				within(t, "frame width", frame.W, tt.w, 1)
@@ -986,6 +1029,7 @@ func TestGeometryFrameRatioAnchors(t *testing.T) {
 // is pushed out by its section's end as the next section arrives —
 // whereupon the next section's heading takes its place.
 func TestGeometryStickyPins(t *testing.T) {
+	t.Parallel()
 	section := func(i int) hi.View {
 		rows := []hi.View{
 			hi.Text(fmt.Sprintf("Heading %d", i)).
@@ -1041,6 +1085,7 @@ func TestGeometryStickyPins(t *testing.T) {
 // TestGeometryGalleryFits loads the full fixture gallery and checks nothing
 // forces its scroll viewport to scroll horizontally.
 func TestGeometryGalleryFits(t *testing.T) {
+	t.Parallel()
 	html, err := fixture.Document(staticCSS)
 	if err != nil {
 		t.Fatalf("fixture.Document: %v", err)
