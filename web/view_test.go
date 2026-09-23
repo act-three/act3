@@ -11,7 +11,6 @@ import (
 	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
-	"ily.dev/act3/ui"
 	"ily.dev/domi"
 )
 
@@ -59,7 +58,7 @@ func TestHiRoot(t *testing.T) {
 			for _, want := range []string{
 				"<title>" + tt.title + "</title>",
 				"<hi-root", "<hi-html", "v-domi-root",
-				"@layer hi{", tt.content, `id="player"`, `id="note-port"`,
+				"@layer hi{", tt.content, `id="player"`, "<hi-note-outbox", "<hi-note-display",
 			} {
 				if !strings.Contains(r.Body.String(), want) {
 					t.Errorf("response missing %q", want)
@@ -75,10 +74,13 @@ func TestHiRoot(t *testing.T) {
 			if strings.Contains(body, "<hi-scroll") {
 				t.Error("page scrolling must use the document viewport")
 			}
-			for _, id := range []string{"player", "note-port"} {
-				if count := strings.Count(body, `id="`+id+`"`); count != 1 {
-					t.Errorf("%s containers = %d, want 1", id, count)
+			for _, marker := range []string{`id="player"`, "<hi-note-outbox", "<hi-note-display"} {
+				if count := strings.Count(body, marker); count != 1 {
+					t.Errorf("%s containers = %d, want 1", marker, count)
 				}
+			}
+			if strings.Contains(body, "note-port") {
+				t.Error("page contains the legacy note port")
 			}
 		})
 	}
@@ -118,7 +120,8 @@ func TestPreviewResolvesObjectPath(t *testing.T) {
 
 func TestPreviewPreservesState(t *testing.T) {
 	a := newTestApp(t, newTestModel(t), "/app/about")
-	a.notes = []ui.Note{{ID: "note-1", Title: "Preview must not replay this"}}
+	liveDialog := &seriesAddDialog{query: "Preserved live search"}
+	a.dialog = liveDialog
 	for _, tt := range []struct {
 		path, dest, title, content string
 	}{
@@ -143,10 +146,10 @@ func TestPreviewPreservesState(t *testing.T) {
 			if dest != tt.dest+"?q=kept#section" || title != tt.title {
 				t.Fatalf("preview = %q, %q", dest, title)
 			}
-			if !strings.Contains(body, tt.content) || strings.Contains(body, a.notes[0].Title) {
-				t.Error("preview must render the destination without replaying notifications")
+			if !strings.Contains(body, tt.content) || strings.Contains(body, liveDialog.query) {
+				t.Error("preview must render the destination without the live dialog")
 			}
-			if a.path != "/app/about" || len(a.notes) != 1 || u.Path != tt.path {
+			if a.path != "/app/about" || a.dialog != liveDialog || u.Path != tt.path {
 				t.Error("preview changed the live app or the requested URL")
 			}
 		})

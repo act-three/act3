@@ -8,7 +8,6 @@ import (
 	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/model/kind"
-	"ily.dev/act3/ui"
 	"ily.dev/act3/view"
 	"ily.dev/domi"
 )
@@ -21,7 +20,6 @@ func (a *app) Preview(ctx context.Context, u *url.URL, render hi.PreviewRenderer
 	a = new(*a)
 	u = u.Clone()
 	u.Path = redirect(u.Path)
-	a.notes = nil
 	a.setPath(ctx, u)
 	a.render(ctx, func(v hi.View) {
 		p = render(u.String(), v)
@@ -59,7 +57,6 @@ func (a *app) render(ctx context.Context, render func(hi.View)) {
 func (a *app) view(v hi.View, dlg node) hi.View {
 	n := domi.Fragment(
 		dlg,
-		ui.NotePort(a.notes),
 		view.PlayerContainer(a.viewPlayer(a.player)),
 	)
 	// A root overlay preserves the theater's document scrolling and
