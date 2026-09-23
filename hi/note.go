@@ -14,9 +14,34 @@ func Notify[Msg any](n Note) domi.Cmd[Msg] {
 	return domi.Effect[Msg](notifyEffect{note: n})
 }
 
+// RegisterNote registers a named note template
+// for the JavaScript function Hi.notify.
+//
+//	RegisterNote[Msg]("upload-failed", Note{
+//		Icon:        "circle-x",
+//		Message:     "Upload failed",
+//		Description: "Could not reach the server",
+//	})
+//
+// If name is empty, RegisterNote panics.
+//
+// After registration,
+// application JavaScript can display the note
+// without a server request:
+//
+//	Hi.notify("upload-failed");
+//
+// Each call displays a fresh copy with its own lifetime.
+func RegisterNote[Msg any](name string, n Note) domi.Cmd[Msg] {
+	if name == "" {
+		panic("hi: RegisterNote requires a nonempty name")
+	}
+	return domi.Effect[Msg](notifyEffect{note: n, template: name})
+}
+
 // A Note specifies a message for the user
 // with associated configuration.
-// See [Notify].
+// See [Notify] and [RegisterNote].
 type Note struct {
 	Message     string        // Required primary text.
 	Description string        // Optional supporting text.
@@ -25,14 +50,18 @@ type Note struct {
 	Duration    time.Duration // Optional lifetime. Default is 4s.
 }
 
-type notifyEffect struct{ note Note }
+type notifyEffect struct {
+	note     Note
+	template string
+}
 
 func notifyHandler(_ context.Context, n notifyEffect) msg {
-	return msgNotify{note: n.note}
+	return msgNotify{note: n.note, template: n.template}
 }
 
 type note struct {
-	id string
+	id       string
+	template string
 	Note
 }
 
@@ -60,7 +89,10 @@ func (n note) view() View {
 		BorderClipped().
 		Frame(Width(360), Top). // Top needed for animating height.
 		Tag("hi-note").
-		Attr(domi.Name("data-duration", fmt.Sprint(n.Duration.Milliseconds()))).
+		Attr(
+			domi.Name("data-duration", fmt.Sprint(n.Duration.Milliseconds())),
+			n.templateAttr(),
+		).
 		BorderStroke(0.5, borderColor).
 		WhileFocused(BorderOutline(0, 1, Accent)).
 		modify(shadowMedium).
@@ -107,6 +139,13 @@ func (n note) dismiss() View {
 			domi.Name("data-dismiss", ""),
 		).
 		ControlSize(Mini)
+}
+
+func (n note) templateAttr() domi.Attr {
+	if n.template != "" {
+		return domi.Name("data-note-template", n.template)
+	}
+	return domi.Group()
 }
 
 func notePortOverlay(root View, notes []note) View {

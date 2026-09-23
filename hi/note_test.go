@@ -37,12 +37,15 @@ func TestNotesViewConsumesOutbox(t *testing.T) {
 	for _, text := range []string{"first <note>", "second", "second"} {
 		in.Update(t.Context(), msgNotify{note: Note{Message: text}})
 	}
+	in.Update(t.Context(), notifyHandler(t.Context(), notifyEffect{
+		template: "saved", note: Note{Message: "Template"},
+	}))
 	in.Update(t.Context(), wrapMsg(7))
-	if len(in.notes) != 3 || appUpdates != 1 {
+	if len(in.notes) != 4 || appUpdates != 1 {
 		t.Fatalf("pending=%d, app updates=%d", len(in.notes), appUpdates)
 	}
 	_, _, preview := in.Preview(t.Context(), &url.URL{Path: "/next"})
-	if strings.Contains(outbox.FindString(renderNode(t, preview)), "domi-key") || len(in.notes) != 3 {
+	if strings.Contains(outbox.FindString(renderNode(t, preview)), "domi-key") || len(in.notes) != 4 {
 		t.Fatal("preview delivered or consumed pending notes")
 	}
 	// An app can invoke its renderer more than once while constructing a page.
@@ -52,7 +55,8 @@ func TestNotesViewConsumesOutbox(t *testing.T) {
 	}
 	_, page := in.View(t.Context())
 	body := outbox.FindString(renderNode(t, page))
-	if strings.Count(body, "domi-key") != 3 || !strings.Contains(body, "first &lt;note&gt;") {
+	if strings.Count(body, "domi-key") != 4 || !strings.Contains(body, "first &lt;note&gt;") ||
+		!strings.Contains(body, `data-note-template="saved"`) {
 		t.Fatalf("missing outbox entries: %s", body)
 	}
 	if len(in.notes) != 0 {
@@ -63,7 +67,7 @@ func TestNotesViewConsumesOutbox(t *testing.T) {
 		t.Fatal("a second View replayed notes")
 	}
 	in.Update(t.Context(), msgNotify{note: Note{Message: "later"}})
-	if in.notes[0].id != "4" {
+	if in.notes[0].id != "5" {
 		t.Fatal("delivery IDs were reused")
 	}
 	other := &instance[int, *navigationApp]{app: a, config: configure(nil)}
@@ -214,6 +218,7 @@ func runNoteView(t *testing.T, w, h int, n Note, fn func(*uitest.Session)) {
 		` + string(rawClientJS) + `
 		let nextID = 0;
 		globalThis.fixture = {
+			notify,
 			add(...texts) {
 				for (const text of texts) {
 					const e = document.querySelector('#note-template').content.firstElementChild.cloneNode(true);
