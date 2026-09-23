@@ -1000,7 +1000,7 @@ func TestNoteSchema(t *testing.T) {
 		{
 			name:   "link",
 			n:      Note{Message: "Saved", Action: Link("/next", Text("Open")), Duration: 1500 * time.Microsecond},
-			want:   []string{`href="/next"`, `data-duration="1.5"`},
+			want:   []string{`href="/next"`, `data-duration="1"`},
 			absent: []string{`aria-label="Dismiss"`},
 		},
 	} {
@@ -1028,7 +1028,7 @@ func TestNotesDuration(t *testing.T) {
 	}{
 		{0, 4000},
 		{-time.Second, 4000},
-		{1500 * time.Microsecond, 1.5},
+		{1500 * time.Microsecond, 1},
 		{10 * time.Second, 10000},
 		{30 * 24 * time.Hour, 2592000000},
 	} {
