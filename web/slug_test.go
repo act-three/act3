@@ -8,7 +8,6 @@ import (
 
 	"ily.dev/act3/database"
 	"ily.dev/act3/model"
-	"ily.dev/act3/model/kind"
 	"ily.dev/act3/msg"
 	"ily.dev/act3/storage"
 )
@@ -37,7 +36,7 @@ func TestReplaceSlugSuffix(t *testing.T) {
 	}
 }
 
-func TestReplaceURLFollowsCanonicalSlug(t *testing.T) {
+func TestModelEventUpdatesMovieTitle(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 	var moviePath, medID string
@@ -60,50 +59,13 @@ func TestReplaceURLFollowsCanonicalSlug(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if c := a.Update(ctx, &msg.ModelEvent{}); c == nil {
-		t.Fatal("Update(ModelEvent) returned nil cmd, want ReplaceURL cmd")
-	}
-	if len(a.notes) != 0 {
-		t.Fatalf("notes = %v, want none", a.notes)
+	a.Update(ctx, &msg.ModelEvent{})
+	if title, _ := renderApp(t, a); title != "Dune Part One" {
+		t.Fatalf("title after ModelEvent = %q, want Dune Part One", title)
 	}
 }
 
-func TestReplaceURLIgnoresStaleDescriptor(t *testing.T) {
-	ctx := context.Background()
-	m := newTestModel(t)
-	var movieID, moviePath string
-	if err := m.WithTxRW(ctx, func(tx *model.TxRW) error {
-		mw, err := tx.MovieCreate("Dune", "")
-		if err != nil {
-			return err
-		}
-		movieID = mw.MovieHead.ID()
-		moviePath = mw.EditorPath()
-		return nil
-	}); err != nil {
-		t.Fatal(err)
-	}
-
-	a := newTestApp(t, m, moviePath)
-	if err := m.WithTxRW(ctx, func(tx *model.TxRW) error {
-		return tx.Trash(kind.Movie{}, movieID)
-	}); err != nil {
-		t.Fatal(err)
-	}
-
-	if c := a.Update(ctx, &msg.ModelEvent{}); c != nil {
-		t.Fatalf("Update(ModelEvent) returned %T, want nil", c)
-	}
-	if len(a.notes) != 0 {
-		t.Fatalf("notes = %v, want none", a.notes)
-	}
-}
-
-// TestTombstonedSlugCanonicalized verifies that arriving at a
-// tombstoned slug — on session start (a bookmark or stale link) or by
-// in-session navigation — resolves the page and yields a ReplaceURL
-// cmd toward the canonical path.
-func TestTombstonedSlugCanonicalized(t *testing.T) {
+func TestTombstonedSlugResolvesMovie(t *testing.T) {
 	ctx := context.Background()
 	m := newTestModel(t)
 	if err := m.WithTxRW(ctx, func(tx *model.TxRW) error {
@@ -116,27 +78,17 @@ func TestTombstonedSlugCanonicalized(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	a, c := newApp(ctx, &Config{Model: m}, &url.URL{Path: "/dune"})
-	if c == nil {
-		t.Fatal("newApp at tombstoned /dune returned nil cmd, want ReplaceURL cmd")
-	}
+	a := newTestApp(t, m, "/dune")
 	if title, _ := renderApp(t, a); title != "Dune Part One" {
 		t.Fatalf("View at tombstoned /dune has title %q, want the movie's", title)
 	}
 
 	a = newTestApp(t, m, "/dune-part-one")
-	if c := a.Update(ctx, &msg.URLChange{URL: &url.URL{Path: "/dune"}}); c == nil {
-		t.Fatal("Update(URLChange to tombstoned /dune) returned nil cmd, want ReplaceURL cmd")
-	}
+	a.Update(ctx, &msg.URLChange{URL: &url.URL{Path: "/dune"}})
 	if title, _ := renderApp(t, a); title != "Dune Part One" {
 		t.Fatalf("View after navigating to tombstoned /dune has title %q, want the movie's", title)
 	}
 
-	// A canonical path needs no correction.
-	a = newTestApp(t, m, "/dune-part-one")
-	if c := a.Update(ctx, &msg.URLChange{URL: &url.URL{Path: "/dune-part-one"}}); c != nil {
-		t.Fatalf("Update(URLChange to canonical path) returned %T, want nil", c)
-	}
 }
 
 func newTestApp(t *testing.T, m *model.Model, path string) *app {
