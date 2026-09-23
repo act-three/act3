@@ -177,8 +177,7 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		a.model.KillTask(m.ID)
 		return nil
 	case *msg.TaskDelete:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.TaskDelete(m.ID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.TaskDelete(m.ID) })
 
 	case *msg.Trash:
 		return a.doNav(ctx, func(tx *model.TxRW) (string, error) {
@@ -186,11 +185,9 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 			return dest, tx.Trash(m.Kind, m.ID)
 		})
 	case *msg.Restore:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.Restore(m.ID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.Restore(m.ID) })
 	case *msg.Purge:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.Purge(m.ID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.Purge(m.ID) })
 
 	case *msg.CollectionAdd:
 		return a.doNav(ctx, func(tx *model.TxRW) (string, error) {
@@ -232,15 +229,13 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		return nil
 	case *msg.DownloadFileAttachPick:
 		a.dialog = nil
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeVideoSet(m.InfoHash, m.Path, m.EpisodeID, true) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeVideoSet(m.InfoHash, m.Path, m.EpisodeID, true) })
 
 	case *msg.Play:
-		a.doR(ctx, func(tx *model.TxR) error {
+		return a.doR(ctx, func(tx *model.TxR) cmd {
 			a.player = getPlayer(tx, m)
 			return nil
 		})
-		return nil
 	case *msg.PlayerClose:
 		a.player = nil
 		return nil
@@ -253,21 +248,16 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		}
 		return nil
 	case *msg.CollectionMovieAdd:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionMovieAdd(m.CollectionID, m.MovieID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionMovieAdd(m.CollectionID, m.MovieID) })
 	case *msg.CollectionSeriesAdd:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionSeriesAdd(m.CollectionID, m.SeriesID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionSeriesAdd(m.CollectionID, m.SeriesID) })
 	case *msg.CollectionMovieRemove:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionMovieRemove(m.CollectionID, m.MovieID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionMovieRemove(m.CollectionID, m.MovieID) })
 	case *msg.CollectionSeriesRemove:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionSeriesRemove(m.CollectionID, m.SeriesID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionSeriesRemove(m.CollectionID, m.SeriesID) })
 
 	case *msg.SeasonAdd:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonAdd(m.EditionID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonAdd(m.EditionID) })
 	case *msg.SeriesEditionAdd:
 		return a.doNav(ctx, func(tx *model.TxRW) (string, error) {
 			sw, err := tx.SeriesEditionClone(m.EditionID)
@@ -288,79 +278,58 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 		// No navigation: promoting changes the editions' slugs, and
 		// every affected session — this one included — follows the
 		// slug-change events to the right place.
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionSetDefault(m.ID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionSetDefault(m.ID) })
 
 	case *msg.EpisodeCreate:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonEpisodeCreate(m.SeasonID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonEpisodeCreate(m.SeasonID) })
 	case *msg.SeasonAddEpisode:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonEpisodeAdd(m.SeasonID, m.EpisodeID, m.SortKey) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonEpisodeAdd(m.SeasonID, m.EpisodeID, m.SortKey) })
 	case *msg.SeasonRemoveEpisode:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonEpisodeRemove(m.SeasonID, m.EpisodeID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonEpisodeRemove(m.SeasonID, m.EpisodeID) })
 	case *msg.EpisodeMove:
-		a.doRW(ctx, func(tx *model.TxRW) error {
+		return a.doRW(ctx, func(tx *model.TxRW) error {
 			return tx.EpisodeMove(m.EpisodeID, m.FromSeasonID, m.SeasonID, m.Index)
 		})
-		return nil
 
 	case *msg.VideoReimport:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.ReimportVideo(m.ID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.ReimportVideo(m.ID) })
 	case *msg.VideoReencode:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.ReencodeVideo(m.ID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.ReencodeVideo(m.ID) })
 
 	case *msg.EpisodeVideoSetActive:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeVideoSetActive(m.EpisodeID, m.VideoID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeVideoSetActive(m.EpisodeID, m.VideoID) })
 	case *msg.MovieVideoSetActive:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieVideoSetActive(m.MovieEditionID, m.VideoID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieVideoSetActive(m.MovieEditionID, m.VideoID) })
 
 	case *msg.CollectionSetTitle:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionTitleSet(m.ID, m.Title) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.CollectionTitleSet(m.ID, m.Title) })
 	case *msg.SeriesSetTitle:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeriesTitleSet(m.ID, m.Title) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeriesTitleSet(m.ID, m.Title) })
 	case *msg.SeasonSetTitle:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonTitleSet(m.ID, m.Title) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeasonTitleSet(m.ID, m.Title) })
 
 	case *msg.EpisodeSetTitle:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeTitleSet(m.ID, m.Title) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeTitleSet(m.ID, m.Title) })
 	case *msg.EpisodeSetAirdate:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeAirdateSet(m.ID, m.Airdate) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeAirdateSet(m.ID, m.Airdate) })
 	case *msg.EpisodeSetSummary:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeSummarySet(m.ID, m.Summary) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeSummarySet(m.ID, m.Summary) })
 	case *msg.EpisodeSetType:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeTypeSet(m.ID, m.Type) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeTypeSet(m.ID, m.Type) })
 
 	case *msg.SeriesEditionSetLabel:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeriesEditionLabelSet(m.ID, m.Label) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeriesEditionLabelSet(m.ID, m.Label) })
 	case *msg.SeriesEditionSetSummary:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeriesEditionSummarySet(m.ID, m.Summary) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SeriesEditionSummarySet(m.ID, m.Summary) })
 
 	case *msg.MovieEditionSetTitle:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionTitleSet(m.ID, m.Title) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionTitleSet(m.ID, m.Title) })
 	case *msg.MovieEditionSetLabel:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionLabelSet(m.ID, m.Label) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionLabelSet(m.ID, m.Label) })
 	case *msg.MovieEditionSetReleaseDate:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionReleaseDateSet(m.ID, m.ReleaseDate) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionReleaseDateSet(m.ID, m.ReleaseDate) })
 	case *msg.MovieEditionSetRuntime:
-		a.doRW(ctx, func(tx *model.TxRW) error {
+		return a.doRW(ctx, func(tx *model.TxRW) error {
 			var runtime int64
 			if s := strings.TrimSpace(m.Runtime); s != "" {
 				var err error
@@ -371,29 +340,22 @@ func (a *app) Update(ctx context.Context, m msg.Msg) cmd {
 			}
 			return tx.MovieEditionRuntimeSet(m.ID, runtime)
 		})
-		return nil
 	case *msg.MovieEditionSetSummary:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionSummarySet(m.ID, m.Summary) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.MovieEditionSummarySet(m.ID, m.Summary) })
 
 	case *msg.DownloadImport:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.DownloadImport(m.ID) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.DownloadImport(m.ID) })
 	case *msg.DownloadSetAutoImport:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.DownloadAutoImportSet(m.ID, m.On) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.DownloadAutoImportSet(m.ID, m.On) })
 	case *msg.EpisodeVideoSet:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeVideoSet(m.InfoHash, m.Path, m.EpisodeID, m.Attach) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.EpisodeVideoSet(m.InfoHash, m.Path, m.EpisodeID, m.Attach) })
 
 	case *msg.TMDBSetToken:
-		a.doRW(ctx, func(tx *model.TxRW) error { return tx.SettingSetString(model.SettingKeyTMDBAccessToken, m.Token) })
-		return nil
+		return a.doRW(ctx, func(tx *model.TxRW) error { return tx.SettingSetString(model.SettingKeyTMDBAccessToken, m.Token) })
 	case *msg.TransmissionSetURL:
-		a.doRW(ctx, func(tx *model.TxRW) error {
+		return a.doRW(ctx, func(tx *model.TxRW) error {
 			return tx.SettingSetString(model.SettingKeyTransmissionBaseURL, m.URL)
 		})
-		return nil
 	}
 	panic("unreached")
 }
@@ -419,11 +381,14 @@ func getPlayer(tx *model.TxR, m *msg.Play) (pl *player) {
 	return pl
 }
 
-// doR runs f inside a readonly tx, and calls notify on error.
-func (a *app) doR(ctx context.Context, f func(tx *model.TxR) error) {
-	if err := a.model.WithTxR(ctx, f); err != nil {
-		a.notify(ui.NoteError, err.Error())
-	}
+// doR runs f inside a readonly tx, and displays a note on error.
+func (a *app) doR(ctx context.Context, f func(tx *model.TxR) cmd) cmd {
+	var c cmd
+	err := a.model.WithTxR(ctx, func(tx *model.TxR) error {
+		c = f(tx)
+		return nil
+	})
+	return domi.Batch[msg.Msg](c, notifyError(err))
 }
 
 // doRW opens a read-write transaction as part of the update,
@@ -431,28 +396,28 @@ func (a *app) doR(ctx context.Context, f func(tx *model.TxR) error) {
 // app's state, so a state-transition write happens inline, where the
 // render that follows reflects it — unlike a slow or external effect,
 // which returns a cmd instead.
-func (a *app) doRW(ctx context.Context, f func(tx *model.TxRW) error) {
-	if err := a.model.WithTxRW(ctx, f); err != nil {
-		a.notify(ui.NoteError, err.Error())
-	}
+func (a *app) doRW(ctx context.Context, f func(tx *model.TxRW) error) cmd {
+	err := a.model.WithTxRW(ctx, f)
+	return notifyError(err)
 }
 
-// doNav is [app.doTx] for a write whose result names a path, to which
-// the session then navigates.
+// doNav navigates to the returned path and displays a note on error.
 func (a *app) doNav(ctx context.Context, f func(tx *model.TxRW) (string, error)) cmd {
 	var dest string
-	a.doRW(ctx, func(tx *model.TxRW) error {
-		var err error
+	c := a.doRW(ctx, func(tx *model.TxRW) (err error) {
 		dest, err = f(tx)
 		return err
 	})
 	if dest == "" {
-		return nil
+		return c
 	}
-	return domi.PushURL[msg.Msg](dest)
+	return domi.Batch[msg.Msg](c, domi.PushURL[msg.Msg](dest))
 }
 
 func notifyError(err error) cmd {
+	if err == nil {
+		return nil
+	}
 	return hi.Notify[msg.Msg](hi.Note{
 		Icon:        "line/x-circle",
 		Message:     "Error",

@@ -22,8 +22,8 @@ const (
 // It derives the correct URL from a.path
 // and the current slug set in the database,
 // and returns a non-nil cmd if the canonical path differs.
-func (a *app) replaceURL(ctx context.Context) (c cmd) {
-	a.doR(ctx, func(tx *model.TxR) error {
+func (a *app) replaceURL(ctx context.Context) cmd {
+	return a.doR(ctx, func(tx *model.TxR) cmd {
 		path := splitPath(a.path)
 		odesc, slugPath := resolve(tx, path)
 		if odesc == nil {
@@ -31,11 +31,10 @@ func (a *app) replaceURL(ctx context.Context) (c cmd) {
 		}
 		dest := replaceSlugSuffix(path, slugPath, tx.SlugPath(odesc))
 		if dest != "" && dest != a.path {
-			c = domi.ReplaceURL[msg.Msg](dest)
+			return domi.ReplaceURL[msg.Msg](dest)
 		}
 		return nil
 	})
-	return c
 }
 
 // resolve resolves the slug suffix of path to an object descriptor,
