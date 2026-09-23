@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -19,6 +20,9 @@ import (
 	. "ily.dev/act3/hi"
 )
 
+//go:embed client.js
+var clientJS string
+
 func main() {
 	dark := flag.Bool("dark", false, "use a dark theme")
 	contrast := flag.Float64("contrast", 30, "theme contrast (15–100)")
@@ -27,22 +31,47 @@ func main() {
 	if *dark {
 		bg = OKLCH(0.2, 0.005, 280)
 	}
+	cssDigest, cssHandler := Stylesheet()
+	cssPath := "/hi." + cssDigest + ".css"
 	handler := Handler(
 		func(context.Context, *url.URL) (*app, domi.Cmd[message]) {
-			return &app{}, nil
+			return &app{}, RegisterNote[message]("client-note", Note{
+				Message:     "A note from JavaScript",
+				Description: "This template keeps its Go action.",
+				Icon:        "zap",
+				Action:      Button(message{Kind: "undo"}, Text("Undo")),
+				Duration:    10 * time.Second,
+			})
 		},
 		func(u *url.URL) message { return message{Kind: "request", Path: u.Path} },
 		func(*url.URL) message { return message{} },
 		AppTitle("Hi notes demo"),
 		Theme(bg, OKLCH(0.6, 0.2, 280), *contrast),
+		domi.InternalURLPrefix("/-/domi"),
+		domi.Document(func(title string, body domi.Node) domi.Node {
+			return domi.Tag("html")(
+				domi.Tag("head")(
+					domi.Tag("meta", attr.Charset("utf-8"))(),
+					domi.Tag("meta", attr.Name("viewport"), attr.Content("width=device-width,initial-scale=1"))(),
+					domi.Tag("title")(domi.Text(title)),
+					domi.Tag("link", attr.Rel("stylesheet"), attr.Href(cssPath))(),
+					ClientModule("/-/domi"),
+					domi.Tag("script", attr.Type("module"))(domi.Text(clientJS)),
+				),
+				body,
+			)
+		}),
 	)
+	mux := http.NewServeMux()
+	mux.Handle("GET "+cssPath, cssHandler)
+	mux.Handle("/", handler)
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		slog.Error("listen", "err", err)
 		os.Exit(1)
 	}
 	fmt.Println("http://" + listener.Addr().String())
-	if err := http.Serve(listener, handler); err != nil {
+	if err := http.Serve(listener, mux); err != nil {
 		slog.Error("serve demo", "err", err)
 		os.Exit(1)
 	}
@@ -165,6 +194,8 @@ func (a *app) page() View {
 			Button(message{Kind: "queue", Remaining: 3, Variant: "mixed"}, Text("Three different heights")),
 			Button(message{Kind: "queue", Remaining: 1, Variant: "long"}, Text("Add a long note")),
 			Button(message{Kind: "queue", Remaining: 6, Delay: 3 * time.Second}, Text("Burst in 3 seconds")),
+			Button(message{}, Text("Client-side note · 10 seconds")).
+				Attr(attr.ID("client-note")),
 		).Alignment(Leading).Gap(10),
 		Text(fmt.Sprintf("%d notes sent · %d awaiting delivery · %d undone", a.sent, a.pending, a.undone)).
 			Foreground(Secondary),
@@ -176,6 +207,7 @@ func (a *app) page() View {
 			Text("On touch screens, tap the stack to expand and tap outside to collapse. Swipe a note downward, or use its dismiss button."),
 			Text("Add a long note to check the two-line message and three-line description limits. Its action row pushes the content past the height cap, where it is clipped."),
 			Text("Add notes, choose “Burst in 3 seconds,” then engage with the stack before the burst arrives. New arrivals appear immediately."),
+			Text("Choose “Client-side note” to reuse a registered template without sending a server message. Try it again after navigating away and back, and use Undo to check its Go action."),
 			Text("Switch tabs to pause timers, or enable reduced motion in your system settings to try the quieter transitions."),
 		).Alignment(Leading).Gap(12),
 		VStack(

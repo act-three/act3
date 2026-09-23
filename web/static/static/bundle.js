@@ -622,6 +622,7 @@
   // hi/hi.js
   var notes = [];
   var delivered = /* @__PURE__ */ new Set();
+  var templates = /* @__PURE__ */ new Map();
   var lifetime = 4e3;
   var gap = 14;
   var interactive = "button, a, input, select, textarea, [contenteditable], [tabindex], [domi-msg-click]";
@@ -664,6 +665,16 @@
     if (!id || delivered.has(id) || !entry.isConnected || !entry.parentElement.matches("hi-note-outbox")) return;
     const node = clone2(entry);
     delivered.add(id);
+    if (node.hasAttribute("data-note-template")) {
+      const name = node.getAttribute("data-note-template");
+      node.removeAttribute("data-note-template");
+      node.removeAttribute("domi-key");
+      templates.set(name, node);
+      return;
+    }
+    show(node);
+  }
+  function show(node) {
     const duration = Number(node.dataset.duration);
     node.dataset.state = "active";
     node.tabIndex = 0;
@@ -3549,9 +3560,9 @@
       this.dismissTarget?.click();
     }
     handleControls(e) {
-      const show = ["touchstart", "touchmove", "mousemove"].includes(e.type);
+      const show2 = ["touchstart", "touchmove", "mousemove"].includes(e.type);
       let delay = 0;
-      if (show) {
+      if (show2) {
         this.#updateControlsVisibility(true);
         delay = this.#isTouch ? 3e3 : 2e3;
       }
@@ -3686,9 +3697,9 @@
       this.#setControlsVisibility();
     }
     #setControlsVisibility() {
-      const show = this.#doShowControls;
-      this.hideControlsValue = !show;
-      return show;
+      const show2 = this.#doShowControls;
+      this.hideControlsValue = !show2;
+      return show2;
     }
     toggleHarlow() {
       this.harlowValue = !this.harlowValue;

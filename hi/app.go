@@ -179,7 +179,10 @@ type msgURLChange[Msg any] struct {
 	path []string
 }
 
-type msgNotify struct{ note Note }
+type msgNotify struct {
+	note     Note
+	template string
+}
 
 func wrapMsg[Msg any](m Msg) msg {
 	return msgApp[Msg]{msg: m}
@@ -216,8 +219,9 @@ func (in *instance[Msg, A]) Update(ctx context.Context, m msg) domi.Cmd[msg] {
 	case msgNotify:
 		in.noteSeq++
 		in.notes = append(in.notes, note{
-			id:   fmt.Sprintf("%d", in.noteSeq),
-			Note: m.note,
+			id:       fmt.Sprintf("%d", in.noteSeq),
+			template: m.template,
+			Note:     m.note,
 		})
 		return nil
 	default:

@@ -4,6 +4,7 @@
 // history is separate: retiring a note must never make it eligible again.
 const notes = [];
 const delivered = new Set();
+const templates = new Map();
 const lifetime = 4000;
 const gap = 14;
 const interactive = "button, a, input, select, textarea, [contenteditable], [tabindex], [domi-msg-click]";
@@ -12,6 +13,15 @@ let clone;
 let hovered = false, focused = false, touchExpanded = false, gesture;
 let previousFocus, pointer;
 let suppressClick = false;
+
+// Display a fresh copy of a template delivered by Go's RegisterNote command.
+// Registration must have reached the browser before calling notify.
+export function notify(name) {
+	const t = templates.get(name);
+	if (!t) throw new Error(`hi: unknown note template ${JSON.stringify(name)}`);
+	show(t.cloneNode(true));
+	sync();
+}
 
 function engaged() {
 	return hovered || focused || touchExpanded || !!gesture;
@@ -45,6 +55,17 @@ function receive(entry) {
 	if (!id || delivered.has(id) || !entry.isConnected || !entry.parentElement.matches("hi-note-outbox")) return;
 	const node = clone(entry);
 	delivered.add(id);
+	if (node.hasAttribute("data-note-template")) {
+		const name = node.getAttribute("data-note-template");
+		node.removeAttribute("data-note-template");
+		node.removeAttribute("domi-key");
+		templates.set(name, node);
+		return;
+	}
+	show(node);
+}
+
+function show(node) {
 	const duration = Number(node.dataset.duration);
 	node.dataset.state = "active";
 	node.tabIndex = 0;
