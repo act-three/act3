@@ -46,8 +46,7 @@ func (n note) view() View {
 			If(n.Description != "", Text(n.Description)),
 		).
 			Alignment(Leading),
-		HStack(n.action()).
-			Tag("hi-note-action"),
+		n.action(),
 	).
 		modify(modStyle("max-height", cssLength(96i))).
 		BorderClipped().

@@ -55,10 +55,9 @@ function receive(entry) {
 		remaining: duration > 0 ? duration : lifetime,
 		timer: undefined,
 	};
-	const action = node.querySelector("hi-note-action");
-	action.addEventListener("click", event => {
+	node.addEventListener("click", event => {
 		const control = event.target.closest("a[href], [domi-msg-click], [data-dismiss]");
-		if (!control || !action.contains(control) || control.closest(":disabled, [aria-disabled=true]")) return;
+		if (!control || !node.contains(control) || control.closest(":disabled, [aria-disabled=true]")) return;
 		// Keep the exiting node attached so Domi's delegated listener can
 		// dispatch the original click, including URL navigation.
 		retire(note, { focusNext: event.detail === 0 });
