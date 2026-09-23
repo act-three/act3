@@ -1,5 +1,16 @@
 (() => {
+  var __defProp = Object.defineProperty;
+  var __export = (target, all) => {
+    for (var name in all)
+      __defProp(target, name, { get: all[name], enumerable: true });
+  };
+
   // domi/domi.js
+  var domi_exports = {};
+  __export(domi_exports, {
+    clone: () => clone,
+    run: () => run
+  });
   function fragmentFromHTML(html) {
     const tmpl = document.createElement("template");
     tmpl.innerHTML = html;
@@ -346,6 +357,17 @@
     const pathname = url.pathname.replace(/^\/+/, "/");
     return pathname + url.search + url.hash;
   }
+  function clone(el) {
+    const root = el.closest("domi-root");
+    if (!root) return el.cloneNode(true);
+    if (!eventVer) {
+      throw new Error("domi: clone requires an available tree version; defer until the DOM update finishes");
+    }
+    const ver = scopedVer(el) || eventVer;
+    const node = el.cloneNode(true);
+    node.setAttribute("domi-event-tree-ver", ver);
+    return node;
+  }
   function run() {
     if (typeof document === "undefined") return;
     const root = document.querySelector("body > domi-root");
@@ -595,6 +617,318 @@
     sse.onerror = () => {
       if (sse.readyState === EventSource.CLOSED) location.reload();
     };
+  }
+
+  // hi/hi.js
+  var notes = [];
+  var delivered = /* @__PURE__ */ new Set();
+  var lifetime = 4e3;
+  var gap = 14;
+  var interactive = "button, a, input, select, textarea, [contenteditable], [tabindex], [domi-msg-click]";
+  var display;
+  var clone2;
+  var hovered = false;
+  var focused = false;
+  var touchExpanded = false;
+  var gesture;
+  var previousFocus;
+  var pointer;
+  var suppressClick = false;
+  function engaged() {
+    return hovered || focused || touchExpanded || !!gesture;
+  }
+  function sync() {
+    focused = !!(notes.length && display?.isConnected && display.querySelector(":focus-visible"));
+    if (!notes.length) hovered = touchExpanded = false;
+    const paused = engaged() || document.hidden || !display?.isConnected;
+    const now = performance.now();
+    for (const note of notes) {
+      if (paused && note.timer !== void 0) {
+        clearTimeout(note.timer);
+        note.remaining = Math.max(0, note.deadline - now);
+        note.timer = void 0;
+      } else if (!paused && note.timer === void 0) {
+        note.deadline = now + note.remaining;
+        note.timer = setTimeout(() => {
+          note.remaining = Math.max(0, note.deadline - performance.now());
+          note.timer = void 0;
+          if (!note.remaining) retire(note);
+          sync();
+        }, Math.min(note.remaining, 2147483647));
+      }
+    }
+    layout();
+  }
+  function receive(entry) {
+    const id = entry.getAttribute?.("domi-key");
+    if (!id || delivered.has(id) || !entry.isConnected || !entry.parentElement.matches("hi-note-outbox")) return;
+    const node = clone2(entry);
+    delivered.add(id);
+    const duration = Number(node.dataset.duration);
+    node.dataset.state = "active";
+    node.tabIndex = 0;
+    const note = {
+      node,
+      height: 0,
+      mounted: false,
+      remaining: duration > 0 ? duration : lifetime,
+      timer: void 0
+    };
+    node.addEventListener("click", (event) => {
+      const control = event.target.closest("a[href], [domi-msg-click], [data-dismiss]");
+      if (!control || !node.contains(control) || control.closest(":disabled, [aria-disabled=true]")) return;
+      retire(note, { focusNext: event.detail === 0 });
+      sync();
+    });
+    node.addEventListener("pointerdown", (event) => startDrag(event, note));
+    notes.push(note);
+    display?.appendChild(node);
+  }
+  function retire(note, { swipe = false, focusNext = true } = {}) {
+    const index2 = notes.indexOf(note);
+    if (index2 < 0) return;
+    const hadFocus = note.node.contains(document.activeElement);
+    const style = getComputedStyle(note.node);
+    const transform = style.transform;
+    const height = style.height;
+    const covered = note.node.dataset.covered === "true";
+    notes.splice(index2, 1);
+    clearTimeout(note.timer);
+    if (gesture?.note === note) cancelDrag();
+    note.node.style.setProperty("--exit-transform", transform === "none" ? "translateY(0)" : transform);
+    note.node.style.height = height;
+    note.node.dataset.exit = swipe ? "swipe" : covered ? "covered" : "normal";
+    note.node.dataset.state = "exiting";
+    note.node.inert = true;
+    setTimeout(() => note.node.remove(), 200);
+    if (hadFocus) {
+      if (focusNext && notes.length) {
+        layout();
+        focusNote(notes[Math.min(index2, notes.length - 1)]);
+      } else restoreFocus();
+    }
+  }
+  function focusNote(note) {
+    const previous = previousFocus;
+    note.node.focus({ preventScroll: true });
+    previousFocus = previous;
+  }
+  function restoreFocus() {
+    if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
+    if (display?.contains(document.activeElement) || document.activeElement === document.body) {
+      const body = document.body;
+      const old = body.getAttribute("tabindex");
+      body.tabIndex = -1;
+      body.focus({ preventScroll: true });
+      if (old === null) body.removeAttribute("tabindex");
+      else body.setAttribute("tabindex", old);
+    }
+  }
+  function layout() {
+    if (!display?.isConnected) return;
+    for (const note of notes) {
+      if (!note.mounted) note.height = parseFloat(getComputedStyle(note.node).height);
+    }
+    const expanded = engaged();
+    const visibleCount = Math.min(3, notes.length);
+    display.dataset.expanded = String(expanded);
+    display.style.pointerEvents = notes.length ? "auto" : "none";
+    const front = notes.at(-1)?.height || 0;
+    const activeElement = document.activeElement;
+    let moveFocus = false;
+    for (let i = 0; i < notes.length; i++) {
+      const note = notes[i];
+      const height = expanded ? note.height : front;
+      const visible = i >= notes.length - visibleCount;
+      moveFocus ||= !visible && note.node.contains(activeElement);
+      note.node.dataset.visible = String(visible);
+      note.node.inert = !visible;
+      note.node.style.height = `${height}px`;
+      note.node.dataset.covered = String(!expanded && i < notes.length - 1);
+    }
+    if (notes.some((note) => !note.mounted)) display.getBoundingClientRect();
+    let offset = 0;
+    let visibleHeight = 0;
+    for (let i = notes.length - 1; i >= 0; i--) {
+      const note = notes[i];
+      const depth = notes.length - 1 - i;
+      note.mounted = true;
+      note.node.dataset.mounted = "true";
+      note.node.style.setProperty("--offset", `${offset}px`);
+      note.node.style.setProperty("--scale", expanded ? "1" : String(1 - depth * 0.05));
+      offset += expanded ? note.height + gap : gap;
+      if (depth < visibleCount) visibleHeight = expanded ? offset - gap : front + depth * gap;
+    }
+    display.style.height = `${visibleHeight}px`;
+    if (moveFocus) focusNote(notes[notes.length - visibleCount]);
+  }
+  function startDrag(event, note) {
+    const control = event.target.closest(interactive);
+    if (event.button !== 0 || !event.isPrimary || gesture || control !== note.node && note.node.contains(control)) return;
+    if (note.node.dataset.covered === "true") {
+      touchExpanded = true;
+      sync();
+      return;
+    }
+    const transform = getComputedStyle(note.node).transform;
+    gesture = {
+      note,
+      id: event.pointerId,
+      start: event.clientY,
+      time: event.timeStamp,
+      distance: 0,
+      moved: false,
+      touch: event.pointerType === "touch"
+    };
+    note.node.style.setProperty("--drag-transform", transform === "none" ? "translateY(0)" : transform);
+    note.node.style.setProperty("--swipe", "0px");
+    note.node.dataset.swiping = "true";
+    note.node.setPointerCapture(event.pointerId);
+    sync();
+  }
+  function moveDrag(event) {
+    if (!gesture || event.pointerId !== gesture.id) return;
+    const g = gesture;
+    g.distance = event.clientY - g.start;
+    g.moved ||= Math.abs(g.distance) > 4;
+    const delta = g.distance >= 0 ? g.distance : g.distance / (1.5 + Math.abs(g.distance) / 20);
+    g.note.node.style.setProperty("--swipe", `${delta}px`);
+  }
+  function endDrag(event) {
+    if (!gesture || event.pointerId !== gesture.id) return;
+    const canceled = event.type !== "pointerup";
+    const g = gesture;
+    if (!canceled) moveDrag(event);
+    const elapsed = event.timeStamp - g.time;
+    const flick = elapsed > 0 && g.distance / elapsed > 0.11;
+    const dismiss = !canceled && g.distance > 0 && (g.distance >= 45 || flick);
+    if (g.moved) {
+      suppressClick = true;
+      setTimeout(() => {
+        suppressClick = false;
+      }, 400);
+    } else if (!canceled && g.touch) touchExpanded = true;
+    if (dismiss) retire(g.note, { swipe: true });
+    else cancelDrag();
+    sync();
+  }
+  function cancelDrag() {
+    if (!gesture) return;
+    const { note, id } = gesture;
+    gesture = void 0;
+    delete note.node.dataset.swiping;
+    if (note.node.hasPointerCapture(id)) note.node.releasePointerCapture(id);
+  }
+  function initDisplay(element) {
+    const hover = (event) => {
+      if (event.pointerType !== "mouse") return;
+      hovered = event.type === "pointerenter";
+      if (!hovered) pointer = void 0;
+      sync();
+    };
+    element.addEventListener("pointerenter", hover);
+    element.addEventListener("pointerleave", hover);
+    element.addEventListener("focusin", (event) => {
+      if (!element.contains(event.relatedTarget)) previousFocus = event.relatedTarget;
+      sync();
+    });
+    element.addEventListener("focusout", () => queueMicrotask(sync));
+    element.addEventListener("keydown", (event) => {
+      queueMicrotask(sync);
+      if (event.key !== "Escape" || !element.contains(document.activeElement)) return;
+      event.preventDefault();
+      restoreFocus();
+      sync();
+    });
+    element.addEventListener("click", (event) => {
+      if (suppressClick && event.detail !== 0) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+      }
+    }, true);
+    element.addEventListener("pointermove", moveDrag);
+    element.addEventListener("pointerup", (event) => {
+      if (gesture) {
+        endDrag(event);
+        return;
+      }
+      const note = event.target.closest("hi-note");
+      if (event.pointerType === "touch" && note && event.target.closest(interactive) === note) {
+        touchExpanded = true;
+        sync();
+      }
+    });
+    element.addEventListener("pointercancel", endDrag);
+    element.addEventListener("lostpointercapture", endDrag);
+  }
+  function bind(element) {
+    cancelDrag();
+    display = element;
+    hovered = touchExpanded = false;
+    const nodes = notes.map((note) => note.node);
+    if (display.children.length !== nodes.length || nodes.some((node, i) => display.children[i] !== node)) {
+      display.replaceChildren(...nodes);
+    }
+    if (pointer) hovered = display.contains(document.elementFromPoint(pointer.x, pointer.y));
+    sync();
+  }
+  function run2(domi) {
+    if (customElements.get("hi-note-display")) return;
+    clone2 = domi.clone;
+    document.addEventListener("visibilitychange", sync);
+    document.addEventListener("pointermove", (event) => {
+      if (event.pointerType === "mouse") pointer = { x: event.clientX, y: event.clientY };
+    });
+    document.addEventListener("pointerdown", (event) => {
+      queueMicrotask(sync);
+      suppressClick = false;
+      if (display && !display.contains(event.target)) {
+        touchExpanded = false;
+        sync();
+      }
+    }, true);
+    customElements.define(
+      "hi-note-display",
+      class extends HTMLElement {
+        constructor() {
+          super();
+          initDisplay(this);
+        }
+        connectedCallback() {
+          queueMicrotask(() => {
+            if (this.isConnected) bind(this);
+          });
+        }
+        disconnectedCallback() {
+          queueMicrotask(() => {
+            if (display !== this || this.isConnected) return;
+            cancelDrag();
+            hovered = touchExpanded = false;
+            sync();
+          });
+        }
+      }
+    );
+    customElements.define(
+      "hi-note-outbox",
+      class extends HTMLElement {
+        #observer = new MutationObserver((records) => {
+          for (const record of records) for (const entry of record.addedNodes) receive(entry);
+          sync();
+        });
+        connectedCallback() {
+          this.#observer.observe(this, { childList: true });
+          queueMicrotask(() => {
+            if (!this.isConnected) return;
+            for (const entry of this.children) receive(entry);
+            sync();
+          });
+        }
+        disconnectedCallback() {
+          this.#observer.disconnect();
+        }
+      }
+    );
   }
 
   // web/stimulus.js
@@ -3067,12 +3401,12 @@
       trigger.style.visibility = "visible";
       trigger.setAttribute("aria-expanded", "true");
       const anchor = trigger.getBoundingClientRect();
-      const gap = 4;
+      const gap2 = 4;
       const pw = panel.offsetWidth, ph = panel.offsetHeight;
       let left = anchor.left + anchor.width / 2 - pw / 2;
-      let top = anchor.bottom + gap;
-      if (top + ph > window.innerHeight - 8 && anchor.top - gap - ph >= 8) {
-        top = anchor.top - gap - ph;
+      let top = anchor.bottom + gap2;
+      if (top + ph > window.innerHeight - 8 && anchor.top - gap2 - ph >= 8) {
+        top = anchor.top - gap2 - ph;
       }
       left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
       top = Math.max(8, Math.min(top, window.innerHeight - ph - 8));
@@ -3231,10 +3565,10 @@
       if (altKey || ctrlKey || metaKey || shiftKey) return;
       if (!key) return;
       if (pressed) {
-        const focused = document.activeElement;
-        if (focused) {
-          if (focused.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(focused.tagName)) return;
-          if (key === " " && focused.matches('button, [role^="menuitem"]')) return;
+        const focused2 = document.activeElement;
+        if (focused2) {
+          if (focused2.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(focused2.tagName)) return;
+          if (key === " " && focused2.matches('button, [role^="menuitem"]')) return;
         }
       }
       const handled = [
@@ -3881,13 +4215,13 @@
     outboxTargetConnected(el) {
       const note = el.firstElementChild;
       if (!note) return;
-      const clone2 = note.cloneNode(true);
-      clone2.setAttribute("data-note-port-target", "note");
-      clone2.setAttribute(
+      const clone4 = note.cloneNode(true);
+      clone4.setAttribute("data-note-port-target", "note");
+      clone4.setAttribute(
         "data-action",
         "pointerdown->note-port#swipeStart pointermove->note-port#swipeMove pointerup->note-port#swipeEnd"
       );
-      queueMicrotask(() => this.portTarget.appendChild(clone2));
+      queueMicrotask(() => this.portTarget.appendChild(clone4));
     }
     noteTargetConnected(el) {
       el.style.setProperty(
@@ -4009,15 +4343,15 @@
     }
     // --- layout ---
     #layout() {
-      const notes = this.noteTargets.filter(
+      const notes2 = this.noteTargets.filter(
         (n) => !n.hasAttribute("data-dismissed") && !n.hasAttribute("data-swipe-out")
       );
-      const count = notes.length;
+      const count = notes2.length;
       const expanded = this.#hovered;
-      const frontHeight = count > 0 ? this.#height(notes[count - 1]) : 0;
+      const frontHeight = count > 0 ? this.#height(notes2[count - 1]) : 0;
       let heightsBefore = 0;
       for (let i = count - 1; i >= 0; i--) {
-        const note = notes[i];
+        const note = notes2[i];
         const idx = count - 1 - i;
         const h = this.#height(note);
         note.style.zIndex = count - idx;
@@ -4759,7 +5093,7 @@
     el.scrollLeft += x;
     el.scrollTop += y;
   }
-  function clone(el) {
+  function clone3(el) {
     var Polymer = window.Polymer;
     var $ = window.jQuery || window.Zepto;
     if (Polymer && Polymer.dom) {
@@ -5686,7 +6020,7 @@
       }
       pluginEvent2("setupClone", this);
       if (!Sortable.eventCanceled) {
-        cloneEl = clone(dragEl);
+        cloneEl = clone3(dragEl);
         cloneEl.removeAttribute("id");
         cloneEl.draggable = false;
         cloneEl.style["will-change"] = "";
@@ -6373,7 +6707,7 @@
     throttle,
     closest,
     toggleClass,
-    clone,
+    clone: clone3,
     index,
     nextTick: _nextTick,
     cancelNextTick: _cancelNextTick,
@@ -6709,6 +7043,7 @@
   Stimulus.register("series", theater_series_default);
   Stimulus.register("home", home_default);
   run();
+  run2(domi_exports);
 })();
 /** !
  * Sortable 1.15.6
