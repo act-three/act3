@@ -2,7 +2,7 @@ package hi
 
 import (
 	"context"
-	"strconv"
+	"fmt"
 	"time"
 
 	"ily.dev/domi"
@@ -52,7 +52,7 @@ func (n note) view() View {
 		BorderClipped().
 		Frame(Width(360), Top). // Top needed for animating height.
 		Tag("hi-note").
-		Attr(domi.Name("data-duration", strconv.FormatFloat(float64(n.Duration)/float64(time.Millisecond), 'f', -1, 64))).
+		Attr(domi.Name("data-duration", fmt.Sprint(n.Duration.Milliseconds()))).
 		Background(backgroundColor).
 		BorderStroke(1, Primary).
 		WhileFocused(BorderOutline(2, 1, Accent)).
