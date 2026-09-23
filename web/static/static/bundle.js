@@ -635,6 +635,12 @@
   var previousFocus;
   var pointer;
   var suppressClick = false;
+  function notify(name) {
+    const t = templates.get(name);
+    if (!t) throw new Error(`hi: unknown note template ${JSON.stringify(name)}`);
+    show(t.cloneNode(true));
+    sync();
+  }
   function engaged() {
     return hovered || focused || touchExpanded || !!gesture;
   }
@@ -4184,31 +4190,47 @@
     }
   };
 
+  // view/upload.js
+  var inflight = 0;
+  function onBeforeUnload(e) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+  var upload_default = class extends Controller {
+    static targets = ["picker"];
+    open() {
+      this.pickerTarget.click();
+    }
+    upload() {
+      const form = this.element;
+      const body = new FormData();
+      for (const [name, value] of new FormData(form)) {
+        if (value instanceof File) body.append("size", value.size);
+        body.append(name, value);
+      }
+      form.reset();
+      if (inflight++ === 0) {
+        window.addEventListener("beforeunload", onBeforeUnload);
+      }
+      fetch(form.action, { method: "POST", body }).then(
+        (res) => {
+          if (!res.ok) notify("upload-failed");
+        },
+        () => notify("server-unreachable")
+      ).finally(() => {
+        if (--inflight === 0) {
+          window.removeEventListener("beforeunload", onBeforeUnload);
+        }
+      });
+    }
+  };
+
   // ui/note-port.js
   var GAP = 14;
   var DURATION = 5e3;
   var VISIBLE = 3;
   var SWIPE_THRESHOLD = 20;
   var VELOCITY_THRESHOLD = 0.11;
-  function notify(msg, variant = "error") {
-    const port = document.getElementById("note-port");
-    if (!port) return;
-    const title = document.createElement("div");
-    title.className = "u-note-title";
-    title.textContent = msg;
-    const note = document.createElement("div");
-    note.className = "u-note";
-    note.setAttribute("role", "status");
-    note.setAttribute("aria-live", "polite");
-    note.setAttribute("data-variant", variant);
-    note.setAttribute("data-note-port-target", "note");
-    note.setAttribute(
-      "data-action",
-      "pointerdown->note-port#swipeStart pointermove->note-port#swipeMove pointerup->note-port#swipeEnd"
-    );
-    note.appendChild(title);
-    port.appendChild(note);
-  }
   var note_port_default = class extends Controller {
     static targets = ["note", "port", "outbox"];
     togglePaused() {
@@ -4406,41 +4428,6 @@
         el.style.getPropertyValue("--initial-height"),
         10
       ) || el.offsetHeight;
-    }
-  };
-
-  // view/upload.js
-  var inflight = 0;
-  function onBeforeUnload(e) {
-    e.preventDefault();
-    e.returnValue = "";
-  }
-  var upload_default = class extends Controller {
-    static targets = ["picker"];
-    open() {
-      this.pickerTarget.click();
-    }
-    upload() {
-      const form = this.element;
-      const body = new FormData();
-      for (const [name, value] of new FormData(form)) {
-        if (value instanceof File) body.append("size", value.size);
-        body.append(name, value);
-      }
-      form.reset();
-      if (inflight++ === 0) {
-        window.addEventListener("beforeunload", onBeforeUnload);
-      }
-      fetch(form.action, { method: "POST", body }).then(
-        (res) => {
-          if (!res.ok) notify("Upload failed");
-        },
-        () => notify("Could not reach the server")
-      ).finally(() => {
-        if (--inflight === 0) {
-          window.removeEventListener("beforeunload", onBeforeUnload);
-        }
-      });
     }
   };
 

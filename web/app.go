@@ -7,6 +7,7 @@ import (
 
 	"ily.dev/domi"
 
+	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
 	"ily.dev/act3/ui"
@@ -45,9 +46,19 @@ func newApp(ctx context.Context, c *Config, u *url.URL) (*app, cmd) {
 		model: c.Model,
 	}
 	a.setPath(ctx, u)
-	// A bookmarked or stale link may arrive with tombstoned slugs;
-	// canonicalize the URL once the session is up.
-	return a, a.replaceURL(ctx)
+	return a, domi.Batch[msg.Msg](
+		// A bookmarked or stale link may arrive with tombstoned slugs.
+		a.replaceURL(ctx),
+
+		hi.RegisterNote[msg.Msg]("upload-failed", hi.Note{
+			Icon:    "line/x-circle",
+			Message: "Upload failed",
+		}),
+		hi.RegisterNote[msg.Msg]("server-unreachable", hi.Note{
+			Icon:    "line/wifi-off",
+			Message: "Could not reach the server",
+		}),
+	)
 }
 
 func (a *app) Subscriptions(ctx context.Context) domi.Sub[msg.Msg] {
