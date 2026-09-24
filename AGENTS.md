@@ -99,6 +99,9 @@ Go tool dependencies are declared in the `tool` block of `go.mod`.
 - Standard library style — no frameworks, concrete types, explicit error
   handling
 - Prefer table-driven tests where it makes sense
+- Prefer `fmt` over `strconv` except in the limited case
+  where `fmt` causes performance problems *and*
+  measurements show `strconv` to be an effective fix.
 - Use gopls MCP server where possible:
   renaming symbols, find all references, etc
 - Error handling uses `kr.dev/errorfmt` with `defer
