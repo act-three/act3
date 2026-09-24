@@ -170,6 +170,9 @@
   html:has(hi-root[scroll~=y]) {
     overflow-y: auto;
   }
+  html:has(hi-root[scroll]):has(dialog:modal) {
+    overflow: hidden;
+  }
   body:has(hi-root[scroll]) {
     height: 100%;
     margin: 0;

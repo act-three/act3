@@ -148,8 +148,8 @@ package hi
 // value in one part of an HTML document requires modifying one or
 // more z-index values in unrelated places.
 //
-// If cross-subtree layering is needed, it should use some sort of
-// portal mecanism.
+// Menus, popovers, and dialogs use the browser's top layer to escape
+// these contexts while retaining their place in the DOM tree.
 //
 // Test Coverage
 //

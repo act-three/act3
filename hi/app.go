@@ -268,6 +268,7 @@ func (in *instance[Msg, A]) render(root View, path []string, notes []note) Page 
 		iconSource: in.icons,
 		sheet:      &in.sheet,
 		root:       rootenv{atRoot: true},
+		canPresent: true,
 	}
 	b := unary(VStack, root)(env)
 	rootAttr := attr.Class(in.sheet.ClassFor(in.theme.styles()))

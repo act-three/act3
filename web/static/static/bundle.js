@@ -889,9 +889,246 @@
     if (pointer) hovered = display.contains(document.elementFromPoint(pointer.x, pointer.y));
     sync();
   }
+  function restorePresentationPlacement(e, entry) {
+    const saved = entry.placement || JSON.parse(e.dataset.hiPlacement || "null");
+    if (!saved) return;
+    for (const [property, [value, priority, applied, appliedPriority]] of Object.entries(saved)) {
+      if (e.style.getPropertyValue(property) === applied && e.style.getPropertyPriority(property) === appliedPriority) {
+        e.style.setProperty(property, value, priority);
+      }
+    }
+    entry.placement = void 0;
+    delete e.dataset.hiPlacement;
+  }
+  function sizePresentation(e, entry) {
+    restorePresentationPlacement(e, entry);
+    const fill = e.dataset.hiFill;
+    if (!fill) return;
+    const vertical = fill !== "horizontal", horizontal = fill !== "vertical";
+    const names = getComputedStyle(e).positionTryFallbacks.split(",").map((s) => s.trim());
+    const rules = /* @__PURE__ */ new Map();
+    function collect(list) {
+      for (const rule of list) {
+        if (names.includes(rule.name) && rule.style) rules.set(rule.name, rule.style);
+        if (rule.cssRules) collect(rule.cssRules);
+      }
+    }
+    for (const sheet of document.styleSheets) {
+      if (sheet.href) continue;
+      try {
+        collect(sheet.cssRules);
+      } catch {
+      }
+    }
+    const candidates = [
+      [],
+      ...names.filter((name) => rules.has(name)).map((name) => {
+        const style2 = rules.get(name);
+        return [
+          "inset-block-start",
+          "inset-block-end",
+          "inset-inline-start",
+          "inset-inline-end",
+          "align-self",
+          "justify-self"
+        ].map((property) => [property, style2.getPropertyValue(property), style2.getPropertyPriority(property)]).filter(([, value]) => value);
+      })
+    ];
+    const properties = /* @__PURE__ */ new Set(["position-try-fallbacks", "position-try-order"]);
+    for (const candidate of candidates) for (const [property] of candidate) properties.add(property);
+    if (vertical) properties.add("height");
+    if (horizontal) properties.add("width");
+    const saved = Object.fromEntries(
+      [...properties].map(
+        (property) => [property, [e.style.getPropertyValue(property), e.style.getPropertyPriority(property)]]
+      )
+    );
+    function apply(candidate) {
+      for (const [property, [value, priority]] of Object.entries(saved)) {
+        e.style.setProperty(property, value, priority);
+      }
+      e.style.setProperty("position-try-fallbacks", "none");
+      e.style.setProperty("position-try-order", "normal");
+      for (const [property, value, priority] of candidate) e.style.setProperty(property, value, priority);
+    }
+    const width = document.documentElement.clientWidth, height = document.documentElement.clientHeight;
+    let best = candidates[0], most = -Infinity;
+    for (const candidate of candidates) {
+      apply(candidate);
+      const rect = e.getBoundingClientRect();
+      const fits = rect.left >= -0.5 && rect.right <= width + 0.5 && rect.top >= -0.5 && rect.bottom <= height + 0.5;
+      const space = vertical ? rect.height : rect.width;
+      if (fits && space > most) {
+        best = candidate;
+        most = space;
+      }
+    }
+    apply(best);
+    const style = getComputedStyle(e), heightUsed = style.height, widthUsed = style.width;
+    if (vertical) e.style.height = heightUsed;
+    if (horizontal) e.style.width = widthUsed;
+    for (const [property, values] of Object.entries(saved)) {
+      values.push(e.style.getPropertyValue(property), e.style.getPropertyPriority(property));
+    }
+    entry.placement = saved;
+    e.dataset.hiPlacement = JSON.stringify(saved);
+  }
+  function initPresentations() {
+    const entries = /* @__PURE__ */ new Map();
+    const stack = [];
+    let pressedOutside, clickedOutside, pending = false;
+    const top = () => stack.at(-1);
+    const isDialog = (e) => e.dataset.hiPresentation === "dialog";
+    const shown = (e) => e.matches(isDialog(e) ? ":modal" : ":popover-open");
+    const registered = (e) => e.isConnected && entries.get(e).proxy.parentElement === e;
+    const requested = (e) => registered(e) && e.dataset.hiOpen === "true";
+    const dismiss = (e) => {
+      entries.get(e).proxy.click();
+    };
+    function hide(e) {
+      if (isDialog(e)) {
+        if (e.open) e.close();
+      } else if (shown(e)) e.hidePopover();
+    }
+    function close(e) {
+      const index2 = stack.indexOf(e);
+      if (index2 >= 0) stack.splice(index2, 1);
+      const entry = entries.get(e);
+      if (pressedOutside?.element === e) pressedOutside = void 0;
+      if (clickedOutside === e) clickedOutside = void 0;
+      const hadFocus = e.contains(document.activeElement) || !e.isConnected && entry.focusWithin && document.activeElement === document.body;
+      hide(e);
+      restorePresentationPlacement(e, entry);
+      const previous = entry.focus?.deref();
+      entry.focus = entry.active = entry.reconnectFocus = void 0;
+      entry.focusWithin = false;
+      if (hadFocus && previous?.isConnected) previous.focus({ preventScroll: true });
+    }
+    function schedule() {
+      if (pending) return;
+      pending = true;
+      queueMicrotask(() => {
+        pending = false;
+        reconcile();
+      });
+    }
+    function reconcile() {
+      for (const e of [...stack].reverse()) if (!requested(e)) close(e);
+      const added = /* @__PURE__ */ new Set();
+      for (const [e, entry] of entries) {
+        if (!registered(e)) {
+          entry.observer.disconnect();
+          entry.listeners.abort();
+          entries.delete(e);
+          continue;
+        }
+        if (!requested(e)) {
+          close(e);
+          continue;
+        }
+        if (!stack.includes(e)) {
+          stack.push(e);
+          added.add(e);
+        }
+      }
+      const first = stack.findIndex((e) => !shown(e));
+      if (first >= 0) {
+        let focus = document.activeElement;
+        if (focus === document.body) {
+          focus = [...stack].reverse().map((e) => entries.get(e).reconnectFocus?.deref()).find((e) => e?.isConnected);
+        }
+        for (let i = stack.length - 1; i >= first; i--) hide(stack[i]);
+        for (let i = first; i < stack.length; i++) {
+          const e = stack[i], entry = entries.get(e);
+          if (added.has(e)) entry.focus = new WeakRef(document.activeElement);
+          if (isDialog(e)) e.showModal();
+          else e.showPopover();
+          if (added.has(e)) sizePresentation(e, entry);
+          entry.focusWithin = e.contains(document.activeElement);
+        }
+        if (!added.size && focus?.isConnected) focus.focus({ preventScroll: true });
+      }
+      for (const entry of entries.values()) entry.reconnectFocus = void 0;
+    }
+    let resizeFrame;
+    window.addEventListener("resize", () => {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        for (const e of stack) if (shown(e) && entries.get(e).placement) sizePresentation(e, entries.get(e));
+      });
+    });
+    document.addEventListener("focusin", (event) => {
+      for (const [e, entry] of entries) {
+        entry.focusWithin = e.contains(event.target);
+        entry.active = entry.focusWithin ? new WeakRef(event.target) : void 0;
+      }
+    });
+    document.addEventListener("focusout", () => queueMicrotask(() => {
+      for (const [e, entry] of entries) {
+        if (e.isConnected) entry.focusWithin = e.contains(document.activeElement);
+      }
+    }));
+    customElements.define(
+      "hi-dismiss",
+      class extends HTMLElement {
+        #host;
+        connectedCallback() {
+          const e = this.#host = this.parentElement;
+          if (!e?.matches("[data-hi-presentation]")) return;
+          let entry = entries.get(e);
+          if (!entry) {
+            entry = { observer: new MutationObserver(schedule), listeners: new AbortController() };
+            entries.set(e, entry);
+            entry.observer.observe(e, { attributes: true, attributeFilter: ["data-hi-open", "open"] });
+            const options = { signal: entry.listeners.signal };
+            e.addEventListener("toggle", schedule, options);
+            e.addEventListener("cancel", (event) => {
+              if (!isDialog(e)) return;
+              event.preventDefault();
+              if (top() === e) dismiss(e);
+            }, options);
+          }
+          entry.proxy = this;
+          schedule();
+        }
+        disconnectedCallback() {
+          const entry = entries.get(this.#host);
+          if (!entry || entry.proxy !== this) return;
+          entry.reconnectFocus = entry.focusWithin ? entry.active : void 0;
+          schedule();
+        }
+      }
+    );
+    document.addEventListener("keydown", (event) => {
+      const e = top();
+      if (!e || event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+      event.preventDefault();
+      if (!event.repeat) dismiss(e);
+    });
+    document.addEventListener("pointerdown", (event) => {
+      const e = top();
+      clickedOutside = void 0;
+      pressedOutside = event.button === 0 && e && !isDialog(e) && !e.contains(event.target) ? { element: e, id: event.pointerId } : void 0;
+    }, true);
+    document.addEventListener("pointerup", (event) => {
+      const pressed = pressedOutside;
+      pressedOutside = void 0;
+      const e = pressed?.element;
+      if (e && pressed.id === event.pointerId && e === top() && !e.contains(event.target)) clickedOutside = e;
+    }, true);
+    document.addEventListener("click", (event) => {
+      const e = clickedOutside;
+      clickedOutside = void 0;
+      if (e && e === top() && !e.contains(event.target)) dismiss(e);
+    });
+    document.addEventListener("pointercancel", () => {
+      pressedOutside = clickedOutside = void 0;
+    }, true);
+  }
   function run2(domi) {
     if (customElements.get("hi-note-display")) return;
     clone2 = domi.clone;
+    initPresentations();
     document.addEventListener("visibilitychange", sync);
     document.addEventListener("pointermove", (event) => {
       if (event.pointerType === "mouse") pointer = { x: event.clientX, y: event.clientY };

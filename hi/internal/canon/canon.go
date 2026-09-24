@@ -30,6 +30,11 @@ func (s *StyleSet) Set(property, value string) {
 	s.decls.Set(property, value)
 }
 
+// Merge assigns the declarations in other to s, replacing existing values.
+func (s *StyleSet) Merge(other StyleSet) {
+	s.decls.Merge(other.decls)
+}
+
 // SetPseudo is [sheet.StyleSet.SetPseudo] for a canonical property.
 // It panics on any other property.
 func (s *StyleSet) SetPseudo(pseudo, property, value string) {
@@ -62,6 +67,8 @@ var canonical = map[string]bool{
 	"-webkit-user-select":    true,
 	"align-items":            true,
 	"align-self":             true,
+	"anchor-name":            true,
+	"anchor-scope":           true,
 	"aspect-ratio":           true,
 	"color-scheme":           true,
 	"column-gap":             true,
@@ -102,6 +109,9 @@ var canonical = map[string]bool{
 	"padding-inline-start":   true,
 	"pointer-events":         true,
 	"position":               true,
+	"position-anchor":        true,
+	"position-try-fallbacks": true,
+	"position-try-order":     true,
 	"row-gap":                true,
 	"text-box-edge":          true,
 	"text-box-trim":          true,
