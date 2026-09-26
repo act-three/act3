@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="-10 -10 20 20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none" role="img" aria-label="Loading">
+<path d="M0-8.75v4" opacity=".51" style="--i:0"/>
+<path d="M0-8.75v4" transform="rotate(45)" opacity=".165" style="--i:1"/>
+<path d="M0-8.75v4" transform="rotate(90)" opacity=".165" style="--i:2"/>
+<path d="M0-8.75v4" transform="rotate(135)" opacity=".165" style="--i:3"/>
+<path d="M0-8.75v4" transform="rotate(180)" opacity=".165" style="--i:4"/>
+<path d="M0-8.75v4" transform="rotate(225)" opacity=".251" style="--i:5"/>
+<path d="M0-8.75v4" transform="rotate(270)" opacity=".337" style="--i:6"/>
+<path d="M0-8.75v4" transform="rotate(315)" opacity=".424" style="--i:7"/>
+</svg>

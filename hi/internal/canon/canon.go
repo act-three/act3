@@ -62,6 +62,7 @@ func check(property string) {
 var canonical = map[string]bool{
 	"--hi-icon-scale":        true,
 	"--hi-icon-stroke-width": true,
+	"--hi-progress-size":     true,
 	"-webkit-box-orient":     true,
 	"-webkit-line-clamp":     true,
 	"-webkit-user-select":    true,
