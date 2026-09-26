@@ -30,6 +30,20 @@
 		vertical-align: baseline;
 	}
 
+	hi-progress > svg {
+		width: var(--hi-progress-size);
+		height: var(--hi-progress-size);
+		vertical-align: calc(0.5cap - var(--hi-progress-size) / 2);
+		color: light-dark(#3c3c43, #ebebf5);
+	}
+
+	hi-progress > svg > path { animation: fade 0.8s steps(8, end) calc(var(--i) * 0.1s - 0.8s) infinite; }
+
+	@keyframes fade {
+		0% { opacity: 0.51; }
+		50%, 100% { opacity: 0.165; }
+	}
+
 	/* A root ScrollView delegates its scrolling to the document viewport. */
 	html:has(hi-root[scroll]) {
 		height: 100%;

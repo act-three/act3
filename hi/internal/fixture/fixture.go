@@ -355,6 +355,34 @@ func section(title string, body View) View {
 		Alignment(Leading)
 }
 
+func progressDemo() View {
+	var controls []View
+	for _, size := range []struct {
+		name string
+		size ControlSize
+	}{
+		{"Mini", Mini},
+		{"Small", Small},
+		{"Regular", Regular},
+		{"Large", Large},
+	} {
+		controls = append(
+			controls,
+			HStack(
+				Progress(),
+				Text(size.name),
+			).
+				Alignment(FirstBaseline).
+				ControlSize(size.size),
+		)
+	}
+	return HStack(controls...).
+		Gap(40).
+		Alignment(FirstBaseline).
+		Font(SizeCap(12, 2)).
+		Padding(EdgesLetterbox(12))
+}
+
 // page has one section per component or layout mechanism.
 func page() View {
 	user := User{Name: "Ada Lovelace", Email: "ada@example.com", PhotoURL: placeholderImage(96, 96, "#818cf8")}
@@ -381,6 +409,7 @@ func page() View {
 		section("Font size (cap height and em square)", fontSizeDemo()),
 		section("TextTrim (none, top/bottom, cap/baseline, ex/baseline)", textTrimDemo()),
 		section("Icon (FirstBaseline with wrapping text, at 12/16/24 scaled pixels)", iconDemo()),
+		section("Progress (ControlSize with baseline alignment)", progressDemo()),
 		section("State modifiers (Hovered / Focused / Pressed)", stateDemo()),
 		section("Grid (Columns(4), then CellMinWidth(120))", gridDemo()),
 		section("FrameRatio (2:3 posters anchored on width, in Columns(6))", posterWall()),
