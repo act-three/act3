@@ -2,6 +2,7 @@ package hi_test
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -10,6 +11,39 @@ import (
 	"ily.dev/act3/hi"
 	"ily.dev/act3/hi/internal/uitest"
 )
+
+func TestProgressValues(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name string
+		v    []float64
+		want string
+	}{
+		{"zero", []float64{0}, "0"},
+		{"fraction", []float64{0.25}, "0.25"},
+		{"total", []float64{3, 4}, "0.75"},
+		{"extra", []float64{3, 4, 100}, "0.75"},
+		{"complete", []float64{1}, "1"},
+		{"negative", []float64{-1}, "0"},
+		{"overflow", []float64{5, 4}, "1"},
+		{"zero total", []float64{1, 0}, "0"},
+		{"negative total", []float64{-1, -2}, "0"},
+		{"nan", []float64{math.NaN()}, "0"},
+		{"nan total", []float64{1, math.NaN()}, "0"},
+		{"infinity", []float64{math.Inf(1)}, "1"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			html := render(t, hi.Progress(tt.v...))
+			for _, want := range []string{
+				`<progress `, `max="1"`, `value="` + tt.want + `"`,
+			} {
+				if !strings.Contains(html, want) {
+					t.Errorf("progress missing %s: %s", want, html)
+				}
+			}
+		})
+	}
+}
 
 func TestProgressGeometry(t *testing.T) {
 	t.Parallel()
