@@ -72,3 +72,20 @@ func shadowMedium(n node) node {
 		return unary(VStack, v)(env) // v is unary, VStack is unused.
 	}
 }
+
+func shadowDialog(n node) node {
+	return func(env environment) box {
+		k := max(env.theme.contrast-30, 0)
+		factor := 1 + k/50
+		alpha := [3]float64{0.08, 0.10, 0.04}
+		if !env.theme.bgbase.isLight() {
+			factor = 1 + k/10
+			alpha = [3]float64{0.25, 0.25, 0.10}
+		}
+		v := view(n).
+			BorderShadow(0, 9, 0, 48, OKLCHA(0, 0, 0, alpha[0]*factor)).
+			BorderShadow(0, 6, 0, 24, OKLCHA(0, 0, 0, alpha[1]*factor)).
+			BorderShadow(0, 1, 0, 1, OKLCHA(0, 0, 0, alpha[2]*factor))
+		return unary(VStack, v)(env)
+	}
+}

@@ -1,4 +1,5 @@
-// Package sheet collects dynamic CSS declarations into reusable class rules.
+// Package sheet collects dynamic CSS declarations
+// into reusable rules.
 package sheet
 
 import (
@@ -214,7 +215,41 @@ func isCTL(c rune) bool { return c < ' ' || c == 0x7f }
 type Sheet struct {
 	classes map[string]string // canonical rule body → class name
 	byClass map[string]string // class name → canonical rule body
+	tries   map[string]string // position-try name → canonical rule body
 	rules   []string
+}
+
+// PositionTryFor registers a named position fallback and returns its name.
+// Equal declarations have the same name in every Sheet.
+// Repeated calls with equal declarations add only one rule.
+//
+// An empty s has no fallback: PositionTryFor returns the empty string
+// and adds nothing to sh.
+//
+// PositionTryFor panics if s contains selectors or media queries.
+func (sh *Sheet) PositionTryFor(s StyleSet) string {
+	if s.IsEmpty() {
+		return ""
+	}
+	for sc := range s.m {
+		if sc != (scope{}) {
+			panic("sheet: position-try cannot contain selectors or media queries")
+		}
+	}
+	body := s.body()
+	name := "--" + className(body) + "-try"
+	if prior, ok := sh.tries[name]; ok {
+		if prior != body {
+			panic(fmt.Sprintf("sheet: position-try %s collides: %q vs %q", name, prior, body))
+		}
+		return name
+	}
+	if sh.tries == nil {
+		sh.tries = make(map[string]string)
+	}
+	sh.tries[name] = body
+	sh.rules = append(sh.rules, "@position-try "+name+"{"+body+"}")
+	return name
 }
 
 // ClassFor returns the generated class name for s.
@@ -249,7 +284,7 @@ func (sh *Sheet) ClassFor(s StyleSet) string {
 	return class
 }
 
-// CSS returns one rule for each declaration set.
+// CSS returns the collected class and position fallback rules.
 // Rules appear in the order they were added.
 func (sh *Sheet) CSS() string { return strings.Join(sh.rules, "\n") }
 

@@ -8,6 +8,57 @@ import (
 
 var classShape = regexp.MustCompile(`^hi-[0-9a-v]{1,8}$`)
 
+func TestPositionTryInterning(t *testing.T) {
+	var a, b Sheet
+	s := Style("inset-block-start", "anchor(bottom)")
+	name := a.PositionTryFor(s)
+	if got := a.PositionTryFor(s); got != name {
+		t.Fatalf("same fallback named %q and %q", name, got)
+	}
+	if got := b.PositionTryFor(s); got != name {
+		t.Fatalf("fallback name changed across sheets: %q and %q", name, got)
+	}
+	a.ClassFor(s)
+	if css := a.CSS(); strings.Count(css, "@position-try ") != 1 ||
+		!strings.Contains(css, "@position-try "+name+"{inset-block-start:anchor(bottom)}") ||
+		strings.Count(css, "inset-block-start:") != 2 {
+		t.Fatalf("class and fallback registration interfered:\n%s", css)
+	}
+}
+
+func TestEmptySetHasNoPositionTry(t *testing.T) {
+	var sh Sheet
+	if got := sh.PositionTryFor(StyleSet{}); got != "" {
+		t.Errorf("PositionTryFor of empty StyleSet = %q, want empty", got)
+	}
+	if css := sh.CSS(); css != "" {
+		t.Errorf("empty StyleSet added a rule:\n%s", css)
+	}
+}
+
+func TestPositionTryRejectsScopes(t *testing.T) {
+	for _, media := range []string{"", "(hover: hover)"} {
+		t.Run(media, func(t *testing.T) {
+			var sh Sheet
+			var s StyleSet
+			if media == "" {
+				s.SetPseudo(":hover", "inset-block-start", "0")
+			} else {
+				s.SetMediaPseudo(media, ":hover", "inset-block-start", "0")
+			}
+			defer func() {
+				if recover() == nil {
+					t.Error("PositionTryFor accepted scoped declarations")
+				}
+				if css := sh.CSS(); css != "" {
+					t.Errorf("rejected declarations added a rule:\n%s", css)
+				}
+			}()
+			sh.PositionTryFor(s)
+		})
+	}
+}
+
 func TestClassInterning(t *testing.T) {
 	var sh Sheet
 

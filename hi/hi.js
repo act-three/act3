@@ -302,9 +302,279 @@ function bind(element) {
 	sync();
 }
 
+function restorePresentationPlacement(e, entry) {
+	const saved = entry.placement || JSON.parse(e.dataset.hiPlacement || "null");
+	if (!saved) return;
+	for (const [property, [value, priority, applied, appliedPriority]] of Object.entries(saved)) {
+		if (
+			e.style.getPropertyValue(property) === applied && e.style.getPropertyPriority(property) === appliedPriority
+		) {
+			e.style.setProperty(property, value, priority);
+		}
+	}
+	entry.placement = undefined;
+	delete e.dataset.hiPlacement;
+}
+
+function sizePresentation(e, entry) {
+	restorePresentationPlacement(e, entry);
+	const fill = e.dataset.hiFill;
+	if (!fill) return;
+	// WebKit accepts a fitting authored position before considering
+	// most-height/width. Measure the same candidates ourselves at opening.
+	// https://bugs.webkit.org/show_bug.cgi?id=317916
+	const vertical = fill !== "horizontal", horizontal = fill !== "vertical";
+	const names = getComputedStyle(e).positionTryFallbacks.split(",").map(s => s.trim());
+	const rules = new Map();
+	function collect(list) {
+		for (const rule of list) {
+			if (names.includes(rule.name) && rule.style) rules.set(rule.name, rule.style);
+			if (rule.cssRules) collect(rule.cssRules);
+		}
+	}
+	for (const sheet of document.styleSheets) {
+		if (sheet.href) continue;
+		try {
+			collect(sheet.cssRules);
+		} catch { /* An inaccessible sheet cannot supply Hi's rules. */ }
+	}
+	// The empty first candidate lets the cascade supply the authored
+	// placement. Alternatives reuse the Go-generated anchor expressions.
+	const candidates = [
+		[],
+		...names.filter(name => rules.has(name)).map(name => {
+			const style = rules.get(name);
+			return [
+				"inset-block-start",
+				"inset-block-end",
+				"inset-inline-start",
+				"inset-inline-end",
+				"align-self",
+				"justify-self",
+			]
+				.map(property => [property, style.getPropertyValue(property), style.getPropertyPriority(property)])
+				.filter(([, value]) => value);
+		}),
+	];
+	const properties = new Set(["position-try-fallbacks", "position-try-order"]);
+	for (const candidate of candidates) for (const [property] of candidate) properties.add(property);
+	if (vertical) properties.add("height");
+	if (horizontal) properties.add("width");
+	const saved = Object.fromEntries(
+		[...properties].map(
+			property => [property, [e.style.getPropertyValue(property), e.style.getPropertyPriority(property)]],
+		),
+	);
+	function apply(candidate) {
+		for (const [property, [value, priority]] of Object.entries(saved)) {
+			e.style.setProperty(property, value, priority);
+		}
+		e.style.setProperty("position-try-fallbacks", "none");
+		e.style.setProperty("position-try-order", "normal");
+		for (const [property, value, priority] of candidate) e.style.setProperty(property, value, priority);
+	}
+	const width = document.documentElement.clientWidth, height = document.documentElement.clientHeight;
+	let best = candidates[0], most = -Infinity;
+	for (const candidate of candidates) {
+		apply(candidate);
+		const rect = e.getBoundingClientRect();
+		const fits = rect.left >= -.5 && rect.right <= width + .5 && rect.top >= -.5 && rect.bottom <= height + .5;
+		// A filling axis occupies its entire available interval. The rect
+		// includes native anchor-scroll adjustment; computed insets do not.
+		const space = vertical ? rect.height : rect.width;
+		if (fits && space > most) {
+			best = candidate;
+			most = space;
+		}
+	}
+	apply(best);
+	const style = getComputedStyle(e), heightUsed = style.height, widthUsed = style.width;
+	if (vertical) e.style.height = heightUsed;
+	if (horizontal) e.style.width = widthUsed;
+	// Explicit sizes also give Safari's descendant scroll views the actual
+	// chosen viewport. Keep anchor expressions so scrolling still tracks
+	// the trigger without resizing the open presentation.
+	for (const [property, values] of Object.entries(saved)) {
+		values.push(e.style.getPropertyValue(property), e.style.getPropertyPriority(property));
+	}
+	entry.placement = saved;
+	// History clones must be able to discard these owned inline overrides.
+	e.dataset.hiPlacement = JSON.stringify(saved);
+}
+
+function initPresentations() {
+	const entries = new Map();
+	const stack = [];
+	let pressedOutside, clickedOutside, pending = false;
+	const top = () => stack.at(-1);
+	const isDialog = e => e.dataset.hiPresentation === "dialog";
+	const shown = e => e.matches(isDialog(e) ? ":modal" : ":popover-open");
+	const registered = e => e.isConnected && entries.get(e).proxy.parentElement === e;
+	const requested = e => registered(e) && e.dataset.hiOpen === "true";
+	const dismiss = e => {
+		// Domi delegates standard events. This inert proxy carries the
+		// application's message without treating content clicks as dismissals.
+		entries.get(e).proxy.click();
+	};
+	function hide(e) {
+		if (isDialog(e)) {
+			if (e.open) e.close();
+		} else if (shown(e)) e.hidePopover();
+	}
+	function close(e) {
+		const index = stack.indexOf(e);
+		if (index >= 0) stack.splice(index, 1);
+		const entry = entries.get(e);
+		if (pressedOutside?.element === e) pressedOutside = undefined;
+		if (clickedOutside === e) clickedOutside = undefined;
+		// Removal can reset activeElement before the observer runs.
+		const hadFocus = e.contains(document.activeElement)
+			|| (!e.isConnected && entry.focusWithin && document.activeElement === document.body);
+		hide(e);
+		restorePresentationPlacement(e, entry);
+		const previous = entry.focus?.deref();
+		entry.focus = entry.active = entry.reconnectFocus = undefined;
+		entry.focusWithin = false;
+		if (hadFocus && previous?.isConnected) previous.focus({ preventScroll: true });
+	}
+	function schedule() {
+		if (pending) return;
+		pending = true;
+		queueMicrotask(() => {
+			pending = false;
+			reconcile();
+		});
+	}
+	function reconcile() {
+		// Close in logical presentation order, independent of DOM order.
+		for (const e of [...stack].reverse()) if (!requested(e)) close(e);
+		const added = new Set();
+		for (const [e, entry] of entries) {
+			if (!registered(e)) {
+				entry.observer.disconnect();
+				entry.listeners.abort();
+				entries.delete(e);
+				continue;
+			}
+			if (!requested(e)) {
+				close(e);
+				continue;
+			}
+			if (!stack.includes(e)) {
+				stack.push(e);
+				added.add(e);
+			}
+		}
+		const first = stack.findIndex(e => !shown(e));
+		if (first >= 0) {
+			let focus = document.activeElement;
+			if (focus === document.body) {
+				focus = [...stack].reverse().map(e => entries.get(e).reconnectFocus?.deref())
+					.find(e => e?.isConnected);
+			}
+			// Moving a DOM subtree drops native top-layer membership. Restore
+			// the affected suffix, including still-shown surfaces above it,
+			// so neither DOM order nor repair order changes which is on top.
+			for (let i = stack.length - 1; i >= first; i--) hide(stack[i]);
+			for (let i = first; i < stack.length; i++) {
+				const e = stack[i], entry = entries.get(e);
+				if (added.has(e)) entry.focus = new WeakRef(document.activeElement);
+				if (isDialog(e)) e.showModal();
+				else e.showPopover();
+				if (added.has(e)) sizePresentation(e, entry);
+				entry.focusWithin = e.contains(document.activeElement);
+			}
+			if (!added.size && focus?.isConnected) focus.focus({ preventScroll: true });
+		}
+		for (const entry of entries.values()) entry.reconnectFocus = undefined;
+	}
+	let resizeFrame;
+	window.addEventListener("resize", () => {
+		cancelAnimationFrame(resizeFrame);
+		resizeFrame = requestAnimationFrame(() => {
+			for (const e of stack) if (shown(e) && entries.get(e).placement) sizePresentation(e, entries.get(e));
+		});
+	});
+	document.addEventListener("focusin", event => {
+		for (const [e, entry] of entries) {
+			entry.focusWithin = e.contains(event.target);
+			entry.active = entry.focusWithin ? new WeakRef(event.target) : undefined;
+		}
+	});
+	document.addEventListener("focusout", () =>
+		queueMicrotask(() => {
+			for (const [e, entry] of entries) {
+				if (e.isConnected) entry.focusWithin = e.contains(document.activeElement);
+			}
+		}));
+	customElements.define(
+		"hi-dismiss",
+		class extends HTMLElement {
+			#host;
+			connectedCallback() {
+				const e = this.#host = this.parentElement;
+				if (!e?.matches("[data-hi-presentation]")) return;
+				let entry = entries.get(e);
+				if (!entry) {
+					entry = { observer: new MutationObserver(schedule), listeners: new AbortController() };
+					entries.set(e, entry);
+					entry.observer.observe(e, { attributes: true, attributeFilter: ["data-hi-open", "open"] });
+					const options = { signal: entry.listeners.signal };
+					e.addEventListener("toggle", schedule, options);
+					e.addEventListener("cancel", event => {
+						if (!isDialog(e)) return;
+						event.preventDefault();
+						if (top() === e) dismiss(e);
+					}, options);
+				}
+				entry.proxy = this;
+				schedule();
+			}
+			disconnectedCallback() {
+				const entry = entries.get(this.#host);
+				if (!entry || entry.proxy !== this) return;
+				entry.reconnectFocus = entry.focusWithin ? entry.active : undefined;
+				schedule();
+			}
+		},
+	);
+	document.addEventListener("keydown", event => {
+		const e = top();
+		if (!e || event.key !== "Escape" || event.defaultPrevented || event.isComposing) return;
+		// Prevent native dialog cancellation so precisely the topmost Hi
+		// surface requests dismissal, even for a popover inside a dialog.
+		event.preventDefault();
+		if (!event.repeat) dismiss(e);
+	});
+	document.addEventListener("pointerdown", event => {
+		const e = top();
+		clickedOutside = undefined;
+		pressedOutside = event.button === 0 && e && !isDialog(e) && !e.contains(event.target)
+			? { element: e, id: event.pointerId }
+			: undefined;
+	}, true);
+	document.addEventListener("pointerup", event => {
+		const pressed = pressedOutside;
+		pressedOutside = undefined;
+		const e = pressed?.element;
+		if (e && pressed.id === event.pointerId && e === top() && !e.contains(event.target)) clickedOutside = e;
+	}, true);
+	document.addEventListener("click", event => {
+		const e = clickedOutside;
+		clickedOutside = undefined;
+		// Dispatch after the outside control's own action. In particular,
+		// a toggle on the trigger must precede the idempotent close request.
+		if (e && e === top() && !e.contains(event.target)) dismiss(e);
+	});
+	document.addEventListener("pointercancel", () => {
+		pressedOutside = clickedOutside = undefined;
+	}, true);
+}
+
 export function run(domi) {
 	if (customElements.get("hi-note-display")) return;
 	clone = domi.clone;
+	initPresentations();
 	document.addEventListener("visibilitychange", sync);
 	document.addEventListener("pointermove", event => {
 		if (event.pointerType === "mouse") pointer = { x: event.clientX, y: event.clientY };

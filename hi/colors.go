@@ -125,13 +125,12 @@ var (
 	//	ThemeColor(0.078, 0.0017, BackgroundScale),
 	// )
 
-	// elevatedColor is the background of a region raised above the page,
-	// such as a dialog.
+	// dialogColor is the background of a dialog.
 	// It is lighter than the background in both modes.
-	// elevatedColor Color = ModeColor(
-	//	ThemeColor(-0.069, 0, BackgroundScale),
-	//	ThemeColor(0.036, 0.0017, BackgroundScale),
-	// )
+	dialogColor Color = ModeColor(
+		ThemeColor(-0.069, 0, BackgroundScale),
+		ThemeColor(0.036, 0.0017, BackgroundScale),
+	)
 
 	// menuColor is the background of a menu.
 	// It is lighter than the background in both modes.

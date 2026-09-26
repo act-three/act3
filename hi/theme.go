@@ -11,14 +11,25 @@ import (
 // A theme holds the inputs from which theme colors are derived.
 type theme struct {
 	bgbase   oklch // always opaque
+	bgroot   oklch // page background, unchanged by local theme backgrounds
 	accent   oklch
 	contrast float64
 }
 
-var defaultTheme = theme{
-	bgbase:   oklch{l: 0.982, c: 0.0013, h: 100, a: 1},
-	accent:   oklch{l: 0.511, c: 0.23, h: 277, a: 1},
-	contrast: 30,
+var defaultTheme = newTheme(
+	oklch{l: 0.982, c: 0.0013, h: 100, a: 1},
+	oklch{l: 0.511, c: 0.23, h: 277, a: 1},
+	30,
+)
+
+func newTheme(background, accent oklch, contrast float64) theme {
+	background.a = 1
+	return theme{
+		bgbase:   background,
+		bgroot:   background,
+		accent:   accent,
+		contrast: min(max(contrast, 15), 100),
+	}
 }
 
 // Theme sets the base colors used to derive the colors
@@ -37,12 +48,8 @@ var defaultTheme = theme{
 // Values outside this range are clamped.
 func Theme(background, accent Color, contrast float64) Option {
 	b := background.color().colorCoords(defaultTheme)
-	b.a = 1
-	return optionTheme{theme: theme{
-		bgbase:   b,
-		accent:   accent.color().colorCoords(defaultTheme),
-		contrast: min(max(contrast, 15), 100),
-	}}
+	a := accent.color().colorCoords(defaultTheme)
+	return optionTheme{theme: newTheme(b, a, contrast)}
 }
 
 // optionTheme is the Option returned by Theme.
