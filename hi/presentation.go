@@ -126,7 +126,7 @@ func (n nodePopover) render(env environment) box {
 	}[fills]; fill != "" {
 		inner.add(domi.Name("data-hi-fill", fill))
 	}
-	inner.style.Set("position", "fixed")
+	inner.position.exterior = positionFixed
 	inner.style.Set("display", "grid")
 	inner.style.Set("grid-template-columns", "100%")
 	inner.style.Set("grid-template-rows", "100%")
@@ -170,7 +170,7 @@ func (n nodeDialog) render(env environment) box {
 	b := unary(VStack, v)(inner)
 	inner.nextenv = nextenv{}
 	inner.tag = "dialog"
-	inner.style.Set("position", "fixed")
+	inner.position.exterior = positionFixed
 	Edges(12).setOn(&inner.style, "inset")
 	inner.style.Set("display", "grid")
 	inner.style.Set("grid-template-columns", "100%")

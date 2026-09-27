@@ -28,6 +28,11 @@ func (s AxisSet) complement() AxisSet { return (Horizontal | Vertical) &^ s }
 // mechanism the parent context responds to: grow or stretch as a flex item,
 // self-stretch in a grid cell. A single mechanism cannot serve both.
 func (s AxisSet) addFillStylesTo(ss *canon.StyleSet, env environment) {
+	if env.position.exterior == positionFixed && s.hasAll(Vertical) {
+		// Fixed overlays start with an intrinsic height. Filling needs
+		// an automatic height for self-stretch to take effect.
+		ss.Set("height", "auto")
+	}
 	switch env.container {
 	case containerFlex:
 		if s.hasAny(env.lc.majorAxis) {

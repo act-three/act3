@@ -422,6 +422,7 @@ type nextenv struct {
 	tag        string
 	attrs      domi.Attr
 	style      canon.StyleSet
+	position   position
 	fg         []term[color]
 	bg         []term[color]
 	stroke     []term[stroke]
@@ -531,11 +532,15 @@ func build(env environment, p plan) box {
 	// A box is always rigid on an unbounded axis.
 	rigid := p.rigid | env.unbounded
 	ss := env.style
+	if len(env.stroke) > 0 || len(env.outline) > 0 {
+		env.position.interior = true
+	}
 	addIdealStylesTo(&ss, p.ideal, env.unbounded, fills)
 	fills.addFillStylesTo(&ss, env)
 	rigid.addRigidStylesTo(&ss, env)
 	styles := env.root.style.Decls()
 	styles.Merge(ss.Decls())
+	env.position.setOn(&styles)
 	addFontStylesTo(&styles, env)
 	addPaintStylesTo(&styles, env)
 	// Keep the generated class after the named classes in rendered output.

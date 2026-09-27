@@ -298,7 +298,6 @@ func addPaintStylesTo(ss *sheet.StyleSet, env environment) {
 	if len(b.stroke) > 0 || hasOutline {
 		// Every state shares one foreground carrier covering the box.
 		// Strokes use its shadow list; the winning outline uses CSS outline.
-		ss.Set("position", "relative")
 		ss.SetPseudo("::after", "content", `""`)
 		ss.SetPseudo("::after", "position", "absolute")
 		ss.SetPseudo("::after", "inset", "0")

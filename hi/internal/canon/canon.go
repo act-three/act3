@@ -109,7 +109,6 @@ var canonical = map[string]bool{
 	"padding-inline-end":     true,
 	"padding-inline-start":   true,
 	"pointer-events":         true,
-	"position":               true,
 	"position-anchor":        true,
 	"position-try-fallbacks": true,
 	"position-try-order":     true,
@@ -129,6 +128,7 @@ var canonical = map[string]bool{
 // rejected names, for properties one might reach for,
 // what to write instead.
 var rejected = map[string]string{
+	"position":            "typed position requests",
 	"overflow":            "overflow-x and overflow-y",
 	"overscroll-behavior": "overscroll-behavior-x and overscroll-behavior-y",
 	"place-items":         "align-items and justify-items",

@@ -2,6 +2,7 @@ package hi
 
 import (
 	"cmp"
+	"fmt"
 	"reflect"
 	"strconv"
 
@@ -69,16 +70,16 @@ func (w wrapLayer) render(env environment, n node) box {
 		// Using modStyle here would eg make canScrollDocument return false.
 		baseEnv.root.style.Set("isolation", "isolate")
 		b := n(baseEnv)
-		layer, title := w.renderLayerElement(env, "fixed")
-		b.node = domi.Fragment(b.node, layer)
-		b.title = cmp.Or(b.title, title)
+		layer := w.renderFixedLayer(env)
+		b.node = domi.Fragment(b.node, layer.content)
+		b.title = cmp.Or(b.title, layer.title)
 		return b
 	}
 
 	// Prevent high-z-index subviews
 	// from painting on top of the overlay or border stroke.
 	p := wrapSubview(env, modStyle("isolation", "isolate")(n))
-	layer, layerTitle := w.renderLayerElement(env, "absolute")
+	layer, layerTitle := w.renderLayerElement(env)
 	p.content = domi.Fragment(p.content, layer)
 	p.title = cmp.Or(p.title, layerTitle)
 	env.tag = cmp.Or(env.tag, "hi-layer")
@@ -89,7 +90,7 @@ func (w wrapLayer) render(env environment, n node) box {
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
 	Center.setItemsOn(&env.style)
-	env.style.Set("position", "relative")
+	env.position.interior = true
 	env.style.Set("isolation", "isolate")
 	// Pending foreground paint must paint in front by z-index.
 	// Elsewhere, its tree position suffices.
@@ -100,26 +101,18 @@ func (w wrapLayer) render(env environment, n node) box {
 }
 
 // renderLayerElement renders the overlay or underlay view in a covering grid.
-// position is absolute for an ordinary layer and fixed for a hoisted root
-// overlay.
-func (w wrapLayer) renderLayerElement(env environment, position string) (domi.Node, string) {
+func (w wrapLayer) renderLayerElement(env environment) (domi.Node, string) {
 	var lss canon.StyleSet
 	lss.Set("display", "grid")
 	lss.Set("grid-template-columns", "100%")
 	lss.Set("grid-template-rows", "100%")
 	w.at.setItemsOn(&lss)
-	lss.Set("position", position)
 	EdgeSpace{}.setOn(&lss, "inset")
 	tag := "hi-underlay"
-	view := w.layer
-	if w.anchor != w.at {
-		// Placement puts the layer view's at-point onto the base's.
-		// Shift by the difference of the two points, in the layer's
-		// coordinates, so its anchor point lands there instead.
-		x := w.at.horizontal().point() - w.anchor.horizontal().point()
-		y := w.at.vertical().point() - w.anchor.vertical().point()
-		view = modStyle("translate", strconv.Itoa(x)+"% "+strconv.Itoa(y)+"%")(view)
-	}
+	view := modEnv(func(env environment) environment {
+		setAttachmentTranslation(&env.style, w.at, w.anchor)
+		return env
+	})(w.layer)
 	if w.over {
 		tag = "hi-overlay"
 		lss.Set("z-index", strconv.Itoa(zOverlay))
@@ -131,7 +124,41 @@ func (w wrapLayer) renderLayerElement(env environment, position string) (domi.No
 		lss.Set("z-index", strconv.Itoa(zUnderlay))
 	}
 	layer := renderLayer(env, view)
-	return domi.Tag(tag, attr.Class(env.sheet.ClassFor(lss.Decls())))(layer.content), layer.title
+	styles := lss.Decls()
+	(position{exterior: positionAbsolute}).setOn(&styles)
+	return domi.Tag(tag, attr.Class(env.sheet.ClassFor(styles)))(layer.content), layer.title
+}
+
+func (w wrapLayer) renderFixedLayer(env environment) plan {
+	return renderLayer(env, modEnv(func(env environment) environment {
+		env.position.exterior = positionFixed
+		// Safari collapses percentage grid rows in auto-height fixed
+		// boxes. Explicit content sizing keeps their children in bounds;
+		// authored heights and vertical fill override this default.
+		env.style.Set("height", "fit-content")
+		// Insets define the alignment area, not the box's size. Fill
+		// requests can override this self-alignment with stretch.
+		// Unsafe alignment preserves the grid's overflow placement.
+		// There is no baseline-sharing group at the viewport.
+		a := w.at.withoutBaseline()
+		env.style.Set("align-self", "unsafe "+a.vertical().keyword())
+		env.style.Set("justify-self", "unsafe "+a.horizontal().keyword())
+		EdgeSpace{}.setOn(&env.style, "inset")
+		env.style.Set("z-index", fmt.Sprint(zOverlay))
+		setAttachmentTranslation(&env.style, w.at, w.anchor)
+		return env
+	})(w.layer))
+}
+
+func setAttachmentTranslation(ss *canon.StyleSet, at, anchor Alignment) {
+	if anchor == at {
+		return
+	}
+	// Placement aligns the view's at-point; shift by the difference
+	// in its own coordinates so the anchor point lands there instead.
+	x := at.horizontal().point() - anchor.horizontal().point()
+	y := at.vertical().point() - anchor.vertical().point()
+	ss.Set("translate", fmt.Sprintf("%d%% %d%%", x, y))
 }
 
 // canOverlayRoot reports whether removing the ordinary layer wrapper
@@ -198,8 +225,11 @@ func (w wrapSticky) render(env environment, n node) box {
 	env.style.Set("grid-template-columns", "100%")
 	env.style.Set("grid-template-rows", "100%")
 	Center.setItemsOn(&env.style)
-	env.style.Set("position", "sticky")
-	w.inset.setOn(&env.style, "inset")
-	env.style.Set("z-index", "1") // The scroll viewport isolates the z-index.
+	// A container may already have placed this box out of flow.
+	if env.position.exterior == positionFlow {
+		env.position.exterior = positionSticky
+		w.inset.setOn(&env.style, "inset")
+		env.style.Set("z-index", "1") // The scroll viewport isolates the z-index.
+	}
 	return build(env, p)
 }

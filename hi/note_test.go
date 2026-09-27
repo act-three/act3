@@ -553,6 +553,32 @@ func TestNotesSnapshotHover(t *testing.T) {
 	}
 }
 
+func TestNotesBottomInset(t *testing.T) {
+	t.Parallel()
+	runNotes(t, 400, 360, func(s *uitest.Session) {
+		check := func() {
+			t.Helper()
+			noteCheck(t, s, `(() => {
+				const r = document.querySelector('hi-note-display hi-note:last-child').getBoundingClientRect();
+				return Math.abs(r.bottom - (innerHeight - 16)) < 0.5 &&
+					Math.abs(r.x + r.width / 2 - innerWidth / 2) < 0.5;
+			})()`)
+		}
+		s.Run(noteAdd(1, `'short'`))
+		check()
+		s.Run(noteAdd(3, `'A longer message that wraps across several lines.', 'very long '.repeat(100)`))
+		check()
+		for _, event := range []string{"pointerenter", "pointerleave"} {
+			s.Eval(fmt.Sprintf(`document.querySelector('hi-note-display').dispatchEvent(
+				new PointerEvent('%s', {pointerType: 'mouse'}));`, event), nil)
+			check()
+		}
+		s.Eval(`document.querySelector('hi-note-display hi-note:last-child button').click();`, nil)
+		s.Eval(`fixture.advance(200);`, nil)
+		check()
+	})
+}
+
 func TestNotesLayoutAndFocus(t *testing.T) {
 	t.Parallel()
 	runNotes(t, 400, 360, func(s *uitest.Session) {
