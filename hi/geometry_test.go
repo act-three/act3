@@ -208,6 +208,20 @@ func TestGeometryDividerSpansMinorAxis(t *testing.T) {
 	})
 }
 
+// TestGeometryDividerInZStack pins a divider with no major axis to a
+// horizontal line: it spans the width and its thickness requests no
+// vertical fill, so the enclosing ZStack doesn't absorb column slack.
+func TestGeometryDividerInZStack(t *testing.T) {
+	t.Parallel()
+	v := hi.VStack(hi.ZStack(hi.Text("a"), hi.Divider()), hi.Text("b"))
+	stage(t, v, func(s *uitest.Session) {
+		z, div := s.Rect("hi-zstack", 0), s.Rect("hi-divider", 0)
+		within(t, "zstack height", z.H, s.Rect("hi-text", 0).H, 1)
+		within(t, "divider width", div.W, 600, 1)
+		within(t, "divider height", div.H, 1, 0.1)
+	})
+}
+
 // TestGeometryDividerSpansMinorAxisUnbounded pins minor-axis fills in
 // unbounded available space: the row's height is resolved from its
 // tallest sibling, and each divider expands to that extent — through
