@@ -1,6 +1,7 @@
-// Package view (along with its subdirectories) holds pure functions
-// for generating HTML trees from model objects.
-// Code in these packages must not perform I/O (e.g. database or network).
+// Package view composes pages and presentation components.
+// Page functions may read data through a model.TxR supplied by web.
+// Reusable presentation components take model objects or values and perform no I/O.
+// Rendering must not write data or perform external service calls.
 package view
 
 import (
