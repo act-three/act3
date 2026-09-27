@@ -414,7 +414,7 @@ func TestGeometryTagFrameCarriesFill(t *testing.T) {
 	})
 }
 
-func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
+func TestGeometryScrollViewportOnlyFillsScrollAxis(t *testing.T) {
 	t.Parallel()
 	var rows []hi.View
 	for i := range 20 {
@@ -423,7 +423,11 @@ func TestGeometryScrollViewportTakesItsFrame(t *testing.T) {
 	v := hi.ScrollView(hi.Vertical, hi.VStack(rows...)).Frame(hi.Width(220), hi.Height(160))
 	stage(t, v, func(s *uitest.Session) {
 		scroll := s.Rect("hi-scroll", 0)
-		within(t, "viewport width", scroll.W, 220, 1)
+		within(t, "outer frame width", s.Rect("hi-frame", 0).W, 220, 1)
+		within(t, "viewport hugs content", scroll.W, s.Rect("hi-scroll > hi-vstack", 0).W, 1)
+		if scroll.W >= 220 {
+			t.Errorf("viewport width = %g, want content width below 220", scroll.W)
+		}
 		within(t, "viewport height", scroll.H, 160, 1)
 		if h := s.Rect("hi-scroll > hi-vstack", 0).H; h <= 160 {
 			t.Errorf("content height = %g, want overflow to scroll against", h)
@@ -476,8 +480,8 @@ func TestGeometryLayerCoincidesUnderStretch(t *testing.T) {
 }
 
 // TestGeometryScrollContributesItsIdeal pins the viewport's sizing:
-// its contents never contribute to an enclosing container's intrinsic
-// sizing, so a content-sized row resolves from its siblings and the
+// its contents never contribute to intrinsic sizing on the scrolling
+// axis, so a content-sized row resolves from its siblings and the
 // scroll axis survives. In unbounded space the viewport contributes
 // its 100px ideal as a floor, with its fill stretching it past the
 // ideal when a sibling resolves taller; in bounded space the ideal is

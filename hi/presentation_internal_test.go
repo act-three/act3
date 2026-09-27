@@ -275,8 +275,8 @@ func TestPresentationScrollLayout(t *testing.T) {
 				entries = append(entries, Text(fmt.Sprintf("Menu item %d", i)).
 					Frame(Height(32)).Class("entry"))
 			}
-			menu := ScrollView(Vertical, VStack(entries...).Gap(0)).
-				Class("menu-scroll").Frame(Width(240))
+			menu := ScrollView(Vertical, VStack(entries...).Gap(0).Frame(Width(240))).
+				Class("menu-scroll")
 			v := Text("Trigger").Frame(Width(80), Height(40)).
 				Menu(Present(true, 1), menu).
 				Class("trigger")
@@ -333,7 +333,7 @@ func TestPresentationPageScrollLayout(t *testing.T) {
 			for i := range 40 {
 				entries = append(entries, Text(fmt.Sprintf("Item %d", i)).Frame(Height(32)).Class("entry"))
 			}
-			menu := ScrollView(Vertical, VStack(entries...).Gap(0)).Class("menu-scroll").Frame(Width(240))
+			menu := ScrollView(Vertical, VStack(entries...).Gap(0).Frame(Width(240))).Class("menu-scroll")
 			trigger := Text("Trigger").Frame(Width(80), Height(40)).Class("trigger").
 				Menu(Present(false, 7), menu)
 			_, page := Render(ScrollView(Vertical, VStack(

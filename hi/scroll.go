@@ -15,8 +15,10 @@ import (
 //
 //	ScrollView(Horizontal|Vertical, v)
 //
-// The viewport expands to fill available space along both axes,
-// regardless of the specified scroll axis.
+// Along a scrolling axis,
+// the viewport expands to fill available space.
+// On a non-scrolling axis,
+// it adopts its content's sizing behavior.
 //
 // When a ScrollView is the root view of the page,
 // it uses document viewport scrolling
@@ -47,7 +49,6 @@ func (s nodeScroll) render(env environment) box {
 	inner.root.atRoot = false
 	inner.lc = layoutContext{}
 	inner.container = containerGrid
-	inner.unbounded = 0
 	contents := modFixedSize(s.along)(s.contents)
 	if canScrollDocument(env) {
 		b := contents(inner)
@@ -55,7 +56,7 @@ func (s nodeScroll) render(env environment) box {
 		return b
 	}
 	// Along a scroll axis, the content's available space is unbounded.
-	// On a non-scrolling axis the available space is the viewport's own size.
+	// On other axes, the available space passes through unchanged.
 	type overflow struct{ x, y string }
 	v := cmp.Or(map[AxisSet]overflow{
 		Horizontal:            {"auto", "hidden"},
@@ -66,19 +67,38 @@ func (s nodeScroll) render(env environment) box {
 	// It is equivalent to the root view context in a scrolling web page.
 	env.tag = cmp.Or(env.tag, "hi-scroll")
 	env.style.Set("display", "grid")
-	env.style.Set("min-width", "0")
-	env.style.Set("min-height", "0")
 	env.style.Set("overflow-x", v.x)
 	env.style.Set("overflow-y", v.y)
 	env.style.Set("overscroll-behavior-x", "contain")
 	env.style.Set("overscroll-behavior-y", "contain")
 	TopLeading.setItemsOn(&env.style)
-	env.style.Set("contain", "size")      // Viewport size doesn't depend on its contents.
+	// A zero track excludes the content from intrinsic sizing only on
+	// scrolling axes. The content takes its ideal size and overflows the
+	// track. Other axes use the same track as a layout-preserving frame.
+	cols, rows := "100%", "100%"
+	minWidth, minHeight := "min-content", "min-content"
+	if s.along.hasAll(Horizontal) {
+		cols, minWidth = "0px", "0"
+	}
+	if s.along.hasAll(Vertical) {
+		rows, minHeight = "0px", "0"
+	}
+	env.style.Set("grid-template-columns", cols)
+	env.style.Set("grid-template-rows", rows)
+	// Scrollable overflow makes CSS automatic minimums zero, even on a
+	// non-scrolling axis. Restore that axis's content-based minimum.
+	env.style.Set("min-width", minWidth)
+	env.style.Set("min-height", minHeight)
 	env.style.Set("isolation", "isolate") // Isolate the wrapSticky z-index.
 	p := renderSubviewNode(inner, contents)
-	p.fills = Horizontal | Vertical
-	p.rigid = 0 // Content rigidity does not escape its viewport.
-	p.ideal = rect{width: 100, height: 100}
+	p.fills |= s.along
+	p.rigid &^= s.along
+	if s.along.hasAll(Horizontal) {
+		p.ideal.width = 100
+	}
+	if s.along.hasAll(Vertical) {
+		p.ideal.height = 100
+	}
 	return build(env, p)
 }
 

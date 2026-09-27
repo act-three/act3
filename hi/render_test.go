@@ -496,7 +496,7 @@ func TestPaddingComposes(t *testing.T) {
 // fill boundaries — scroll content along a scroll axis, a FixedSize
 // subtree's outermost box; and unbounded clears per axis wherever a
 // box makes real space available again — a frame's definite axes, a
-// decoration layer, a scroll viewport.
+// decoration layer.
 func TestIdealSize(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
@@ -533,10 +533,10 @@ func TestIdealSize(t *testing.T) {
 			[]string{"10px"},
 		},
 		{
-			"scroll viewport takes 100px; content unbounded on the scroll axis",
+			"scroll viewport takes 100px only on the scroll axis",
 			hi.ScrollView(hi.Vertical, hi.Secondary).FixedSize().Padding(hi.Edges(0)),
-			[]string{"width:100px", "height:100px", "height:10px"},
-			[]string{"width:10px"},
+			[]string{"min-width:10px", "height:100px", "height:10px"},
+			[]string{"width:100px"},
 		},
 		{
 			// The color's fill is stripped on the scroll axis only,
@@ -554,10 +554,10 @@ func TestIdealSize(t *testing.T) {
 			nil,
 		},
 		{
-			"no-axis scroll makes neither content axis unbounded",
+			"no-axis scroll preserves inherited unbounded space",
 			hi.ScrollView(hi.AxisSet(0), hi.Secondary).FixedSize().Padding(hi.Edges(0)),
-			[]string{"width:100px", "height:100px", "overflow-x:clip;overflow-y:clip"},
-			[]string{"10px"},
+			[]string{"min-width:10px", "min-height:10px", "overflow-x:clip;overflow-y:clip"},
+			[]string{"100px"},
 		},
 		{
 			"bounds frame takes its ideal and makes it the subview's space",
