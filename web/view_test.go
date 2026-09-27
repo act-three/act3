@@ -157,7 +157,7 @@ func TestRendererTransactionScope(t *testing.T) {
 	for _, preview := range []bool{false, true} {
 		t.Run(map[bool]string{false: "View", true: "Preview"}[preview], func(t *testing.T) {
 			m, db := newTestModelDB(t)
-			a := newTestApp(t, m, "/app/profile")
+			a := newTestApp(t, m, "/app/tasks")
 			calls := 0
 			render := func(path string, v hi.View) {
 				renderViewAt(t, path, hi.Lazy(func() hi.View {
@@ -169,7 +169,7 @@ func TestRendererTransactionScope(t *testing.T) {
 				}))
 			}
 			if preview {
-				a.Preview(t.Context(), &url.URL{Path: "/app/about"}, func(dest string, v hi.View) hi.Preview {
+				a.Preview(t.Context(), &url.URL{Path: "/app/tasks"}, func(dest string, v hi.View) hi.Preview {
 					render(dest, v)
 					return hi.Preview{}
 				})

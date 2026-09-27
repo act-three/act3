@@ -6,14 +6,26 @@ import (
 	"ily.dev/domi/event"
 	"ily.dev/domi/html"
 
+	"ily.dev/act3/hi"
+
 	"ily.dev/act3/expr"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
 )
 
-func AppTasks(running []*model.RunningTask, queued, failed []*model.Task) (string, domi.Node) {
-	return "Tasks", ScrollY(Class("v-system"))(
+func AppTasks(tx *model.TxR) hi.View {
+	running := tx.RunningTasks()
+	tasks := tx.TaskList()
+	var queued, failed []*model.Task
+	for _, t := range tasks {
+		if t.Failed() {
+			failed = append(failed, t)
+		} else {
+			queued = append(queued, t)
+		}
+	}
+	return hi.HTML(ScrollY(Class("v-system"))(
 		html.Div()(domi.Text("Scheduled Tasks")),
 
 		html.Div(Class("v-system-field"))(
@@ -97,7 +109,7 @@ func AppTasks(running []*model.RunningTask, queued, failed []*model.Task) (strin
 				),
 			),
 		),
-	)
+	)).Title("Tasks")
 }
 
 func taskRow(t *model.Task, runLabel string) domi.Node {

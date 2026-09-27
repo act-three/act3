@@ -46,8 +46,8 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) hi.Vi
 		hi.Path("/app/storage", viewHTML(func() (string, node) {
 			return viewEditorStorage(tx)
 		})),
-		hi.Path("/app/tasks", viewHTML(func() (string, node) {
-			return viewEditorTasks(tx)
+		hi.Path("/app/tasks", hi.Lazy(func() hi.View {
+			return view.AppTasks(tx)
 		})),
 		hi.Path("/app/tmdb", viewHTML(func() (string, node) {
 			return view.AppTMDB(tx.SettingGetByGroup("tmdb"))
@@ -104,20 +104,6 @@ func viewEditorTrash(tx *model.TxR, id string) (title string, n node) {
 		selected, found = tx.FindTrashItem(id)
 	}
 	return view.AppTrash(items, selected, !found)
-}
-
-func viewEditorTasks(tx *model.TxR) (title string, n node) {
-	running := tx.RunningTasks()
-	tasks := tx.TaskList()
-	var queued, failed []*model.Task
-	for _, t := range tasks {
-		if t.Failed() {
-			failed = append(failed, t)
-		} else {
-			queued = append(queued, t)
-		}
-	}
-	return view.AppTasks(running, queued, failed)
 }
 
 func viewEditorMovie(tx *model.TxR, medID string, notFound bool) (title string, n node) {
