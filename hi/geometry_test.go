@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chromedp/chromedp"
 	"ily.dev/domi"
 
 	"ily.dev/act3/hi"
@@ -174,14 +175,22 @@ func TestGeometryRootScrollShortContentHugsItsScrollAxis(t *testing.T) {
 
 func TestGeometryRootScrollStickyUsesDocumentViewport(t *testing.T) {
 	t.Parallel()
-	v := hi.ScrollView(hi.Vertical, hi.VStack(
-		hi.Text("heading").Sticky().Class("heading"),
-		hi.OKLCH(0.5, 0, 0).Frame(hi.Height(1000)),
-	).Gap(0).Alignment(hi.Leading))
-	stage(t, v, func(s *uitest.Session) {
-		s.Eval(`window.scrollTo(0, 300)`, nil)
-		within(t, "sticky heading top", s.Rect(".heading", 0).Y, 0, 1)
-	})
+	for _, stroke := range []bool{false, true} {
+		t.Run(fmt.Sprint("stroke=", stroke), func(t *testing.T) {
+			heading := hi.Text("heading").Sticky()
+			if stroke {
+				heading = heading.BorderStroke(2, hi.Red)
+			}
+			v := hi.ScrollView(hi.Vertical, hi.VStack(
+				heading.Class("heading"),
+				hi.OKLCH(0.5, 0, 0).Frame(hi.Height(1000)),
+			).Gap(0).Alignment(hi.Leading))
+			stage(t, v, func(s *uitest.Session) {
+				s.Eval(`window.scrollTo(0, 300)`, nil)
+				within(t, "sticky heading top", s.Rect(".heading", 0).Y, 0, 1)
+			})
+		})
+	}
 }
 
 // TestGeometrySpacerMinimumLength pins the spacer's floor: under
@@ -336,61 +345,59 @@ func TestGeometryFrameCentersOversizedSubview(t *testing.T) {
 	})
 }
 
-// TestGeometryOverlayHitTest pins overlay hit-testing: overlay content
-// receives clicks, while clicks in the empty parts of the layer pass
-// through to the base.
-func TestGeometryOverlayHitTest(t *testing.T) {
+func TestGeometryNonRootOverlayHitTest(t *testing.T) {
 	t.Parallel()
 	v := hi.Text("base").
-		Frame(hi.Width(300), hi.Height(100)).
-		Overlay(hi.TopTrailing, hi.Badge("hit").Class("probe"))
+		Frame(hi.Width(300), hi.Height(100)).Class("base").
+		Overlay(hi.TopTrailing, hi.Badge("hit").Class("overlay")).
+		Padding(hi.Edges(0))
 	stage(t, v, func(s *uitest.Session) {
-		var badgeHit bool
-		s.Eval(`(() => {
-			const badge = document.querySelector(".probe");
-			const r = badge.getBoundingClientRect();
-			const e = document.elementFromPoint(r.x + r.width/2, r.y + r.height/2);
-			return e === badge || badge.contains(e);
-		})()`, &badgeHit)
-		if !badgeHit {
-			t.Error("overlay content is not hit-testable")
-		}
-
-		var passThrough bool
-		s.Eval(`(() => {
-			const overlay = document.querySelector("hi-overlay");
-			const r = overlay.getBoundingClientRect();
-			// The overlay's bottom-left corner is empty: the badge sits
-			// top-trailing.
-			const e = document.elementFromPoint(r.x + 4, r.bottom - 4);
-			return !overlay.contains(e);
-		})()`, &passThrough)
-		if !passThrough {
-			t.Error("empty overlay area blocks clicks to the base")
+		s.Eval(`globalThis.overlayClicks = [];
+			for (const name of ["base", "overlay"]) {
+				document.querySelector("." + name).addEventListener("click", () => overlayClicks.push(name));
+			}`, nil)
+		base, overlay := s.Rect(".base", 0), s.Rect(".overlay", 0)
+		s.Run(
+			chromedp.MouseClickXY(overlay.X+overlay.W/2, overlay.Y+overlay.H/2),
+			chromedp.MouseClickXY(base.X+4, base.Bottom()-4),
+		)
+		var clicks []string
+		s.Eval(`overlayClicks`, &clicks)
+		if got := strings.Join(clicks, ","); got != "overlay,base" {
+			t.Errorf("click recipients = %q, want overlay,base", got)
 		}
 	})
 }
 
 // TestGeometryRootOverlayUsesViewport pins the fixed root geometry across
-// document scrolling. Both overlay grids stay on the browser viewport and the
+// document scrolling. Both overlays stay centered in the viewport and the
 // later overlay paints above the earlier one where their contents overlap.
 func TestGeometryRootOverlayUsesViewport(t *testing.T) {
 	t.Parallel()
 	v := hi.ScrollView(hi.Vertical,
-		hi.OKLCH(0.5, 0, 0).Frame(hi.Width(600), hi.Height(1000))).
+		hi.VStack(hi.OKLCH(0.5, 0, 0).
+			Frame(hi.Width(600), hi.Height(1000)).Class("raised"))).
 		Overlay(hi.Center, hi.Badge("first").Class("first")).
 		Overlay(hi.Center, hi.Badge("second").Class("second"))
 	stage(t, v, func(s *uitest.Session) {
-		for i := range 2 {
-			r := s.Rect("hi-overlay", i)
-			within(t, "overlay left", r.X, 0, 0.5)
-			within(t, "overlay top", r.Y, 0, 0.5)
-			within(t, "overlay width", r.W, 600, 1)
-			within(t, "overlay height", r.H, 400, 1)
+		s.Eval(`Object.assign(document.querySelector(".raised").style,
+			{position: "relative", zIndex: "9999"})`, nil)
+		for _, sel := range []string{".first", ".second"} {
+			r := s.Rect(sel, 0)
+			within(t, "overlay center x", r.X+r.W/2, 300, 0.5)
+			within(t, "overlay center y", r.Y+r.H/2, 200, 0.5)
+			if r.W >= 600 || r.H >= 400 {
+				t.Errorf("overlay should hug the badge, got %+v", r)
+			}
 		}
 		s.Eval(`window.scrollTo(0, 300)`, nil)
-		within(t, "scrolled first overlay top", s.Rect("hi-overlay", 0).Y, 0, 0.5)
-		within(t, "scrolled second overlay top", s.Rect("hi-overlay", 1).Y, 0, 0.5)
+		var scrollY float64
+		s.Eval(`window.scrollY`, &scrollY)
+		within(t, "document scroll offset", scrollY, 300, 1)
+		for _, sel := range []string{".first", ".second"} {
+			r := s.Rect(sel, 0)
+			within(t, "scrolled overlay center y", r.Y+r.H/2, 200, 0.5)
+		}
 
 		var secondOnTop bool
 		s.Eval(`(() => {
@@ -400,6 +407,130 @@ func TestGeometryRootOverlayUsesViewport(t *testing.T) {
 		if !secondOnTop {
 			t.Error("later root overlay does not paint above the earlier one")
 		}
+	})
+}
+
+// The ordinary grid layer provides the reference geometry for root overlays,
+// including content sizing, fill propagation, and overflowing attachments.
+func TestGeometryRootOverlayMatchesGrid(t *testing.T) {
+	t.Parallel()
+	badge := hi.Badge("overlay")
+	cases := []struct {
+		name       string
+		view       hi.View
+		at, anchor hi.Alignment
+	}{
+		{"center", badge, hi.Center, hi.Center},
+		{"top leading", badge, hi.TopLeading, hi.TopLeading},
+		{"top", badge, hi.Top, hi.Top},
+		{"top trailing", badge, hi.TopTrailing, hi.TopTrailing},
+		{"leading", badge, hi.Leading, hi.Leading},
+		{"trailing", badge, hi.Trailing, hi.Trailing},
+		{"bottom leading", badge, hi.BottomLeading, hi.BottomLeading},
+		{"bottom", badge, hi.Bottom, hi.Bottom},
+		{"bottom trailing", badge, hi.BottomTrailing, hi.BottomTrailing},
+		{"baseline", badge, hi.FirstBaseline, hi.FirstBaseline},
+		{"attachment", badge, hi.TopTrailing, hi.Center},
+		{"wrapping", hi.Text(strings.Repeat("some wrapping text ", 60)), hi.Center, hi.Center},
+		{"oversized", badge.Frame(hi.Width(800), hi.Height(500)), hi.Center, hi.Center},
+		{"oversized end", badge.Frame(hi.Width(800), hi.Height(500)), hi.BottomTrailing, hi.BottomTrailing},
+		{"fixed size", hi.Text(strings.Repeat("unbroken", 100)).FixedSize(), hi.Center, hi.Center},
+		{"horizontal fill", hi.HStack(badge, hi.Spacer()), hi.Bottom, hi.Bottom},
+		{"vertical fill", hi.VStack(badge, hi.Spacer()), hi.Trailing, hi.Trailing},
+		{"both fill", hi.Secondary, hi.Center, hi.Center},
+		{"percentage size", badge.Frame(hi.Width(50i), hi.Height(25i)), hi.BottomTrailing, hi.BottomTrailing},
+		{"minimum size", badge.FrameBounds(hi.MinWidth(200), hi.MinHeight(80)), hi.Center, hi.Center},
+		{"horizontal ratio", hi.Secondary.FrameRatio(3, 2, hi.Horizontal), hi.Center, hi.Center},
+		{"vertical ratio", hi.Secondary.FrameRatio(3, 2, hi.Vertical), hi.TopTrailing, hi.TopTrailing},
+		{"stroke", badge.BorderStroke(2, hi.Red), hi.Center, hi.Center},
+		{"padded", badge.Padding(hi.EdgeBottom(16)), hi.Bottom, hi.Bottom},
+		{"padded vertical fill", hi.VStack(badge, hi.Spacer()).Padding(hi.Edges(16)), hi.Bottom, hi.Bottom},
+		{"nested overlay", badge.Overlay(hi.TopTrailing, hi.Text("x")), hi.Center, hi.Center},
+		{"scroll view", hi.ScrollView(hi.Vertical, hi.Text(strings.Repeat("long text ", 100))), hi.Center, hi.Center},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			v := hi.Transparent.Frame(hi.Width(600), hi.Height(400)).
+				OverlayAt(tt.at, tt.anchor, tt.view.Class("probe"))
+			var want uitest.Rect
+			stage(t, v.Padding(hi.Edges(0)), func(s *uitest.Session) {
+				want = s.Rect(".probe", 0)
+			})
+			stage(t, v, func(s *uitest.Session) {
+				got := s.Rect(".probe", 0)
+				within(t, "left", got.X, want.X, 1)
+				within(t, "top", got.Y, want.Y, 1)
+				within(t, "width", got.W, want.W, 1)
+				within(t, "height", got.H, want.H, 1)
+			})
+		})
+	}
+}
+
+func TestGeometryRootOverlayOverridesSticky(t *testing.T) {
+	t.Parallel()
+	v := hi.ScrollView(hi.Vertical, hi.Text("base").Frame(hi.Height(1000))).Overlay(hi.Center,
+		hi.Badge("overlay").Sticky(hi.Edges(30)).BorderStroke(2, hi.Red).Class("probe"))
+	stage(t, v, func(s *uitest.Session) {
+		for _, offset := range []int{0, 300} {
+			s.Eval(fmt.Sprintf(`window.scrollTo(0, %d)`, offset), nil)
+			r := s.Rect(".probe", 0)
+			within(t, "overlay center x", r.X+r.W/2, 300, 0.5)
+			within(t, "overlay center y", r.Y+r.H/2, 200, 0.5)
+		}
+	})
+}
+
+func TestGeometryPaddingAddsValues(t *testing.T) {
+	t.Parallel()
+	v := hi.Text("hi").Class("content").
+		Padding(hi.EdgeTop(8), hi.Edges(4)).Class("padded")
+	stage(t, v, func(s *uitest.Session) {
+		content, padded := s.Rect(".content", 0), s.Rect(".padded", 0)
+		within(t, "top padding", content.Y-padded.Y, 12, 0.5)
+		within(t, "bottom padding", padded.Bottom()-content.Bottom(), 4, 0.5)
+		within(t, "leading padding", content.X-padded.X, 4, 0.5)
+		within(t, "trailing padding", padded.Right()-content.Right(), 4, 0.5)
+	})
+}
+
+func TestGeometryOverlayAtMovesGroupAsOne(t *testing.T) {
+	t.Parallel()
+	v := hi.Text("base").Frame(hi.Width(300), hi.Height(100)).Class("base").
+		OverlayAt(hi.TopTrailing, hi.Center, hi.Group(
+			hi.Red.Frame(hi.Width(80), hi.Height(40)).Class("large"),
+			hi.Blue.Frame(hi.Width(20), hi.Height(10)).Class("small"),
+		))
+	for _, root := range []bool{false, true} {
+		t.Run(fmt.Sprint("root=", root), func(t *testing.T) {
+			view := v
+			if !root {
+				view = view.Padding(hi.Edges(0))
+			}
+			stage(t, view, func(s *uitest.Session) {
+				x, y := 600.0, 0.0
+				if !root {
+					base := s.Rect(".base", 0)
+					x, y = base.Right(), base.Y
+				}
+				for _, name := range []string{".large", ".small"} {
+					r := s.Rect(name, 0)
+					within(t, name+" center x", r.X+r.W/2, x, 0.5)
+					within(t, name+" center y", r.Y+r.H/2, y, 0.5)
+				}
+			})
+		})
+	}
+}
+
+func TestGeometryUnderlayAtAnchors(t *testing.T) {
+	t.Parallel()
+	v := hi.Text("base").Frame(hi.Width(300), hi.Height(100)).Class("base").
+		UnderlayAt(hi.Bottom, hi.Top, hi.Badge("below").Class("probe"))
+	stage(t, v, func(s *uitest.Session) {
+		base, probe := s.Rect(".base", 0), s.Rect(".probe", 0)
+		within(t, "underlay top", probe.Y, base.Bottom(), 0.5)
+		within(t, "underlay center x", probe.X+probe.W/2, base.X+base.W/2, 0.5)
 	})
 }
 
@@ -462,7 +593,7 @@ func TestGeometryOverlayAtAnchors(t *testing.T) {
 		view  hi.View
 		layer string
 	}{
-		{"root", v, "hi-overlay"},
+		{"root", v, "hi-root"},
 		{"wrapped", v.Padding(hi.Edges(0)), "hi-layer"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

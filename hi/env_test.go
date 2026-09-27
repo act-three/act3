@@ -53,6 +53,7 @@ func TestSubviewHelpersStrip(t *testing.T) {
 		}
 		env.root.atRoot = true
 		env.root.style.Set("isolation", "isolate")
+		env.position = position{exterior: positionFixed, interior: true}
 		return env
 	}
 	subview := func(t *testing.T, render func(environment, node)) {

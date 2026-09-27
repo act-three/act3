@@ -109,40 +109,6 @@ func render(t *testing.T, v hi.View, o ...hi.Option) string {
 	return sb.String()
 }
 
-// renderSubject retains the requested view and its generated rules, excluding
-// the shared notification overlays that Render appends to every page.
-func renderSubject(t *testing.T, v hi.View) string {
-	t.Helper()
-	document := render(t, v)
-	_, body, ok := strings.Cut(document, "</style>")
-	if !ok {
-		t.Fatalf("missing stylesheet:\n%s", document)
-	}
-	for {
-		start := strings.LastIndex(body, "<hi-overlay ")
-		end := strings.LastIndex(body, "</hi-overlay>")
-		if start < 0 || end < start ||
-			(!strings.Contains(body[start:end], "<hi-note-display ") && !strings.Contains(body[start:end], "<hi-note-outbox ")) {
-			break
-		}
-		body = body[:start] + body[end+len("</hi-overlay>"):]
-	}
-	var styles strings.Builder
-	styles.WriteString("<style>@layer hi{")
-	seen := make(map[string]bool)
-	for _, match := range regexp.MustCompile(`class="[^"]*(hi-\w+)"`).FindAllStringSubmatch(body, -1) {
-		class := match[1]
-		if seen[class] {
-			continue
-		}
-		seen[class] = true
-		rule := classRule(t, document, `class="[^"]*(`+regexp.QuoteMeta(class)+`)"`)
-		styles.WriteString("." + class + "{" + rule + "}\n")
-	}
-	styles.WriteString("}</style>")
-	return styles.String() + body
-}
-
 // classRule finds an element matching pattern.
 // It returns the declarations for the generated class captured by the pattern.
 func classRule(t *testing.T, html, pattern string) string {
@@ -161,11 +127,11 @@ func classRule(t *testing.T, html, pattern string) string {
 }
 
 func TestAccountCard(t *testing.T) {
-	html := render(t, accountCard(User{
+	html := render(t, hi.VStack(accountCard(User{
 		Name:     "Ada Lovelace",
 		Email:    "ada@example.com",
 		PhotoURL: "/ada.jpg",
-	}))
+	})))
 
 	wants := []string{
 		`<hi-root `,         // root
@@ -178,9 +144,6 @@ func TestAccountCard(t *testing.T) {
 		`<button `,
 		`<hi-layer `, // Underlay + Overlay decoration layers
 		`<hi-underlay `,
-		`<hi-overlay `,
-		`align-items:start`, // the Overlay's alignment
-		`justify-items:end`, // the Overlay's alignment
 		`Pro`,
 		`Ada Lovelace`,
 	}
@@ -192,7 +155,7 @@ func TestAccountCard(t *testing.T) {
 }
 
 func TestMoviePageFillPropagation(t *testing.T) {
-	html := renderSubject(t, moviePage([]Movie{
+	html := render(t, moviePage([]Movie{
 		{ID: 1, Title: "Metropolis", Summary: "A city divided.", PosterURL: "/m.jpg"},
 		{ID: 2, Title: "Solaris", Summary: "An ocean that thinks.", PosterURL: "/s.jpg"},
 	}))
@@ -310,7 +273,7 @@ func TestButtonLabelArity(t *testing.T) {
 		{"multiple", hi.Group(hi.Text("a"), hi.Text("b")), true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			html := renderSubject(t, hi.Button(Msg{}, tt.label))
+			html := render(t, hi.Button(Msg{}, tt.label))
 			if got := strings.Contains(html, "<hi-hstack "); got != tt.stack {
 				t.Errorf("HStack present = %v, want %v:\n%s", got, tt.stack, html)
 			}
@@ -387,7 +350,7 @@ func TestHTMLFill(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			html := renderSubject(t, tt.v)
+			html := render(t, tt.v)
 			for _, w := range tt.wants {
 				if !strings.Contains(html, w) {
 					t.Errorf("missing %q\n\n%s", w, html)
@@ -572,14 +535,6 @@ func TestIdealSize(t *testing.T) {
 			[]string{"width"},
 		},
 		{
-			// A scaling mode meets an imposed box; with no box to
-			// meet, the img's intrinsic geometry answers instead.
-			"scaled image drops its fills on unbounded axes",
-			hi.Image("/x.png").ScaledToFill().FixedSize(),
-			[]string{"object-fit:cover"},
-			[]string{"justify-self", "align-self"},
-		},
-		{
 			// The viewport itself stays greedy on both axes; only
 			// the image's own fill is dropped on the scroll axis.
 			"scaled image keeps its fill on the bounded cross axis",
@@ -607,7 +562,7 @@ func TestIdealSize(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			html := renderSubject(t, tt.v)
+			html := render(t, tt.v)
 			for _, w := range tt.wants {
 				if !strings.Contains(html, w) {
 					t.Errorf("missing %q\n\n%s", w, html)
@@ -619,25 +574,6 @@ func TestIdealSize(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-// TestPaddingAddsValues checks that one Padding call with several EdgeSpace
-// arguments sums them per edge into a single wrapper.
-func TestPaddingAddsValues(t *testing.T) {
-	html := renderSubject(t, hi.Text("hi").Padding(hi.EdgeTop(8), hi.Edges(4)))
-	for _, w := range []string{
-		"padding-block-start:12px",
-		"padding-block-end:4px",
-		"padding-inline-start:4px",
-		"padding-inline-end:4px",
-	} {
-		if !strings.Contains(html, w) {
-			t.Errorf("summed padding missing %q:\n%s", w, html)
-		}
-	}
-	if got := strings.Count(html, "<hi-padding "); got != 1 {
-		t.Errorf("hi-padding wrapper count = %d, want 1:\n%s", got, html)
 	}
 }
 
@@ -1600,151 +1536,6 @@ func TestStateUnionRestoresBase(t *testing.T) {
 	}
 	if strings.Contains(rule, "&:active{") {
 		t.Errorf("pressed variant equal to the base should declare nothing, got %q", rule)
-	}
-}
-
-// TestOverlayAt pins the two-point lowering: the layer keeps its
-// single-point placement at the base's at point, and the layered view
-// is shifted by the two points' difference, in percentages of its own
-// box, so its anchor point lands on at.
-func TestOverlayAt(t *testing.T) {
-	over := render(t, hi.Text("x").OverlayAt(hi.TopTrailing, hi.Center, hi.Text("o").Class("probe")))
-	if got := classRule(t, over, `<hi-overlay class="(hi-\w+)"`); !strings.Contains(got, "align-items:start") || !strings.Contains(got, "justify-items:end") {
-		t.Errorf("overlay placement should follow at, got %q:\n%s", got, over)
-	}
-	if got := classRule(t, over, `<hi-text class="probe (hi-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
-		t.Errorf("overlay view should shift its anchor onto at, got %q:\n%s", got, over)
-	}
-	// elm-ui's below: the underlay hangs off the base's bottom edge.
-	under := render(t, hi.Text("x").UnderlayAt(hi.Bottom, hi.Top, hi.Text("u").Class("probe")))
-	if got := classRule(t, under, `<hi-text class="probe (hi-\w+)"`); !strings.Contains(got, "translate:0% 100%") {
-		t.Errorf("underlay view should shift its anchor onto at, got %q:\n%s", got, under)
-	}
-	// Coincident points shift nothing, matching Overlay's lowering.
-	same := render(t, hi.Text("x").OverlayAt(hi.TopTrailing, hi.TopTrailing, hi.Text("o").Class("probe")))
-	if strings.Contains(same, "translate") {
-		t.Errorf("coincident points should not shift the overlay view:\n%s", same)
-	}
-}
-
-// TestOverlayPageLowering pins the narrow root specialization: the base keeps
-// the page-root lowering path, while the overlay becomes a fixed sibling. A
-// ScrollView base can therefore retain document scrolling, and chained
-// overlays become ordered fixed siblings. A modifier belonging to the layer
-// composite, a wrapper, or an Underlay retains the ordinary layer box.
-func TestOverlayPageLowering(t *testing.T) {
-	plain := renderSubject(t, hi.Text("base").Overlay(hi.Center, hi.Text("overlay")))
-	if strings.Contains(plain, "<hi-layer ") {
-		t.Errorf("root Overlay retained its composite wrapper:\n%s", plain)
-	}
-	if strings.Count(plain, "<hi-overlay ") != 1 {
-		t.Errorf("root Overlay should emit one sibling:\n%s", plain)
-	}
-	if got := classRule(t, plain, `<hi-overlay class="(hi-\w+)"`); !strings.Contains(got, "position:fixed") || !strings.Contains(got, "pointer-events:none") || !strings.Contains(got, "z-index:2") {
-		t.Errorf("root overlay rule = %q, want a fixed hit-transparent front layer", got)
-	}
-	if got := classRule(t, plain, `<hi-text class="(hi-\w+)">base`); !strings.Contains(got, "isolation:isolate") {
-		t.Errorf("root overlay base rule = %q, want stacking isolation", got)
-	}
-	baseModified := render(t, hi.Text("base").Background(hi.Red).
-		Overlay(hi.Center, hi.Text("overlay")))
-	if strings.Contains(baseModified, "<hi-layer ") {
-		t.Errorf("a modifier owned by the base should preserve root Overlay lowering:\n%s", baseModified)
-	}
-	if got := classRule(t, baseModified, `<hi-text class="(hi-\w+)">base`); !strings.Contains(got, "background-color:"+redCSS) {
-		t.Errorf("base background rule = %q, want the modifier on the base", got)
-	}
-
-	scrolling := render(t, hi.ScrollView(hi.Vertical,
-		hi.Text("content")).Overlay(hi.Top, hi.Text("toolbar")))
-	if !pageRoot(scrolling, ` scroll="y"`) || strings.Contains(scrolling, "<hi-scroll ") || strings.Contains(scrolling, "<hi-layer ") {
-		t.Errorf("Overlay should preserve its ScrollView base's document lowering:\n%s", scrolling)
-	}
-	if got := classRule(t, scrolling, `<hi-text class="(hi-\w+)">content`); !strings.Contains(got, "isolation:isolate") {
-		t.Errorf("document ScrollView base rule = %q, want the root-carried isolation", got)
-	}
-
-	chained := renderSubject(t, hi.Text("base").
-		Overlay(hi.Center, hi.Text("first")).
-		Overlay(hi.Center, hi.Text("second")))
-	if strings.Count(chained, "<hi-overlay ") != 2 || strings.Contains(chained, "<hi-layer ") {
-		t.Errorf("chained root Overlays should emit two fixed siblings:\n%s", chained)
-	}
-	if first, second := strings.Index(chained, ">first<"), strings.Index(chained, ">second<"); first < 0 || second < first {
-		t.Errorf("chained root Overlays should retain application order:\n%s", chained)
-	}
-	fallbacks := []struct {
-		name string
-		view hi.View
-	}{
-		{"composite background", hi.Text("base").Overlay(hi.Center, hi.Text("overlay")).Background(hi.Red)},
-		{"wrapper", hi.Text("base").Overlay(hi.Center, hi.Text("overlay")).Padding(hi.Edges(0))},
-		{"underlay", hi.Text("base").Underlay(hi.Center, hi.Text("underlay"))},
-	}
-	for _, tt := range fallbacks {
-		t.Run(tt.name, func(t *testing.T) {
-			html := render(t, tt.view)
-			if !strings.Contains(html, "<hi-layer ") {
-				t.Errorf("%s should retain the ordinary layer composite:\n%s", tt.name, html)
-			}
-		})
-	}
-	scrollFallback := render(t, hi.ScrollView(hi.Vertical, hi.Text("base")).
-		Overlay(hi.Center, hi.Text("overlay")).
-		Background(hi.Red))
-	if !strings.Contains(scrollFallback, "<hi-layer ") || !strings.Contains(scrollFallback, "<hi-scroll ") {
-		t.Errorf("a modified Overlay composite should also keep its ScrollView base in element mode:\n%s", scrollFallback)
-	}
-}
-
-// TestLayerArity pins the layer arity rule: multi-node overlay and
-// underlay views are composed into a ZStack, while empty and unary
-// views remain direct.
-func TestLayerArity(t *testing.T) {
-	for _, tt := range []struct {
-		name  string
-		layer func(hi.View) hi.View
-	}{
-		{"overlay", func(v hi.View) hi.View { return hi.Text("base").Overlay(hi.Center, v) }},
-		{"underlay", func(v hi.View) hi.View { return hi.Text("base").Underlay(hi.Center, v) }},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			for _, arity := range []struct {
-				name  string
-				view  hi.View
-				stack bool
-			}{
-				{"empty", hi.Empty(), true},
-				{"single", hi.Text("a"), false},
-				{"multiple", hi.Group(hi.Text("a"), hi.Text("b")), true},
-			} {
-				t.Run(arity.name, func(t *testing.T) {
-					html := renderSubject(t, tt.layer(arity.view))
-					if got := strings.Contains(html, "<hi-zstack "); got != arity.stack {
-						t.Errorf("ZStack present = %v, want %v:\n%s", got, arity.stack, html)
-					}
-				})
-			}
-		})
-	}
-}
-
-// TestOverlayAtMovesGroupAsOne pins that two-point placement shifts
-// the aggregate ZStack rather than each member of a multi-node layer.
-func TestOverlayAtMovesGroupAsOne(t *testing.T) {
-	html := render(t, hi.Text("base").OverlayAt(
-		hi.TopTrailing,
-		hi.Center,
-		hi.Group(hi.Text("a"), hi.Text("b")),
-	))
-	if got := classRule(t, html, `<hi-zstack class="(hi-\w+)"`); !strings.Contains(got, "translate:50% -50%") {
-		t.Errorf("overlay ZStack should shift its anchor onto at, got %q:\n%s", got, html)
-	}
-	for _, text := range []string{"a", "b"} {
-		pattern := `<hi-text class="(hi-\w+)">` + text
-		if got := classRule(t, html, pattern); strings.Contains(got, "translate:") {
-			t.Errorf("overlay member %q should not shift independently, got %q:\n%s", text, got, html)
-		}
 	}
 }
 

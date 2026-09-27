@@ -12,6 +12,10 @@ func TestSet(t *testing.T) {
 	}{
 		{"overflow-x", ""},
 		{"padding-inline-start", ""},
+		{"z-index", ""},
+		{"align-self", ""},
+		{"justify-self", ""},
+		{"position", `cannot set "position"; use typed position requests`},
 		{"overflow", `cannot set "overflow"; use overflow-x and overflow-y`},
 		{"padding", `use padding-block-start, padding-block-end, padding-inline-start, and padding-inline-end`},
 		{"opacity", `use the Opacity modifier`},
