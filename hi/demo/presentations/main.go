@@ -203,9 +203,9 @@ func (a *app) scrollableMenuSection() View {
 						}),
 					).
 						Alignment(Leading).
+						FrameBounds(MinWidth(200), Leading).
 						Padding(Edges(8)),
 				).
-					Frame(Width(200)).
 					Title("Choose an Episode").
 					Attr(attr.ID("episode-menu")),
 			),

@@ -367,7 +367,7 @@ func TestBorderStrokeOnImage(t *testing.T) {
 func TestBorderStrokeOnScroll(t *testing.T) {
 	t.Parallel()
 	html := render(t, hi.ScrollView(hi.Vertical, hi.Text("x")).BorderStroke(2, hi.Red))
-	if got := classRule(t, html, `<hi-box class="[^"]*(hi-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;justify-self:stretch;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
+	if got := classRule(t, html, `<hi-box class="[^"]*(hi-\w+)"`); got != "align-items:center;align-self:stretch;display:grid;grid-template-columns:100%;grid-template-rows:100%;isolation:isolate;justify-items:center;position:relative;"+carrier("inset 0 0 0 2px "+redCSS) {
 		t.Errorf("scroll strokes should land on a wrapper, got %q:\n%s", got, html)
 	}
 	if !strings.Contains(html, `<hi-scroll `) {

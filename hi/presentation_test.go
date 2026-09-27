@@ -349,7 +349,7 @@ func TestDialogAvailableSpace(t *testing.T) {
 		})
 	}
 	stage(t, hi.Text("Trigger").Dialog(hi.Present(true, 7), hi.ScrollView(hi.Vertical,
-		hi.Text("Tall").Frame(hi.Height(1060)))),
+		hi.HStack(hi.Text("Tall").Frame(hi.Height(1060)), hi.Spacer()))),
 		func(s *uitest.Session) {
 			s.Eval(`document.querySelector('dialog').showModal()`, nil)
 			r := s.Rect("hi-scroll", 0)
@@ -367,8 +367,9 @@ func TestPresentationFillPreference(t *testing.T) {
 	}{
 		{"natural", hi.Text("Content"), ""},
 		{"vertical", scroll.Frame(hi.Width(200)), "most-height"},
-		{"horizontal", scroll.Frame(hi.Height(200)), "most-width"},
-		{"both", scroll, "most-height"},
+		{"fixed scrolling axis", scroll.Frame(hi.Height(200)), ""},
+		{"horizontal", hi.ScrollView(hi.Horizontal, hi.Text("Content")).Frame(hi.Height(200)), "most-width"},
+		{"both", hi.ScrollView(hi.Horizontal|hi.Vertical, hi.Text("Content")), "most-height"},
 		{"fixed", scroll.Frame(hi.Width(200), hi.Height(200)), ""},
 		{"rigid", scroll.FixedSize(), ""},
 	} {
