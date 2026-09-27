@@ -78,7 +78,7 @@ func aboutModuleRow(path, version string) domi.Node {
 func aboutSection(title string, body domi.Node) hi.View {
 	return hi.VStack(
 		hi.Text(title),
-		hi.HTML(body).Class("v-domi-root"),
+		hi.HTML(body).Class("v-html-block"),
 	).
 		Alignment(hi.Leading).
 		Gap(12i)

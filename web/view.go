@@ -43,7 +43,7 @@ func (a *app) view(ctx context.Context, render func(hi.View)) {
 					viewDialog(tx, a.dialog),
 					view.PlayerContainer(a.viewPlayer(a.player)),
 				)).
-					Class("v-domi-root").
+					Class("v-html-block").
 					FixedSize(),
 			),
 		)
@@ -78,7 +78,7 @@ func viewRoot(tx *model.TxR) hi.View {
 				viewHTML(func() (string, node) {
 					return viewTheater(tx, odesc)
 				}),
-			).Class("v-domi-root")),
+			).Class("v-html-block")),
 		)
 	})
 }
