@@ -153,6 +153,7 @@ func Divider() View { return view(nodeDivider) }
 func nodeDivider(env environment) box {
 	env.tag = cmp.Or(env.tag, "hi-divider")
 	env.bg = append(env.bg, term[color]{value: borderColor.color()})
+	env.lc.majorAxis = cmp.Or(env.lc.majorAxis, Vertical)
 	p := plan{fills: env.lc.minorAxes(), rigid: env.lc.majorAxis}
 	if env.lc.majorAxis.hasAll(Horizontal) {
 		// Major axis horizontal: vertical line.
