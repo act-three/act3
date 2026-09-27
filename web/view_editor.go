@@ -24,7 +24,7 @@ func viewEditor(tx *model.TxR, path hi.RequestPath, odesc map[string]string) hi.
 
 func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) hi.View {
 	return hi.First(
-		hi.Path("/app/about", viewHTML(viewEditorAbout)),
+		hi.Path("/app/about", hi.Lazy(viewEditorAbout)),
 		hi.Path("/app/profile", viewHTML(view.AppProfile)),
 		hi.Path("/app/security", viewHTML(view.AppSecurity)),
 		hi.PathPrefix("/app/collections", viewHTML(func() (string, node) {
@@ -73,7 +73,7 @@ func viewEditorItem(tx *model.TxR, path []string, f func(*model.TxR, string) (st
 	})
 }
 
-func viewEditorAbout() (title string, n node) {
+func viewEditorAbout() hi.View {
 	return view.AppAbout(buildinfo.Get())
 }
 

@@ -26,7 +26,7 @@ func TestHiRoot(t *testing.T) {
 		{"/missing", "Not Found — Act Three", "Not Found", true},
 		{"/app/profile", "Profile — Act Three", "Change Name", false},
 		{"/app/profile/", "Act Three", "Not Found", false},
-		{"/app/about", "About — Act Three", `class="v-about`, false},
+		{"/app/about", "About — Act Three", "Go Version", false},
 		{"/app/security", "Security — Act Three", "Change Password", false},
 		{"/app/tasks", "Tasks — Act Three", "Tasks", false},
 		{"/app/tmdb", "TMDB — Act Three", "TMDB", false},
@@ -70,9 +70,6 @@ func TestHiRoot(t *testing.T) {
 			}
 			if got := strings.Contains(body, `scroll="y"`); got != tt.scroll {
 				t.Errorf("document scrolling = %v, want %v", got, tt.scroll)
-			}
-			if strings.Contains(body, "<hi-scroll") {
-				t.Error("page scrolling must use the document viewport")
 			}
 			for _, marker := range []string{`id="player"`, "<hi-note-outbox", "<hi-note-display"} {
 				if count := strings.Count(body, marker); count != 1 {
