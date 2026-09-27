@@ -25,6 +25,6 @@
 
 	html:has(#full-player), body:has(#full-player) { overflow: hidden; }
 
-	/* Existing domi fragments own their interior layout during migration. */
-	.v-domi-root { display: block; }
+	/* Some legacy HTML wants block layout instead of grid. */
+	.v-html-block { display: block; }
 }

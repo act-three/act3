@@ -3169,7 +3169,7 @@
   body:has(#full-player) {
     overflow: hidden;
   }
-  .v-domi-root {
+  .v-html-block {
     display: block;
   }
 }

@@ -57,7 +57,7 @@ func TestHiRoot(t *testing.T) {
 			}
 			for _, want := range []string{
 				"<title>" + tt.title + "</title>",
-				"<hi-root", "<hi-html", "v-domi-root",
+				"<hi-root", "<hi-html", "v-html-block",
 				"@layer hi{", tt.content, `id="player"`, "<hi-note-outbox", "<hi-note-display",
 			} {
 				if !strings.Contains(r.Body.String(), want) {

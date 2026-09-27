@@ -8,7 +8,6 @@ import (
 
 	"ily.dev/act3/hi"
 
-	"ily.dev/act3/expr"
 	"ily.dev/act3/model"
 	"ily.dev/act3/msg"
 	. "ily.dev/act3/ui"
@@ -25,91 +24,97 @@ func AppTasks(tx *model.TxR) hi.View {
 			queued = append(queued, t)
 		}
 	}
-	return hi.HTML(ScrollY(Class("v-system"))(
-		html.Div()(domi.Text("Scheduled Tasks")),
+	return hi.ScrollView(hi.Vertical,
+		hi.VStack(
+			hi.Text("Scheduled Tasks").Title("Tasks"),
+			taskSection("Running", runningTasks(running)),
+			taskSection("Failed", failedTasks(failed)),
+			taskSection("Queued", queuedTasks(queued)),
+		).
+			Alignment(hi.Leading).
+			Gap(32i).
+			Padding(hi.Edges(16i)),
+	)
+}
 
-		html.Div(Class("v-system-field"))(
-			html.Div()(domi.Text("Running")),
-			expr.IfElse(len(running) > 0,
-				func() domi.Node {
-					return TableRoot(Class("v-system-input-wide"))(
-						TableHeader()(
-							TableRow()(
-								TableHead()(domi.Text("Task")),
-								TableHead()(domi.Text("ID")),
-								TableHead()(domi.Text("Args")),
-								TableHead()(),
-							),
-						),
-						TableBody()(
-							rangeNodes(running, func(t *model.RunningTask) domi.Node {
-								return html.TR()(
-									TableCell()(domi.Text(t.Type())),
-									TableCell()(domi.Text(t.ID())),
-									TableCell()(domi.Text(t.Args())),
-									TableCell()(
-										Button(event.Click(&msg.TaskKill{ID: t.ID()}), Destructive)(
-											domi.Text("Kill"),
-										),
-									),
-								)
-							}),
-						),
-					)
-				},
-				func() domi.Node {
-					return Text("No running tasks")
-				},
+func taskSection(title string, body hi.View) hi.View {
+	return hi.VStack(
+		hi.Text(title),
+		body,
+	).
+		Alignment(hi.Leading).
+		Gap(12i)
+}
+
+func runningTasks(running []*model.RunningTask) hi.View {
+	if len(running) == 0 {
+		return hi.Text("No running tasks")
+	}
+	return hi.HTML(TableRoot(Class("v-system-input-wide"))(
+		TableHeader()(
+			TableRow()(
+				TableHead()(domi.Text("Task")),
+				TableHead()(domi.Text("ID")),
+				TableHead()(domi.Text("Args")),
+				TableHead()(),
 			),
 		),
-
-		html.Div(Class("v-system-field"))(
-			html.Div()(domi.Text("Failed")),
-			expr.IfElse(len(failed) > 0,
-				func() domi.Node {
-					return TableRoot(Class("v-system-input-wide"))(
-						TableHeader()(
-							TableRow()(
-								TableHead()(domi.Text("Task")),
-								TableHead()(domi.Text("ID")),
-								TableHead()(domi.Text("Args")),
-								TableHead()(domi.Text("Failures")),
-								TableHead()(),
-							),
+		TableBody()(
+			rangeNodes(running, func(t *model.RunningTask) domi.Node {
+				return html.TR()(
+					TableCell()(domi.Text(t.Type())),
+					TableCell()(domi.Text(t.ID())),
+					TableCell()(domi.Text(t.Args())),
+					TableCell()(
+						Button(event.Click(&msg.TaskKill{ID: t.ID()}), Destructive)(
+							domi.Text("Kill"),
 						),
-						TableBody()(
-							rangeNodes(failed, func(t *model.Task) domi.Node {
-								return taskRow(t, "Retry")
-							}),
-						),
-					)
-				},
-				func() domi.Node {
-					return Text("No failed tasks")
-				},
-			),
-		),
-
-		html.Div(Class("v-system-field"))(
-			html.Div()(domi.Text("Queued")),
-			TableRoot(Class("v-system-input-wide"))(
-				TableHeader()(
-					TableRow()(
-						TableHead()(domi.Text("Task")),
-						TableHead()(domi.Text("ID")),
-						TableHead()(domi.Text("Args")),
-						TableHead()(domi.Text("Failures")),
-						TableHead()(domi.Text("Next Run")),
 					),
-				),
-				TableBody()(
-					rangeNodes(queued, func(t *model.Task) domi.Node {
-						return taskRow(t, "Run Now")
-					}),
-				),
+				)
+			}),
+		),
+	)).Class("v-html-block")
+}
+
+func failedTasks(failed []*model.Task) hi.View {
+	if len(failed) == 0 {
+		return hi.Text("No failed tasks")
+	}
+	return hi.HTML(TableRoot(Class("v-system-input-wide"))(
+		TableHeader()(
+			TableRow()(
+				TableHead()(domi.Text("Task")),
+				TableHead()(domi.Text("ID")),
+				TableHead()(domi.Text("Args")),
+				TableHead()(domi.Text("Failures")),
+				TableHead()(),
 			),
 		),
-	)).Title("Tasks")
+		TableBody()(
+			rangeNodes(failed, func(t *model.Task) domi.Node {
+				return taskRow(t, "Retry")
+			}),
+		),
+	)).Class("v-html-block")
+}
+
+func queuedTasks(queued []*model.Task) hi.View {
+	return hi.HTML(TableRoot(Class("v-system-input-wide"))(
+		TableHeader()(
+			TableRow()(
+				TableHead()(domi.Text("Task")),
+				TableHead()(domi.Text("ID")),
+				TableHead()(domi.Text("Args")),
+				TableHead()(domi.Text("Failures")),
+				TableHead()(domi.Text("Next Run")),
+			),
+		),
+		TableBody()(
+			rangeNodes(queued, func(t *model.Task) domi.Node {
+				return taskRow(t, "Run Now")
+			}),
+		),
+	)).Class("v-html-block")
 }
 
 func taskRow(t *model.Task, runLabel string) domi.Node {
