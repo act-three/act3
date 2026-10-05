@@ -3171,5 +3171,6 @@
   }
   .v-html-block {
     display: block;
+    justify-items: normal;
   }
 }

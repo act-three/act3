@@ -49,11 +49,11 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) hi.Vi
 		hi.Path("/app/tasks", hi.Lazy(func() hi.View {
 			return view.AppTasks(tx)
 		})),
-		hi.Path("/app/tmdb", viewHTML(func() (string, node) {
-			return view.AppTMDB(tx.SettingGetByGroup("tmdb"))
+		hi.Path("/app/tmdb", hi.Lazy(func() hi.View {
+			return view.AppTMDB(tx)
 		})),
-		hi.Path("/app/transmission", viewHTML(func() (string, node) {
-			return view.AppTransmission(tx.SettingGetByGroup("transmission"))
+		hi.Path("/app/transmission", hi.Lazy(func() hi.View {
+			return view.AppTransmission(tx)
 		})),
 		hi.PathPrefix("/app/trash", viewEditorItem(tx, path, viewEditorTrash)),
 		hi.HTML(notFound),
