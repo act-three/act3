@@ -49,6 +49,7 @@ func Handle(mux *http.ServeMux, c *Config) {
 		msg.OnURLRequest,
 		msg.OnURLChange,
 		hi.AppTitle("Act Three"),
+		hi.Theme(hi.OKLCH(0.085, 0.041, 317), hi.OKLCH(0.651, 0.254, 3), 30),
 		hi.IconSource(ui.HiIcon),
 		domi.Document(view.Document),
 		domi.InternalURLPrefix("/-/domi"),
