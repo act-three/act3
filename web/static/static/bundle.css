@@ -2118,11 +2118,6 @@
 
 /* view/app-system.css */
 @layer components {
-  .v-system {
-    height: 100%;
-    width: 100%;
-    padding: 1rem;
-  }
   .v-system-field {
     padding-block: 1rem;
   }

@@ -43,7 +43,7 @@ func viewEditorPage(tx *model.TxR, path []string, odesc map[string]string) hi.Vi
 			}
 			return viewEditorSeries(tx, "", len(path) > 2)
 		})),
-		hi.Path("/app/storage", viewHTML(func() (string, node) {
+		hi.Path("/app/storage", hi.Lazy(func() hi.View {
 			return viewEditorStorage(tx)
 		})),
 		hi.Path("/app/tasks", hi.Lazy(func() hi.View {

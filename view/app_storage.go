@@ -3,9 +3,7 @@ package view
 import (
 	"fmt"
 
-	"ily.dev/domi"
-	"ily.dev/domi/attr"
-	"ily.dev/domi/html"
+	"ily.dev/act3/hi"
 )
 
 type Filesystem struct {
@@ -16,13 +14,24 @@ type Filesystem struct {
 	Free int64
 }
 
-func AppStorage(fs []*Filesystem, cloneDegraded error) (title string, n domi.Node) {
-	return "Storage", html.Div(attr.Class("v-system"))(
-		cloneWarning(cloneDegraded),
-		html.H2()(domi.Text("filesystem info")),
-		html.UL()(
-			rangeNodes(fs, fsItem),
-		),
+func AppStorage(fs []*Filesystem, cloneDegraded error) hi.View {
+	return hi.ScrollView(hi.Vertical,
+		hi.VStack(
+			hi.Text("Storage").Title("Storage"),
+			cloneWarning(cloneDegraded),
+			hi.VStack(
+				hi.Text("filesystem info"),
+				hi.VStack(
+					hi.ForEach(fs, nil, fsItem),
+				).
+					Alignment(hi.Leading),
+			).
+				Alignment(hi.Leading).
+				Gap(12i),
+		).
+			Alignment(hi.Leading).
+			Gap(32i).
+			Padding(hi.Edges(16i)),
 	)
 }
 
@@ -30,18 +39,13 @@ func AppStorage(fs []*Filesystem, cloneDegraded error) (title string, n domi.Nod
 // have fallen back from filesystem clones to full byte copies,
 // which keeps media flowing but wastes time and disk until the
 // storage configuration is fixed.
-func cloneWarning(err error) domi.Node {
+func cloneWarning(err error) hi.View {
 	if err == nil {
-		return nil
+		return hi.Empty()
 	}
-	return html.P()(
-		domi.Text("⚠ " + err.Error()),
-	)
+	return hi.Text("⚠ " + err.Error())
 }
 
-func fsItem(fs *Filesystem) domi.Node {
-	s := fmt.Sprintf("%s %d %d avail:%d %s", fs.Path, fs.Used, fs.Size, fs.Free, fs.Type)
-	return html.LI()(
-		domi.Text(s),
-	)
+func fsItem(fs *Filesystem) hi.View {
+	return hi.Text(fmt.Sprintf("%s %d %d avail:%d %s", fs.Path, fs.Used, fs.Size, fs.Free, fs.Type))
 }
