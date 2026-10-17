@@ -2118,9 +2118,6 @@
 
 /* view/app-system.css */
 @layer components {
-  .v-system-field {
-    padding-block: 1rem;
-  }
   .v-system-input {
     max-width: 20rem;
   }
