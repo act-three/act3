@@ -4,6 +4,7 @@ import (
 	"path"
 	"path/filepath"
 
+	"ily.dev/act3/hi"
 	"ily.dev/act3/model"
 	"ily.dev/act3/sys/fsinfo"
 	"ily.dev/act3/view"
@@ -16,10 +17,10 @@ var excludeFSType = map[string]bool{
 	"tmpfs":    true,
 }
 
-func viewEditorStorage(tx *model.TxR) (title string, n node) {
+func viewEditorStorage(tx *model.TxR) hi.View {
 	fsList, err := fsinfo.GetInfo()
 	if err != nil {
-		return "", viewError(err)
+		return hi.HTML(viewError(err))
 	}
 	var fs []*view.Filesystem
 	for _, f := range fsList {
