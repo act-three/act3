@@ -25,6 +25,11 @@
 
 	html:has(#full-player), body:has(#full-player) { overflow: hidden; }
 
-	/* Some legacy HTML wants block layout instead of grid. */
-	.v-html-block { display: block; }
+	/* Some legacy HTML wants block layout instead of grid.
+	   Block containers honor justify-items, so the adapter's
+	   centering must be reset too or the content shrink-wraps. */
+	.v-html-block {
+		display: block;
+		justify-items: normal;
+	}
 }
