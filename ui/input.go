@@ -2,7 +2,6 @@ package ui
 
 import (
 	"ily.dev/domi"
-	"ily.dev/domi/attr"
 	"ily.dev/domi/html"
 )
 
@@ -16,12 +15,5 @@ func InputText(attrs ...domi.Attr) domi.Node {
 	return html.Input(
 		Class("u-input"),
 		group(attrs...),
-	)
-}
-
-func InputSubmit(attrs ...domi.Attr) domi.Node {
-	return html.Input(
-		group(attrs...),
-		attr.Type("submit"),
 	)
 }
