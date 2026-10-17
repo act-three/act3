@@ -5,21 +5,21 @@ import (
 	"runtime/debug"
 	"time"
 
-	"ily.dev/act3/hi"
 	"ily.dev/domi"
 	"ily.dev/domi/html"
 
 	"ily.dev/act3/buildinfo"
-	. "ily.dev/act3/ui"
+	. "ily.dev/act3/hi"
+	"ily.dev/act3/ui"
 )
 
 // AppAbout renders build, runtime, and dependency metadata for the
 // running server: jj and link-time provenance from info, Go toolchain
 // and module data straight from bi.
-func AppAbout(info buildinfo.Info, bi *debug.BuildInfo) hi.View {
-	return hi.ScrollView(hi.Vertical,
-		hi.VStack(
-			hi.Text("About").
+func AppAbout(info buildinfo.Info, bi *debug.BuildInfo) View {
+	return ScrollView(Vertical,
+		VStack(
+			Text("About").
 				Title("About"),
 			aboutRuntime(info),
 			aboutBuild(info, bi),
@@ -27,19 +27,19 @@ func AppAbout(info buildinfo.Info, bi *debug.BuildInfo) hi.View {
 			aboutModules(bi),
 			aboutSettings(bi),
 		).
-			Alignment(hi.Leading).
+			Alignment(Leading).
 			Gap(32i).
-			Padding(hi.Edges(16i)),
+			Padding(Edges(16i)),
 	)
 }
 
-func aboutRuntime(info buildinfo.Info) hi.View {
+func aboutRuntime(info buildinfo.Info) View {
 	return aboutSection("Runtime", aboutGrid(
 		aboutRow("Started", domi.Text(formatTime(info.StartTime))),
 	))
 }
 
-func aboutBuild(info buildinfo.Info, bi *debug.BuildInfo) hi.View {
+func aboutBuild(info buildinfo.Info, bi *debug.BuildInfo) View {
 	return aboutSection("Build", aboutGrid(
 		aboutRow("Build Time", domi.Text(info.BuildTime)),
 		aboutRow("Change ID", domi.Text(info.ChangeID)),
@@ -48,7 +48,7 @@ func aboutBuild(info buildinfo.Info, bi *debug.BuildInfo) hi.View {
 	))
 }
 
-func aboutSettings(bi *debug.BuildInfo) hi.View {
+func aboutSettings(bi *debug.BuildInfo) View {
 	var rows []domi.Node
 	for _, s := range bi.Settings {
 		rows = append(rows, aboutRow(s.Key, domi.Text(s.Value)))
@@ -56,11 +56,11 @@ func aboutSettings(bi *debug.BuildInfo) hi.View {
 	return aboutSection("Settings", aboutGrid(rows...))
 }
 
-func aboutCommits(info buildinfo.Info) hi.View {
-	return aboutSection("Commits", Code(CodeNowrap, CodeSize2)(domi.Text(info.Log)))
+func aboutCommits(info buildinfo.Info) View {
+	return aboutSection("Commits", ui.Code(ui.CodeNowrap, ui.CodeSize2)(domi.Text(info.Log)))
 }
 
-func aboutModules(bi *debug.BuildInfo) hi.View {
+func aboutModules(bi *debug.BuildInfo) View {
 	rows := []domi.Node{aboutModuleRow(
 		bi.Main.Path,
 		cmp.Or(bi.Main.Version, "(devel)"),
@@ -75,22 +75,22 @@ func aboutModuleRow(path, version string) domi.Node {
 	return aboutRow(path, domi.Text(version))
 }
 
-func aboutSection(title string, body domi.Node) hi.View {
-	return hi.VStack(
-		hi.Text(title),
-		hi.HTML(body).Class("v-html-block"),
+func aboutSection(title string, body domi.Node) View {
+	return VStack(
+		Text(title),
+		HTML(body).Class("v-html-block"),
 	).
-		Alignment(hi.Leading).
+		Alignment(Leading).
 		Gap(12i)
 }
 
 func aboutGrid(rows ...domi.Node) domi.Node {
-	return html.Div(Class("v-about-grid"))(rows...)
+	return html.Div(ui.Class("v-about-grid"))(rows...)
 }
 
 func aboutRow(key string, value domi.Node) domi.Node {
 	return domi.Fragment(
-		html.Div(Class("v-about-key"))(domi.Text(key)),
+		html.Div(ui.Class("v-about-key"))(domi.Text(key)),
 		html.Div()(value),
 	)
 }

@@ -3,7 +3,7 @@ package view
 import (
 	"fmt"
 
-	"ily.dev/act3/hi"
+	. "ily.dev/act3/hi"
 )
 
 type Filesystem struct {
@@ -14,24 +14,24 @@ type Filesystem struct {
 	Free int64
 }
 
-func AppStorage(fs []*Filesystem, cloneDegraded error) hi.View {
-	return hi.ScrollView(hi.Vertical,
-		hi.VStack(
-			hi.Text("Storage").Title("Storage"),
+func AppStorage(fs []*Filesystem, cloneDegraded error) View {
+	return ScrollView(Vertical,
+		VStack(
+			Text("Storage").Title("Storage"),
 			cloneWarning(cloneDegraded),
-			hi.VStack(
-				hi.Text("filesystem info"),
-				hi.VStack(
-					hi.ForEach(fs, nil, fsItem),
+			VStack(
+				Text("filesystem info"),
+				VStack(
+					ForEach(fs, nil, fsItem),
 				).
-					Alignment(hi.Leading),
+					Alignment(Leading),
 			).
-				Alignment(hi.Leading).
+				Alignment(Leading).
 				Gap(12i),
 		).
-			Alignment(hi.Leading).
+			Alignment(Leading).
 			Gap(32i).
-			Padding(hi.Edges(16i)),
+			Padding(Edges(16i)),
 	)
 }
 
@@ -39,13 +39,13 @@ func AppStorage(fs []*Filesystem, cloneDegraded error) hi.View {
 // have fallen back from filesystem clones to full byte copies,
 // which keeps media flowing but wastes time and disk until the
 // storage configuration is fixed.
-func cloneWarning(err error) hi.View {
+func cloneWarning(err error) View {
 	if err == nil {
-		return hi.Empty()
+		return Empty()
 	}
-	return hi.Text("⚠ " + err.Error())
+	return Text("⚠ " + err.Error())
 }
 
-func fsItem(fs *Filesystem) hi.View {
-	return hi.Text(fmt.Sprintf("%s %d %d avail:%d %s", fs.Path, fs.Used, fs.Size, fs.Free, fs.Type))
+func fsItem(fs *Filesystem) View {
+	return Text(fmt.Sprintf("%s %d %d avail:%d %s", fs.Path, fs.Used, fs.Size, fs.Free, fs.Type))
 }
