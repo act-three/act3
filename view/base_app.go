@@ -3,9 +3,9 @@ package view
 import (
 	"ily.dev/domi/attr"
 
-	"ily.dev/act3/hi"
+	. "ily.dev/act3/hi"
 	"ily.dev/act3/model"
-	. "ily.dev/act3/ui"
+	"ily.dev/act3/ui"
 	"ily.dev/act3/view/sidebar"
 )
 
@@ -16,23 +16,23 @@ type AppConfig struct {
 	Uploads        []model.Upload
 }
 
-func Editor(body hi.View, cfg AppConfig) hi.View {
-	return hi.HStack(
-		hi.HTML(sidebar.Sidebar(sidebar.Config{
+func Editor(body View, cfg AppConfig) View {
+	return HStack(
+		HTML(sidebar.Sidebar(sidebar.Config{
 			Path:           cfg.Path,
 			TaskCount:      cfg.TaskCount,
 			TaskCountError: cfg.TaskCountError,
 			Uploads:        cfg.Uploads,
 		})).
 			FixedSize(),
-		hi.ZStack(body).
-			Attr(attr.Role("main"), Attr("data-slot")("sidebar-inset")).
+		ZStack(body).
+			Attr(attr.Role("main"), ui.Attr("data-slot")("sidebar-inset")).
 			Class("v-app-main").
 			BorderClipped().
-			Padding(hi.EdgesLetterbox(8i), hi.EdgeTrailing(8i)),
+			Padding(EdgesLetterbox(8i), EdgeTrailing(8i)),
 	).
 		Gap(0).
 		Class("v-app").
-		Attr(Attr("data-slot")("sidebar-wrapper")).
-		Overlay(hi.Center, hi.HTML(Port()).FixedSize())
+		Attr(ui.Attr("data-slot")("sidebar-wrapper")).
+		Overlay(Center, HTML(ui.Port()).FixedSize())
 }
