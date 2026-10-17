@@ -13,15 +13,10 @@ import (
 
 func AppTransmission(tx *model.TxR) hi.View {
 	settings := tx.SettingGetByGroup("transmission")
-	return settingsPage("Transmission", html.Form(
-		onSubmit("url", func(value string) msg.Msg {
-			return &msg.TransmissionSetURL{URL: value}
-		}),
-	)(
+	return settingsPage("Transmission",
 		html.Div(Class("v-system-field"))(
 			html.Div()(domi.Text("RPC URL")),
 			InputText(
-				attr.Name("url"),
 				Class("v-system-input"),
 				attr.Value(settings[model.SettingKeyTransmissionBaseURL].String()),
 				OnChangeValue(func(v string) msg.Msg {
@@ -29,10 +24,5 @@ func AppTransmission(tx *model.TxR) hi.View {
 				}),
 			),
 		),
-		html.Div(Class("v-system-field"))(
-			InputSubmit(
-				attr.Value("Save"),
-			),
-		),
-	))
+	)
 }
